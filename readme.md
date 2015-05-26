@@ -11,6 +11,10 @@ Currently, the assembler and disassembler only support the core SPIR-V
 specification (i.e. nothing Vulkan or OpenCL-specific) and the validator is a
 work in progress. See the Future Work section for more information.
 
+The repository is maintained by Kenneth Benzie `k.benzie@codeplay.com`, please
+submit any merge requests as stated in these
+[instructions](https://cvs.khronos.org/wiki/index.php/How_to_access_and_use_the_Khronos_Gitlab_Repository).
+
 ## Build
 
 The project uses CMake to generate platform-specific build configurations. To
@@ -144,7 +148,7 @@ arbitrary word into the stream the prefix `!` is used, this takes the form
 `!<integer>`. Here is an example.
 
 ```
-OpCapability !0x0000FF000
+OpCapability !0x0000FF00
 ```
 
 ### Disassembler
