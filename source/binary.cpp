@@ -110,7 +110,7 @@ spv_result_t spvBinaryHeaderSet(spv_binary_t *binary, const uint32_t bound) {
 
   binary->code[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
   binary->code[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
-  binary->code[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_CODEPLAY;
+  binary->code[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
   binary->code[SPV_INDEX_BOUND] = bound;
   binary->code[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
 
