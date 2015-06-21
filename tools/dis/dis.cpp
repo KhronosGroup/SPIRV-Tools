@@ -114,16 +114,17 @@ int main(int argc, char **argv) {
   error = spvExtInstTableGet(&extInstTable);
   spvCheck(error, fprintf(stderr, "error: Internal malfunction.\n"));
 
+  bool option_print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   spv_text text;
   spv_diagnostic diagnostic = nullptr;
   error = spvBinaryToText(&binary, options, opcodeTable, operandTable,
-                          extInstTable, &text, &diagnostic);
+                          extInstTable,
+                          option_print ? NULL : &text,
+                          &diagnostic);
   spvCheck(error, spvDiagnosticPrint(diagnostic);
            spvDiagnosticDestroy(diagnostic); return error);
 
-  if (spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)) {
-    printf("%s", text->str);
-  } else {
+  if (!option_print) {
     if (FILE *fp = fopen(outFile, "w")) {
       size_t written = fwrite(text->str, sizeof(char), (size_t)text->length, fp);
       if (text->length != written) {
@@ -137,8 +138,6 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
-
-  spvTextDestroy(text);
 
   return 0;
 }
