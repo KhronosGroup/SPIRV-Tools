@@ -90,7 +90,7 @@ extern "C" {
 
 #define spvIsInBitfield(value, bitfield) (value == (value & bitfield))
 
-#define SPV_BIT(shift) 1 << shift
+#define SPV_BIT(shift) (1 << (shift))
 
 #define SPV_FORCE_16_BIT_ENUM(name) _##name = 0x7fff
 #define SPV_FORCE_32_BIT_ENUM(name) _##name = 0x7fffffff
