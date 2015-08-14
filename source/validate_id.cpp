@@ -1330,157 +1330,6 @@ bool idUsage::isValid<OpFunctionCall>(const spv_instruction_t *inst,
 
 #if 0
 template <>
-bool idUsage::isValid<OpSampler>(const spv_instruction_t *inst,
-                                 const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSample>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
-}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleDref>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleLod>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProj>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleGrad>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProjLod>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProjGrad>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleLodOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProjOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleGradOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProjLodOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureSampleProjGradOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureFetchTexelLod>(const spv_instruction_t *inst) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureFetchTexelOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureFetchSample>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureFetchTexel>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureGather>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
-}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureGatherOffset>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureGatherOffsets>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureQuerySizeLod>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureQuerySize>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureQueryLevels>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTextureQuerySamples>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
 bool idUsage::isValid<OpConvertUToF>(const spv_instruction_t *inst,
                                      const spv_opcode_desc opcodeEntry) {}
 #endif
@@ -2586,36 +2435,10 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
     FAIL(OpAccessChain)
     FAIL(OpInBoundsAccessChain)
     FAIL(OpArrayLength)
-    FAIL(OpImagePointer)
     FAIL(OpGenericPtrMemSemantics)
     CASE(OpFunction)
     CASE(OpFunctionParameter)
     CASE(OpFunctionCall)
-    FAIL(OpSampler)
-    FAIL(OpTextureSample)
-    FAIL(OpTextureSampleDref)
-    FAIL(OpTextureSampleLod)
-    FAIL(OpTextureSampleProj)
-    FAIL(OpTextureSampleGrad)
-    FAIL(OpTextureSampleOffset)
-    FAIL(OpTextureSampleProjLod)
-    FAIL(OpTextureSampleProjGrad)
-    FAIL(OpTextureSampleLodOffset)
-    FAIL(OpTextureSampleProjOffset)
-    FAIL(OpTextureSampleGradOffset)
-    FAIL(OpTextureSampleProjLodOffset)
-    FAIL(OpTextureSampleProjGradOffset)
-    FAIL(OpTextureFetchTexelLod)
-    FAIL(OpTextureFetchTexelOffset)
-    FAIL(OpTextureFetchSample)
-    FAIL(OpTextureFetchTexel)
-    FAIL(OpTextureGather)
-    FAIL(OpTextureGatherOffset)
-    FAIL(OpTextureGatherOffsets)
-    FAIL(OpTextureQuerySizeLod)
-    FAIL(OpTextureQuerySize)
-    FAIL(OpTextureQueryLevels)
-    FAIL(OpTextureQuerySamples)
     FAIL(OpConvertUToF)
     FAIL(OpConvertFToS)
     FAIL(OpConvertSToF)
@@ -2679,7 +2502,6 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
     FAIL(OpOrdered)
     FAIL(OpUnordered)
     FAIL(OpLogicalOr)
-    FAIL(OpLogicalXor)
     FAIL(OpLogicalAnd)
     FAIL(OpSelect)
     FAIL(OpIEqual)
@@ -2722,7 +2544,6 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
     CASE(OpReturnValue)
     FAIL(OpLifetimeStart)
     FAIL(OpLifetimeStop)
-    FAIL(OpAtomicInit)
     FAIL(OpAtomicLoad)
     FAIL(OpAtomicStore)
     FAIL(OpAtomicExchange)
@@ -2736,9 +2557,8 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
     FAIL(OpAtomicUMax)
     FAIL(OpAtomicAnd)
     FAIL(OpAtomicOr)
-    FAIL(OpAtomicXor)
-    FAIL(OpAtomicIMin)
-    FAIL(OpAtomicIMax)
+    FAIL(OpAtomicSMin)
+    FAIL(OpAtomicSMax)
     FAIL(OpEmitStreamVertex)
     FAIL(OpEndStreamPrimitive)
     FAIL(OpAsyncGroupCopy)

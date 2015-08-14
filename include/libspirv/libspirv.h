@@ -27,7 +27,7 @@
 #ifndef _CODEPLAY_SPIRV_SPIRV_H_
 #define _CODEPLAY_SPIRV_SPIRV_H_
 
-#include <headers/spirv.h>
+#include <headers/spirv.hpp>
 #include <headers/GLSL.std.450.h>
 #include <headers/OpenCLLib.h>
 

@@ -37,7 +37,7 @@ class BinaryToText : public ::testing::Test {
 
     const char *textStr = R"(
 OpSource OpenCL 12
-OpMemoryModel Physical64 OpenCL1.2
+OpMemoryModel Physical64 OpenCL
 OpSourceExtension "PlaceholderExtensionName"
 OpEntryPoint Kernel $1
 OpExecutionMode $1 LocalSizeHint 1 1 1
