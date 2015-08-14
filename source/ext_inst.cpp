@@ -4,7 +4,7 @@
 
 static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {
-     "round", GLSL_STD_450::Round, {SPV_OPERAND_TYPE_ID},
+     "round", GLSLstd450::GLSLstd450Round, {SPV_OPERAND_TYPE_ID},
     },
     // TODO: Add remaining GLSL.std.450 instructions
 };
