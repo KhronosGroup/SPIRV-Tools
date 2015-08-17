@@ -25,7 +25,7 @@
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 cmake_minimum_required(VERSION 2.8)
-project(SPIRV)
+project(spirv-tools)
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   add_definitions(-DSPIRV_LINUX)
@@ -113,27 +113,27 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
 
-add_library(SPIRV ${SPIRV_SOURCES})
-target_link_libraries(SPIRV ${SPIRV_LIBS})
-set_target_properties(SPIRV PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+add_library(SPIRV-TOOLS ${SPIRV_SOURCES})
+target_link_libraries(SPIRV-TOOLS ${SPIRV_LIBS})
+set_target_properties(SPIRV-TOOLS PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
 
 add_executable(spirv-as
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
 set_target_properties(spirv-as PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-as SPIRV)
+target_link_libraries(spirv-as SPIRV-TOOLS)
 
 add_executable(spirv-dis
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
 set_target_properties(spirv-dis PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-dis SPIRV)
+target_link_libraries(spirv-dis SPIRV-TOOLS)
 
 add_executable(spirv-val
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
 set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-val SPIRV)
+target_link_libraries(spirv-val SPIRV-TOOLS)
 
 set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest)
 if(EXISTS ${GTEST_DIR})
@@ -143,13 +143,14 @@ if(EXISTS ${GTEST_DIR})
       ON)
   endif()
 
+  add_subdirectory(${GTEST_DIR})
+endif()
+if (TARGET gtest)
   message(STATUS "Found googletest, building tests.")
 
   include_directories(SYSTEM
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest/include)
-
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/googletest)
+    ${gtest_SOURCE_DIR}
+    ${gtest_SOURCE_DIR}/include)
 
   add_executable(UnitSPIRV
     ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
@@ -172,14 +173,14 @@ if(EXISTS ${GTEST_DIR})
     ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
-  target_link_libraries(UnitSPIRV SPIRV gtest)
+  target_link_libraries(UnitSPIRV SPIRV-TOOLS gtest)
 else()
   message(STATUS "Did not find googletest, tests will not be built."
     "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
 endif()
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install)
-install(TARGETS SPIRV spirv-as spirv-dis spirv-val
+install(TARGETS SPIRV-TOOLS spirv-as spirv-dis spirv-val
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
