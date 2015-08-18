@@ -38,7 +38,7 @@ TEST(TextToBinary, Default) {
 
   const char *textStr = R"(
 OpSource OpenCL 12
-OpMemoryModel Physical64 OpenCL1.2
+OpMemoryModel Physical64 OpenCL
 OpSourceExtension "PlaceholderExtensionName"
 OpEntryPoint Kernel $1
 OpExecutionMode $1 LocalSizeHint 1 1 1
@@ -104,7 +104,7 @@ OpTypeVector %15 4 2
 
   ASSERT_EQ(spvOpcodeMake(3, OpMemoryModel), binary->code[instIndex++]);
   ASSERT_EQ(AddressingModelPhysical64, binary->code[instIndex++]);
-  ASSERT_EQ(MemoryModelOpenCL12, binary->code[instIndex++]);
+  ASSERT_EQ(MemoryModelOpenCL, binary->code[instIndex++]);
 
   uint16_t sourceExtensionWordCount =
       (uint16_t)((strlen("PlaceholderExtensionName") / sizeof(uint32_t)) + 2);

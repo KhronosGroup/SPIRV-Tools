@@ -149,7 +149,7 @@ enum Entrypoints {
     Fast_length = 109,
     Fast_normalize = 110,
 
-    // Images
+    // Images - Deprecated 
     Read_imagef = 111,
     Read_imagei = 112,
     Read_imageui = 113,
@@ -170,9 +170,13 @@ enum Entrypoints {
     Read_imagef_mipmap_grad = 126,
     Read_imagei_mipmap_grad = 127,
     Read_imageui_mipmap_grad = 128,
+
+    // Image write with LOD
     Write_imagef_mipmap_lod = 129,
     Write_imagei_mipmap_lod = 130,
     Write_imageui_mipmap_lod = 131,
+
+    // Images - Deprecated
     Get_image_width = 132,
     Get_image_height = 133,
     Get_image_depth = 134,
@@ -262,46 +266,7 @@ enum Entrypoints {
     UMad_hi = 204,
 };
 
-enum ImageChannelOrder {
-    R_ChannelOrder          = 0x10B0,
-    A_ChannelOrder          = 0x10B1,
-    RG_ChannelOrder         = 0x10B2,
-    RA_ChannelOrder         = 0x10B3,
-    RGB_ChannelOrder        = 0x10B4,
-    RGBA_ChannelOrder       = 0x10B5,
-    BGRA_ChannelOrder       = 0x10B6,
-    ARGB_ChannelOrder       = 0x10B7,
-    INTENSITY_ChannelOrder  = 0x10B8,
-    LUMINANCE_ChannelOrder  = 0x10B9,
-    Rx_ChannelOrder         = 0x10BA,
-    RGx_ChannelOrder        = 0x10BB,
-    RGBx_ChannelOrder       = 0x10BC,
-    DEPTH_ChannelOrder      = 0x10BD,
-    DEPTH_STENCIL_ChannelOrder = 0x10BE,
-    sRGB_ChannelOrder       = 0x10BF,
-    sRGBx_ChannelOrder      = 0x10C0,
-    sRGBA_ChannelOrder      = 0x10C1,
-    sBGRA_ChannelOrder      = 0x10C2,
-};
 
-enum ImageChannelType {
-    SNORM_INT8_ChannelType          = 0x10D0,
-    SNORM_INT16_ChannelType         = 0x10D1,
-    UNORM_INT8_ChannelType          = 0x10D2,
-    UNORM_INT16_ChannelType         = 0x10D3,
-    UNORM_SHORT_565_ChannelType     = 0x10D4,
-    UNORM_SHORT_555_ChannelType     = 0x10D5,
-    UNORM_INT_101010_ChannelType    = 0x10D6,
-    SIGNED_INT8_ChannelType         = 0x10D7,
-    SIGNED_INT16_ChannelType        = 0x10D8,
-    SIGNED_INT32_ChannelType        = 0x10D9,
-    UNSIGNED_INT8_ChannelType       = 0x10DA,
-    UNSIGNED_INT16_ChannelType      = 0x10DB,
-    UNSIGNED_INT32_ChannelType      = 0x10DC,
-    HALF_FLOAT_ChannelType          = 0x10DD,
-    FLOAT_ChannelType               = 0x10DE,
-    UNORM_INT24_ChannelType         = 0x10DF,
-};
 
 }; // end namespace OpenCL20
 

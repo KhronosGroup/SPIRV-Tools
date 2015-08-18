@@ -38,7 +38,7 @@ TEST(TextDestroy, Default) {
 
   char textStr[] =
       "OpSource OpenCL 12\n"
-      "OpMemoryModel Physical64 OpenCL1.2\n"
+      "OpMemoryModel Physical64 OpenCL\n"
       "OpSourceExtension \"PlaceholderExtensionName\"\n"
       "OpEntryPoint Kernel 0\n"
       "OpExecutionMode 0 LocalSizeHint 1 1 1\n"

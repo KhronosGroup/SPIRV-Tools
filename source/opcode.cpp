@@ -186,12 +186,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_EXECUTION_MODE,
       SPV_OPERAND_TYPE_LITERAL, SPV_OPERAND_TYPE_LITERAL,
       SPV_OPERAND_TYPE_ELLIPSIS}},
-    {"CompileFlag",
-     1,
-     OpCompileFlag,
-     SPV_OPCODE_FLAGS_VARIABLE | SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityKernel,
-     {SPV_OPERAND_TYPE_LITERAL_STRING}},
     {"Capability",
      2,
      OpCapability,
@@ -249,12 +243,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
       SPV_OPERAND_TYPE_LITERAL_NUMBER,
       SPV_OPERAND_TYPE_ID  // TODO: See Khronos bug 13755
      }},
-    {"TypeFilter",
-     2,
-     OpTypeFilter,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_RESULT_ID}},
     {"TypeArray",
      4,
      OpTypeArray,
@@ -409,13 +397,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID,
       SPV_OPERAND_TYPE_STORAGE_CLASS, SPV_OPERAND_TYPE_ID}},
-    {"VariableArray",
-     5,
-     OpVariableArray,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityAddresses,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID,
-      SPV_OPERAND_TYPE_STORAGE_CLASS, SPV_OPERAND_TYPE_ID}},
     {"Load",
      4,
      OpLoad,
@@ -467,13 +448,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      CapabilityShader,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
       SPV_OPERAND_TYPE_LITERAL_NUMBER}},
-    {"ImagePointer",
-     6,
-     OpImagePointer,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
     {"GenericPtrMemSemantics",
      4,
      OpGenericPtrMemSemantics,
@@ -501,188 +475,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
       SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ELLIPSIS}},
-    {"Sampler",
-     5,
-     OpSampler,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureSample",
-     5,
-     OpTextureSample,
-     SPV_OPCODE_FLAGS_VARIABLE | SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleDref",
-     6,
-     OpTextureSampleDref,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleLod",
-     6,
-     OpTextureSampleLod,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProj",
-     5,
-     OpTextureSampleProj,
-     SPV_OPCODE_FLAGS_VARIABLE | SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleGrad",
-     7,
-     OpTextureSampleGrad,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleOffset",
-     6,
-     OpTextureSampleOffset,
-     SPV_OPCODE_FLAGS_VARIABLE | SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProjLod",
-     6,
-     OpTextureSampleProjLod,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProjGrad",
-     7,
-     OpTextureSampleProjGrad,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleLodOffset",
-     7,
-     OpTextureSampleLodOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProjOffset",
-     6,
-     OpTextureSampleProjOffset,
-     SPV_OPCODE_FLAGS_VARIABLE | SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleGradOffset",
-     8,
-     OpTextureSampleGradOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProjLodOffset",
-     7,
-     OpTextureSampleProjLodOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureSampleProjGradOffset",
-     8,
-     OpTextureSampleProjGradOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureFetchTexel",
-     6,
-     OpTextureFetchTexel,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureFetchTexelOffset",
-     6,
-     OpTextureFetchTexelOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureFetchSample",
-     6,
-     OpTextureFetchSample,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureFetchTexel",
-     5,
-     OpTextureFetchTexel,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureGather",
-     6,
-     OpTextureGather,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureGatherOffset",
-     7,
-     OpTextureGatherOffset,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureGatherOffsets",
-     7,
-     OpTextureGatherOffsets,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureQuerySizeLod",
-     5,
-     OpTextureQuerySizeLod,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureQuerySize",
-     4,
-     OpTextureQuerySize,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureQueryLod",
-     5,
-     OpTextureQueryLod,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
-    {"TextureQueryLevels",
-     4,
-     OpTextureQueryLevels,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}},
-    {"TextureQuerySamples",
-     4,
-     OpTextureQuerySamples,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}},
     {"ConvertFToU",
      4,
      OpConvertFToU,
@@ -1108,13 +900,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
       SPV_OPERAND_TYPE_ID}},
-    {"LogicalXor",
-     5,
-     OpLogicalXor,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
-      SPV_OPERAND_TYPE_ID}},
     {"LogicalAnd",
      5,
      OpLogicalAnd,
@@ -1411,12 +1196,6 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      SPV_OPCODE_FLAGS_NONE,
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_LITERAL_NUMBER}},
-    {"AtomicInit",
-     3,
-     OpAtomicInit,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
     {"AtomicLoad",
      6,
      OpAtomicLoad,
@@ -1525,17 +1304,33 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
       SPV_OPERAND_TYPE_EXECUTION_SCOPE, SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
       SPV_OPERAND_TYPE_ID}},
-    {"AtomicIMin",
+    {"AtomicSMin",
      7,
-     OpAtomicIMin,
+     OpAtomicSMin,
      SPV_OPCODE_FLAGS_NONE,
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
       SPV_OPERAND_TYPE_EXECUTION_SCOPE, SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
       SPV_OPERAND_TYPE_ID}},
-    {"AtomicIMax",
+    {"AtomicUMin",
      7,
-     OpAtomicIMax,
+     OpAtomicUMin,
+     SPV_OPCODE_FLAGS_NONE,
+     0,
+     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
+      SPV_OPERAND_TYPE_EXECUTION_SCOPE, SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
+      SPV_OPERAND_TYPE_ID}},
+    {"AtomicSMax",
+     7,
+     OpAtomicSMax,
+     SPV_OPCODE_FLAGS_NONE,
+     0,
+     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
+      SPV_OPERAND_TYPE_EXECUTION_SCOPE, SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
+      SPV_OPERAND_TYPE_ID}},
+    {"AtomicUMax",
+     7,
+     OpAtomicUMax,
      SPV_OPCODE_FLAGS_NONE,
      0,
      {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID,
@@ -1977,7 +1772,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpTypeVector)
     CASE(OpTypeMatrix)
     CASE(OpTypeSampler)
-    CASE(OpTypeFilter)
     CASE(OpTypeArray)
     CASE(OpTypeRuntimeArray)
     CASE(OpTypeStruct)
@@ -2000,7 +1794,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpSpecConstant)
     CASE(OpSpecConstantComposite)
     CASE(OpVariable)
-    CASE(OpVariableArray)
     CASE(OpFunction)
     CASE(OpFunctionParameter)
     CASE(OpFunctionEnd)
@@ -2028,31 +1821,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpCopyObject)
     CASE(OpCopyMemory)
     CASE(OpCopyMemorySized)
-    CASE(OpSampler)
-    CASE(OpTextureSample)
-    CASE(OpTextureSampleDref)
-    CASE(OpTextureSampleLod)
-    CASE(OpTextureSampleProj)
-    CASE(OpTextureSampleGrad)
-    CASE(OpTextureSampleOffset)
-    CASE(OpTextureSampleProjLod)
-    CASE(OpTextureSampleProjGrad)
-    CASE(OpTextureSampleLodOffset)
-    CASE(OpTextureSampleProjOffset)
-    CASE(OpTextureSampleGradOffset)
-    CASE(OpTextureSampleProjLodOffset)
-    CASE(OpTextureSampleProjGradOffset)
-    CASE(OpTextureFetchTexelOffset)
-    CASE(OpTextureFetchSample)
-    CASE(OpTextureFetchTexel)
-    CASE(OpTextureGather)
-    CASE(OpTextureGatherOffset)
-    CASE(OpTextureGatherOffsets)
-    CASE(OpTextureQuerySizeLod)
-    CASE(OpTextureQuerySize)
-    CASE(OpTextureQueryLod)
-    CASE(OpTextureQueryLevels)
-    CASE(OpTextureQuerySamples)
     CASE(OpAccessChain)
     CASE(OpInBoundsAccessChain)
     CASE(OpSNegate)
@@ -2107,7 +1875,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpShiftRightArithmetic)
     CASE(OpShiftLeftLogical)
     CASE(OpLogicalOr)
-    CASE(OpLogicalXor)
     CASE(OpLogicalAnd)
     CASE(OpBitwiseOr)
     CASE(OpBitwiseXor)
@@ -2150,8 +1917,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpEndStreamPrimitive)
     CASE(OpControlBarrier)
     CASE(OpMemoryBarrier)
-    CASE(OpImagePointer)
-    CASE(OpAtomicInit)
     CASE(OpAtomicLoad)
     CASE(OpAtomicStore)
     CASE(OpAtomicExchange)
@@ -2178,7 +1943,6 @@ const char *spvOpcodeString(const Op opcode) {
     CASE(OpUnreachable)
     CASE(OpLifetimeStart)
     CASE(OpLifetimeStop)
-    CASE(OpCompileFlag)
     CASE(OpAsyncGroupCopy)
     CASE(OpWaitGroupEvents)
     CASE(OpGroupAll)
@@ -2239,7 +2003,6 @@ int32_t spvOpcodeIsType(const Op opcode) {
     case OpTypeVector:
     case OpTypeMatrix:
     case OpTypeSampler:
-    case OpTypeFilter:
     case OpTypeArray:
     case OpTypeRuntimeArray:
     case OpTypeStruct:
@@ -2309,10 +2072,8 @@ int32_t spvOpcodeAreTypesEqual(const spv_instruction_t *pTypeInst0,
 int32_t spvOpcodeIsPointer(const Op opcode) {
   switch (opcode) {
     case OpVariable:
-    case OpVariableArray:
     case OpAccessChain:
     case OpInBoundsAccessChain:
-    // TODO: case OpImagePointer:
     case OpFunctionParameter:
       return true;
     default:
@@ -2334,7 +2095,6 @@ int32_t spvOpcodeIsObject(const Op opcode) {
     case OpSpecConstantComposite:
     // TODO: case OpSpecConstantOp:
     case OpVariable:
-    case OpVariableArray:
     case OpAccessChain:
     case OpInBoundsAccessChain:
     case OpConvertFToU:
@@ -2396,7 +2156,6 @@ int32_t spvOpcodeIsObject(const Op opcode) {
     case OpOrdered:
     case OpUnordered:
     case OpLogicalOr:
-    case OpLogicalXor:
     case OpLogicalAnd:
     case OpSelect:
     case OpIEqual:

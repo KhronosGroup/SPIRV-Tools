@@ -157,7 +157,7 @@ TEST_F(ValidateID, OpGroupDecorateGood) {
   const char *spirv = R"(
 OpDecorationGroup %1
 OpDecorate $1 Uniform
-OpDecorate $1 GLSLStd430
+OpDecorate $1 GLSLShared
 OpGroupDecorate $1 $3 $4
 OpTypeInt %2 32 0
 OpConstant $2 %3 42
@@ -176,7 +176,7 @@ TEST_F(ValidateID, OpGroupDecorateTargetBad) {
   const char *spirv = R"(
 OpDecorationGroup %1
 OpDecorate $1 Uniform
-OpDecorate $1 GLSLStd430
+OpDecorate $1 GLSLShared
 OpGroupDecorate $1 $3
 OpTypeInt %2 32 0)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
