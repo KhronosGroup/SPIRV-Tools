@@ -155,27 +155,12 @@ OpExtInst $4 %9 $1 )" + std::string(GetParam().inst) +
 OpReturn
 OpFunctionEnd
 )";
-  const std::string expected_spirv =
+  const std::string spirv_header =
       R"(; SPIR-V
 ; Version: 99
 ; Generator: Khronos
 ; Bound: 10
-; Schema: 0
-OpCapability Shader
-OpExtInstImport %1 "GLSL.std.450"
-OpMemoryModel Logical Simple
-OpEntryPoint Vertex $2 "main"
-OpTypeVoid %3
-OpTypeFloat %4 32
-OpConstant $4 %5 1
-OpTypeFunction %6 $3
-OpFunction $3 %2 None $6
-OpLabel %8
-OpExtInst $4 %9 $1 )" +
-      std::to_string(GetParam().value) + R"( $5
-OpReturn
-OpFunctionEnd
-)";
+; Schema: 0)";
   spv_text_t text = {spirv.c_str(), spirv.size()};
   spv_binary binary;
   spv_diagnostic diagnostic;
@@ -200,7 +185,7 @@ OpFunctionEnd
     spvDiagnosticDestroy(diagnostic);
     ASSERT_EQ(SPV_SUCCESS, error);
   }
-  EXPECT_EQ(expected_spirv, output_text->str);
+  EXPECT_EQ(spirv_header + spirv, output_text->str);
   spvTextDestroy(output_text);
 }
 

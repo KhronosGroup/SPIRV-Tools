@@ -245,11 +245,14 @@ spv_result_t spvBinaryDecodeOperand(
                  DIAGNOSTIC << "Invalid extended instruction '" << words[0]
                             << "'.";
                  return SPV_ERROR_INVALID_BINARY);
+        stream.get() << (color ? clr::red() : "");
+        stream.get() << extInst->name;
+        stream.get() << (color ? clr::reset() : "");
+      } else {
+        stream.get() << (color ? clr::red() : "");
+        stream.get() << spvFixWord(words[index], endian);
+        stream.get() << (color ? clr::reset() : "");
       }
-
-      stream.get() << (color ? clr::red() : "");
-      stream.get() << spvFixWord(words[index], endian);
-      stream.get() << (color ? clr::reset() : "");
       index++;
       position->index++;
     } break;
