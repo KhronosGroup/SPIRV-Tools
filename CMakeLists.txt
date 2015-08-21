@@ -153,7 +153,9 @@ if (TARGET gtest)
     ${gtest_SOURCE_DIR}/include)
 
   add_executable(UnitSPIRV
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
     ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
