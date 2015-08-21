@@ -339,10 +339,10 @@ spv_result_t spvTextEncodeOperand(
 
   switch (type) {
     case SPV_OPERAND_TYPE_ID: {
-      if ('$' == textValue[0]) {
+      if ('%' == textValue[0]) {
         textValue++;
       }
-      // TODO: Force all ID's to be prefixed with '$'.
+      // TODO: Force all ID's to be prefixed with '%'.
       uint32_t id = 0;
       if (spvTextIsNamedId(textValue)) {
         id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);

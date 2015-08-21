@@ -45,8 +45,8 @@ TEST(TextToBinary, Default) {
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
-      OpEntryPoint Kernel $1
-      OpExecutionMode $1 LocalSizeHint 1 1 1
+      OpEntryPoint Kernel %1
+      OpExecutionMode %1 LocalSizeHint 1 1 1
  %2 = OpTypeVoid
  %3 = OpTypeBool
  ; commment
@@ -286,15 +286,15 @@ TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
             OpCapability Shader
  %glsl450 = OpExtInstImport "GLSL.std.450"
             OpMemoryModel Logical Simple
-            OpEntryPoint Vertex $main "main"
+            OpEntryPoint Vertex %main "main"
     %void = OpTypeVoid
    %float = OpTypeFloat 32
-%const1.5 = OpConstant $float 1.5
-  %fnMain = OpTypeFunction $void
-    %main = OpFunction $void None $fnMain
+%const1.5 = OpConstant %float 1.5
+  %fnMain = OpTypeFunction %void
+    %main = OpFunction %void None %fnMain
   %lbMain = OpLabel
-  %result = OpExtInst $float $glsl450 )" +
-                            std::string(GetParam().inst) + R"( $const1.5
+  %result = OpExtInst %float %glsl450 )" +
+                            std::string(GetParam().inst) + R"( %const1.5
             OpReturn
             OpFunctionEnd
 )";
@@ -357,9 +357,9 @@ TEST_F(TextToBinaryTest, InstructionTwoFormats) {
             OpTypeInt %7 16 1
     %void = OpTypeVoid
             OpTypeFloat %float 32
-%const1.5 = OpConstant $float 1.5
-            OpTypeFunction %fnMain $void
-    %main = OpFunction $void None $fnMain
+%const1.5 = OpConstant %float 1.5
+            OpTypeFunction %fnMain %void
+    %main = OpFunction %void None %fnMain
             OpLabel %lbMain
   %result = OpExtInst $float $glsl450 Round $const1.5
             OpReturn

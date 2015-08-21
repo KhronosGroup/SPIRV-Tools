@@ -216,7 +216,7 @@ spv_result_t spvBinaryDecodeOperand(
   switch (type) {
     case SPV_OPERAND_TYPE_ID: {
       stream.get() << ((color) ? clr::yellow() : "");
-      stream.get() << "$" << spvFixWord(words[index], endian);
+      stream.get() << "%" << spvFixWord(words[index], endian);
       stream.get() << ((color) ? clr::reset() : "");
       index++;
       position->index++;

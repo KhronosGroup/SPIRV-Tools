@@ -30,10 +30,10 @@ TEST(NamedId, Default) {
   const char *spirv = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
-          OpEntryPoint Vertex $main
+          OpEntryPoint Vertex %main
   %void = OpTypeVoid
-%fnMain = OpTypeFunction $void
-  %main = OpFunction $void None $fnMain
+%fnMain = OpTypeFunction %void
+  %main = OpFunction %void None %fnMain
 %lbMain = OpLabel
           OpReturn
           OpFunctionEnd)";
