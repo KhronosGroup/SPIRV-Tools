@@ -42,26 +42,26 @@ TEST(TextToBinary, Default) {
   spv_endianness_t endian = SPV_ENDIANNESS_LITTLE;
 
   const char *textStr = R"(
-OpSource OpenCL 12
-OpMemoryModel Physical64 OpenCL
-OpSourceExtension "PlaceholderExtensionName"
-OpEntryPoint Kernel $1
-OpExecutionMode $1 LocalSizeHint 1 1 1
-OpTypeVoid %2
-OpTypeBool %3
+      OpSource OpenCL 12
+      OpMemoryModel Physical64 OpenCL
+      OpSourceExtension "PlaceholderExtensionName"
+      OpEntryPoint Kernel $1
+      OpExecutionMode $1 LocalSizeHint 1 1 1
+%2  = OpTypeVoid
+%3  = OpTypeBool
 ; commment
-OpTypeInt %4 8 0 ; comment
-OpTypeInt %5 8 1
-OpTypeInt %6 16 0
-OpTypeInt %7 16 1
-OpTypeInt %8 32 0
-OpTypeInt %9 32 1
-OpTypeInt %10 64 0
-OpTypeInt %11 64 1
-OpTypeFloat %12 16
-OpTypeFloat %13 32
-OpTypeFloat %14 64
-OpTypeVector %15 4 2
+%4  = OpTypeInt 8 0 ; comment
+%5  = OpTypeInt 8 1
+%6  = OpTypeInt 16 0
+%7  = OpTypeInt 16 1
+%8  = OpTypeInt 32 0
+%9  = OpTypeInt 32 1
+%10 = OpTypeInt 64 0
+%11 = OpTypeInt 64 1
+%12 = OpTypeFloat 16
+%13 = OpTypeFloat 32
+%14 = OpTypeFloat 64
+%15 = OpTypeVector 4 2
 )";
   spv_text_t text = {textStr, strlen(textStr)};
 
@@ -283,20 +283,20 @@ class GLSingleFloatTest
 
 TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
   const std::string spirv = R"(
-OpCapability Shader
-OpExtInstImport %glsl450 "GLSL.std.450"
-OpMemoryModel Logical Simple
-OpEntryPoint Vertex $main "main"
-OpTypeVoid %void
-OpTypeFloat %float 32
-OpConstant $float %const1.5 1.5
-OpTypeFunction %fnMain %void
-OpFunction $void %main None $fnMain
-OpLabel %lbMain
-OpExtInst $float %result $glsl450 )" +
+            OpCapability Shader
+ %glsl450 = OpExtInstImport "GLSL.std.450"
+            OpMemoryModel Logical Simple
+            OpEntryPoint Vertex $main "main"
+    %void = OpTypeVoid
+   %float = OpTypeFloat 32
+%const1.5 = OpConstant $float 1.5
+  %fnMain = OpTypeFunction $void
+    %main = OpFunction $void None $fnMain
+  %lbMain = OpLabel
+  %result = OpExtInst $float $glsl450 )" +
                             std::string(GetParam().inst) + R"( $const1.5
-OpReturn
-OpFunctionEnd
+            OpReturn
+            OpFunctionEnd
 )";
 
   this->text.str = spirv.c_str();
@@ -308,7 +308,7 @@ OpFunctionEnd
       << spirv << std::endl
       << "Test case for : " << GetParam().inst << std::endl;
   std::vector<uint32_t> expected_contains({
-    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 9 /*%result*/, 1 /*%glsl450*/,
+    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 8 /*%result*/, 1 /*%glsl450*/,
       GetParam().value, 5 /*const1.5*/});
   EXPECT_TRUE(std::search(this->binary->code,
                           this->binary->code + this->binary->wordCount,
@@ -341,4 +341,23 @@ TEST_F(TextToBinaryTest, StringSpace) {
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
+}
+
+TEST_F(TextToBinaryTest, UnknownBeginningOfInsruction) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+Google
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(4, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ(
+      "Expected <opcode> or <result-id> at the beginning of an instruction, "
+      "found 'Google'.",
+      diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
 }

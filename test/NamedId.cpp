@@ -28,15 +28,15 @@
 
 TEST(NamedId, Default) {
   const char *spirv = R"(
-OpCapability Shader
-OpMemoryModel Logical Simple
-OpEntryPoint Vertex $main
-OpTypeVoid %void
-OpTypeFunction %fnMain $void
-OpFunction $void %main None $fnMain
-OpLabel %lbMain
-OpReturn
-OpFunctionEnd)";
+          OpCapability Shader
+          OpMemoryModel Logical Simple
+          OpEntryPoint Vertex $main
+  %void = OpTypeVoid
+%fnMain = OpTypeFunction $void
+  %main = OpFunction $void None $fnMain
+%lbMain = OpLabel
+          OpReturn
+          OpFunctionEnd)";
   spv_text_t text;
   text.str = spirv;
   text.length = strlen(spirv);
