@@ -157,9 +157,10 @@ if (TARGET gtest)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeTableGet.cpp

@@ -47,15 +47,15 @@ TEST(TextToBinary, Default) {
       OpSourceExtension "PlaceholderExtensionName"
       OpEntryPoint Kernel $1
       OpExecutionMode $1 LocalSizeHint 1 1 1
-%2  = OpTypeVoid
-%3  = OpTypeBool
-; commment
-%4  = OpTypeInt 8 0 ; comment
-%5  = OpTypeInt 8 1
-%6  = OpTypeInt 16 0
-%7  = OpTypeInt 16 1
-%8  = OpTypeInt 32 0
-%9  = OpTypeInt 32 1
+ %2 = OpTypeVoid
+ %3 = OpTypeBool
+ ; commment
+ %4 = OpTypeInt 8 0 ; comment
+ %5 = OpTypeInt 8 1
+ %6 = OpTypeInt 16 0
+ %7 = OpTypeInt 16 1
+ %8 = OpTypeInt 32 0
+ %9 = OpTypeInt 32 1
 %10 = OpTypeInt 64 0
 %11 = OpTypeInt 64 1
 %12 = OpTypeFloat 16

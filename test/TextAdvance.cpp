@@ -66,6 +66,23 @@ TEST(TextAdvance, LeadingNewLinesSpacesAndTabs) {
   ASSERT_EQ(5, position.index);
 }
 
+TEST(TextAdvance, LeadingWhitespaceAfterCommentLine) {
+  char textStr[] = "; comment\n \t \tWord";
+  spv_text_t text = {textStr, strlen(textStr)};
+  spv_position_t position = {};
+  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
+  ASSERT_EQ(4, position.column);
+  ASSERT_EQ(1, position.line);
+  ASSERT_EQ(14, position.index);
+}
+
+TEST(TextAdvance, EOFAfterCommentLine) {
+  char textStr[] = "; comment";
+  spv_text_t text = {textStr, strlen(textStr)};
+  spv_position_t position = {};
+  ASSERT_EQ(SPV_END_OF_STREAM, spvTextAdvance(&text, &position));
+}
+
 TEST(TextAdvance, NullTerminator) {
   char textStr[] = "";
   spv_text_t text = {textStr, strlen(textStr)};

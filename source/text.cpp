@@ -111,7 +111,7 @@ spv_result_t spvTextAdvanceLine(const spv_text text, spv_position position) {
         position->index++;
         return SPV_SUCCESS;
       default:
-        position->line++;
+        position->column++;
         position->index++;
         break;
     }
@@ -124,7 +124,8 @@ spv_result_t spvTextAdvance(const spv_text text, spv_position position) {
     case '\0':
       return SPV_END_OF_STREAM;
     case ';':
-      return spvTextAdvanceLine(text, position);
+      if (spv_result_t error = spvTextAdvanceLine(text, position)) return error;
+      return spvTextAdvance(text, position);
     case ' ':
     case '\t':
       position->column++;
