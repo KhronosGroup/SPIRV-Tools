@@ -2,10 +2,33 @@
 
 #include <string.h>
 
+#define GL450Inst(name) #name, GLSLstd450::GLSLstd450##name
+
 static const spv_ext_inst_desc_t glslStd450Entries[] = {
-    {
-     "round", GLSLstd450::GLSLstd450Round, {SPV_OPERAND_TYPE_ID},
-    },
+    { GL450Inst(Round), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(RoundEven), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Trunc), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(FAbs), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(SAbs), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(FSign), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(SSign), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Floor), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Ceil), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Fract), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Radians), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Degrees), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Sin), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Cos), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Tan), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Asin), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Acos), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Atan), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Sinh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Cosh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Tanh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Asinh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Acosh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Atanh), {SPV_OPERAND_TYPE_ID}, },
     // TODO: Add remaining GLSL.std.450 instructions
 };
 

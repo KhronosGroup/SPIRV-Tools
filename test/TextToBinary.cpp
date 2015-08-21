@@ -26,6 +26,10 @@
 
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
+#include <algorithm>
+#include <iomanip>
+#include <utility>
+#include <vector>
 
 union char_word_t {
   char cs[4];
@@ -269,8 +273,16 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
   }
 }
 
-TEST_F(TextToBinaryTest, ExtInst) {
-  SetText(R"(
+struct InstValue {
+  const char* inst;
+  uint32_t value;
+};
+class GLSingleFloatTest
+    : public TextToBinaryTestBase<
+          ::testing::TestWithParam<InstValue>> {};
+
+TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
+  const std::string spirv = R"(
 OpCapability Shader
 OpExtInstImport %glsl450 "GLSL.std.450"
 OpMemoryModel Logical Simple
@@ -281,19 +293,43 @@ OpConstant $float %const1.5 1.5
 OpTypeFunction %fnMain %void
 OpFunction $void %main None $fnMain
 OpLabel %lbMain
-OpExtInst $float %result $glsl450 round $const1.5
+OpExtInst $float %result $glsl450 )" +
+                            std::string(GetParam().inst) + R"( $const1.5
 OpReturn
 OpFunctionEnd
-)");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
+)";
+
+  this->text.str = spirv.c_str();
+  this->text.length = spirv.size();
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&this->text, this->opcodeTable,
+                                         this->operandTable, this->extInstTable,
+                                         &this->binary, &this->diagnostic))
+      << "Source was: " << std::endl
+      << spirv << std::endl
+      << "Test case for : " << GetParam().inst << std::endl;
+  std::vector<uint32_t> expected_contains({
+    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 9 /*%result*/, 1 /*%glsl450*/,
+      GetParam().value, 5 /*const1.5*/});
+  EXPECT_TRUE(std::search(this->binary->code,
+                          this->binary->code + this->binary->wordCount,
+                          expected_contains.begin(), expected_contains.end()) !=
+              this->binary->code + this->binary->wordCount);
+  if (this->binary) {
+    spvBinaryDestroy(this->binary);
   }
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
+  if (this->diagnostic) {
+    spvDiagnosticPrint(this->diagnostic);
   }
 }
+
+INSTANTIATE_TEST_CASE_P(
+    SingleElementFloatingParams, GLSingleFloatTest,
+    ::testing::ValuesIn(std::vector<InstValue>({
+        {"Round", 1}, {"RoundEven", 2}, {"Trunc", 3}, {"FAbs", 4}, {"SAbs", 5},
+        {"FSign", 6}, {"SSign", 7}, {"Floor", 8}, {"Ceil", 9}, {"Fract", 10},
+        {"Radians", 11}, {"Degrees", 12}, {"Sin", 13}, {"Cos", 14}, {"Tan", 15},
+        {"Asin", 16}, {"Acos", 17}, {"Atan", 18}, {"Sinh", 19}, {"Cosh", 20},
+        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24}})));
 
 TEST_F(TextToBinaryTest, StringSpace) {
   SetText("OpSourceExtension \"string with spaces\"");

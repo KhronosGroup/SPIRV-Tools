@@ -34,6 +34,18 @@
 #include "../source/text.h"
 #include "../source/validate.h"
 
+#ifdef __ANDROID__
+#include <sstream>
+namespace std {
+template<typename T>
+std::string to_string(const T& val) {
+  std::ostringstream os;
+  os << val;
+  return os.str();
+}
+}
+#endif
+
 #include <gtest/gtest.h>
 
 #include <stdint.h>
@@ -48,6 +60,8 @@ static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
+
+
 
 #define I32_ENDIAN_HOST (o32_host_order.value)
 

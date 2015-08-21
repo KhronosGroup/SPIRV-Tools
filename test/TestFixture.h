@@ -23,14 +23,17 @@
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+#ifndef _TEST_FIXTURE_H_
+#define _TEST_FIXTURE_H_
 
 #include "UnitSPIRV.h"
 
 // Common setup for TextToBinary tests. SetText() should be called to populate
 // the actual test text.
-class TextToBinaryTest : public ::testing::Test {
+template<typename T>
+class TextToBinaryTestBase : public T {
  public:
-  TextToBinaryTest()
+  TextToBinaryTestBase()
       : opcodeTable(nullptr),
         operandTable(nullptr),
         diagnostic(nullptr),
@@ -64,3 +67,7 @@ class TextToBinaryTest : public ::testing::Test {
   spv_text_t text;
   spv_binary binary;
 };
+
+class TextToBinaryTest : public TextToBinaryTestBase<::testing::Test> {};
+
+#endif// _TEXT_FIXTURE_H_
