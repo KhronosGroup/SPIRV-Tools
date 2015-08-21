@@ -343,6 +343,39 @@ TEST_F(TextToBinaryTest, StringSpace) {
   }
 }
 
+// TODO(antiagainst): we might not want to support both instruction formats in
+// the future. Only the "<result-id> = <opcode> <operand>.." one may survive.
+TEST_F(TextToBinaryTest, InstructionTwoFormats) {
+  SetText(R"(
+            OpCapability Shader
+ %glsl450 = OpExtInstImport "GLSL.std.450"
+            OpMemoryModel Logical Simple
+            OpTypeBool %3
+       %4 = OpTypeInt 8 0
+            OpTypeInt %5 8 1
+       %6 = OpTypeInt 16 0
+            OpTypeInt %7 16 1
+    %void = OpTypeVoid
+            OpTypeFloat %float 32
+%const1.5 = OpConstant $float 1.5
+            OpTypeFunction %fnMain $void
+    %main = OpFunction $void None $fnMain
+            OpLabel %lbMain
+  %result = OpExtInst $float $glsl450 Round $const1.5
+            OpReturn
+            OpFunctionEnd
+)");
+
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
+                                         extInstTable, &binary, &diagnostic));
+  if (binary) {
+    spvBinaryDestroy(binary);
+  }
+  if (diagnostic) {
+    spvDiagnosticPrint(diagnostic);
+  }
+}
+
 TEST_F(TextToBinaryTest, UnknownBeginningOfInsruction) {
   SetText(R"(
      OpSource OpenCL 12
@@ -359,5 +392,53 @@ Google
       "Expected <opcode> or <result-id> at the beginning of an instruction, "
       "found 'Google'.",
       diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, NoEqualSign) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(5, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, NoOpCode) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2 =
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(5, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, WrongOpCode) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2 = Wahahaha
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(4, diagnostic->position.line + 1);
+  EXPECT_EQ(6, diagnostic->position.column + 1);
+  EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
   if (binary) spvBinaryDestroy(binary);
 }

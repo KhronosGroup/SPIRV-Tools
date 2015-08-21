@@ -540,10 +540,11 @@ spv_result_t spvTextEncodeOpcode(
     spvCheck(spvTextAdvance(text, position),
              DIAGNOSTIC << "Expected opcode, found end of stream.";
              return SPV_ERROR_INVALID_TEXT);
+    error = spvTextWordGet(text, position, opcodeName, &nextPosition);
+    spvCheck(error, return error);
     spvCheck(!spvStartsWithOp(text, position),
              DIAGNOSTIC << "Invalid Opcode prefix '" << opcodeName << "'.";
              return SPV_ERROR_INVALID_TEXT);
-    error = spvTextWordGet(text, position, opcodeName, &nextPosition);
   }
 
   // NOTE: The table contains Opcode names without the "Op" prefix.
