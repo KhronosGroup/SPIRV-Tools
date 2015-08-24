@@ -468,7 +468,7 @@ TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
  %4 = OpConstant %1 1.0
- %5 = OpConstant %1 %5 0.0
+ %5 = OpConstant %1 0.0
  %6 = OpConstantComposite %2 %4 %5 %5 %5
  %7 = OpConstantComposite %2 %5 %4 %5 %5
  %8 = OpConstantComposite %2 %5 %5 %4 %5

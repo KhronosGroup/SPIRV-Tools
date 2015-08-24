@@ -84,40 +84,59 @@ TEST(TextLiteral, GoodFloat) {
   EXPECT_EQ(-.25, l.value.f);
 }
 
+TEST(TextLiteral, BadString) {
+  spv_literal_t l;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("-", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("--", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("1-2", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("123a", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("12.2.3", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("\"", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("\"z", &l));
+  EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("a\"", &l));
+}
+
 TEST(TextLiteral, GoodString) {
   spv_literal_t l;
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("-", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"-\"", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ("-", l.value.str);
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("--", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"--\"", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ("--", l.value.str);
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("1-2", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"1-2\"", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ("1-2", l.value.str);
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("123a", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"123a\"", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ("123a", l.value.str);
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("12.2.3", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"12.2.3\"", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ("12.2.3", l.value.str);
+
+  // TODO(dneto): escaping in strings is not supported yet.
 }
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
-  std::string too_long(SPV_LIMIT_LITERAL_STRING_MAX, 'a');
+  std::string too_long = std::string("\"") +
+                         std::string(SPV_LIMIT_LITERAL_STRING_MAX - 2, 'a') +
+                         "\"";
   EXPECT_EQ(SPV_ERROR_OUT_OF_MEMORY, spvTextToLiteral(too_long.data(), &l));
 }
 
 TEST(TextLiteral, GoodLongString) {
   spv_literal_t l;
-  std::string good_long(SPV_LIMIT_LITERAL_STRING_MAX-1, 'a');
+  std::string unquoted(SPV_LIMIT_LITERAL_STRING_MAX - 3, 'a');
+  std::string good_long = std::string("\"") + unquoted + "\"";
   EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ(good_long.data(), l.value.str);
+  EXPECT_STREQ(unquoted.data(), l.value.str);
 }

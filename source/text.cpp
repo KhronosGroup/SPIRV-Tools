@@ -251,6 +251,8 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
   bool isString = false;
 
   const size_t len = strlen(textValue);
+  if (len == 0) return SPV_FAILED_MATCH;
+
   for (uint64_t index = 0; index < len; ++index) {
     switch (textValue[index]) {
       case '0':
@@ -284,12 +286,14 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
   pLiteral->type = spv_literal_type_t(99);
 
   if (isString || numPeriods > 1 || (isSigned && len==1)) {
-    // TODO(dneto): Quotes should be required, and stripped.
     // TODO(dneto): Allow escaping.
+    if (len < 2 || textValue[0] != '"' || textValue[len - 1] != '"')
+      return SPV_FAILED_MATCH;
     pLiteral->type = SPV_LITERAL_TYPE_STRING;
     // Need room for the null-terminator.
-    if (len + 1 > sizeof(pLiteral->value.str)) return SPV_ERROR_OUT_OF_MEMORY;
-    strncpy(pLiteral->value.str, textValue, len+1);
+    if (len >= sizeof(pLiteral->value.str)) return SPV_ERROR_OUT_OF_MEMORY;
+    strncpy(pLiteral->value.str, textValue+1, len-2);
+    pLiteral->value.str[len-2] = 0;
   } else if (numPeriods == 1) {
     double d = std::strtod(textValue, nullptr);
     float f = (float)d;

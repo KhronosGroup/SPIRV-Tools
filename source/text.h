@@ -117,7 +117,10 @@ spv_result_t spvTextStringGet(const spv_text text,
 /// @return result code
 spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue);
 
-/// @brief Convert the input text to one of the number types
+/// @brief Convert the input text to one of the number types.
+///
+/// String literals must be surrounded by double-quotes ("), which are
+/// then stripped.
 ///
 /// @param[in] textValue input text to parse
 /// @param[out] pLiteral the returned literal number
