@@ -171,6 +171,7 @@ if (TARGET gtest)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeSplit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandTableGet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextAdvance.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextLiteral.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextDestroy.cpp

@@ -34,7 +34,7 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string.h>
 
 #include <string>
@@ -247,14 +247,11 @@ spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue) {
 
 spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
   bool isSigned = false;
-  bool isFloat = false;
+  int numPeriods = 0;
   bool isString = false;
 
-  if ('-' == textValue[0]) {
-    isSigned = true;
-  }
-
-  for (uint64_t index = 0; index < strlen(textValue); ++index) {
+  const size_t len = strlen(textValue);
+  for (uint64_t index = 0; index < len; ++index) {
     switch (textValue[index]) {
       case '0':
       case '1':
@@ -268,19 +265,33 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
       case '9':
         break;
       case '.':
-        isFloat = true;
+        numPeriods++;
+        break;
+      case '-':
+        if (index == 0) {
+          isSigned = true;
+        } else {
+          isString = true;
+        }
         break;
       default:
         isString = true;
+        index = len; // break out of the loop too.
         break;
     }
   }
 
-  if (isString) {
+  pLiteral->type = spv_literal_type_t(99);
+
+  if (isString || numPeriods > 1 || (isSigned && len==1)) {
+    // TODO(dneto): Quotes should be required, and stripped.
+    // TODO(dneto): Allow escaping.
     pLiteral->type = SPV_LITERAL_TYPE_STRING;
-    strncpy(pLiteral->value.str, textValue, strlen(textValue));
-  } else if (isFloat) {
-    double d = strtod(textValue, nullptr);
+    // Need room for the null-terminator.
+    if (len + 1 > sizeof(pLiteral->value.str)) return SPV_ERROR_OUT_OF_MEMORY;
+    strncpy(pLiteral->value.str, textValue, len+1);
+  } else if (numPeriods == 1) {
+    double d = std::strtod(textValue, nullptr);
     float f = (float)d;
     if (d == (double)f) {
       pLiteral->type = SPV_LITERAL_TYPE_FLOAT_32;
