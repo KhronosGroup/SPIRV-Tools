@@ -35,7 +35,7 @@ class BinaryToText : public ::testing::Test {
     ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
     ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
 
-    const char *textStr = R"(
+    const char* textStr = R"(
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
@@ -141,16 +141,16 @@ TEST_P(BinaryToTextGLExtSingleFloatInst, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   const std::string spirv = R"(
 OpCapability Shader
-OpExtInstImport %1 "GLSL.std.450"
+%1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical Simple
 OpEntryPoint Vertex %2 "main"
-OpTypeVoid %3
-OpTypeFloat %4 32
-OpConstant %4 %5 1
-OpTypeFunction %6 %3
-OpFunction %3 %2 None %6
-OpLabel %8
-OpExtInst %4 %9 %1 )" + std::string(GetParam().inst) +
+%3 = OpTypeVoid
+%4 = OpTypeFloat 32
+%5 = OpConstant %4 1
+%6 = OpTypeFunction %3
+%2 = OpFunction %3 None %6
+%8 = OpLabel
+%9 = OpExtInst %4 %1 )" + std::string(GetParam().inst) +
                             R"( %5
 OpReturn
 OpFunctionEnd
@@ -176,9 +176,9 @@ OpFunctionEnd
   }
 
   spv_text output_text;
-  error = spvBinaryToText(
-      binary, SPV_BINARY_TO_TEXT_OPTION_NONE,
-      opcodeTable, operandTable, extInstTable, &output_text, &diagnostic);
+  error =
+      spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                      operandTable, extInstTable, &output_text, &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);

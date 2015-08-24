@@ -348,7 +348,10 @@ spv_result_t spvBinaryDecodeOpcode(
                       << "'.";
            return SPV_ERROR_INVALID_BINARY);
 
-  stream.get() << "Op" << opcodeEntry->name;
+  std::stringstream no_result_id_strstream;
+  out_stream no_result_id_stream(no_result_id_strstream);
+  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
+  no_result_id_stream.get() << "Op" << opcodeEntry->name;
 
   position->index++;
 
@@ -357,16 +360,20 @@ spv_result_t spvBinaryDecodeOpcode(
     const uint32_t word = spvFixWord(pInst->words[index], endian);
     const uint64_t currentPosIndex = position->index;
 
-    stream.get() << " ";
+    if (result_id_index != index - 1) no_result_id_strstream << " ";
     spv_operand_type_t type = spvBinaryOperandInfo(word, index, opcodeEntry,
                                                    operandTable, &operandEntry);
     spvCheck(spvBinaryDecodeOperand(
                  opcodeEntry->opcode, type, pInst->words + index, endian,
                  options, operandTable, extInstTable, &pInst->extInstType,
-                 stream, position, pDiagnostic),
+                 (result_id_index == index - 1 ? stream : no_result_id_stream),
+                 position, pDiagnostic),
              return SPV_ERROR_INVALID_BINARY);
+    if (result_id_index == index - 1) stream.get() << " = ";
     index += (uint16_t)(position->index - currentPosIndex - 1);
   }
+
+  stream.get() << no_result_id_strstream.str();
 
   return SPV_SUCCESS;
 }
