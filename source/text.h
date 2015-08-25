@@ -85,7 +85,9 @@ spv_result_t spvTextAdvanceLine(const spv_text text, spv_position_t *pPosition);
 /// @return result code
 spv_result_t spvTextAdvance(const spv_text text, spv_position_t *pPosition);
 
-/// @brief Fetch the next word from the text stream
+/// @brief Fetch the next word from the text stream.
+///
+/// A word ends at the next comment or whitespace.
 ///
 /// @param[in] text stream to read from
 /// @param[in] startPosition current position in text stream

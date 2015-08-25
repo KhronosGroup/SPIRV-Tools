@@ -155,6 +155,7 @@ spv_result_t spvTextWordGet(const spv_text text,
   while (true) {
     switch (text->str[endPosition->index]) {
       case ' ':
+      case ';':
       case '\t':
       case '\n':
       case '\0': {  // NOTE: End of word found!

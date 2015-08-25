@@ -68,6 +68,20 @@ TEST(TextWordGet, SpaceTerminator) {
   ASSERT_STREQ("Word", word.c_str());
 }
 
+TEST(TextWordGet, SemicolonTerminator) {
+  char textStr[] = "Wo;rd ";
+  spv_text_t text = {textStr, strlen(textStr)};
+  spv_position_t startPosition = {};
+  std::string word;
+  spv_position_t endPosition = {};
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextWordGet(&text, &startPosition, word, &endPosition));
+  ASSERT_EQ(2, endPosition.column);
+  ASSERT_EQ(0, endPosition.line);
+  ASSERT_EQ(2, endPosition.index);
+  ASSERT_STREQ("Wo", word.c_str());
+}
+
 TEST(TextWordGet, MultipleWords) {
   char textStr[] = "Words in a sentence";
   spv_text_t text = {textStr, strlen(textStr)};
