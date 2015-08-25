@@ -29,6 +29,16 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     { GL450Inst(Asinh), {SPV_OPERAND_TYPE_ID}, },
     { GL450Inst(Acosh), {SPV_OPERAND_TYPE_ID}, },
     { GL450Inst(Atanh), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Atan2), {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Pow), {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Exp), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Log), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Exp2), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Log2), {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Sqrt), {SPV_OPERAND_TYPE_ID}, },
+    { "Inversesqrt", GLSLstd450::GLSLstd450InverseSqrt, {SPV_OPERAND_TYPE_ID}, },
+    { GL450Inst(Determinant), {SPV_OPERAND_TYPE_ID}, },
+    { "Inverse", GLSLstd450::GLSLstd450MatrixInverse, {SPV_OPERAND_TYPE_ID}, },
     // TODO: Add remaining GLSL.std.450 instructions
 };
 

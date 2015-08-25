@@ -196,4 +196,8 @@ INSTANTIATE_TEST_CASE_P(
         {"FSign", 6}, {"SSign", 7}, {"Floor", 8}, {"Ceil", 9}, {"Fract", 10},
         {"Radians", 11}, {"Degrees", 12}, {"Sin", 13}, {"Cos", 14}, {"Tan", 15},
         {"Asin", 16}, {"Acos", 17}, {"Atan", 18}, {"Sinh", 19}, {"Cosh", 20},
-        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24}})));
+        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24},
+        // TODO(deki): tests for two-argument functions.
+        /*{"Atan2", 25}, {"Pow", 26},*/ {"Exp", 27}, {"Log", 28},
+        {"Exp2", 29}, {"Log2", 30}, {"Sqrt", 31}, {"Inversesqrt", 32},
+        {"Determinant", 33}, {"Inverse", 34}})));
