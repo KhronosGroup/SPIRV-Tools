@@ -151,20 +151,34 @@ spv_result_t spvTextWordGet(const spv_text text,
 
   *endPosition = *startPosition;
 
+  bool quoting = false;
+  bool escaping = false;
+
   // NOTE: Assumes first character is not white space!
   while (true) {
-    switch (text->str[endPosition->index]) {
-      case ' ':
-      case ';':
-      case '\t':
-      case '\n':
-      case '\0': {  // NOTE: End of word found!
-        word.assign(text->str + startPosition->index,
-                    (size_t)(endPosition->index - startPosition->index));
-        return SPV_SUCCESS;
+    const char ch = text->str[endPosition->index];
+    if (ch == '\\')
+      escaping = !escaping;
+    else {
+      switch (ch) {
+        case '"':
+          if (!escaping) quoting = !quoting;
+          break;
+        case ' ':
+        case ';':
+        case '\t':
+        case '\n':
+          if (escaping || quoting) break;
+          // Fall through.
+        case '\0': {  // NOTE: End of word found!
+          word.assign(text->str + startPosition->index,
+                      (size_t)(endPosition->index - startPosition->index));
+          return SPV_SUCCESS;
+        }
+        default:
+          break;
       }
-      default:
-        break;
+      escaping = false;
     }
 
     endPosition->column++;

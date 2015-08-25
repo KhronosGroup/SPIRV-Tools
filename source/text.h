@@ -87,7 +87,8 @@ spv_result_t spvTextAdvance(const spv_text text, spv_position_t *pPosition);
 
 /// @brief Fetch the next word from the text stream.
 ///
-/// A word ends at the next comment or whitespace.
+/// A word ends at the next comment or whitespace.  However, double-quoted
+/// strings remain intact, and a backslash always escapes the next character.
 ///
 /// @param[in] text stream to read from
 /// @param[in] startPosition current position in text stream

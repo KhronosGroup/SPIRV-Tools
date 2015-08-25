@@ -91,6 +91,15 @@ inline ::std::ostream& operator<<(::std::ostream& os,
 }
 }
 
+// A type for easily creating spv_text_t values, with an implicit conversion to
+// spv_text.
+struct AutoText {
+  AutoText(std::string value) : str(value), text({str.data(), str.size()}) {}
+  operator spv_text() { return &text; }
+  std::string str;
+  spv_text_t text;
+};
+
 #define I32_ENDIAN_HOST (o32_host_order.value)
 
 #endif
