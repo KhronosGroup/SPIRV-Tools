@@ -159,6 +159,7 @@ if (TARGET gtest)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp

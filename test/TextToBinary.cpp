@@ -273,68 +273,6 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
   }
 }
 
-struct InstValue {
-  const char* inst;
-  uint32_t value;
-};
-class GLSingleFloatTest
-    : public TextToBinaryTestBase<
-          ::testing::TestWithParam<InstValue>> {};
-
-TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
-  const std::string spirv = R"(
-            OpCapability Shader
- %glsl450 = OpExtInstImport "GLSL.std.450"
-            OpMemoryModel Logical Simple
-            OpEntryPoint Vertex %main "main"
-    %void = OpTypeVoid
-   %float = OpTypeFloat 32
-%const1.5 = OpConstant %float 1.5
-  %fnMain = OpTypeFunction %void
-    %main = OpFunction %void None %fnMain
-  %lbMain = OpLabel
-  %result = OpExtInst %float %glsl450 )" +
-                            std::string(GetParam().inst) + R"( %const1.5
-            OpReturn
-            OpFunctionEnd
-)";
-
-  this->text.str = spirv.c_str();
-  this->text.length = spirv.size();
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&this->text, this->opcodeTable,
-                                         this->operandTable, this->extInstTable,
-                                         &this->binary, &this->diagnostic))
-      << "Source was: " << std::endl
-      << spirv << std::endl
-      << "Test case for : " << GetParam().inst << std::endl;
-  std::vector<uint32_t> expected_contains({
-    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 8 /*%result*/, 1 /*%glsl450*/,
-      GetParam().value, 5 /*const1.5*/});
-  EXPECT_TRUE(std::search(this->binary->code,
-                          this->binary->code + this->binary->wordCount,
-                          expected_contains.begin(), expected_contains.end()) !=
-              this->binary->code + this->binary->wordCount);
-  if (this->binary) {
-    spvBinaryDestroy(this->binary);
-  }
-  if (this->diagnostic) {
-    spvDiagnosticPrint(this->diagnostic);
-  }
-}
-
-INSTANTIATE_TEST_CASE_P(
-    SingleElementFloatingParams, GLSingleFloatTest,
-    ::testing::ValuesIn(std::vector<InstValue>({
-        {"Round", 1}, {"RoundEven", 2}, {"Trunc", 3}, {"FAbs", 4}, {"SAbs", 5},
-        {"FSign", 6}, {"SSign", 7}, {"Floor", 8}, {"Ceil", 9}, {"Fract", 10},
-        {"Radians", 11}, {"Degrees", 12}, {"Sin", 13}, {"Cos", 14}, {"Tan", 15},
-        {"Asin", 16}, {"Acos", 17}, {"Atan", 18}, {"Sinh", 19}, {"Cosh", 20},
-        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24},
-        // TODO(deki): tests for two-argument functions.
-        /*{"Atan2", 25}, {"Pow", 26},*/ {"Exp", 27}, {"Log", 28},
-        {"Exp2", 29}, {"Log2", 30}, {"Sqrt", 31}, {"Inversesqrt", 32},
-        {"Determinant", 33}, {"Inverse", 34}})));
-
 TEST_F(TextToBinaryTest, StringSpace) {
   SetText("OpSourceExtension \"string with spaces\"");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
