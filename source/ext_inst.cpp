@@ -2,74 +2,76 @@
 
 #include <string.h>
 
-#define GL450InstWithOneIdParam(name) \
+/// Generate a spv_ext_inst_desc_t literal for a GLSL std450 extended
+/// instruction with one/two/three <id> parameter(s).
+#define GLSL450Inst1(name) \
   #name, GLSLstd450::GLSLstd450##name, { SPV_OPERAND_TYPE_ID }
-#define GL450InstWithTwoIdParam(name)        \
+#define GLSL450Inst2(name)                   \
   #name, GLSLstd450::GLSLstd450##name, {     \
     SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
   }
-#define GL450InstWithThreeIdParam(name)                           \
+#define GLSL450Inst3(name)                                        \
   #name, GLSLstd450::GLSLstd450##name, {                          \
     SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
   }
 
 static const spv_ext_inst_desc_t glslStd450Entries[] = {
-    {GL450InstWithOneIdParam(Round)},
-    {GL450InstWithOneIdParam(RoundEven)},
-    {GL450InstWithOneIdParam(Trunc)},
-    {GL450InstWithOneIdParam(FAbs)},
-    {GL450InstWithOneIdParam(SAbs)},
-    {GL450InstWithOneIdParam(FSign)},
-    {GL450InstWithOneIdParam(SSign)},
-    {GL450InstWithOneIdParam(Floor)},
-    {GL450InstWithOneIdParam(Ceil)},
-    {GL450InstWithOneIdParam(Fract)},
-    {GL450InstWithOneIdParam(Radians)},
-    {GL450InstWithOneIdParam(Degrees)},
-    {GL450InstWithOneIdParam(Sin)},
-    {GL450InstWithOneIdParam(Cos)},
-    {GL450InstWithOneIdParam(Tan)},
-    {GL450InstWithOneIdParam(Asin)},
-    {GL450InstWithOneIdParam(Acos)},
-    {GL450InstWithOneIdParam(Atan)},
-    {GL450InstWithOneIdParam(Sinh)},
-    {GL450InstWithOneIdParam(Cosh)},
-    {GL450InstWithOneIdParam(Tanh)},
-    {GL450InstWithOneIdParam(Asinh)},
-    {GL450InstWithOneIdParam(Acosh)},
-    {GL450InstWithOneIdParam(Atanh)},
-    {GL450InstWithTwoIdParam(Atan2)},
-    {GL450InstWithTwoIdParam(Pow)},
-    {GL450InstWithOneIdParam(Exp)},
-    {GL450InstWithOneIdParam(Log)},
-    {GL450InstWithOneIdParam(Exp2)},
-    {GL450InstWithOneIdParam(Log2)},
-    {GL450InstWithOneIdParam(Sqrt)},
+    {GLSL450Inst1(Round)},
+    {GLSL450Inst1(RoundEven)},
+    {GLSL450Inst1(Trunc)},
+    {GLSL450Inst1(FAbs)},
+    {GLSL450Inst1(SAbs)},
+    {GLSL450Inst1(FSign)},
+    {GLSL450Inst1(SSign)},
+    {GLSL450Inst1(Floor)},
+    {GLSL450Inst1(Ceil)},
+    {GLSL450Inst1(Fract)},
+    {GLSL450Inst1(Radians)},
+    {GLSL450Inst1(Degrees)},
+    {GLSL450Inst1(Sin)},
+    {GLSL450Inst1(Cos)},
+    {GLSL450Inst1(Tan)},
+    {GLSL450Inst1(Asin)},
+    {GLSL450Inst1(Acos)},
+    {GLSL450Inst1(Atan)},
+    {GLSL450Inst1(Sinh)},
+    {GLSL450Inst1(Cosh)},
+    {GLSL450Inst1(Tanh)},
+    {GLSL450Inst1(Asinh)},
+    {GLSL450Inst1(Acosh)},
+    {GLSL450Inst1(Atanh)},
+    {GLSL450Inst2(Atan2)},
+    {GLSL450Inst2(Pow)},
+    {GLSL450Inst1(Exp)},
+    {GLSL450Inst1(Log)},
+    {GLSL450Inst1(Exp2)},
+    {GLSL450Inst1(Log2)},
+    {GLSL450Inst1(Sqrt)},
     // clang-format off
     {"Inversesqrt", GLSLstd450::GLSLstd450InverseSqrt, {SPV_OPERAND_TYPE_ID}},
-    {GL450InstWithOneIdParam(Determinant)},
+    {GLSL450Inst1(Determinant)},
     {"Inverse", GLSLstd450::GLSLstd450MatrixInverse, {SPV_OPERAND_TYPE_ID}},
     // clang-format on
-    {GL450InstWithTwoIdParam(Modf)},
-    {GL450InstWithOneIdParam(ModfStruct)},
-    {GL450InstWithTwoIdParam(FMin)},
-    {GL450InstWithTwoIdParam(UMin)},
-    {GL450InstWithTwoIdParam(SMin)},
-    {GL450InstWithTwoIdParam(FMax)},
-    {GL450InstWithTwoIdParam(UMax)},
-    {GL450InstWithTwoIdParam(SMax)},
-    {GL450InstWithThreeIdParam(FClamp)},
-    {GL450InstWithThreeIdParam(UClamp)},
-    {GL450InstWithThreeIdParam(SClamp)},
-    {GL450InstWithThreeIdParam(Mix)},
-    {GL450InstWithTwoIdParam(Step)},
+    {GLSL450Inst2(Modf)},
+    {GLSL450Inst1(ModfStruct)},
+    {GLSL450Inst2(FMin)},
+    {GLSL450Inst2(UMin)},
+    {GLSL450Inst2(SMin)},
+    {GLSL450Inst2(FMax)},
+    {GLSL450Inst2(UMax)},
+    {GLSL450Inst2(SMax)},
+    {GLSL450Inst3(FClamp)},
+    {GLSL450Inst3(UClamp)},
+    {GLSL450Inst3(SClamp)},
+    {GLSL450Inst3(Mix)},
+    {GLSL450Inst2(Step)},
     // clang-format off
     {"Smoothstep", GLSLstd450::GLSLstd450SmoothStep, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
     // clang-format on
-    {GL450InstWithThreeIdParam(Fma)},
-    {GL450InstWithTwoIdParam(Frexp)},
-    {GL450InstWithOneIdParam(FrexpStruct)},
-    {GL450InstWithTwoIdParam(Ldexp)},
+    {GLSL450Inst3(Fma)},
+    {GLSL450Inst2(Frexp)},
+    {GLSL450Inst1(FrexpStruct)},
+    {GLSL450Inst2(Ldexp)},
     // TODO: Add remaining GLSL.std.450 instructions
 };
 
