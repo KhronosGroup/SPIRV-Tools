@@ -131,6 +131,10 @@ static const char* kI32Const = R"(%5 = OpConstant %4 1)";
 INSTANTIATE_TEST_CASE_P(
     ExtInstParameters, ExtInstGLSLstd450RoundTripTest,
     ::testing::ValuesIn(std::vector<ExtInstContext>({
+        // We are only testing the correctness of encoding and decoding here.
+        // Semantic correctness should be the responsibility of validator. So
+        // some of the instructions below have incorrect operand and/or return
+        // types, e.g, Modf, ModfStruct, etc.
         {kF32Type, kF32Const, "%4", "Round", "%5", 1, 6, {5}},
         {kF32Type, kF32Const, "%4", "RoundEven", "%5", 2, 6, {5}},
         {kF32Type, kF32Const, "%4", "Trunc", "%5", 3, 6, {5}},
@@ -165,8 +169,8 @@ INSTANTIATE_TEST_CASE_P(
         {kF32Type, kF32Const, "%4", "Inversesqrt", "%5", 32, 6, {5}},
         {kF32Type, kF32Const, "%4", "Determinant", "%5", 33, 6, {5}},
         {kF32Type, kF32Const, "%4", "Inverse", "%5", 34, 6, {5}},
-        /* Modf */
-        /* ModfStruct */
+        {kF32Type, kF32Const, "%4", "Modf", "%5 %5", 35, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "ModfStruct", "%5", 36, 6, {5}},
         {kF32Type, kF32Const, "%4", "FMin", "%5 %5", 37, 7, {5, 5}},
         {kU32Type, kI32Const, "%4", "UMin", "%5 %5", 38, 7, {5, 5}},
         {kS32Type, kI32Const, "%4", "SMin", "%5 %5", 39, 7, {5, 5}},
