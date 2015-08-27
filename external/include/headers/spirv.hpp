@@ -811,6 +811,16 @@ enum Op {
     OpCaptureEventProfilingInfo = 302,
     OpGetDefaultQueue = 303,
     OpBuildNDRange = 304,
+
+    // These are new instructions, added so we can process
+    // assembly tables from newer versions of doc.h.
+    // TODO(dneto): This hack should be removed by upgrading
+    // to Rev32 or later of the headers.
+    OpSourceContinued = 305,
+    OpTypeForwardPointer = 306,
+    OpInBoundsPtrAccessChain = 307,
+    OpUMulExtended = 308,
+    OpSMulExtended = 309,
 };
 
 // Overload operator| for mask bit combining
