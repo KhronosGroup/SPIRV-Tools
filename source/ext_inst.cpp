@@ -66,6 +66,10 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     // clang-format off
     {"Smoothstep", GLSLstd450::GLSLstd450SmoothStep, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
     // clang-format on
+    {GL450InstWithThreeIdParam(Fma)},
+    {GL450InstWithTwoIdParam(Frexp)},
+    {GL450InstWithOneIdParam(FrexpStruct)},
+    {GL450InstWithTwoIdParam(Ldexp)},
     // TODO: Add remaining GLSL.std.450 instructions
 };
 

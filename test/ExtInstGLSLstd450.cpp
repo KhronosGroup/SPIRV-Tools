@@ -179,4 +179,8 @@ INSTANTIATE_TEST_CASE_P(
         {kF32Type, kF32Const, "%4", "Mix", "%5 %5 %5", 46, 8, {5, 5, 5}},
         {kF32Type, kF32Const, "%4", "Step", "%5 %5", 47, 7, {5, 5}},
         {kF32Type, kF32Const, "%4", "Smoothstep", "%5 %5 %5", 48, 8, {5, 5, 5}},
+        {kF32Type, kF32Const, "%4", "Fma", "%5 %5 %5", 49, 8, {5, 5, 5}},
+        {kF32Type, kF32Const, "%4", "Frexp", "%5 %5", 50, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "FrexpStruct", "%5", 51, 6, {5}},
+        {kF32Type, kF32Const, "%4", "Ldexp", "%5 %5", 52, 7, {5, 5}},
     })));
