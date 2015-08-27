@@ -49,7 +49,7 @@ struct ExtInstContext {
 
 using ExtInstGLSLstd450RoundTripTest = ::testing::TestWithParam<ExtInstContext>;
 
-TEST_P(ExtInstGLSLstd450RoundTripTest, ParamterizedExtInst) {
+TEST_P(ExtInstGLSLstd450RoundTripTest, ParameterizedExtInst) {
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
   spv_operand_table operandTable;
@@ -155,8 +155,8 @@ INSTANTIATE_TEST_CASE_P(
         {kF32Type, kF32Const, "%4", "Asinh", "%5", 22, 6, {5}},
         {kF32Type, kF32Const, "%4", "Acosh", "%5", 23, 6, {5}},
         {kF32Type, kF32Const, "%4", "Atanh", "%5", 24, 6, {5}},
-        /* Atan2 */
-        /* Pow */
+        {kF32Type, kF32Const, "%4", "Atan2", "%5 %5", 25, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "Pow", "%5 %5", 26, 7, {5, 5}},
         {kF32Type, kF32Const, "%4", "Exp", "%5", 27, 6, {5}},
         {kF32Type, kF32Const, "%4", "Log", "%5", 28, 6, {5}},
         {kF32Type, kF32Const, "%4", "Exp2", "%5", 29, 6, {5}},
