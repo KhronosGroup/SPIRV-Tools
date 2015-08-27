@@ -32,7 +32,7 @@ TEST(NamedId, Default) {
   const char *spirv = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
-          OpEntryPoint Vertex %main
+          OpEntryPoint Vertex %main "foo"
   %void = OpTypeVoid
 %fnMain = OpTypeFunction %void
   %main = OpFunction %void None %fnMain

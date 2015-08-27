@@ -28,6 +28,7 @@
 #define _CODEPLAY_SPIRV_SPIRV_H_
 
 #include <headers/spirv.hpp>
+#include <headers/spirv_operands.hpp>
 #include <headers/GLSL.std.450.h>
 #include <headers/OpenCLLib.h>
 
@@ -139,11 +140,25 @@ typedef enum spv_opcode_flags_t {
   SPV_FORCE_32_BIT_ENUM(spv_opcode_flags_t)
 } spv_opcode_flags_t;
 
+// The kinds of operands that an instruction may have.
+//
+// Sometimes an operand kind is very specific, e.g. SPV_OPERAND_TYPE_RESULT_ID
+// for a result ID in a value-generating instruction.
+// Other times they represent several options, e.g. a SPV_OPERAND_TYPE_LITERAL
+// could either be a literal number or a literal string, depending on context.
+//
+// In addition to determining what kind of value an operand may be, certain
+// enums capture the fact that an operand might be optional (may be absent,
+// or present exactly once), or might occure zero or more times.
+//
+// Sometimes we also need to be able to express the fact that an operand
+// is a member of an optional tuple of values.  In that case the first member
+// would be optional, and the subsequent members would be required.
 typedef enum spv_operand_type_t {
-  SPV_OPERAND_TYPE_NONE,
+  SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  SPV_OPERAND_TYPE_LITERAL,
+  SPV_OPERAND_TYPE_LITERAL, // Either a literal number or literal string
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
   SPV_OPERAND_TYPE_LITERAL_STRING,
   SPV_OPERAND_TYPE_SOURCE_LANGUAGE,
@@ -166,13 +181,52 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_LOOP_CONTROL,
   SPV_OPERAND_TYPE_FUNCTION_CONTROL,
   SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
-  SPV_OPERAND_TYPE_MEMORY_ACCESS,
   SPV_OPERAND_TYPE_EXECUTION_SCOPE,
   SPV_OPERAND_TYPE_GROUP_OPERATION,
   SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS,
   SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
   SPV_OPERAND_TYPE_CAPABILITY,
 
+  // An optional operand represents zero or one logical operands.
+  // In an instruction definition, this may only appear at the end of the
+  // operand types.
+  SPV_OPERAND_TYPE_OPTIONAL_ID,
+  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+  // A literal number or string, but optional.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
+  // An optional literal string.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
+  // An optional memory access qualifier, e.g. Volatile
+  SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+  // An optional execution mode
+  SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
+  // A variable operand represents zero or more logical operands.
+  // In an instruction definition, this may only appear at the end of the
+  // operand types.
+  SPV_OPERAND_TYPE_VARIABLE_ID,
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL,
+  // A sequence of zero or more pairs of (Literal, Id)
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID,
+  // A sequence of zero or more pairs of (Id, Literal)
+  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL,
+  // A sequence of zero or more memory access operands
+  SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS,
+  // A sequence of zero or more execution modes
+  SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
+
+  // An Id that is second or later in an optional tuple of operands.
+  // This must be present if the first operand in the tuple is present.
+  SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE,
+  // A Literal that is second or later in an optional tuple of operands.
+  // This must be present if the first operand in the tuple is present.
+  SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE,
+
+  // This is a sentinel value, and does not represent an operand type.
+  // It should come last.
+  SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
+
+  // TODO(dneto): Remove this, as it's covered by above optional and
+  // variable cases.
   SPV_OPERAND_TYPE_ELLIPSIS,  // NOTE: Unspecified variable operands
   SPV_FORCE_32_BIT_ENUM(spv_operand_type_t)
 } spv_operand_type_t;
@@ -217,11 +271,19 @@ typedef struct spv_header_t {
 
 typedef struct spv_opcode_desc_t {
   const char *name;
-  const uint16_t wordCount;
   const Op opcode;
   const uint32_t flags;                       // Bitfield of spv_opcode_flags_t
   const uint32_t capabilities;                // spv_language_capabilities_t
-  const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  // operandTypes[0..numTypes-1] describe logical operands for the instruction.
+  // The operand types include result id and result-type id, followed by
+  // the types of arguments.
+  uint16_t numTypes;
+  spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  const bool hasResult; // Does the instruction have a result ID operand?
+  const bool hasType;   // Does the instruction have a type ID operand?
+  // The operand class for each logical argument.  This does *not* include
+  // the result Id or type ID.  The list is terminated by SPV_OPERAND_TYPE_NONE.
+  const OperandClass operandClass[16];
 } spv_opcode_desc_t;
 
 typedef struct spv_opcode_table_t {
@@ -275,6 +337,15 @@ typedef struct spv_text_t {
   uint64_t length;
 } spv_text_t;
 
+// Describes an instruction.
+//
+// The wordCount and words[0..wordCount-1] always contain valid data.
+//
+// Normally, both opcode and extInstType contain valid data.
+// However, when the assembler parses !<number> as the first word in
+// an instruction, then opcode and extInstType are invalid, and
+//   wordCount == 1
+//   words[0] == <number>
 typedef struct spv_instruction_t {
   uint16_t wordCount;
   Op opcode;

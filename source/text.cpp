@@ -188,20 +188,22 @@ spv_result_t spvTextWordGet(const spv_text text,
 
 // Returns true if the string at the given position in text starts with "Op".
 static bool spvStartsWithOp(const spv_text text, const spv_position position) {
-  if (text->length < position->index + 2) return false;
-  return ('O' == text->str[position->index] &&
-          'p' == text->str[position->index + 1]);
+  if (text->length < position->index + 3) return false;
+  char ch0 = text->str[position->index];
+  char ch1 = text->str[position->index + 1];
+  char ch2 = text->str[position->index + 2];
+  return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
 }
 
 // Returns true if a new instruction begins at the given position in text.
-static bool spvTextIsStartOfNewInst(const spv_text text,
-                                    const spv_position position) {
+bool spvTextIsStartOfNewInst(const spv_text text,
+                             const spv_position position) {
   spv_position_t nextPosition = *position;
   if (spvTextAdvance(text, &nextPosition)) return false;
-  if (spvStartsWithOp(text, position)) return true;
+  if (spvStartsWithOp(text, &nextPosition)) return true;
 
   std::string word;
-  spv_position_t startPosition = nextPosition;
+  spv_position_t startPosition = *position;
   if (spvTextWordGet(text, &startPosition, word, &nextPosition)) return false;
   if ('%' != word.front()) return false;
 
@@ -348,7 +350,7 @@ spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    const spv_operand_type_t **ppExtraOperands, uint32_t *pBound,
+    spv_operand_pattern_t* pExpectedOperands, uint32_t *pBound,
     const spv_position position, spv_diagnostic *pDiagnostic) {
   // NOTE: Handle immediate int in the stream
   if ('!' == textValue[0]) {
@@ -369,6 +371,8 @@ spv_result_t spvTextEncodeOperand(
 
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_RESULT_ID: {
       if ('%' == textValue[0]) {
         textValue++;
@@ -379,10 +383,12 @@ spv_result_t spvTextEncodeOperand(
         id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
       } else {
         spvCheck(spvTextToUInt32(textValue, &id),
-                 DIAGNOSTIC << "Invalid "
-                            << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result " : "")
-                            << "ID '" << textValue << "'.";
-                 return SPV_ERROR_INVALID_TEXT);
+                 DIAGNOSTIC
+                     << "Invalid "
+                     << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result " : "")
+                     << "ID '" << textValue << "'.";
+                 return (spvOperandIsOptional(type) ? SPV_FAILED_MATCH
+                                                    : SPV_ERROR_INVALID_TEXT));
       }
       pInst->words[pInst->wordCount++] = id;
       if (*pBound <= id) {
@@ -399,18 +405,26 @@ spv_result_t spvTextEncodeOperand(
                             << textValue << "'.";
                  return SPV_ERROR_INVALID_TEXT);
         pInst->words[pInst->wordCount++] = extInst->ext_inst;
-        *ppExtraOperands = extInst->operandTypes;
+
+        // Prepare to parse the operands for the extended instructions.
+        spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
+
         return SPV_SUCCESS;
       }
 
       // TODO: Literal numbers can be any number up to 64 bits wide. This
       // includes integers and floating point numbers.
+      // TODO(dneto): Suggest using spvTextToLiteral and looking for an
+      // appropriate result type.
       spvCheck(spvTextToUInt32(textValue, &pInst->words[pInst->wordCount++]),
                DIAGNOSTIC << "Invalid literal number '" << textValue << "'.";
                return SPV_ERROR_INVALID_TEXT);
     } break;
-    case SPV_OPERAND_TYPE_LITERAL: {
+    case SPV_OPERAND_TYPE_LITERAL:
+    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL: {
       spv_literal_t literal = {};
+      // TODO(dneto): Is return code different for optional operands?
       spvCheck(spvTextToLiteral(textValue, &literal),
                DIAGNOSTIC << "Invalid literal '" << textValue << "'.";
                return SPV_ERROR_INVALID_TEXT);
@@ -455,12 +469,15 @@ spv_result_t spvTextEncodeOperand(
           return SPV_ERROR_INVALID_TEXT;
       }
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_STRING: {
+    case SPV_OPERAND_TYPE_LITERAL_STRING:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       size_t len = strlen(textValue);
       spvCheck('"' != textValue[0] && '"' != textValue[len - 1],
+               if (spvOperandIsOptional(type))
+                 return SPV_FAILED_MATCH;
                DIAGNOSTIC << "Invalid literal string '" << textValue
                           << "', expected quotes.";
-               return SPV_ERROR_INVALID_TEXT);
+               return SPV_ERROR_INVALID_TEXT;);
       // NOTE: Strip quotes
       std::string text(textValue + 1, len - 2);
 
@@ -473,6 +490,9 @@ spv_result_t spvTextEncodeOperand(
           spvBinaryEncodeString(text.c_str(), pInst, position, pDiagnostic),
           return SPV_ERROR_INVALID_TEXT);
     } break;
+    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
+      assert(0 && " Handle optional optional image operands");
+      break;
     default: {
       // NOTE: All non literal operands are handled here using the operand
       // table.
@@ -485,9 +505,9 @@ spv_result_t spvTextEncodeOperand(
                DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " '"
                           << textValue << "'.";
                return SPV_ERROR_INVALID_TEXT;);
-      if (ppExtraOperands && entry->operandTypes[0] != SPV_OPERAND_TYPE_NONE) {
-        *ppExtraOperands = entry->operandTypes;
-      }
+
+      // Prepare to parse the operands for this logical operand.
+      spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
     } break;
   }
   return SPV_SUCCESS;
@@ -574,98 +594,74 @@ spv_result_t spvTextEncodeOpcode(
   *position = nextPosition;
   pInst->wordCount++;
 
-  // Get the arugment index for <result-id>. Used for handling the <result-id>
-  // for value generating instructions below.
-  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
+  // Maintains the ordered list of expected operand types.
+  // For many instructions we only need the {numTypes, operandTypes}
+  // entries in opcodeEntry.  However, sometimes we need to modify
+  // the list as we parse the operands. This occurs when an operand
+  // has its own logical operands (such as the LocalSize operand for
+  // ExecutionMode), or for extended instructions that may have their
+  // own operands depending on the selected extended instruction.
+  spv_operand_pattern_t expectedOperands(
+      opcodeEntry->operandTypes,
+      opcodeEntry->operandTypes + opcodeEntry->numTypes);
 
-  // NOTE: Process the fixed size operands
-  const spv_operand_type_t *extraOperandTypes = nullptr;
-  for (int32_t operandIndex = 0; operandIndex < (opcodeEntry->wordCount - 1);
-       ++operandIndex) {
-    if (operandIndex == result_id_index && !result_id.empty()) {
-      // Handling the <result-id> for value generating instructions.
+  while (!expectedOperands.empty()) {
+    const spv_operand_type_t type = expectedOperands.front();
+    expectedOperands.pop_front();
+
+    // Expand optional tuples lazily.
+    if (spvExpandOperandSequenceOnce(type, &expectedOperands))
+      continue;
+
+    if (type == SPV_OPERAND_TYPE_RESULT_ID && !result_id.empty()) {
+      // Handle the <result-id> for value generating instructions.
+      // We've already consumed it from the text stream.  Here
+      // we inject its words into the instruction.
       error = spvTextEncodeOperand(
           SPV_OPERAND_TYPE_RESULT_ID, result_id.c_str(), operandTable,
-          extInstTable, namedIdTable, pInst, &extraOperandTypes, pBound,
+          extInstTable, namedIdTable, pInst, nullptr, pBound,
           &result_id_position, pDiagnostic);
       spvCheck(error, return error);
-      continue;
-    }
-    spvCheck(spvTextAdvance(text, position),
-             DIAGNOSTIC << "Expected operand, found end of stream.";
-             return SPV_ERROR_INVALID_TEXT);
-
-    std::string operandValue;
-    error = spvTextWordGet(text, position, operandValue, &nextPosition);
-    spvCheck(error, return error);
-
-    error = spvTextEncodeOperand(
-        opcodeEntry->operandTypes[operandIndex], operandValue.c_str(),
-        operandTable, extInstTable, namedIdTable, pInst, &extraOperandTypes,
-        pBound, position, pDiagnostic);
-    spvCheck(error, return error);
-
-    *position = nextPosition;
-  }
-
-  if (spvOpcodeIsVariable(opcodeEntry)) {
-    if (!extraOperandTypes) {
-      // NOTE: Handle variable length not defined by an immediate previously
-      // encountered in the Opcode.
-      spv_operand_type_t type =
-          opcodeEntry->operandTypes[opcodeEntry->wordCount - 1];
-
-      while (!spvTextAdvance(text, position)) {
-        // NOTE: If this is the end of the current instruction stream and we
-        // break out of this loop.
-        if (spvTextIsStartOfNewInst(text, position)) break;
-
-        std::string textValue;
-        spvTextWordGet(text, position, textValue, &nextPosition);
-
-        if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {
-          spvCheck(spvTextAdvance(text, position),
-                   DIAGNOSTIC << "Invalid string, found end of stream.";
-                   return SPV_ERROR_INVALID_TEXT);
-
-          std::string string;
-          spvCheck(spvTextStringGet(text, position, string, &nextPosition),
-                   DIAGNOSTIC << "Invalid string, new line or end of stream.";
-                   return SPV_ERROR_INVALID_TEXT);
-          spvCheck(spvTextEncodeOperand(type, string.c_str(), operandTable,
-                                        extInstTable, namedIdTable, pInst,
-                                        nullptr, pBound, position, pDiagnostic),
-                   return SPV_ERROR_INVALID_TEXT);
-        } else {
-          spvCheck(spvTextEncodeOperand(type, textValue.c_str(), operandTable,
-                                        extInstTable, namedIdTable, pInst,
-                                        nullptr, pBound, position, pDiagnostic),
-                   return SPV_ERROR_INVALID_TEXT);
-        }
-        *position = nextPosition;
-      }
     } else {
-      // NOTE: Process the variable size operands defined by an immediate
-      // previously encountered in the Opcode.
-      uint64_t extraOperandsIndex = 0;
-      while (extraOperandTypes[extraOperandsIndex]) {
-        spvCheck(spvTextAdvance(text, position),
-                 DIAGNOSTIC << "Expected operand, found end of stream.";
-                 return SPV_ERROR_INVALID_TEXT);
-
-        std::string operandValue;
-        error = spvTextWordGet(text, position, operandValue, &nextPosition);
-
-        error = spvTextEncodeOperand(extraOperandTypes[extraOperandsIndex],
-                                     operandValue.c_str(), operandTable,
-                                     extInstTable, namedIdTable, pInst, nullptr,
-                                     pBound, position, pDiagnostic);
-        spvCheck(error, return error);
-
-        *position = nextPosition;
-
-        extraOperandsIndex++;
+      // Find the next word.
+      error = spvTextAdvance(text, position);
+      if (error == SPV_END_OF_STREAM) {
+        if (spvOperandIsOptional(type)) {
+          // This would have been the last potential operand for the instruction,
+          // and we didn't find one.  We're finished parsing this instruction.
+          break;
+        } else {
+          DIAGNOSTIC << "Expected operand, found end of stream.";
+          return SPV_ERROR_INVALID_TEXT;
+        }
       }
+      assert(error == SPV_SUCCESS && "Somebody added another way to fail");
+
+      if (spvTextIsStartOfNewInst(text, position)) {
+        if (spvOperandIsOptional(type)) {
+          break;
+        } else {
+          DIAGNOSTIC << "Expected operand, found next instruction instead.";
+          return SPV_ERROR_INVALID_TEXT;
+        }
+      }
+
+      std::string operandValue;
+      error = spvTextWordGet(text, position, operandValue, &nextPosition);
+      spvCheck(error, return error);
+
+      error = spvTextEncodeOperand(
+          type, operandValue.c_str(),
+          operandTable, extInstTable, namedIdTable, pInst, &expectedOperands,
+          pBound, position, pDiagnostic);
+
+      if (error == SPV_FAILED_MATCH && spvOperandIsOptional(type))
+        return SPV_SUCCESS;
+
+      spvCheck(error, return error);
+
+      *position = nextPosition;
+
     }
   }
 

@@ -49,7 +49,7 @@ TEST(TextToBinary, Default) {
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
-      OpEntryPoint Kernel %1
+      OpEntryPoint Kernel %1 "foo"
       OpExecutionMode %1 LocalSizeHint 1 1 1
  %2 = OpTypeVoid
  %3 = OpTypeBool
@@ -128,9 +128,11 @@ TEST(TextToBinary, Default) {
   ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
   ASSERT_EQ(0, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(3, OpEntryPoint), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, OpEntryPoint), binary->code[instIndex++]);
   ASSERT_EQ(ExecutionModelKernel, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
+  cw = {{'f', 'o', 'o', 0}};
+  ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
 
   ASSERT_EQ(spvOpcodeMake(6, OpExecutionMode), binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
@@ -212,7 +214,7 @@ TEST_F(TextToBinaryTest, InvalidText) {
 }
 
 TEST_F(TextToBinaryTest, InvalidTable) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText("OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
             spvTextToBinary(&text, nullptr, operandTable, extInstTable, &binary,
                             &diagnostic));
@@ -225,14 +227,14 @@ TEST_F(TextToBinaryTest, InvalidTable) {
 }
 
 TEST_F(TextToBinaryTest, InvalidPointer) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText("OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
             spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
                             nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText("OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
             spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
@@ -294,7 +296,7 @@ TEST_F(TextToBinaryTest, InstructionTwoFormats) {
   }
 }
 
-TEST_F(TextToBinaryTest, UnknownBeginningOfInsruction) {
+TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
   SetText(R"(
      OpSource OpenCL 12
      OpMemoryModel Physical64 OpenCL
@@ -359,6 +361,55 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_EQ(6, diagnostic->position.column + 1);
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
   if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, GoodSwitch) {
+  const SpirvVector code = CompileSuccessfully(
+      R"(
+%i32      = OpTypeInt 32 0
+%fortytwo = OpConstant %i32 42
+%twelve   = OpConstant %i32 12
+%entry    = OpLabel
+            OpSwitch %fortytwo %default 42 %go42 12 %go12
+%go42     = OpLabel
+            OpBranch %default
+%go12     = OpLabel
+            OpBranch %default
+%default  = OpLabel
+)");
+
+  // Minimal check: The OpSwitch opcode word is correct.
+  EXPECT_EQ(int(spv::OpSwitch) || (7<<16) , code[14]);
+}
+
+TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
+  const SpirvVector code = CompileSuccessfully(R"(
+%i32      = OpTypeInt 32 0
+%fortytwo = OpConstant %i32 42
+%entry    = OpLabel
+            OpSwitch %fortytwo %default
+%default  = OpLabel
+)");
+
+  // Minimal check: The OpSwitch opcode word is correct.
+  EXPECT_EQ(int(spv::OpSwitch) || (3<<16) , code[10]);
+}
+
+TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
+  SetText(R"(
+%i32      = OpTypeInt 32 0
+%fortytwo = OpConstant %i32 42
+%entry    = OpLabel
+            OpSwitch %fortytwo %default 42 ; missing target!
+%default  = OpLabel
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(6, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ("Expected operand, found next instruction instead.", diagnostic->error);
 }
 
 }  // anonymous namespace

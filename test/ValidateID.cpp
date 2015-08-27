@@ -104,6 +104,8 @@ TEST_F(ValidateID, OpMemberNameMemberBad) {
 }
 
 TEST_F(ValidateID, OpLineGood) {
+  // TODO(dneto): OpLine changed after Rev31.  It no longer has a first argument.
+  // The following is the Rev31 form.
   const char *spirv = R"(
 %1 = OpString "/path/to/source.file"
      OpLine %4 %1 0 0
@@ -113,6 +115,8 @@ TEST_F(ValidateID, OpLineGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLineFileBad) {
+  // TODO(dneto): OpLine changed after Rev31.  It no longer has a first argument.
+  // The following is the Rev31 form.
   const char *spirv = R"(
      OpLine %4 %2 0 0
 %2 = OpTypeInt 32 0
@@ -189,7 +193,7 @@ TEST_F(ValidateID, OpGroupDecorateTargetBad) {
 
 TEST_F(ValidateID, OpEntryPointGood) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
@@ -201,13 +205,13 @@ TEST_F(ValidateID, OpEntryPointGood) {
 }
 TEST_F(ValidateID, OpEntryPointFunctionBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %1
+     OpEntryPoint GLCompute %1 ""
 %1 = OpTypeVoid)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpEntryPointParameterCountBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1 %1
 %3 = OpFunction %1 None %2
@@ -218,7 +222,7 @@ TEST_F(ValidateID, OpEntryPointParameterCountBad) {
 }
 TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeInt 32 0
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
@@ -230,7 +234,7 @@ TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
 
 TEST_F(ValidateID, OpExecutionModeGood) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -281,16 +285,10 @@ TEST_F(ValidateID, OpTypeMatrixColumnTypeBad) {
 }
 
 TEST_F(ValidateID, OpTypeSamplerGood) {
+  // In Rev31, OpTypeSampler takes no arguments.
   const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpTypeSampler %1 2D 0 0 0 0)";
+%s = OpTypeSampler)";
   CHECK(spirv, SPV_SUCCESS);
-}
-TEST_F(ValidateID, OpTypeSamplerSampledTypeBad) {
-  const char *spirv = R"(
-%1 = OpTypeVoid
-%2 = OpTypeSampler %1 2D 0 0 0 0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpTypeArrayGood) {
@@ -556,9 +554,9 @@ TEST_F(ValidateID, OpConstantCompositeStructMemberBad) {
 
 TEST_F(ValidateID, OpConstantSamplerGood) {
   const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpTypeSampler %1 2D 1 0 1 0
-%3 = OpConstantSampler %2 ClampToEdge 0 Nearest)";
+%float = OpTypeFloat 32
+%samplerType = OpTypeSampler
+%3 = OpConstantSampler %samplerType ClampToEdge 0 Nearest)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantSamplerResultTypeBad) {
@@ -606,9 +604,8 @@ TEST_F(ValidateID, OpConstantNullBasicBad) {
 }
 TEST_F(ValidateID, OpConstantNullArrayBad) {
   const char *spirv = R"(
-%1 = OpTypeInt 8 0
 %2 = OpTypeInt 32 0
-%3 = OpTypeSampler %1 2D 0 0 0 0
+%3 = OpTypeSampler
 %4 = OpConstant %2 4
 %5 = OpTypeArray %3 %4
 %6 = OpConstantNull %5)";
@@ -616,8 +613,7 @@ TEST_F(ValidateID, OpConstantNullArrayBad) {
 }
 TEST_F(ValidateID, OpConstantNullStructBad) {
   const char *spirv = R"(
-%1 = OpTypeInt 8 0
-%2 = OpTypeSampler %1 2D 0 0 0 0
+%2 = OpTypeSampler
 %3 = OpTypeStruct %2 %2
 %4 = OpConstantNull %3)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
@@ -1110,7 +1106,8 @@ TEST_F(ValidateID, OpFunctionCallArgumentCountBar) {
 }
 #endif
 
-// TODO: OpSampler
+// TODO: OpSampledImage
+// TODO: The many things that changed with how images are used.
 // TODO: OpTextureSample
 // TODO: OpTextureSampleDref
 // TODO: OpTextureSampleLod

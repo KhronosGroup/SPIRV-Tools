@@ -26,12 +26,23 @@
 
 #include "UnitSPIRV.h"
 
+// TODO(dneto): This function is dead anyway.  We should remove its implementation
+// and tests.
 namespace {
 
-TEST(OpcodeIsVariable, Default) {
+TEST(OpcodeIsVariable, IsVariable) {
   spv_opcode_desc_t entry = {
-      nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_VARIABLE, 0, {}};
-  ASSERT_NE(0, spvOpcodeIsVariable(&entry));
+      nullptr, Op(0), SPV_OPCODE_FLAGS_VARIABLE, 0, 0, {}, false, false, {}};
+  EXPECT_TRUE(spvOpcodeIsVariable(&entry));
+}
+
+TEST(OpcodeIsVariable, NotVariable) {
+  spv_opcode_desc_t entryNone = {
+      nullptr, Op(0), SPV_OPCODE_FLAGS_NONE, 0, 0, {}, true, false, {}};
+  EXPECT_FALSE(spvOpcodeIsVariable(&entryNone));
+  spv_opcode_desc_t entryCap = {
+      nullptr, Op(0), SPV_OPCODE_FLAGS_CAPABILITIES, 0, 0, {}, true, false, {}};
+  EXPECT_FALSE(spvOpcodeIsVariable(&entryCap));
 }
 
 }  // anonymous namespace

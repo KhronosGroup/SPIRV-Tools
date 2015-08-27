@@ -28,6 +28,7 @@
 #define _LIBSPIRV_UTIL_TEXT_H_
 
 #include <libspirv/libspirv.h>
+#include "operand.h"
 
 #include <string>
 
@@ -77,7 +78,7 @@ spv_result_t spvTextAdvanceLine(const spv_text text, spv_position_t *pPosition);
 ///
 /// If a null terminator is found during the text advance SPV_END_OF_STREAM is
 /// returned, SPV_SUCCESS otherwise. No error checking is performed on the
-/// parameters, its the users responsispvity to ensure these are non null.
+/// parameters, its the users responsibility to ensure these are non null.
 ///
 /// @param[in] text to be parsed
 /// @param[in,out] pPosition position text has been advanced to
@@ -99,6 +100,15 @@ spv_result_t spvTextAdvance(const spv_text text, spv_position_t *pPosition);
 spv_result_t spvTextWordGet(const spv_text text,
                             const spv_position startPosition, std::string &word,
                             spv_position endPosition);
+
+/// @brief Returns true if the given text can start a new instruction.
+///
+/// @param[in] text stream to read from
+/// @param[in] startPosition current position in text stream
+///
+/// @return result code
+bool spvTextIsStartOfNewInst(const spv_text text,
+                             const spv_position startPosition);
 
 /// @brief Fetch a string, including quotes, from the text stream
 ///
@@ -165,7 +175,7 @@ int32_t spvTextIsNamedId(const char *textValue);
 /// @param[in] operandTable operand lookup table
 /// @param[in,out] namedIdTable table of named ID's
 /// @param[out] pInst return binary Opcode
-/// @param[out] ppExtraOperands list of extra variable operands, if any
+/// @param[in,out] pExpectedOperands the operand types expected
 /// @param[in,out] pBound current highest defined ID value
 /// @param[in] pPosition used in diagnostic on error
 /// @param[out] pDiagnostic populated on error
@@ -175,7 +185,7 @@ spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    const spv_operand_type_t **ppExtraOperands, uint32_t *pBound,
+    spv_operand_pattern_t* pExpectedOperands, uint32_t *pBound,
     const spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
 
 /// @brief Translate single Opcode and operands to binary form

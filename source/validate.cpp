@@ -99,7 +99,7 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
@@ -135,16 +135,23 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
              return SPV_ERROR_INVALID_BINARY);
     position->index++;
 
-    spvCheck(opcodeEntry->wordCount > wordCount,
+    spvCheck(opcodeEntry->numTypes > wordCount,
              DIAGNOSTIC << "Instruction word count '" << wordCount
                         << "' is not small, expected at least '"
-                        << opcodeEntry->wordCount << "'.";
+                        << opcodeEntry->numTypes << "'.";
              return SPV_ERROR_INVALID_BINARY);
 
     spv_operand_desc operandEntry = nullptr;
     for (uint16_t index = 1; index < pInsts[instIndex].wordCount;
          ++index, position->index++) {
       const uint32_t word = words[index];
+
+      // TODO(dneto): This strategy is inadequate for dealing with operations
+      // with varying kinds or numbers of logical operands.  See the definition
+      // of spvBinaryOperandInfo for more.
+      // We should really parse the instruction and capture and use
+      // the elaborated list of logical operands generated as a side effect
+      // of the parse.
       spv_operand_type_t type = spvBinaryOperandInfo(
           word, index, opcodeEntry, operandTable, &operandEntry);
       if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {

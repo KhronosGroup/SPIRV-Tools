@@ -1418,7 +1418,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
      sizeof(memorySemanticsEntries) / sizeof(spv_operand_desc_t),
      memorySemanticsEntries},
-    {SPV_OPERAND_TYPE_MEMORY_ACCESS,
+    {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
      sizeof(memoryAccessEntries) / sizeof(spv_operand_desc_t),
      memoryAccessEntries},
     {SPV_OPERAND_TYPE_EXECUTION_SCOPE,
@@ -1549,7 +1549,7 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "function control";
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
       return "memory semantics";
-    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
       return "memory access";
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
       return "execution scope";
@@ -1561,9 +1561,98 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "kernel profiling info";
     case SPV_OPERAND_TYPE_CAPABILITY:
       return "capability";
+    case SPV_OPERAND_TYPE_NONE:
+      return "NONE";
     default:
       assert(0 && "Unhandled operand type!");
       break;
   }
   return "unknown";
+}
+
+void spvPrependOperandTypes(const spv_operand_type_t* types,
+                            spv_operand_pattern_t* pattern) {
+  const spv_operand_type_t* endTypes;
+  for (endTypes = types ; *endTypes != SPV_OPERAND_TYPE_NONE ; ++endTypes)
+    ;
+  pattern->insert(pattern->begin(), types, endTypes);
+}
+
+bool spvOperandIsOptional(spv_operand_type_t type) {
+  // Variable means zero or more times.
+  if (spvOperandIsVariable(type))
+    return true;
+
+  switch (type) {
+    case SPV_OPERAND_TYPE_OPTIONAL_ID:
+    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool spvOperandIsVariable(spv_operand_type_t type) {
+  switch (type) {
+    case SPV_OPERAND_TYPE_VARIABLE_ID:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL:
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID:
+    case SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+
+bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
+                                  spv_operand_pattern_t* pattern) {
+  switch (type) {
+    case SPV_OPERAND_TYPE_VARIABLE_ID:
+      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_ID, type});
+      return true;
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL:
+      pattern->insert(pattern->begin(),
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL, type});
+      return true;
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID:
+      // Represents Zero or more (Literal, Id) pairs.
+      pattern->insert(pattern->begin(),
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
+                       SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE, type});
+      return true;
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL:
+      // Represents Zero or more (Id, Literal) pairs.
+      pattern->insert(pattern->begin(),
+                      {SPV_OPERAND_TYPE_OPTIONAL_ID,
+                       SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE, type});
+      return true;
+    case SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS:
+      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, type});
+      return true;
+    case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
+      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern) {
+  assert(!pattern->empty());
+  spv_operand_type_t result;
+  do {
+    result = pattern->front();
+    pattern->pop_front();
+  } while(spvExpandOperandSequenceOnce(result, pattern));
+  return result;
 }

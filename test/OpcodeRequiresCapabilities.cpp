@@ -32,11 +32,10 @@ class Requires : public ::testing::TestWithParam<Capability> {
  public:
   Requires()
       : entry({nullptr,
-               0,
                (Op)0,
                SPV_OPCODE_FLAGS_CAPABILITIES,
                GetParam(),
-               {}}) {}
+               0, {}, false, false, {}}) {}
 
   virtual void SetUp() {}
 
@@ -57,7 +56,12 @@ INSTANTIATE_TEST_CASE_P(Op, Requires,
                                           CapabilityLinkage, CapabilityKernel));
 
 TEST(OpcodeRequiresCapabilityaspvities, None) {
-  spv_opcode_desc_t entry = {nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_NONE, 0, {}};
+  spv_opcode_desc_t entry = {nullptr, (Op)0, SPV_OPCODE_FLAGS_NONE, 0, 0, {}, false, false, {}};
+  ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
+}
+
+TEST(OpcodeRequiresCapabilityaspvities, Variable) {
+  spv_opcode_desc_t entry = {nullptr, (Op)0, SPV_OPCODE_FLAGS_VARIABLE, 0, 0, {}, false, false, {}};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 

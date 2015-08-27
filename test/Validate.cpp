@@ -49,7 +49,7 @@ class Validate : public ::testing::Test {
 TEST_F(Validate, DISABLED_Default) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 1 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 3 2
@@ -74,7 +74,7 @@ OpFunctionEnd
 TEST_F(Validate, DISABLED_InvalidIdUndefined) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 5 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 3 2
@@ -98,7 +98,7 @@ OpFunctionEnd
 TEST_F(Validate, DISABLED_InvalidIdRedefined) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 1 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 2 2

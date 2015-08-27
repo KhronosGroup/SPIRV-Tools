@@ -42,7 +42,7 @@ class BinaryToText : public ::testing::Test {
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
-      OpEntryPoint Kernel %1
+      OpEntryPoint Kernel %1 "foo"
       OpExecutionMode %1 LocalSizeHint 1 1 1
  %2 = OpTypeVoid
  %3 = OpTypeBool

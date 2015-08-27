@@ -162,13 +162,17 @@ spv_result_t spvBinaryEncodeString(const char *str, spv_instruction_t *pInst,
   return SPV_SUCCESS;
 }
 
+// TODO(dneto): This API is not powerful enough in the case that the
+// number and type of operands are not known until partway through parsing
+// the operation.  This happens when enum operands might have different number
+// of operands, or with extended instructions.
 spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const uint16_t operandIndex,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
                                         spv_operand_desc *pOperandEntry) {
   spv_operand_type_t type;
-  if (operandIndex < opcodeEntry->wordCount) {
+  if (operandIndex < opcodeEntry->numTypes) {
     // NOTE: Do operand table lookup to set operandEntry if successful
     uint16_t index = operandIndex - 1;
     type = opcodeEntry->operandTypes[index];
@@ -180,7 +184,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
     }
   } else if (*pOperandEntry) {
     // NOTE: Use specified operand entry operand type for this word
-    uint16_t index = operandIndex - opcodeEntry->wordCount;
+    uint16_t index = operandIndex - opcodeEntry->numTypes;
     type = (*pOperandEntry)->operandTypes[index];
   } else if (OpSwitch == opcodeEntry->opcode) {
     // NOTE: OpSwitch is a special case which expects a list of paired extra
@@ -188,12 +192,12 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
     assert(0 &&
            "This case is previously untested, remove this assert and ensure it "
            "is behaving correctly!");
-    uint16_t lastIndex = opcodeEntry->wordCount - 1;
+    uint16_t lastIndex = opcodeEntry->numTypes - 1;
     uint16_t index = lastIndex + ((operandIndex - lastIndex) % 2);
     type = opcodeEntry->operandTypes[index];
   } else {
     // NOTE: Default to last operand type in opcode entry
-    uint16_t index = opcodeEntry->wordCount - 1;
+    uint16_t index = opcodeEntry->numTypes - 1;
     type = opcodeEntry->operandTypes[index];
   }
   return type;
@@ -203,8 +207,8 @@ spv_result_t spvBinaryDecodeOperand(
     const Op opcode, const spv_operand_type_t type, const uint32_t *words,
     const spv_endianness_t endian, const uint32_t options,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_ext_inst_type_t *pExtInstType, out_stream &stream,
-    spv_position position, spv_diagnostic *pDiagnostic) {
+    spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
+    out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
   spvCheck(!words || !position, return SPV_ERROR_INVALID_POINTER);
   spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
 
@@ -214,21 +218,22 @@ spv_result_t spvBinaryDecodeOperand(
 
   uint64_t index = 0;
   switch (type) {
-    case SPV_OPERAND_TYPE_ID: {
-      stream.get() << ((color) ? clr::yellow() : "");
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID:
+    case SPV_OPERAND_TYPE_OPTIONAL_ID:
+    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE: {
+      if (color) {
+        stream.get() << (type == SPV_OPERAND_TYPE_RESULT_ID ? clr::blue()
+                                                            : clr::yellow());
+      }
       stream.get() << "%" << spvFixWord(words[index], endian);
       stream.get() << ((color) ? clr::reset() : "");
       index++;
       position->index++;
     } break;
-    case SPV_OPERAND_TYPE_RESULT_ID: {
-      stream.get() << (color ? clr::blue() : "");
-      stream.get() << "%" << spvFixWord(words[index], endian);
-      stream.get() << (color ? clr::reset() : "");
-      index++;
-      position->index++;
-    } break;
-    case SPV_OPERAND_TYPE_LITERAL: {
+    case SPV_OPERAND_TYPE_LITERAL:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
+    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
       // TODO: Need to support multiple word literals
       stream.get() << (color ? clr::red() : "");
       stream.get() << spvFixWord(words[index], endian);
@@ -245,6 +250,7 @@ spv_result_t spvBinaryDecodeOperand(
                  DIAGNOSTIC << "Invalid extended instruction '" << words[0]
                             << "'.";
                  return SPV_ERROR_INVALID_BINARY);
+        spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
         stream.get() << (color ? clr::red() : "");
         stream.get() << extInst->name;
         stream.get() << (color ? clr::reset() : "");
@@ -256,7 +262,8 @@ spv_result_t spvBinaryDecodeOperand(
       index++;
       position->index++;
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_STRING: {
+    case SPV_OPERAND_TYPE_LITERAL_STRING:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       const char *string = (const char *)&words[index];
       uint64_t stringOperandCount = (strlen(string) / 4) + 1;
 
@@ -283,6 +290,7 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
     case SPV_OPERAND_TYPE_EXECUTION_MODE:
+    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
     case SPV_OPERAND_TYPE_STORAGE_CLASS:
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
@@ -298,7 +306,7 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
@@ -311,6 +319,8 @@ spv_result_t spvBinaryDecodeOperand(
                      << words[index] << "'.";
           return SPV_ERROR_INVALID_TEXT);
       stream.get() << entry->name;
+      // Prepare to accept operands to this operand, if needed.
+      spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
       index++;
       position->index++;
     } break;
@@ -333,6 +343,8 @@ spv_result_t spvBinaryDecodeOpcode(
            return SPV_ERROR_INVALID_TABLE);
   spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
 
+  spv_position_t instructionStart = *position;
+
   uint16_t wordCount;
   Op opcode;
   spvOpcodeSplit(spvFixWord(pInst->words[0], endian), &wordCount, &opcode);
@@ -342,11 +354,21 @@ spv_result_t spvBinaryDecodeOpcode(
            DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
            return SPV_ERROR_INVALID_BINARY);
 
-  spvCheck(opcodeEntry->wordCount > wordCount,
-           DIAGNOSTIC << "Invalid instruction word count '" << wordCount
-                      << "', expected at least '" << opcodeEntry->wordCount
-                      << "'.";
-           return SPV_ERROR_INVALID_BINARY);
+  // See if there are enough required words.
+  // Some operands in the operand types are optional or could be zero length.
+  // The optional and zero length opeands must be at the end of the list.
+  if (opcodeEntry->numTypes > wordCount &&
+      !spvOperandIsOptional(opcodeEntry->operandTypes[wordCount])) {
+    uint16_t numRequired;
+    for (numRequired = 0; numRequired < opcodeEntry->numTypes &&
+         !spvOperandIsOptional(opcodeEntry->operandTypes[numRequired]) ; numRequired++ )
+      ;
+    DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
+               << " word count '" << wordCount
+               << "', expected at least '" << numRequired
+               << "'.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   std::stringstream no_result_id_strstream;
   out_stream no_result_id_stream(no_result_id_strstream);
@@ -355,23 +377,50 @@ spv_result_t spvBinaryDecodeOpcode(
 
   position->index++;
 
-  spv_operand_desc operandEntry = nullptr;
+  // Maintains the ordered list of expected operand types.
+  // For many instructions we only need the {numTypes, operandTypes}
+  // entries in opcodeEntry.  However, sometimes we need to modify
+  // the list as we parse the operands. This occurs when an operand
+  // has its own logical operands (such as the LocalSize operand for
+  // ExecutionMode), or for extended instructions that may have their
+  // own operands depending on the selected extended instruction.
+  spv_operand_pattern_t expectedOperands(
+      opcodeEntry->operandTypes,
+      opcodeEntry->operandTypes + opcodeEntry->numTypes);
+
   for (uint16_t index = 1; index < wordCount; ++index) {
-    const uint32_t word = spvFixWord(pInst->words[index], endian);
     const uint64_t currentPosIndex = position->index;
 
+    spvCheck(expectedOperands.empty(),
+             DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
+                        << " starting at word " << instructionStart.index
+                        << ": "
+                        << " expected no more operands after " << index
+                        << " words, but word count is " << wordCount << ".";
+             return SPV_ERROR_INVALID_BINARY;);
+
+    spv_operand_type_t type = spvTakeFirstMatchableOperand(&expectedOperands);
+
     if (result_id_index != index - 1) no_result_id_strstream << " ";
-    spv_operand_type_t type = spvBinaryOperandInfo(word, index, opcodeEntry,
-                                                   operandTable, &operandEntry);
-    spvCheck(spvBinaryDecodeOperand(
-                 opcodeEntry->opcode, type, pInst->words + index, endian,
-                 options, operandTable, extInstTable, &pInst->extInstType,
-                 (result_id_index == index - 1 ? stream : no_result_id_stream),
-                 position, pDiagnostic),
-             return SPV_ERROR_INVALID_BINARY);
+    spvCheck(
+        spvBinaryDecodeOperand(
+            opcodeEntry->opcode, type, pInst->words + index, endian, options,
+            operandTable, extInstTable, &expectedOperands, &pInst->extInstType,
+            (result_id_index == index - 1 ? stream : no_result_id_stream),
+            position, pDiagnostic),
+        DIAGNOSTIC << "UNEXPLAINED ERROR";
+        return SPV_ERROR_INVALID_BINARY);
     if (result_id_index == index - 1) stream.get() << " = ";
     index += (uint16_t)(position->index - currentPosIndex - 1);
   }
+  // TODO(dneto): There's an opportunity for a more informative message.
+  spvCheck(!expectedOperands.empty() &&
+               !spvOperandIsOptional(expectedOperands.front()),
+           DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
+                      << " starting at word " << instructionStart.index << ": "
+                      << " expected more operands after " << wordCount
+                      << " words.";
+           return SPV_ERROR_INVALID_BINARY;);
 
   stream.get() << no_result_id_strstream.str();
 

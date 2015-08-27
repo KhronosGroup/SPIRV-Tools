@@ -166,6 +166,7 @@ if (TARGET gmock)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeIsVariable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeMake.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeRequiresCapabilities.cpp
@@ -175,6 +176,7 @@ if (TARGET gmock)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextAdvance.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextDestroy.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextLiteral.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextStartsNewInst.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp

@@ -359,20 +359,9 @@ bool idUsage::isValid<OpTypeMatrix>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<OpTypeSampler>(const spv_instruction_t *inst,
+bool idUsage::isValid<OpTypeSampler>(const spv_instruction_t *,
                                      const spv_opcode_desc) {
-  auto sampledTypeIndex = 2;
-  auto sampledType = find(inst->words[sampledTypeIndex]);
-  spvCheck(!found(sampledType), DIAG(sampledTypeIndex)
-                                    << "OpTypeSampler Sampled Type <id> '"
-                                    << inst->words[sampledTypeIndex]
-                                    << "' is not defined.";
-           return false);
-  spvCheck(!spvOpcodeIsScalarType(sampledType->second.opcode),
-           DIAG(sampledTypeIndex) << "OpTypeSampler Sampled Type <id> '"
-                                  << inst->words[sampledTypeIndex]
-                                  << "' is not a scalar type.";
-           return false);
+  // OpTypeSampler takes no arguments in Rev31 and beyond.
   return true;
 }
 
@@ -957,7 +946,7 @@ bool idUsage::isValid<OpVariable>(const spv_instruction_t *inst,
                                  << inst->words[resultTypeIndex]
                                  << "' is not a pointer type.";
            return false);
-  if (opcodeEntry->wordCount < inst->wordCount) {
+  if (opcodeEntry->numTypes < inst->wordCount) {
     auto initialiserIndex = 4;
     auto initialiser = find(inst->words[initialiserIndex]);
     spvCheck(!found(initialiser), DIAG(initialiserIndex)

@@ -28,6 +28,7 @@
 #define _LIBSPIRV_UTIL_BINARY_H_
 
 #include <libspirv/libspirv.h>
+#include "operand.h"
 #include "print.h"
 
 // Functions
@@ -131,6 +132,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
 /// @param[in] endian the endianness of the stream
 /// @param[in] options bitfield of spv_binary_to_text_options_t values
 /// @param[in] operandTable table of specified operands
+/// @param[in,out] pExpectedOperands the expected operand types
 /// @param[in,out] pExtInstType type of extended instruction library
 /// @param[in,out] stream the text output stream
 /// @param[in,out] position position in the binary stream
@@ -141,8 +143,8 @@ spv_result_t spvBinaryDecodeOperand(
     const Op opcode, const spv_operand_type_t type, const uint32_t *words,
     const spv_endianness_t endian, const uint32_t options,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_ext_inst_type_t *pExtInstType, out_stream &stream,
-    spv_position position, spv_diagnostic *pDiag);
+    spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
+    out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic);
 
 /// @brief Translate binary Opcode stream to textual form
 ///
