@@ -97,8 +97,8 @@ OpFunctionEnd
   // Check we do have the extended instruction's corresponding binary code in
   // the generated SPIR-V binary.
   std::vector<uint32_t> expected_contains(
-      {12 /*OpExtInst*/ | GetParam().extInstLength << 16, 4 /*%flt*/,
-       9 /*%result*/, 1 /*%glsl450*/, GetParam().extInstOpcode});
+      {12 /*OpExtInst*/ | GetParam().extInstLength << 16, 4 /*return type*/,
+       9 /*result id*/, 1 /*glsl450 import*/, GetParam().extInstOpcode});
   for (uint32_t operand : GetParam().extInstOperandIds) {
     expected_contains.push_back(operand);
   }
@@ -178,5 +178,5 @@ INSTANTIATE_TEST_CASE_P(
         {kS32Type, kI32Const, "%4", "SClamp", "%5 %5 %5", 45, 8, {5, 5, 5}},
         {kF32Type, kF32Const, "%4", "Mix", "%5 %5 %5", 46, 8, {5, 5, 5}},
         {kF32Type, kF32Const, "%4", "Step", "%5 %5", 47, 7, {5, 5}},
-        /* SmoothStep */
+        {kF32Type, kF32Const, "%4", "Smoothstep", "%5 %5 %5", 48, 8, {5, 5, 5}},
     })));
