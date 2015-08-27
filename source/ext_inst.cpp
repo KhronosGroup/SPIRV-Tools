@@ -93,7 +93,19 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     // clang-format on
     {GLSL450Inst2(Reflect)},
     {GLSL450Inst3(Refract)},
-    // TODO: Add remaining GLSL.std.450 instructions
+    // clang-format off
+    {"FindILsb", GLSLstd450::GLSLstd450FindILSB, {SPV_OPERAND_TYPE_ID}},
+    {"FindSMsb", GLSLstd450::GLSLstd450FindSMSB, {SPV_OPERAND_TYPE_ID}},
+    {"FindUMsb", GLSLstd450::GLSLstd450FindUMSB, {SPV_OPERAND_TYPE_ID}},
+    // clang-format on
+    {GLSL450Inst1(InterpolateAtCentroid)},
+    {GLSL450Inst2(InterpolateAtSample)},
+    {GLSL450Inst2(InterpolateAtOffset)},
+    // clang-format off
+    {"UaddCarry", GLSLstd450::GLSLstd450AddCarry, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
+    {"UsubBorrow", GLSLstd450::GLSLstd450SubBorrow, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
+    {"UmulExtended", GLSLstd450::GLSLstd450MulExtended, { SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
+    // clang-format on
 };
 
 static const spv_ext_inst_desc_t openclStd12Entries[] = {

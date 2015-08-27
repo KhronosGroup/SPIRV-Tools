@@ -208,4 +208,17 @@ INSTANTIATE_TEST_CASE_P(
         // clang-format on
         {kF32Type, kF32Const, "%4", "Reflect", "%5 %5", 70, 7, {5, 5}},
         {kF32Type, kF32Const, "%4", "Refract", "%5 %5 %5", 71, 8, {5, 5, 5}},
+        {kS32Type, kI32Const, "%4", "FindILsb", "%5", 72, 6, {5}},
+        {kS32Type, kI32Const, "%4", "FindSMsb", "%5", 73, 6, {5}},
+        {kU32Type, kI32Const, "%4", "FindUMsb", "%5", 74, 6, {5}},
+        {kF32Type, kF32Const, "%4", "InterpolateAtCentroid", "%5", 75, 6, {5}},
+        // clang-format off
+        {kF32Type, kF32Const, "%4", "InterpolateAtSample", "%5 %5", 76, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "InterpolateAtOffset", "%5 %5", 77, 7, {5, 5}},
+        // clang-format on
+        {kU32Type, kI32Const, "%4", "UaddCarry", "%5 %5 %5", 78, 8, {5, 5, 5}},
+        {kU32Type, kI32Const, "%4", "UsubBorrow", "%5 %5 %5", 79, 8, {5, 5, 5}},
+        // clang-format off
+        {kU32Type, kI32Const, "%4", "UmulExtended", "%5 %5 %5 %5", 80, 9, {5, 5, 5, 5}},
+        // clang-format on
     })));
