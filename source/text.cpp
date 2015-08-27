@@ -353,7 +353,8 @@ spv_result_t spvTextEncodeOperand(
   }
 
   switch (type) {
-    case SPV_OPERAND_TYPE_ID: {
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID: {
       if ('%' == textValue[0]) {
         textValue++;
       }
@@ -363,25 +364,9 @@ spv_result_t spvTextEncodeOperand(
         id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
       } else {
         spvCheck(spvTextToUInt32(textValue, &id),
-                 DIAGNOSTIC << "Invalid ID '" << textValue << "'.";
-                 return SPV_ERROR_INVALID_TEXT);
-      }
-      pInst->words[pInst->wordCount++] = id;
-      if (*pBound <= id) {
-        *pBound = id + 1;
-      }
-    } break;
-    case SPV_OPERAND_TYPE_RESULT_ID: {
-      if ('%' == textValue[0]) {
-        textValue++;
-      }
-      // TODO: Force all Result ID's to be prefixed with '%'.
-      uint32_t id = 0;
-      if (spvTextIsNamedId(textValue)) {
-        id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
-      } else {
-        spvCheck(spvTextToUInt32(textValue, &id),
-                 DIAGNOSTIC << "Invalid result ID '" << textValue << "'.";
+                 DIAGNOSTIC << "Invalid "
+                            << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result " : "")
+                            << "ID '" << textValue << "'.";
                  return SPV_ERROR_INVALID_TEXT);
       }
       pInst->words[pInst->wordCount++] = id;
