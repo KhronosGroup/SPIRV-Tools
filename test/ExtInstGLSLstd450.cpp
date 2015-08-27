@@ -187,4 +187,14 @@ INSTANTIATE_TEST_CASE_P(
         {kF32Type, kF32Const, "%4", "Frexp", "%5 %5", 50, 7, {5, 5}},
         {kF32Type, kF32Const, "%4", "FrexpStruct", "%5", 51, 6, {5}},
         {kF32Type, kF32Const, "%4", "Ldexp", "%5 %5", 52, 7, {5, 5}},
+
+        {kF32Type, kF32Const, "%4", "Length", "%5", 65, 6, {5}},
+        {kF32Type, kF32Const, "%4", "Distance", "%5 %5", 66, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "Cross", "%5 %5", 67, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "Normalize", "%5", 68, 6, {5}},
+        // clang-format off
+        {kF32Type, kF32Const, "%4", "Faceforward", "%5 %5 %5", 69, 8, {5, 5, 5}},
+        // clang-format on
+        {kF32Type, kF32Const, "%4", "Reflect", "%5 %5", 70, 7, {5, 5}},
+        {kF32Type, kF32Const, "%4", "Refract", "%5 %5 %5", 71, 8, {5, 5, 5}},
     })));

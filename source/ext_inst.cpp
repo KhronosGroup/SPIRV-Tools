@@ -72,6 +72,15 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst2(Frexp)},
     {GLSL450Inst1(FrexpStruct)},
     {GLSL450Inst2(Ldexp)},
+    {GLSL450Inst1(Length)},
+    {GLSL450Inst2(Distance)},
+    {GLSL450Inst2(Cross)},
+    {GLSL450Inst1(Normalize)},
+    // clang-format off
+    {"Faceforward", GLSLstd450::GLSLstd450FaceForward, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
+    // clang-format on
+    {GLSL450Inst2(Reflect)},
+    {GLSL450Inst3(Refract)},
     // TODO: Add remaining GLSL.std.450 instructions
 };
 
