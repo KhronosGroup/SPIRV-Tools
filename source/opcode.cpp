@@ -1554,7 +1554,7 @@ static const spv_opcode_desc_t opcodeTableEntries[] = {
      OpCaptureEventProfilingInfo,
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityDeviceEnqueue,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_KERENL_PROFILING_INFO,
+     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
       SPV_OPERAND_TYPE_ID}},
     {"GetDefaultQueue",
      3,

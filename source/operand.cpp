@@ -1429,7 +1429,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS,
      sizeof(kernelKernelEnqueueFlagssEntries) / sizeof(spv_operand_desc_t),
      kernelKernelEnqueueFlagssEntries},
-    {SPV_OPERAND_TYPE_KERENL_PROFILING_INFO,
+    {SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
      sizeof(kernelProfilingInfoEntries) / sizeof(spv_operand_desc_t),
      kernelProfilingInfoEntries},
     {SPV_OPERAND_TYPE_CAPABILITY,
@@ -1557,7 +1557,7 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "group operation";
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
       return "kernel enqeue flags";
-    case SPV_OPERAND_TYPE_KERENL_PROFILING_INFO:
+    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO:
       return "kernel profiling info";
     case SPV_OPERAND_TYPE_CAPABILITY:
       return "capability";

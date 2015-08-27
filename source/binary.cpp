@@ -302,7 +302,7 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
-    case SPV_OPERAND_TYPE_KERENL_PROFILING_INFO: {
+    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       spv_operand_desc entry;
       spvCheck(
           spvOperandTableValueLookup(operandTable, type,
