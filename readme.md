@@ -134,7 +134,7 @@ Capability of the SPIR-V specification. Literals strings are enclosed in quotes
 
 An ID definition pertains to the `<result-id>` of an OpCode, and ID usage is any
 input to an OpCode. All IDs are prefixed with `%`. To differentiate between
-defs and uses, we suggest using the second format shown in the above.
+defs and uses, we suggest using the second format shown in the above example.
 
 ##### Named IDs
 
@@ -166,6 +166,79 @@ arbitrary word into the stream the prefix `!` is used, this takes the form
 ```
 OpCapability !0x0000FF00
 ```
+
+Any word in a valid assembly program may be replaced by `!<integer>` -- even
+words that dictate how the rest of the instruction is parsed.  Consider, for
+example, the following assembly program:
+
+```
+%4 = OpConstant %1 123 456 789 OpExecutionMode %2 LocalSize 11 22 33
+OpExecutionMode %3 InputLines
+```
+
+The words `OpConstant`, `LocalSize`, and `InputLines` may be replaced by random
+`!<integer>` values, and the assembler will still assemble an output binary with
+three instructions.  It will not necessarily be valid SPIR-V, but it will
+faithfully reflect the input text.
+
+You may wonder how the assembler recognizes the instruction structure (including
+instruction boundaries) in the text with certain crucial words replaced by
+arbitrary integers.  If, say, `OpConstant` becomes a `!<integer>` whose value
+differs from the binary representation of `OpConstant` (remember that this
+feature is intended for fine-grain control in SPIR-V testing), the assembler
+generally has no idea what that value stands for.  So how does it know there is
+exactly one `<id>` and three number literals following in that instruction,
+before the next one begins?  And if `LocalSize` is replaced by an arbitrary
+`!<integer>`, how does it know to take the next three words (instead of zero or
+one, both of which are possible in the absence of certainty that `LocalSize`
+provided)?  The answer is a simple rule governing the parsing of instructions
+with `!<integer>` in them:
+
+When a word in the assembly program is a `!<integer>`, that integer value is
+emitted into the binary output, and parsing proceeds differently than before:
+each subsequent word not recognized as an OpCode is treated as an operand
+(emitted as described below); when a recognizable OpCode is eventually
+encountered, it begins a new instruction and parsing returns to normal.  (If a
+subsequent OpCode is never found, then the current instruction is last in the
+generated binary and contains all the words until the end-of-stream as its
+operands.)
+
+Operands following a `!<integer>` are interpreted depending on their format:
+
+* If the operand is a number literal, it outputs a word equal to the number.
+* If the operand is a string literal, it outputs a sequence of words
+  representing the string as defined in the SPIR-V specification for Literal
+  String.
+* If the operand is an ID, it outputs a word equal to the ID's internal number.
+  If no such number exists yet, a unique new one will be generated.  (Uniqueness
+  is at the translation-unit level: no other ID in the same translation unit
+  will have the same number.)
+* If the operand is a `!<integer>`, it outputs a word equal to the integer.
+* Otherwise, the assembler quits with an error.
+
+Note that this has some interesting consequences, including:
+
+* When an OpCode is replaced by `!<integer>`, the integer value must encode the
+  instruction's word count, as specified in the physical-layout section of the
+  SPIR-V specification.
+
+* Consecutive instructions may have their OpCode replaced by `!<integer>` and
+  still produce the expected binary.  For example, `!262187 %1 %2 "abc" !327739
+  %1 %3 6 %2` will successfully assemble into SPIR-V declaring a constant and a
+  PrivateGlobal variable.
+
+* Not every word in an assembly program may be replaced by `!<integer>` without
+  failure.  For example, replacing either of the `OpExecutionMode` OpCodes above
+  will result in an error, because their mode enums are not valid operands in
+  the alternate parsing mode prompted by `!<integer>`.  (It is, however,
+  possible to replace both `OpExecutionMode` and all mode enums with
+  `!<integer>` and assemble successfully.)
+
+* When replacing a named ID with `!<integer>`, it is possible to generate
+  unintentionally valid SPIR-V.  If the integer provided happens to equal a
+  number generated for an existing named ID, it will result in a reference to
+  that named ID being output.  This may be valid SPIR-V, contrary to the
+  presumed intention of the writer.
 
 ### Disassembler
 
