@@ -126,4 +126,29 @@ TEST_F(BinaryToText, InvalidDiagnostic) {
                             operandTable, extInstTable, &text, nullptr));
 }
 
+TEST(BinaryToTextSmall, OneInstruction) {
+  // TODO(dneto): This test could/should be refactored.
+  spv_opcode_table opcodeTable;
+  spv_operand_table operandTable;
+  spv_ext_inst_table extInstTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+  spv_binary binary;
+  spv_diagnostic diagnostic = nullptr;
+  spv_result_t error =
+      spvTextToBinary(AutoText("OpSource OpenCL 12"), opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
+  ASSERT_EQ(SPV_SUCCESS, error);
+  spv_text text;
+  error = spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                          operandTable, extInstTable, &text, &diagnostic);
+  EXPECT_EQ(SPV_SUCCESS, error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
+  spvTextDestroy(text);
+}
+
 }  // anonymous namespace
