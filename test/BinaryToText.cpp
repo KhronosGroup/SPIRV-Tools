@@ -1,3 +1,4 @@
+//
 // Copyright (c) 2015 The Khronos Group Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -138,6 +139,40 @@ TEST(BinaryToTextSmall, OneInstruction) {
   spv_diagnostic diagnostic = nullptr;
   spv_result_t error =
       spvTextToBinary(AutoText("OpSource OpenCL 12"), opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
+  ASSERT_EQ(SPV_SUCCESS, error);
+  spv_text text;
+  error = spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                          operandTable, extInstTable, &text, &diagnostic);
+  EXPECT_EQ(SPV_SUCCESS, error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
+  spvTextDestroy(text);
+}
+
+// Exercise the case where an operand itself has operands.
+// This could detect problems in updating the expected-set-of-operands
+// list.
+TEST(BinaryToTextSmall, OperandWithOperands) {
+  spv_opcode_table opcodeTable;
+  spv_operand_table operandTable;
+  spv_ext_inst_table extInstTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+  spv_binary binary;
+  spv_diagnostic diagnostic = nullptr;
+
+  AutoText input(R"(OpEntryPoint Kernel %fn "foo"
+                 OpExecutionMode %fn LocalSizeHint 100 200 300
+                 %void = OpTypeVoid
+                 %fnType = OpTypeFunction %void
+                 %fn = OpFunction %void None %fnType
+                 )");
+  spv_result_t error =
+      spvTextToBinary(input, opcodeTable, operandTable,
                       extInstTable, &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
   spv_text text;
