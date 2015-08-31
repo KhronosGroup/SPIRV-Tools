@@ -24,10 +24,12 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "TestFixture.h"
-#include "UnitSPIRV.h"
 #include <algorithm>
 #include <vector>
+
+#include "UnitSPIRV.h"
+
+namespace {
 
 /// Context for an extended instruction.
 ///
@@ -222,3 +224,5 @@ INSTANTIATE_TEST_CASE_P(
         {kU32Type, kI32Const, "%4", "UmulExtended", "%5 %5 %5 %5", 80, 9, {5, 5, 5, 5}},
         // clang-format on
     })));
+
+}  // anonymous namespace

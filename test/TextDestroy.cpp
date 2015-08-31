@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(TextDestroy, Default) {
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
@@ -83,3 +85,5 @@ TEST(TextDestroy, Default) {
   EXPECT_NE(0, text.length);
   spvTextDestroy(resultText);
 }
+
+}  // anonymous namespace

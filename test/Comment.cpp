@@ -27,6 +27,10 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 
+namespace {
+
+using  test_fixture::TextToBinaryTest;
+
 TEST_F(TextToBinaryTest, Whitespace) {
   SetText(R"(
 ; I'm a proud comment at the begining of the file
@@ -45,3 +49,5 @@ TEST_F(TextToBinaryTest, Whitespace) {
     spvDiagnosticPrint(diagnostic);
   }
 }
+
+}  // anonymous namespace

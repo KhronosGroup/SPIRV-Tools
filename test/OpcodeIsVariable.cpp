@@ -26,8 +26,12 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(OpcodeIsVariable, Default) {
   spv_opcode_desc_t entry = {
       nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_VARIABLE, 0, {}};
   ASSERT_NE(0, spvOpcodeIsVariable(&entry));
 }
+
+}  // anonymous namespace

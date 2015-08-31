@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class Validate : public ::testing::Test {
  public:
   Validate() : binary(), opcodeTable(nullptr), operandTable(nullptr) {}
@@ -117,3 +119,5 @@ OpFunctionEnd
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);
 }
+
+}  // anonymous namespace

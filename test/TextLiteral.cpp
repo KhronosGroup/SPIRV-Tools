@@ -28,6 +28,8 @@
 
 #include <string>
 
+namespace {
+
 TEST(TextLiteral, GoodI32) {
   spv_literal_t l;
 
@@ -140,3 +142,5 @@ TEST(TextLiteral, GoodLongString) {
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ(unquoted.data(), l.value.str);
 }
+
+}  // anonymous namespace

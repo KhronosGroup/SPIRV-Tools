@@ -32,6 +32,8 @@
 // in stages, ID validation is only one of these stages. All validation stages
 // are stand alone.
 
+namespace {
+
 class ValidateID : public ::testing::Test {
  public:
   ValidateID() : opcodeTable(nullptr), operandTable(nullptr), binary() {}
@@ -1340,3 +1342,5 @@ TEST_F(ValidateID, OpReturnValueBad) {
 // TODO: OpGroupReserveWritePipePackets
 // TODO: OpGroupCommitReadPipe
 // TODO: OpGroupCommitWritePipe
+
+}  // anonymous namespace

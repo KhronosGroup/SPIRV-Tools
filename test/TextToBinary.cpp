@@ -31,6 +31,10 @@
 #include <utility>
 #include <vector>
 
+namespace {
+
+using  test_fixture::TextToBinaryTest;
+
 union char_word_t {
   char cs[4];
   uint32_t u;
@@ -384,3 +388,5 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
   if (binary) spvBinaryDestroy(binary);
 }
+
+}  // anonymous namespace

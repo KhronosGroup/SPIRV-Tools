@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class BinaryToText : public ::testing::Test {
  public:
   BinaryToText() : binary(), opcodeTable(nullptr), operandTable(nullptr) {}
@@ -123,3 +125,5 @@ TEST_F(BinaryToText, InvalidDiagnostic) {
             spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                             operandTable, extInstTable, &text, nullptr));
 }
+
+}  // anonymous namespace

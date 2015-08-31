@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(OperandTableGet, Default) {
   spv_operand_table table;
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&table));
@@ -36,3 +38,5 @@ TEST(OperandTableGet, Default) {
 TEST(OperandTableGet, InvalidPointerTable) {
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER, spvOperandTableGet(nullptr));
 }
+
+}  // anonymous namespace

@@ -28,6 +28,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace test_fixture {
+
 // Common setup for TextToBinary tests. SetText() should be called to populate
 // the actual test text.
 template<typename T>
@@ -68,6 +70,8 @@ class TextToBinaryTestBase : public T {
   spv_binary binary;
 };
 
-class TextToBinaryTest : public TextToBinaryTestBase<::testing::Test> {};
+using TextToBinaryTest = TextToBinaryTestBase<::testing::Test>;
+
+}  // namespace test_fixture
 
 #endif// _TEXT_FIXTURE_H_

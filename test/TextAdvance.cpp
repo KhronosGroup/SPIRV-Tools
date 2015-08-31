@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(TextAdvance, LeadingNewLines) {
   char textStr[] = "\n\nWord";
   spv_text_t text = {textStr, strlen(textStr)};
@@ -89,3 +91,5 @@ TEST(TextAdvance, NullTerminator) {
   spv_position_t position = {};
   ASSERT_EQ(SPV_END_OF_STREAM, spvTextAdvance(&text, &position));
 }
+
+}  // anonymous namespace

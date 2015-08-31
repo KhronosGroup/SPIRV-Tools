@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(FixWord, Default) {
   spv_endianness_t endian;
   if (I32_ENDIAN_HOST == I32_ENDIAN_LITTLE) {
@@ -48,3 +50,5 @@ TEST(FixWord, Reorder) {
   uint32_t result = 0x21097853;
   ASSERT_EQ(result, spvFixWord(word, endian));
 }
+
+}  // anonymous namespace

@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(NamedId, Default) {
   const char *spirv = R"(
           OpCapability Shader
@@ -67,3 +69,5 @@ TEST(NamedId, Default) {
   }
   spvBinaryDestroy(binary);
 }
+
+}  // anonymous namespace

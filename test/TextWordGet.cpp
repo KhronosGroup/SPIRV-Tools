@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(TextWordGet, NullTerminator) {
   char textStr[] = "Word";
   spv_text_t text = {textStr, strlen(textStr)};
@@ -109,3 +111,5 @@ TEST(TextWordGet, MultipleWords) {
     }
   }
 }
+
+}  // anonymous namespace

@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class Requires : public ::testing::TestWithParam<Capability> {
  public:
   Requires()
@@ -58,3 +60,5 @@ TEST(OpcodeRequiresCapabilityaspvities, None) {
   spv_opcode_desc_t entry = {nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_NONE, 0, {}};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
+
+}  // anonymous namespace

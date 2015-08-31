@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(DiagnosticPrint, Default) {
   char message[] = "Test Diagnostic!";
   spv_diagnostic_t diagnostic = {{2, 3, 5}, message};
@@ -38,3 +40,5 @@ TEST(DiagnosticPrint, Default) {
 TEST(DiagnosticPrint, InvalidDiagnostic) {
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC, spvDiagnosticPrint(nullptr));
 }
+
+}  // anonymous namespace

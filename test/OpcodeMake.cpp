@@ -28,6 +28,8 @@
 
 #include <limits>
 
+namespace {
+
 TEST(OpcodeMake, DISABLED_Default) {
   for (uint16_t wordCount = 0; wordCount < std::numeric_limits<uint16_t>::max();
        ++wordCount) {
@@ -40,3 +42,5 @@ TEST(OpcodeMake, DISABLED_Default) {
     }
   }
 }
+
+}  // anonymous namespace
