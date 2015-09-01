@@ -107,7 +107,8 @@ OpFunctionEnd
   EXPECT_NE(binary->code + binary->wordCount,
             std::search(binary->code, binary->code + binary->wordCount,
                         expected_contains.begin(), expected_contains.end()))
-      << "Cannot find\n" << expected_contains << "in\n" << *binary;
+      << "Cannot find\n" << spvtest::WordVector(expected_contains).str()
+      << "in\n" << spvtest::WordVector(*binary).str();
 
   // Check round trip gives the same text.
   spv_text output_text;

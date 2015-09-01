@@ -63,33 +63,50 @@ static const union {
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
 
-inline ::std::ostream& operator<<(::std::ostream& os,
-                                  const spv_binary_t& binary) {
-  for (size_t i = 0; i < binary.wordCount; ++i) {
-    os << "0x" << std::setw(8) << std::setfill('0') << std::hex
-       << binary.code[i] << " ";
-    if (i % 8 == 7) {
-      os << std::endl;
+
+// A namespace for utilities used in SPIR-V Tools unit tests.
+// TODO(dneto): Move other type declarations into this namespace.
+namespace spvtest {
+
+class WordVector;
+
+// Emits the given word vector to the given stream.
+// This function can be used by the gtest value printer.
+void PrintTo(const WordVector& words, ::std::ostream* os);
+
+// A proxy class to allow us to easily write out vectors of SPIR-V words.
+class WordVector {
+ public:
+  explicit WordVector(const std::vector<uint32_t>& value) : value_(value) {}
+  explicit WordVector(const spv_binary_t& binary)
+      : value_(binary.code, binary.code + binary.wordCount) {}
+
+  // Returns the underlying vector.
+  const std::vector<uint32_t>& value() const { return value_; }
+
+  // Returns the string representation of this word vector.
+  std::string str() const {
+    std::ostringstream os;
+    PrintTo(*this, &os);
+    return os.str();
+  }
+
+ private:
+  const std::vector<uint32_t> value_;
+};
+
+inline void PrintTo(const WordVector& words, ::std::ostream* os) {
+  size_t count = 0;
+  for (uint32_t value : words.value()) {
+    *os << "0x" << std::setw(8) << std::setfill('0') << std::hex << value << " ";
+    if (count++ % 8 == 7) {
+      *os << std::endl;
     }
   }
-  os << std::endl;
-  return os;
+  *os << std::endl;
 }
 
-namespace std {
-inline ::std::ostream& operator<<(::std::ostream& os,
-                                  const std::vector<uint32_t>& value) {
-  size_t count = 0;
-  for (size_t i : value) {
-    os << "0x" << std::setw(8) << std::setfill('0') << std::hex << i << " ";
-    if (count++ % 8 == 7) {
-      os << std::endl;
-    }
-  }
-  os << std::endl;
-  return os;
-}
-}
+} // namespace spvtest
 
 // A type for easily creating spv_text_t values, with an implicit conversion to
 // spv_text.
