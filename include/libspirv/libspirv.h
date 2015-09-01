@@ -225,9 +225,6 @@ typedef enum spv_operand_type_t {
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
 
-  // TODO(dneto): Remove this, as it's covered by above optional and
-  // variable cases.
-  SPV_OPERAND_TYPE_ELLIPSIS,  // NOTE: Unspecified variable operands
   SPV_FORCE_32_BIT_ENUM(spv_operand_type_t)
 } spv_operand_type_t;
 
