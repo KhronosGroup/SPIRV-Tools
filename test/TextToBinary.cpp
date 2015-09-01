@@ -89,12 +89,6 @@ TEST(TextToBinary, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
 
-  struct bin {
-    bin(spv_binary binary) : binary(binary) {}
-    ~bin() { spvBinaryDestroy(binary); }
-    spv_binary binary;
-  } bin(binary);
-
   EXPECT_NE(nullptr, text.str);
   EXPECT_NE(0, text.length);
 
