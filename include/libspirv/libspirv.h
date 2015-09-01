@@ -362,6 +362,7 @@ typedef struct spv_position_t {
 typedef struct spv_diagnostic_t {
   spv_position_t position;
   char *error;
+  bool isTextSource;
 } spv_diagnostic_t;
 
 // Type Definitions

@@ -41,4 +41,7 @@ TEST(DiagnosticPrint, InvalidDiagnostic) {
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC, spvDiagnosticPrint(nullptr));
 }
 
+// TODO(dneto): We should be able to redirect the diagnostic printing.
+// Once we do that, we can test diagnostic corner cases.
+
 }  // anonymous namespace

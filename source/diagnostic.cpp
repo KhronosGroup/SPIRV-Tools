@@ -42,6 +42,7 @@ spv_diagnostic spvDiagnosticCreate(const spv_position position,
   diagnostic->error = new char[length];
   spvCheck(!diagnostic->error, delete diagnostic; return nullptr);
   diagnostic->position = *position;
+  diagnostic->isTextSource = false;
   memset(diagnostic->error, 0, length);
   strncpy(diagnostic->error, message, length);
   return diagnostic;
@@ -58,10 +59,7 @@ void spvDiagnosticDestroy(spv_diagnostic diagnostic) {
 spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
   spvCheck(!diagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
 
-  // TODO: Check that the logic choosing between a text or binary diagnostic is
-  // corrent.
-  if ((diagnostic->position.line || diagnostic->position.column) &&
-      diagnostic->position.index) {
+  if (diagnostic->isTextSource) {
     // NOTE: This is a text position
     // NOTE: add 1 to the line as editors start at line 1, we are counting new
     // line characters to start at line 0
@@ -69,9 +67,8 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
               << diagnostic->position.column + 1 << ": " << diagnostic->error
               << "\n";
     return SPV_SUCCESS;
-  } else if (!diagnostic->position.line && !diagnostic->position.column &&
-             diagnostic->position.index) {
-    // NOTE: This is a binary position
+  } else {
+    // NOTE: Assume this is a binary position
     std::cerr << "error: " << diagnostic->position.index << ": "
               << diagnostic->error << "\n";
     return SPV_SUCCESS;

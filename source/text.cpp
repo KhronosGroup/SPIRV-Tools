@@ -186,14 +186,18 @@ spv_result_t spvTextWordGet(const spv_text text,
   }
 }
 
+namespace {
+
 // Returns true if the string at the given position in text starts with "Op".
-static bool spvStartsWithOp(const spv_text text, const spv_position position) {
+bool spvStartsWithOp(const spv_text text, const spv_position position) {
   if (text->length < position->index + 3) return false;
   char ch0 = text->str[position->index];
   char ch1 = text->str[position->index + 1];
   char ch2 = text->str[position->index + 2];
   return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
 }
+
+} // anonymous namespace
 
 // Returns true if a new instruction begins at the given position in text.
 bool spvTextIsStartOfNewInst(const spv_text text,
@@ -670,11 +674,17 @@ spv_result_t spvTextEncodeOpcode(
   return SPV_SUCCESS;
 }
 
-spv_result_t spvTextToBinary(const spv_text text,
-                             const spv_opcode_table opcodeTable,
-                             const spv_operand_table operandTable,
-                             const spv_ext_inst_table extInstTable,
-                             spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+namespace {
+
+// Translates a given assembly language module into binary form.
+// If a diagnostic is generated, it is not yet marked as being
+// for a text-based input.
+spv_result_t spvTextToBinaryInternal(const spv_text text,
+                                     const spv_opcode_table opcodeTable,
+                                     const spv_operand_table operandTable,
+                                     const spv_ext_inst_table extInstTable,
+                                     spv_binary *pBinary,
+                                     spv_diagnostic *pDiagnostic) {
   spv_position_t position = {};
   spvCheck(!text->str || !text->length, DIAGNOSTIC << "Text stream is empty.";
            return SPV_ERROR_INVALID_TEXT);
@@ -740,6 +750,20 @@ spv_result_t spvTextToBinary(const spv_text text,
   *pBinary = binary;
 
   return SPV_SUCCESS;
+}
+
+} // anonymous namespace
+
+spv_result_t spvTextToBinary(const spv_text text,
+                             const spv_opcode_table opcodeTable,
+                             const spv_operand_table operandTable,
+                             const spv_ext_inst_table extInstTable,
+                             spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+  spv_result_t result = spvTextToBinaryInternal(
+      text, opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
+  if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
+
+  return result;
 }
 
 void spvTextDestroy(spv_text text) {
