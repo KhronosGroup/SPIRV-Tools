@@ -60,9 +60,9 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
 
 using ImmediateIntTest = TextToBinaryTest;
 
-// TODO(deki): uncomment assertions below and make them pass.
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
   SpirvVector original = CompileSuccessfully("OpConstant %1 %2 123");
+  // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 %2 123"));
   EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 123"));
   // EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 !2 123"));
@@ -74,7 +74,20 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
 
 TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
   SpirvVector original = CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 %1 123"));
+  // TODO(deki): uncomment assertions below and make them pass.
+  // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
+  // EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 123"));
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 %1 !123"));
+  // Instead of checking all possible multiple-! combinations, only probe a few.
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 !123"));
+  // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 !12 !1 !123"));
+
+  // NB: when/if these cases are handled, it will require reworking the
+  // description in readme.md, which currently dictates that each word past
+  // !<integer> must be a literal, an ID, or another immediate (ie, not a '=').
+  // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
+  // EXPECT_EQ(original, CompileSuccessfully("!2 = !0x00040044 %12 %1 123"));
 }
 
 TEST_F(ImmediateIntTest, InvalidStatement) {
@@ -119,10 +132,20 @@ OpCopyMemorySized %3 %4 %1
 #endif
 }
 
-// TODO(deki): implement.
 TEST_F(ImmediateIntTest, NextAssignmentRecognized) {
   // Like NextOpcodeRecognized, but next statement is in assignment form.
+  SpirvVector original = CompileSuccessfully(R"(
+OpLoad %10 %1 %2 None
+%4 = OpFunctionCall %10 %3 123
+)");
+  SpirvVector alternate = CompileSuccessfully(R"(
+OpLoad %10 !1 %2 !0
+%4 = OpFunctionCall %10 %3 123
+)");
+  EXPECT_EQ(original, alternate);
 }
+
+// TODO(deki): implement all tests below.
 
 TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
   // Two instructions in a row each have !<integer> opcode.
@@ -144,18 +167,6 @@ TEST_F(ImmediateIntTest, ImmediateOperands) {
 
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
   // !<integer> followed by, eg, an enum or '=' or a random bareword.
-}
-
-// NB: when/if these cases are handled, it will require reworking the
-// description in readme.md, which currently dictates that each word past
-// !<integer> must be a literal, an ID, or another immediate (ie, not a '=').
-
-TEST_F(ImmediateIntTest, AssignmentLHS) {
-  // !<integer> = OpIAdd %i32 %op0 %op1
-}
-
-TEST_F(ImmediateIntTest, AssignmentLHSAndOpCode) {
-  // !<integer> = !<integer> %i32 %op0 %op1
 }
 
 }  // anonymous namespace
