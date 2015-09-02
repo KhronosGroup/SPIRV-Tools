@@ -24,46 +24,24 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "TestFixture.h"
 #include "UnitSPIRV.h"
 
-TEST(NamedId, Default) {
-  const char *spirv = R"(
-          OpCapability Shader
-          OpMemoryModel Logical Simple
-          OpEntryPoint Vertex %main
-  %void = OpTypeVoid
-%fnMain = OpTypeFunction %void
-  %main = OpFunction %void None %fnMain
-%lbMain = OpLabel
-          OpReturn
-          OpFunctionEnd)";
-  spv_text_t text;
-  text.str = spirv;
-  text.length = strlen(spirv);
-  spv_opcode_table opcodeTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  spv_binary binary;
-  spv_diagnostic diagnostic;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
+TEST_F(TextToBinaryTest, Whitespace) {
+  SetText(R"(
+; I'm a proud comment at the begining of the file
+; I hide:   OpCapability Shader
+            OpMemoryModel Logical Simple ; comment after instruction
+;;;;;;;; many ;'s
+ %glsl450 = OpExtInstImport "GLSL.std.450"
+            ; comment indented
+)");
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
+                                         extInstTable, &binary, &diagnostic));
+  if (binary) {
     spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
   }
-  error = spvBinaryToText(
-      binary, SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
-      opcodeTable, operandTable, extInstTable, nullptr, &diagnostic);
-  if (error) {
+  if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
   }
-  spvBinaryDestroy(binary);
 }

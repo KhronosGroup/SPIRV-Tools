@@ -1730,6 +1730,13 @@ int32_t spvOpcodeIsVariable(spv_opcode_desc entry) {
          (SPV_OPCODE_FLAGS_VARIABLE & entry->flags);
 }
 
+int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry) {
+  for (int16_t i = 0; i < entry->wordCount; ++i) {
+    if (SPV_OPERAND_TYPE_RESULT_ID == entry->operandTypes[i]) return i;
+  }
+  return SPV_OPERAND_INVALID_RESULT_ID_INDEX;
+}
+
 int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry) {
   return SPV_OPCODE_FLAGS_CAPABILITIES ==
          (SPV_OPCODE_FLAGS_CAPABILITIES & entry->flags);

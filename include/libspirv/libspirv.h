@@ -95,6 +95,8 @@ extern "C" {
 #define SPV_FORCE_16_BIT_ENUM(name) _##name = 0x7fff
 #define SPV_FORCE_32_BIT_ENUM(name) _##name = 0x7fffffff
 
+#define SPV_OPERAND_INVALID_RESULT_ID_INDEX -1
+
 // Enumerations
 
 typedef enum spv_generator_t {

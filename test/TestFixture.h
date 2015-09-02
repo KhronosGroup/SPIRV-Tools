@@ -23,47 +23,51 @@
 // CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+#ifndef _TEST_FIXTURE_H_
+#define _TEST_FIXTURE_H_
 
 #include "UnitSPIRV.h"
 
-TEST(NamedId, Default) {
-  const char *spirv = R"(
-          OpCapability Shader
-          OpMemoryModel Logical Simple
-          OpEntryPoint Vertex %main
-  %void = OpTypeVoid
-%fnMain = OpTypeFunction %void
-  %main = OpFunction %void None %fnMain
-%lbMain = OpLabel
-          OpReturn
-          OpFunctionEnd)";
-  spv_text_t text;
-  text.str = spirv;
-  text.length = strlen(spirv);
+// Common setup for TextToBinary tests. SetText() should be called to populate
+// the actual test text.
+template<typename T>
+class TextToBinaryTestBase : public T {
+ public:
+  TextToBinaryTestBase()
+      : opcodeTable(nullptr),
+        operandTable(nullptr),
+        diagnostic(nullptr),
+        text(),
+        binary(nullptr) {}
+
+  virtual void SetUp() {
+    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+    char textStr[] = "substitute the text member variable with your test";
+    text = {textStr, strlen(textStr)};
+  }
+
+  virtual void TearDown() {
+    if (diagnostic) spvDiagnosticDestroy(diagnostic);
+  }
+
+  void SetText(const std::string& code) {
+    textString = code;
+    text.str = textString.c_str();
+    text.length = textString.size();
+  }
+
   spv_opcode_table opcodeTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
   spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
   spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  spv_binary binary;
   spv_diagnostic diagnostic;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
-  }
-  error = spvBinaryToText(
-      binary, SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
-      opcodeTable, operandTable, extInstTable, nullptr, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
-  }
-  spvBinaryDestroy(binary);
-}
+
+  std::string textString;
+  spv_text_t text;
+  spv_binary binary;
+};
+
+class TextToBinaryTest : public TextToBinaryTestBase<::testing::Test> {};
+
+#endif// _TEXT_FIXTURE_H_

@@ -111,7 +111,7 @@ spv_result_t spvTextAdvanceLine(const spv_text text, spv_position position) {
         position->index++;
         return SPV_SUCCESS;
       default:
-        position->line++;
+        position->column++;
         position->index++;
         break;
     }
@@ -124,7 +124,8 @@ spv_result_t spvTextAdvance(const spv_text text, spv_position position) {
     case '\0':
       return SPV_END_OF_STREAM;
     case ';':
-      return spvTextAdvanceLine(text, position);
+      if (spv_result_t error = spvTextAdvanceLine(text, position)) return error;
+      return spvTextAdvance(text, position);
     case ' ':
     case '\t':
       position->column++;
@@ -168,6 +169,36 @@ spv_result_t spvTextWordGet(const spv_text text,
     endPosition->column++;
     endPosition->index++;
   }
+}
+
+// Returns true if the string at the given position in text starts with "Op".
+static bool spvStartsWithOp(const spv_text text, const spv_position position) {
+  if (text->length < position->index + 2) return false;
+  return ('O' == text->str[position->index] &&
+          'p' == text->str[position->index + 1]);
+}
+
+// Returns true if a new instruction begins at the given position in text.
+static bool spvTextIsStartOfNewInst(const spv_text text,
+                                    const spv_position position) {
+  spv_position_t nextPosition = *position;
+  if (spvTextAdvance(text, &nextPosition)) return false;
+  if (spvStartsWithOp(text, position)) return true;
+
+  std::string word;
+  spv_position_t startPosition = nextPosition;
+  if (spvTextWordGet(text, &startPosition, word, &nextPosition)) return false;
+  if ('%' != word.front()) return false;
+
+  if (spvTextAdvance(text, &nextPosition)) return false;
+  startPosition = nextPosition;
+  if (spvTextWordGet(text, &startPosition, word, &nextPosition)) return false;
+  if ("=" != word) return false;
+
+  if (spvTextAdvance(text, &nextPosition)) return false;
+  startPosition = nextPosition;
+  if (spvStartsWithOp(text, &startPosition)) return true;
+  return false;
 }
 
 spv_result_t spvTextStringGet(const spv_text text,
@@ -308,10 +339,10 @@ spv_result_t spvTextEncodeOperand(
 
   switch (type) {
     case SPV_OPERAND_TYPE_ID: {
-      if ('$' == textValue[0]) {
+      if ('%' == textValue[0]) {
         textValue++;
       }
-      // TODO: Force all ID's to be prefixed with '$'.
+      // TODO: Force all ID's to be prefixed with '%'.
       uint32_t id = 0;
       if (spvTextIsNamedId(textValue)) {
         id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
@@ -452,20 +483,20 @@ spv_result_t spvTextEncodeOpcode(
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_named_id_table namedIdTable, uint32_t *pBound, spv_instruction_t *pInst,
     spv_position position, spv_diagnostic *pDiagnostic) {
+  // An assembly instruction has two possible formats:
+  // 1. <opcode> <operand>.., e.g., "OpMemoryModel Physical64 OpenCL".
+  // 2. <result-id> = <opcode> <operand>.., e.g., "%void = OpTypeVoid".
+
+  // Assume it's the first format at the beginning.
   std::string opcodeName;
   spv_position_t nextPosition = {};
-  spvCheck(spvTextWordGet(text, position, opcodeName, &nextPosition),
-           return SPV_ERROR_INTERNAL);
-
-  bool immediate = false;
-  spvCheck('!' == text->str[position->index], immediate = true);
-  if (!immediate) {
-    spvCheck('O' != opcodeName[0] || 'p' != opcodeName[1],
-             DIAGNOSTIC << "Invalid Opcode prefix '" << opcodeName << "'.";
-             return SPV_ERROR_INVALID_TEXT);
-  }
+  spv_result_t error =
+      spvTextWordGet(text, position, opcodeName, &nextPosition);
+  spvCheck(error, return error);
 
   // NOTE: Handle insertion of an immediate integer into the binary stream
+  bool immediate = false;
+  spvCheck('!' == text->str[position->index], immediate = true);
   if (immediate) {
     const char *begin = opcodeName.data() + 1;
     char *end = nullptr;
@@ -481,12 +512,46 @@ spv_result_t spvTextEncodeOpcode(
     return SPV_SUCCESS;
   }
 
+  // Handle value generating instructions (the second format above) here.
+  std::string result_id;
+  spv_position_t result_id_position = {};
+  // If the word we get doesn't start with "Op", assume it's an <result-id>
+  // from now.
+  spvCheck(!spvStartsWithOp(text, position), result_id = opcodeName);
+  if (!result_id.empty()) {
+    spvCheck('%' != result_id.front(),
+             DIAGNOSTIC << "Expected <opcode> or <result-id> at the beginning "
+                           "of an instruction, found '"
+                        << result_id << "'.";
+             return SPV_ERROR_INVALID_TEXT);
+    result_id_position = *position;
+    *position = nextPosition;
+    spvCheck(spvTextAdvance(text, position),
+             DIAGNOSTIC << "Expected '=', found end of stream.";
+             return SPV_ERROR_INVALID_TEXT);
+    // The '=' sign.
+    std::string equal_sign;
+    error = spvTextWordGet(text, position, equal_sign, &nextPosition);
+    spvCheck("=" != equal_sign, DIAGNOSTIC << "'=' expected after result id.";
+             return SPV_ERROR_INVALID_TEXT);
+
+    // The <opcode> after the '=' sign.
+    *position = nextPosition;
+    spvCheck(spvTextAdvance(text, position),
+             DIAGNOSTIC << "Expected opcode, found end of stream.";
+             return SPV_ERROR_INVALID_TEXT);
+    error = spvTextWordGet(text, position, opcodeName, &nextPosition);
+    spvCheck(error, return error);
+    spvCheck(!spvStartsWithOp(text, position),
+             DIAGNOSTIC << "Invalid Opcode prefix '" << opcodeName << "'.";
+             return SPV_ERROR_INVALID_TEXT);
+  }
+
   // NOTE: The table contains Opcode names without the "Op" prefix.
   const char *pInstName = opcodeName.data() + 2;
 
   spv_opcode_desc opcodeEntry;
-  spv_result_t error =
-      spvOpcodeTableNameLookup(opcodeTable, pInstName, &opcodeEntry);
+  error = spvOpcodeTableNameLookup(opcodeTable, pInstName, &opcodeEntry);
   spvCheck(error, DIAGNOSTIC << "Invalid Opcode name '"
                              << getWord(text->str + position->index) << "'";
            return error);
@@ -494,10 +559,23 @@ spv_result_t spvTextEncodeOpcode(
   *position = nextPosition;
   pInst->wordCount++;
 
+  // Get the arugment index for <result-id>. Used for handling the <result-id>
+  // for value generating instructions below.
+  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
+
   // NOTE: Process the fixed size operands
   const spv_operand_type_t *extraOperandTypes = nullptr;
   for (int32_t operandIndex = 0; operandIndex < (opcodeEntry->wordCount - 1);
        ++operandIndex) {
+    if (operandIndex == result_id_index && !result_id.empty()) {
+      // Handling the <result-id> for value generating instructions.
+      error = spvTextEncodeOperand(
+          SPV_OPERAND_TYPE_RESULT_ID, result_id.c_str(), operandTable,
+          extInstTable, namedIdTable, pInst, &extraOperandTypes, pBound,
+          &result_id_position, pDiagnostic);
+      spvCheck(error, return error);
+      continue;
+    }
     spvCheck(spvTextAdvance(text, position),
              DIAGNOSTIC << "Expected operand, found end of stream.";
              return SPV_ERROR_INVALID_TEXT);
@@ -523,38 +601,33 @@ spv_result_t spvTextEncodeOpcode(
           opcodeEntry->operandTypes[opcodeEntry->wordCount - 1];
 
       while (!spvTextAdvance(text, position)) {
+        // NOTE: If this is the end of the current instruction stream and we
+        // break out of this loop.
+        if (spvTextIsStartOfNewInst(text, position)) break;
+
         std::string textValue;
         spvTextWordGet(text, position, textValue, &nextPosition);
 
-        // NOTE: Check if the next text word is an Opcode
-        if ('O' == textValue[0] && 'p' == textValue[1]) {
-          // NOTE: This is the end of the current instruction stream and we
-          // break out of this loop
-          break;
-        } else {
-          if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {
-            spvCheck(spvTextAdvance(text, position),
-                     DIAGNOSTIC << "Invalid string, found end of stream.";
-                     return SPV_ERROR_INVALID_TEXT);
+        if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {
+          spvCheck(spvTextAdvance(text, position),
+                   DIAGNOSTIC << "Invalid string, found end of stream.";
+                   return SPV_ERROR_INVALID_TEXT);
 
-            std::string string;
-            spvCheck(spvTextStringGet(text, position, string, &nextPosition),
-                     DIAGNOSTIC << "Invalid string, new line or end of stream.";
-                     return SPV_ERROR_INVALID_TEXT);
-            spvCheck(
-                spvTextEncodeOperand(type, string.c_str(), operandTable,
-                                     extInstTable, namedIdTable, pInst, nullptr,
-                                     pBound, position, pDiagnostic),
-                return SPV_ERROR_INVALID_TEXT);
-          } else {
-            spvCheck(
-                spvTextEncodeOperand(type, textValue.c_str(), operandTable,
-                                     extInstTable, namedIdTable, pInst, nullptr,
-                                     pBound, position, pDiagnostic),
-                return SPV_ERROR_INVALID_TEXT);
-          }
-          *position = nextPosition;
+          std::string string;
+          spvCheck(spvTextStringGet(text, position, string, &nextPosition),
+                   DIAGNOSTIC << "Invalid string, new line or end of stream.";
+                   return SPV_ERROR_INVALID_TEXT);
+          spvCheck(spvTextEncodeOperand(type, string.c_str(), operandTable,
+                                        extInstTable, namedIdTable, pInst,
+                                        nullptr, pBound, position, pDiagnostic),
+                   return SPV_ERROR_INVALID_TEXT);
+        } else {
+          spvCheck(spvTextEncodeOperand(type, textValue.c_str(), operandTable,
+                                        extInstTable, namedIdTable, pInst,
+                                        nullptr, pBound, position, pDiagnostic),
+                   return SPV_ERROR_INVALID_TEXT);
         }
+        *position = nextPosition;
       }
     } else {
       // NOTE: Process the variable size operands defined by an immediate

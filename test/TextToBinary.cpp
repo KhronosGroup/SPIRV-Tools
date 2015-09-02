@@ -24,7 +24,12 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "TestFixture.h"
 #include "UnitSPIRV.h"
+#include <algorithm>
+#include <iomanip>
+#include <utility>
+#include <vector>
 
 union char_word_t {
   char cs[4];
@@ -37,26 +42,26 @@ TEST(TextToBinary, Default) {
   spv_endianness_t endian = SPV_ENDIANNESS_LITTLE;
 
   const char *textStr = R"(
-OpSource OpenCL 12
-OpMemoryModel Physical64 OpenCL
-OpSourceExtension "PlaceholderExtensionName"
-OpEntryPoint Kernel $1
-OpExecutionMode $1 LocalSizeHint 1 1 1
-OpTypeVoid %2
-OpTypeBool %3
-; commment
-OpTypeInt %4 8 0 ; comment
-OpTypeInt %5 8 1
-OpTypeInt %6 16 0
-OpTypeInt %7 16 1
-OpTypeInt %8 32 0
-OpTypeInt %9 32 1
-OpTypeInt %10 64 0
-OpTypeInt %11 64 1
-OpTypeFloat %12 16
-OpTypeFloat %13 32
-OpTypeFloat %14 64
-OpTypeVector %15 4 2
+      OpSource OpenCL 12
+      OpMemoryModel Physical64 OpenCL
+      OpSourceExtension "PlaceholderExtensionName"
+      OpEntryPoint Kernel %1
+      OpExecutionMode %1 LocalSizeHint 1 1 1
+ %2 = OpTypeVoid
+ %3 = OpTypeBool
+ ; commment
+ %4 = OpTypeInt 8 0 ; comment
+ %5 = OpTypeInt 8 1
+ %6 = OpTypeInt 16 0
+ %7 = OpTypeInt 16 1
+ %8 = OpTypeInt 32 0
+ %9 = OpTypeInt 32 1
+%10 = OpTypeInt 64 0
+%11 = OpTypeInt 64 1
+%12 = OpTypeFloat 16
+%13 = OpTypeFloat 32
+%14 = OpTypeFloat 64
+%15 = OpTypeVector 4 2
 )";
   spv_text_t text = {textStr, strlen(textStr)};
 
@@ -200,40 +205,6 @@ OpTypeVector %15 4 2
   ASSERT_EQ(2, binary->code[instIndex++]);
 }
 
-class TextToBinaryTest : public ::testing::Test {
- public:
-  TextToBinaryTest()
-      : binary(nullptr),
-        text(),
-        opcodeTable(nullptr),
-        operandTable(nullptr),
-        diagnostic(nullptr) {}
-
-  virtual void SetUp() {
-    char textStr[] =
-        "OpEntryPoint Kernel 0\n"
-        "OpExecutionMode 0 LocalSizeHint 1 1 1\n";
-    text.str = textStr;
-    text.length = strlen(textStr);
-    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  }
-
-  virtual void TearDown() {
-    if (diagnostic) {
-      spvDiagnosticDestroy(diagnostic);
-    }
-  }
-
-  spv_binary binary;
-  spv_text_t text;
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
-  spv_diagnostic diagnostic;
-};
-
 TEST_F(TextToBinaryTest, InvalidText) {
   spv_text_t text = {nullptr, 0};
   spv_binary binary;
@@ -243,6 +214,7 @@ TEST_F(TextToBinaryTest, InvalidText) {
 }
 
 TEST_F(TextToBinaryTest, InvalidTable) {
+  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
             spvTextToBinary(&text, nullptr, operandTable, extInstTable, &binary,
                             &diagnostic));
@@ -255,12 +227,14 @@ TEST_F(TextToBinaryTest, InvalidTable) {
 }
 
 TEST_F(TextToBinaryTest, InvalidPointer) {
+  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
             spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
                             nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
+  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
             spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
@@ -268,10 +242,7 @@ TEST_F(TextToBinaryTest, InvalidDiagnostic) {
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {
-  const char *spirv = R"(
-Invalid)";
-  text.str = spirv;
-  text.length = strlen(spirv);
+  SetText("Invalid");
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
                             &binary, &diagnostic));
@@ -281,11 +252,7 @@ Invalid)";
 }
 
 TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
-  const char *spirv = R"(
-!0x00FF00FF
-)";
-  text.str = spirv;
-  text.length = strlen(spirv);
+  SetText("!0x00FF00FF");
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FF, binary->code[5]);
@@ -296,10 +263,7 @@ TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
 }
 
 TEST_F(TextToBinaryTest, ImmediateIntOperand) {
-  const char *spirv = R"(
-OpCapability !0x00FF00FF)";
-  text.str = spirv;
-  text.length = strlen(spirv);
+  SetText("OpCapability !0x00FF00FF");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FF, binary->code[6]);
@@ -309,24 +273,66 @@ OpCapability !0x00FF00FF)";
   }
 }
 
-TEST_F(TextToBinaryTest, ExtInst) {
-  const char *spirv = R"(
-OpCapability Shader
-OpExtInstImport %glsl450 "GLSL.std.450"
-OpMemoryModel Logical Simple
-OpEntryPoint Vertex $main "main"
-OpTypeVoid %void
-OpTypeFloat %float 32
-OpConstant $float %const1.5 1.5
-OpTypeFunction %fnMain %void
-OpFunction $void %main None $fnMain
-OpLabel %lbMain
-OpExtInst $float %result $glsl450 round $const1.5
-OpReturn
-OpFunctionEnd
+struct InstValue {
+  const char* inst;
+  uint32_t value;
+};
+class GLSingleFloatTest
+    : public TextToBinaryTestBase<
+          ::testing::TestWithParam<InstValue>> {};
+
+TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
+  const std::string spirv = R"(
+            OpCapability Shader
+ %glsl450 = OpExtInstImport "GLSL.std.450"
+            OpMemoryModel Logical Simple
+            OpEntryPoint Vertex %main "main"
+    %void = OpTypeVoid
+   %float = OpTypeFloat 32
+%const1.5 = OpConstant %float 1.5
+  %fnMain = OpTypeFunction %void
+    %main = OpFunction %void None %fnMain
+  %lbMain = OpLabel
+  %result = OpExtInst %float %glsl450 )" +
+                            std::string(GetParam().inst) + R"( %const1.5
+            OpReturn
+            OpFunctionEnd
 )";
-  text.str = spirv;
-  text.length = strlen(spirv);
+
+  this->text.str = spirv.c_str();
+  this->text.length = spirv.size();
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&this->text, this->opcodeTable,
+                                         this->operandTable, this->extInstTable,
+                                         &this->binary, &this->diagnostic))
+      << "Source was: " << std::endl
+      << spirv << std::endl
+      << "Test case for : " << GetParam().inst << std::endl;
+  std::vector<uint32_t> expected_contains({
+    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 8 /*%result*/, 1 /*%glsl450*/,
+      GetParam().value, 5 /*const1.5*/});
+  EXPECT_TRUE(std::search(this->binary->code,
+                          this->binary->code + this->binary->wordCount,
+                          expected_contains.begin(), expected_contains.end()) !=
+              this->binary->code + this->binary->wordCount);
+  if (this->binary) {
+    spvBinaryDestroy(this->binary);
+  }
+  if (this->diagnostic) {
+    spvDiagnosticPrint(this->diagnostic);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    SingleElementFloatingParams, GLSingleFloatTest,
+    ::testing::ValuesIn(std::vector<InstValue>({
+        {"Round", 1}, {"RoundEven", 2}, {"Trunc", 3}, {"FAbs", 4}, {"SAbs", 5},
+        {"FSign", 6}, {"SSign", 7}, {"Floor", 8}, {"Ceil", 9}, {"Fract", 10},
+        {"Radians", 11}, {"Degrees", 12}, {"Sin", 13}, {"Cos", 14}, {"Tan", 15},
+        {"Asin", 16}, {"Acos", 17}, {"Atan", 18}, {"Sinh", 19}, {"Cosh", 20},
+        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24}})));
+
+TEST_F(TextToBinaryTest, StringSpace) {
+  SetText("OpSourceExtension \"string with spaces\"");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   if (binary) {
@@ -337,12 +343,29 @@ OpFunctionEnd
   }
 }
 
-TEST_F(TextToBinaryTest, StringSpace) {
-  const char *spirv = R"(
-OpSourceExtension "string with spaces"
-)";
-  text.str = spirv;
-  text.length = strlen(spirv);
+// TODO(antiagainst): we might not want to support both instruction formats in
+// the future. Only the "<result-id> = <opcode> <operand>.." one may survive.
+TEST_F(TextToBinaryTest, InstructionTwoFormats) {
+  SetText(R"(
+            OpCapability Shader
+ %glsl450 = OpExtInstImport "GLSL.std.450"
+            OpMemoryModel Logical Simple
+            OpTypeBool %3
+       %4 = OpTypeInt 8 0
+            OpTypeInt %5 8 1
+       %6 = OpTypeInt 16 0
+            OpTypeInt %7 16 1
+    %void = OpTypeVoid
+            OpTypeFloat %float 32
+%const1.5 = OpConstant %float 1.5
+            OpTypeFunction %fnMain %void
+    %main = OpFunction %void None %fnMain
+            OpLabel %lbMain
+  %result = OpExtInst $float $glsl450 Round $const1.5
+            OpReturn
+            OpFunctionEnd
+)");
+
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   if (binary) {
@@ -351,4 +374,71 @@ OpSourceExtension "string with spaces"
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
+}
+
+TEST_F(TextToBinaryTest, UnknownBeginningOfInsruction) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+Google
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(4, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ(
+      "Expected <opcode> or <result-id> at the beginning of an instruction, "
+      "found 'Google'.",
+      diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, NoEqualSign) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(5, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, NoOpCode) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2 =
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(5, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
+}
+
+TEST_F(TextToBinaryTest, WrongOpCode) {
+  SetText(R"(
+     OpSource OpenCL 12
+     OpMemoryModel Physical64 OpenCL
+%2 = Wahahaha
+)");
+
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &binary, &diagnostic));
+  EXPECT_EQ(4, diagnostic->position.line + 1);
+  EXPECT_EQ(6, diagnostic->position.column + 1);
+  EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
+  if (binary) spvBinaryDestroy(binary);
 }

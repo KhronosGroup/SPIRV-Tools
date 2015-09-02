@@ -34,6 +34,20 @@
 #include "../source/text.h"
 #include "../source/validate.h"
 
+#include <iomanip>
+
+#ifdef __ANDROID__
+#include <sstream>
+namespace std {
+template<typename T>
+std::string to_string(const T& val) {
+  std::ostringstream os;
+  os << val;
+  return os.str();
+}
+}
+#endif
+
 #include <gtest/gtest.h>
 
 #include <stdint.h>
@@ -48,6 +62,34 @@ static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
+
+inline ::std::ostream& operator<<(::std::ostream& os,
+                                  const spv_binary_t& binary) {
+  for (size_t i = 0; i < binary.wordCount; ++i) {
+    os << "0x" << std::setw(8) << std::setfill('0') << std::hex
+       << binary.code[i] << " ";
+    if (i % 8 == 7) {
+      os << std::endl;
+    }
+  }
+  os << std::endl;
+  return os;
+}
+
+namespace std {
+inline ::std::ostream& operator<<(::std::ostream& os,
+                                  const std::vector<uint32_t>& value) {
+  size_t count = 0;
+  for (size_t i : value) {
+    os << "0x" << std::setw(8) << std::setfill('0') << std::hex << i << " ";
+    if (count++ % 8 == 7) {
+      os << std::endl;
+    }
+  }
+  os << std::endl;
+  return os;
+}
+}
 
 #define I32_ENDIAN_HOST (o32_host_order.value)
 

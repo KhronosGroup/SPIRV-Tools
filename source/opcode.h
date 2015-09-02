@@ -82,6 +82,18 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
 /// @return zero if false, non-zero otherwise
 int32_t spvOpcodeIsVariable(spv_opcode_desc entry);
 
+/// @brief Get the argument index for the <result-id> operand, if any.
+///
+/// @param[in] entry the Opcode entry
+///
+/// @return index for the <result-id> operand, or
+///         SPV_OPERAND_INVALID_RESULT_ID_INDEX if the given opcode
+///         doesn't have a <result-id> operand.
+//
+/// For example, 0 means <result-id> is the first argument, i.e. right after
+/// the wordcount/opcode word.
+int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry);
+
 /// @brief Determine if the Opcode has capaspvity requirements
 ///
 /// This function does not check if @a entry is valid.
