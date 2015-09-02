@@ -289,10 +289,10 @@ The validator operates on the binary form.
 
 The project contains a number of tests, implemented in the `UnitSPIRV`
 executable, used to drive the development and correctness of the tools, these
-use the [googletest](https://code.google.com/p/googletest/) framework. The
-[googletest](https://code.google.com/p/googletest/) source is not provided with
+use the [googletest](https://github.com/google/googletest) framework. The
+[googletest](https://github.com/google/googletest) source is not provided with
 this project, to enable the tests place the
-[googletest](https://code.google.com/p/googletest/) source in the
+[googletest](https://github.com/google/googletest) source in the
 `<spirv-dir>/external/googletest` directory, rerun CMake if you have already
 done so previously, CMake will detect the existence of
 `<spirv-dir>/external/googletest` then build as normal.

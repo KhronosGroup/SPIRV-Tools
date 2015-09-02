@@ -145,11 +145,11 @@ if(EXISTS ${GTEST_DIR})
 
   add_subdirectory(${GTEST_DIR})
 endif()
-if (TARGET gtest)
-  message(STATUS "Found googletest, building tests.")
+if (TARGET gmock)
+  message(STATUS "Found Google Mock, building tests.")
 
   include_directories(SYSTEM
-    ${gtest_SOURCE_DIR}
+    ${gmock_SOURCE_DIR}/include
     ${gtest_SOURCE_DIR}/include)
 
   add_executable(UnitSPIRV
@@ -180,7 +180,7 @@ if (TARGET gtest)
     ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
-  target_link_libraries(UnitSPIRV SPIRV-TOOLS gtest)
+  target_link_libraries(UnitSPIRV SPIRV-TOOLS gmock)
 else()
   message(STATUS "Did not find googletest, tests will not be built."
     "To enable tests place googletest in '<spirv-dir>/external/googletest'.")

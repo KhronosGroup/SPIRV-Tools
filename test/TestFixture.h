@@ -32,26 +32,54 @@ namespace test_fixture {
 
 // Common setup for TextToBinary tests. SetText() should be called to populate
 // the actual test text.
-template<typename T>
+template <typename T>
 class TextToBinaryTestBase : public T {
  public:
+  // Shorthand for SPIR-V compilation result.
+  using SpirvVector = std::vector<uint32_t>;
+
+  // Offset into a SpirvVector at which the first instruction starts.
+  const SpirvVector::size_type kFirstInstruction = 5;
+
   TextToBinaryTestBase()
       : opcodeTable(nullptr),
         operandTable(nullptr),
         diagnostic(nullptr),
         text(),
-        binary(nullptr) {}
-
-  virtual void SetUp() {
-    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+        binary(nullptr) {
+    EXPECT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+    EXPECT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+    EXPECT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
     char textStr[] = "substitute the text member variable with your test";
     text = {textStr, strlen(textStr)};
   }
 
-  virtual void TearDown() {
+  virtual ~TextToBinaryTestBase() {
     if (diagnostic) spvDiagnosticDestroy(diagnostic);
+  }
+
+  // Returns subvector v[from:end).
+  SpirvVector Subvector(const SpirvVector& v, SpirvVector::size_type from) {
+    assert(from < v.size());
+    return SpirvVector(v.begin() + from, v.end());
+  }
+
+  // Compiles SPIR-V text, asserting compilation success.  Returns the compiled
+  // code.
+  SpirvVector CompileSuccessfully(const std::string& text) {
+    SetText(text);
+    spv_result_t status =
+        spvTextToBinary(&this->text, opcodeTable, operandTable, extInstTable,
+                        &binary, &diagnostic);
+    EXPECT_EQ(SPV_SUCCESS, status);
+    SpirvVector code_copy;
+    if (status == SPV_SUCCESS) {
+      code_copy = SpirvVector(binary->code, binary->code + binary->wordCount);
+      spvBinaryDestroy(binary);
+    } else {
+      spvDiagnosticPrint(diagnostic);
+    }
+    return code_copy;
   }
 
   void SetText(const std::string& code) {
@@ -74,4 +102,4 @@ using TextToBinaryTest = TextToBinaryTestBase<::testing::Test>;
 
 }  // namespace test_fixture
 
-#endif// _TEXT_FIXTURE_H_
+#endif  // _TEXT_FIXTURE_H_
