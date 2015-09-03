@@ -132,8 +132,8 @@ OpCopyMemorySized %3 %4 %1
 #endif
 }
 
+// Like NextOpcodeRecognized, but next statement is in assignment form.
 TEST_F(ImmediateIntTest, NextAssignmentRecognized) {
-  // Like NextOpcodeRecognized, but next statement is in assignment form.
   SpirvVector original = CompileSuccessfully(R"(
 OpLoad %10 %1 %2 None
 %4 = OpFunctionCall %10 %3 123
@@ -145,11 +145,25 @@ OpLoad %10 !1 %2 !0
   EXPECT_EQ(original, alternate);
 }
 
-// TODO(deki): implement all tests below.
-
+// Two instructions in a row each have !<integer> opcode.
 TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
-  // Two instructions in a row each have !<integer> opcode.
+  SpirvVector original = CompileSuccessfully(R"(
+OpConstantSampler %10 %1 Clamp 78 Linear
+OpFRem %11 %4 %3 %2
+%5 = OpIsValidEvent %12 %2
+)");
+// TODO(deki): uncomment assertions below and make them pass.
+#if 0
+  SpirvVector alternate = CompileSuccessfully(R"(
+!0x0006002D %10 %1 !2 78 !1
+!0x0005008C %11 %4 %3 %2
+%5 = OpIsValidEvent %12 %2
+)");
+  EXPECT_EQ(original, alternate);
+#endif
 }
+
+// TODO(deki): implement all tests below.
 
 TEST_F(ImmediateIntTest, LiteralOperands) {
   // !<integer> followed by a literal-number operand.
