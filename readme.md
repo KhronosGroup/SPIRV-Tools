@@ -239,54 +239,51 @@ with `!<integer>` in them:
 
 When a word in the assembly program is a `!<integer>`, that integer value is
 emitted into the binary output, and parsing proceeds differently than before:
-each subsequent word not recognized as an OpCode is treated as an operand
-(emitted as described below); when a recognizable OpCode is eventually
+each subsequent word not recognized as an OpCode is emitted into the binary
+output without any checking; when a recognizable OpCode is eventually
 encountered, it begins a new instruction and parsing returns to normal.  (If a
-subsequent OpCode is never found, then the current instruction is last in the
-generated binary and contains all the words until the end-of-stream as its
-operands.)
+subsequent OpCode is never found, then this alternate parsing mode handles all
+the remaining words in the program.  If a subsequent OpCode is in an
+[assignment format](#assignment-format), the ID preceding it begins a new
+instruction, even if that ID is itself a `!<integer>`.)
 
-Operands following a `!<integer>` are interpreted depending on their format:
+The assembler processes the words encountered in alternate parsing mode as
+follows:
 
-* If the operand is a number literal, it outputs a word equal to the number.
-* If the operand is a string literal, it outputs a sequence of words
-  representing the string as defined in the SPIR-V specification for Literal
-  String.
-* If the operand is an ID, it outputs a word equal to the ID's internal number.
-  If no such number exists yet, a unique new one will be generated.  (Uniqueness
-  is at the translation-unit level: no other ID in the same translation unit
-  will have the same number.)
-* If the operand is a `!<integer>`, it outputs a word equal to the integer.
-* Otherwise, the assembler quits with an error.
+* If the word is a number literal, it outputs that number as one or more words,
+  as defined in the SPIR-V specification for Literal Number.
+* If the word is a string literal, it outputs a sequence of words representing
+  the string as defined in the SPIR-V specification for Literal String.
+* If the word is an ID, it outputs the ID's internal number.  If no such number
+  exists yet, a unique new one will be generated.  (Uniqueness is at the
+  translation-unit level: no other ID in the same translation unit will have the
+  same number.)
+* If the word is another `!<integer>`, it outputs that integer.
+* Any other word causes the assembler to quit with an error.
 
 Note that this has some interesting consequences, including:
 
-* When an OpCode is replaced by `!<integer>`, the integer value must encode the
-  instruction's word count, as specified in the physical-layout section of the
-  SPIR-V specification.
+* When an OpCode is replaced by `!<integer>`, the integer value should encode
+  the instruction's word count, as specified in the physical-layout section of
+  the SPIR-V specification.
 
 * Consecutive instructions may have their OpCode replaced by `!<integer>` and
-  still produce the expected binary.  For example, `!262187 %1 %2 "abc" !327739
-  %1 %3 6 %2` will successfully assemble into SPIR-V declaring a constant and a
+  still produce valid SPIR-V.  For example, `!262187 %1 %2 "abc" !327739 %1 %3 6
+  %2` will successfully assemble into SPIR-V declaring a constant and a
   PrivateGlobal variable.
 
-* Not every word in an assembly program may be replaced by `!<integer>` without
-  failure.  For example, replacing either of the `OpExecutionMode` OpCodes above
-  will result in an error, because their mode enums are not valid operands in
-  the alternate parsing mode prompted by `!<integer>`.  (It is, however,
-  possible to replace both `OpExecutionMode` and all mode enums with
-  `!<integer>` and assemble successfully.)
+* Enums (such as `DontInline` or `SubgroupMemory`, for instance) are not handled
+  by the alternate parsing mode.  They must be replaced by `!<integer>` for
+  successful assembly.
+
+* The `=` sign cannot be processed by the alternate parsing mode if the OpCode
+  following it is a `!<integer>`.
 
 * When replacing a named ID with `!<integer>`, it is possible to generate
   unintentionally valid SPIR-V.  If the integer provided happens to equal a
   number generated for an existing named ID, it will result in a reference to
   that named ID being output.  This may be valid SPIR-V, contrary to the
   presumed intention of the writer.
-
-* If the next instruction after a `!<integer>` has the assignment format
-  (described [above](#assignment-format)), then its OpCode cannot also be a
-  `!<integer>`.  The alternate parsing mode cannot handle the assignment format
-  and will complain that `=` is not a valid operand.
 
 ### Disassembler
 

@@ -75,6 +75,7 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
 TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
   SpirvVector original = CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
   // TODO(deki): uncomment assertions below and make them pass.
+  // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 123"));
@@ -82,11 +83,6 @@ TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
   // Instead of checking all possible multiple-! combinations, only probe a few.
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 !123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 !12 !1 !123"));
-
-  // NB: when/if these cases are handled, it will require reworking the
-  // description in readme.md, which currently dictates that each word past
-  // !<integer> must be a literal, an ID, or another immediate (ie, not a '=').
-  // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("!2 = !0x00040044 %12 %1 123"));
 }
 
