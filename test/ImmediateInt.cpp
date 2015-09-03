@@ -86,7 +86,8 @@ TEST_F(ImmediateIntTest, InvalidStatementBetweenValidOnes) {
   EXPECT_THAT(
       Subvector(CompileSuccessfully("OpTypeFloat %10 32 !5 !6 !7 OpEmitVertex"),
                 kFirstInstruction),
-      ElementsAre(0x00030016, 10, 32, 5, 6, 7, 0x000100DA));
+      ElementsAre(spvOpcodeMake(3, spv::OpTypeFloat), 10, 32, 5, 6, 7,
+                  spvOpcodeMake(1, spv::OpEmitVertex)));
 }
 
 TEST_F(ImmediateIntTest, NextOpcodeRecognized) {
