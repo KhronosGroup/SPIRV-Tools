@@ -7,13 +7,53 @@ based on a common static library. The library contains all of the implementation
 details and is used in the standalone tools whilst also enabling integration
 into other code bases directly.
 
-Currently, the assembler and disassembler only support the core SPIR-V
-specification (i.e. nothing Vulkan or OpenCL-specific) and the validator is a
-work in progress. See the Future Work section for more information.
+## Supported features
 
-The repository is maintained by Kenneth Benzie `k.benzie@codeplay.com`, please
-submit any merge requests as stated in these
+### Assembler and disassembler
+
+* Based on Revision 31 of SPIR-V
+* All core instructions are supported, except:
+  * Changes to operand enum values and their syntax since Rev 30 will not work.
+  * Image operands (section 3.14) are not supported, for example.
+  * Test coverage is very limited.
+* All GLSL std450 extended instructions are supported.
+* Assembler only does basic syntax checking.  No cross validation of IDs or
+  types is performed.
+* OpenCL extended instructions are not supported.
+
+### Validator
+
+The validator is incomplete.  See the Future Work section for more information.
+
+## CHANGES (for tools hackers)
+
+* The parser has been overhauled
+  * We use an automatically generated table to describe the syntax of each
+    core instruction.  The changes to the SPIR-V spec document generator to
+    create this table are still being developed.
+  * The parser uses a dynamically updated list of expected operand types.
+    It is expanded as needed for variable-length lists of operands, and
+    consumed during the parse.  See the uses of `spv_operand_pattern_t`.
+  * The syntax of enum operands and their potential operands is still
+    hand-coded.  (That might change depending on the cost-benefit tradeoff.)
+* We are actively increasing test coverage.
+* We have tweaked the CMake build rules to make it easier to integrate
+  into other packages.  Google is integrating SPIR-V Tools into the Vulkan
+  conformance test suite.
+* New code tends to use Google C++ style, including formatting as generated
+  by `clang-format --style=google`.
+
+## Where is the code?
+
+The `master` branch of the repository is maintained by
+Kenneth Benzie `k.benzie@codeplay.com`.
+
+*You are looking at the `google` branch.*  Google plans to maintain a linear
+history of commits.
+
+Please submit any merge requests as stated in these
 [instructions](https://cvs.khronos.org/wiki/index.php/How_to_access_and_use_the_Khronos_Gitlab_Repository).
+
 
 ## Build
 
@@ -159,6 +199,8 @@ following example will result in identical SPIR-V binary as the example above.
 
 ##### Arbitrary Integers
 
+*Warning: Not all of the following has been implemented*
+
 When writing tests it can be useful to emit an invalid 32 bit word into the
 binary stream at arbitrary positions within the assembly. To specify an
 arbitrary word into the stream the prefix `!` is used, this takes the form
@@ -299,7 +341,15 @@ done so previously, CMake will detect the existence of
 
 ## Future Work
 
-* Support extension libraries in `spirv-as`, `spirv-dis`, and `spirv-val`.
+### Assembler and disassembler
+
+* Support OpenCL extension libraries.
+* Enforce the parsing rules.
+* Likely add an option to select from different assembly language syntaxes.
+
+### Validator
+
+* Adopt the parser strategy used by the text and binary parsers.
 * Complete implementation of ID validation rules in `spirv-val`.
 * Implement section 2.16 Validation Rules in `spirv-val`.
 * Implement Capability validation and or report in `spirv-val`.
@@ -308,9 +358,14 @@ done so previously, CMake will detect the existence of
 
 ## Known Issues
 
+* Float constant values are parsed incorrectly.
 * Improve literal parsing in the assembler, currently only decimal integers and
   floating-point numbers are supported as literal operands and the parser is not
   contextually aware of the desired width of the operand.
+* Sometimes the assembler will succeed, but the disassembler will fail to
+  disassemble the result.
+* Sometimes the disassembler fails to produce any output on an error.
+* Many more issues.
 
 ## Licence
 
