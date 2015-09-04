@@ -117,79 +117,85 @@ add_library(SPIRV-TOOLS ${SPIRV_SOURCES})
 target_link_libraries(SPIRV-TOOLS ${SPIRV_LIBS})
 set_target_properties(SPIRV-TOOLS PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
 
-add_executable(spirv-as
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
-set_target_properties(spirv-as PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-as SPIRV-TOOLS)
+option(SPIRV_SKIP_EXECUTABLES "Skip building the executables and tests along with the library" ${SPIRV_SKIP_EXECUTABLES})
 
-add_executable(spirv-dis
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
-set_target_properties(spirv-dis PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-dis SPIRV-TOOLS)
+set(SPIRV_BUILT_TARGETS SPIRV-TOOLS)
+if (NOT ${SPIRV_SKIP_EXECUTABLES})
+  list(APPEND SPIRV_BUILT_TARGETS spirv-as spirv-dis spirv-val)
+  add_executable(spirv-as
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
+  set_target_properties(spirv-as PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+  target_link_libraries(spirv-as SPIRV-TOOLS)
 
-add_executable(spirv-val
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
-set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-target_link_libraries(spirv-val SPIRV-TOOLS)
+  add_executable(spirv-dis
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
+  set_target_properties(spirv-dis PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+  target_link_libraries(spirv-dis SPIRV-TOOLS)
 
-set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest)
-if(EXISTS ${GTEST_DIR})
-  if(WIN32)
-    option(gtest_force_shared_crt
-      "Use shared (DLL) run-time lib even when Google Test is built as static lib."
-      ON)
+  add_executable(spirv-val
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
+  set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+  target_link_libraries(spirv-val SPIRV-TOOLS)
+
+  set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest)
+  if(EXISTS ${GTEST_DIR})
+    if(WIN32)
+      option(gtest_force_shared_crt
+        "Use shared (DLL) run-time lib even when Google Test is built as static lib."
+        ON)
+    endif()
+
+    add_subdirectory(${GTEST_DIR})
   endif()
+  if (TARGET gmock)
+    message(STATUS "Found Google Mock, building tests.")
 
-  add_subdirectory(${GTEST_DIR})
-endif()
-if (TARGET gmock)
-  message(STATUS "Found Google Mock, building tests.")
+    include_directories(SYSTEM
+      ${gmock_SOURCE_DIR}/include
+      ${gtest_SOURCE_DIR}/include)
 
-  include_directories(SYSTEM
-    ${gmock_SOURCE_DIR}/include
-    ${gtest_SOURCE_DIR}/include)
+    add_executable(UnitSPIRV
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
 
-  add_executable(UnitSPIRV
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticPrint.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeIsVariable.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeMake.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeRequiresCapabilities.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeSplit.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeTableGet.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandTableGet.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextAdvance.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextDestroy.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextLiteral.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextStartsNewInst.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
-  target_link_libraries(UnitSPIRV SPIRV-TOOLS gmock)
-else()
-  message(STATUS "Did not find googletest, tests will not be built."
-    "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticPrint.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeIsVariable.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeMake.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeRequiresCapabilities.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeSplit.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeTableGet.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandTableGet.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextAdvance.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextDestroy.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextLiteral.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextStartsNewInst.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
+    target_link_libraries(UnitSPIRV SPIRV-TOOLS gmock)
+  else()
+    message(STATUS "Did not find googletest, tests will not be built."
+      "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
+  endif()
 endif()
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install)
-install(TARGETS SPIRV-TOOLS spirv-as spirv-dis spirv-val
+install(TARGETS ${SPIRV_BUILT_TARGETS}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
