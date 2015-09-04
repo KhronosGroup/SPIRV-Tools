@@ -412,4 +412,23 @@ TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
   EXPECT_STREQ("Expected operand, found next instruction instead.", diagnostic->error);
 }
 
+using TextToBinaryFloatValueTest =
+    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<float>>;
+
+// TODO(dneto): Fix float parsing.
+TEST_P(TextToBinaryFloatValueTest, DISABLED_NormalValues) {
+  std::stringstream input;
+  input <<
+      R"(OpTypeFloat %float 32
+         %constval = OpConstant %float )"
+        << GetParam();
+  const SpirvVector code = CompileSuccessfully(input.str());
+
+  EXPECT_EQ(code[6], GetParam());
+}
+
+INSTANTIATE_TEST_CASE_P(float, TextToBinaryFloatValueTest,
+                        ::testing::ValuesIn(std::vector<float>{1.5, 0.0,
+                                                               -2.5}));
+
 }  // anonymous namespace
