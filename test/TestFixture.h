@@ -71,7 +71,7 @@ class TextToBinaryTestBase : public T {
     spv_result_t status =
         spvTextToBinary(&this->text, opcodeTable, operandTable, extInstTable,
                         &binary, &diagnostic);
-    EXPECT_EQ(SPV_SUCCESS, status);
+    EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
       code_copy = SpirvVector(binary->code, binary->code + binary->wordCount);
