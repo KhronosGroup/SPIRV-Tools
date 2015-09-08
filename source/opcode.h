@@ -73,15 +73,6 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                      const Op opcode, spv_opcode_desc *pEntry);
 
-/// @brief Determine if the Opcode has variable word count
-///
-/// This function does not check if @a entry is valid.
-///
-/// @param[in] entry the Opcode entry
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsVariable(spv_opcode_desc entry);
-
 /// @brief Get the argument index for the <result-id> operand, if any.
 ///
 /// @param[in] entry the Opcode entry

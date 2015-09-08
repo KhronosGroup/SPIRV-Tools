@@ -135,8 +135,7 @@ typedef enum spv_endianness_t {
 
 typedef enum spv_opcode_flags_t {
   SPV_OPCODE_FLAGS_NONE = 0,
-  SPV_OPCODE_FLAGS_VARIABLE = 1,
-  SPV_OPCODE_FLAGS_CAPABILITIES = 2,
+  SPV_OPCODE_FLAGS_CAPABILITIES = 1,
   SPV_FORCE_32_BIT_ENUM(spv_opcode_flags_t)
 } spv_opcode_flags_t;
 

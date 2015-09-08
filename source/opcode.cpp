@@ -50,7 +50,7 @@ spv_opcode_desc_t opcodeTableEntries[] = {
 #define Instruction(Name,HasResult,HasType,NumLogicalOperands,NumCapabilities,CapabilityRequired,IsVariable,LogicalArgsList) \
   { #Name, \
     Op##Name, \
-    ((IsVariable ? SPV_OPCODE_FLAGS_VARIABLE : 0) | (CapabilityRequired != CapabilityNone ? SPV_OPCODE_FLAGS_CAPABILITIES : 0)), \
+    ((CapabilityRequired != CapabilityNone ? SPV_OPCODE_FLAGS_CAPABILITIES : 0)), \
     uint32_t(CapabilityRequired), \
     0, {}, /* Filled in later. Operand list, including result id and type id, if needed */ \
     HasResult, \
@@ -272,11 +272,6 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   }
 
   return SPV_ERROR_INVALID_LOOKUP;
-}
-
-int32_t spvOpcodeIsVariable(spv_opcode_desc entry) {
-  return SPV_OPCODE_FLAGS_VARIABLE ==
-         (SPV_OPCODE_FLAGS_VARIABLE & entry->flags);
 }
 
 int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry) {
