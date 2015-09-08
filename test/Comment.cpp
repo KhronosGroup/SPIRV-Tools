@@ -42,9 +42,6 @@ TEST_F(TextToBinaryTest, Whitespace) {
 )");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }

@@ -48,7 +48,7 @@ TEST(NamedId, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
   spv_ext_inst_table extInstTable;
   ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  spv_binary binary;
+  spv_binary binary = nullptr;
   spv_diagnostic diagnostic;
   spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
                                        extInstTable, &binary, &diagnostic);

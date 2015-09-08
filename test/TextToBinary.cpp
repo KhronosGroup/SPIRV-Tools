@@ -255,9 +255,6 @@ TEST_F(TextToBinaryTest, StringSpace) {
   SetText("OpSourceExtension \"string with spaces\"");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -288,9 +285,6 @@ TEST_F(TextToBinaryTest, InstructionTwoFormats) {
 
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -312,7 +306,6 @@ Google
       "Expected <opcode> or <result-id> at the beginning of an instruction, "
       "found 'Google'.",
       diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, NoEqualSign) {
@@ -328,7 +321,6 @@ TEST_F(TextToBinaryTest, NoEqualSign) {
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, NoOpCode) {
@@ -344,7 +336,6 @@ TEST_F(TextToBinaryTest, NoOpCode) {
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, WrongOpCode) {
@@ -360,7 +351,6 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(6, diagnostic->position.column + 1);
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, GoodSwitch) {

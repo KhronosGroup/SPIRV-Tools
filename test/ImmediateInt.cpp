@@ -42,7 +42,6 @@ TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FF, binary->code[5]);
-  spvBinaryDestroy(binary);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -53,7 +52,6 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FF, binary->code[6]);
-  spvBinaryDestroy(binary);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }

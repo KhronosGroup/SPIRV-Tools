@@ -55,6 +55,7 @@ class TextToBinaryTestBase : public T {
   }
 
   virtual ~TextToBinaryTestBase() {
+    DestroyBinary();
     if (diagnostic) spvDiagnosticDestroy(diagnostic);
   }
 
@@ -75,7 +76,7 @@ class TextToBinaryTestBase : public T {
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
       code_copy = SpirvVector(binary->code, binary->code + binary->wordCount);
-      spvBinaryDestroy(binary);
+      DestroyBinary();
     } else {
       spvDiagnosticPrint(diagnostic);
     }
@@ -90,6 +91,7 @@ class TextToBinaryTestBase : public T {
               spvTextToBinary(&this->text, opcodeTable, operandTable,
                               extInstTable, &binary, &diagnostic))
         << text;
+    DestroyBinary();
     return diagnostic->error;
   }
 
@@ -97,6 +99,12 @@ class TextToBinaryTestBase : public T {
     textString = code;
     text.str = textString.c_str();
     text.length = textString.size();
+  }
+
+  // Destroys the binary, if it exists.
+  void DestroyBinary() {
+    spvBinaryDestroy(binary);
+    binary = nullptr;
   }
 
   spv_opcode_table opcodeTable;
