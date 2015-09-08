@@ -111,7 +111,7 @@ OpFunctionEnd
       << "in\n" << spvtest::WordVector(*binary).str();
 
   // Check round trip gives the same text.
-  spv_text output_text;
+  spv_text output_text = nullptr;
   error = spvBinaryToText(
       binary->code, binary->wordCount, SPV_BINARY_TO_TEXT_OPTION_NONE,
       opcodeTable, operandTable, extInstTable, &output_text, &diagnostic);

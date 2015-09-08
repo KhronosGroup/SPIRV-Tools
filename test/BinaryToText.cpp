@@ -147,7 +147,7 @@ TEST(BinaryToTextSmall, OneInstruction) {
       spvTextToBinary(input, strlen(input), opcodeTable, operandTable,
                       extInstTable, &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text;
+  spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
                           SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                           operandTable, extInstTable, &text, &diagnostic);
@@ -182,7 +182,7 @@ TEST(BinaryToTextSmall, OperandWithOperands) {
       spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
                       operandTable, extInstTable, &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text;
+  spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
                           SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                           operandTable, extInstTable, &text, &diagnostic);
