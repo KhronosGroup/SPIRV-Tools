@@ -102,6 +102,12 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   // Negative integer.
   EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 -123"),
             CompileSuccessfully("OpConstant %10 !1 -123"));
+
+  // Hex value(s).
+  // EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0x12345678"),
+  //           CompileSuccessfully("OpConstant %10 !1 0x12345678"));
+  // EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0x12345678 0x87654321"),
+  //           CompileSuccessfully("OpConstant %10 !1 0x12345678 0x87654321"));
 }
 
 // Literal floats after !<integer> are handled correctly.
