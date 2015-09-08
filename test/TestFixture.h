@@ -122,6 +122,19 @@ class TextToBinaryTestBase : public T {
     return decoded_string;
   }
 
+  // Compiles SPIR-V text, asserts success, and returns the words representing
+  // the instructions.  In particular, skip the words in the SPIR-V header.
+  SpirvVector CompiledInstructions(const std::string& text) {
+    const SpirvVector code = CompileSuccessfully(text);
+    SpirvVector result;
+    // Extract just the instructions.
+    // If the code fails to compile, then return the empty vector.
+    // In any case, don't crash or invoke undefined behaviour.
+    if (code.size() >= kFirstInstruction)
+      result = Subvector(code, kFirstInstruction);
+    return result;
+  }
+
   void SetText(const std::string& code) {
     textString = code;
     text.str = textString.c_str();

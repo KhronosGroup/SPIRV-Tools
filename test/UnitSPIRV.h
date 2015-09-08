@@ -106,6 +106,16 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
   *os << std::endl;
 }
 
+// Returns a vector of words representing a single instruction with the
+// given opcode and number of operand words.
+inline std::vector<uint32_t> MakeInstruction(
+    spv::Op opcode, std::initializer_list<uint32_t> args) {
+  std::vector<uint32_t> result{
+      spvOpcodeMake(uint16_t(args.size() + 1), opcode)};
+  result.insert(result.end(), args.begin(), args.end());
+  return result;
+}
+
 } // namespace spvtest
 
 // A type for easily creating spv_text_t values, with an implicit conversion to
