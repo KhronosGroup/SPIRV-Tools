@@ -82,6 +82,17 @@ class TextToBinaryTestBase : public T {
     return code_copy;
   }
 
+  // Compiles SPIR-V text, asserting compilation failure.  Returns the error
+  // message(s).
+  std::string CompileFailure(const std::string& text) {
+    SetText(text);
+    EXPECT_NE(SPV_SUCCESS,
+              spvTextToBinary(&this->text, opcodeTable, operandTable,
+                              extInstTable, &binary, &diagnostic))
+        << text;
+    return diagnostic->error;
+  }
+
   void SetText(const std::string& code) {
     textString = code;
     text.str = textString.c_str();

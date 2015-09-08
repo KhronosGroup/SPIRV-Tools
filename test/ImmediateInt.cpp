@@ -33,6 +33,7 @@
 
 namespace {
 
+using ::testing::HasSubstr;
 using ::testing::ElementsAre;
 using test_fixture::TextToBinaryTest;
 
@@ -73,7 +74,8 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
 }
 
 TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
-  const SpirvVector original = CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
+  const SpirvVector original =
+      CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
@@ -222,10 +224,18 @@ OpFRem %11 %4 %3 %2
 #endif
 }
 
-// TODO(deki): implement all tests below.
-
+// !<integer> followed by, eg, an enum or '=' or a random bareword.
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
-  // !<integer> followed by, eg, an enum or '=' or a random bareword.
+// TODO(deki): uncomment assertions below and make them pass.
+#if 0
+  EXPECT_THAT(CompileFailure("OpMemoryModel !0 OpenCL"), HasSubstr("OpenCL"));
+  EXPECT_THAT(CompileFailure("!1 %0 = !2"), HasSubstr("="));
+  // Immediate integers longer than one 32-bit word.
+  EXPECT_THAT(CompileFailure("!5000000000"), HasSubstr("5000000000"));
+  EXPECT_THAT(CompileFailure("!0x00020049 !5000000000"), HasSubstr("5000000000"));
+#endif
+  EXPECT_THAT(CompileFailure("OpMemoryModel !0 random_bareword"),
+              HasSubstr("random_bareword"));
 }
 
 }  // anonymous namespace
