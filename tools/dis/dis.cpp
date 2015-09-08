@@ -114,17 +114,25 @@ int main(int argc, char **argv) {
   error = spvExtInstTableGet(&extInstTable);
   spvCheck(error, fprintf(stderr, "error: Internal malfunction.\n"));
 
-  bool option_print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
+  // If the printing option is turned on, then spvBinaryToText should
+  // do the printing.  In particular, colour printing on Windows is
+  // controlled by modifying console objects synchronously while
+  // outputting to the stream rather than by injecting escape codes
+  // into the output stream.
+  // If the printing option is off, then save the text in memory, so
+  // it can be emitted later in this function.
+  const bool printOptionOn =
+      spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   spv_text text;
+  spv_text *textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
   error = spvBinaryToText(&binary, options, opcodeTable, operandTable,
-                          extInstTable,
-                          option_print ? NULL : &text,
-                          &diagnostic);
+                          extInstTable, textOrNull, &diagnostic);
   spvCheck(error, spvDiagnosticPrint(diagnostic);
            spvDiagnosticDestroy(diagnostic); return error);
 
-  if (!option_print) {
+  // Output the result.
+  if (!printOptionOn) {
     if (FILE *fp = fopen(outFile, "w")) {
       size_t written = fwrite(text->str, sizeof(char), (size_t)text->length, fp);
       if (text->length != written) {
