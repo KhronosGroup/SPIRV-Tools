@@ -161,6 +161,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
 
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryDestroy.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp

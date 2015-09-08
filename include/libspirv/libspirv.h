@@ -441,7 +441,9 @@ spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
                              const spv_ext_inst_table extInstTable,
                              spv_text *pText, spv_diagnostic *pDiagnostic);
 
-/// @brief Free a binary stream from memory
+/// @brief Free a binary stream from memory.
+///
+/// This is a no-op if binary is a null pointer.
 ///
 /// @param binary stream to destroy
 void spvBinaryDestroy(spv_binary binary);
