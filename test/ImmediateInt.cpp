@@ -61,7 +61,7 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
 using ImmediateIntTest = TextToBinaryTest;
 
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
-  SpirvVector original = CompileSuccessfully("OpConstant %1 %2 123");
+  const SpirvVector original = CompileSuccessfully("OpConstant %1 %2 123");
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 %2 123"));
   EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 123"));
@@ -73,7 +73,7 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
 }
 
 TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
-  SpirvVector original = CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
+  const SpirvVector original = CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
@@ -88,7 +88,7 @@ TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
 
 // Literal integers after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
-  SpirvVector original = CompileSuccessfully("OpTypeInt %1 8 1");
+  const SpirvVector original = CompileSuccessfully("OpTypeInt %1 8 1");
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1"));
   // EXPECT_EQ(original, CompileSuccessfully("OpTypeInt !1 8 1"));
@@ -120,7 +120,7 @@ TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
 TEST_F(ImmediateIntTest, StringFollowingImmediate) {
   // Try a variety of strings, including empty and single-character.
   for (std::string name : {"", "s", "longish"}) {
-    SpirvVector original =
+    const SpirvVector original =
         CompileSuccessfully("OpMemberName %10 4 \"" + name + "\"");
     EXPECT_EQ(original,
               CompileSuccessfully("OpMemberName %10 !4 \"" + name + "\""));
@@ -143,7 +143,7 @@ TEST_F(ImmediateIntTest, IdFollowingImmediate) {
 
 // !<integer> after !<integer> is handled correctly.
 TEST_F(ImmediateIntTest, ImmediateFollowingImmediate) {
-  SpirvVector original = CompileSuccessfully("OpTypeMatrix %11 %10 7");
+  const SpirvVector original = CompileSuccessfully("OpTypeMatrix %11 %10 7");
   EXPECT_EQ(original, CompileSuccessfully("OpTypeMatrix %11 !10 !7"));
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!0x00040018 %11 !10 !7"));
@@ -163,11 +163,11 @@ TEST_F(ImmediateIntTest, InvalidStatementBetweenValidOnes) {
 }
 
 TEST_F(ImmediateIntTest, NextOpcodeRecognized) {
-  SpirvVector original = CompileSuccessfully(R"(
+  const SpirvVector original = CompileSuccessfully(R"(
 OpLoad %10 %1 %2 Volatile
 OpCompositeInsert %11 %4 %1 %3 0 1 2
 )");
-  SpirvVector alternate = CompileSuccessfully(R"(
+  const SpirvVector alternate = CompileSuccessfully(R"(
 OpLoad %10 %1 %2 !1
 OpCompositeInsert %11 %4 %1 %3 0 1 2
 )");
@@ -175,13 +175,13 @@ OpCompositeInsert %11 %4 %1 %3 0 1 2
 }
 
 TEST_F(ImmediateIntTest, WrongLengthButNextOpcodeStillRecognized) {
-  SpirvVector original = CompileSuccessfully(R"(
+  const SpirvVector original = CompileSuccessfully(R"(
 OpLoad %10 %1 %2 Volatile
 OpCopyMemorySized %3 %4 %1
 )");
 // TODO(deki): uncomment assertions below and make them pass.
 #if 0
-  SpirvVector alternate = CompileSuccessfully(R"(
+  const SpirvVector alternate = CompileSuccessfully(R"(
 !0x0002003D %10 %1 %2 !1
 OpCopyMemorySized %3 %4 %1
 )");
@@ -193,11 +193,11 @@ OpCopyMemorySized %3 %4 %1
 
 // Like NextOpcodeRecognized, but next statement is in assignment form.
 TEST_F(ImmediateIntTest, NextAssignmentRecognized) {
-  SpirvVector original = CompileSuccessfully(R"(
+  const SpirvVector original = CompileSuccessfully(R"(
 OpLoad %10 %1 %2 None
 %4 = OpFunctionCall %10 %3 123
 )");
-  SpirvVector alternate = CompileSuccessfully(R"(
+  const SpirvVector alternate = CompileSuccessfully(R"(
 OpLoad %10 !1 %2 !0
 %4 = OpFunctionCall %10 %3 123
 )");
@@ -206,14 +206,14 @@ OpLoad %10 !1 %2 !0
 
 // Two instructions in a row each have !<integer> opcode.
 TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
-  SpirvVector original = CompileSuccessfully(R"(
+  const SpirvVector original = CompileSuccessfully(R"(
 OpConstantSampler %10 %1 Clamp 78 Linear
 OpFRem %11 %4 %3 %2
 %5 = OpIsValidEvent %12 %2
 )");
 // TODO(deki): uncomment assertions below and make them pass.
 #if 0
-  SpirvVector alternate = CompileSuccessfully(R"(
+  const SpirvVector alternate = CompileSuccessfully(R"(
 !0x0006002D %10 %1 !2 78 !1
 !0x0005008C %11 %4 %3 %2
 %5 = OpIsValidEvent %12 %2
