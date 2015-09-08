@@ -26,19 +26,27 @@
 
 #include "UnitSPIRV.h"
 
-#include <limits>
-
 namespace {
 
-TEST(OpcodeMake, DISABLED_Default) {
-  for (uint16_t wordCount = 0; wordCount < std::numeric_limits<uint16_t>::max();
-       ++wordCount) {
-    for (uint16_t code = 0; code < std::numeric_limits<uint16_t>::max();
-         ++code) {
-      uint32_t opcode = 0;
-      opcode |= (uint32_t)code;
-      opcode |= (uint32_t)wordCount << 16;
-      ASSERT_EQ(opcode, spvOpcodeMake(wordCount, (Op)code));
+// A sampling of word counts.  Covers extreme points well, and all bit
+// positions, and some combinations of bit positions.
+const uint16_t kSampleWordCounts[] = {
+    0,   1,   2,   3,    4,    8,    16,   32,    64,    127,    128,
+    256, 511, 512, 1024, 2048, 4096, 8192, 16384, 32768, 0xfffe, 0xffff};
+
+// A sampling of opcode values.  Covers the lower values well, a few samples
+// around the number of core instructions (as of this writing), and some
+// higher values.
+const uint16_t kSampleOpcodes[] = {0,   1,   2,    3,      4,     100,
+                                   300, 305, 1023, 0xfffe, 0xffff};
+
+TEST(OpcodeMake, Samples) {
+  for (auto wordCount : kSampleWordCounts) {
+    for (auto opcode : kSampleOpcodes) {
+      uint32_t word = 0;
+      word |= uint32_t(opcode);
+      word |= uint32_t(wordCount) << 16;
+      EXPECT_EQ(word, spvOpcodeMake(wordCount, Op(opcode)));
     }
   }
 }
