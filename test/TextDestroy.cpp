@@ -28,6 +28,10 @@
 
 namespace {
 
+TEST(TextDestroy, DestroyNull) {
+  spvBinaryDestroy(nullptr);
+}
+
 TEST(TextDestroy, Default) {
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));

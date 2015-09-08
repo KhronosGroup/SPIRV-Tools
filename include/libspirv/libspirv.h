@@ -419,6 +419,8 @@ spv_result_t spvTextToBinary(const spv_text text,
 
 /// @brief Free an allocated text stream
 ///
+/// This is a no-op if the text parameter is a null pointer.
+///
 /// @param text the text object to be destored
 void spvTextDestroy(spv_text text);
 
