@@ -86,6 +86,69 @@ TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
   // EXPECT_EQ(original, CompileSuccessfully("!2 = !0x00040044 %12 %1 123"));
 }
 
+// Literal integers after !<integer> are handled correctly.
+TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
+  SpirvVector original = CompileSuccessfully("OpTypeInt %1 8 1");
+  // TODO(deki): uncomment assertions below and make them pass.
+  // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1"));
+  // EXPECT_EQ(original, CompileSuccessfully("OpTypeInt !1 8 1"));
+
+  // 64-bit integer literal.
+  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 5000000000"),
+            CompileSuccessfully("OpConstant %10 !1 5000000000"));
+
+  // Negative integer.
+  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 -123"),
+            CompileSuccessfully("OpConstant %10 !1 -123"));
+}
+
+// Literal floats after !<integer> are handled correctly.
+TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
+  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0.123"),
+            CompileSuccessfully("OpConstant %10 !1 0.123"));
+  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 -0.5"),
+            CompileSuccessfully("OpConstant %10 !1 -0.5"));
+  // 64-bit float.
+  EXPECT_EQ(
+      CompileSuccessfully(
+          "OpConstant %10 %1 9999999999999999999999999999999999999999.9"),
+      CompileSuccessfully(
+          "OpConstant %10 !1 9999999999999999999999999999999999999999.9"));
+}
+
+// Literal strings after !<integer> are handled correctly.
+TEST_F(ImmediateIntTest, StringFollowingImmediate) {
+  // Try a variety of strings, including empty and single-character.
+  for (std::string name : {"", "s", "longish"}) {
+    SpirvVector original =
+        CompileSuccessfully("OpMemberName %10 4 \"" + name + "\"");
+    EXPECT_EQ(original,
+              CompileSuccessfully("OpMemberName %10 !4 \"" + name + "\""));
+    // TODO(deki): uncomment assertions below and make them pass.
+    // EXPECT_EQ(original,
+    //           CompileSuccessfully("!0x00040006 !10 4 \"" + name + "\""));
+  }
+}
+
+// IDs after !<integer> are handled correctly.
+TEST_F(ImmediateIntTest, IdFollowingImmediate) {
+// TODO(deki): uncomment assertions below and make them pass.
+#if 0
+  EXPECT_EQ(CompileSuccessfully("OpDecorationGroup %123"),
+            CompileSuccessfully("!0x00020049 %123"));
+  EXPECT_EQ(CompileSuccessfully("OpDecorationGroup %group"),
+            CompileSuccessfully("!0x00020049 %group"));
+#endif
+}
+
+// !<integer> after !<integer> is handled correctly.
+TEST_F(ImmediateIntTest, ImmediateFollowingImmediate) {
+  SpirvVector original = CompileSuccessfully("OpTypeMatrix %11 %10 7");
+  EXPECT_EQ(original, CompileSuccessfully("OpTypeMatrix %11 !10 !7"));
+  // TODO(deki): uncomment assertions below and make them pass.
+  // EXPECT_EQ(original, CompileSuccessfully("!0x00040018 %11 !10 !7"));
+}
+
 TEST_F(ImmediateIntTest, InvalidStatement) {
   EXPECT_THAT(Subvector(CompileSuccessfully("!4 !3 !2 !1"), kFirstInstruction),
               ElementsAre(4, 3, 2, 1));
@@ -160,20 +223,6 @@ OpFRem %11 %4 %3 %2
 }
 
 // TODO(deki): implement all tests below.
-
-TEST_F(ImmediateIntTest, LiteralOperands) {
-  // !<integer> followed by a literal-number operand.
-  // !<integer> followed by a literal-string operand.
-  // Combos thereof.
-}
-
-TEST_F(ImmediateIntTest, IdOperands) {
-  // !<integer> followed by ID operand(s).
-}
-
-TEST_F(ImmediateIntTest, ImmediateOperands) {
-  // !<integer> followed by !<integer> operand(s).
-}
 
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
   // !<integer> followed by, eg, an enum or '=' or a random bareword.
