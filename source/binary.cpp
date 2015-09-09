@@ -223,8 +223,11 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE: {
       if (color) {
-        stream.get() << (type == SPV_OPERAND_TYPE_RESULT_ID ? clr::blue()
-                                                            : clr::yellow());
+        if (type == SPV_OPERAND_TYPE_RESULT_ID) {
+          stream.get() << clr::blue();
+        } else {
+          stream.get() << clr::yellow();
+        }
       }
       stream.get() << "%" << spvFixWord(words[index], endian);
       stream.get() << ((color) ? clr::reset() : "");
