@@ -93,6 +93,35 @@ class TextToBinaryTestBase : public T {
     return diagnostic->error;
   }
 
+  // Encodes SPIR-V text into binary and then decodes the binary. Returns the
+  // decoded text.
+  std::string EncodeAndDecodeSuccessfully(const std::string& text_string) {
+    SetText(text_string);
+    DestroyBinary();
+    spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
+                                         extInstTable, &binary, &diagnostic);
+    if (error) {
+      spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+    }
+    EXPECT_EQ(SPV_SUCCESS, error);
+
+    spv_text decoded_text;
+    error =
+        spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                        operandTable, extInstTable, &decoded_text, &diagnostic);
+    if (error) {
+      spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+    }
+    EXPECT_EQ(SPV_SUCCESS, error);
+
+    const std::string decoded_string = decoded_text->str;
+    spvTextDestroy(decoded_text);
+
+    return decoded_string;
+  }
+
   void SetText(const std::string& code) {
     textString = code;
     text.str = textString.c_str();

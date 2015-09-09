@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <utils/bitwisecast.h>
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include <algorithm>
@@ -33,7 +34,8 @@
 
 namespace {
 
-using  test_fixture::TextToBinaryTest;
+using spvutils::BitwiseCast;
+using test_fixture::TextToBinaryTest;
 
 union char_word_t {
   char cs[4];
@@ -403,23 +405,36 @@ TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
   EXPECT_STREQ("Expected operand, found next instruction instead.", diagnostic->error);
 }
 
-using TextToBinaryFloatValueTest =
-    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<float>>;
+using TextToBinaryFloatValueTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
 
-// TODO(dneto): Fix float parsing.
-TEST_P(TextToBinaryFloatValueTest, DISABLED_NormalValues) {
-  std::stringstream input;
-  input <<
-      R"(OpTypeFloat %float 32
-         %constval = OpConstant %float )"
-        << GetParam();
-  const SpirvVector code = CompileSuccessfully(input.str());
-
-  EXPECT_EQ(code[6], GetParam());
+TEST_P(TextToBinaryFloatValueTest, NormalValues) {
+  const std::string assembly = "%1 = OpTypeFloat 32\n%2 = OpConstant %1 ";
+  const std::string input_string = assembly + GetParam().first;
+  const std::string expected_string =
+      "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
+      "Bound: 3\n; Schema: 0\n" +
+      assembly + std::to_string(GetParam().second) + "\n";
+  const std::string decoded_string = EncodeAndDecodeSuccessfully(input_string);
+  EXPECT_EQ(expected_string, decoded_string);
 }
 
-INSTANTIATE_TEST_CASE_P(float, TextToBinaryFloatValueTest,
-                        ::testing::ValuesIn(std::vector<float>{1.5, 0.0,
-                                                               -2.5}));
+INSTANTIATE_TEST_CASE_P(
+    FloatValues, TextToBinaryFloatValueTest,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
+        {"0.0", 0x00000000},          // +0
+        {"!0x00000001", 0x00000001},  // +denorm
+        {"!0x00800000", 0x00800000},  // +norm
+        {"1.5", 0x3fc00000},
+        {"!0x7f800000", 0x7f800000},  // +inf
+        {"!0x7f800001", 0x7f800001},  // NaN
+
+        {"-0.0", 0x80000000},         // -0
+        {"!0x80000001", 0x80000001},  // -denorm
+        {"!0x80800000", 0x80800000},  // -norm
+        {"-2.5", 0xc0200000},
+        {"!0xff800000", 0xff800000},  // -inf
+        {"!0xff800001", 0xff800001},  // NaN
+    }));
 
 }  // anonymous namespace

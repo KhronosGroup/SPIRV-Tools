@@ -25,6 +25,8 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <libspirv/libspirv.h>
+#include <utils/bitwisecast.h>
+
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
@@ -40,6 +42,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+
+using spvutils::BitwiseCast;
 
 // Structures
 
@@ -434,13 +438,13 @@ spv_result_t spvTextEncodeOperand(
                return SPV_ERROR_INVALID_TEXT);
       switch (literal.type) {
         case SPV_LITERAL_TYPE_INT_32:
-          spvCheck(spvBinaryEncodeU32((uint32_t)literal.value.i32, pInst,
-                                      position, pDiagnostic),
+          spvCheck(spvBinaryEncodeU32(BitwiseCast<uint32_t>(literal.value.i32),
+                                      pInst, position, pDiagnostic),
                    return SPV_ERROR_INVALID_TEXT);
           break;
         case SPV_LITERAL_TYPE_INT_64: {
-          spvCheck(spvBinaryEncodeU64((uint64_t)literal.value.i64, pInst,
-                                      position, pDiagnostic),
+          spvCheck(spvBinaryEncodeU64(BitwiseCast<uint64_t>(literal.value.i64),
+                                      pInst, position, pDiagnostic),
                    return SPV_ERROR_INVALID_TEXT);
         } break;
         case SPV_LITERAL_TYPE_UINT_32: {
@@ -449,18 +453,18 @@ spv_result_t spvTextEncodeOperand(
                    return SPV_ERROR_INVALID_TEXT);
         } break;
         case SPV_LITERAL_TYPE_UINT_64: {
-          spvCheck(spvBinaryEncodeU64((uint64_t)literal.value.u64, pInst,
-                                      position, pDiagnostic),
+          spvCheck(spvBinaryEncodeU64(BitwiseCast<uint64_t>(literal.value.u64),
+                                      pInst, position, pDiagnostic),
                    return SPV_ERROR_INVALID_TEXT);
         } break;
         case SPV_LITERAL_TYPE_FLOAT_32: {
-          spvCheck(spvBinaryEncodeU32((uint32_t)literal.value.f, pInst,
-                                      position, pDiagnostic),
+          spvCheck(spvBinaryEncodeU32(BitwiseCast<uint32_t>(literal.value.f),
+                                      pInst, position, pDiagnostic),
                    return SPV_ERROR_INVALID_TEXT);
         } break;
         case SPV_LITERAL_TYPE_FLOAT_64: {
-          spvCheck(spvBinaryEncodeU64((uint64_t)literal.value.d, pInst,
-                                      position, pDiagnostic),
+          spvCheck(spvBinaryEncodeU64(BitwiseCast<uint64_t>(literal.value.d),
+                                      pInst, position, pDiagnostic),
                    return SPV_ERROR_INVALID_TEXT);
         } break;
         case SPV_LITERAL_TYPE_STRING: {
