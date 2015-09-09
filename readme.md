@@ -27,6 +27,21 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-09-09
+* Avoid confusion about ownership of storage:
+  * `spv_binary` is only used for output of the assembler, and should
+  always be destroyed with `spvBinaryDestroy`.
+  * `spv_text` is only used for output of the disassembler, and should
+  always be destroyed with `spvTextDestroy`.
+  * Inputs to the assembler and disassembler are provided as pointer
+  and length arguments.
+* Fixed parsing of floating point literals.
+* Fixed the -p option for the disassembler executable.
+* Fixed a build break on MSVC when using a ternary operator with conflicting
+  types.
+* More test coverage and other cleanups.
+
+2015-09-04
 * The parser has been overhauled
   * We use an automatically generated table to describe the syntax of each
     core instruction.  The changes to the SPIR-V spec document generator to
