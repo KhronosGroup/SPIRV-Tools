@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+#include "TestFixture.h"
+
 namespace {
 
 TEST(BinaryDestroy, Null) {
@@ -34,13 +36,18 @@ TEST(BinaryDestroy, Null) {
   spvBinaryDestroy(nullptr);
 }
 
-// Check safety of destroying a validly constructed binary.
-TEST(BinaryDestroy, Something) {
-  spv_binary binary = new spv_binary_t;
-  const int fewest_words_possible = 5;  // The SPIR-V preamble is 5 words long.
-  binary->code = new uint32_t[fewest_words_possible];
-  binary->wordCount = fewest_words_possible;
-  spvBinaryDestroy(binary);
+using BinaryDestroySomething = test_fixture::TextToBinaryTest;
+
+// Checks safety of destroying a validly constructed binary.
+TEST_F(BinaryDestroySomething, Default) {
+  // Use a binary object constructed by the API instead of rolling our own.
+  SetText("OpSource OpenCL 120");
+  spv_binary my_binary = nullptr;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+                            &my_binary, &diagnostic));
+  ASSERT_NE(nullptr, my_binary);
+  spvBinaryDestroy(my_binary);
 }
 
 }  // anonymous namespace
