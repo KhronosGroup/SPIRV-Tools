@@ -98,8 +98,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  spv_binary_t binary = {contents.data(), contents.size()};
-
   spv_opcode_table opcodeTable;
   spv_result_t error = spvOpcodeTableGet(&opcodeTable);
   spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
@@ -126,8 +124,9 @@ int main(int argc, char **argv) {
   spv_text text;
   spv_text *textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  error = spvBinaryToText(&binary, options, opcodeTable, operandTable,
-                          extInstTable, textOrNull, &diagnostic);
+  error =
+      spvBinaryToText(contents.data(), contents.size(), options, opcodeTable,
+                      operandTable, extInstTable, textOrNull, &diagnostic);
   spvCheck(error, spvDiagnosticPrint(diagnostic);
            spvDiagnosticDestroy(diagnostic); return error);
 

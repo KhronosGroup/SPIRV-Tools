@@ -82,11 +82,11 @@ OpFunctionEnd
 ; Generator: Khronos
 ; Bound: 10
 ; Schema: 0)";
-  spv_text_t text = {spirv.c_str(), spirv.size()};
   spv_binary binary;
   spv_diagnostic diagnostic;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(spirv.c_str(), spirv.size(), opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -112,9 +112,9 @@ OpFunctionEnd
 
   // Check round trip gives the same text.
   spv_text output_text;
-  error =
-      spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                      operandTable, extInstTable, &output_text, &diagnostic);
+  error = spvBinaryToText(
+      binary->code, binary->wordCount, SPV_BINARY_TO_TEXT_OPTION_NONE,
+      opcodeTable, operandTable, extInstTable, &output_text, &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);

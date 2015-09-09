@@ -50,8 +50,9 @@ TEST(NamedId, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -59,7 +60,8 @@ TEST(NamedId, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
   error = spvBinaryToText(
-      binary, SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
+      binary->code, binary->wordCount,
+      SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
       opcodeTable, operandTable, extInstTable, nullptr, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);

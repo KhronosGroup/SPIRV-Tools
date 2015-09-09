@@ -68,10 +68,9 @@ class TextToBinaryTestBase : public T {
   // Compiles SPIR-V text, asserting compilation success.  Returns the compiled
   // code.
   SpirvVector CompileSuccessfully(const std::string& text) {
-    SetText(text);
     spv_result_t status =
-        spvTextToBinary(&this->text, opcodeTable, operandTable, extInstTable,
-                        &binary, &diagnostic);
+        spvTextToBinary(text.c_str(), text.size(), opcodeTable,
+                        operandTable, extInstTable, &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -86,10 +85,9 @@ class TextToBinaryTestBase : public T {
   // Compiles SPIR-V text, asserting compilation failure.  Returns the error
   // message(s).
   std::string CompileFailure(const std::string& text) {
-    SetText(text);
     EXPECT_NE(SPV_SUCCESS,
-              spvTextToBinary(&this->text, opcodeTable, operandTable,
-                              extInstTable, &binary, &diagnostic))
+              spvTextToBinary(text.c_str(), text.size(), opcodeTable,
+                              operandTable, extInstTable, &binary, &diagnostic))
         << text;
     DestroyBinary();
     return diagnostic->error;

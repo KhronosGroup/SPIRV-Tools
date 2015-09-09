@@ -40,8 +40,9 @@ TEST_F(TextToBinaryTest, Whitespace) {
  %glsl450 = OpExtInstImport "GLSL.std.450"
             ; comment indented
 )");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }

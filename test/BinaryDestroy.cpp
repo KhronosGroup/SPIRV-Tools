@@ -44,8 +44,8 @@ TEST_F(BinaryDestroySomething, Default) {
   SetText("OpSource OpenCL 120");
   spv_binary my_binary = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &my_binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &my_binary, &diagnostic));
   ASSERT_NE(nullptr, my_binary);
   spvBinaryDestroy(my_binary);
 }

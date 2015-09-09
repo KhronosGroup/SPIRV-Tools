@@ -58,10 +58,10 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_SUCCESS,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
@@ -83,9 +83,8 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
+  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
                                          extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
@@ -107,10 +106,10 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   // TODO: Fix setting of bound in spvTextTo, then remove this!
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,

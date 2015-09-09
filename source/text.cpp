@@ -754,13 +754,16 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
 
 } // anonymous namespace
 
-spv_result_t spvTextToBinary(const spv_text text,
+spv_result_t spvTextToBinary(const char* input_text,
+                             const uint64_t input_text_size,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+  spv_text_t text = {input_text, input_text_size};
+
   spv_result_t result = spvTextToBinaryInternal(
-      text, opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
+      &text, opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
   if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
 
   return result;

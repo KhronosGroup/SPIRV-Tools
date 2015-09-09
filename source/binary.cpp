@@ -427,12 +427,16 @@ spv_result_t spvBinaryDecodeOpcode(
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
+spv_result_t spvBinaryToText(uint32_t* code,
+                             const uint64_t wordCount,
+                             const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_text *pText, spv_diagnostic *pDiagnostic) {
-  spvCheck(!binary->code || !binary->wordCount,
+  spv_binary_t binary = {code, wordCount};
+
+  spvCheck(!binary.code || !binary.wordCount,
            return SPV_ERROR_INVALID_BINARY);
   spvCheck(!opcodeTable || !operandTable || !extInstTable,
            return SPV_ERROR_INVALID_TABLE);
@@ -444,13 +448,13 @@ spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
 
   spv_endianness_t endian;
   spv_position_t position = {};
-  spvCheck(spvBinaryEndianness(binary, &endian),
+  spvCheck(spvBinaryEndianness(&binary, &endian),
            DIAGNOSTIC << "Invalid SPIR-V magic number '" << std::hex
-                      << binary->code[0] << "'.";
+                      << binary.code[0] << "'.";
            return SPV_ERROR_INVALID_BINARY);
 
   spv_header_t header;
-  spvCheck(spvBinaryHeaderGet(binary, endian, &header),
+  spvCheck(spvBinaryHeaderGet(&binary, endian, &header),
            DIAGNOSTIC << "Invalid SPIR-V header.";
            return SPV_ERROR_INVALID_BINARY);
 
@@ -476,10 +480,10 @@ spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
     stream.get() << clr::reset();
   }
 
-  const uint32_t *words = binary->code;
+  const uint32_t *words = binary.code;
   position.index = SPV_INDEX_INSTRUCTION;
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
-  while (position.index < binary->wordCount) {
+  while (position.index < binary.wordCount) {
     uint64_t index = position.index;
     uint16_t wordCount;
     Op opcode;

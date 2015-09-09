@@ -404,6 +404,7 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @brief Entry point to covert text form to binary form
 ///
 /// @param[in] text input text
+/// @param[in] length of the input text
 /// @param[in] opcodeTable of specified Opcodes
 /// @param[in] operandTable of specified operands
 /// @param[in] extInstTable of specified extended instructions
@@ -411,7 +412,8 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextToBinary(const spv_text text,
+spv_result_t spvTextToBinary(const char* text,
+                             const uint64_t length,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
@@ -428,7 +430,8 @@ void spvTextDestroy(spv_text text);
 
 /// @brief Entry point to convert binary to text form
 ///
-/// @param[in] binary the input binary stream
+/// @param[in] binary the input binary
+/// @param[in] wordCount the number of input words
 /// @param[in] options bitfield of spv_binary_to_text_options_t values
 /// @param[in] opcodeTable table of specified Opcodes
 /// @param[in] operandTable table of specified operands
@@ -437,7 +440,9 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
+spv_result_t spvBinaryToText(uint32_t* binary,
+                             const uint64_t wordCount,
+                             const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,

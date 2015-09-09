@@ -53,9 +53,8 @@ class ValidateID : public ::testing::Test {
 };
 
 #define CHECK(str, expected)                                                \
-  spv_text_t text = {str, strlen(str)};                                     \
   spv_diagnostic diagnostic;                                                \
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,    \
+  spv_result_t error = spvTextToBinary(str, strlen(str), opcodeTable, operandTable,    \
                                        extInstTable, &binary, &diagnostic); \
   if (error) {                                                              \
     spvDiagnosticPrint(diagnostic);                                         \

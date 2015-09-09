@@ -42,6 +42,10 @@ The validator is incomplete.  See the Future Work section for more information.
   conformance test suite.
 * New code tends to use Google C++ style, including formatting as generated
   by `clang-format --style=google`.
+* The spvBinaryToText and spvTextToBinary interfaces have been updated to
+  remove a conceptual ambiguity that arises when cleaning up `spv_binary_t`
+  and `spv_text_t` objects.
+
 
 ## Where is the code?
 

@@ -63,11 +63,12 @@ TEST(TextDestroy, Default) {
       OpTypeFloat 13 64
       OpTypeVector 14 3 2
   )";
-  spv_text_t text = {textStr, strlen(textStr)};
+
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
   EXPECT_NE(0, binary->wordCount);
@@ -77,17 +78,18 @@ TEST(TextDestroy, Default) {
   }
 
   spv_text resultText = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryToText(binary, 0, opcodeTable, operandTable, extInstTable,
-                            &resultText, &diagnostic));
+  EXPECT_EQ(
+      SPV_SUCCESS,
+      spvBinaryToText(binary->code, binary->wordCount, 0, opcodeTable,
+                      operandTable, extInstTable, &resultText, &diagnostic));
   spvBinaryDestroy(binary);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
     ASSERT_TRUE(false);
   }
-  EXPECT_NE(nullptr, text.str);
-  EXPECT_NE(0, text.length);
+  EXPECT_NE(nullptr, resultText->str);
+  EXPECT_NE(0, resultText->length);
   spvTextDestroy(resultText);
 }
 
