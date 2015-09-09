@@ -69,8 +69,8 @@ class TextToBinaryTestBase : public T {
   // code.
   SpirvVector CompileSuccessfully(const std::string& text) {
     spv_result_t status =
-        spvTextToBinary(text.c_str(), text.size(), opcodeTable,
-                        operandTable, extInstTable, &binary, &diagnostic);
+        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
+                        extInstTable, &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -95,11 +95,11 @@ class TextToBinaryTestBase : public T {
 
   // Encodes SPIR-V text into binary and then decodes the binary. Returns the
   // decoded text.
-  std::string EncodeAndDecodeSuccessfully(const std::string& text_string) {
-    SetText(text_string);
+  std::string EncodeAndDecodeSuccessfully(const std::string& text) {
     DestroyBinary();
-    spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic);
+    spv_result_t error =
+        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
+                        extInstTable, &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -107,9 +107,9 @@ class TextToBinaryTestBase : public T {
     EXPECT_EQ(SPV_SUCCESS, error);
 
     spv_text decoded_text;
-    error =
-        spvBinaryToText(binary, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                        operandTable, extInstTable, &decoded_text, &diagnostic);
+    error = spvBinaryToText(
+        binary->code, binary->wordCount, SPV_BINARY_TO_TEXT_OPTION_NONE,
+        opcodeTable, operandTable, extInstTable, &decoded_text, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
