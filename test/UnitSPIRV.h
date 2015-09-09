@@ -107,12 +107,35 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
 }
 
 // Returns a vector of words representing a single instruction with the
-// given opcode and number of operand words.
+// given opcode and operand words as a vector.
 inline std::vector<uint32_t> MakeInstruction(
-    spv::Op opcode, std::initializer_list<uint32_t> args) {
+    spv::Op opcode, std::vector<uint32_t> args) {
   std::vector<uint32_t> result{
       spvOpcodeMake(uint16_t(args.size() + 1), opcode)};
   result.insert(result.end(), args.begin(), args.end());
+  return result;
+}
+
+// Encodes a string as a sequence of words, using the SPIR-V encoding.
+inline std::vector<uint32_t> MakeVector(std::string input) {
+  std::vector<uint32_t> result;
+  uint32_t word = 0;
+  size_t num_bytes = input.size();
+  // SPIR-V strings are null-terminated.  The byte_index == num_bytes
+  // case is used to push the terminating null byte.
+  for (size_t byte_index = 0; byte_index <= num_bytes; byte_index++) {
+    const auto new_byte =
+        (byte_index < num_bytes ? uint8_t(input[byte_index]) : uint8_t(0));
+    word |= (new_byte << (8 * (byte_index % sizeof(uint32_t))));
+    if (3 == (byte_index % sizeof(uint32_t))) {
+      result.push_back(word);
+      word = 0;
+    }
+  }
+  // Emit a trailing partial word.
+  if ((num_bytes+1) % sizeof(uint32_t)) {
+    result.push_back(word);
+  }
   return result;
 }
 

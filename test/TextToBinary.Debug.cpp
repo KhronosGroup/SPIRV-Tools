@@ -37,7 +37,10 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::MakeVector;
 using ::testing::Eq;
+
+// Test OpSource
 
 // A single test case for OpSource
 struct LanguageCase {
@@ -74,7 +77,28 @@ TEST_P(OpSourceTest, AnyLanguage) {
 INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
                         ::testing::ValuesIn(kLanguageCases));
 
-// TODO(dneto): OpSourceExtension
+// Test OpSourceExtension
+
+using OpSourceExtensionTest =
+    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpSourceExtensionTest, AnyExtension) {
+  // TODO(dneto): utf-8, quoting, escaping
+  std::string input = std::string("OpSourceExtension \"") + GetParam() + "\"";
+
+  const std::vector<uint32_t> encoded_string = MakeVector(GetParam());
+  std::vector<uint32_t> expected_instruction{
+      spvOpcodeMake(encoded_string.size() + 1, spv::OpSourceExtension)};
+  expected_instruction.insert(expected_instruction.end(),
+                              encoded_string.begin(), encoded_string.end());
+  EXPECT_THAT(CompiledInstructions(input), Eq(expected_instruction));
+}
+
+// TODO(dneto): utf-8, quoting, escaping
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceExtensionTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            "", "foo bar this and that"}));
+
 // TODO(dneto): OpName
 // TODO(dneto): OpMemberName
 // TODO(dneto): OpString
