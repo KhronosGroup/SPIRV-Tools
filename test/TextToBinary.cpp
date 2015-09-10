@@ -81,8 +81,9 @@ TEST(TextToBinary, Default) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spv_result_t error = spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -228,14 +229,16 @@ TEST_F(TextToBinaryTest, InvalidTable) {
 }
 
 TEST_F(TextToBinaryTest, InvalidPointer) {
-  SetText("OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText(
+      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
             spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
                             extInstTable, nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
-  SetText("OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText(
+      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
             spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
@@ -340,7 +343,7 @@ TEST_F(TextToBinaryTest, GoodSwitch) {
 )");
 
   // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ(int(spv::OpSwitch) || (7<<16) , code[14]);
+  EXPECT_EQ(int(spv::OpSwitch) || (7 << 16), code[14]);
 }
 
 TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
@@ -353,7 +356,7 @@ TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
 )");
 
   // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ(int(spv::OpSwitch) || (3<<16) , code[10]);
+  EXPECT_EQ(int(spv::OpSwitch) || (3 << 16), code[10]);
 }
 
 TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
@@ -370,7 +373,8 @@ TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
                             extInstTable, &binary, &diagnostic));
   EXPECT_EQ(6, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
-  EXPECT_STREQ("Expected operand, found next instruction instead.", diagnostic->error);
+  EXPECT_STREQ("Expected operand, found next instruction instead.",
+               diagnostic->error);
 }
 
 using TextToBinaryFloatValueTest = test_fixture::TextToBinaryTestBase<

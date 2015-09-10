@@ -29,7 +29,7 @@
 
 namespace {
 
-using  test_fixture::TextToBinaryTest;
+using test_fixture::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, Whitespace) {
   SetText(R"(

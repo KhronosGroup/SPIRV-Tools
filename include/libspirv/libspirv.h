@@ -157,7 +157,7 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  SPV_OPERAND_TYPE_LITERAL, // Either a literal number or literal string
+  SPV_OPERAND_TYPE_LITERAL,  // Either a literal number or literal string
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
   SPV_OPERAND_TYPE_LITERAL_STRING,
   SPV_OPERAND_TYPE_SOURCE_LANGUAGE,
@@ -274,15 +274,15 @@ typedef struct spv_header_t {
 typedef struct spv_opcode_desc_t {
   const char *name;
   const Op opcode;
-  const uint32_t flags;                       // Bitfield of spv_opcode_flags_t
-  const uint32_t capabilities;                // spv_language_capabilities_t
+  const uint32_t flags;         // Bitfield of spv_opcode_flags_t
+  const uint32_t capabilities;  // spv_language_capabilities_t
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
   // The operand types include result id and result-type id, followed by
   // the types of arguments.
   uint16_t numTypes;
   spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
-  const bool hasResult; // Does the instruction have a result ID operand?
-  const bool hasType;   // Does the instruction have a type ID operand?
+  const bool hasResult;  // Does the instruction have a result ID operand?
+  const bool hasType;    // Does the instruction have a type ID operand?
   // The operand class for each logical argument.  This does *not* include
   // the result Id or type ID.  The list is terminated by SPV_OPERAND_TYPE_NONE.
   const OperandClass operandClass[16];
@@ -465,8 +465,7 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(uint32_t* binary,
-                             const uint64_t wordCount,
+spv_result_t spvBinaryToText(uint32_t *binary, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,

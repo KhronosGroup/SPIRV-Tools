@@ -50,7 +50,8 @@ TEST(TextStartsWithOp, NoIfTooFar) {
 
 TEST(TextStartsWithOp, NoRegular) {
   spv_position_t startPosition = {};
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("Fee Fi Fo Fum"), &startPosition));
+  EXPECT_FALSE(
+      spvTextIsStartOfNewInst(AutoText("Fee Fi Fo Fum"), &startPosition));
   EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("123456"), &startPosition));
   EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("123456"), &startPosition));
   EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("OpenCL"), &startPosition));
@@ -58,8 +59,10 @@ TEST(TextStartsWithOp, NoRegular) {
 
 TEST(TextStartsWithOp, YesForValueGenerationForm) {
   spv_position_t startPosition = {};
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("\%foo = OpAdd"), &startPosition));
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("\%foo  =  OpAdd"), &startPosition));
+  EXPECT_TRUE(
+      spvTextIsStartOfNewInst(AutoText("\%foo = OpAdd"), &startPosition));
+  EXPECT_TRUE(
+      spvTextIsStartOfNewInst(AutoText("\%foo  =  OpAdd"), &startPosition));
 }
 
 TEST(TextStartsWithOp, NoForNearlyValueGeneration) {

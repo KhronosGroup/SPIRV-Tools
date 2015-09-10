@@ -173,7 +173,7 @@ spv_result_t spvTextWordGet(const spv_text text,
         case '\t':
         case '\n':
           if (escaping || quoting) break;
-          // Fall through.
+        // Fall through.
         case '\0': {  // NOTE: End of word found!
           word.assign(text->str + startPosition->index,
                       (size_t)(endPosition->index - startPosition->index));
@@ -201,11 +201,10 @@ bool spvStartsWithOp(const spv_text text, const spv_position position) {
   return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // Returns true if a new instruction begins at the given position in text.
-bool spvTextIsStartOfNewInst(const spv_text text,
-                             const spv_position position) {
+bool spvTextIsStartOfNewInst(const spv_text text, const spv_position position) {
   spv_position_t nextPosition = *position;
   if (spvTextAdvance(text, &nextPosition)) return false;
   if (spvStartsWithOp(text, &nextPosition)) return true;
@@ -303,22 +302,22 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
         break;
       default:
         isString = true;
-        index = len; // break out of the loop too.
+        index = len;  // break out of the loop too.
         break;
     }
   }
 
   pLiteral->type = spv_literal_type_t(99);
 
-  if (isString || numPeriods > 1 || (isSigned && len==1)) {
+  if (isString || numPeriods > 1 || (isSigned && len == 1)) {
     // TODO(dneto): Allow escaping.
     if (len < 2 || textValue[0] != '"' || textValue[len - 1] != '"')
       return SPV_FAILED_MATCH;
     pLiteral->type = SPV_LITERAL_TYPE_STRING;
     // Need room for the null-terminator.
     if (len >= sizeof(pLiteral->value.str)) return SPV_ERROR_OUT_OF_MEMORY;
-    strncpy(pLiteral->value.str, textValue+1, len-2);
-    pLiteral->value.str[len-2] = 0;
+    strncpy(pLiteral->value.str, textValue + 1, len - 2);
+    pLiteral->value.str[len - 2] = 0;
   } else if (numPeriods == 1) {
     double d = std::strtod(textValue, nullptr);
     float f = (float)d;
@@ -358,7 +357,7 @@ spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    spv_operand_pattern_t* pExpectedOperands, uint32_t *pBound,
+    spv_operand_pattern_t *pExpectedOperands, uint32_t *pBound,
     const spv_position position, spv_diagnostic *pDiagnostic) {
   // NOTE: Handle immediate int in the stream
   if ('!' == textValue[0]) {
@@ -483,8 +482,7 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       size_t len = strlen(textValue);
       spvCheck('"' != textValue[0] && '"' != textValue[len - 1],
-               if (spvOperandIsOptional(type))
-                 return SPV_FAILED_MATCH;
+               if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
                DIAGNOSTIC << "Invalid literal string '" << textValue
                           << "', expected quotes.";
                return SPV_ERROR_INVALID_TEXT;);
@@ -635,24 +633,24 @@ spv_result_t spvTextEncodeOpcode(
     expectedOperands.pop_front();
 
     // Expand optional tuples lazily.
-    if (spvExpandOperandSequenceOnce(type, &expectedOperands))
-      continue;
+    if (spvExpandOperandSequenceOnce(type, &expectedOperands)) continue;
 
     if (type == SPV_OPERAND_TYPE_RESULT_ID && !result_id.empty()) {
       // Handle the <result-id> for value generating instructions.
       // We've already consumed it from the text stream.  Here
       // we inject its words into the instruction.
-      error = spvTextEncodeOperand(
-          SPV_OPERAND_TYPE_RESULT_ID, result_id.c_str(), operandTable,
-          extInstTable, namedIdTable, pInst, nullptr, pBound,
-          &result_id_position, pDiagnostic);
+      error = spvTextEncodeOperand(SPV_OPERAND_TYPE_RESULT_ID,
+                                   result_id.c_str(), operandTable,
+                                   extInstTable, namedIdTable, pInst, nullptr,
+                                   pBound, &result_id_position, pDiagnostic);
       spvCheck(error, return error);
     } else {
       // Find the next word.
       error = spvTextAdvance(text, position);
       if (error == SPV_END_OF_STREAM) {
         if (spvOperandIsOptional(type)) {
-          // This would have been the last potential operand for the instruction,
+          // This would have been the last potential operand for the
+          // instruction,
           // and we didn't find one.  We're finished parsing this instruction.
           break;
         } else {
@@ -676,9 +674,8 @@ spv_result_t spvTextEncodeOpcode(
       spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
 
       error = spvTextEncodeOperand(
-          type, operandValue.c_str(),
-          operandTable, extInstTable, namedIdTable, pInst, &expectedOperands,
-          pBound, position, pDiagnostic);
+          type, operandValue.c_str(), operandTable, extInstTable, namedIdTable,
+          pInst, &expectedOperands, pBound, position, pDiagnostic);
 
       if (error == SPV_FAILED_MATCH && spvOperandIsOptional(type))
         return SPV_SUCCESS;
@@ -773,7 +770,7 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
   return SPV_SUCCESS;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 spv_result_t spvTextToBinary(const char *input_text,
                              const uint64_t input_text_size,

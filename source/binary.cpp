@@ -363,13 +363,14 @@ spv_result_t spvBinaryDecodeOpcode(
   if (opcodeEntry->numTypes > wordCount &&
       !spvOperandIsOptional(opcodeEntry->operandTypes[wordCount])) {
     uint16_t numRequired;
-    for (numRequired = 0; numRequired < opcodeEntry->numTypes &&
-         !spvOperandIsOptional(opcodeEntry->operandTypes[numRequired]) ; numRequired++ )
+    for (numRequired = 0;
+         numRequired < opcodeEntry->numTypes &&
+         !spvOperandIsOptional(opcodeEntry->operandTypes[numRequired]);
+         numRequired++)
       ;
     DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-               << " word count '" << wordCount
-               << "', expected at least '" << numRequired
-               << "'.";
+               << " word count '" << wordCount << "', expected at least '"
+               << numRequired << "'.";
     return SPV_ERROR_INVALID_BINARY;
   }
 
@@ -430,8 +431,7 @@ spv_result_t spvBinaryDecodeOpcode(
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryToText(uint32_t* code,
-                             const uint64_t wordCount,
+spv_result_t spvBinaryToText(uint32_t *code, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
@@ -440,8 +440,8 @@ spv_result_t spvBinaryToText(uint32_t* code,
   spv_binary_t binary = {code, wordCount};
 
   spv_position_t position = {};
-  spvCheck(!binary.code || !binary.wordCount,
-           DIAGNOSTIC << "Binary stream is empty.";
+  spvCheck(!binary.code || !binary.wordCount, DIAGNOSTIC
+                                                  << "Binary stream is empty.";
            return SPV_ERROR_INVALID_BINARY);
   spvCheck(!opcodeTable || !operandTable || !extInstTable,
            return SPV_ERROR_INVALID_TABLE);

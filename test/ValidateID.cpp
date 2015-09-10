@@ -52,22 +52,23 @@ class ValidateID : public ::testing::Test {
   spv_binary binary;
 };
 
-#define CHECK(str, expected)                                                \
-  spv_diagnostic diagnostic;                                                \
-  spv_result_t error = spvTextToBinary(str, strlen(str), opcodeTable, operandTable,    \
-                                       extInstTable, &binary, &diagnostic); \
-  if (error) {                                                              \
-    spvDiagnosticPrint(diagnostic);                                         \
-    spvDiagnosticDestroy(diagnostic);                                       \
-    ASSERT_EQ(SPV_SUCCESS, error);                                          \
-  }                                                                         \
-  spv_result_t result =                                                     \
-      spvValidate(binary, opcodeTable, operandTable, extInstTable,          \
-                  SPV_VALIDATE_ID_BIT, &diagnostic);                        \
-  if (SPV_SUCCESS != result) {                                              \
-    spvDiagnosticPrint(diagnostic);                                         \
-    spvDiagnosticDestroy(diagnostic);                                       \
-  }                                                                         \
+#define CHECK(str, expected)                                       \
+  spv_diagnostic diagnostic;                                       \
+  spv_result_t error =                                             \
+      spvTextToBinary(str, strlen(str), opcodeTable, operandTable, \
+                      extInstTable, &binary, &diagnostic);         \
+  if (error) {                                                     \
+    spvDiagnosticPrint(diagnostic);                                \
+    spvDiagnosticDestroy(diagnostic);                              \
+    ASSERT_EQ(SPV_SUCCESS, error);                                 \
+  }                                                                \
+  spv_result_t result =                                            \
+      spvValidate(binary, opcodeTable, operandTable, extInstTable, \
+                  SPV_VALIDATE_ID_BIT, &diagnostic);               \
+  if (SPV_SUCCESS != result) {                                     \
+    spvDiagnosticPrint(diagnostic);                                \
+    spvDiagnosticDestroy(diagnostic);                              \
+  }                                                                \
   ASSERT_EQ(expected, result);
 
 // TODO: OpUndef
@@ -103,7 +104,7 @@ TEST_F(ValidateID, OpMemberNameMemberBad) {
 }
 
 TEST_F(ValidateID, OpLineGood) {
-  // TODO(dneto): OpLine changed after Rev31.  It no longer has a first argument.
+  // TODO(dneto): OpLine changed after Rev31. It no longer has a first argument.
   // The following is the Rev31 form.
   const char *spirv = R"(
 %1 = OpString "/path/to/source.file"
@@ -114,7 +115,7 @@ TEST_F(ValidateID, OpLineGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLineFileBad) {
-  // TODO(dneto): OpLine changed after Rev31.  It no longer has a first argument.
+  // TODO(dneto): OpLine changed after Rev31. It no longer has a first argument.
   // The following is the Rev31 form.
   const char *spirv = R"(
      OpLine %4 %2 0 0

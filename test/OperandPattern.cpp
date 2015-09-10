@@ -114,5 +114,4 @@ INSTANTIATE_TEST_CASE_P(NonMatchableOperandExpansion,
                         VariableOperandExpansionTest,
                         ::testing::ValuesIn(allOperandTypes()));
 
-
 }  // anonymous namespace
