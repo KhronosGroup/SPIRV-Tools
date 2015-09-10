@@ -27,6 +27,12 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+* Fixes decorations:
+  * Names: SaturatedConversion, FuncParamAttr NoCapture
+  * Values: Fixes values for some decorations: BuiltIn LocalInvocationId, and BuiltIn
+    SubgroupId
+  * All handling of FPFastMathMode masks.
+
 2015-09-09
 * Avoid confusion about ownership of storage:
   * `spv_binary` is only used for output of the assembler, and should
