@@ -439,7 +439,9 @@ spv_result_t spvBinaryToText(uint32_t* code,
                              spv_text *pText, spv_diagnostic *pDiagnostic) {
   spv_binary_t binary = {code, wordCount};
 
+  spv_position_t position = {};
   spvCheck(!binary.code || !binary.wordCount,
+           DIAGNOSTIC << "Binary stream is empty.";
            return SPV_ERROR_INVALID_BINARY);
   spvCheck(!opcodeTable || !operandTable || !extInstTable,
            return SPV_ERROR_INVALID_TABLE);
@@ -450,7 +452,6 @@ spv_result_t spvBinaryToText(uint32_t* code,
   spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
 
   spv_endianness_t endian;
-  spv_position_t position = {};
   spvCheck(spvBinaryEndianness(&binary, &endian),
            DIAGNOSTIC << "Invalid SPIR-V magic number '" << std::hex
                       << binary.code[0] << "'.";

@@ -437,6 +437,8 @@ spv_result_t spvTextEncodeOperand(
                DIAGNOSTIC << "Invalid literal '" << textValue << "'.";
                return SPV_ERROR_INVALID_TEXT);
       switch (literal.type) {
+        // We do not have to print diagnostics here because spvBinaryEncode*
+        // prints diagnostic messages on failure.
         case SPV_LITERAL_TYPE_INT_32:
           spvCheck(spvBinaryEncodeU32(BitwiseCast<uint32_t>(literal.value.i32),
                                       pInst, position, pDiagnostic),
@@ -535,7 +537,7 @@ spv_result_t spvTextEncodeOpcode(
   spv_position_t nextPosition = {};
   spv_result_t error =
       spvTextWordGet(text, position, opcodeName, &nextPosition);
-  spvCheck(error, return error);
+  spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
 
   // NOTE: Handle insertion of an immediate integer into the binary stream
   bool immediate = false;
@@ -584,7 +586,7 @@ spv_result_t spvTextEncodeOpcode(
              DIAGNOSTIC << "Expected opcode, found end of stream.";
              return SPV_ERROR_INVALID_TEXT);
     error = spvTextWordGet(text, position, opcodeName, &nextPosition);
-    spvCheck(error, return error);
+    spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
     spvCheck(!spvStartsWithOp(text, position),
              DIAGNOSTIC << "Invalid Opcode prefix '" << opcodeName << "'.";
              return SPV_ERROR_INVALID_TEXT);
@@ -656,7 +658,7 @@ spv_result_t spvTextEncodeOpcode(
 
       std::string operandValue;
       error = spvTextWordGet(text, position, operandValue, &nextPosition);
-      spvCheck(error, return error);
+      spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
 
       error = spvTextEncodeOperand(
           type, operandValue.c_str(),
