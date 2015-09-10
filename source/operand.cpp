@@ -751,7 +751,7 @@ static const spv_operand_desc_t decorationEntries[] = {
      DecorationLinkageAttributes,
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityLinkage,
-     {SPV_OPERAND_TYPE_LINKAGE_TYPE, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_STRING, SPV_OPERAND_TYPE_LINKAGE_TYPE, SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t builtInEntries[] = {

@@ -236,7 +236,44 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
 #undef CASE
 // clang-format on
 
-// TODO(dneto): OpDecorate with Linkage attributes
+// Test OpDecorate Linkage
+
+// A single test case for a linkage
+struct DecorateLinkageCase {
+  const uint32_t linkage_type_value;
+  const std::string linkage_type_name;
+  const std::string external_name;
+};
+
+using OpDecorateLinkageTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<DecorateLinkageCase>>;
+
+TEST_P(OpDecorateLinkageTest, AnyLinkageDecoration) {
+  // This string should assemble, but should not validate.
+  std::string input = "OpDecorate %1 LinkageAttributes \"" + GetParam().external_name +
+                      "\" " + GetParam().linkage_type_name;
+  std::vector<uint32_t> expected_operands{1, spv::DecorationLinkageAttributes};
+  std::vector<uint32_t> encoded_external_name =
+      MakeVector(GetParam().external_name);
+  expected_operands.insert(expected_operands.end(),
+                           encoded_external_name.begin(),
+                           encoded_external_name.end());
+  expected_operands.push_back(GetParam().linkage_type_value);
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpDecorate, expected_operands)));
+}
+
+// clang-format off
+#define CASE(ENUM) spv::LinkageType##ENUM, #ENUM
+INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
+                        ::testing::ValuesIn(std::vector<DecorateLinkageCase>{
+                            { CASE(Import), "a" },
+                            { CASE(Export), "foo" },
+                            { CASE(Import), "some kind of long name with spaces etc." },
+                            // TODO(dneto): utf-8, escaping, quoting cases.
+                      }));
+#undef CASE
+// clang-format on
 
 // TODO(dneto): OpMemberDecorate
 // TODO(dneto): OpDecorationGroup

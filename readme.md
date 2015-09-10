@@ -32,6 +32,7 @@ The validator is incomplete.  See the Future Work section for more information.
   * Values: Fixes values for some decorations: BuiltIn LocalInvocationId, and BuiltIn
     SubgroupId
   * All handling of FPFastMathMode masks.
+  * LinkageAttributes now requires the literal string operand.
 
 2015-09-09
 * Avoid confusion about ownership of storage:
