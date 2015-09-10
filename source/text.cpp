@@ -540,9 +540,7 @@ spv_result_t spvTextEncodeOpcode(
   spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
 
   // NOTE: Handle insertion of an immediate integer into the binary stream
-  bool immediate = false;
-  spvCheck('!' == text->str[position->index], immediate = true);
-  if (immediate) {
+  if ('!' == text->str[position->index]) {
     const char *begin = opcodeName.data() + 1;
     char *end = nullptr;
     uint32_t immediateInt = strtoul(begin, &end, 0);
