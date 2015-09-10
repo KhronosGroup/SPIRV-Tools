@@ -33,6 +33,8 @@ The validator is incomplete.  See the Future Work section for more information.
     SubgroupId
   * All handling of FPFastMathMode masks.
   * LinkageAttributes now requires the literal string operand.
+* Fixes capabilities: Adds ImageMipmap, and capabilities from LiteralSampler through
+  SampleRateShading.
 
 2015-09-09
 * Avoid confusion about ownership of storage:
