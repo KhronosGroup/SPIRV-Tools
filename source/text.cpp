@@ -524,55 +524,64 @@ spv_result_t spvTextEncodeOperand(
 }
 
 spv_result_t spvTextEncodeOpcode(
-    const spv_text text, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, uint32_t *pBound, spv_instruction_t *pInst,
-    spv_position position, spv_diagnostic *pDiagnostic) {
+    const spv_text text, spv_assembly_syntax_format_t format,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
+    uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
+    spv_diagnostic *pDiagnostic) {
   // An assembly instruction has two possible formats:
-  // 1. <opcode> <operand>.., e.g., "OpMemoryModel Physical64 OpenCL".
-  // 2. <result-id> = <opcode> <operand>.., e.g., "%void = OpTypeVoid".
+  // 1(CAF): <opcode> <operand>..., e.g., "OpTypeVoid %void".
+  // 2(AAF): <result-id> = <opcode> <operand>..., e.g., "%void = OpTypeVoid".
 
-  // Assume it's the first format at the beginning.
-  std::string opcodeName;
+  std::string firstWord;
   spv_position_t nextPosition = {};
-  spv_result_t error =
-      spvTextWordGet(text, position, opcodeName, &nextPosition);
+  spv_result_t error = spvTextWordGet(text, position, firstWord, &nextPosition);
   spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
 
   // NOTE: Handle insertion of an immediate integer into the binary stream
   if ('!' == text->str[position->index]) {
-    const char *begin = opcodeName.data() + 1;
+    const char *begin = firstWord.data() + 1;
     char *end = nullptr;
     uint32_t immediateInt = strtoul(begin, &end, 0);
-    size_t size = opcodeName.size() - 1;
+    size_t size = firstWord.size() - 1;
     spvCheck(size != (size_t)(end - begin),
-             DIAGNOSTIC << "Invalid immediate integer '" << opcodeName << "'.";
+             DIAGNOSTIC << "Invalid immediate integer '" << firstWord << "'.";
              return SPV_ERROR_INVALID_TEXT);
-    position->column += opcodeName.size();
-    position->index += opcodeName.size();
+    position->column += firstWord.size();
+    position->index += firstWord.size();
     pInst->words[0] = immediateInt;
     pInst->wordCount = 1;
     return SPV_SUCCESS;
   }
 
-  // Handle value generating instructions (the second format above) here.
+  std::string opcodeName;
   std::string result_id;
   spv_position_t result_id_position = {};
-  // If the word we get doesn't start with "Op", assume it's an <result-id>
-  // from now.
-  spvCheck(!spvStartsWithOp(text, position), result_id = opcodeName);
-  if (!result_id.empty()) {
+  if (spvStartsWithOp(text, position)) {
+    opcodeName = firstWord;
+  } else {
+    // If the first word of this instruction is not an opcode, we must be
+    // processing AAF now.
+    spvCheck(
+        SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT != format,
+        DIAGNOSTIC
+            << "Expected <opcode> at the beginning of an instruction, found '"
+            << firstWord << "'.";
+        return SPV_ERROR_INVALID_TEXT);
+
+    result_id = firstWord;
     spvCheck('%' != result_id.front(),
              DIAGNOSTIC << "Expected <opcode> or <result-id> at the beginning "
                            "of an instruction, found '"
                         << result_id << "'.";
              return SPV_ERROR_INVALID_TEXT);
     result_id_position = *position;
+
+    // The '=' sign.
     *position = nextPosition;
     spvCheck(spvTextAdvance(text, position),
              DIAGNOSTIC << "Expected '=', found end of stream.";
              return SPV_ERROR_INVALID_TEXT);
-    // The '=' sign.
     std::string equal_sign;
     error = spvTextWordGet(text, position, equal_sign, &nextPosition);
     spvCheck("=" != equal_sign, DIAGNOSTIC << "'=' expected after result id.";
@@ -598,6 +607,14 @@ spv_result_t spvTextEncodeOpcode(
   spvCheck(error, DIAGNOSTIC << "Invalid Opcode name '"
                              << getWord(text->str + position->index) << "'";
            return error);
+  if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format) {
+    // If this instruction has <result-id>, check it follows AAF.
+    spvCheck(opcodeEntry->hasResult && result_id.empty(),
+             DIAGNOSTIC << "Expected <result-id> at the beginning of an "
+                           "instruction, found '"
+                        << firstWord << "'.";
+             return SPV_ERROR_INVALID_TEXT);
+  }
   pInst->opcode = opcodeEntry->opcode;
   *position = nextPosition;
   pInst->wordCount++;
@@ -669,7 +686,6 @@ spv_result_t spvTextEncodeOpcode(
       spvCheck(error, return error);
 
       *position = nextPosition;
-
     }
   }
 
@@ -684,6 +700,7 @@ namespace {
 // If a diagnostic is generated, it is not yet marked as being
 // for a text-based input.
 spv_result_t spvTextToBinaryInternal(const spv_text text,
+                                     spv_assembly_syntax_format_t format,
                                      const spv_opcode_table opcodeTable,
                                      const spv_operand_table operandTable,
                                      const spv_ext_inst_table extInstTable,
@@ -716,9 +733,9 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
     spv_instruction_t inst = {};
     inst.extInstType = extInstType;
 
-    spvCheck(spvTextEncodeOpcode(text, opcodeTable, operandTable, extInstTable,
-                                 namedIdTable, &bound, &inst, &position,
-                                 pDiagnostic),
+    spvCheck(spvTextEncodeOpcode(text, format, opcodeTable, operandTable,
+                                 extInstTable, namedIdTable, &bound, &inst,
+                                 &position, pDiagnostic),
              spvNamedIdTableDestory(namedIdTable);
              return SPV_ERROR_INVALID_TEXT);
     extInstType = inst.extInstType;
@@ -758,16 +775,27 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
 
 } // anonymous namespace
 
-spv_result_t spvTextToBinary(const char* input_text,
+spv_result_t spvTextToBinary(const char *input_text,
                              const uint64_t input_text_size,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+  return spvTextWithFormatToBinary(
+      input_text, input_text_size, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT,
+      opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
+}
+
+spv_result_t spvTextWithFormatToBinary(
+    const char *input_text, const uint64_t input_text_size,
+    spv_assembly_syntax_format_t format, const spv_opcode_table opcodeTable,
+    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
+    spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
   spv_text_t text = {input_text, input_text_size};
 
-  spv_result_t result = spvTextToBinaryInternal(
-      &text, opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
+  spv_result_t result =
+      spvTextToBinaryInternal(&text, format, opcodeTable, operandTable,
+                              extInstTable, pBinary, pDiagnostic);
   if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
 
   return result;

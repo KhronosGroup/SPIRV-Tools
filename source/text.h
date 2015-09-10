@@ -191,6 +191,7 @@ spv_result_t spvTextEncodeOperand(
 /// @brief Translate single Opcode and operands to binary form
 ///
 /// @param[in] text stream to translate
+/// @param[in] format the assembly syntax format of text
 /// @param[in] opcodeTable Opcode lookup table
 /// @param[in] operandTable operand lookup table
 /// @param[in,out] namedIdTable table of named ID's
@@ -201,9 +202,10 @@ spv_result_t spvTextEncodeOperand(
 ///
 /// @return result code
 spv_result_t spvTextEncodeOpcode(
-    const spv_text text, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, uint32_t *pBound, spv_instruction_t *pInst,
-    spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
+    const spv_text text, spv_assembly_syntax_format_t format,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
+    uint32_t *pBound, spv_instruction_t *pInst, spv_position_t *pPosition,
+    spv_diagnostic *pDiagnostic);
 
 #endif

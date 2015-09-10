@@ -28,9 +28,7 @@
 
 namespace {
 
-TEST(TextDestroy, DestroyNull) {
-  spvBinaryDestroy(nullptr);
-}
+TEST(TextDestroy, DestroyNull) { spvBinaryDestroy(nullptr); }
 
 TEST(TextDestroy, Default) {
   spv_opcode_table opcodeTable;
@@ -67,8 +65,9 @@ TEST(TextDestroy, Default) {
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
   EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextWithFormatToBinary(
+                textStr, strlen(textStr), SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
   EXPECT_NE(0, binary->wordCount);

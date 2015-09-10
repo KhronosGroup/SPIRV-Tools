@@ -411,7 +411,7 @@ TEST_F(ValidateID, OpConstantTrueBad) {
 
 TEST_F(ValidateID, OpConstantFalseGood) {
   const char *spirv = R"(
-OpTypeBool %1
+%1 = OpTypeBool
 %2 = OpConstantTrue %1)";
   CHECK(spirv, SPV_SUCCESS);
 }

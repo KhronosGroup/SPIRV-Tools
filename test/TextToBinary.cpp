@@ -262,37 +262,6 @@ TEST_F(TextToBinaryTest, StringSpace) {
   }
 }
 
-// TODO(antiagainst): we might not want to support both instruction formats in
-// the future. Only the "<result-id> = <opcode> <operand>.." one may survive.
-TEST_F(TextToBinaryTest, InstructionTwoFormats) {
-  SetText(R"(
-            OpCapability Shader
- %glsl450 = OpExtInstImport "GLSL.std.450"
-            OpMemoryModel Logical Simple
-            OpTypeBool %3
-       %4 = OpTypeInt 8 0
-            OpTypeInt %5 8 1
-       %6 = OpTypeInt 16 0
-            OpTypeInt %7 16 1
-    %void = OpTypeVoid
-            OpTypeFloat %float 32
-%const1.5 = OpConstant %float 1.5
-            OpTypeFunction %fnMain %void
-    %main = OpFunction %void None %fnMain
-            OpLabel %lbMain
-  %result = OpExtInst $float $glsl450 Round $const1.5
-            OpReturn
-            OpFunctionEnd
-)");
-
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
-}
-
 TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
   SetText(R"(
      OpSource OpenCL 12
@@ -357,8 +326,7 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
 }
 
 TEST_F(TextToBinaryTest, GoodSwitch) {
-  const SpirvVector code = CompileSuccessfully(
-      R"(
+  const SpirvVector code = CompileSuccessfully(R"(
 %i32      = OpTypeInt 32 0
 %fortytwo = OpConstant %i32 42
 %twelve   = OpConstant %i32 12

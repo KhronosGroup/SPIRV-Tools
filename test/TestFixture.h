@@ -65,12 +65,13 @@ class TextToBinaryTestBase : public T {
     return SpirvVector(v.begin() + from, v.end());
   }
 
-  // Compiles SPIR-V text, asserting compilation success.  Returns the compiled
-  // code.
-  SpirvVector CompileSuccessfully(const std::string& text) {
-    spv_result_t status =
-        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
-                        extInstTable, &binary, &diagnostic);
+  // Compiles SPIR-V text in the given assembly syntax format, asserting
+  // compilation success. Returns the compiled code.
+  SpirvVector CompileWithFormatSuccessfully(
+      const std::string& text, spv_assembly_syntax_format_t format) {
+    spv_result_t status = spvTextWithFormatToBinary(
+        text.c_str(), text.size(), format, opcodeTable, operandTable,
+        extInstTable, &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -80,6 +81,18 @@ class TextToBinaryTestBase : public T {
       spvDiagnosticPrint(diagnostic);
     }
     return code_copy;
+  }
+  // Compiles SPIR-V text in the Assignment Assembly Format, asserting success.
+  // Returns the compiled code.
+  SpirvVector CompileSuccessfully(const std::string& text) {
+    return CompileWithFormatSuccessfully(text,
+                                         SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT);
+  }
+  // Compiles SPIR-V text in the Canonical Assembly Format, asserting success.
+  // Returns the compiled code.
+  SpirvVector CompileCAFSuccessfully(const std::string& text) {
+    return CompileWithFormatSuccessfully(text,
+                                         SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL);
   }
 
   // Compiles SPIR-V text, asserting compilation failure.  Returns the error

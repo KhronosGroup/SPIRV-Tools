@@ -244,6 +244,12 @@ typedef enum spv_binary_to_text_options_t {
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
 
+typedef enum spv_assembly_syntax_format_t {
+  SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,  // Assignment Assembly Format
+  SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,   // Canonical Assembly Format
+  SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT = SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+} spv_assembly_syntax_format_t;
+
 typedef enum spv_validate_options_t {
   SPV_VALIDATE_BASIC_BIT = SPV_BIT(0),
   SPV_VALIDATE_LAYOUT_BIT = SPV_BIT(1),
@@ -412,12 +418,31 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextToBinary(const char* text,
-                             const uint64_t length,
+spv_result_t spvTextToBinary(const char *text, const uint64_t length,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_binary *pBinary, spv_diagnostic *pDiagnostic);
+
+/// @brief Entry point to covert text form to binary form
+///
+/// @param[in] text input text
+/// @param[in] length of the input text
+/// @param[in] format the assembly syntax format of text
+/// @param[in] opcodeTable of specified Opcodes
+/// @param[in] operandTable of specified operands
+/// @param[in] extInstTable of specified extended instructions
+/// @param[out] pBinary the binary module
+/// @param[out] pDiagnostic contains diagnostic on failure
+///
+/// @return result code
+spv_result_t spvTextWithFormatToBinary(const char *text, const uint64_t length,
+                                       spv_assembly_syntax_format_t format,
+                                       const spv_opcode_table opcodeTable,
+                                       const spv_operand_table operandTable,
+                                       const spv_ext_inst_table extInstTable,
+                                       spv_binary *pBinary,
+                                       spv_diagnostic *pDiagnostic);
 
 /// @brief Free an allocated text stream
 ///
