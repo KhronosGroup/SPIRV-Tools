@@ -24,6 +24,12 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+
 #include <libspirv/libspirv.h>
 
 #include "bitwisecast.h"
@@ -33,11 +39,6 @@
 #include "opcode.h"
 #include "operand.h"
 #include "text.h"
-
-#include <assert.h>
-#include <stdio.h>
-#include <cstdlib>
-#include <string.h>
 
 #include <string>
 #include <vector>
@@ -355,6 +356,25 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
   return SPV_SUCCESS;
 }
 
+namespace {
+
+// True if type is an ID type, false otherwise.
+bool isIdType(spv_operand_type_t type) {
+  switch (type) {
+    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_OPTIONAL_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID:
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}
+
+}  // anonymous namespace
+
 spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
@@ -376,6 +396,7 @@ spv_result_t spvTextEncodeOperand(
     position->index += size;
     pInst->words[pInst->wordCount] = immediateInt;
     pInst->wordCount += 1;
+    if (isIdType(type)) *pBound = std::max(*pBound, immediateInt + 1);
     return SPV_SUCCESS;
   }
 
@@ -404,9 +425,7 @@ spv_result_t spvTextEncodeOperand(
         }
       }
       pInst->words[pInst->wordCount++] = id;
-      if (*pBound <= id) {
-        *pBound = id + 1;
-      }
+      *pBound = std::max(*pBound, id + 1);
     } break;
     case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
       // NOTE: Special case for extension instruction lookup

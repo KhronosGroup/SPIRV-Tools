@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <cassert>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -70,11 +71,11 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
   // TODO(deki): uncomment assertions below and make them pass.
   EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 %2 123", kCAF));
   EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 123", kCAF));
-  // EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 !2 123", kCAF)));
+  EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 !2 123", kCAF));
   EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 %2 !123", kCAF));
-  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 !2 123", kCAF)));
+  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 !2 123", kCAF));
   EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 !123", kCAF));
-  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B !1 !2 !123", kCAF)));
+  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B !1 !2 !123", kCAF));
 }
 
 TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
@@ -83,7 +84,7 @@ TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
   // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
-  // EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 %1 !123"));
   // Instead of checking all possible multiple-! combinations, only probe a few.
@@ -97,8 +98,8 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   const SpirvVector original = CompileSuccessfully(
       "OpTypeInt %1 8 1", kCAF);
   // TODO(deki): uncomment assertions below and make them pass.
-  // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1", kCAF)));
-  // EXPECT_EQ(original, CompileSuccessfully("OpTypeInt !1 8 1", kCAF)));
+  // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1", kCAF));
+  EXPECT_EQ(original, CompileSuccessfully("OpTypeInt !1 8 1", kCAF));
 
   // 64-bit integer literal.
   EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 5000000000", kCAF),
@@ -134,26 +135,29 @@ TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
 // Literal strings after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, StringFollowingImmediate) {
   // Try a variety of strings, including empty and single-character.
-  for (std::string name : {"", "s", "longish"}) {
+  for (std::string name : {"", "s", "longish", "really looooooooooooooooong"}) {
     const SpirvVector original =
         CompileSuccessfully("OpMemberName %10 4 \"" + name + "\"", kCAF);
-    EXPECT_EQ(original, CompileSuccessfully(
-                            "OpMemberName %10 !4 \"" + name + "\"", kCAF));
-    // TODO(deki): uncomment assertions below and make them pass.
-    // EXPECT_EQ(original, CompileSuccessfully("!0x00040006 !10 4 \"" + name +
-    // "\"", kCAF));
+    EXPECT_EQ(original,
+              CompileSuccessfully("OpMemberName %10 !4 \"" + name + "\"", kCAF))
+        << name;
+    EXPECT_EQ(original,
+              CompileSuccessfully("OpMemberName !10 !4 \"" + name + "\"", kCAF))
+        << name;
+    const uint32_t wordCount = 4 + name.size() / 4;
+    const uint32_t firstWord = spvOpcodeMake(wordCount, spv::OpMemberName);
+    EXPECT_EQ(original, CompileSuccessfully("!" + std::to_string(firstWord) +
+                                               " %10 !4 \"" + name + "\"", kCAF))
+        << name;
   }
 }
 
 // IDs after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, IdFollowingImmediate) {
-// TODO(deki): uncomment assertions below and make them pass.
-#if 0
   EXPECT_EQ(CompileSuccessfully("OpDecorationGroup %123", kCAF),
             CompileSuccessfully("!0x00020049 %123", kCAF));
   EXPECT_EQ(CompileSuccessfully("OpDecorationGroup %group", kCAF),
             CompileSuccessfully("!0x00020049 %group", kCAF));
-#endif
 }
 
 // !<integer> after !<integer> is handled correctly.
@@ -198,8 +202,6 @@ OpLoad %10 %1 %2 Volatile
 OpCopyMemorySized %3 %4 %1
 )",
                                                    kCAF);
-// TODO(deki): uncomment assertions below and make them pass.
-#if 0
   const SpirvVector alternate = CompileSuccessfully(R"(
 !0x0002003D %10 %1 %2 !1
 OpCopyMemorySized %3 %4 %1
@@ -208,19 +210,16 @@ OpCopyMemorySized %3 %4 %1
   EXPECT_EQ(0x0002003D, alternate[kFirstInstruction]);
   EXPECT_EQ(Subvector(original, kFirstInstruction + 1),
             Subvector(alternate, kFirstInstruction + 1));
-#endif
 }
 
 // Like NextOpcodeRecognized, but next statement is in assignment form.
-// TODO(deki): enable this after adding proper support for !<integer> at the
-// beginning of an instruction.
-TEST_F(ImmediateIntTest, DISABLED_NextAssignmentRecognized) {
+TEST_F(ImmediateIntTest, NextAssignmentRecognized) {
   const SpirvVector original = CompileSuccessfully(R"(
 %1 = OpLoad %10 %2 None
 %4 = OpFunctionCall %10 %3 123
 )");
   const SpirvVector alternate = CompileSuccessfully(R"(
-!1 = OpLoad %10 %2 !0
+%1 = OpLoad %10 %2 !0
 %4 = OpFunctionCall %10 %3 123
 )");
   EXPECT_EQ(original, alternate);
@@ -233,15 +232,12 @@ TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
 %4 = OpFRem %11 %3 %2
 %5 = OpIsValidEvent %12 %2
 )");
-// TODO(deki): uncomment assertions below and make them pass.
-#if 0
   const SpirvVector alternate = CompileSuccessfully(R"(
 !0x0006002D %10 %1 !2 78 !1
 !0x0005008C %11 %4 %3 %2
 %5 = OpIsValidEvent %12 %2
 )");
   EXPECT_EQ(original, alternate);
-#endif
 }
 
 // !<integer> followed by, eg, an enum or '=' or a random bareword.
