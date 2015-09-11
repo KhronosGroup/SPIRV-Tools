@@ -120,6 +120,73 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryEntryPoint, OpEntryPointTest,
 #undef CASE
 // clang-format on
 
+// Test OpExecutionMode
+
+// A single test case for a simple OpExecutionMode.
+// An execution mode has no operands, or just literal numbers as operands.
+struct ExecutionModeCase {
+  const spv::ExecutionMode mode_value;
+  const std::string mode_name;
+  const std::vector<uint32_t> operands;
+};
+
+using OpExecutionModeTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<ExecutionModeCase>>;
+
+TEST_P(OpExecutionModeTest, AnyExecutionMode) {
+  // This string should assemble, but should not validate.
+  std::stringstream input;
+  input << "OpExecutionMode %1 " << GetParam().mode_name;
+  for (auto operand : GetParam().operands) input << " " << operand;
+  std::vector<uint32_t> expected_operands{1, GetParam().mode_value};
+  expected_operands.insert(expected_operands.end(), GetParam().operands.begin(),
+                           GetParam().operands.end());
+  EXPECT_THAT(CompiledInstructions(input.str()),
+              Eq(MakeInstruction(spv::OpExecutionMode, expected_operands)));
+}
+
+// clang-format off
+#define CASE(NAME) spv::ExecutionMode##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(TextToBinaryExecutionMode, OpExecutionModeTest,
+                        ::testing::ValuesIn(std::vector<ExecutionModeCase>{
+                          // The operand literal values are arbitrarily chosen,
+                          // but there are the right number of them.
+                            {CASE(Invocations), {101}},
+                            {CASE(SpacingEqual), {}},
+                            {CASE(SpacingFractionalEven), {}},
+                            {CASE(SpacingFractionalOdd), {}},
+                            {CASE(VertexOrderCw), {}},
+                            {CASE(VertexOrderCcw), {}},
+                            {CASE(PixelCenterInteger), {}},
+                            {CASE(OriginUpperLeft), {}},
+                            {CASE(OriginLowerLeft), {}},
+                            {CASE(EarlyFragmentTests), {}},
+                            {CASE(PointMode), {}},
+                            {CASE(Xfb), {}},
+                            {CASE(DepthReplacing), {}},
+                            {CASE(DepthAny), {}},
+                            {CASE(DepthGreater), {}},
+                            {CASE(DepthLess), {}},
+                            {CASE(DepthUnchanged), {}},
+                            {CASE(LocalSize), {64,1,2}},
+                            {CASE(LocalSizeHint), {8,2,4}},
+                            {CASE(InputPoints), {}},
+                            {CASE(InputLines), {}},
+                            {CASE(InputLinesAdjacency), {}},
+                            {CASE(InputTriangles), {}},
+                            {CASE(InputTrianglesAdjacency), {}},
+                            {CASE(InputQuads), {}},
+                            {CASE(InputIsolines), {}},
+                            {CASE(OutputVertices), {21}},
+                            {CASE(OutputPoints), {}},
+                            {CASE(OutputLineStrip), {}},
+                            {CASE(OutputTriangleStrip), {}},
+                            {CASE(VecTypeHint), {96}},
+                            {CASE(ContractionOff), {}},
+                        }));
+#undef CASE
+// clang-format on
+
 // Test OpCapability
 
 struct CapabilityCase {
