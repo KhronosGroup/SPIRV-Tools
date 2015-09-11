@@ -37,6 +37,46 @@ namespace {
 using spvtest::MakeInstruction;
 using ::testing::Eq;
 
+// Test OpMemoryModel
+
+// An example case for OpMemoryModel
+struct MemoryModelCase {
+  spv::AddressingModel addressing_value;
+  std::string addressing_name;
+  spv::MemoryModel memory_value;
+  std::string memory_name;
+};
+
+using OpMemoryModelTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<MemoryModelCase>>;
+
+TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
+  std::string input = "OpMemoryModel " + GetParam().addressing_name + " " +
+                      GetParam().memory_name;
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpMemoryModel, {GetParam().addressing_value,
+                                              GetParam().memory_value})));
+}
+
+#define CASE(ADDRESSING, MEMORY)                                             \
+  {                                                                          \
+    spv::AddressingModel##ADDRESSING, #ADDRESSING, spv::MemoryModel##MEMORY, \
+        #MEMORY                                                              \
+  }
+// clang-format off
+INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
+                        ::testing::ValuesIn(std::vector<MemoryModelCase>{
+                          // These cases exercise each addressing model, and
+                          // each memory model, but not necessarily in
+                          // combination.
+                            CASE(Logical,Simple),
+                            CASE(Logical,GLSL450),
+                            CASE(Physical32,OpenCL),
+                            CASE(Physical64,OpenCL),
+                        }));
+#undef CASE
+// clang-format on
 // Test OpCapability
 
 struct CapabilityCase {
