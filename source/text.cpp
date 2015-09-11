@@ -25,8 +25,8 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <libspirv/libspirv.h>
-#include <utils/bitwisecast.h>
 
+#include "bitwisecast.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"

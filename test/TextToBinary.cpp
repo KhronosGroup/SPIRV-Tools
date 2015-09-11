@@ -24,7 +24,6 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <utils/bitwisecast.h>
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include <algorithm>
@@ -34,7 +33,6 @@
 
 namespace {
 
-using spvutils::BitwiseCast;
 using test_fixture::TextToBinaryTest;
 
 TEST(GetWord, Simple) {

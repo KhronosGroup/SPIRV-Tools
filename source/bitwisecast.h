@@ -24,6 +24,9 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#ifndef _LIBSPIRV_UTIL_BITWISECAST_H_
+#define _LIBSPIRV_UTIL_BITWISECAST_H_
+
 #include <cstring>
 
 namespace spvutils {
@@ -39,3 +42,5 @@ Dest BitwiseCast(Src source) {
 }
 
 }  // namespace spvutils
+
+#endif
