@@ -340,7 +340,8 @@ spv_result_t spvBinaryDecodeOpcode(
     spv_instruction_t *pInst, const spv_endianness_t endian,
     const uint32_t options, const spv_opcode_table opcodeTable,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
+    spv_assembly_syntax_format_t format, out_stream &stream,
+    spv_position position, spv_diagnostic *pDiagnostic) {
   spvCheck(!pInst || !position, return SPV_ERROR_INVALID_POINTER);
   spvCheck(!opcodeTable || !operandTable || !extInstTable,
            return SPV_ERROR_INVALID_TABLE);
@@ -374,11 +375,21 @@ spv_result_t spvBinaryDecodeOpcode(
     return SPV_ERROR_INVALID_BINARY;
   }
 
+  const bool isAssigmentFormat =
+      SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format;
+
+  // For Canonical Assembly Format, all words are written to stream in order.
+  // For Assignment Assembly Format, <result-id> and the equal sign are written
+  // to stream first, while the rest are written to no_result_id_stream. After
+  // processing all words, all words in no_result_id_stream are transcribed to
+  // stream.
+
   std::stringstream no_result_id_strstream;
   out_stream no_result_id_stream(no_result_id_strstream);
-  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
-  no_result_id_stream.get() << "Op" << opcodeEntry->name;
+  (isAssigmentFormat ? no_result_id_stream.get() : stream.get())
+      << "Op" << opcodeEntry->name;
 
+  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
   position->index++;
 
   // Maintains the ordered list of expected operand types.
@@ -394,27 +405,32 @@ spv_result_t spvBinaryDecodeOpcode(
 
   for (uint16_t index = 1; index < wordCount; ++index) {
     const uint64_t currentPosIndex = position->index;
+    const bool currentIsResultId = result_id_index == index - 1;
 
     spvCheck(expectedOperands.empty(),
              DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
                         << " starting at word " << instructionStart.index
-                        << ": "
-                        << " expected no more operands after " << index
+                        << ": expected no more operands after " << index
                         << " words, but word count is " << wordCount << ".";
              return SPV_ERROR_INVALID_BINARY;);
 
     spv_operand_type_t type = spvTakeFirstMatchableOperand(&expectedOperands);
 
-    if (result_id_index != index - 1) no_result_id_strstream << " ";
+    if (isAssigmentFormat) {
+      if (!currentIsResultId) no_result_id_stream.get() << " ";
+    } else {
+      stream.get() << " ";
+    }
     spvCheck(
         spvBinaryDecodeOperand(
             opcodeEntry->opcode, type, pInst->words + index, endian, options,
             operandTable, extInstTable, &expectedOperands, &pInst->extInstType,
-            (result_id_index == index - 1 ? stream : no_result_id_stream),
+            (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
+                                                     : stream),
             position, pDiagnostic),
         DIAGNOSTIC << "UNEXPLAINED ERROR";
         return SPV_ERROR_INVALID_BINARY);
-    if (result_id_index == index - 1) stream.get() << " = ";
+    if (isAssigmentFormat && currentIsResultId) stream.get() << " = ";
     index += (uint16_t)(position->index - currentPosIndex - 1);
   }
   // TODO(dneto): There's an opportunity for a more informative message.
@@ -437,6 +453,16 @@ spv_result_t spvBinaryToText(uint32_t *code, const uint64_t wordCount,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_text *pText, spv_diagnostic *pDiagnostic) {
+  return spvBinaryToTextWithFormat(
+      code, wordCount, options, opcodeTable, operandTable, extInstTable,
+      SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT, pText, pDiagnostic);
+}
+
+spv_result_t spvBinaryToTextWithFormat(
+    uint32_t *code, const uint64_t wordCount, const uint32_t options,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
+    spv_text *pText, spv_diagnostic *pDiagnostic) {
   spv_binary_t binary = {code, wordCount};
 
   spv_position_t position = {};
@@ -499,10 +525,10 @@ spv_result_t spvBinaryToText(uint32_t *code, const uint64_t wordCount,
     spvInstructionCopy(&words[position.index], opcode, wordCount, endian,
                        &inst);
 
-    spvCheck(
-        spvBinaryDecodeOpcode(&inst, endian, options, opcodeTable, operandTable,
-                              extInstTable, stream, &position, pDiagnostic),
-        return SPV_ERROR_INVALID_BINARY);
+    spvCheck(spvBinaryDecodeOpcode(&inst, endian, options, opcodeTable,
+                                   operandTable, extInstTable, format, stream,
+                                   &position, pDiagnostic),
+             return SPV_ERROR_INVALID_BINARY);
     extInstType = inst.extInstType;
 
     spvCheck((index + wordCount) != position.index,

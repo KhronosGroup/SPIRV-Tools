@@ -472,6 +472,25 @@ spv_result_t spvBinaryToText(uint32_t *binary, const uint64_t wordCount,
                              const spv_ext_inst_table extInstTable,
                              spv_text *pText, spv_diagnostic *pDiagnostic);
 
+/// @brief Entry point to convert binary to text form
+///
+/// @param[in] binary the input binary
+/// @param[in] wordCount the number of input words
+/// @param[in] options bitfield of spv_binary_to_text_options_t values
+/// @param[in] opcodeTable table of specified Opcodes
+/// @param[in] operandTable table of specified operands
+/// @param[in] extInstTable of specified extended instructions
+/// @param[in] format the assembly syntax format of text
+/// @param[out] pText the textual form
+/// @param[out] pDiagnostic contains diagnostic on failure
+///
+/// @return result code
+spv_result_t spvBinaryToTextWithFormat(
+    uint32_t *binary, const uint64_t wordCount, const uint32_t options,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
+    spv_text *pText, spv_diagnostic *pDiagnostic);
+
 /// @brief Free a binary stream from memory.
 ///
 /// This is a no-op if binary is a null pointer.

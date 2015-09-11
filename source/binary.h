@@ -153,6 +153,7 @@ spv_result_t spvBinaryDecodeOperand(
 /// @param[in] options bitfield of spv_binary_to_text_options_t values
 /// @param[in] opcodeTable table of specified Opcodes
 /// @param[in] operandTable table of specified operands
+/// @param[in] format the assembly syntax format to decode into
 /// @param[out] stream output text stream
 /// @param[in,out] position position in the stream
 /// @param[out] pDiag return diagnostic on error
@@ -162,7 +163,7 @@ spv_result_t spvBinaryDecodeOpcode(
     spv_instruction_t *pInst, const spv_endianness_t endian,
     const uint32_t options, const spv_opcode_table opcodeTable,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    out_stream &stream, spv_position position, spv_diagnostic *pDiag);
+    spv_assembly_syntax_format_t format, out_stream &stream,
+    spv_position position, spv_diagnostic *pDiag);
 
 #endif
-

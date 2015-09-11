@@ -106,4 +106,87 @@ TEST_F(TextToBinaryTest, EncodeMixedTextAsCAF) {
   EXPECT_EQ(1, diagnostic->position.line);
 }
 
+const char* kBound4Preamble =
+    "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; Bound: 4\n; Schema: 0\n";
+
+TEST_F(TextToBinaryTest, DecodeAAFAsAAF) {
+  const std::string assembly =
+      "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n";
+  SetText(assembly);
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextWithFormatToBinary(
+                text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
+  spv_text decoded_text;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryToTextWithFormat(binary->code, binary->wordCount,
+                                      SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                      opcodeTable, operandTable, extInstTable,
+                                      SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+                                      &decoded_text, &diagnostic));
+  EXPECT_EQ(kBound4Preamble + assembly, decoded_text->str);
+  spvTextDestroy(decoded_text);
+}
+
+TEST_F(TextToBinaryTest, DecodeAAFAsCAF) {
+  const std::string assembly =
+      "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n";
+  SetText(assembly);
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextWithFormatToBinary(
+                text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
+  spv_text decoded_text;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryToTextWithFormat(binary->code, binary->wordCount,
+                                      SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                      opcodeTable, operandTable, extInstTable,
+                                      SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                                      &decoded_text, &diagnostic));
+  EXPECT_EQ(std::string(kBound4Preamble) +
+                "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n",
+            decoded_text->str);
+  spvTextDestroy(decoded_text);
+}
+
+TEST_F(TextToBinaryTest, DecodeCAFAsAAF) {
+  const std::string assembly = "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n";
+  SetText(assembly);
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextWithFormatToBinary(
+                text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
+  spv_text decoded_text;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryToTextWithFormat(binary->code, binary->wordCount,
+                                      SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                      opcodeTable, operandTable, extInstTable,
+                                      SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+                                      &decoded_text, &diagnostic));
+  EXPECT_EQ(std::string(kBound4Preamble) +
+                "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n",
+            decoded_text->str);
+  spvTextDestroy(decoded_text);
+}
+
+TEST_F(TextToBinaryTest, DecodeCAFAsCAF) {
+  const std::string assembly = "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n";
+  SetText(assembly);
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextWithFormatToBinary(
+                text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
+  spv_text decoded_text;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryToTextWithFormat(binary->code, binary->wordCount,
+                                      SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                      opcodeTable, operandTable, extInstTable,
+                                      SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                                      &decoded_text, &diagnostic));
+  EXPECT_EQ(std::string(kBound4Preamble) +
+                "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n",
+            decoded_text->str);
+  spvTextDestroy(decoded_text);
+}
+
 }  // anonymous namespace
