@@ -1283,6 +1283,7 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
      0,
      {SPV_OPERAND_TYPE_NONE}},
 // A macro for defining a capability that doesn't depend on other capabilities.
+// TODO(dneto): Rev32 adds many dependencies between capbilities.
 #define CASE(NAME) { #NAME, Capability##NAME, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}}
      CASE(LiteralSampler),
      CASE(AtomicStorage),
