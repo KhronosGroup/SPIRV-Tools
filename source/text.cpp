@@ -601,6 +601,11 @@ spv_result_t encodeInstructionStartingWithImmediate(
       return error;
     }
 
+    if (operandValue == "=") {
+      DIAGNOSTIC << firstWord << " not allowed before =.";
+      return SPV_ERROR_INVALID_TEXT;
+    }
+
     // Needed to pass to spvTextEncodeOpcode(), but it shouldn't ever be
     // expanded.
     spv_operand_pattern_t dummyExpectedOperands;

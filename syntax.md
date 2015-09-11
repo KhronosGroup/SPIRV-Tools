@@ -138,7 +138,7 @@ encountered, it begins a new instruction and parsing returns to normal.  (If a
 subsequent OpCode is never found, then this alternate parsing mode handles all
 the remaining words in the program.  If a subsequent OpCode is in an
 [assignment form](#assignment-form), the ID preceding it begins a new
-instruction, even if that ID is itself a `!<integer>`.)
+instruction.)
 
 The assembler processes the words encountered in alternate parsing mode as
 follows:
@@ -168,6 +168,10 @@ Note that this has some interesting consequences, including:
 * Enums (such as `DontInline` or `SubgroupMemory`, for instance) are not handled
   by the alternate parsing mode.  They must be replaced by `!<integer>` for
   successful assembly.
+
+* The `<result-id>` on the left-hand side of an assignment cannot be
+  a`!<integer>`.  But it can be a number prefixed by `%`, which still gives the
+  user control over its value.
 
 * The `=` sign cannot be processed by the alternate parsing mode if the OpCode
   following it is a `!<integer>`.

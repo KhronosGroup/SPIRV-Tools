@@ -78,19 +78,27 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
   // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B !1 !2 !123", kCAF));
 }
 
-TEST_F(ImmediateIntTest, AnyWordInAssignmentStatement) {
+TEST_F(ImmediateIntTest, AnyWordAfterEqualsAndOpCode) {
   const SpirvVector original =
       CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
-  // TODO(deki): uncomment assertions below and make them pass.
-  // EXPECT_EQ(original, CompileSuccessfully("!2 = OpArrayLength %12 %1 123"));
-  // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 %12 %1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 123"));
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 %1 !123"));
-  // Instead of checking all possible multiple-! combinations, only probe a few.
   EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 !123"));
-  // EXPECT_EQ(original, CompileSuccessfully("%2 = !0x00040044 !12 !1 !123"));
-  // EXPECT_EQ(original, CompileSuccessfully("!2 = !0x00040044 %12 %1 123"));
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 !1 123"));
+  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 !1 !123"));
+}
+
+TEST_F(ImmediateIntTest, ResultIdInAssignment) {
+  EXPECT_EQ("!2 not allowed before =.",
+            CompileFailure("!2 = OpArrayLength %12 %1 123"));
+  EXPECT_EQ("!2 not allowed before =.",
+            CompileFailure("!2 = !0x00040044 %12 %1 123"));
+}
+
+TEST_F(ImmediateIntTest, OpCodeInAssignment) {
+  EXPECT_EQ("Invalid Opcode prefix '!0x00040044'.",
+            CompileFailure("%2 = !0x00040044 %12 %1 123"));
 }
 
 // Literal integers after !<integer> are handled correctly.
