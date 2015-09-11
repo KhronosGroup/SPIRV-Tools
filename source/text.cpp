@@ -389,13 +389,17 @@ spv_result_t spvTextEncodeOperand(
       if (spvTextIsNamedId(textValue)) {
         id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
       } else {
-        spvCheck(spvTextToUInt32(textValue, &id),
-                 DIAGNOSTIC
-                     << "Invalid "
-                     << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result " : "")
-                     << "ID '" << textValue << "'.";
-                 return (spvOperandIsOptional(type) ? SPV_FAILED_MATCH
-                                                    : SPV_ERROR_INVALID_TEXT));
+        if (spvTextToUInt32(textValue, &id) != SPV_SUCCESS) {
+          if (spvOperandIsOptional(type)) {
+            return SPV_FAILED_MATCH;
+          } else {
+            DIAGNOSTIC << "Invalid "
+                       << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result "
+                                                                : "")
+                       << "ID '" << textValue << "'.";
+            return SPV_ERROR_INVALID_TEXT;
+          }
+        }
       }
       pInst->words[pInst->wordCount++] = id;
       if (*pBound <= id) {
@@ -431,10 +435,14 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL: {
       spv_literal_t literal = {};
-      // TODO(dneto): Is return code different for optional operands?
-      spvCheck(spvTextToLiteral(textValue, &literal),
-               DIAGNOSTIC << "Invalid literal '" << textValue << "'.";
-               return SPV_ERROR_INVALID_TEXT);
+      if (spvTextToLiteral(textValue, &literal) != SPV_SUCCESS) {
+        if (spvOperandIsOptional(type)) {
+          return SPV_FAILED_MATCH;
+        } else {
+          DIAGNOSTIC << "Invalid literal '" << textValue << "'.";
+          return SPV_ERROR_INVALID_TEXT;
+        }
+      }
       switch (literal.type) {
         // We do not have to print diagnostics here because spvBinaryEncode*
         // prints diagnostic messages on failure.
@@ -521,36 +529,99 @@ spv_result_t spvTextEncodeOperand(
   return SPV_SUCCESS;
 }
 
+namespace {
+
+/// Encodes an instruction started by !<integer> at the given position in text.
+///
+/// Puts the encoded words into *pInst.  If successful, moves position past the
+/// instruction and returns SPV_SUCCESS.  Otherwise, returns an error code and
+/// leaves position pointing to the error in text.
+spv_result_t encodeInstructionStartingWithImmediate(
+    const spv_text text, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
+    uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
+    spv_diagnostic *pDiagnostic) {
+  std::string firstWord;
+  spv_position_t nextPosition = {};
+  auto error = spvTextWordGet(text, position, firstWord, &nextPosition);
+  spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
+
+  assert(firstWord[0] == '!');
+  const char *begin = firstWord.data() + 1;
+  char *end = nullptr;
+  uint32_t immediateInt = strtoul(begin, &end, 0);
+  spvCheck((begin + firstWord.size() - 1) != end,
+           DIAGNOSTIC << "Invalid immediate integer '" << firstWord << "'.";
+           return SPV_ERROR_INVALID_TEXT);
+  position->column += firstWord.size();
+  position->index += firstWord.size();
+  pInst->words[0] = immediateInt;
+  pInst->wordCount = 1;
+  while (spvTextAdvance(text, position) != SPV_END_OF_STREAM) {
+    // A beginning of a new instruction means we're done.
+    if (spvTextIsStartOfNewInst(text, position)) return SPV_SUCCESS;
+
+    // Otherwise, there must be an operand that's either a literal, an ID, or
+    // an immediate.
+    std::string operandValue;
+    if ((error = spvTextWordGet(text, position, operandValue, &nextPosition))) {
+      DIAGNOSTIC << "Internal Error";
+      return error;
+    }
+
+    // Needed to pass to spvTextEncodeOpcode(), but it shouldn't ever be
+    // expanded.
+    spv_operand_pattern_t dummyExpectedOperands;
+    error = spvTextEncodeOperand(
+        SPV_OPERAND_TYPE_OPTIONAL_LITERAL, operandValue.c_str(), operandTable,
+        extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
+        position, pDiagnostic);
+    if (error == SPV_FAILED_MATCH) {
+      // It's not a literal -- is it an ID?
+      error = spvTextEncodeOperand(
+          SPV_OPERAND_TYPE_OPTIONAL_ID, operandValue.c_str(), operandTable,
+          extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
+          position, pDiagnostic);
+      if (error) {
+        DIAGNOSTIC << "Invalid word following " << firstWord << ": "
+                   << operandValue;
+      }
+    }
+    spvCheck(error, return error);
+    *position = nextPosition;
+  }
+  return SPV_SUCCESS;
+}
+
+}  // anonymous namespace
+
 spv_result_t spvTextEncodeOpcode(
     const spv_text text, spv_assembly_syntax_format_t format,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
     uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
     spv_diagnostic *pDiagnostic) {
+  // Check for !<integer> first.
+  if ('!' == text->str[position->index]) {
+    return encodeInstructionStartingWithImmediate(
+        text, operandTable, extInstTable, namedIdTable, pBound, pInst, position,
+        pDiagnostic);
+  }
+
   // An assembly instruction has two possible formats:
   // 1(CAF): <opcode> <operand>..., e.g., "OpTypeVoid %void".
   // 2(AAF): <result-id> = <opcode> <operand>..., e.g., "%void = OpTypeVoid".
+
+  if ('!' == text->str[position->index]) {
+    return encodeInstructionStartingWithImmediate(
+        text, operandTable, extInstTable, namedIdTable, pBound, pInst, position,
+        pDiagnostic);
+  }
 
   std::string firstWord;
   spv_position_t nextPosition = {};
   spv_result_t error = spvTextWordGet(text, position, firstWord, &nextPosition);
   spvCheck(error, DIAGNOSTIC << "Internal Error"; return error);
-
-  // NOTE: Handle insertion of an immediate integer into the binary stream
-  if ('!' == text->str[position->index]) {
-    const char *begin = firstWord.data() + 1;
-    char *end = nullptr;
-    uint32_t immediateInt = strtoul(begin, &end, 0);
-    size_t size = firstWord.size() - 1;
-    spvCheck(size != (size_t)(end - begin),
-             DIAGNOSTIC << "Invalid immediate integer '" << firstWord << "'.";
-             return SPV_ERROR_INVALID_TEXT);
-    position->column += firstWord.size();
-    position->index += firstWord.size();
-    pInst->words[0] = immediateInt;
-    pInst->wordCount = 1;
-    return SPV_SUCCESS;
-  }
 
   std::string opcodeName;
   std::string result_id;

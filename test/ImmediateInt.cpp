@@ -33,8 +33,9 @@
 
 namespace {
 
-using ::testing::HasSubstr;
 using ::testing::ElementsAre;
+using ::testing::HasSubstr;
+using ::testing::StrEq;
 using test_fixture::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
@@ -64,7 +65,7 @@ using ImmediateIntTest = TextToBinaryTest;
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
   const SpirvVector original = CompileCAFSuccessfully("OpConstant %1 %2 123");
   // TODO(deki): uncomment assertions below and make them pass.
-  // EXPECT_EQ(original, CompileCAFSuccessfully("!0x0004002B %1 %2 123"));
+  EXPECT_EQ(original, CompileCAFSuccessfully("!0x0004002B %1 %2 123"));
   EXPECT_EQ(original, CompileCAFSuccessfully("OpConstant !1 %2 123"));
   // EXPECT_EQ(original, CompileCAFSuccessfully("OpConstant %1 !2 123"));
   EXPECT_EQ(original, CompileCAFSuccessfully("OpConstant %1 %2 !123"));
@@ -152,8 +153,7 @@ TEST_F(ImmediateIntTest, IdFollowingImmediate) {
 TEST_F(ImmediateIntTest, ImmediateFollowingImmediate) {
   const SpirvVector original = CompileCAFSuccessfully("OpTypeMatrix %11 %10 7");
   EXPECT_EQ(original, CompileCAFSuccessfully("OpTypeMatrix %11 !10 !7"));
-  // TODO(deki): uncomment assertions below and make them pass.
-  // EXPECT_EQ(original, CompileCAFSuccessfully("!0x00040018 %11 !10 !7"));
+  EXPECT_EQ(original, CompileCAFSuccessfully("!0x00040018 %11 !10 !7"));
 }
 
 TEST_F(ImmediateIntTest, InvalidStatement) {
@@ -244,6 +244,15 @@ TEST_F(ImmediateIntTest, ForbiddenOperands) {
 #endif
   EXPECT_THAT(CompileFailure("OpMemoryModel !0 random_bareword"),
               HasSubstr("random_bareword"));
+}
+
+TEST_F(ImmediateIntTest, NotInteger) {
+  EXPECT_THAT(CompileFailure("!abc"),
+              StrEq("Invalid immediate integer '!abc'."));
+  EXPECT_THAT(CompileFailure("!12.3"),
+              StrEq("Invalid immediate integer '!12.3'."));
+  EXPECT_THAT(CompileFailure("!12K"),
+              StrEq("Invalid immediate integer '!12K'."));
 }
 
 }  // anonymous namespace
