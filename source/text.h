@@ -66,6 +66,16 @@ typedef spv_named_id_table_t *spv_named_id_table;
 
 // Functions
 
+/// @brief Returns the word at the beginning of the given string.
+///
+/// A word ends at the first space, tab, form feed, carriage return, newline,
+/// or at the end of the string.
+///
+/// @param[in] str the source string
+///
+/// @return word as a string
+std::string spvGetWord(const char* str);
+
 /// @brief Advance text to the start of the next line
 ///
 /// @param[in] text to be parsed

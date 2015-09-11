@@ -37,6 +37,23 @@ namespace {
 using spvutils::BitwiseCast;
 using test_fixture::TextToBinaryTest;
 
+TEST(GetWord, Simple) {
+  EXPECT_EQ("", spvGetWord(""));
+  EXPECT_EQ("", spvGetWord("\0a"));
+  EXPECT_EQ("", spvGetWord(" a"));
+  EXPECT_EQ("", spvGetWord("\ta"));
+  EXPECT_EQ("", spvGetWord("\va"));
+  EXPECT_EQ("", spvGetWord("\ra"));
+  EXPECT_EQ("", spvGetWord("\na"));
+  EXPECT_EQ("abc", spvGetWord("abc"));
+  EXPECT_EQ("abc", spvGetWord("abc "));
+  EXPECT_EQ("abc", spvGetWord("abc\t"));
+  EXPECT_EQ("abc", spvGetWord("abc\r"));
+  EXPECT_EQ("abc", spvGetWord("abc\v"));
+  EXPECT_EQ("abc", spvGetWord("abc\n"));
+}
+
+// TODO(dneto): Aliasing like this relies on undefined behaviour. Fix this.
 union char_word_t {
   char cs[4];
   uint32_t u;

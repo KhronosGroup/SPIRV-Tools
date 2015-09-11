@@ -53,20 +53,23 @@ struct spv_named_id_table_t {
 
 // Text API
 
-std::string getWord(const char *str) {
+std::string spvGetWord(const char *str) {
   size_t index = 0;
   while (true) {
     switch (str[index]) {
       case '\0':
       case '\t':
+      case '\v':
+      case '\r':
       case '\n':
       case ' ':
-        break;
+        return std::string(str, str + index);
       default:
         index++;
     }
   }
-  return std::string(str, str + index);
+  assert(0 && "Unreachable");
+  return ""; // Make certain compilers happy.
 }
 
 spv_named_id_table spvNamedIdTableCreate() {
@@ -674,7 +677,7 @@ spv_result_t spvTextEncodeOpcode(
   spv_opcode_desc opcodeEntry;
   error = spvOpcodeTableNameLookup(opcodeTable, pInstName, &opcodeEntry);
   spvCheck(error, DIAGNOSTIC << "Invalid Opcode name '"
-                             << getWord(text->str + position->index) << "'";
+                             << spvGetWord(text->str + position->index) << "'";
            return error);
   if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format) {
     // If this instruction has <result-id>, check it follows AAF.
