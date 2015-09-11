@@ -37,10 +37,13 @@
 spv_diagnostic spvDiagnosticCreate(const spv_position position,
                                    const char *message) {
   spv_diagnostic diagnostic = new spv_diagnostic_t;
-  spvCheck(!diagnostic, return nullptr);
+  if (!diagnostic) return nullptr;
   size_t length = strlen(message) + 1;
   diagnostic->error = new char[length];
-  spvCheck(!diagnostic->error, delete diagnostic; return nullptr);
+  if (!diagnostic->error) {
+    delete diagnostic;
+    return nullptr;
+  }
   diagnostic->position = *position;
   diagnostic->isTextSource = false;
   memset(diagnostic->error, 0, length);
@@ -49,7 +52,7 @@ spv_diagnostic spvDiagnosticCreate(const spv_position position,
 }
 
 void spvDiagnosticDestroy(spv_diagnostic diagnostic) {
-  spvCheck(!diagnostic, return );
+  if (!diagnostic) return;
   if (diagnostic->error) {
     delete[] diagnostic->error;
   }
@@ -57,7 +60,7 @@ void spvDiagnosticDestroy(spv_diagnostic diagnostic) {
 }
 
 spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
-  spvCheck(!diagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
+  if (!diagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   if (diagnostic->isTextSource) {
     // NOTE: This is a text position

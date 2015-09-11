@@ -73,13 +73,13 @@ bool opcodeTableInitialized = false;
 // Converts the given operand class enum (from the SPIR-V document generation
 // logic) to the operand type required by the parser.
 // This only applies to logical operands.
-spv_operand_type_t convertOperandClassToType(spv::Op opcode, spv::OperandClass operandClass) {
-
+spv_operand_type_t convertOperandClassToType(spv::Op opcode,
+                                             spv::OperandClass operandClass) {
   // The spec document generator uses OptionalOperandLiteral for several kinds
   // of repeating values.  Our parser needs more specific information about
   // what is being repeated.
   if (operandClass == OperandOptionalLiteral) {
-    switch(opcode) {
+    switch (opcode) {
       case spv::OpLoad:
       case spv::OpStore:
       case spv::OpCopyMemory:
@@ -217,7 +217,7 @@ void spvOpcodeSplit(const uint32_t word, uint16_t *pWordCount, Op *pOpcode) {
 }
 
 spv_result_t spvOpcodeTableGet(spv_opcode_table *pInstTable) {
-  spvCheck(!pInstTable, return SPV_ERROR_INVALID_POINTER);
+  if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
 
   static spv_opcode_table_t table = {
       sizeof(opcodeTableEntries) / sizeof(spv_opcode_desc_t),
@@ -225,8 +225,7 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table *pInstTable) {
 
   // TODO(dneto): Consider thread safety of initialization.
   // That is, ordering effects of the flag vs. the table updates.
-  if (!opcodeTableInitialized)
-    spvOpcodeTableInitialize();
+  if (!opcodeTableInitialized) spvOpcodeTableInitialize();
 
   *pInstTable = &table;
 
@@ -236,8 +235,8 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table *pInstTable) {
 spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
                                       const char *name,
                                       spv_opcode_desc *pEntry) {
-  spvCheck(!name || !pEntry, return SPV_ERROR_INVALID_POINTER);
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
+  if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
+  if (!table) return SPV_ERROR_INVALID_TABLE;
 
   // TODO: This lookup of the Opcode table is suboptimal! Binary sort would be
   // preferable but the table requires sorting on the Opcode name, but it's
@@ -259,8 +258,8 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                        const Op opcode,
                                        spv_opcode_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   // TODO: As above this lookup is not optimal.
   for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
@@ -615,8 +614,8 @@ int32_t spvOpcodeIsComposite(const Op opcode) {
 
 int32_t spvOpcodeAreTypesEqual(const spv_instruction_t *pTypeInst0,
                                const spv_instruction_t *pTypeInst1) {
-  spvCheck(pTypeInst0->opcode != pTypeInst1->opcode, return false);
-  spvCheck(pTypeInst0->words[1] != pTypeInst1->words[1], return false);
+  if (pTypeInst0->opcode != pTypeInst1->opcode) return false;
+  if (pTypeInst0->words[1] != pTypeInst1->words[1]) return false;
   return true;
 }
 
@@ -766,16 +765,16 @@ int32_t spvOpcodeIsBasicTypeNullable(Op opcode) {
 int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
                                      const spv_instruction_t *pInst) {
   while (pFirstInst != pInst) {
-    spvCheck(OpFunction == pInst->opcode, break);
+    if (OpFunction == pInst->opcode) break;
     pInst--;
   }
-  spvCheck(OpFunction != pInst->opcode, return false);
+  if (OpFunction != pInst->opcode) return false;
   return true;
 }
 
 int32_t spvOpcodeIsValue(Op opcode) {
-  spvCheck(spvOpcodeIsPointer(opcode), return true);
-  spvCheck(spvOpcodeIsConstant(opcode), return true);
+  if (spvOpcodeIsPointer(opcode)) return true;
+  if (spvOpcodeIsConstant(opcode)) return true;
   switch (opcode) {
     case OpLoad:
       // TODO: Other Opcode's resulting in a value

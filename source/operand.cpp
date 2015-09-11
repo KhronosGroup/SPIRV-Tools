@@ -1383,7 +1383,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
 };
 
 spv_result_t spvOperandTableGet(spv_operand_table *pOperandTable) {
-  spvCheck(!pOperandTable, return SPV_ERROR_INVALID_POINTER);
+  if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
 
   static const spv_operand_table_t table = {
       sizeof(opcodeEntryTypes) / sizeof(spv_operand_desc_group_t),
@@ -1398,8 +1398,8 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char *name,
                                        spv_operand_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!name || !pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
 
   const uint64_t nameLength = strlen(name);
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
@@ -1424,8 +1424,8 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
                                         spv_operand_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
     if (type == table->types[typeIndex].type) {

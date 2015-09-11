@@ -94,7 +94,10 @@ int main(int argc, char **argv) {
     outFile = "out.spv";
   }
 
-  spvCheck(!inFile, fprintf(stderr, "error: input file is empty.\n"); return 1);
+  if (!inFile) {
+    fprintf(stderr, "error: input file is empty.\n");
+    return 1;
+  }
 
   std::vector<char> contents;
   if (FILE *fp = fopen(inFile, "r")) {
@@ -109,25 +112,32 @@ int main(int argc, char **argv) {
 
   spv_opcode_table opcodeTable;
   spv_result_t error = spvOpcodeTableGet(&opcodeTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_operand_table operandTable;
   error = spvOperandTableGet(&operandTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_ext_inst_table extInstTable;
   error = spvExtInstTableGet(&extInstTable);
-  spvCheck(error, fprintf(stderr, "error: Internal malfunction.\n"));
+  if (error) fprintf(stderr, "error: Internal malfunction.\n");
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
   error = spvTextWithFormatToBinary(contents.data(), contents.size(), format,
                                     opcodeTable, operandTable, extInstTable,
                                     &binary, &diagnostic);
-  spvCheck(error, spvDiagnosticPrint(diagnostic);
-           spvDiagnosticDestroy(diagnostic); return error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+    return error;
+  }
 
   if (FILE *fp = fopen(outFile, "wb")) {
     size_t written =

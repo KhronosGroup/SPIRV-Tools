@@ -76,19 +76,6 @@ extern "C" {
 
 // Helpers
 
-#define spvCheck(condition, action) \
-  if (condition) {                  \
-    action;                         \
-  }
-
-#define spvCheckReturn(expression)     \
-  {                                    \
-    spv_result_t error = (expression); \
-    if (error) {                       \
-      return error;                    \
-    }                                  \
-  }
-
 #define spvIsInBitfield(value, bitfield) (value == (value & bitfield))
 
 #define SPV_BIT(shift) (1 << (shift))

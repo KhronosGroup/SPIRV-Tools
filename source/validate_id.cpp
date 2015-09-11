@@ -35,6 +35,11 @@
 #include <unordered_map>
 #include <vector>
 
+#define spvCheck(condition, action) \
+  if (condition) {                  \
+    action;                         \
+  }
+
 namespace {
 class idUsage {
  public:

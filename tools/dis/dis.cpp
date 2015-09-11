@@ -104,7 +104,10 @@ int main(int argc, char **argv) {
     outFile = "out.spvasm";
   }
 
-  spvCheck(!inFile, fprintf(stderr, "error: input file is empty.\n"); return 1);
+  if (!inFile) {
+    fprintf(stderr, "error: input file is empty.\n");
+    return 1;
+  }
 
   std::vector<uint32_t> contents;
   if (FILE *fp = fopen(inFile, "rb")) {
@@ -120,17 +123,21 @@ int main(int argc, char **argv) {
 
   spv_opcode_table opcodeTable;
   spv_result_t error = spvOpcodeTableGet(&opcodeTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_operand_table operandTable;
   error = spvOperandTableGet(&operandTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_ext_inst_table extInstTable;
   error = spvExtInstTableGet(&extInstTable);
-  spvCheck(error, fprintf(stderr, "error: Internal malfunction.\n"));
+  if (error) fprintf(stderr, "error: Internal malfunction.\n");
 
   // If the printing option is turned on, then spvBinaryToText should
   // do the printing.  In particular, colour printing on Windows is
@@ -147,8 +154,11 @@ int main(int argc, char **argv) {
   error = spvBinaryToTextWithFormat(contents.data(), contents.size(), options,
                                     opcodeTable, operandTable, extInstTable,
                                     format, textOrNull, &diagnostic);
-  spvCheck(error, spvDiagnosticPrint(diagnostic);
-           spvDiagnosticDestroy(diagnostic); return error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+    return error;
+  }
 
   // Output the result.
   if (!printOptionOn) {

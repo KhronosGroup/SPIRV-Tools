@@ -52,9 +52,8 @@ static const union {
 
 spv_result_t spvBinaryEndianness(const spv_binary binary,
                                  spv_endianness_t *pEndian) {
-  spvCheck(!binary->code || !binary->wordCount,
-           return SPV_ERROR_INVALID_BINARY);
-  spvCheck(!pEndian, return SPV_ERROR_INVALID_POINTER);
+  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
+  if (!pEndian) return SPV_ERROR_INVALID_POINTER;
 
   uint8_t bytes[4];
   memcpy(bytes, binary->code, sizeof(uint32_t));
@@ -87,9 +86,8 @@ uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian) {
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t *pHeader) {
-  spvCheck(!binary->code || !binary->wordCount,
-           return SPV_ERROR_INVALID_BINARY);
-  spvCheck(!pHeader, return SPV_ERROR_INVALID_POINTER);
+  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
+  if (!pHeader) return SPV_ERROR_INVALID_POINTER;
 
   // TODO: Validation checking?
   pHeader->magic = spvFixWord(binary->code[SPV_INDEX_MAGIC_NUMBER], endian);
@@ -104,9 +102,8 @@ spv_result_t spvBinaryHeaderGet(const spv_binary binary,
 }
 
 spv_result_t spvBinaryHeaderSet(spv_binary_t *binary, const uint32_t bound) {
-  spvCheck(!binary, return SPV_ERROR_INVALID_BINARY);
-  spvCheck(!binary->code || !binary->wordCount,
-           return SPV_ERROR_INVALID_BINARY);
+  if (!binary) return SPV_ERROR_INVALID_BINARY;
+  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
 
   binary->code[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
   binary->code[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
@@ -120,10 +117,11 @@ spv_result_t spvBinaryHeaderSet(spv_binary_t *binary, const uint32_t bound) {
 spv_result_t spvBinaryEncodeU32(const uint32_t value, spv_instruction_t *pInst,
                                 const spv_position position,
                                 spv_diagnostic *pDiagnostic) {
-  spvCheck(pInst->wordCount + 1 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX,
-           DIAGNOSTIC << "Instruction word count '"
-                      << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
-           return SPV_ERROR_INVALID_TEXT);
+  if (pInst->wordCount + 1 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
+    DIAGNOSTIC << "Instruction word count '"
+               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
+    return SPV_ERROR_INVALID_TEXT;
+  }
 
   pInst->words[pInst->wordCount++] = (uint32_t)value;
   return SPV_SUCCESS;
@@ -132,10 +130,11 @@ spv_result_t spvBinaryEncodeU32(const uint32_t value, spv_instruction_t *pInst,
 spv_result_t spvBinaryEncodeU64(const uint64_t value, spv_instruction_t *pInst,
                                 const spv_position position,
                                 spv_diagnostic *pDiagnostic) {
-  spvCheck(pInst->wordCount + 2 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX,
-           DIAGNOSTIC << "Instruction word count '"
-                      << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
-           return SPV_ERROR_INVALID_TEXT);
+  if (pInst->wordCount + 2 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
+    DIAGNOSTIC << "Instruction word count '"
+               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
+    return SPV_ERROR_INVALID_TEXT;
+  }
 
   uint32_t low = (uint32_t)(0x00000000ffffffff & value);
   uint32_t high = (uint32_t)((0xffffffff00000000 & value) >> 32);
@@ -149,11 +148,12 @@ spv_result_t spvBinaryEncodeString(const char *str, spv_instruction_t *pInst,
                                    spv_diagnostic *pDiagnostic) {
   size_t length = strlen(str);
   size_t wordCount = (length / 4) + 1;
-  spvCheck((sizeof(uint32_t) * pInst->wordCount) + length >
-               sizeof(uint32_t) * SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX,
-           DIAGNOSTIC << "Instruction word count '"
-                      << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "'exceeded.";
-           return SPV_ERROR_INVALID_TEXT);
+  if ((sizeof(uint32_t) * pInst->wordCount) + length >
+      sizeof(uint32_t) * SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
+    DIAGNOSTIC << "Instruction word count '"
+               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "'exceeded.";
+    return SPV_ERROR_INVALID_TEXT;
+  }
 
   char *dest = (char *)&pInst->words[pInst->wordCount];
   strncpy(dest, str, length);
@@ -209,8 +209,8 @@ spv_result_t spvBinaryDecodeOperand(
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
     out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
-  spvCheck(!words || !position, return SPV_ERROR_INVALID_POINTER);
-  spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
+  if (!words || !position) return SPV_ERROR_INVALID_POINTER;
+  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   bool print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   bool color =
@@ -248,11 +248,11 @@ spv_result_t spvBinaryDecodeOperand(
       // NOTE: Special case for extended instruction use
       if (OpExtInst == opcode) {
         spv_ext_inst_desc extInst;
-        spvCheck(spvExtInstTableValueLookup(extInstTable, *pExtInstType,
-                                            words[0], &extInst),
-                 DIAGNOSTIC << "Invalid extended instruction '" << words[0]
-                            << "'.";
-                 return SPV_ERROR_INVALID_BINARY);
+        if (spvExtInstTableValueLookup(extInstTable, *pExtInstType, words[0],
+                                       &extInst)) {
+          DIAGNOSTIC << "Invalid extended instruction '" << words[0] << "'.";
+          return SPV_ERROR_INVALID_BINARY;
+        }
         spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
         stream.get() << (color ? clr::red() : "");
         stream.get() << extInst->name;
@@ -273,10 +273,11 @@ spv_result_t spvBinaryDecodeOperand(
       // NOTE: Special case for extended instruction import
       if (OpExtInstImport == opcode) {
         *pExtInstType = spvExtInstImportTypeGet(string);
-        spvCheck(SPV_EXT_INST_TYPE_NONE == *pExtInstType,
-                 DIAGNOSTIC << "Invalid extended instruction import'" << string
-                            << "'.";
-                 return SPV_ERROR_INVALID_BINARY);
+        if (SPV_EXT_INST_TYPE_NONE == *pExtInstType) {
+          DIAGNOSTIC << "Invalid extended instruction import'" << string
+                     << "'.";
+          return SPV_ERROR_INVALID_BINARY;
+        }
       }
 
       stream.get() << "\"";
@@ -315,12 +316,12 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       spv_operand_desc entry;
-      spvCheck(
-          spvOperandTableValueLookup(operandTable, type,
-                                     spvFixWord(words[index], endian), &entry),
-          DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
-                     << words[index] << "'.";
-          return SPV_ERROR_INVALID_TEXT);
+      if (spvOperandTableValueLookup(
+              operandTable, type, spvFixWord(words[index], endian), &entry)) {
+        DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
+                   << words[index] << "'.";
+        return SPV_ERROR_INVALID_TEXT;
+      }
       stream.get() << entry->name;
       // Prepare to accept operands to this operand, if needed.
       spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
@@ -342,10 +343,10 @@ spv_result_t spvBinaryDecodeOpcode(
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_assembly_syntax_format_t format, out_stream &stream,
     spv_position position, spv_diagnostic *pDiagnostic) {
-  spvCheck(!pInst || !position, return SPV_ERROR_INVALID_POINTER);
-  spvCheck(!opcodeTable || !operandTable || !extInstTable,
-           return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
+  if (!pInst || !position) return SPV_ERROR_INVALID_POINTER;
+  if (!opcodeTable || !operandTable || !extInstTable)
+    return SPV_ERROR_INVALID_TABLE;
+  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   spv_position_t instructionStart = *position;
 
@@ -354,9 +355,10 @@ spv_result_t spvBinaryDecodeOpcode(
   spvOpcodeSplit(spvFixWord(pInst->words[0], endian), &wordCount, &opcode);
 
   spv_opcode_desc opcodeEntry;
-  spvCheck(spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry),
-           DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
-           return SPV_ERROR_INVALID_BINARY);
+  if (spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry)) {
+    DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   // See if there are enough required words.
   // Some operands in the operand types are optional or could be zero length.
@@ -407,12 +409,13 @@ spv_result_t spvBinaryDecodeOpcode(
     const uint64_t currentPosIndex = position->index;
     const bool currentIsResultId = result_id_index == index - 1;
 
-    spvCheck(expectedOperands.empty(),
-             DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-                        << " starting at word " << instructionStart.index
-                        << ": expected no more operands after " << index
-                        << " words, but word count is " << wordCount << ".";
-             return SPV_ERROR_INVALID_BINARY;);
+    if (expectedOperands.empty()) {
+      DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
+                 << " starting at word " << instructionStart.index
+                 << ": expected no more operands after " << index
+                 << " words, but word count is " << wordCount << ".";
+      return SPV_ERROR_INVALID_BINARY;
+    }
 
     spv_operand_type_t type = spvTakeFirstMatchableOperand(&expectedOperands);
 
@@ -421,26 +424,26 @@ spv_result_t spvBinaryDecodeOpcode(
     } else {
       stream.get() << " ";
     }
-    spvCheck(
-        spvBinaryDecodeOperand(
+    if (spvBinaryDecodeOperand(
             opcodeEntry->opcode, type, pInst->words + index, endian, options,
             operandTable, extInstTable, &expectedOperands, &pInst->extInstType,
             (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
                                                      : stream),
-            position, pDiagnostic),
-        DIAGNOSTIC << "UNEXPLAINED ERROR";
-        return SPV_ERROR_INVALID_BINARY);
+            position, pDiagnostic)) {
+      DIAGNOSTIC << "UNEXPLAINED ERROR";
+      return SPV_ERROR_INVALID_BINARY;
+    }
     if (isAssigmentFormat && currentIsResultId) stream.get() << " = ";
     index += (uint16_t)(position->index - currentPosIndex - 1);
   }
   // TODO(dneto): There's an opportunity for a more informative message.
-  spvCheck(!expectedOperands.empty() &&
-               !spvOperandIsOptional(expectedOperands.front()),
-           DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-                      << " starting at word " << instructionStart.index << ": "
-                      << " expected more operands after " << wordCount
-                      << " words.";
-           return SPV_ERROR_INVALID_BINARY;);
+  if (!expectedOperands.empty() &&
+      !spvOperandIsOptional(expectedOperands.front())) {
+    DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
+               << " starting at word " << instructionStart.index
+               << ": expected more operands after " << wordCount << " words.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   stream.get() << no_result_id_strstream.str();
 
@@ -466,27 +469,30 @@ spv_result_t spvBinaryToTextWithFormat(
   spv_binary_t binary = {code, wordCount};
 
   spv_position_t position = {};
-  spvCheck(!binary.code || !binary.wordCount, DIAGNOSTIC
-                                                  << "Binary stream is empty.";
-           return SPV_ERROR_INVALID_BINARY);
-  spvCheck(!opcodeTable || !operandTable || !extInstTable,
-           return SPV_ERROR_INVALID_TABLE);
-  spvCheck(pText && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options),
-           return SPV_ERROR_INVALID_POINTER);
-  spvCheck(!pText && !spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options),
-           return SPV_ERROR_INVALID_POINTER);
-  spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
+  if (!binary.code || !binary.wordCount) {
+    DIAGNOSTIC << "Binary stream is empty.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
+  if (!opcodeTable || !operandTable || !extInstTable)
+    return SPV_ERROR_INVALID_TABLE;
+  if (pText && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options))
+    return SPV_ERROR_INVALID_POINTER;
+  if (!pText && !spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options))
+    return SPV_ERROR_INVALID_POINTER;
+  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   spv_endianness_t endian;
-  spvCheck(spvBinaryEndianness(&binary, &endian),
-           DIAGNOSTIC << "Invalid SPIR-V magic number '" << std::hex
-                      << binary.code[0] << "'.";
-           return SPV_ERROR_INVALID_BINARY);
+  if (spvBinaryEndianness(&binary, &endian)) {
+    DIAGNOSTIC << "Invalid SPIR-V magic number '" << std::hex << binary.code[0]
+               << "'.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   spv_header_t header;
-  spvCheck(spvBinaryHeaderGet(&binary, endian, &header),
-           DIAGNOSTIC << "Invalid SPIR-V header.";
-           return SPV_ERROR_INVALID_BINARY);
+  if (spvBinaryHeaderGet(&binary, endian, &header)) {
+    DIAGNOSTIC << "Invalid SPIR-V header.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   bool print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   bool color =
@@ -525,15 +531,16 @@ spv_result_t spvBinaryToTextWithFormat(
     spvInstructionCopy(&words[position.index], opcode, wordCount, endian,
                        &inst);
 
-    spvCheck(spvBinaryDecodeOpcode(&inst, endian, options, opcodeTable,
-                                   operandTable, extInstTable, format, stream,
-                                   &position, pDiagnostic),
-             return SPV_ERROR_INVALID_BINARY);
+    if (spvBinaryDecodeOpcode(&inst, endian, options, opcodeTable, operandTable,
+                              extInstTable, format, stream, &position,
+                              pDiagnostic))
+      return SPV_ERROR_INVALID_BINARY;
     extInstType = inst.extInstType;
 
-    spvCheck((index + wordCount) != position.index,
-             DIAGNOSTIC << "Invalid word count.";
-             return SPV_ERROR_INVALID_BINARY);
+    if ((index + wordCount) != position.index) {
+      DIAGNOSTIC << "Invalid word count.";
+      return SPV_ERROR_INVALID_BINARY;
+    }
 
     stream.get() << "\n";
   }
@@ -541,10 +548,10 @@ spv_result_t spvBinaryToTextWithFormat(
   if (!print) {
     size_t length = sstream.str().size();
     char *str = new char[length + 1];
-    spvCheck(!str, return SPV_ERROR_OUT_OF_MEMORY);
+    if (!str) return SPV_ERROR_OUT_OF_MEMORY;
     strncpy(str, sstream.str().c_str(), length + 1);
     spv_text text = new spv_text_t();
-    spvCheck(!text, return SPV_ERROR_OUT_OF_MEMORY);
+    if (!text) return SPV_ERROR_OUT_OF_MEMORY;
     text->str = str;
     text->length = length;
     *pText = text;
@@ -554,7 +561,7 @@ spv_result_t spvBinaryToTextWithFormat(
 }
 
 void spvBinaryDestroy(spv_binary binary) {
-  spvCheck(!binary, return );
+  if (!binary) return;
   if (binary->code) {
     delete[] binary->code;
   }

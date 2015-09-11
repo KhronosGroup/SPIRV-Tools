@@ -124,7 +124,7 @@ static const spv_ext_inst_desc_t openclStd21Entries[] = {
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
-  spvCheck(!pExtInstTable, return SPV_ERROR_INVALID_POINTER);
+  if (!pExtInstTable) return SPV_ERROR_INVALID_POINTER;
 
   static const spv_ext_inst_group_t groups[] = {
       {SPV_EXT_INST_TYPE_GLSL_STD_450,
@@ -169,8 +169,8 @@ spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
                                        const char *name,
                                        spv_ext_inst_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
     auto &group = table->groups[groupIndex];
@@ -192,8 +192,8 @@ spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const spv_ext_inst_type_t type,
                                         const uint32_t value,
                                         spv_ext_inst_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
     auto &group = table->groups[groupIndex];
