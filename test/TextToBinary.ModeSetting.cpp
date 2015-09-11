@@ -35,6 +35,7 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::MakeVector;
 using ::testing::Eq;
 
 // Test OpMemoryModel
@@ -77,6 +78,48 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
                         }));
 #undef CASE
 // clang-format on
+
+// Test OpEntryPoint
+
+// An example case for OpEntryPoint
+struct EntryPointCase {
+  spv::ExecutionModel execution_value;
+  std::string execution_name;
+  std::string entry_point_name;
+};
+
+using OpEntryPointTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EntryPointCase>>;
+
+TEST_P(OpEntryPointTest, AnyEntryPointCase) {
+  // TODO(dneto): utf-8, escaping, quoting cases for entry point name.
+  std::string input = "OpEntryPoint " + GetParam().execution_name +
+                      " %1 \"" + GetParam().entry_point_name + "\"";
+  std::vector<uint32_t> expected_operands{GetParam().execution_value, 1};
+  std::vector<uint32_t> encoded_entry_point_name =
+      MakeVector(GetParam().entry_point_name);
+  expected_operands.insert(expected_operands.end(),
+                           encoded_entry_point_name.begin(),
+                           encoded_entry_point_name.end());
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpEntryPoint, expected_operands)));
+}
+
+// clang-format off
+#define CASE(NAME) spv::ExecutionModel##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(TextToBinaryEntryPoint, OpEntryPointTest,
+                        ::testing::ValuesIn(std::vector<EntryPointCase>{
+                          { CASE(Vertex), "" },
+                          { CASE(TessellationControl), "my tess" },
+                          { CASE(TessellationEvaluation), "really fancy" },
+                          { CASE(Geometry), "Euclid" },
+                          { CASE(Fragment), "FAT32" },
+                          { CASE(GLCompute), "cubic" },
+                          { CASE(Kernel), "Sanders" },
+                        }));
+#undef CASE
+// clang-format on
+
 // Test OpCapability
 
 struct CapabilityCase {
@@ -137,8 +180,6 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryCapability, OpCapabilityTest,
 #undef CASE
 // clang-format on
 
-// TODO(dneto): OpMemoryModel
-// TODO(dneto): OpMemoryEntryPoint
 // TODO(dneto): OpExecutionMode
 
 }  // anonymous namespace
