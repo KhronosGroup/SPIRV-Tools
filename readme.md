@@ -27,6 +27,13 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-09-11
+* Assembly format must be consistent across the entire source module.
+  * Add API assembler and disassembler entry points to control the format.
+  * Add command line options to assembler and disassembler to force it:
+    --syntax-format=assignment
+    --syntax-format=canonical
+    The default is "assignment".
 * Fixes decorations:
   * Names: SaturatedConversion, FuncParamAttr NoCapture
   * Values: Fixes values for some decorations: BuiltIn LocalInvocationId, and BuiltIn
