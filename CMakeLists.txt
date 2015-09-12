@@ -192,6 +192,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Memory.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Miscellaneous.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.ModeSetting.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.TypeDeclaration.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
