@@ -1004,7 +1004,7 @@ static const spv_operand_desc_t functionControlEntries[] = {
      SPV_OPCODE_FLAGS_NONE,
      0,
      {SPV_OPERAND_TYPE_NONE}},
-    {"InLine",
+    {"Inline",
      FunctionControlInlineMask,
      SPV_OPCODE_FLAGS_NONE,
      0,

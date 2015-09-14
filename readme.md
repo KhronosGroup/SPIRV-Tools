@@ -27,6 +27,8 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+* Fixed spelling of Function Control "Inline" enumerated value.
+
 2015-09-11
 * Assembly format must be consistent across the entire source module.
   * Add API assembler and disassembler entry points to control the format.
