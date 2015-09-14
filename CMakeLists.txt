@@ -186,6 +186,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextStartsNewInst.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Annotation.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.ControlFlow.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Debug.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Miscellaneous.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.ModeSetting.cpp
