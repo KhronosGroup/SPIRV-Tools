@@ -69,6 +69,30 @@ INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
 
 // TODO(dneto): Combination of selection control masks.
 
+// Test OpLoopMerge
+
+using OpLoopMergeTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
+
+TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
+  std::string input = "OpLoopMerge %1 " + GetParam().name;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().value})));
+}
+
+// clang-format off
+#define CASE(VALUE,NAME) { spv::LoopControl##VALUE, NAME}
+INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
+                        ::testing::ValuesIn(std::vector<EnumCase<spv::LoopControlMask>>{
+                            CASE(MaskNone, "None"),
+                            CASE(UnrollMask, "Unroll"),
+                            CASE(DontUnrollMask, "DontUnroll"),
+                        }));
+#undef CASE
+// clang-format on
+
+// TODO(dneto): Combination of loop control masks.
+
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge
 // TODO(dneto): OpLabel
