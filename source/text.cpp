@@ -383,7 +383,8 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_RESULT_ID: {
+    case SPV_OPERAND_TYPE_RESULT_ID:
+    case SPV_OPERAND_TYPE_EXECUTION_SCOPE: {
       if ('%' == textValue[0]) {
         textValue++;
       }
@@ -396,10 +397,8 @@ spv_result_t spvTextEncodeOperand(
           if (spvOperandIsOptional(type)) {
             return SPV_FAILED_MATCH;
           } else {
-            DIAGNOSTIC << "Invalid "
-                       << ((type == SPV_OPERAND_TYPE_RESULT_ID) ? "result "
-                                                                : "")
-                       << "ID '" << textValue << "'.";
+            DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " '"
+                       << textValue << "'.";
             return SPV_ERROR_INVALID_TEXT;
           }
         }

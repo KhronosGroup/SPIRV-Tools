@@ -1445,7 +1445,9 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
 const char *spvOperandTypeStr(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
-      return "id";
+    case SPV_OPERAND_TYPE_OPTIONAL_ID:
+    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
+      return "ID";
     case SPV_OPERAND_TYPE_RESULT_ID:
       return "result ID";
     case SPV_OPERAND_TYPE_LITERAL:
@@ -1497,7 +1499,7 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
       return "memory access";
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
-      return "execution scope";
+      return "execution scope ID";
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
       return "group operation";
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
