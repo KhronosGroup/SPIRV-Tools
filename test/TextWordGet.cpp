@@ -28,10 +28,10 @@
 
 namespace {
 
-#define TAB       "\t"
-#define NEWLINE   "\n"
+#define TAB "\t"
+#define NEWLINE "\n"
 #define BACKSLASH R"(\)"
-#define QUOTE     R"(")"
+#define QUOTE R"(")"
 
 TEST(TextWordGet, NullTerminator) {
   char textStr[] = "Word";

@@ -94,10 +94,10 @@ TEST_F(BinaryToText, InvalidCode) {
   spv_binary_t binary = {nullptr, 42};
   spv_text text;
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryToText(nullptr, 42,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            operandTable, extInstTable, &text, &diagnostic));
+  ASSERT_EQ(
+      SPV_ERROR_INVALID_BINARY,
+      spvBinaryToText(nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                      operandTable, extInstTable, &text, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

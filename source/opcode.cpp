@@ -154,12 +154,12 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
   return SPV_OPERAND_TYPE_NONE;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // Finish populating the opcodeTableEntries array.
 void spvOpcodeTableInitialize() {
   // Compute the operandTypes field for each entry.
-  for (auto& opcode : opcodeTableEntries) {
+  for (auto &opcode : opcodeTableEntries) {
     opcode.numTypes = 0;
     // Type ID always comes first, if present.
     if (opcode.hasType)
@@ -167,11 +167,16 @@ void spvOpcodeTableInitialize() {
     // Result ID always comes next, if present
     if (opcode.hasResult)
       opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_RESULT_ID;
-    const uint16_t maxNumOperands = sizeof(opcode.operandTypes)/sizeof(opcode.operandTypes[0]);
-    const uint16_t maxNumClasses = sizeof(opcode.operandClass)/sizeof(opcode.operandClass[0]);
-    for (uint16_t classIndex = 0; opcode.numTypes < maxNumOperands && classIndex < maxNumClasses ; classIndex++ ) {
+    const uint16_t maxNumOperands =
+        sizeof(opcode.operandTypes) / sizeof(opcode.operandTypes[0]);
+    const uint16_t maxNumClasses =
+        sizeof(opcode.operandClass) / sizeof(opcode.operandClass[0]);
+    for (uint16_t classIndex = 0;
+         opcode.numTypes < maxNumOperands && classIndex < maxNumClasses;
+         classIndex++) {
       const OperandClass operandClass = opcode.operandClass[classIndex];
-      opcode.operandTypes[opcode.numTypes++] = convertOperandClassToType(opcode.opcode, operandClass);
+      opcode.operandTypes[opcode.numTypes++] =
+          convertOperandClassToType(opcode.opcode, operandClass);
       // The OperandNone value is not explicitly represented in the .inc file.
       // However, it is the zero value, and is created via implicit value
       // initialization.
@@ -182,8 +187,9 @@ void spvOpcodeTableInitialize() {
     }
     // We should have written the terminating SPV_OPERAND_TYPE_NONE entry, but
     // also without overflowing.
-    assert((opcode.numTypes < maxNumOperands)
-           && "Operand class list is too long.  Expand spv_opcode_desc_t.operandClass");
+    assert((opcode.numTypes < maxNumOperands) &&
+           "Operand class list is too long.  Expand "
+           "spv_opcode_desc_t.operandClass");
   }
   opcodeTableInitialized = true;
 }

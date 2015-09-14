@@ -39,7 +39,7 @@
 #ifdef __ANDROID__
 #include <sstream>
 namespace std {
-template<typename T>
+template <typename T>
 std::string to_string(const T& val) {
   std::ostringstream os;
   os << val;
@@ -62,7 +62,6 @@ static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
-
 
 // A namespace for utilities used in SPIR-V Tools unit tests.
 // TODO(dneto): Move other type declarations into this namespace.
@@ -98,7 +97,8 @@ class WordVector {
 inline void PrintTo(const WordVector& words, ::std::ostream* os) {
   size_t count = 0;
   for (uint32_t value : words.value()) {
-    *os << "0x" << std::setw(8) << std::setfill('0') << std::hex << value << " ";
+    *os << "0x" << std::setw(8) << std::setfill('0') << std::hex << value
+        << " ";
     if (count++ % 8 == 7) {
       *os << std::endl;
     }
@@ -108,8 +108,8 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
 
 // Returns a vector of words representing a single instruction with the
 // given opcode and operand words as a vector.
-inline std::vector<uint32_t> MakeInstruction(
-    spv::Op opcode, std::vector<uint32_t> args) {
+inline std::vector<uint32_t> MakeInstruction(spv::Op opcode,
+                                             std::vector<uint32_t> args) {
   std::vector<uint32_t> result{
       spvOpcodeMake(uint16_t(args.size() + 1), opcode)};
   result.insert(result.end(), args.begin(), args.end());
@@ -133,13 +133,13 @@ inline std::vector<uint32_t> MakeVector(std::string input) {
     }
   }
   // Emit a trailing partial word.
-  if ((num_bytes+1) % sizeof(uint32_t)) {
+  if ((num_bytes + 1) % sizeof(uint32_t)) {
     result.push_back(word);
   }
   return result;
 }
 
-} // namespace spvtest
+}  // namespace spvtest
 
 // A type for easily creating spv_text_t values, with an implicit conversion to
 // spv_text.

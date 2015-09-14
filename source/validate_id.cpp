@@ -100,7 +100,7 @@ class idUsage {
     return idUses.end() != item;
   }
   bool foundUses(std::unordered_map<
-      uint32_t, std::vector<spv_id_info_t>>::const_iterator item) {
+                 uint32_t, std::vector<spv_id_info_t>>::const_iterator item) {
     return idUses.end() != item;
   }
 
@@ -620,8 +620,8 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
           // TODO: Output ID's on diagnostic
           DIAG(inst->wordCount - 1)
               << "OpConstantComposite Constituent <id> count does not match "
-                 "Result Type <id> '" << resultType->second.id
-              << "'s vector component count.";
+                 "Result Type <id> '"
+              << resultType->second.id << "'s vector component count.";
           return false);
       auto componentType = find(resultType->second.inst->words[2]);
       spvCheck(!found(componentType), assert(0 && "Unreachable!"));
@@ -653,8 +653,8 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
           // TODO: Output ID's on diagnostic
           DIAG(inst->wordCount - 1)
               << "OpConstantComposite Constituent <id> count does not match "
-                 "Result Type <id> '" << resultType->second.id
-              << "'s matrix column count.";
+                 "Result Type <id> '"
+              << resultType->second.id << "'s matrix column count.";
           return false);
 
       auto columnType = find(resultType->second.inst->words[2]);
@@ -715,8 +715,8 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
       spvCheck(length->second.inst->words[3] != constituentCount,
                DIAG(inst->wordCount - 1)
                    << "OpConstantComposite Constituent count does not match "
-                      "Result Type <id> '" << resultType->second.id
-                   << "'s array length.";
+                      "Result Type <id> '"
+                   << resultType->second.id << "'s array length.";
                return false);
       for (uint64_t constituentIndex = 3; constituentIndex < inst->wordCount;
            constituentIndex++) {
@@ -2603,7 +2603,7 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
 #undef FAIL
 #undef CASE
 }
-}//anonymous namespace
+}  // anonymous namespace
 
 spv_result_t spvValidateInstructionIDs(
     const spv_instruction_t *pInsts, const uint64_t instCount,

@@ -74,7 +74,7 @@ typedef spv_named_id_table_t *spv_named_id_table;
 /// @param[in] str the source string
 ///
 /// @return word as a string
-std::string spvGetWord(const char* str);
+std::string spvGetWord(const char *str);
 
 /// @brief Advance text to the start of the next line
 ///
@@ -195,7 +195,7 @@ spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    spv_operand_pattern_t* pExpectedOperands, uint32_t *pBound,
+    spv_operand_pattern_t *pExpectedOperands, uint32_t *pBound,
     const spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
 
 /// @brief Translate single Opcode and operands to binary form

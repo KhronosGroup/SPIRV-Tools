@@ -61,7 +61,8 @@ void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, Op *opcode);
 ///
 /// @return result code
 spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
-                                    const char *name, spv_opcode_desc *pEntry);
+                                      const char *name,
+                                      spv_opcode_desc *pEntry);
 
 /// @brief Find the opcode ID in the table
 ///
@@ -71,7 +72,8 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 ///
 /// @return result code
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
-                                     const Op opcode, spv_opcode_desc *pEntry);
+                                       const Op opcode,
+                                       spv_opcode_desc *pEntry);
 
 /// @brief Get the argument index for the <result-id> operand, if any.
 ///

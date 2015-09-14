@@ -84,8 +84,9 @@ OpReturn
 OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
