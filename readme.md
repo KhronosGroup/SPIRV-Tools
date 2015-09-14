@@ -144,7 +144,15 @@ There are three main entry points into the library.
 In addition to the interface header `<spirv-dir>/include/libspirv/libspirv.h`
 the implementation source files reside in `<spirv-dir>/source/*`.
 
-## Tools
+The parsers for the assembler and disassembler use a table describing the
+syntax of each core instruction.  This table can be generated from the SPIR-V
+document generator:
+
+1. Apply the patch in `source/core_syntax_table.patch` to the document generator.
+2. Run the document generator with the `-a` option and place the results in
+the `opcode.inc` file in the SPIR-V Tools `source` directory.
+3. Be aware of version skew: The SPIR-V document generator might target a newer
+verison of the spec than targeted by the SPIR-V tools.
 
 ### Assembler
 
