@@ -234,16 +234,6 @@ spv_result_t spvBinaryDecodeOperand(
       index++;
       position->index++;
     } break;
-    case SPV_OPERAND_TYPE_LITERAL:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
-    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
-      // TODO: Need to support multiple word literals
-      stream.get() << (color ? clr::red() : "");
-      stream.get() << spvFixWord(words[index], endian);
-      stream.get() << (color ? clr::reset() : "");
-      index++;
-      position->index++;
-    } break;
     case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
       // NOTE: Special case for extended instruction use
       if (OpExtInst == opcode) {
@@ -257,11 +247,18 @@ spv_result_t spvBinaryDecodeOperand(
         stream.get() << (color ? clr::red() : "");
         stream.get() << extInst->name;
         stream.get() << (color ? clr::reset() : "");
-      } else {
-        stream.get() << (color ? clr::red() : "");
-        stream.get() << spvFixWord(words[index], endian);
-        stream.get() << (color ? clr::reset() : "");
+        index++;
+        position->index++;
+        break;
       }
+    }  // Fall through for the general case.
+    case SPV_OPERAND_TYPE_LITERAL:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
+    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
+      // TODO: Need to support multiple word literals
+      stream.get() << (color ? clr::red() : "");
+      stream.get() << spvFixWord(words[index], endian);
+      stream.get() << (color ? clr::reset() : "");
       index++;
       position->index++;
     } break;
