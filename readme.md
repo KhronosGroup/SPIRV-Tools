@@ -28,6 +28,7 @@ The validator is incomplete.  See the Future Work section for more information.
 ## CHANGES (for tools hackers)
 
 * Fixed spelling of Function Control "Inline" enumerated value.
+* Fixed: `Aligned` memory access flag takes a literal number operand.
 
 2015-09-11
 * Assembly format must be consistent across the entire source module.

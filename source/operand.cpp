@@ -1102,7 +1102,7 @@ static const spv_operand_desc_t memoryAccessEntries[] = {
      MemoryAccessAlignedMask,
      SPV_OPCODE_FLAGS_NONE,
      0,
-     {SPV_OPERAND_TYPE_NONE},
+     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE},
     },
 };
 
