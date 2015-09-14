@@ -216,7 +216,6 @@ spv_result_t spvBinaryDecodeOperand(
   bool color =
       print && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options);
 
-  uint64_t index = 0;
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_RESULT_ID:
@@ -229,9 +228,8 @@ spv_result_t spvBinaryDecodeOperand(
           stream.get() << clr::yellow();
         }
       }
-      stream.get() << "%" << spvFixWord(words[index], endian);
+      stream.get() << "%" << spvFixWord(words[0], endian);
       stream.get() << ((color) ? clr::reset() : "");
-      index++;
       position->index++;
     } break;
     case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
@@ -247,7 +245,6 @@ spv_result_t spvBinaryDecodeOperand(
         stream.get() << (color ? clr::red() : "");
         stream.get() << extInst->name;
         stream.get() << (color ? clr::reset() : "");
-        index++;
         position->index++;
         break;
       }
@@ -257,14 +254,13 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
       // TODO: Need to support multiple word literals
       stream.get() << (color ? clr::red() : "");
-      stream.get() << spvFixWord(words[index], endian);
+      stream.get() << spvFixWord(words[0], endian);
       stream.get() << (color ? clr::reset() : "");
-      index++;
       position->index++;
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
-      const char *string = (const char *)&words[index];
+      const char *string = (const char *)words;
       uint64_t stringOperandCount = (strlen(string) / 4) + 1;
 
       // NOTE: Special case for extended instruction import
@@ -282,7 +278,6 @@ spv_result_t spvBinaryDecodeOperand(
       stream.get() << string;
       stream.get() << (color ? clr::reset() : "");
       stream.get() << "\"";
-      index += stringOperandCount;
       position->index += stringOperandCount;
     } break;
     case SPV_OPERAND_TYPE_CAPABILITY:
@@ -313,16 +308,15 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       spv_operand_desc entry;
-      if (spvOperandTableValueLookup(
-              operandTable, type, spvFixWord(words[index], endian), &entry)) {
+      if (spvOperandTableValueLookup(operandTable, type,
+                                     spvFixWord(words[0], endian), &entry)) {
         DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
-                   << words[index] << "'.";
+                   << words[0] << "'.";
         return SPV_ERROR_INVALID_TEXT;
       }
       stream.get() << entry->name;
       // Prepare to accept operands to this operand, if needed.
       spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
-      index++;
       position->index++;
     } break;
     default: {
