@@ -41,6 +41,16 @@
 /// @return word with host endianness correction
 uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian);
 
+/// @brief Fix the endianness of a double word
+///
+/// @param[in] low the lower 32-bit of the double word
+/// @param[in] high the higher 32-bit of the double word
+/// @param[in] endian the desired endianness
+///
+/// @return word with host endianness correction
+uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
+                          const spv_endianness_t endian);
+
 /// @brief Determine the endianness of the SPV binary
 ///
 /// Gets the endianness of the SPV source. Returns SPV_ENDIANNESS_UNKNOWN if
@@ -141,7 +151,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
 /// @return result code
 spv_result_t spvBinaryDecodeOperand(
     const Op opcode, const spv_operand_type_t type, const uint32_t *words,
-    const spv_endianness_t endian, const uint32_t options,
+    uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
     out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic);

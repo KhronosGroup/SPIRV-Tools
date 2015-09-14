@@ -1454,6 +1454,8 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "literal";
     case SPV_OPERAND_TYPE_LITERAL_NUMBER:
       return "literal number";
+    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
+      return "multiple word literal number";
     case SPV_OPERAND_TYPE_LITERAL_STRING:
       return "literal string";
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:

@@ -435,6 +435,9 @@ spv_result_t spvTextEncodeOperand(
         return SPV_ERROR_INVALID_TEXT;
       }
     } break;
+    // TODO(antiagainst): the handling of literal numbers in this function need
+    // to be reorganized.
+    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_LITERAL:
     case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL: {

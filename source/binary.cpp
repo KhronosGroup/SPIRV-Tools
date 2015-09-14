@@ -83,6 +83,11 @@ uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian) {
   return word;
 }
 
+uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
+                          const spv_endianness_t endian) {
+  return (uint64_t(spvFixWord(high, endian)) << 32) | spvFixWord(low, endian);
+}
+
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t *pHeader) {
@@ -205,7 +210,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
 
 spv_result_t spvBinaryDecodeOperand(
     const Op opcode, const spv_operand_type_t type, const uint32_t *words,
-    const spv_endianness_t endian, const uint32_t options,
+    uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
     spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
     out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
@@ -249,14 +254,23 @@ spv_result_t spvBinaryDecodeOperand(
         break;
       }
     }  // Fall through for the general case.
+    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_LITERAL:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
     case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
       // TODO: Need to support multiple word literals
       stream.get() << (color ? clr::red() : "");
-      stream.get() << spvFixWord(words[0], endian);
+      if (numWords > 2) {
+        DIAGNOSTIC << "Literal numbers larger than 64-bit not supported yet.";
+        return SPV_UNSUPPORTED;
+      } else if (numWords == 2) {
+        stream.get() << spvFixDoubleWord(words[0], words[1], endian);
+        position->index += 2;
+      } else {
+        stream.get() << spvFixWord(words[0], endian);
+        position->index++;
+      }
       stream.get() << (color ? clr::reset() : "");
-      position->index++;
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
@@ -415,9 +429,25 @@ spv_result_t spvBinaryDecodeOpcode(
     } else {
       stream.get() << " ";
     }
+
+    uint16_t numWords = 1;
+    if (type == SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER) {
+      // Make sure this is the last operand for this instruction.
+      if (expectedOperands.empty()) {
+        numWords = wordCount - index;
+      } else {
+        // TODO(antiagainst): This may not be an error. The exact design has not
+        // been settled yet.
+        DIAGNOSTIC << "Multiple word literal numbers can only appear as the "
+                      "last operand of an instruction.";
+        return SPV_ERROR_INVALID_BINARY;
+      }
+    }
+
     if (spvBinaryDecodeOperand(
-            opcodeEntry->opcode, type, pInst->words + index, endian, options,
-            operandTable, extInstTable, &expectedOperands, &pInst->extInstType,
+            opcodeEntry->opcode, type, pInst->words + index, numWords, endian,
+            options, operandTable, extInstTable, &expectedOperands,
+            &pInst->extInstType,
             (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
                                                      : stream),
             position, pDiagnostic)) {

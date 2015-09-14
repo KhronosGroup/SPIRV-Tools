@@ -90,6 +90,9 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
       default:
         break;
     }
+  } else if (operandClass == OperandVariableLiterals) {
+    if (opcode == spv::OpConstant || opcode == spv::OpSpecConstant)
+      return SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER;
   }
 
   switch(operandClass) {

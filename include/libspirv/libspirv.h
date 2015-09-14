@@ -146,6 +146,8 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_RESULT_ID,
   SPV_OPERAND_TYPE_LITERAL,  // Either a literal number or literal string
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
+  // A literal number that can (but is not required to) expand multiple words.
+  SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
   SPV_OPERAND_TYPE_LITERAL_STRING,
   SPV_OPERAND_TYPE_SOURCE_LANGUAGE,
   SPV_OPERAND_TYPE_EXECUTION_MODEL,

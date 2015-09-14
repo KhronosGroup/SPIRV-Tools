@@ -194,4 +194,74 @@ TEST(BinaryToTextSmall, OperandWithOperands) {
   spvTextDestroy(text);
 }
 
+TEST(BinaryToTextSmall, LiteralInt64) {
+  spv_opcode_table opcodeTable;
+  spv_operand_table operandTable;
+  spv_ext_inst_table extInstTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+  spv_binary binary;
+  spv_diagnostic diagnostic = nullptr;
+
+  AutoText input("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 123456789021\n");
+  spv_result_t error =
+      spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
+                      operandTable, extInstTable, &binary, &diagnostic);
+  ASSERT_EQ(SPV_SUCCESS, error);
+  spv_text text = nullptr;
+  error = spvBinaryToText(binary->code, binary->wordCount,
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                          operandTable, extInstTable, &text, &diagnostic);
+  EXPECT_EQ(SPV_SUCCESS, error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
+  const std::string header =
+      "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
+      "Bound: 3\n; Schema: 0\n";
+  EXPECT_EQ(header + input.str, text->str);
+  spvTextDestroy(text);
+}
+
+TEST(BinaryToTextSmall, LiteralDouble) {
+  spv_opcode_table opcodeTable;
+  spv_operand_table operandTable;
+  spv_ext_inst_table extInstTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+  spv_binary binary;
+  spv_diagnostic diagnostic = nullptr;
+
+  // Pi: 3.1415926535897930 => 0x400921fb54442d18 => 4614256656552045848
+  AutoText input(
+      "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 3.1415926535897930");
+  spv_result_t error =
+      spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
+                      operandTable, extInstTable, &binary, &diagnostic);
+  ASSERT_EQ(SPV_SUCCESS, error);
+  spv_text text = nullptr;
+  error = spvBinaryToText(binary->code, binary->wordCount,
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                          operandTable, extInstTable, &text, &diagnostic);
+  EXPECT_EQ(SPV_SUCCESS, error);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
+  const std::string output =
+      R"(; SPIR-V
+; Version: 99
+; Generator: Khronos
+; Bound: 3
+; Schema: 0
+%1 = OpTypeFloat 64
+%2 = OpSpecConstant %1 4614256656552045848
+)";
+  EXPECT_EQ(output, text->str);
+  spvTextDestroy(text);
+}
+
 }  // anonymous namespace
