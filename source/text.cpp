@@ -478,30 +478,19 @@ spv_result_t spvTextEncodeOperand(
 
         return SPV_SUCCESS;
       }
-
-      // TODO: Literal numbers can be any number up to 64 bits wide. This
-      // includes integers and floating point numbers.
-      // TODO(dneto): Suggest using spvTextToLiteral and looking for an
-      // appropriate result type.
-      if (spvTextToUInt32(textValue, &pInst->words[pInst->wordCount++])) {
-        DIAGNOSTIC << "Invalid literal number '" << textValue << "'.";
-        return SPV_ERROR_INVALID_TEXT;
-      }
-    } break;
-    // TODO(antiagainst): the handling of literal numbers in this function need
-    // to be reorganized.
+    }  // Fall through for the general case.
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
+    // TODO(antiagainst): SPV_OPERAND_TYPE_LITERAL should be removed.
     case SPV_OPERAND_TYPE_LITERAL:
     case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL: {
       spv_literal_t literal = {};
-      if (spvTextToLiteral(textValue, &literal) != SPV_SUCCESS) {
-        if (spvOperandIsOptional(type)) {
-          return SPV_FAILED_MATCH;
-        } else {
-          DIAGNOSTIC << "Invalid literal '" << textValue << "'.";
-          return SPV_ERROR_INVALID_TEXT;
-        }
+      spv_result_t error = spvTextToLiteral(textValue, &literal);
+      if (error != SPV_SUCCESS) {
+        if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
+        if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
+        DIAGNOSTIC << "Invalid literal number '" << textValue << "'.";
+        return SPV_ERROR_INVALID_TEXT;
       }
       switch (literal.type) {
         // We do not have to print diagnostics here because spvBinaryEncode*
@@ -537,33 +526,38 @@ spv_result_t spvTextEncodeOperand(
             return SPV_ERROR_INVALID_TEXT;
         } break;
         case SPV_LITERAL_TYPE_STRING: {
-          if (spvBinaryEncodeString(literal.value.str, pInst, position,
-                                    pDiagnostic))
-            return SPV_ERROR_INVALID_TEXT;
+          DIAGNOSTIC << "Expected literal number, found literal string '"
+                     << textValue << "'.";
+          return SPV_FAILED_MATCH;
         } break;
         default:
-          DIAGNOSTIC << "Invalid literal '" << textValue << "'";
+          DIAGNOSTIC << "Invalid literal number '" << textValue << "'";
           return SPV_ERROR_INVALID_TEXT;
       }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
-      size_t len = strlen(textValue);
-      if ('"' != textValue[0] && '"' != textValue[len - 1]) {
+      spv_literal_t literal = {};
+      spv_result_t error = spvTextToLiteral(textValue, &literal);
+      if (error != SPV_SUCCESS) {
+        if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
         if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
-        DIAGNOSTIC << "Invalid literal string '" << textValue
-                   << "', expected quotes.";
+        DIAGNOSTIC << "Invalid literal string '" << textValue << "'.";
         return SPV_ERROR_INVALID_TEXT;
       }
-      // NOTE: Strip quotes
-      std::string text(textValue + 1, len - 2);
+      if (literal.type != SPV_LITERAL_TYPE_STRING) {
+        DIAGNOSTIC << "Expected literal string, found literal number '"
+                   << textValue << "'.";
+        return SPV_FAILED_MATCH;
+      }
 
       // NOTE: Special case for extended instruction library import
       if (OpExtInstImport == pInst->opcode) {
-        pInst->extInstType = spvExtInstImportTypeGet(text.c_str());
+        pInst->extInstType = spvExtInstImportTypeGet(literal.value.str);
       }
 
-      if (spvBinaryEncodeString(text.c_str(), pInst, position, pDiagnostic))
+      if (spvBinaryEncodeString(literal.value.str, pInst, position,
+                                pDiagnostic))
         return SPV_ERROR_INVALID_TEXT;
     } break;
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
@@ -661,9 +655,18 @@ spv_result_t encodeInstructionStartingWithImmediate(
     // expanded.
     spv_operand_pattern_t dummyExpectedOperands;
     error = spvTextEncodeOperand(
+        // TODO(antiagainst): SPV_OPERAND_TYPE_OPTIONAL_LITERAL should be
+        // substituted by SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER.
         SPV_OPERAND_TYPE_OPTIONAL_LITERAL, operandValue.c_str(), operandTable,
         extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
         position, pDiagnostic);
+    if (error == SPV_FAILED_MATCH) {
+      // It's not a literal number -- is it a literal string?
+      error = spvTextEncodeOperand(
+          SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING, operandValue.c_str(),
+          operandTable, extInstTable, namedIdTable, pInst,
+          &dummyExpectedOperands, pBound, position, pDiagnostic);
+    }
     if (error == SPV_FAILED_MATCH) {
       // It's not a literal -- is it an ID?
       error = spvTextEncodeOperand(

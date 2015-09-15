@@ -144,6 +144,9 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
+  // TODO(antiagainst): Instructions in opcode.inc that use
+  // SPV_OPERAND_TYPE_LITERAL should in fact use LITERAL_NUMBER. So
+  // SPV_OPERAND_TYPE_LITERAL can be removed.
   SPV_OPERAND_TYPE_LITERAL,  // Either a literal number or literal string
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
   // A literal number that can (but is not required to) expand multiple words.
@@ -185,6 +188,7 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_OPTIONAL_ID,
   SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
   // A literal number or string, but optional.
+  // TODO(antiagainst): change to SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
