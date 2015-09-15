@@ -73,9 +73,40 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryAccessTest, MemoryAccessTest,
 #undef CASE
 // clang-format on
 
+// Test Storage Class enum values
+
+using StorageClassTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCaseWithOperands<spv::StorageClass>>>;
+
+TEST_P(StorageClassTest, AnyStorageClass) {
+  std::string input = "%1 = OpVariable %2 " + GetParam().name;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().value})));
+}
+
+// clang-format off
+#define CASE(NAME) { spv::StorageClass##NAME, #NAME, {} }
+INSTANTIATE_TEST_CASE_P(TextToBinaryStorageClassTest, StorageClassTest,
+                        ::testing::ValuesIn(std::vector<EnumCaseWithOperands<spv::StorageClass>>{
+                          // TODO(dneto): There are more storage classes in Rev32 and later.
+                          CASE(UniformConstant),
+                          CASE(Input),
+                          CASE(Uniform),
+                          CASE(Output),
+                          CASE(WorkgroupLocal),
+                          CASE(WorkgroupGlobal),
+                          CASE(PrivateGlobal),
+                          CASE(Function),
+                          CASE(Generic),
+                          CASE(AtomicCounter),
+                          CASE(Image),
+                        }));
+#undef CASE
+// clang-format on
+
 // TODO(dneto): Combination of memory access masks.
 
-// TODO(dneto): OpVariable
+// TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
 // TODO(dneto): OpLoad
 // TODO(dneto): OpStore

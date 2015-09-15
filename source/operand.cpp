@@ -294,6 +294,7 @@ static const spv_operand_desc_t executionModeEntries[] = {
 };
 
 static const spv_operand_desc_t storageClassEntries[] = {
+  // TODO(dneto): There are more storage classes in Rev32 and later.
     {"UniformConstant",
      StorageClassUniformConstant,
      SPV_OPCODE_FLAGS_NONE,
