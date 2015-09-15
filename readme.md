@@ -27,8 +27,10 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-09-15
 * Fixed spelling of Function Control "Inline" enumerated value.
 * Fixed: `Aligned` memory access flag takes a literal number operand.
+* Fixed parsing of scope ID arguments, e.g. for group operations.
 
 2015-09-11
 * Assembly format must be consistent across the entire source module.
@@ -232,9 +234,11 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* Support OpenCL extension libraries.
+* Handle image operands
+* Support literal numbers wider than 32 bits.
+* Support OpenCL extension library.
 * Enforce the parsing rules.
-* Likely add an option to select from different assembly language syntaxes.
+* Support UTF-8 literal strings.
 
 ### Validator
 
@@ -247,14 +251,12 @@ done so previously, CMake will detect the existence of
 
 ## Known Issues
 
-* Float constant values are parsed incorrectly.
+* Header file `libspirv.h` cannot be used in C code.
 * Improve literal parsing in the assembler, currently only decimal integers and
   floating-point numbers are supported as literal operands and the parser is not
   contextually aware of the desired width of the operand.
 * Sometimes the assembler will succeed, but the disassembler will fail to
-  disassemble the result.
-* Sometimes the disassembler fails to produce any output on an error.
-* Many more issues.
+  disassemble the result. (Is this still true?)
 
 ## Licence
 
