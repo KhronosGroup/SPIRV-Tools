@@ -410,6 +410,62 @@ static const spv_operand_desc_t samplerFilterModeEntries[] = {
      {SPV_OPERAND_TYPE_NONE}},
 };
 
+static const spv_operand_desc_t samplerImageFormatEntries[] = {
+// In Rev31, all the cases depend on the Shader capability.
+// TODO(dneto): In Rev32, many of these depend on the AdvancedFormats
+// capability instead.
+#define CASE(NAME)                                                             \
+  {                                                                            \
+    #NAME, ImageFormat##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, CapabilityShader, \
+    {                                                                          \
+      SPV_OPERAND_TYPE_NONE                                                    \
+    }                                                                          \
+  }
+  // clang-format off
+  CASE(Unknown),
+  CASE(Rgba32f),
+  CASE(Rgba16f),
+  CASE(R32f),
+  CASE(Rgba8),
+  CASE(Rgba8Snorm),
+  CASE(Rg32f),
+  CASE(Rg16f),
+  CASE(R11fG11fB10f),
+  CASE(R16f),
+  CASE(Rgba16),
+  CASE(Rgb10A2),
+  CASE(Rg16),
+  CASE(Rg8),
+  CASE(R16),
+  CASE(R8),
+  CASE(Rgba16Snorm),
+  CASE(Rg16Snorm),
+  CASE(Rg8Snorm),
+  CASE(R16Snorm),
+  CASE(R8Snorm),
+  CASE(Rgba32i),
+  CASE(Rgba16i),
+  CASE(Rgba8i),
+  CASE(R32i),
+  CASE(Rg32i),
+  CASE(Rg16i),
+  CASE(Rg8i),
+  CASE(R16i),
+  CASE(R8i),
+  CASE(Rgba32ui),
+  CASE(Rgba16ui),
+  CASE(Rgba8ui),
+  CASE(R32ui),
+  CASE(Rgb10a2ui),
+  CASE(Rg32ui),
+  CASE(Rg16ui),
+  CASE(Rg8ui),
+  CASE(R16ui),
+  CASE(R8ui),
+  // clang-format on
+#undef CASE
+};
+
 static const spv_operand_desc_t fpFastMathModeEntries[] = {
     {"None",
      FPFastMathModeMaskNone,
@@ -1333,6 +1389,9 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE,
      sizeof(samplerFilterModeEntries) / sizeof(spv_operand_desc_t),
      samplerFilterModeEntries},
+    {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
+     sizeof(samplerImageFormatEntries) / sizeof(spv_operand_desc_t),
+     samplerImageFormatEntries},
     {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
      sizeof(fpFastMathModeEntries) / sizeof(spv_operand_desc_t),
      fpFastMathModeEntries},
@@ -1477,6 +1536,8 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "addressing mode";
     case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
       return "sampler filter mode";
+    case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
+      return "sampler image format";
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
       return "floating pointer fast math mode";
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:

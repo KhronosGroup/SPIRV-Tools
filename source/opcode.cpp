@@ -115,7 +115,7 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     case OperandDimensionality: return SPV_OPERAND_TYPE_DIMENSIONALITY;
     case OperandSamplerAddressingMode: return SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE;
     case OperandSamplerFilterMode: return SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE;
-    case OperandSamplerImageFormat: return SPV_OPERAND_TYPE_NONE; //TODO
+    case OperandSamplerImageFormat: return SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT;
     case OperandImageChannelOrder: return SPV_OPERAND_TYPE_NONE; //TODO
     case OperandImageChannelDataType: return SPV_OPERAND_TYPE_NONE; //TODO
     case OperandImageOperands: return SPV_OPERAND_TYPE_NONE; //TODO

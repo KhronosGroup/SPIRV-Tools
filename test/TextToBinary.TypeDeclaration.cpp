@@ -44,7 +44,100 @@ struct EnumCase {
   const std::string name;
 };
 
-// Test OpTypePipe
+// Test Dim enums via OpTypeImage
+
+using DimTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<spv::Dim>>>;
+
+TEST_P(DimTest, AnyDim) {
+  std::string input = "%imageType = OpTypeImage %sampledType " +
+                      GetParam().name + " 2 3 0 4 Rgba8";
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().value, 2, 3, 0, 4,
+                                            spv::ImageFormatRgba8})));
+}
+
+// clang-format off
+#define CASE(NAME) {spv::Dim##NAME, #NAME}
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryDim, DimTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::Dim>>{
+        CASE(1D),
+        CASE(2D),
+        CASE(3D),
+        CASE(Cube),
+        CASE(Rect),
+        CASE(Buffer),
+        // TODO(dneto): Rev32 adds InputTarget.
+    }));
+#undef CASE
+// clang-format on
+
+// Test ImageFormat enums via OpTypeImage
+
+using ImageFormatTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<spv::ImageFormat>>>;
+
+TEST_P(ImageFormatTest, AnyImageFormat) {
+  std::string input =
+      "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpTypeImage, {1, 2, spv::Dim1D, 2, 3, 0,
+                                                    4, GetParam().value})));
+}
+
+// clang-format off
+#define CASE(NAME) {spv::ImageFormat##NAME, #NAME}
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryImageFormat, ImageFormatTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::ImageFormat>>{
+        CASE(Unknown),
+        CASE(Rgba32f),
+        CASE(Rgba16f),
+        CASE(R32f),
+        CASE(Rgba8),
+        CASE(Rgba8Snorm),
+        CASE(Rg32f),
+        CASE(Rg16f),
+        CASE(R11fG11fB10f),
+        CASE(R16f),
+        CASE(Rgba16),
+        CASE(Rgb10A2),
+        CASE(Rg16),
+        CASE(Rg8),
+        CASE(R16),
+        CASE(R8),
+        CASE(Rgba16Snorm),
+        CASE(Rg16Snorm),
+        CASE(Rg8Snorm),
+        CASE(R16Snorm),
+        CASE(R8Snorm),
+        CASE(Rgba32i),
+        CASE(Rgba16i),
+        CASE(Rgba8i),
+        CASE(R32i),
+        CASE(Rg32i),
+        CASE(Rg16i),
+        CASE(Rg8i),
+        CASE(R16i),
+        CASE(R8i),
+        CASE(Rgba32ui),
+        CASE(Rgba16ui),
+        CASE(Rgba8ui),
+        CASE(R32ui),
+        CASE(Rgb10a2ui),
+        CASE(Rg32ui),
+        CASE(Rg16ui),
+        CASE(Rg8ui),
+        CASE(R16ui),
+        CASE(R8ui),
+        // TODO(dneto): Rev32 adds InputTarget.
+    }));
+#undef CASE
+// clang-format on
+
+// Test AccessQualifier enums via OpTypePipe.
 
 using OpTypePipeTest = test_fixture::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::AccessQualifier>>>;
@@ -68,6 +161,9 @@ INSTANTIATE_TEST_CASE_P(
     }));
 #undef CASE
 // clang-format on
+
+// TODO(dneto): error message test for sampler addressing mode
+// TODO(dneto): error message test for sampler image format
 
 // TODO(dneto): OpTypeVoid
 // TODO(dneto): OpTypeBool
