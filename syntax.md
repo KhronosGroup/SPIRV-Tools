@@ -193,4 +193,9 @@ For example:
      OpEnqueueKernel.
    * Similarly for the names in section 3.25 Memory Semantics.
    * Similarly for the names in section 3.27 Scope.
-
+* Some enumerants cannot be used by name, because they only name values
+returned by an instruction:
+   * Enumerants from 3.12 Image Channel Order name possible values returned
+     by the `OpImageQueryOrder` instruction.
+   * Enumerants from 3.13 Image Channel Data Type name possible values
+     returned by the `OpImageQueryFormat` instruction.
