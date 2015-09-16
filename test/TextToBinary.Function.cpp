@@ -36,6 +36,7 @@ namespace {
 
 using spvtest::MakeInstruction;
 using ::testing::Eq;
+using test_fixture::TextToBinaryTest;;
 
 // An example case for an enumerated value.
 template <typename E>
@@ -70,7 +71,17 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryFunctionTest, OpFunctionControlTest,
 #undef CASE
 // clang-format on
 
-// TODO(dneto): Combination of function control masks.
+TEST_F(TextToBinaryTest, CombinedFunctionControlMask) {
+  // Sample a single combination.  This ensures we've integrated
+  // the instruction parsing logic with spvTextParseMask.
+  const std::string input =
+      "%result_id = OpFunction %result_type Inline|Pure|Const %function_type";
+  const uint32_t expected_mask = spv::FunctionControlInlineMask |
+                                 spv::FunctionControlPureMask |
+                                 spv::FunctionControlConstMask;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpFunction, {1, 2, expected_mask, 3})));
+}
 
 // TODO(dneto): OpFunctionParameter
 // TODO(dneto): OpFunctionEnd

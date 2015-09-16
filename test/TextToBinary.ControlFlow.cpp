@@ -36,6 +36,7 @@ namespace {
 
 using spvtest::MakeInstruction;
 using ::testing::Eq;
+using test_fixture::TextToBinaryTest;
 
 // An example case for an enumerated value.
 template <typename E>
@@ -67,7 +68,13 @@ INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
 #undef CASE
 // clang-format on
 
-// TODO(dneto): Combination of selection control masks.
+TEST_F(OpSelectionMergeTest, CombinedSelectionControlMask) {
+  const std::string input = "OpSelectionMerge %1 Flatten|DontFlatten";
+  const uint32_t expected_mask =
+      spv::SelectionControlFlattenMask | spv::SelectionControlDontFlattenMask;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpSelectionMerge, {1, expected_mask})));
+}
 
 // Test OpLoopMerge
 
@@ -91,7 +98,13 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
 #undef CASE
 // clang-format on
 
-// TODO(dneto): Combination of loop control masks.
+TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
+  const std::string input = "OpLoopMerge %1 Unroll|DontUnroll";
+  const uint32_t expected_mask =
+      spv::LoopControlUnrollMask | spv::LoopControlDontUnrollMask;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpLoopMerge, {1, expected_mask})));
+}
 
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge

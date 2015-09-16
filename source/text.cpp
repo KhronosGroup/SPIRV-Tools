@@ -24,25 +24,24 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "text.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-#include <libspirv/libspirv.h>
-
-#include "bitwisecast.h"
 #include "binary.h"
+#include "bitwisecast.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include <libspirv/libspirv.h>
 #include "opcode.h"
 #include "operand.h"
-#include "text.h"
-
-#include <string>
-#include <vector>
-#include <unordered_map>
 
 using spvutils::BitwiseCast;
 
@@ -375,6 +374,41 @@ bool isIdType(spv_operand_type_t type) {
 
 }  // anonymous namespace
 
+spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
+                                     const spv_operand_type_t type,
+                                     const char *textValue, uint32_t *pValue) {
+  if (textValue == nullptr) return SPV_ERROR_INVALID_TEXT;
+  size_t text_length = strlen(textValue);
+  if (text_length == 0) return SPV_ERROR_INVALID_TEXT;
+  const char *text_end = textValue + text_length;
+
+  // We only support mask expressions in ASCII, so the separator value is a
+  // char.
+  const char separator = '|';
+
+  // Accumulate the result by interpreting one word at a time, scanning
+  // from left to right.
+  uint32_t value = 0;
+  const char *begin = textValue;  // The left end of the current word.
+  const char *end = nullptr;  // One character past the end of the current word.
+  do {
+    end = std::find(begin, text_end, separator);
+
+    spv_operand_desc entry = nullptr;
+    if (spvOperandTableNameLookup(operandTable, type, begin, end - begin,
+                                  &entry)) {
+      return SPV_ERROR_INVALID_TEXT;
+    }
+    value |= entry->value;
+
+    // Advance to the next word by skipping over the separator.
+    begin = end + 1;
+  } while (end != text_end);
+
+  *pValue = value;
+  return SPV_SUCCESS;
+}
+
 spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
@@ -535,6 +569,20 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
       assert(0 && " Handle optional optional image operands");
       break;
+    case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
+    case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
+    case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
+      uint32_t value;
+      if (spvTextParseMaskOperand(operandTable, type, textValue, &value)) {
+        DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " '" << textValue
+                   << "'.";
+        return SPV_ERROR_INVALID_TEXT;
+      }
+      if (auto error = spvBinaryEncodeU32(value, pInst, position, pDiagnostic))
+        return error;
+      // TODO(dneto): So far, masks don't modify the expected operand pattern.
+    } break;
     default: {
       // NOTE: All non literal operands are handled here using the operand
       // table.

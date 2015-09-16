@@ -51,6 +51,76 @@ TEST(GetWord, Simple) {
   EXPECT_EQ("abc", spvGetWord("abc\n"));
 }
 
+// An mask parsing test case.
+struct MaskCase {
+  const spv_operand_type_t which_enum;
+  const uint32_t expected_value;
+  const char* expression;
+};
+
+using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
+
+TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
+  spv_operand_table operandTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+
+  uint32_t value;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextParseMaskOperand(operandTable, GetParam().which_enum,
+                                    GetParam().expression, &value));
+  EXPECT_EQ(GetParam().expected_value, value);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ParseMask, GoodMaskParseTest,
+    ::testing::ValuesIn(std::vector<MaskCase>{
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 0, "None"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 1, "NotNaN"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 2, "NotInf"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotNaN|NotInf"},
+        // Mask experssions are symmetric.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotInf|NotNaN"},
+        // Repeating a value has no effect.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotInf|NotNaN|NotInf"},
+        // Using 3 operands still works.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 0x13, "NotInf|NotNaN|Fast"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 1, "Flatten"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 2, "DontFlatten"},
+        // Weirdly, you can specify to flatten and don't flatten a selection.
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 3, "Flatten|DontFlatten"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 1, "Unroll"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 2, "DontUnroll"},
+        // Weirdly, you can specify to unroll and don't unroll a loop.
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 3, "Unroll|DontUnroll"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 1, "Inline"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 2, "DontInline"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 4, "Pure"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 8, "Const"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0xd, "Inline|Const|Pure"},
+    }));
+
+using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
+
+TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
+  spv_operand_table operandTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+
+  uint32_t value;
+  EXPECT_NE(SPV_SUCCESS, spvTextParseMaskOperand(operandTable,
+                                             SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
+                                             GetParam(), &value));
+}
+
+INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            nullptr, "", "NotValidEnum", "|", "NotInf|",
+                            "|NotInf", "NotInf||NotNaN",
+                            "Unroll"  // A good word, but for the wrong enum
+                        }));
+
 // TODO(dneto): Aliasing like this relies on undefined behaviour. Fix this.
 union char_word_t {
   char cs[4];

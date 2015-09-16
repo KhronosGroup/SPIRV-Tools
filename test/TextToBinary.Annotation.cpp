@@ -39,6 +39,7 @@ namespace {
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
 using ::testing::Eq;
+using test_fixture::TextToBinaryTest;
 
 // Test OpDecorate
 
@@ -235,6 +236,19 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
                       }));
 #undef CASE
 // clang-format on
+
+TEST_F(TextToBinaryTest, CombinedFPFastMathMask) {
+  // Sample a single combination.  This ensures we've integrated
+  // the instruction parsing logic with spvTextParseMask.
+  const std::string input = "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ";
+  const uint32_t expected_enum = spv::DecorationFPFastMathMode;
+  const uint32_t expected_mask = spv::FPFastMathModeNotNaNMask |
+                                 spv::FPFastMathModeNotInfMask |
+                                 spv::FPFastMathModeNSZMask;
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpDecorate, {1, expected_enum, expected_mask})));
+}
 
 // Test OpDecorate Linkage
 

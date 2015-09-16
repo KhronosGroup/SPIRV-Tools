@@ -178,6 +178,24 @@ uint32_t spvNamedIdAssignOrGet(spv_named_id_table table, const char *textValue,
 /// @return zero on failure, non-zero otherwise
 int32_t spvTextIsNamedId(const char *textValue);
 
+/// @brief Parses a mask expression string for the given operand type.
+///
+/// A mask expression is a sequence of one or more terms separated by '|',
+/// where each term a named enum value for the given type.  No whitespace
+/// is permitted.
+///
+/// On success, the value is written to pValue.
+///
+/// @param[in] operandTable operand lookup table
+/// @param[in] type of the operand
+/// @param[in] textValue word of text to be parsed
+/// @param[out] pValue where the resulting value is written
+///
+/// @return result code
+spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
+                                     const spv_operand_type_t type,
+                                     const char *textValue, uint32_t *pValue);
+
 /// @brief Translate an Opcode operand to binary form
 ///
 /// @param[in] type of the operand
