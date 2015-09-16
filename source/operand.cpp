@@ -1456,12 +1456,12 @@ spv_result_t spvOperandTableGet(spv_operand_table *pOperandTable) {
 
 spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
-                                       const char *name,
-                                       spv_operand_desc *pEntry) {
+                                       const char* name,
+                                       const size_t nameLength,
+                                       spv_operand_desc* pEntry) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  const uint64_t nameLength = strlen(name);
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
     if (type == table->types[typeIndex].type) {
       for (uint64_t operandIndex = 0;
@@ -1469,7 +1469,7 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
         if (nameLength ==
                 strlen(table->types[typeIndex].entries[operandIndex].name) &&
             !strncmp(table->types[typeIndex].entries[operandIndex].name, name,
-                     strlen(name))) {
+                     nameLength)) {
           *pEntry = &table->types[typeIndex].entries[operandIndex];
           return SPV_SUCCESS;
         }

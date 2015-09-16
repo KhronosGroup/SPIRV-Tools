@@ -539,7 +539,8 @@ spv_result_t spvTextEncodeOperand(
       // NOTE: All non literal operands are handled here using the operand
       // table.
       spv_operand_desc entry;
-      if (spvOperandTableNameLookup(operandTable, type, textValue, &entry)) {
+      if (spvOperandTableNameLookup(operandTable, type, textValue,
+                                    strlen(textValue), &entry)) {
         DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " '" << textValue
                    << "'.";
         return SPV_ERROR_INVALID_TEXT;

@@ -45,12 +45,14 @@ using spv_operand_pattern_t = std::deque<spv_operand_type_t>;
 /// @param[in] table to lookup
 /// @param[in] type the operand group's type
 /// @param[in] name of the operand to find
+/// @param[in] nameLength number of bytes of name to compare
 /// @param[out] pEntry returned operand table entry
 ///
 /// @return result code
 spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char *name,
+                                       const size_t nameLength,
                                        spv_operand_desc *pEntry);
 
 /// @brief Find the operand with value in the table
