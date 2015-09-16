@@ -37,16 +37,17 @@ namespace {
 using spvtest::MakeInstruction;
 using ::testing::Eq;
 
-// Test OpTypePipe
-
-// An example case for OpTypePipe
-struct TypePipeCase {
-  spv::AccessQualifier value;
-  std::string name;
+// An example case for an enumerated value.
+template <typename E>
+struct EnumCase {
+  const E value;
+  const std::string name;
 };
 
-using OpTypePipeTest =
-    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<TypePipeCase>>;
+// Test OpTypePipe
+
+using OpTypePipeTest = test_fixture::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<spv::AccessQualifier>>>;
 
 TEST_P(OpTypePipeTest, AnyAccessQualifier) {
   // TODO(dneto): In Rev31 and later, pipes are opaque, and so the %2, which
@@ -58,12 +59,13 @@ TEST_P(OpTypePipeTest, AnyAccessQualifier) {
 
 // clang-format off
 #define CASE(NAME) {spv::AccessQualifier##NAME, #NAME}
-INSTANTIATE_TEST_CASE_P(TextToBinaryTypePipe, OpTypePipeTest,
-                        ::testing::ValuesIn(std::vector<TypePipeCase>{
-                            CASE(ReadOnly),
-                            CASE(WriteOnly),
-                            CASE(ReadWrite),
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryTypePipe, OpTypePipeTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::AccessQualifier>>{
+        CASE(ReadOnly),
+        CASE(WriteOnly),
+        CASE(ReadWrite),
+    }));
 #undef CASE
 // clang-format on
 
