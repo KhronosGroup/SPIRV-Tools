@@ -55,10 +55,7 @@ TEST_F(TextToBinaryTest, LiteralNumberInPlaceOfLiteralString) {
 TEST_F(TextToBinaryTest, DISABLED_LiteralStringTooLong) {
   const std::string code =
       "OpSourceExtension \"" + std::string(65534, 'o') + "\"\n";
-  const std::string header =
-      "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
-      "Bound: 1\n; Schema: 0\n";
-  EXPECT_EQ(header + code, EncodeAndDecodeSuccessfully(code));
+  EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
 }
 
 }  // anonymous namespace

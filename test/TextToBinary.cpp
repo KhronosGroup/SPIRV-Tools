@@ -109,9 +109,9 @@ TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
 
   uint32_t value;
-  EXPECT_NE(SPV_SUCCESS, spvTextParseMaskOperand(operandTable,
-                                             SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
-                                             GetParam(), &value));
+  EXPECT_NE(SPV_SUCCESS, spvTextParseMaskOperand(
+                             operandTable, SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
+                             GetParam(), &value));
 }
 
 INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
@@ -132,7 +132,7 @@ TEST(TextToBinary, Default) {
   // little endian for encoding comparison!
   spv_endianness_t endian = SPV_ENDIANNESS_LITTLE;
 
-  const char *textStr = R"(
+  const char* textStr = R"(
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
@@ -469,8 +469,6 @@ TEST_P(TextToBinaryFloatValueTest, NormalValues) {
   const std::string assembly = "%1 = OpTypeFloat 32\n%2 = OpConstant %1 ";
   const std::string input_string = assembly + GetParam().first;
   const std::string expected_string =
-      "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
-      "Bound: 3\n; Schema: 0\n" +
       assembly + std::to_string(GetParam().second) + "\n";
   const std::string decoded_string = EncodeAndDecodeSuccessfully(input_string);
   EXPECT_EQ(expected_string, decoded_string);
