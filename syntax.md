@@ -27,7 +27,8 @@ but the assembler does not enforce this rule.
 
 The opcode names and expected operands are described in section 3 of
 the SPIR-V specification.  An operand is one of:
-* a literal integer: A decimal integer or a hexadecimal integer (preceded by `0x`).
+* a literal integer: A decimal integer, or a hexadecimal integer
+  (indicated by a leading `0x`).
 * a literal floating point number.
 * a literal string, surrounded by double-quotes ("). TODO: describe quoting and
 escaping rules.
@@ -36,6 +37,11 @@ the `OpMemoryModel` takes a named Addressing Model operand (e.g. `Logical` or
 `Physical32`), and a named Memory Model operand (e.g. `Simple` or `OpenCL`).
 Named enumerated values are only meaningful in specific positions, and will
 otherwise generate an error.
+* a mask expression, consisting of one or more mask enum names separated
+  by `|`.  For example, the expression `NotNaN|NotInf|NSZ` denotes the mask
+  which is the combination of the `NotNaN`, `NotInf`, and `NSZ` flags.
+  (This is supported by the assembler but not yet by the disassembler.
+  TODO(dneto): Add disassembler support for emitting mask expressions.)
 * an injected immediate integer: `!<integer>`.  See [below](#immediate).
 
 ## Assignment-oriented Assembly Form
