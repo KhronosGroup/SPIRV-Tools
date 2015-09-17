@@ -188,7 +188,8 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
-  // An optional memory access qualifier, e.g. Volatile
+  // An optional memory access qualifier mask, e.g. Volatile, Aligned,
+  // or a combination.
   SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
   // An optional execution mode
   SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
@@ -201,8 +202,6 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID,
   // A sequence of zero or more pairs of (Id, Literal)
   SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL,
-  // A sequence of zero or more memory access operands
-  SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS,
   // A sequence of zero or more execution modes
   SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
 

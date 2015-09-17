@@ -84,7 +84,9 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
       case spv::OpStore:
       case spv::OpCopyMemory:
       case spv::OpCopyMemorySized:
-        return SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS;
+        // Expect an optional mask.  When the Aligned bit is set in the mask,
+        // we will later add the expectation of a literal number operand.
+        return SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS;
       case spv::OpExecutionMode:
         return SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE;
       default:
@@ -132,7 +134,7 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     case OperandMemorySemantics: return SPV_OPERAND_TYPE_MEMORY_SEMANTICS;
     case OperandMemoryAccess:
       // This case does not occur in Rev 31.
-      // We expect that it will become SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS,
+      // We expect that it will become SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
       // and we can remove the special casing above for memory operation
       // instructions.
       break;

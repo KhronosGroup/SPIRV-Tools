@@ -1631,7 +1631,6 @@ bool spvOperandIsVariable(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL:
     case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL:
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID:
-    case SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       return true;
     default:
@@ -1662,9 +1661,6 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
       pattern->insert(pattern->begin(),
                       {SPV_OPERAND_TYPE_OPTIONAL_ID,
                        SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE, type});
-      return true;
-    case SPV_OPERAND_TYPE_VARIABLE_MEMORY_ACCESS:
-      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
