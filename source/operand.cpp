@@ -1589,6 +1589,23 @@ void spvPrependOperandTypes(const spv_operand_type_t* types,
   pattern->insert(pattern->begin(), types, endTypes);
 }
 
+void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
+                                   const spv_operand_type_t type,
+                                   const uint32_t mask,
+                                   spv_operand_pattern_t* pattern) {
+  // Scan from highest bits to lowest bits because we will prepend in LIFO
+  // fashion, and we need the operands for lower order bits to appear first.
+  for (uint32_t candidate_bit = (1 << 31); candidate_bit; candidate_bit >>= 1) {
+    if (candidate_bit & mask) {
+      spv_operand_desc entry = nullptr;
+      if (SPV_SUCCESS == spvOperandTableValueLookup(operandTable, type,
+                                                    candidate_bit, &entry)) {
+        spvPrependOperandTypes(entry->operandTypes, pattern);
+      }
+    }
+  }
+}
+
 bool spvOperandIsOptional(spv_operand_type_t type) {
   // Variable means zero or more times.
   if (spvOperandIsVariable(type))

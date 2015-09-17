@@ -572,6 +572,7 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       uint32_t value;
       if (spvTextParseMaskOperand(operandTable, type, textValue, &value)) {
@@ -581,7 +582,8 @@ spv_result_t spvTextEncodeOperand(
       }
       if (auto error = spvBinaryEncodeU32(value, pInst, position, pDiagnostic))
         return error;
-      // TODO(dneto): So far, masks don't modify the expected operand pattern.
+      // Prepare to parse the operands for this logical operand.
+      spvPrependOperandTypesForMask(operandTable, type, value, pExpectedOperands);
     } break;
     default: {
       // NOTE: All non literal operands are handled here using the operand

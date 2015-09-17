@@ -101,6 +101,24 @@ bool spvOperandIsVariable(spv_operand_type_t type);
 void spvPrependOperandTypes(const spv_operand_type_t *types,
                             spv_operand_pattern_t *pattern);
 
+/// @brief Inserts the operands expected after the given typed mask onto the
+/// front of the given pattern.
+///
+/// Each set bit in the mask represents zero or more operand types that should
+/// be prepended onto the pattern.  Operands for a less significant bit always
+/// appear before operands for a more significant bit.
+///
+/// If the a set bit is unknown, then we assume it has no operands.
+///
+/// @param[in] operandTable the table of operand type definitions
+/// @param[in] type the type of operand
+/// @param[in] mask the mask value for the given type
+/// @param[in,out] pattern the destination sequence of operand types
+void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
+                                   const spv_operand_type_t type,
+                                   const uint32_t mask,
+                                   spv_operand_pattern_t *pattern);
+
 /// @brief Expands an operand type representing zero or more logical operands,
 /// exactly once.
 ///

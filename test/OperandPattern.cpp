@@ -68,6 +68,57 @@ TEST(OperandPattern, PopFrontsAreOnTheLeft) {
   EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{}));
 }
 
+// A test case for typed mask expansion
+struct MaskExpansionCase {
+  const spv_operand_type_t type;
+  const uint32_t mask;
+  const spv_operand_pattern_t initial;
+  const spv_operand_pattern_t expected;
+};
+
+using MaskExpansionTest = ::testing::TestWithParam<MaskExpansionCase>;
+
+TEST_P(MaskExpansionTest, Sample) {
+  spv_operand_table operandTable = nullptr;
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+
+  spv_operand_pattern_t pattern(GetParam().initial);
+  spvPrependOperandTypesForMask(operandTable, GetParam().type, GetParam().mask, &pattern);
+  EXPECT_THAT(pattern, Eq(GetParam().expected));
+}
+
+// These macros let us write non-trivial examples without too much text.
+#define SUFFIX0  SPV_OPERAND_TYPE_NONE, SPV_OPERAND_TYPE_ID
+#define SUFFIX1  SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE, SPV_OPERAND_TYPE_STORAGE_CLASS
+INSTANTIATE_TEST_CASE_P(
+    OperandPattern, MaskExpansionTest,
+    ::testing::ValuesIn(std::vector<MaskExpansionCase>{
+        // No bits means no change.
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, 0, {SUFFIX0}, {SUFFIX0}},
+        // Unknown bits means no change.
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+         0xfffffffc,
+         {SUFFIX1},
+         {SUFFIX1}},
+        // Volatile has no operands.
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+         spv::MemoryAccessVolatileMask,
+         {SUFFIX0},
+         {SUFFIX0}},
+        // Aligned has one literal number operand.
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+         spv::MemoryAccessAlignedMask,
+         {SUFFIX1},
+         {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
+        // Volatile with Aligned still has just one literal number operand.
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+         spv::MemoryAccessVolatileMask| spv::MemoryAccessAlignedMask,
+         {SUFFIX1},
+         {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
+    }));
+#undef SUFFIX0
+#undef SUFFIX1
+
 // Returns a vector of all operand types that can be used in a pattern.
 std::vector<spv_operand_type_t> allOperandTypes() {
   std::vector<spv_operand_type_t> result;

@@ -38,6 +38,7 @@ namespace {
 
 using spvtest::MakeInstruction;
 using ::testing::Eq;
+using test_fixture::TextToBinaryTest;
 
 // An example case for an enumerated value.
 template <typename E>
@@ -73,6 +74,15 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryAccessTest, MemoryAccessTest,
 #undef CASE
 // clang-format on
 
+TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
+  const std::string input = "OpStore %ptr %value Volatile|Aligned 16";
+  const uint32_t expected_mask =
+      spv::MemoryAccessVolatileMask | spv::MemoryAccessAlignedMask;
+  EXPECT_THAT(expected_mask, Eq(3));
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpStore, {1, 2, expected_mask, 16})));
+}
+
 // Test Storage Class enum values
 
 using StorageClassTest = test_fixture::TextToBinaryTestBase<
@@ -103,8 +113,6 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryStorageClassTest, StorageClassTest,
                         }));
 #undef CASE
 // clang-format on
-
-// TODO(dneto): Combination of memory access masks.
 
 // TODO(dneto): OpVariable with initializers
 // TODO(dneto): OpImageTexelPointer
