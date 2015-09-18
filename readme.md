@@ -27,6 +27,21 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-09-18
+* MILESTONE: This version of the assembler supports all of SPIR-V Rev31,
+  provided you only use 32-bit values.
+* Fixes build problems with MSVC 2013.
+* Assembler supports mask expressions
+  * e.g. OpStore %ptr %value Volatile|Aligned 4
+  * See [`syntax.md`](syntax.md) for more.
+* Assembler supports image operands from Rev31.
+  * This uses mask expression support.
+* Assembler supports enum operands:
+  storage class enums, sampler addressing mode,
+  sampler filter mode, dim, image format
+* More support for `!<number>` syntax.  Still incomplete.
+* Disassembler will print 64-bit values correctly.
+
 2015-09-15
 * Fixed spelling of Function Control "Inline" enumerated value.
 * Fixed: `Aligned` memory access flag takes a literal number operand.
@@ -234,11 +249,12 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* Handle image operands
-* Support literal numbers wider than 32 bits.
+* Encode literal numbers correctly, for widths other than 32-bits.
 * Support OpenCL extension library.
 * Enforce the parsing rules.
 * Support UTF-8 literal strings.
+* Disallow accidental conflict between numbered IDs and named IDs.
+  For example, %4 should not accidentally alias to %foo.
 
 ### Validator
 
