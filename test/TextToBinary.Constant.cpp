@@ -37,13 +37,6 @@ namespace {
 using spvtest::MakeInstruction;
 using ::testing::Eq;
 
-// An example case for an enumerated value.
-template <typename E>
-struct EnumCase {
-  E value;
-  std::string name;
-};
-
 // Test Sampler Addressing Mode enum values
 
 using SamplerAddressingModeTest = test_fixture::TextToBinaryTestBase<
@@ -54,7 +47,7 @@ TEST_P(SamplerAddressingModeTest, AnySamplerAddressingMode) {
       "%result = OpConstantSampler %type " + GetParam().name + " 0 Nearest";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
-                                 {1, 2, GetParam().value, 0, 0})));
+                                 {1, 2, GetParam().get_value(), 0, 0})));
 }
 
 // clang-format off
@@ -81,7 +74,7 @@ TEST_P(SamplerFilterModeTest, AnySamplerFilterMode) {
       "%result = OpConstantSampler %type Clamp 0 " + GetParam().name;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
-                                 {1, 2, 2, 0, GetParam().value})));
+                                 {1, 2, 2, 0, GetParam().get_value()})));
 }
 
 // clang-format off

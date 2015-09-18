@@ -49,9 +49,9 @@ using test_fixture::TextToBinaryTest;
 struct DecorateSimpleCase {
   // Place the enum value first, so it's easier to read the binary dumps when
   // the test fails.
-  const spv::Decoration decoration;
-  const std::string name;
-  const std::vector<uint32_t> operands;
+  spv::Decoration decoration;
+  std::string name;
+  std::vector<uint32_t> operands;
 };
 
 using OpDecorateSimpleTest =
@@ -118,10 +118,10 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimple, OpDecorateSimpleTest,
 struct DecorateEnumCase {
   // Place the enum value first, so it's easier to read the binary dumps when
   // the test fails.
-  const uint32_t value;  // The value within the enum, e.g. Position
-  const std::string name;
-  const uint32_t enum_value;  // Which enum, e.g. BuiltIn
-  const std::string enum_name;
+  uint32_t value;  // The value within the enum, e.g. Position
+  std::string name;
+  uint32_t enum_value;  // Which enum, e.g. BuiltIn
+  std::string enum_name;
 };
 
 using OpDecorateEnumTest = test_fixture::TextToBinaryTestBase<
@@ -254,9 +254,9 @@ TEST_F(TextToBinaryTest, CombinedFPFastMathMask) {
 
 // A single test case for a linkage
 struct DecorateLinkageCase {
-  const uint32_t linkage_type_value;
-  const std::string linkage_type_name;
-  const std::string external_name;
+  uint32_t linkage_type_value;
+  std::string linkage_type_name;
+  std::string external_name;
 };
 
 using OpDecorateLinkageTest = test_fixture::TextToBinaryTestBase<

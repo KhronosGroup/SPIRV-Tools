@@ -38,13 +38,6 @@ using spvtest::MakeInstruction;
 using ::testing::Eq;
 using test_fixture::TextToBinaryTest;
 
-// An example case for an enumerated value.
-template <typename E>
-struct EnumCase {
-  E value;
-  std::string name;
-};
-
 // Test OpSelectionMerge
 
 using OpSelectionMergeTest = test_fixture::TextToBinaryTestBase<
@@ -54,7 +47,7 @@ TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
   std::string input = "OpSelectionMerge %1 " + GetParam().name;
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().value})));
+      Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().get_value()})));
 }
 
 // clang-format off
@@ -83,8 +76,9 @@ using OpLoopMergeTest = test_fixture::TextToBinaryTestBase<
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
   std::string input = "OpLoopMerge %1 " + GetParam().name;
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().value})));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().get_value()})));
 }
 
 // clang-format off

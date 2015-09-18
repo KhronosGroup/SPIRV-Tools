@@ -38,13 +38,6 @@ using spvtest::MakeInstruction;
 using ::testing::Eq;
 using test_fixture::TextToBinaryTest;;
 
-// An example case for an enumerated value.
-template <typename E>
-struct EnumCase {
-  E value;
-  std::string name;
-};
-
 // Test OpFunction
 
 using OpFunctionControlTest = test_fixture::TextToBinaryTestBase<
@@ -55,7 +48,7 @@ TEST_P(OpFunctionControlTest, AnySingleFunctionControlMask) {
                       GetParam().name + " %function_type ";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpFunction, {1, 2, GetParam().value, 3})));
+      Eq(MakeInstruction(spv::OpFunction, {1, 2, GetParam().get_value(), 3})));
 }
 
 // clang-format off

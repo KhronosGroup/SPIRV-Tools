@@ -150,6 +150,14 @@ struct AutoText {
   spv_text_t text;
 };
 
+// An example case for an enumerated value.
+template <typename E>
+struct EnumCase {
+  uint32_t get_value() const { return static_cast<uint32_t>(value); }
+  E value;
+  std::string name;
+};
+
 #define I32_ENDIAN_HOST (o32_host_order.value)
 
 #endif

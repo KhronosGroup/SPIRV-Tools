@@ -47,7 +47,7 @@ TEST_F(TextToBinaryTest, EncodeAAFTextAsCAF) {
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
                 opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
-  ASSERT_TRUE(diagnostic);
+  ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <opcode> at the beginning of an instruction, found '%2'.",
       diagnostic->error);
@@ -71,7 +71,7 @@ TEST_F(TextToBinaryTest, EncodeCAFTextAsAAF) {
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
                 opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
-  ASSERT_TRUE(diagnostic);
+  ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <result-id> at the beginning of an instruction, found "
       "'OpConstant'.",
@@ -85,7 +85,7 @@ TEST_F(TextToBinaryTest, EncodeMixedTextAsAAF) {
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
                 opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
-  ASSERT_TRUE(diagnostic);
+  ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <result-id> at the beginning of an instruction, found "
       "'OpConstant'.",
@@ -99,7 +99,7 @@ TEST_F(TextToBinaryTest, EncodeMixedTextAsCAF) {
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
                 opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
-  ASSERT_TRUE(diagnostic);
+  ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <opcode> at the beginning of an instruction, found '%3'.",
       diagnostic->error);

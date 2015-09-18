@@ -44,9 +44,12 @@ using ::testing::Eq;
 
 // A single test case for OpSource
 struct LanguageCase {
-  const char* language_name;
-  const spv::SourceLanguage language_value;
-  const uint32_t version;
+  uint32_t get_language_value() const {
+    return static_cast<uint32_t>(language_value);
+  }
+  char* language_name;
+  spv::SourceLanguage language_value;
+  uint32_t version;
 };
 
 // clang-format off
@@ -70,7 +73,7 @@ TEST_P(OpSourceTest, AnyLanguage) {
   std::string input = std::string("OpSource ") + GetParam().language_name +
                       " " + std::to_string(GetParam().version);
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpSource, {GetParam().language_value,
+              Eq(MakeInstruction(spv::OpSource, {GetParam().get_language_value(),
                                                  GetParam().version})));
 }
 

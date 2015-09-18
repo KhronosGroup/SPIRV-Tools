@@ -39,7 +39,7 @@ TEST(TextLiteral, GoodI32) {
 
   ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("-2147483648", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_INT_32, l.type);
-  EXPECT_EQ(-2147483648, l.value.i32);
+  EXPECT_EQ((-2147483647L - 1), l.value.i32);
 }
 
 TEST(TextLiteral, GoodU32) {
@@ -59,7 +59,7 @@ TEST(TextLiteral, GoodI64) {
 
   ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("-2147483649", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_INT_64, l.type);
-  EXPECT_EQ(-2147483649, l.value.i64);
+  EXPECT_EQ(-2147483649LL, l.value.i64);
 }
 
 TEST(TextLiteral, GoodU64) {

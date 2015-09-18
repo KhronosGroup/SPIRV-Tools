@@ -53,9 +53,9 @@ TEST(GetWord, Simple) {
 
 // An mask parsing test case.
 struct MaskCase {
-  const spv_operand_type_t which_enum;
-  const uint32_t expected_value;
-  const char* expression;
+  spv_operand_type_t which_enum;
+  uint32_t expected_value;
+  char* expression;
 };
 
 using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
@@ -428,7 +428,7 @@ TEST_F(TextToBinaryTest, GoodSwitch) {
 )");
 
   // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ(int(spv::OpSwitch) || (7 << 16), code[14]);
+  EXPECT_EQ((int(spv::OpSwitch) | (7 << 16)), code[14 + SPV_INDEX_INSTRUCTION]);
 }
 
 TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
@@ -441,7 +441,7 @@ TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
 )");
 
   // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ(int(spv::OpSwitch) || (3 << 16), code[10]);
+  EXPECT_EQ((int(spv::OpSwitch) | (3 << 16)), code[10 + SPV_INDEX_INSTRUCTION]);
 }
 
 TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {

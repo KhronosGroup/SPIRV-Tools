@@ -70,10 +70,10 @@ TEST(OperandPattern, PopFrontsAreOnTheLeft) {
 
 // A test case for typed mask expansion
 struct MaskExpansionCase {
-  const spv_operand_type_t type;
-  const uint32_t mask;
-  const spv_operand_pattern_t initial;
-  const spv_operand_pattern_t expected;
+  spv_operand_type_t type;
+  uint32_t mask;
+  spv_operand_pattern_t initial;
+  spv_operand_pattern_t expected;
 };
 
 using MaskExpansionTest = ::testing::TestWithParam<MaskExpansionCase>;

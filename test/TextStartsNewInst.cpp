@@ -60,14 +60,14 @@ TEST(TextStartsWithOp, NoRegular) {
 TEST(TextStartsWithOp, YesForValueGenerationForm) {
   spv_position_t startPosition = {};
   EXPECT_TRUE(
-      spvTextIsStartOfNewInst(AutoText("\%foo = OpAdd"), &startPosition));
+      spvTextIsStartOfNewInst(AutoText("%foo = OpAdd"), &startPosition));
   EXPECT_TRUE(
-      spvTextIsStartOfNewInst(AutoText("\%foo  =  OpAdd"), &startPosition));
+      spvTextIsStartOfNewInst(AutoText("%foo  =  OpAdd"), &startPosition));
 }
 
 TEST(TextStartsWithOp, NoForNearlyValueGeneration) {
   spv_position_t startPosition = {};
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("\%foo = "), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("\%foo "), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("\%foo"), &startPosition));
+  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo = "), &startPosition));
+  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo "), &startPosition));
+  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo"), &startPosition));
 }

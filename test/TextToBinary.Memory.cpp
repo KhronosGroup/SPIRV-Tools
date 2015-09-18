@@ -43,6 +43,7 @@ using test_fixture::TextToBinaryTest;
 // An example case for an enumerated value.
 template <typename E>
 struct EnumCaseWithOperands {
+  uint32_t get_value() const { return static_cast<uint32_t>(value); }
   E value;
   std::string name;
   std::vector<uint32_t> operands;
@@ -57,7 +58,7 @@ TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
   std::stringstream input;
   input << "OpStore %ptr %value " << GetParam().name;
   for (auto operand : GetParam().operands) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, 2, GetParam().value};
+  std::vector<uint32_t> expected_operands{1, 2, GetParam().get_value()};
   expected_operands.insert(expected_operands.end(), GetParam().operands.begin(),
                            GetParam().operands.end());
   EXPECT_THAT(CompiledInstructions(input.str()),
@@ -91,7 +92,7 @@ using StorageClassTest = test_fixture::TextToBinaryTestBase<
 TEST_P(StorageClassTest, AnyStorageClass) {
   std::string input = "%1 = OpVariable %2 " + GetParam().name;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().value})));
+              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().get_value()})));
 }
 
 // clang-format off
