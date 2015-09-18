@@ -47,7 +47,7 @@ struct LanguageCase {
   uint32_t get_language_value() const {
     return static_cast<uint32_t>(language_value);
   }
-  char* language_name;
+  const char* language_name;
   spv::SourceLanguage language_value;
   uint32_t version;
 };

@@ -55,7 +55,7 @@ TEST(GetWord, Simple) {
 struct MaskCase {
   spv_operand_type_t which_enum;
   uint32_t expected_value;
-  char* expression;
+  const char* expression;
 };
 
 using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
