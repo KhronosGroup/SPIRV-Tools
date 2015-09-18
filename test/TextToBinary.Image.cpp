@@ -77,7 +77,8 @@ INSTANTIATE_TEST_CASE_P(
         {"ConstOffsets %15", {MASK(ConstOffsets), 15}},
         {"Sample %16", {MASK(Sample), 16}},
     }));
-
+#undef MASK
+#define MASK(NAME) static_cast<uint32_t>(spv::ImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryImageOperandsCombination, ImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
@@ -105,8 +106,7 @@ INSTANTIATE_TEST_CASE_P(
          " %5 %10 %11 %12 %13 %14 %15 %16",
          {MASK(Bias) | MASK(Lod) | MASK(Grad) | MASK(ConstOffset) |
               MASK(Offset) | MASK(ConstOffsets) | MASK(Sample),
-          5, 10, 11, 12, 13, 14, 15, 16}},
-    }));
+          5, 10, 11, 12, 13, 14, 15, 16}}}));
 #undef MASK
 
 }  // anonymous namespace
