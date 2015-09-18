@@ -560,12 +560,10 @@ spv_result_t spvTextEncodeOperand(
                                 pDiagnostic))
         return SPV_ERROR_INVALID_TEXT;
     } break;
-    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
-      assert(0 && " Handle optional optional image operands");
-      break;
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       uint32_t value;

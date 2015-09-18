@@ -186,6 +186,8 @@ typedef enum spv_operand_type_t {
   // In an instruction definition, this may only appear at the end of the
   // operand types.
   SPV_OPERAND_TYPE_OPTIONAL_ID,
+  // An optional image operands mask.  A set bit in the mask may
+  // imply that more arguments are required.
   SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
   // A literal number or string, but optional.
   // TODO(antiagainst): change to SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER.

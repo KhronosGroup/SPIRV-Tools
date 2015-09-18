@@ -466,6 +466,31 @@ static const spv_operand_desc_t samplerImageFormatEntries[] = {
 #undef CASE
 };
 
+// Image operand definitions.  Each enum value is a mask.  When that mask
+// bit is set, the instruction should have further ID operands.
+// Some mask values depend on a capability.
+static const spv_operand_desc_t imageOperandEntries[] = {
+// Rev32 and later adds many more enums.
+#define CASE(NAME) \
+  #NAME, spv::ImageOperands##NAME##Mask, SPV_OPCODE_FLAGS_NONE, 0
+#define CASE_CAP(NAME, CAP) \
+  #NAME, spv::ImageOperands##NAME##Mask, SPV_OPCODE_FLAGS_CAPABILITIES, CAP
+#define ID SPV_OPERAND_TYPE_ID
+#define NONE SPV_OPERAND_TYPE_NONE
+    {"None", spv::ImageOperandsMaskNone, SPV_OPCODE_FLAGS_NONE, 0, {NONE}},
+    {CASE_CAP(Bias, CapabilityShader), {ID, NONE}},
+    {CASE(Lod), {ID, NONE}},
+    {CASE(Grad), {ID, ID, NONE}},
+    {CASE(ConstOffset), {ID, NONE}},
+    {CASE_CAP(Offset, CapabilityImageGatherExtended), {ID, NONE}},
+    {CASE(ConstOffsets), {ID, NONE}},
+    {CASE(Sample), {ID, NONE}},
+#undef CASE
+#undef CASE_CAP
+#undef ID
+#undef NONE
+};
+
 static const spv_operand_desc_t fpFastMathModeEntries[] = {
     {"None",
      FPFastMathModeMaskNone,
@@ -1392,6 +1417,9 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
      sizeof(samplerImageFormatEntries) / sizeof(spv_operand_desc_t),
      samplerImageFormatEntries},
+    {SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+     sizeof(imageOperandEntries) / sizeof(spv_operand_desc_t),
+     imageOperandEntries},
     {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
      sizeof(fpFastMathModeEntries) / sizeof(spv_operand_desc_t),
      fpFastMathModeEntries},
@@ -1572,6 +1600,8 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "kernel profiling info";
     case SPV_OPERAND_TYPE_CAPABILITY:
       return "capability";
+    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
+      return "image operand";
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
     default:
