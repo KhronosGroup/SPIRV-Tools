@@ -12,10 +12,9 @@ into other code bases directly.
 ### Assembler and disassembler
 
 * Based on Revision 31 of SPIR-V
-* All core instructions are supported, except:
-  * Changes to operand enum values and their syntax since Rev 30 will not work.
-  * Image operands (section 3.14) are not supported, for example.
-  * Test coverage is very limited.
+* Assembler supports all core instructions, for 32-bit code.
+  * Handling of non-32-bit literal numbers has been recently clarified.
+    Those changes have not been applied.
 * All GLSL std450 extended instructions are supported.
 * Assembler only does basic syntax checking.  No cross validation of IDs or
   types is performed.
