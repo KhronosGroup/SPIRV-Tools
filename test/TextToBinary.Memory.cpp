@@ -37,8 +37,8 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::TextToBinaryTest;
 using ::testing::Eq;
-using test_fixture::TextToBinaryTest;
 
 // An example case for an enumerated value.
 template <typename E>
@@ -51,7 +51,7 @@ struct EnumCaseWithOperands {
 
 // Test assembly of Memory Access masks
 
-using MemoryAccessTest = test_fixture::TextToBinaryTestBase<
+using MemoryAccessTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCaseWithOperands<spv::MemoryAccessMask>>>;
 
 TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
@@ -86,7 +86,7 @@ TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
 
 // Test Storage Class enum values
 
-using StorageClassTest = test_fixture::TextToBinaryTestBase<
+using StorageClassTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCaseWithOperands<spv::StorageClass>>>;
 
 TEST_P(StorageClassTest, AnyStorageClass) {

@@ -30,7 +30,7 @@
 
 namespace {
 
-using test_fixture::TextToBinaryTest;
+using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, LiteralStringInPlaceOfLiteralNumber) {
   EXPECT_EQ(

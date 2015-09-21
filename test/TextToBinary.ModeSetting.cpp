@@ -54,7 +54,7 @@ struct MemoryModelCase {
   std::string memory_name;
 };
 
-using OpMemoryModelTest = test_fixture::TextToBinaryTestBase<
+using OpMemoryModelTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<MemoryModelCase>>;
 
 TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
@@ -97,7 +97,7 @@ struct EntryPointCase {
   std::string entry_point_name;
 };
 
-using OpEntryPointTest = test_fixture::TextToBinaryTestBase<
+using OpEntryPointTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EntryPointCase>>;
 
 TEST_P(OpEntryPointTest, AnyEntryPointCase) {
@@ -140,7 +140,7 @@ struct ExecutionModeCase {
   std::vector<uint32_t> operands;
 };
 
-using OpExecutionModeTest = test_fixture::TextToBinaryTestBase<
+using OpExecutionModeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<ExecutionModeCase>>;
 
 TEST_P(OpExecutionModeTest, AnyExecutionMode) {
@@ -199,7 +199,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryExecutionMode, OpExecutionModeTest,
 
 // Test OpCapability
 
-using OpCapabilityTest = test_fixture::TextToBinaryTestBase<
+using OpCapabilityTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::Capability>>>;
 
 TEST_P(OpCapabilityTest, AnyCapability) {

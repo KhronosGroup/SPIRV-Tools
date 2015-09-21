@@ -39,7 +39,7 @@ using ::testing::Eq;
 
 // Test Sampler Addressing Mode enum values
 
-using SamplerAddressingModeTest = test_fixture::TextToBinaryTestBase<
+using SamplerAddressingModeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SamplerAddressingMode>>>;
 
 TEST_P(SamplerAddressingModeTest, AnySamplerAddressingMode) {
@@ -66,7 +66,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // Test Sampler Filter Mode enum values
 
-using SamplerFilterModeTest = test_fixture::TextToBinaryTestBase<
+using SamplerFilterModeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SamplerFilterMode>>>;
 
 TEST_P(SamplerFilterModeTest, AnySamplerFilterMode) {

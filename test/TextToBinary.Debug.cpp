@@ -67,7 +67,7 @@ const LanguageCase kLanguageCases[] = {
 // clang-format on
 
 using OpSourceTest =
-    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<LanguageCase>>;
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<LanguageCase>>;
 
 TEST_P(OpSourceTest, AnyLanguage) {
   std::string input = std::string("OpSource ") + GetParam().language_name +
@@ -83,7 +83,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
 // Test OpSourceExtension
 
 using OpSourceExtensionTest =
-    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
 
 TEST_P(OpSourceExtensionTest, AnyExtension) {
   // TODO(dneto): utf-8, quoting, escaping

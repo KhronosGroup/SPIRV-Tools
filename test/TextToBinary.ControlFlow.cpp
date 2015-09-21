@@ -36,11 +36,10 @@ namespace {
 
 using spvtest::MakeInstruction;
 using ::testing::Eq;
-using test_fixture::TextToBinaryTest;
 
 // Test OpSelectionMerge
 
-using OpSelectionMergeTest = test_fixture::TextToBinaryTestBase<
+using OpSelectionMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SelectionControlMask>>>;
 
 TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
@@ -71,7 +70,7 @@ TEST_F(OpSelectionMergeTest, CombinedSelectionControlMask) {
 
 // Test OpLoopMerge
 
-using OpLoopMergeTest = test_fixture::TextToBinaryTestBase<
+using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {

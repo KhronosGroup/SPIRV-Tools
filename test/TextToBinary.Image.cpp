@@ -46,7 +46,7 @@ struct ImageOperandsCase {
 
 // Test all kinds of image operands.
 
-using ImageOperandsTest = test_fixture::TextToBinaryTestBase<
+using ImageOperandsTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<ImageOperandsCase>>;
 
 TEST_P(ImageOperandsTest, Sample) {

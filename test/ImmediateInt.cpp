@@ -34,10 +34,10 @@
 
 namespace {
 
+using spvtest::TextToBinaryTest;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
-using test_fixture::TextToBinaryTest;
 
 const auto kCAF = SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL;
 

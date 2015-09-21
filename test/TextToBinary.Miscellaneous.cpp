@@ -34,11 +34,11 @@
 
 namespace {
 
-using SpirvVector = test_fixture::TextToBinaryTest::SpirvVector;
+using SpirvVector = spvtest::TextToBinaryTest::SpirvVector;
 using spv::Op;
 using spvtest::MakeInstruction;
 using ::testing::Eq;
-using TextToBinaryMisc = test_fixture::TextToBinaryTest;
+using TextToBinaryMisc = spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryMisc, OpNop) {
   EXPECT_THAT(CompiledInstructions("OpNop"), Eq(MakeInstruction(OpNop, {})));

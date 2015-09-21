@@ -39,7 +39,7 @@ using ::testing::Eq;
 
 // Test GroupOperation enum
 
-using GroupOperationTest = test_fixture::TextToBinaryTestBase<
+using GroupOperationTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::GroupOperation>>>;
 
 TEST_P(GroupOperationTest, AnyGroupOperation) {

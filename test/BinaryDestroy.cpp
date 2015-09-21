@@ -36,7 +36,7 @@ TEST(BinaryDestroy, Null) {
   spvBinaryDestroy(nullptr);
 }
 
-using BinaryDestroySomething = test_fixture::TextToBinaryTest;
+using BinaryDestroySomething = spvtest::TextToBinaryTest;
 
 // Checks safety of destroying a validly constructed binary.
 TEST_F(BinaryDestroySomething, Default) {

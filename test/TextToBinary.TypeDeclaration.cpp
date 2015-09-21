@@ -39,7 +39,7 @@ using ::testing::Eq;
 
 // Test Dim enums via OpTypeImage
 
-using DimTest = test_fixture::TextToBinaryTestBase<
+using DimTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::Dim>>>;
 
 TEST_P(DimTest, AnyDim) {
@@ -69,7 +69,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // Test ImageFormat enums via OpTypeImage
 
-using ImageFormatTest = test_fixture::TextToBinaryTestBase<
+using ImageFormatTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::ImageFormat>>>;
 
 TEST_P(ImageFormatTest, AnyImageFormat) {
@@ -132,7 +132,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // Test AccessQualifier enums via OpTypePipe.
 
-using OpTypePipeTest = test_fixture::TextToBinaryTestBase<
+using OpTypePipeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::AccessQualifier>>>;
 
 TEST_P(OpTypePipeTest, AnyAccessQualifier) {

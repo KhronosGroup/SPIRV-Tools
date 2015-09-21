@@ -28,7 +28,7 @@
 
 namespace {
 
-using test_fixture::TextToBinaryTest;
+using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, EncodeAAFTextAsAAF) {
   SetText("%2 = OpConstant %1 1000");

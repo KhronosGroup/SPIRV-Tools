@@ -35,12 +35,12 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::TextToBinaryTest;;
 using ::testing::Eq;
-using test_fixture::TextToBinaryTest;;
 
 // Test OpFunction
 
-using OpFunctionControlTest = test_fixture::TextToBinaryTestBase<
+using OpFunctionControlTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::FunctionControlMask>>>;
 
 TEST_P(OpFunctionControlTest, AnySingleFunctionControlMask) {

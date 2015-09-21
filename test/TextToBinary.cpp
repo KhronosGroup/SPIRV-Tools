@@ -33,7 +33,7 @@
 
 namespace {
 
-using test_fixture::TextToBinaryTest;
+using spvtest::TextToBinaryTest;
 
 TEST(GetWord, Simple) {
   EXPECT_EQ("", spvGetWord(""));
@@ -462,7 +462,7 @@ TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
                diagnostic->error);
 }
 
-using TextToBinaryFloatValueTest = test_fixture::TextToBinaryTestBase<
+using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
 
 TEST_P(TextToBinaryFloatValueTest, NormalValues) {

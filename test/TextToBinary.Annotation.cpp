@@ -38,8 +38,8 @@ namespace {
 
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
+using spvtest::TextToBinaryTest;
 using ::testing::Eq;
-using test_fixture::TextToBinaryTest;
 
 // Test OpDecorate
 
@@ -55,7 +55,7 @@ struct DecorateSimpleCase {
 };
 
 using OpDecorateSimpleTest =
-    test_fixture::TextToBinaryTestBase<::testing::TestWithParam<DecorateSimpleCase>>;
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<DecorateSimpleCase>>;
 
 TEST_P(OpDecorateSimpleTest, AnySimpleDecoration) {
   // This string should assemble, but should not validate.
@@ -124,7 +124,7 @@ struct DecorateEnumCase {
   std::string enum_name;
 };
 
-using OpDecorateEnumTest = test_fixture::TextToBinaryTestBase<
+using OpDecorateEnumTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<DecorateEnumCase>>;
 
 TEST_P(OpDecorateEnumTest, AnyEnumDecoration) {
@@ -259,7 +259,7 @@ struct DecorateLinkageCase {
   std::string external_name;
 };
 
-using OpDecorateLinkageTest = test_fixture::TextToBinaryTestBase<
+using OpDecorateLinkageTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<DecorateLinkageCase>>;
 
 TEST_P(OpDecorateLinkageTest, AnyLinkageDecoration) {
