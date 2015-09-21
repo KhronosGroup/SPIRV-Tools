@@ -45,14 +45,14 @@ using OpFunctionControlTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(OpFunctionControlTest, AnySingleFunctionControlMask) {
   std::string input = "%result_id = OpFunction %result_type " +
-                      GetParam().name + " %function_type ";
+                      GetParam().name() + " %function_type ";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpFunction, {1, 2, GetParam().get_value(), 3})));
+      Eq(MakeInstruction(spv::OpFunction, {1, 2, GetParam().value(), 3})));
 }
 
 // clang-format off
-#define CASE(VALUE,NAME) { spv::FunctionControl##VALUE, NAME}
+#define CASE(VALUE,NAME) { spv::FunctionControl##VALUE, NAME }
 INSTANTIATE_TEST_CASE_P(TextToBinaryFunctionTest, OpFunctionControlTest,
                         ::testing::ValuesIn(std::vector<EnumCase<spv::FunctionControlMask>>{
                             CASE(MaskNone, "None"),

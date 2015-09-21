@@ -43,10 +43,10 @@ using OpSelectionMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SelectionControlMask>>>;
 
 TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
-  std::string input = "OpSelectionMerge %1 " + GetParam().name;
+  std::string input = "OpSelectionMerge %1 " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().get_value()})));
+      Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().value()})));
 }
 
 // clang-format off
@@ -74,10 +74,10 @@ using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
-  std::string input = "OpLoopMerge %1 " + GetParam().name;
+  std::string input = "OpLoopMerge %1 " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().get_value()})));
+      Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().value()})));
 }
 
 // clang-format off

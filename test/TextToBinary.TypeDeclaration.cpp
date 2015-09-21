@@ -44,10 +44,10 @@ using DimTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(DimTest, AnyDim) {
   std::string input = "%imageType = OpTypeImage %sampledType " +
-                      GetParam().name + " 2 3 0 4 Rgba8";
+                      GetParam().name() + " 2 3 0 4 Rgba8";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().get_value(), 2, 3, 0, 4,
+      Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().value(), 2, 3, 0, 4,
                                             spv::ImageFormatRgba8})));
 }
 
@@ -74,10 +74,10 @@ using ImageFormatTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(ImageFormatTest, AnyImageFormat) {
   std::string input =
-      "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name;
+      "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpTypeImage, {1, 2, spv::Dim1D, 2, 3, 0,
-                                                    4, GetParam().get_value()})));
+                                                    4, GetParam().value()})));
 }
 
 // clang-format off
@@ -138,10 +138,10 @@ using OpTypePipeTest = spvtest::TextToBinaryTestBase<
 TEST_P(OpTypePipeTest, AnyAccessQualifier) {
   // TODO(dneto): In Rev31 and later, pipes are opaque, and so the %2, which
   // is the type-of-element operand, should be dropped.
-  std::string input = "%1 = OpTypePipe %2 " + GetParam().name;
+  std::string input = "%1 = OpTypePipe %2 " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpTypePipe, {1, 2, GetParam().get_value()})));
+      Eq(MakeInstruction(spv::OpTypePipe, {1, 2, GetParam().value()})));
 }
 
 // clang-format off

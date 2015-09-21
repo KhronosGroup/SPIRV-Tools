@@ -40,40 +40,29 @@ using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
 using ::testing::Eq;
 
-// An example case for an enumerated value.
-template <typename E>
-struct EnumCaseWithOperands {
-  uint32_t get_value() const { return static_cast<uint32_t>(value); }
-  E value;
-  std::string name;
-  std::vector<uint32_t> operands;
-};
-
 // Test assembly of Memory Access masks
 
 using MemoryAccessTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCaseWithOperands<spv::MemoryAccessMask>>>;
+    ::testing::TestWithParam<EnumCase<spv::MemoryAccessMask>>>;
 
 TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
   std::stringstream input;
-  input << "OpStore %ptr %value " << GetParam().name;
-  for (auto operand : GetParam().operands) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, 2, GetParam().get_value()};
-  expected_operands.insert(expected_operands.end(), GetParam().operands.begin(),
-                           GetParam().operands.end());
+  input << "OpStore %ptr %value " << GetParam().name();
+  for (auto operand : GetParam().operands()) input << " " << operand;
+  std::vector<uint32_t> expected_operands{1, 2, GetParam().value()};
+  expected_operands.insert(expected_operands.end(), GetParam().operands().begin(),
+                           GetParam().operands().end());
   EXPECT_THAT(CompiledInstructions(input.str()),
               Eq(MakeInstruction(spv::OpStore, expected_operands)));
 }
 
-// clang-format off
-INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryAccessTest, MemoryAccessTest,
-                        ::testing::ValuesIn(std::vector<EnumCaseWithOperands<spv::MemoryAccessMask>>{
-                          {spv::MemoryAccessMaskNone, "None", {}},
-                          {spv::MemoryAccessVolatileMask, "Volatile", {}},
-                          {spv::MemoryAccessAlignedMask, "Aligned", {16}},
-                        }));
-#undef CASE
-// clang-format on
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryMemoryAccessTest, MemoryAccessTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::MemoryAccessMask>>{
+        {spv::MemoryAccessMaskNone, "None", {}},
+        {spv::MemoryAccessVolatileMask, "Volatile", {}},
+        {spv::MemoryAccessAlignedMask, "Aligned", {16}},
+    }));
 
 TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
   const std::string input = "OpStore %ptr %value Volatile|Aligned 16";
@@ -87,31 +76,32 @@ TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
 // Test Storage Class enum values
 
 using StorageClassTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCaseWithOperands<spv::StorageClass>>>;
+    ::testing::TestWithParam<EnumCase<spv::StorageClass>>>;
 
 TEST_P(StorageClassTest, AnyStorageClass) {
-  std::string input = "%1 = OpVariable %2 " + GetParam().name;
+  std::string input = "%1 = OpVariable %2 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().get_value()})));
+              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().value()})));
 }
 
 // clang-format off
 #define CASE(NAME) { spv::StorageClass##NAME, #NAME, {} }
-INSTANTIATE_TEST_CASE_P(TextToBinaryStorageClassTest, StorageClassTest,
-                        ::testing::ValuesIn(std::vector<EnumCaseWithOperands<spv::StorageClass>>{
-                          // TODO(dneto): There are more storage classes in Rev32 and later.
-                          CASE(UniformConstant),
-                          CASE(Input),
-                          CASE(Uniform),
-                          CASE(Output),
-                          CASE(WorkgroupLocal),
-                          CASE(WorkgroupGlobal),
-                          CASE(PrivateGlobal),
-                          CASE(Function),
-                          CASE(Generic),
-                          CASE(AtomicCounter),
-                          CASE(Image),
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryStorageClassTest, StorageClassTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::StorageClass>>{
+        // TODO(dneto): There are more storage classes in Rev32 and later.
+        CASE(UniformConstant),
+        CASE(Input),
+        CASE(Uniform),
+        CASE(Output),
+        CASE(WorkgroupLocal),
+        CASE(WorkgroupGlobal),
+        CASE(PrivateGlobal),
+        CASE(Function),
+        CASE(Generic),
+        CASE(AtomicCounter),
+        CASE(Image),
+    }));
 #undef CASE
 // clang-format on
 

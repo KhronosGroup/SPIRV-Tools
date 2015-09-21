@@ -44,10 +44,10 @@ using GroupOperationTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(GroupOperationTest, AnyGroupOperation) {
   std::string input =
-      "%result = OpGroupIAdd %type %scope " + GetParam().name + " %x";
+      "%result = OpGroupIAdd %type %scope " + GetParam().name() + " %x";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpGroupIAdd,
-                                 {1, 2, 3, GetParam().get_value(), 4})));
+                                 {1, 2, 3, GetParam().value(), 4})));
 }
 
 // clang-format off

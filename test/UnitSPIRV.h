@@ -150,12 +150,23 @@ struct AutoText {
   spv_text_t text;
 };
 
-// An example case for an enumerated value.
+// An example case for an enumerated value, optionally with operands.
 template <typename E>
-struct EnumCase {
-  uint32_t get_value() const { return static_cast<uint32_t>(value); }
-  E value;
-  std::string name;
+class EnumCase {
+ public:
+  EnumCase(E value, std::string name, std::vector<uint32_t> operands = {})
+      : enum_value_(value), name_(name), operands_(operands) {}
+  // Returns the enum value as a uint32_t.
+  uint32_t value() const { return static_cast<uint32_t>(enum_value_); }
+  // Returns the name of the enumerant.
+  const std::string& name() const { return name_; }
+  // Returns a reference to the operands.
+  const std::vector<uint32_t>& operands() const { return operands_; }
+
+ private:
+  E enum_value_;
+  std::string name_;
+  std::vector<uint32_t> operands_;
 };
 
 #define I32_ENDIAN_HOST (o32_host_order.value)

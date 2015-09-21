@@ -44,10 +44,10 @@ using SamplerAddressingModeTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(SamplerAddressingModeTest, AnySamplerAddressingMode) {
   std::string input =
-      "%result = OpConstantSampler %type " + GetParam().name + " 0 Nearest";
+      "%result = OpConstantSampler %type " + GetParam().name() + " 0 Nearest";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
-                                 {1, 2, GetParam().get_value(), 0, 0})));
+                                 {1, 2, GetParam().value(), 0, 0})));
 }
 
 // clang-format off
@@ -71,10 +71,10 @@ using SamplerFilterModeTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(SamplerFilterModeTest, AnySamplerFilterMode) {
   std::string input =
-      "%result = OpConstantSampler %type Clamp 0 " + GetParam().name;
+      "%result = OpConstantSampler %type Clamp 0 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
-                                 {1, 2, 2, 0, GetParam().get_value()})));
+                                 {1, 2, 2, 0, GetParam().value()})));
 }
 
 // clang-format off

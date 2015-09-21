@@ -203,9 +203,9 @@ using OpCapabilityTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::Capability>>>;
 
 TEST_P(OpCapabilityTest, AnyCapability) {
-  std::string input = "OpCapability " + GetParam().name;
+  std::string input = "OpCapability " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpCapability, {GetParam().get_value()})));
+              Eq(MakeInstruction(spv::OpCapability, {GetParam().value()})));
 }
 
 // clang-format off
