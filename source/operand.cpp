@@ -285,7 +285,7 @@ static const spv_operand_desc_t executionModeEntries[] = {
      ExecutionModeVecTypeHint,
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityKernel,
-     {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
     {"ContractionOff",
      ExecutionModeContractionOff,
      SPV_OPCODE_FLAGS_CAPABILITIES,
