@@ -47,11 +47,9 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst1(Exp2)},
     {GLSL450Inst1(Log2)},
     {GLSL450Inst1(Sqrt)},
-    // clang-format off
-    {"Inversesqrt", GLSLstd450::GLSLstd450InverseSqrt, {SPV_OPERAND_TYPE_ID}},
+    {GLSL450Inst1(InverseSqrt)},
     {GLSL450Inst1(Determinant)},
-    {"Inverse", GLSLstd450::GLSLstd450MatrixInverse, {SPV_OPERAND_TYPE_ID}},
-    // clang-format on
+    {GLSL450Inst1(MatrixInverse)},
     {GLSL450Inst2(Modf)},
     {GLSL450Inst1(ModfStruct)},
     {GLSL450Inst2(FMin)},
@@ -63,11 +61,10 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst3(FClamp)},
     {GLSL450Inst3(UClamp)},
     {GLSL450Inst3(SClamp)},
-    {GLSL450Inst3(Mix)},
+    {GLSL450Inst3(FMix)},
+    {GLSL450Inst3(IMix)},
     {GLSL450Inst2(Step)},
-    // clang-format off
-    {"Smoothstep", GLSLstd450::GLSLstd450SmoothStep, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    // clang-format on
+    {GLSL450Inst3(SmoothStep)},
     {GLSL450Inst3(Fma)},
     {GLSL450Inst2(Frexp)},
     {GLSL450Inst1(FrexpStruct)},
@@ -88,24 +85,15 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst2(Distance)},
     {GLSL450Inst2(Cross)},
     {GLSL450Inst1(Normalize)},
-    // clang-format off
-    {"Faceforward", GLSLstd450::GLSLstd450FaceForward, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    // clang-format on
+    {GLSL450Inst3(FaceForward)},
     {GLSL450Inst2(Reflect)},
     {GLSL450Inst3(Refract)},
-    // clang-format off
-    {"FindILsb", GLSLstd450::GLSLstd450FindILSB, {SPV_OPERAND_TYPE_ID}},
-    {"FindSMsb", GLSLstd450::GLSLstd450FindSMSB, {SPV_OPERAND_TYPE_ID}},
-    {"FindUMsb", GLSLstd450::GLSLstd450FindUMSB, {SPV_OPERAND_TYPE_ID}},
-    // clang-format on
+    {GLSL450Inst1(FindILsb)},
+    {GLSL450Inst1(FindSMsb)},
+    {GLSL450Inst1(FindUMsb)},
     {GLSL450Inst1(InterpolateAtCentroid)},
     {GLSL450Inst2(InterpolateAtSample)},
     {GLSL450Inst2(InterpolateAtOffset)},
-    // clang-format off
-    {"UaddCarry", GLSLstd450::GLSLstd450AddCarry, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"UsubBorrow", GLSLstd450::GLSLstd450SubBorrow, {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    {"UmulExtended", GLSLstd450::GLSLstd450MulExtended, { SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID}},
-    // clang-format on
 };
 
 static const spv_ext_inst_desc_t openclStd12Entries[] = {

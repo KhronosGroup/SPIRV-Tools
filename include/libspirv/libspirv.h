@@ -30,7 +30,7 @@
 #include <headers/spirv.hpp>
 #include <headers/spirv_operands.hpp>
 #include <headers/GLSL.std.450.h>
-#include <headers/OpenCLLib.h>
+#include <headers/OpenCL.std.h>
 
 #ifdef __cplusplus
 using namespace spv;
