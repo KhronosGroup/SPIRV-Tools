@@ -690,6 +690,7 @@ spv_result_t spvTextEncodeOpcode(
     const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
     uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
     spv_diagnostic *pDiagnostic) {
+
   // Check for !<integer> first.
   if ('!' == text->str[position->index]) {
     return encodeInstructionStartingWithImmediate(
@@ -700,12 +701,6 @@ spv_result_t spvTextEncodeOpcode(
   // An assembly instruction has two possible formats:
   // 1(CAF): <opcode> <operand>..., e.g., "OpTypeVoid %void".
   // 2(AAF): <result-id> = <opcode> <operand>..., e.g., "%void = OpTypeVoid".
-
-  if ('!' == text->str[position->index]) {
-    return encodeInstructionStartingWithImmediate(
-        text, operandTable, extInstTable, namedIdTable, pBound, pInst, position,
-        pDiagnostic);
-  }
 
   std::string firstWord;
   spv_position_t nextPosition = {};
