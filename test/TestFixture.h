@@ -129,8 +129,9 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text, asserts success, and returns the words representing
   // the instructions.  In particular, skip the words in the SPIR-V header.
-  SpirvVector CompiledInstructions(const std::string& text) {
-    const SpirvVector code = CompileSuccessfully(text);
+  SpirvVector CompiledInstructions(const std::string& text,
+                                   spv_assembly_syntax_format_t format) {
+    const SpirvVector code = CompileSuccessfully(text, format);
     SpirvVector result;
     // Extract just the instructions.
     // If the code fails to compile, then return the empty vector.
@@ -138,6 +139,13 @@ class TextToBinaryTestBase : public T {
     if (code.size() >= kFirstInstruction)
       result = Subvector(code, kFirstInstruction);
     return result;
+  }
+
+  // Compiles SPIR-V text with the default assembly format, asserts success, and
+  // returns the words representing the instructions.  In particular, skip the
+  // words in the SPIR-V header.
+  SpirvVector CompiledInstructions(const std::string& text) {
+    return CompiledInstructions(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT);
   }
 
   void SetText(const std::string& code) {

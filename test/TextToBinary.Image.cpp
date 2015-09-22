@@ -70,12 +70,12 @@ INSTANTIATE_TEST_CASE_P(
         {"", {}},
         // Test each kind, alone.
         {"Bias %5", {MASK(Bias), 5}},
-        {"Lod %10", {MASK(Lod), 10}},
-        {"Grad %11 %12", {MASK(Grad), 11, 12}},
-        {"ConstOffset %13", {MASK(ConstOffset), 13}},
-        {"Offset %14", {MASK(Offset), 14}},
-        {"ConstOffsets %15", {MASK(ConstOffsets), 15}},
-        {"Sample %16", {MASK(Sample), 16}},
+        {"Lod %10", {MASK(Lod), 5}},
+        {"Grad %11 %12", {MASK(Grad), 5, 6}},
+        {"ConstOffset %13", {MASK(ConstOffset), 5}},
+        {"Offset %14", {MASK(Offset), 5}},
+        {"ConstOffsets %15", {MASK(ConstOffsets), 5}},
+        {"Sample %16", {MASK(Sample), 5}},
     }));
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(spv::ImageOperands##NAME##Mask)
@@ -85,28 +85,28 @@ INSTANTIATE_TEST_CASE_P(
         // TODO(dneto): Rev32 adds many more values, and rearranges their
         // values.
         // Test adjacent pairs, so we can easily debug the values when it fails.
-        {"Bias|Lod %10 %11", {MASK(Bias) | MASK(Lod), 10, 11}},
-        {"Lod|Grad %12 %13 %14", {MASK(Lod) | MASK(Grad), 12, 13, 14}},
+        {"Bias|Lod %10 %11", {MASK(Bias) | MASK(Lod), 5, 6}},
+        {"Lod|Grad %12 %13 %14", {MASK(Lod) | MASK(Grad), 5, 6, 7}},
         {"Grad|ConstOffset %15 %16 %17",
-         {MASK(Grad) | MASK(ConstOffset), 15, 16, 17}},
+         {MASK(Grad) | MASK(ConstOffset), 5, 6, 7}},
         {"ConstOffset|Offset %18 %19",
-         {MASK(ConstOffset) | MASK(Offset), 18, 19}},
+         {MASK(ConstOffset) | MASK(Offset), 5, 6}},
         {"Offset|ConstOffsets %20 %21",
-         {MASK(Offset) | MASK(ConstOffsets), 20, 21}},
+         {MASK(Offset) | MASK(ConstOffsets), 5, 6}},
         {"ConstOffsets|Sample %22 %23",
-         {MASK(ConstOffsets) | MASK(Sample), 22, 23}},
+         {MASK(ConstOffsets) | MASK(Sample), 5, 6}},
         // Test all masks together.
         {"Bias|Lod|Grad|ConstOffset|Offset|ConstOffsets|Sample"
          " %5 %10 %11 %12 %13 %14 %15 %16",
          {MASK(Bias) | MASK(Lod) | MASK(Grad) | MASK(ConstOffset) |
               MASK(Offset) | MASK(ConstOffsets) | MASK(Sample),
-          5, 10, 11, 12, 13, 14, 15, 16}},
+          5, 6, 7, 8, 9, 10, 11, 12}},
         // The same, but with mask value names reversed.
         {"Sample|ConstOffsets|Offset|ConstOffset|Grad|Lod|Bias"
          " %5 %10 %11 %12 %13 %14 %15 %16",
          {MASK(Bias) | MASK(Lod) | MASK(Grad) | MASK(ConstOffset) |
               MASK(Offset) | MASK(ConstOffsets) | MASK(Sample),
-          5, 10, 11, 12, 13, 14, 15, 16}}}));
+          5, 6, 7, 8, 9, 10, 11, 12}}}));
 #undef MASK
 
 }  // anonymous namespace

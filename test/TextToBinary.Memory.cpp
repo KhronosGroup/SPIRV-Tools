@@ -81,7 +81,7 @@ using StorageClassTest = spvtest::TextToBinaryTestBase<
 TEST_P(StorageClassTest, AnyStorageClass) {
   std::string input = "%1 = OpVariable %2 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpVariable, {2, 1, GetParam().value()})));
+              Eq(MakeInstruction(spv::OpVariable, {1, 2, GetParam().value()})));
 }
 
 // clang-format off

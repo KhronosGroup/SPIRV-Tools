@@ -44,22 +44,22 @@ TEST(TextDestroy, Default) {
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
-      OpEntryPoint Kernel 0 ""
-      OpExecutionMode 0 LocalSizeHint 1 1 1
-      OpTypeVoid 1
-      OpTypeBool 2
-      OpTypeInt 3 8 0
-      OpTypeInt 4 8 1
-      OpTypeInt 5 16 0
-      OpTypeInt 6 16 1
-      OpTypeInt 7 32 0
-      OpTypeInt 8 32 1
-      OpTypeInt 9 64 0
-      OpTypeInt 10 64 1
-      OpTypeFloat 11 16
-      OpTypeFloat 12 32
-      OpTypeFloat 13 64
-      OpTypeVector 14 3 2
+      OpEntryPoint Kernel %0 ""
+      OpExecutionMode %0 LocalSizeHint 1 1 1
+      OpTypeVoid %1
+      OpTypeBool %2
+      OpTypeInt %3 8 0
+      OpTypeInt %4 8 1
+      OpTypeInt %5 16 0
+      OpTypeInt %6 16 1
+      OpTypeInt %7 32 0
+      OpTypeInt %8 32 1
+      OpTypeInt %9 64 0
+      OpTypeInt %10 64 1
+      OpTypeFloat %11 16
+      OpTypeFloat %12 32
+      OpTypeFloat %13 64
+      OpTypeVector %14 %3 2
   )";
 
   spv_binary binary = nullptr;

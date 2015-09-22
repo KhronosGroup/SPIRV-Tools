@@ -75,12 +75,12 @@ An ID definition pertains to the `<result-id>` of an OpCode, and ID usage is any
 input to an OpCode. All IDs are prefixed with `%`. To differentiate between
 defs and uses, we suggest using the second format shown in the above example.
 
-## Named IDs
-
-The assembler also supports named IDs, or virtual IDs, which greatly improves
-the readability of the assembly. The same ID definition and usage prefixes
-apply. Names must begin with an character in the range `[a-z|A-Z]`. The
-following example will result in identical SPIR-V binary as the example above.
+The ID names do not necessarily have to be numerical. Furthermore to avoid
+aliasing names, if a name is numerical, it will not necessarily map to the
+corresponding numerical id in the generated spirv.  The same ID definition and
+usage prefixes apply. Names may contain any character in
+['0-9|a-z|A-Z|\_'] The following example will result in identical SPIR-V binary
+as the example above.
 
 ```
           OpCapability Shader
@@ -94,6 +94,8 @@ following example will result in identical SPIR-V binary as the example above.
           OpReturn
           OpFunctionEnd
 ```
+
+
 
 ## Arbitrary Integers
 <a name="immediate"></a>

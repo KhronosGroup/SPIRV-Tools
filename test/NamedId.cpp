@@ -25,6 +25,9 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "UnitSPIRV.h"
+#include "TestFixture.h"
+
+#include <vector>
 
 namespace {
 
@@ -71,5 +74,59 @@ TEST(NamedId, Default) {
   }
   spvBinaryDestroy(binary);
 }
+
+struct IdCheckCase {
+  std::string id;
+  bool valid;
+};
+
+using IdValidityTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<IdCheckCase>>;
+
+TEST_P(IdValidityTest, IdTypes) {
+  std::string input = GetParam().id + " = OpTypeVoid";
+  SetText(input);
+  if (GetParam().valid) {
+    CompileSuccessfully(input);
+  } else {
+    CompileFailure(input);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ValidAndInvalidIds, IdValidityTest,
+    ::testing::ValuesIn(std::vector<IdCheckCase>({{"%1", true},
+                                                  {"%2abc", true},
+                                                  {"%3Def", true},
+                                                  {"%4GHI", true},
+                                                  {"%5_j_k", true},
+                                                  {"%6J_M", true},
+                                                  {"%n", true},
+                                                  {"%O", true},
+                                                  {"%p7", true},
+                                                  {"%Q8", true},
+                                                  {"%R_S", true},
+                                                  {"%T_10_U", true},
+                                                  {"%V_11", true},
+                                                  {"%W_X_13", true},
+                                                  {"%_A", true},
+                                                  {"%_", true},
+                                                  {"%__", true},
+                                                  {"%A_", true},
+                                                  {"%_A_", true},
+
+                                                  {"%@", false},
+                                                  {"%!", false},
+                                                  {"%ABC!", false},
+                                                  {"%__A__@", false},
+                                                  {"%%", false},
+                                                  {"%-", false},
+                                                  {"%foo_@_bar", false},
+                                                  {"%", false},
+
+                                                  {"5", false},
+                                                  {"32", false},
+                                                  {"foo", false},
+                                                  {"a%bar", false}})));
 
 }  // anonymous namespace

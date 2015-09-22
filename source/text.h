@@ -58,11 +58,6 @@ typedef struct spv_literal_t {
   } value;
 } spv_literal_t;
 
-struct spv_named_id_table_t;
-
-// Types
-
-typedef spv_named_id_table_t *spv_named_id_table;
 
 // Functions
 
@@ -151,33 +146,6 @@ spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue);
 /// @return result code
 spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral);
 
-/// @brief Create a named ID table
-///
-/// @return named ID table
-spv_named_id_table spvNamedIdTableCreate();
-
-/// @brief Free a named ID table
-///
-/// @param table named ID table
-void spvNamedIdTableDestory(spv_named_id_table table);
-
-/// @brief Lookup or assign a named ID
-///
-/// @param table named ID table
-/// @param textValue name value
-/// @param pBound upper ID bound, used for assigning new ID's
-///
-/// @return the new ID assossiated with the named ID
-uint32_t spvNamedIdAssignOrGet(spv_named_id_table table, const char *textValue,
-                               uint32_t *pBound);
-
-/// @brief Determine if a name has an assossiated ID
-///
-/// @param textValue name value
-///
-/// @return zero on failure, non-zero otherwise
-int32_t spvTextIsNamedId(const char *textValue);
-
 /// @brief Parses a mask expression string for the given operand type.
 ///
 /// A mask expression is a sequence of one or more terms separated by '|',
@@ -195,45 +163,4 @@ int32_t spvTextIsNamedId(const char *textValue);
 spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
                                      const spv_operand_type_t type,
                                      const char *textValue, uint32_t *pValue);
-
-/// @brief Translate an Opcode operand to binary form
-///
-/// @param[in] type of the operand
-/// @param[in] textValue word of text to be parsed
-/// @param[in] operandTable operand lookup table
-/// @param[in,out] namedIdTable table of named ID's
-/// @param[out] pInst return binary Opcode
-/// @param[in,out] pExpectedOperands the operand types expected
-/// @param[in,out] pBound current highest defined ID value
-/// @param[in] pPosition used in diagnostic on error
-/// @param[out] pDiagnostic populated on error
-///
-/// @return result code
-spv_result_t spvTextEncodeOperand(
-    const spv_operand_type_t type, const char *textValue,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    spv_operand_pattern_t *pExpectedOperands, uint32_t *pBound,
-    const spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
-
-/// @brief Translate single Opcode and operands to binary form
-///
-/// @param[in] text stream to translate
-/// @param[in] format the assembly syntax format of text
-/// @param[in] opcodeTable Opcode lookup table
-/// @param[in] operandTable operand lookup table
-/// @param[in,out] namedIdTable table of named ID's
-/// @param[in,out] pBound current highest defined ID value
-/// @param[out] pInst returned binary Opcode
-/// @param[in,out] pPosition in the text stream
-/// @param[out] pDiagnostic populated on failure
-///
-/// @return result code
-spv_result_t spvTextEncodeOpcode(
-    const spv_text text, spv_assembly_syntax_format_t format,
-    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
-    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
-    uint32_t *pBound, spv_instruction_t *pInst, spv_position_t *pPosition,
-    spv_diagnostic *pDiagnostic);
-
 #endif

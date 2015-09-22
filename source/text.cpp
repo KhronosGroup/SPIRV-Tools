@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -47,9 +48,7 @@ using spvutils::BitwiseCast;
 
 // Structures
 
-struct spv_named_id_table_t {
-  std::unordered_map<std::string, uint32_t> namedIds;
-};
+using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
 
 // Text API
 
@@ -72,39 +71,12 @@ std::string spvGetWord(const char *str) {
   return "";  // Make certain compilers happy.
 }
 
-spv_named_id_table spvNamedIdTableCreate() {
-  return new spv_named_id_table_t();
-}
-
-void spvNamedIdTableDestory(spv_named_id_table table) { delete table; }
-
-uint32_t spvNamedIdAssignOrGet(spv_named_id_table table, const char *textValue,
+uint32_t spvNamedIdAssignOrGet(spv_named_id_table* table, const char *textValue,
                                uint32_t *pBound) {
-  if (table->namedIds.end() == table->namedIds.find(textValue)) {
-    table->namedIds[textValue] = *pBound;
+  if (table->end() == table->find(textValue)) {
+    (*table)[std::string(textValue)] = *pBound;
   }
-  return table->namedIds[textValue];
-}
-
-int32_t spvTextIsNamedId(const char *textValue) {
-  // TODO: Strengthen the parsing of textValue to only include allow names that
-  // match: ([a-z]|[A-Z])(_|[a-z]|[A-Z]|[0-9])*
-  switch (textValue[0]) {
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-      return false;
-    default:
-      break;
-  }
-  return true;
+  return (*table)[textValue];
 }
 
 spv_result_t spvTextAdvanceLine(const spv_text text, spv_position position) {
@@ -123,6 +95,22 @@ spv_result_t spvTextAdvanceLine(const spv_text text, spv_position position) {
         break;
     }
   }
+}
+
+bool spvIsValidIDCharacter(const char value) {
+  return value == '_' || 0 != ::isalnum(value);
+}
+
+// Returns true if the given string represents a valid ID name.
+bool spvIsValidID(const char* textValue) {
+  const char* c = textValue;
+  for (; *c != '\0'; ++c) {
+    if (!spvIsValidIDCharacter(*c)) {
+      return false;
+    }
+  }
+  // If the string was empty, then the ID also is not valid.
+  return c != textValue;
 }
 
 spv_result_t spvTextAdvance(const spv_text text, spv_position position) {
@@ -409,10 +397,25 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
   return SPV_SUCCESS;
 }
 
+
+
+/// @brief Translate an Opcode operand to binary form
+///
+/// @param[in] type of the operand
+/// @param[in] textValue word of text to be parsed
+/// @param[in] operandTable operand lookup table
+/// @param[in,out] namedIdTable table of named ID's
+/// @param[out] pInst return binary Opcode
+/// @param[in,out] pExpectedOperands the operand types expected
+/// @param[in,out] pBound current highest defined ID value
+/// @param[in] pPosition used in diagnostic on error
+/// @param[out] pDiagnostic populated on error
+///
+/// @return result code
 spv_result_t spvTextEncodeOperand(
     const spv_operand_type_t type, const char *textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, spv_instruction_t *pInst,
+    spv_named_id_table* namedIdTable, spv_instruction_t *pInst,
     spv_operand_pattern_t *pExpectedOperands, uint32_t *pBound,
     const spv_position position, spv_diagnostic *pDiagnostic) {
   // NOTE: Handle immediate int in the stream
@@ -430,7 +433,6 @@ spv_result_t spvTextEncodeOperand(
     position->index += size;
     pInst->words[pInst->wordCount] = immediateInt;
     pInst->wordCount += 1;
-    if (isIdType(type)) *pBound = std::max(*pBound, immediateInt + 1);
     return SPV_SUCCESS;
   }
 
@@ -442,22 +444,16 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE: {
       if ('%' == textValue[0]) {
         textValue++;
-      }
-      // TODO: Force all ID's to be prefixed with '%'.
-      uint32_t id = 0;
-      if (spvTextIsNamedId(textValue)) {
-        id = spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
       } else {
-        if (spvTextToUInt32(textValue, &id) != SPV_SUCCESS) {
-          if (spvOperandIsOptional(type)) {
-            return SPV_FAILED_MATCH;
-          } else {
-            DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " '"
-                       << textValue << "'.";
-            return SPV_ERROR_INVALID_TEXT;
-          }
-        }
+        DIAGNOSTIC << "Expected id to start with %.";
+        return SPV_ERROR_INVALID_TEXT;
       }
+      if (!spvIsValidID(textValue)) {
+        DIAGNOSTIC << "Invalid ID " << textValue;
+        return SPV_ERROR_INVALID_TEXT;
+      }
+      const uint32_t id =
+          spvNamedIdAssignOrGet(namedIdTable, textValue, pBound);
       pInst->words[pInst->wordCount++] = id;
       *pBound = std::max(*pBound, id + 1);
     } break;
@@ -609,7 +605,7 @@ namespace {
 /// leaves position pointing to the error in text.
 spv_result_t encodeInstructionStartingWithImmediate(
     const spv_text text, const spv_operand_table operandTable,
-    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
+    const spv_ext_inst_table extInstTable, spv_named_id_table* namedIdTable,
     uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
     spv_diagnostic *pDiagnostic) {
   std::string firstWord;
@@ -684,10 +680,23 @@ spv_result_t encodeInstructionStartingWithImmediate(
 
 }  // anonymous namespace
 
+/// @brief Translate single Opcode and operands to binary form
+///
+/// @param[in] text stream to translate
+/// @param[in] format the assembly syntax format of text
+/// @param[in] opcodeTable Opcode lookup table
+/// @param[in] operandTable operand lookup table
+/// @param[in,out] namedIdTable table of named ID's
+/// @param[in,out] pBound current highest defined ID value
+/// @param[out] pInst returned binary Opcode
+/// @param[in,out] pPosition in the text stream
+/// @param[out] pDiagnostic populated on failure
+///
+/// @return result code
 spv_result_t spvTextEncodeOpcode(
     const spv_text text, spv_assembly_syntax_format_t format,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
-    const spv_ext_inst_table extInstTable, spv_named_id_table namedIdTable,
+    const spv_ext_inst_table extInstTable, spv_named_id_table* namedIdTable,
     uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
     spv_diagnostic *pDiagnostic) {
 
@@ -898,28 +907,27 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
     return SPV_ERROR_INVALID_TEXT;
   }
 
-  spv_named_id_table namedIdTable = spvNamedIdTableCreate();
-  if (!namedIdTable) return SPV_ERROR_OUT_OF_MEMORY;
+  // This causes namedIdTable to get cleaned up as soon as it is no
+  // longer necessary.
+  {
+    spv_named_id_table namedIdTable;
+    spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
+    while (text->length > position.index) {
+      spv_instruction_t inst = {};
+      inst.extInstType = extInstType;
 
-  spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
-  while (text->length > position.index) {
-    spv_instruction_t inst = {};
-    inst.extInstType = extInstType;
+      if (spvTextEncodeOpcode(text, format, opcodeTable, operandTable,
+                              extInstTable, &namedIdTable, &bound, &inst,
+                              &position, pDiagnostic)) {
+        return SPV_ERROR_INVALID_TEXT;
+      }
+      extInstType = inst.extInstType;
 
-    if (spvTextEncodeOpcode(text, format, opcodeTable, operandTable,
-                            extInstTable, namedIdTable, &bound, &inst,
-                            &position, pDiagnostic)) {
-      spvNamedIdTableDestory(namedIdTable);
-      return SPV_ERROR_INVALID_TEXT;
+      instructions.push_back(inst);
+
+      if (spvTextAdvance(text, &position)) break;
     }
-    extInstType = inst.extInstType;
-
-    instructions.push_back(inst);
-
-    if (spvTextAdvance(text, &position)) break;
   }
-
-  spvNamedIdTableDestory(namedIdTable);
 
   size_t totalSize = SPV_INDEX_INSTRUCTION;
   for (auto &inst : instructions) {

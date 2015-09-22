@@ -34,8 +34,10 @@
 
 namespace {
 
+using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
 using ::testing::ElementsAre;
+using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
 
@@ -66,27 +68,34 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
 using ImmediateIntTest = TextToBinaryTest;
 
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
-  const SpirvVector original =
-      CompileSuccessfully("OpConstant %1 %2 123", kCAF);
   // TODO(deki): uncomment assertions below and make them pass.
-  EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 %2 123", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 123", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 !2 123", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("OpConstant %1 %2 !123", kCAF));
+  EXPECT_THAT(CompiledInstructions("!0x0004002B %a %b 123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
+  EXPECT_THAT(CompiledInstructions("OpConstant !1 %b 123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
+  EXPECT_THAT(CompiledInstructions("OpConstant %1 !2 123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
+  EXPECT_THAT(CompiledInstructions("OpConstant  %a %b !123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
   // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 !2 123", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("OpConstant !1 %2 !123", kCAF));
+  EXPECT_THAT(CompiledInstructions("OpConstant !1 %b !123", kCAF),
+            Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
   // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B !1 !2 !123", kCAF));
 }
 
 TEST_F(ImmediateIntTest, AnyWordAfterEqualsAndOpCode) {
-  const SpirvVector original =
-      CompileSuccessfully("%2 = OpArrayLength %12 %1 123");
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 %1 123"));
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 123"));
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 %1 !123"));
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength %12 !1 !123"));
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 !1 123"));
-  EXPECT_EQ(original, CompileSuccessfully("%2 = OpArrayLength !12 !1 !123"));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength !2 %c 123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {2, 1, 2, 123})));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength %b !3 123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {1, 2, 3, 123})));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength %b %c !123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {1, 2, 3, 123})));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength %b !3 !123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {1, 2, 3, 123})));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength !2 !3 123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {2, 1, 3, 123})));
+  EXPECT_THAT(CompiledInstructions("%a = OpArrayLength !2 !3 !123"),
+              Eq(MakeInstruction(spv::OpArrayLength, {2, 1, 3, 123})));
 }
 
 TEST_F(ImmediateIntTest, ResultIdInAssignment) {
@@ -103,19 +112,19 @@ TEST_F(ImmediateIntTest, OpCodeInAssignment) {
 
 // Literal integers after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
-  const SpirvVector original = CompileSuccessfully(
+  const SpirvVector original = CompiledInstructions(
       "OpTypeInt %1 8 1", kCAF);
   // TODO(deki): uncomment assertions below and make them pass.
   // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("OpTypeInt !1 8 1", kCAF));
+  EXPECT_EQ(original, CompiledInstructions("OpTypeInt !1 8 1", kCAF));
 
   // 64-bit integer literal.
-  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 5000000000", kCAF),
-            CompileSuccessfully("OpConstant %10 !1 5000000000", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 5000000000", kCAF),
+            CompiledInstructions("OpConstant %10 !2 5000000000", kCAF));
 
   // Negative integer.
-  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 -123", kCAF),
-            CompileSuccessfully("OpConstant %10 !1 -123", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 -123", kCAF),
+            CompiledInstructions("OpConstant %10 !2 -123", kCAF));
 
   // Hex value(s).
   // EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0x12345678", kCAF),
@@ -127,16 +136,16 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
 
 // Literal floats after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
-  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0.123", kCAF),
-            CompileSuccessfully("OpConstant %10 !1 0.123", kCAF));
-  EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 -0.5", kCAF),
-            CompileSuccessfully("OpConstant %10 !1 -0.5", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 0.123", kCAF),
+            CompiledInstructions("OpConstant %10 !2 0.123", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 -0.5", kCAF),
+            CompiledInstructions("OpConstant %10 !2 -0.5", kCAF));
   // 64-bit float.
   EXPECT_EQ(
-      CompileSuccessfully(
-          "OpConstant %10 %1 9999999999999999999999999999999999999999.9", kCAF),
-      CompileSuccessfully(
-          "OpConstant %10 !1 9999999999999999999999999999999999999999.9",
+      CompiledInstructions(
+          "OpConstant %10 %2 9999999999999999999999999999999999999999.9", kCAF),
+      CompiledInstructions(
+          "OpConstant %10 !2 9999999999999999999999999999999999999999.9",
           kCAF));
 }
 
@@ -145,17 +154,18 @@ TEST_F(ImmediateIntTest, StringFollowingImmediate) {
   // Try a variety of strings, including empty and single-character.
   for (std::string name : {"", "s", "longish", "really looooooooooooooooong"}) {
     const SpirvVector original =
-        CompileSuccessfully("OpMemberName %10 4 \"" + name + "\"", kCAF);
-    EXPECT_EQ(original,
-              CompileSuccessfully("OpMemberName %10 !4 \"" + name + "\"", kCAF))
+        CompiledInstructions("OpMemberName %10 4 \"" + name + "\"", kCAF);
+    EXPECT_EQ(original, CompiledInstructions(
+                            "OpMemberName %10 !4 \"" + name + "\"", kCAF))
         << name;
     EXPECT_EQ(original,
-              CompileSuccessfully("OpMemberName !10 !4 \"" + name + "\"", kCAF))
+              CompiledInstructions("OpMemberName !1 !4 \"" + name + "\"", kCAF))
         << name;
     const uint32_t wordCount = 4 + name.size() / 4;
     const uint32_t firstWord = spvOpcodeMake(wordCount, spv::OpMemberName);
-    EXPECT_EQ(original, CompileSuccessfully("!" + std::to_string(firstWord) +
-                                               " %10 !4 \"" + name + "\"", kCAF))
+    EXPECT_EQ(original, CompiledInstructions("!" + std::to_string(firstWord) +
+                                                 " %10 !4 \"" + name + "\"",
+                                             kCAF))
         << name;
   }
 }
@@ -171,9 +181,9 @@ TEST_F(ImmediateIntTest, IdFollowingImmediate) {
 // !<integer> after !<integer> is handled correctly.
 TEST_F(ImmediateIntTest, ImmediateFollowingImmediate) {
   const SpirvVector original =
-      CompileSuccessfully("OpTypeMatrix %11 %10 7", kCAF);
-  EXPECT_EQ(original, CompileSuccessfully("OpTypeMatrix %11 !10 !7", kCAF));
-  EXPECT_EQ(original, CompileSuccessfully("!0x00040018 %11 !10 !7", kCAF));
+      CompiledInstructions("OpTypeMatrix %a %b 7", kCAF);
+  EXPECT_EQ(original, CompiledInstructions("OpTypeMatrix %a !2 !7", kCAF));
+  EXPECT_EQ(original, CompiledInstructions("!0x00040018 %a !2 !7", kCAF));
 }
 
 TEST_F(ImmediateIntTest, InvalidStatement) {
@@ -186,7 +196,7 @@ TEST_F(ImmediateIntTest, InvalidStatementBetweenValidOnes) {
   EXPECT_THAT(Subvector(CompileSuccessfully(
                             "OpTypeFloat %10 32 !5 !6 !7 OpEmitVertex", kCAF),
                         kFirstInstruction),
-              ElementsAre(spvOpcodeMake(3, spv::OpTypeFloat), 10, 32, 5, 6, 7,
+              ElementsAre(spvOpcodeMake(3, spv::OpTypeFloat), 1, 32, 5, 6, 7,
                           spvOpcodeMake(1, spv::OpEmitVertex)));
 }
 
@@ -224,11 +234,11 @@ OpCopyMemorySized %3 %4 %1
 TEST_F(ImmediateIntTest, NextAssignmentRecognized) {
   const SpirvVector original = CompileSuccessfully(R"(
 %1 = OpLoad %10 %2 None
-%4 = OpFunctionCall %10 %3 123
+%4 = OpFunctionCall %10 %3 %123
 )");
   const SpirvVector alternate = CompileSuccessfully(R"(
 %1 = OpLoad %10 %2 !0
-%4 = OpFunctionCall %10 %3 123
+%4 = OpFunctionCall %10 %3 %123
 )");
   EXPECT_EQ(original, alternate);
 }

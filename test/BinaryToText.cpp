@@ -57,7 +57,7 @@ class BinaryToText : public ::testing::Test {
 %12 = OpTypeFloat 16
 %13 = OpTypeFloat 32
 %14 = OpTypeFloat 64
-%15 = OpTypeVector 4 2
+%15 = OpTypeVector %4 2
 )";
     spv_text_t text = {textStr, strlen(textStr)};
     spv_diagnostic diagnostic = nullptr;

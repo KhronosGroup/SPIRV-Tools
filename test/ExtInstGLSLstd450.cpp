@@ -69,8 +69,8 @@ OpEntryPoint Vertex %2 "main"
                             "\n" + std::string(GetParam().constGenInst) + R"(
 %6 = OpTypeFunction %3
 %2 = OpFunction %3 None %6
-%8 = OpLabel
-%9 = OpExtInst )" + GetParam().extInstRetType +
+%7 = OpLabel
+%8 = OpExtInst )" + GetParam().extInstRetType +
                             " %1 " + GetParam().extInstOpName + " " +
                             GetParam().extInstOperandVars + R"(
 OpReturn
@@ -80,7 +80,7 @@ OpFunctionEnd
       R"(; SPIR-V
 ; Version: 99
 ; Generator: Khronos
-; Bound: 10
+; Bound: 9
 ; Schema: 0)";
   spv_binary binary;
   spv_diagnostic diagnostic;
@@ -100,7 +100,7 @@ OpFunctionEnd
   // the generated SPIR-V binary.
   std::vector<uint32_t> expected_contains(
       {12 /*OpExtInst*/ | GetParam().extInstLength << 16, 4 /*return type*/,
-       9 /*result id*/, 1 /*glsl450 import*/, GetParam().extInstOpcode});
+       8 /*result id*/, 1 /*glsl450 import*/, GetParam().extInstOpcode});
   for (uint32_t operand : GetParam().extInstOperandIds) {
     expected_contains.push_back(operand);
   }
