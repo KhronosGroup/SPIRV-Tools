@@ -1093,6 +1093,11 @@ static const spv_operand_desc_t memoryAccessEntries[] = {
      0,
      {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE},
     },
+    {"Nontemporal",
+     MemoryAccessNontemporalMask,
+     SPV_OPCODE_FLAGS_NONE,
+     0,
+     {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t scopeEntries[] = {

@@ -62,6 +62,7 @@ INSTANTIATE_TEST_CASE_P(
         {spv::MemoryAccessMaskNone, "None", {}},
         {spv::MemoryAccessVolatileMask, "Volatile", {}},
         {spv::MemoryAccessAlignedMask, "Aligned", {16}},
+        {spv::MemoryAccessNontemporalMask, "Nontemporal", {}},
     }));
 
 TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
