@@ -363,6 +363,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
 };
 
 static const spv_operand_desc_t dimensionalityEntries[] = {
+  // TODO(dneto): Update capability dependencies for Rev32
     {"1D", Dim1D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"2D", Dim2D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"3D", Dim3D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
@@ -377,6 +378,11 @@ static const spv_operand_desc_t dimensionalityEntries[] = {
      CapabilityShader,
      {SPV_OPERAND_TYPE_NONE}},
     {"Buffer", DimBuffer, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"InputTarget",
+     DimInputTarget,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityInputTarget,
+     {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t samplerAddressingModeEntries[] = {

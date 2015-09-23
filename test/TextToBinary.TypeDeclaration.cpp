@@ -62,7 +62,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE(Cube),
         CASE(Rect),
         CASE(Buffer),
-        // TODO(dneto): Rev32 adds InputTarget.
+        CASE(InputTarget),
     }));
 #undef CASE
 // clang-format on
@@ -125,7 +125,6 @@ INSTANTIATE_TEST_CASE_P(
         CASE(Rg8ui),
         CASE(R16ui),
         CASE(R8ui),
-        // TODO(dneto): Rev32 adds InputTarget.
     }));
 #undef CASE
 // clang-format on
