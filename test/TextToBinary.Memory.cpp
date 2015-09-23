@@ -89,7 +89,6 @@ TEST_P(StorageClassTest, AnyStorageClass) {
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryStorageClassTest, StorageClassTest,
     ::testing::ValuesIn(std::vector<EnumCase<spv::StorageClass>>{
-        // TODO(dneto): There are more storage classes in Rev32 and later.
         CASE(UniformConstant),
         CASE(Input),
         CASE(Uniform),
@@ -99,6 +98,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE(PrivateGlobal),
         CASE(Function),
         CASE(Generic),
+        CASE(PushConstant),
         CASE(AtomicCounter),
         CASE(Image),
     }));
