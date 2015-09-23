@@ -110,6 +110,9 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimple, OpDecorateSimpleTest,
                             {CASE(Offset), {12}},
                             {CASE(XfbBuffer), {1}},
                             {CASE(XfbStride), {8}},
+                            {CASE(NoContraction), {}},
+                            {CASE(InputTargetIndex), {}},
+                            {CASE(Alignment), {16}},
                         }));
 #undef CASE
 

@@ -746,6 +746,21 @@ static const spv_operand_desc_t decorationEntries[] = {
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityLinkage,
      {SPV_OPERAND_TYPE_LITERAL_STRING, SPV_OPERAND_TYPE_LINKAGE_TYPE, SPV_OPERAND_TYPE_NONE}},
+    {"NoContraction",
+     DecorationNoContraction,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityShader,
+     {SPV_OPERAND_TYPE_NONE}},
+    {"InputTargetIndex",
+     DecorationInputTargetIndex,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityShader, // TODO(dneto): Should this be CapabilityInputTarget?
+     {SPV_OPERAND_TYPE_NONE}}, // TODO(dneto): Should this have a literal number argument?
+    {"Alignment",
+     DecorationAlignment,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityKernel,
+     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t builtInEntries[] = {
