@@ -76,6 +76,7 @@ INSTANTIATE_TEST_CASE_P(
         {"Offset %14", {MASK(Offset), 5}},
         {"ConstOffsets %15", {MASK(ConstOffsets), 5}},
         {"Sample %16", {MASK(Sample), 5}},
+        {"MinLod %17", {MASK(MinLod), 5}},
     }));
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(spv::ImageOperands##NAME##Mask)

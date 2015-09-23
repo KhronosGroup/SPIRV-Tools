@@ -402,6 +402,7 @@ static const spv_operand_desc_t imageOperandEntries[] = {
     {CASE_CAP(Offset, CapabilityImageGatherExtended), {ID, NONE}},
     {CASE(ConstOffsets), {ID, NONE}},
     {CASE(Sample), {ID, NONE}},
+    {CASE_CAP(MinLod, CapabilityMinLod), {ID, NONE}},
 #undef CASE
 #undef CASE_CAP
 #undef ID
