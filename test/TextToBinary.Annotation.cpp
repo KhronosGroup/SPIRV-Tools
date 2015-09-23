@@ -180,6 +180,8 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
                             CASE(NumEnqueuedSubgroups),
                             CASE(SubgroupId),
                             CASE(SubgroupLocalInvocationId),
+                            CASE(VertexIndex),
+                            CASE(InstanceIndex),
                         }));
 #undef CASE
 // clang-format on

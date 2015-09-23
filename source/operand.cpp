@@ -954,6 +954,16 @@ static const spv_operand_desc_t builtInEntries[] = {
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityKernel,
      {SPV_OPERAND_TYPE_NONE}},
+    {"VertexIndex",
+     BuiltInVertexIndex,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityShader,
+     {SPV_OPERAND_TYPE_NONE}},
+    {"InstanceIndex",
+     BuiltInInstanceIndex,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityShader,
+     {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t selectionControlEntries[] = {
