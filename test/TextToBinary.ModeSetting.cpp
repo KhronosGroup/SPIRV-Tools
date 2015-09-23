@@ -193,6 +193,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryExecutionMode, OpExecutionModeTest,
                             {CASE(OutputTriangleStrip), {}},
                             {CASE(VecTypeHint), {96}},
                             {CASE(ContractionOff), {}},
+                            {CASE(IndependentForwardProgress), {}},
                         }));
 #undef CASE
 // clang-format on

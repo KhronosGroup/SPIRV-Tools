@@ -291,6 +291,11 @@ static const spv_operand_desc_t executionModeEntries[] = {
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityKernel,
      {SPV_OPERAND_TYPE_NONE}},
+    {"IndependentForwardProgress",
+     ExecutionModeIndependentForwardProgress,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     CapabilityKernel,
+     {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t storageClassEntries[] = {
