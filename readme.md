@@ -11,7 +11,9 @@ into other code bases directly.
 
 ### Assembler and disassembler
 
-* Based on Revision 31 of SPIR-V
+* Based on SPIR-V 0.99 Revision 32
+  * Assembler supports core instructions and enumerants from Rev 32.
+  * Capability dependencies may be incomplete or incorrect.
 * Assembler supports all core instructions, for 32-bit code.
   * Handling of non-32-bit literal numbers has been recently clarified.
     Those changes have not been applied.
@@ -25,6 +27,21 @@ into other code bases directly.
 The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
+
+2015-09-24
+* Updated to Rev32 headers
+  * Core instructions and enumerants from Rev 32 are supported by the
+    assembler.
+  * Capability dependencies may be incomplete or incorrect.
+* Assembler ID syntax:
+  * All IDs must use the `%` prefix before the name.
+  * ID name syntax is checked: it must be made from letters, numbers or
+    underscore (`_`).
+  * IDs with different names always map to different ID numbers.
+    Previously, a numeric ID such as `%2` could accidentally map to the
+    same numeric ID as named ID `%foo`.
+  * In particular, an ID with a number for a name doesn't necessarily
+    map to that number. E.g. `%2` doesn't necessarily map to ID 2.
 
 2015-09-18
 * MILESTONE: This version of the assembler supports all of SPIR-V Rev31,
