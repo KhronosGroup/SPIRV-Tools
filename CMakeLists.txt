@@ -103,6 +103,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
@@ -111,6 +112,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
 

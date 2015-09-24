@@ -32,6 +32,7 @@
 #include "../source/diagnostic.h"
 #include "../source/opcode.h"
 #include "../source/text.h"
+#include "../source/text_handler.h"
 #include "../source/validate.h"
 
 #include <iomanip>

@@ -29,9 +29,8 @@
 
 #include <libspirv/libspirv.h>
 
-#include <sstream>
-
 #include <iostream>
+#include <sstream>
 
 class diagnostic_helper {
  public:
@@ -50,6 +49,38 @@ class diagnostic_helper {
  private:
   spv_position position;
   spv_diagnostic *pDiagnostic;
+};
+
+// On destruction of the diagnostic stream, a diagnostic message will be
+// written to pDiagnostic containing all of the data written to the stream.
+// TODO(awoloszyn): This is very similar to diagnostic_helper, and hides
+//                  the data more easily. Replace diagnostic_helper elsewhere
+//                  eventually.
+class DiagnosticStream {
+ public:
+  DiagnosticStream(spv_position position, spv_diagnostic *pDiagnostic)
+      : position_(position), pDiagnostic_(pDiagnostic) {}
+
+  DiagnosticStream(DiagnosticStream &&other) : position_(other.position_) {
+    stream_.str(other.stream_.str());
+    other.stream_.str("");
+    pDiagnostic_ = other.pDiagnostic_;
+    other.pDiagnostic_ = nullptr;
+  }
+
+  ~DiagnosticStream();
+
+  // Adds the given value to the diagnostic message to be written.
+  template <typename T>
+  DiagnosticStream &operator<<(const T &val) {
+    stream_ << val;
+    return *this;
+  }
+
+ private:
+  std::stringstream stream_;
+  spv_position position_;
+  spv_diagnostic *pDiagnostic_;
 };
 
 #define DIAGNOSTIC                                 \

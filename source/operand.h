@@ -108,7 +108,7 @@ void spvPrependOperandTypes(const spv_operand_type_t* types,
 /// be prepended onto the pattern.  Operands for a less significant bit always
 /// appear before operands for a more significant bit.
 ///
-/// If the a set bit is unknown, then we assume it has no operands.
+/// If a set bit is unknown, then we assume it has no operands.
 ///
 /// @param[in] operandTable the table of operand type definitions
 /// @param[in] type the type of operand

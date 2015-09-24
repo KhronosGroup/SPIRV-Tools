@@ -34,21 +34,27 @@
 namespace {
 
 using spvtest::TextToBinaryTest;
+using libspirv::AssemblyContext;
+using libspirv::AssemblyGrammar;
 
 TEST(GetWord, Simple) {
-  EXPECT_EQ("", spvGetWord(""));
-  EXPECT_EQ("", spvGetWord("\0a"));
-  EXPECT_EQ("", spvGetWord(" a"));
-  EXPECT_EQ("", spvGetWord("\ta"));
-  EXPECT_EQ("", spvGetWord("\va"));
-  EXPECT_EQ("", spvGetWord("\ra"));
-  EXPECT_EQ("", spvGetWord("\na"));
-  EXPECT_EQ("abc", spvGetWord("abc"));
-  EXPECT_EQ("abc", spvGetWord("abc "));
-  EXPECT_EQ("abc", spvGetWord("abc\t"));
-  EXPECT_EQ("abc", spvGetWord("abc\r"));
-  EXPECT_EQ("abc", spvGetWord("abc\v"));
-  EXPECT_EQ("abc", spvGetWord("abc\n"));
+  EXPECT_EQ("", AssemblyContext(AutoText(""), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\0a"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText(" a"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\ta"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\va"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\ra"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\na"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc "), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\t"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\r"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\v"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\n"), nullptr).getWord());
 }
 
 // An mask parsing test case.
@@ -65,9 +71,9 @@ TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
 
   uint32_t value;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextParseMaskOperand(operandTable, GetParam().which_enum,
-                                    GetParam().expression, &value));
+  EXPECT_EQ(SPV_SUCCESS, AssemblyGrammar(operandTable, nullptr, nullptr)
+                             .parseMaskOperand(GetParam().which_enum,
+                                               GetParam().expression, &value));
   EXPECT_EQ(GetParam().expected_value, value);
 }
 
@@ -109,9 +115,10 @@ TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
 
   uint32_t value;
-  EXPECT_NE(SPV_SUCCESS, spvTextParseMaskOperand(
-                             operandTable, SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
-                             GetParam(), &value));
+  EXPECT_NE(SPV_SUCCESS,
+            AssemblyGrammar(operandTable, nullptr, nullptr)
+                .parseMaskOperand(SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
+                                  GetParam(), &value));
 }
 
 INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,

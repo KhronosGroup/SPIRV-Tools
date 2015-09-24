@@ -28,19 +28,18 @@
 
 namespace {
 
+using libspirv::AssemblyContext;
+
 #define TAB "\t"
 #define NEWLINE "\n"
 #define BACKSLASH R"(\)"
 #define QUOTE R"(")"
 
 TEST(TextWordGet, NullTerminator) {
-  char textStr[] = "Word";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t startPosition = {};
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(&text, &startPosition, word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word"), nullptr)
+                             .getWord(word, &endPosition));
   ASSERT_EQ(4, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(4, endPosition.index);
@@ -48,13 +47,10 @@ TEST(TextWordGet, NullTerminator) {
 }
 
 TEST(TextWordGet, TabTerminator) {
-  char textStr[] = "Word\t";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t startPosition = {};
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(&text, &startPosition, word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word\t"), nullptr)
+                             .getWord(word, &endPosition));
   ASSERT_EQ(4, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(4, endPosition.index);
@@ -62,13 +58,10 @@ TEST(TextWordGet, TabTerminator) {
 }
 
 TEST(TextWordGet, SpaceTerminator) {
-  char textStr[] = "Word ";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t startPosition = {};
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(&text, &startPosition, word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word "), nullptr)
+                             .getWord(word, &endPosition));
   ASSERT_EQ(4, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(4, endPosition.index);
@@ -76,13 +69,10 @@ TEST(TextWordGet, SpaceTerminator) {
 }
 
 TEST(TextWordGet, SemicolonTerminator) {
-  char textStr[] = "Wo;rd ";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t startPosition = {};
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(&text, &startPosition, word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Wo;rd"), nullptr)
+                             .getWord(word, &endPosition));
   ASSERT_EQ(2, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(2, endPosition.index);
@@ -90,29 +80,28 @@ TEST(TextWordGet, SemicolonTerminator) {
 }
 
 TEST(TextWordGet, MultipleWords) {
-  char textStr[] = "Words in a sentence";
-  spv_text_t text = {textStr, strlen(textStr)};
-  const char *words[] = {"Words", "in", "a", "sentence"};
+  AutoText input("Words in a sentence");
+  AssemblyContext data(input, nullptr);
 
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
+  const char *words[] = {"Words", "in", "a", "sentence"};
 
   std::string word;
   for (uint32_t wordIndex = 0; wordIndex < 4; ++wordIndex) {
     ASSERT_EQ(SPV_SUCCESS,
-              spvTextWordGet(&text, &startPosition, word, &endPosition));
+              data.getWord(word, &endPosition));
     ASSERT_EQ(strlen(words[wordIndex]),
-              endPosition.column - startPosition.column);
+              endPosition.column - data.position().column);
     ASSERT_EQ(0, endPosition.line);
     ASSERT_EQ(strlen(words[wordIndex]),
-              endPosition.index - startPosition.index);
+              endPosition.index - data.position().index);
     ASSERT_STREQ(words[wordIndex], word.c_str());
 
-    startPosition = endPosition;
+    data.setPosition(endPosition);
     if (3 != wordIndex) {
-      ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &startPosition));
+      ASSERT_EQ(SPV_SUCCESS, data.advance());
     } else {
-      ASSERT_EQ(SPV_END_OF_STREAM, spvTextAdvance(&text, &startPosition));
+      ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
     }
   }
 }
@@ -120,24 +109,23 @@ TEST(TextWordGet, MultipleWords) {
 TEST(TextWordGet, QuotesAreKept) {
   AutoText input(R"("quotes" "around words")");
   const char *expected[] = {R"("quotes")", R"("around words")"};
+  AssemblyContext data(input, nullptr);
 
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            data.getWord(word, &endPosition));
   EXPECT_EQ(8, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(8, endPosition.index);
   EXPECT_STREQ(expected[0], word.c_str());
 
   // Move to the next word.
-  startPosition = endPosition;
-  startPosition.index++;
-  startPosition.column++;
+  data.setPosition(endPosition);
+  data.seekForward(1);
 
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            data.getWord(word, &endPosition));
   EXPECT_EQ(23, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(23, endPosition.index);
@@ -147,24 +135,23 @@ TEST(TextWordGet, QuotesAreKept) {
 TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
   AutoText input(R"(quotes" "between words)");
   const char *expected[] = {R"(quotes" "between)", "words"};
+  AssemblyContext data(input, nullptr);
 
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            data.getWord(word, &endPosition));
   EXPECT_EQ(16, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(16, endPosition.index);
   EXPECT_STREQ(expected[0], word.c_str());
 
   // Move to the next word.
-  startPosition = endPosition;
-  startPosition.index++;
-  startPosition.column++;
+  data.setPosition(endPosition);
+  data.seekForward(1);
 
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            data.getWord(word, &endPosition));
   EXPECT_EQ(22, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(22, endPosition.index);
@@ -172,13 +159,13 @@ TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
 }
 
 TEST(TextWordGet, QuotingWhitespace) {
-  // Whitespace surrounded by quotes acts like glue.
   AutoText input(QUOTE "white " NEWLINE TAB " space" QUOTE);
+  // Whitespace surrounded by quotes acts like glue.
   std::string word;
   spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   EXPECT_EQ(input.str.length(), endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(input.str.length(), endPosition.index);
@@ -188,10 +175,9 @@ TEST(TextWordGet, QuotingWhitespace) {
 TEST(TextWordGet, QuoteAlone) {
   AutoText input(QUOTE);
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   ASSERT_EQ(1, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(1, endPosition.index);
@@ -201,10 +187,9 @@ TEST(TextWordGet, QuoteAlone) {
 TEST(TextWordGet, EscapeAlone) {
   AutoText input(BACKSLASH);
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   ASSERT_EQ(1, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(1, endPosition.index);
@@ -214,10 +199,9 @@ TEST(TextWordGet, EscapeAlone) {
 TEST(TextWordGet, EscapeAtEndOfInput) {
   AutoText input("word" BACKSLASH);
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   ASSERT_EQ(5, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(5, endPosition.index);
@@ -227,10 +211,9 @@ TEST(TextWordGet, EscapeAtEndOfInput) {
 TEST(TextWordGet, Escaping) {
   AutoText input("w" BACKSLASH QUOTE "o" BACKSLASH NEWLINE "r" BACKSLASH ";d");
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   ASSERT_EQ(10, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(10, endPosition.index);
@@ -240,10 +223,9 @@ TEST(TextWordGet, Escaping) {
 TEST(TextWordGet, EscapingEscape) {
   AutoText input("word" BACKSLASH BACKSLASH " abc");
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextWordGet(input, &startPosition, word, &endPosition));
+            AssemblyContext(input, nullptr).getWord(word, &endPosition));
   ASSERT_EQ(6, endPosition.column);
   ASSERT_EQ(0, endPosition.line);
   ASSERT_EQ(6, endPosition.index);

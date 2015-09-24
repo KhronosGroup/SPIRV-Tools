@@ -28,46 +28,59 @@
 
 #include <string>
 
+using libspirv::AssemblyContext;
+
 TEST(TextStartsWithOp, YesAtStart) {
-  spv_position_t startPosition = {};
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("OpFoo"), &startPosition));
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("OpFoo"), &startPosition));
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("OpEnCL"), &startPosition));
+  EXPECT_TRUE(
+      AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(
+      AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(
+      AssemblyContext(AutoText("OpEnCL"), nullptr).isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, YesAtMiddle) {
-  spv_position_t startPosition = {};
-  startPosition.index = 2;
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("  OpFoo"), &startPosition));
-  EXPECT_TRUE(spvTextIsStartOfNewInst(AutoText("    OpFoo"), &startPosition));
+  {
+    AssemblyContext dat(AutoText("  OpFoo"), nullptr);
+    dat.seekForward(2);
+    EXPECT_TRUE(dat.isStartOfNewInst());
+  }
+  {
+    AssemblyContext dat(AutoText("xx OpFoo"), nullptr);
+    dat.seekForward(2);
+    EXPECT_TRUE(dat.isStartOfNewInst());
+  }
 }
 
 TEST(TextStartsWithOp, NoIfTooFar) {
-  spv_position_t startPosition = {};
-  startPosition.index = 3;
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("  OpFoo"), &startPosition));
+  AssemblyContext dat(AutoText("  OpFoo"), nullptr);
+  dat.seekForward(3);
+  EXPECT_FALSE(dat.isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, NoRegular) {
-  spv_position_t startPosition = {};
+  EXPECT_FALSE(AssemblyContext(AutoText("Fee Fi Fo Fum"), nullptr)
+                   .isStartOfNewInst());
   EXPECT_FALSE(
-      spvTextIsStartOfNewInst(AutoText("Fee Fi Fo Fum"), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("123456"), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("123456"), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("OpenCL"), &startPosition));
+      AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(
+      AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(
+      AssemblyContext(AutoText("OpenCL"), nullptr).isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, YesForValueGenerationForm) {
-  spv_position_t startPosition = {};
-  EXPECT_TRUE(
-      spvTextIsStartOfNewInst(AutoText("%foo = OpAdd"), &startPosition));
-  EXPECT_TRUE(
-      spvTextIsStartOfNewInst(AutoText("%foo  =  OpAdd"), &startPosition));
+  EXPECT_TRUE(AssemblyContext(AutoText("%foo = OpAdd"), nullptr)
+                  .isStartOfNewInst());
+  EXPECT_TRUE(AssemblyContext(AutoText("%foo  =  OpAdd"), nullptr)
+                  .isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, NoForNearlyValueGeneration) {
-  spv_position_t startPosition = {};
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo = "), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo "), &startPosition));
-  EXPECT_FALSE(spvTextIsStartOfNewInst(AutoText("%foo"), &startPosition));
+  EXPECT_FALSE(
+      AssemblyContext(AutoText("%foo = "), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(
+      AssemblyContext(AutoText("%foo "), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(
+      AssemblyContext(AutoText("%foo"), nullptr).isStartOfNewInst());
 }

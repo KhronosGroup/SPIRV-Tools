@@ -83,42 +83,6 @@ spv_result_t spvBinaryHeaderGet(const spv_binary binary,
 /// @return result code
 spv_result_t spvBinaryHeaderSet(spv_binary binary, const uint32_t bound);
 
-/// @brief Append a single word into a binary stream
-///
-/// @param[in] value the word to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeU32(const uint32_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic);
-
-/// @brief Append two related words into the binary stream
-///
-/// @param[in] value the two words to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeU64(const uint64_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic);
-
-/// @brief Append a string literal in the binary stream
-///
-/// @param[in] str the string to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeString(const char *str, spv_instruction_t *pInst,
-                                   const spv_position position,
-                                   spv_diagnostic *pDiagnostic);
-
 /// @brief Determine the type of the desired operand
 ///
 /// @param[in] word the operand value

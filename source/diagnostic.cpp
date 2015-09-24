@@ -79,3 +79,11 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
 
   return SPV_ERROR_INVALID_VALUE;
 }
+
+
+DiagnosticStream::~DiagnosticStream() {
+  if (pDiagnostic_) {
+    *pDiagnostic_ = spvDiagnosticCreate(position_, stream_.str().c_str());
+  }
+}
+

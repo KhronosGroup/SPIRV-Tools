@@ -119,54 +119,6 @@ spv_result_t spvBinaryHeaderSet(spv_binary_t *binary, const uint32_t bound) {
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryEncodeU32(const uint32_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic) {
-  if (pInst->wordCount + 1 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    DIAGNOSTIC << "Instruction word count '"
-               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
-
-  pInst->words[pInst->wordCount++] = (uint32_t)value;
-  return SPV_SUCCESS;
-}
-
-spv_result_t spvBinaryEncodeU64(const uint64_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic) {
-  if (pInst->wordCount + 2 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    DIAGNOSTIC << "Instruction word count '"
-               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
-
-  uint32_t low = (uint32_t)(0x00000000ffffffff & value);
-  uint32_t high = (uint32_t)((0xffffffff00000000 & value) >> 32);
-  pInst->words[pInst->wordCount++] = low;
-  pInst->words[pInst->wordCount++] = high;
-  return SPV_SUCCESS;
-}
-
-spv_result_t spvBinaryEncodeString(const char *str, spv_instruction_t *pInst,
-                                   const spv_position position,
-                                   spv_diagnostic *pDiagnostic) {
-  size_t length = strlen(str);
-  size_t wordCount = (length / 4) + 1;
-  if ((sizeof(uint32_t) * pInst->wordCount) + length >
-      sizeof(uint32_t) * SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    DIAGNOSTIC << "Instruction word count '"
-               << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "'exceeded.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
-
-  char *dest = (char *)&pInst->words[pInst->wordCount];
-  strncpy(dest, str, length);
-  pInst->wordCount += (uint16_t)wordCount;
-
-  return SPV_SUCCESS;
-}
-
 // TODO(dneto): This API is not powerful enough in the case that the
 // number and type of operands are not known until partway through parsing
 // the operation.  This happens when enum operands might have different number
