@@ -170,13 +170,7 @@ bool idUsage::isValid<OpMemberName>(const spv_instruction_t *inst,
 template <>
 bool idUsage::isValid<OpLine>(const spv_instruction_t *inst,
                               const spv_opcode_desc) {
-  auto targetIndex = 1;
-  auto target = find(inst->words[targetIndex]);
-  spvCheck(!found(target), DIAG(targetIndex) << "OpLine Target <id> '"
-                                             << inst->words[targetIndex]
-                                             << "' is not defined.";
-           return false);
-  auto fileIndex = 2;
+  auto fileIndex = 1;
   auto file = find(inst->words[fileIndex]);
   spvCheck(!found(file), DIAG(fileIndex) << "OpLine Target <id> '"
                                          << inst->words[fileIndex]
@@ -525,18 +519,9 @@ bool idUsage::isValid<OpTypeFunction>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<OpTypePipe>(const spv_instruction_t *inst,
+bool idUsage::isValid<OpTypePipe>(const spv_instruction_t *,
                                   const spv_opcode_desc) {
-  auto typeIndex = 2;
-  auto type = find(inst->words[typeIndex]);
-  spvCheck(!found(type), DIAG(typeIndex) << "OpTypePipe Type <id> '"
-                                         << inst->words[typeIndex]
-                                         << "' is not defined.";
-           return false);
-  spvCheck(!spvOpcodeIsType(type->second.opcode),
-           DIAG(typeIndex) << "OpTypePipe Type <id> '" << inst->words[typeIndex]
-                           << "' is not a type.";
-           return false);
+  // OpTypePipe has no ID arguments.
   return true;
 }
 

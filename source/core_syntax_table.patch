@@ -1,5 +1,5 @@
 diff --git a/tools/spirv/CMakeLists.txt b/tools/spirv/CMakeLists.txt
-index 6b47799..7b687e4 100644
+index af51f86..5775510 100644
 --- a/tools/spirv/CMakeLists.txt
 +++ b/tools/spirv/CMakeLists.txt
 @@ -12,6 +12,7 @@ include_directories(../..)
@@ -12,10 +12,10 @@ index 6b47799..7b687e4 100644
      doc.cpp
 diff --git a/tools/spirv/assembler_table.cpp b/tools/spirv/assembler_table.cpp
 new file mode 100644
-index 0000000..63ea9a5
+index 0000000..5a68ade
 --- /dev/null
 +++ b/tools/spirv/assembler_table.cpp
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,200 @@
 +// Copyright (c) 2015 The Khronos Group Inc.
 +//
 +// Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,11 +170,16 @@ index 0000000..63ea9a5
 +    out << inst.operands.getNum() << ", ";
 +
 +    // Emit the capability, if any.
-+    // We only handle 0 or 1 capabiliites.
++    // The SPIR-V tools doesn't handle the concept of depending on more than
++    // one capability.  So call it out separately.  Currently the biggest case
++    // is 2.  This is a big hack.
 +    out << inst.capabilities.size() << ", ";
-+    assert(inst.capabilities.size() < 2);
-+    if (inst.capabilities.size()) {
++    assert(inst.capabilities.size() < 3);
++    if (inst.capabilities.size() == 1) {
 +      out << "Capability(" << CapabilityString(inst.capabilities[0]) << "), ";
++    } else if (inst.capabilities.size() == 2) {
++      out << "Capability2(" << CapabilityString(inst.capabilities[0]) << ","
++          << CapabilityString(inst.capabilities[1]) << "), ";
 +    } else {
 +      out << "Capability(None), ";
 +    }
@@ -195,6 +200,7 @@ index 0000000..63ea9a5
 +      << "//    numLogicalOperands - does not include result id or type id\n"
 +      << "//    numCapabilities - we only handle 0 or 1 required capabilities\n"
 +      << "//    Capability(<capability-name>) - capability required to use this instruction. Might be None.\n"
++      << "//       There can be Capability2(a,b) for dependence on two capabilities.\n"
 +      << "//    {0|1} - whether the instruction is variable number of words\n"
 +      << "//    EmptyList or List(...) - list of classes of logical operands\n"
 +      << "// Example use:\n"
@@ -258,7 +264,7 @@ index 0000000..03ab769
 +
 +#endif // ASSEMBLER_TABLE_H
 diff --git a/tools/spirv/doc.h b/tools/spirv/doc.h
-index 2b326e9..d16febb 100644
+index 78b1031..5984835 100644
 --- a/tools/spirv/doc.h
 +++ b/tools/spirv/doc.h
 @@ -81,6 +81,7 @@ const char* KernelEnqueueFlagsString(int);
@@ -281,11 +287,11 @@ index 2b326e9..d16febb 100644
  };
  
 diff --git a/tools/spirv/main.cpp b/tools/spirv/main.cpp
-index d10bd2a..b825974 100644
+index d7312f9..c856271 100644
 --- a/tools/spirv/main.cpp
 +++ b/tools/spirv/main.cpp
 @@ -46,6 +46,7 @@ namespace spv {
- #include "headers/OpenCLLib.h"
+ #include "headers/OpenCL.std.h"
  
  // This tool's includes
 +#include "assembler_table.h"

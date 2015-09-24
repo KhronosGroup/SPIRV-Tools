@@ -47,6 +47,13 @@ spv_opcode_desc_t opcodeTableEntries[] = {
 #define List(...) {__VA_ARGS__}
 #define Capability(X) Capability##X
 #define CapabilityNone -1
+// TODO(dneto): Some things can be enabled by one of two different capabilities.
+// The capabilities field in spv_operand_desc_t can't handle that yet.
+// Maybe have to make it a 64-bit mask.  Currently there are 54 distinct
+// capabilities.
+// For now, just select the first one.  This must be fixed for the validator
+// to work.
+#define Capability2(X,Y) Capability##X
 #define Instruction(Name,HasResult,HasType,NumLogicalOperands,NumCapabilities,CapabilityRequired,IsVariable,LogicalArgsList) \
   { #Name, \
     Op##Name, \

@@ -104,21 +104,17 @@ TEST_F(ValidateID, OpMemberNameMemberBad) {
 }
 
 TEST_F(ValidateID, OpLineGood) {
-  // TODO(dneto): OpLine changed after Rev31. It no longer has a first argument.
-  // The following is the Rev31 form.
   const char *spirv = R"(
 %1 = OpString "/path/to/source.file"
-     OpLine %4 %1 0 0
+     OpLine %1 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Generic %2
 %4 = OpVariable %3 Generic)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLineFileBad) {
-  // TODO(dneto): OpLine changed after Rev31. It no longer has a first argument.
-  // The following is the Rev31 form.
   const char *spirv = R"(
-     OpLine %4 %2 0 0
+     OpLine %2 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Generic %2
 %4 = OpVariable %3 Generic)";
@@ -386,15 +382,8 @@ TEST_F(ValidateID, OpTypePipeGood) {
   const char *spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 16
-%3 = OpTypePipe %2 ReadOnly)";
+%3 = OpTypePipe ReadOnly)";
   CHECK(spirv, SPV_SUCCESS);
-}
-TEST_F(ValidateID, OpTypePipeBad) {
-  const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpConstant %1 0
-%3 = OpTypePipe %2 ReadOnly)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantTrueGood) {

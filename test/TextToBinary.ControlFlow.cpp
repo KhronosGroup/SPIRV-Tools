@@ -74,10 +74,10 @@ using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
-  std::string input = "OpLoopMerge %1 " + GetParam().name();
+  std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpLoopMerge, {1, GetParam().value()})));
+      Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, GetParam().value()})));
 }
 
 // clang-format off
@@ -92,11 +92,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
 // clang-format on
 
 TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
-  const std::string input = "OpLoopMerge %1 Unroll|DontUnroll";
+  const std::string input = "OpLoopMerge %merge %continue Unroll|DontUnroll";
   const uint32_t expected_mask =
       spv::LoopControlUnrollMask | spv::LoopControlDontUnrollMask;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpLoopMerge, {1, expected_mask})));
+              Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, expected_mask})));
 }
 
 // TODO(dneto): OpPhi
