@@ -110,4 +110,36 @@ INSTANTIATE_TEST_CASE_P(
           5, 6, 7, 8, 9, 10, 11, 12}}}));
 #undef MASK
 
+// TODO(dneto): OpSampledImage
+// TODO(dneto): OpImageSampleImplicitLod
+// TODO(dneto): OpImageSampleExplicitLod
+// TODO(dneto): OpImageSampleDrefImplicitLod
+// TODO(dneto): OpImageSampleDrefExplicitLod
+// TODO(dneto): OpImageSampleProjImplicitLod
+// TODO(dneto): OpImageSampleProjExplicitLod
+// TODO(dneto): OpImageSampleProjDrefImplicitLod
+// TODO(dneto): OpImageSampleProjDrefExplicitLod
+// TODO(dneto): OpImageGather
+// TODO(dneto): OpImageDrefGather
+// TODO(dneto): OpImageRead
+// TODO(dneto): OpImageWrite
+// TODO(dneto): OpImageQueryFormat
+// TODO(dneto): OpImageQueryOrder
+// TODO(dneto): OpImageQuerySizeLod
+// TODO(dneto): OpImageQuerySize
+// TODO(dneto): OpImageQueryLod
+// TODO(dneto): OpImageQueryLevels
+// TODO(dneto): OpImageQuerySamples
+// TODO(dneto): OpImageSparseSampleImplicitLod
+// TODO(dneto): OpImageSparseSampleExplicitLod
+// TODO(dneto): OpImageSparseSampleDrefImplicitLod
+// TODO(dneto): OpImageSparseSampleDrefExplicitLod
+// TODO(dneto): OpImageSparseSampleProjImplicitLod
+// TODO(dneto): OpImageSparseSampleProjExplicitLod
+// TODO(dneto): OpImageSparseSampleProjDrefImplicitLod
+// TODO(dneto): OpImageSparseSampleProjDrefExplicitLod
+// TODO(dneto): OpImageSparseFetch
+// TODO(dneto): OpImageSparseDrefGather
+// TODO(dneto): OpImageSparseTexelsResident
+
 }  // anonymous namespace
