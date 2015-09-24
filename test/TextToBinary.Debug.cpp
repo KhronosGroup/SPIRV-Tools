@@ -38,6 +38,7 @@ namespace {
 
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
+using spvtest::TextToBinaryTest;
 using ::testing::Eq;
 
 // Test OpSource
@@ -80,6 +81,24 @@ TEST_P(OpSourceTest, AnyLanguage) {
 INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
                         ::testing::ValuesIn(kLanguageCases));
 
+// Test OpSourceContinued
+
+using OpSourceContinuedTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpSourceContinuedTest, AnyExtension) {
+  // TODO(dneto): utf-8, quoting, escaping
+  std::string input = std::string("OpSourceContinued \"") + GetParam() + "\"";
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpSourceContinued, MakeVector(GetParam()))));
+}
+
+// TODO(dneto): utf-8, quoting, escaping
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceContinuedTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            "", "foo bar this and that"}));
+
 // Test OpSourceExtension
 
 using OpSourceExtensionTest =
@@ -88,13 +107,9 @@ using OpSourceExtensionTest =
 TEST_P(OpSourceExtensionTest, AnyExtension) {
   // TODO(dneto): utf-8, quoting, escaping
   std::string input = std::string("OpSourceExtension \"") + GetParam() + "\"";
-
-  const std::vector<uint32_t> encoded_string = MakeVector(GetParam());
-  std::vector<uint32_t> expected_instruction{
-      spvOpcodeMake(encoded_string.size() + 1, spv::OpSourceExtension)};
-  expected_instruction.insert(expected_instruction.end(),
-                              encoded_string.begin(), encoded_string.end());
-  EXPECT_THAT(CompiledInstructions(input), Eq(expected_instruction));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpSourceExtension, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -102,9 +117,70 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceExtensionTest,
                         ::testing::ValuesIn(std::vector<const char*>{
                             "", "foo bar this and that"}));
 
-// TODO(dneto): OpName
-// TODO(dneto): OpMemberName
-// TODO(dneto): OpString
-// TODO(dneto): OpLine.  OpLine is significantly different after Rev31.
+TEST_F(TextToBinaryTest, OpLine) {
+  EXPECT_THAT(CompiledInstructions("OpLine %srcfile 42 99"),
+              Eq(MakeInstruction(spv::OpLine, {1, 42, 99})));
+}
+
+TEST_F(TextToBinaryTest, OpNoLine) {
+  EXPECT_THAT(CompiledInstructions("OpNoLine"),
+              Eq(MakeInstruction(spv::OpNoLine, {})));
+}
+
+using OpStringTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpStringTest, AnyString) {
+  // TODO(dneto): utf-8, quoting, escaping
+  std::string input = std::string("%result = OpString \"") + GetParam() + "\"";
+  std::vector<uint32_t> expected_operands = MakeVector(GetParam());
+  expected_operands.insert(expected_operands.begin(), 1);  // The ID of the result.
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpString, expected_operands)));
+}
+
+// TODO(dneto): utf-8, quoting, escaping
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpStringTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            "", "foo bar this and that"}));
+
+using OpNameTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpNameTest, AnyString) {
+  // TODO(dneto): utf-8, quoting, escaping
+  std::string input = std::string("OpName %target \"") + GetParam() + "\"";
+  std::vector<uint32_t> expected_operands = MakeVector(GetParam());
+  expected_operands.insert(expected_operands.begin(), 1);  // The ID of the target.
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpName, expected_operands)));
+}
+
+// TODO(dneto): utf-8, quoting, escaping
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpNameTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            "", "foo bar this and that"}));
+
+using OpMemberNameTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpMemberNameTest, AnyString) {
+  // TODO(dneto): utf-8, quoting, escaping
+  std::string input =
+      std::string("OpMemberName %type 42 \"") + GetParam() + "\"";
+  std::vector<uint32_t> expected_operands = {1, 42};
+  std::vector<uint32_t> encoded_string = MakeVector(GetParam());
+  expected_operands.insert(expected_operands.end(), encoded_string.begin(),
+                           encoded_string.end());
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpMemberName, expected_operands)));
+}
+
+// TODO(dneto): utf-8, quoting, escaping
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpMemberNameTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            "", "foo bar this and that"}));
+
+// TODO(dneto): Parse failures?
 
 }  // anonymous namespace
