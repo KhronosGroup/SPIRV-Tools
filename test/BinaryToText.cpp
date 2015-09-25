@@ -361,4 +361,36 @@ INSTANTIATE_TEST_CASE_P(
               " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"}));
 // clang-format on
 
+using MaskSorting = spvtest::TextToBinaryTest;
+
+TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(
+          "OpStore %1 %2 Nontemporal|Aligned|Volatile 32"),
+      Eq(std::string("OpStore %1 %2 Volatile|Aligned|Nontemporal 32\n")));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(
+          "OpDecorate %1 FPFastMathMode NotInf|Fast|AllowRecip|NotNaN|NSZ"),
+      Eq(std::string(
+          "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ|AllowRecip|Fast\n")));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully("OpLoopMerge %1 %2 DontUnroll|Unroll"),
+      Eq(std::string("OpLoopMerge %1 %2 Unroll|DontUnroll\n")));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully("OpSelectionMerge %1 DontFlatten|Flatten"),
+      Eq(std::string("OpSelectionMerge %1 Flatten|DontFlatten\n")));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(
+          "%2 = OpFunction %1 DontInline|Const|Pure|Inline %3"),
+      Eq(std::string("%2 = OpFunction %1 Inline|DontInline|Pure|Const %3\n")));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  "%2 = OpImageFetch %1 %3 %4"
+                  " MinLod|Sample|Offset|Lod|Grad|ConstOffsets|ConstOffset|Bias"
+                  " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"),
+              Eq(std::string(
+                  "%2 = OpImageFetch %1 %3 %4"
+                  " Bias|Lod|Grad|ConstOffset|Offset|ConstOffsets|Sample|MinLod"
+                  " %5 %6 %7 %8 %9 %10 %11 %12 %13\n")));
+}
+
 }  // anonymous namespace
