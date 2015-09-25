@@ -351,6 +351,7 @@ bool isIdType(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_RESULT_ID:
       return true;
@@ -437,11 +438,12 @@ spv_result_t spvTextEncodeOperand(
   }
 
   switch (type) {
+    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_RESULT_ID:
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE: {
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_RESULT_ID: {
       if ('%' == textValue[0]) {
         textValue++;
       } else {
@@ -559,7 +561,6 @@ spv_result_t spvTextEncodeOperand(
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {

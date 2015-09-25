@@ -28,7 +28,7 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
-2015-09-24
+2015-09-25
 * Updated to Rev32 headers
   * Core instructions and enumerants from Rev 32 are supported by the
     assembler.
@@ -44,6 +44,8 @@ The validator is incomplete.  See the Future Work section for more information.
     map to that number. E.g. `%2` doesn't necessarily map to ID 2.
 * Disassembler emits mask expressions for mask combinations instead of
   erroring out.
+* Fixed parsing and printing of Execution Scope and Memory Semantics
+  operands.  They are supplied as IDs, not as literals.
 
 2015-09-18
 * MILESTONE: This version of the assembler supports all of SPIR-V Rev31,

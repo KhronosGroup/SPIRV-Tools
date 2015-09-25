@@ -40,46 +40,13 @@ using ::testing::Eq;
 
 // Test OpMemoryBarrier
 
-using MemorySemanticsTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::MemorySemanticsMask>>>;
+using OpMemoryBarrier = spvtest::TextToBinaryTest;
 
-TEST_P(MemorySemanticsTest, AnySingleMemorySemanticsMask) {
-  std::string input = "OpMemoryBarrier %1 " + GetParam().name();
-  EXPECT_THAT(
-      CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpMemoryBarrier, {1, GetParam().value()})));
-}
-
-#define CASE(NAME)                              \
-  {                                             \
-    spv::MemorySemantics##NAME##Mask, #NAME, {} \
-  }
-INSTANTIATE_TEST_CASE_P(
-    TextToBinaryMemorySemanticsTest, MemorySemanticsTest,
-    ::testing::ValuesIn(std::vector<EnumCase<spv::MemorySemanticsMask>>{
-        {spv::MemorySemanticsMaskNone, "None", {}},
-        // Relaxed is a synonym for None.
-        {spv::MemorySemanticsMaskNone, "Relaxed", {}},
-        CASE(Acquire),
-        CASE(Release),
-        CASE(SequentiallyConsistent),
-        CASE(UniformMemory),
-        CASE(SubgroupMemory),
-        CASE(WorkgroupLocalMemory),
-        CASE(WorkgroupGlobalMemory),
-        CASE(AtomicCounterMemory),
-        CASE(ImageMemory),
-    }));
-#undef CASE
-
-TEST_F(TextToBinaryTest, CombinedMemorySemanticsMask) {
-  // Sample a single combination.  This ensures we've integrated
-  // the instruction parsing logic with spvTextParseMask.
-  const std::string input = "OpMemoryBarrier %1 Acquire|WorkgroupLocalMemory";
-  const uint32_t expected_mask = spv::MemorySemanticsAcquireMask |
-                                 spv::MemorySemanticsWorkgroupLocalMemoryMask;
+TEST_F(OpMemoryBarrier, Sample) {
+  std::string input = "OpMemoryBarrier %1 %2\n";
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpMemoryBarrier, {1, expected_mask})));
+              Eq(MakeInstruction(spv::OpMemoryBarrier, {1, 2})));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
 
 // TODO(dneto): OpControlBarrier

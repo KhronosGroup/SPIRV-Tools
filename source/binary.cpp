@@ -222,10 +222,12 @@ spv_result_t spvBinaryDecodeOperand(
       print && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options);
 
   switch (type) {
+    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_ID:
-    case SPV_OPERAND_TYPE_RESULT_ID:
+    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE: {
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_RESULT_ID: {
       if (color) {
         if (type == SPV_OPERAND_TYPE_RESULT_ID) {
           stream.get() << clr::blue();
@@ -311,8 +313,6 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
     case SPV_OPERAND_TYPE_DECORATION:
     case SPV_OPERAND_TYPE_BUILT_IN:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {

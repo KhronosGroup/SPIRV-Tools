@@ -172,8 +172,9 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_SELECTION_CONTROL,
   SPV_OPERAND_TYPE_LOOP_CONTROL,
   SPV_OPERAND_TYPE_FUNCTION_CONTROL,
-  SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
 
+  // The ID for a memory semantics value.
+  SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
   // The ID for an execution scope value.
   SPV_OPERAND_TYPE_EXECUTION_SCOPE,
 
