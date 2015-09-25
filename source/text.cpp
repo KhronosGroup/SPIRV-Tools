@@ -478,10 +478,8 @@ spv_result_t spvTextEncodeOperand(
       }
     }  // Fall through for the general case.
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
-    // TODO(antiagainst): SPV_OPERAND_TYPE_LITERAL should be removed.
-    case SPV_OPERAND_TYPE_LITERAL:
-    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL: {
+    case SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER: {
       spv_literal_t literal = {};
       spv_result_t error = spvTextToLiteral(textValue, &literal);
       if (error != SPV_SUCCESS) {
@@ -651,11 +649,9 @@ spv_result_t encodeInstructionStartingWithImmediate(
     // expanded.
     spv_operand_pattern_t dummyExpectedOperands;
     error = spvTextEncodeOperand(
-        // TODO(antiagainst): SPV_OPERAND_TYPE_OPTIONAL_LITERAL should be
-        // substituted by SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER.
-        SPV_OPERAND_TYPE_OPTIONAL_LITERAL, operandValue.c_str(), operandTable,
-        extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
-        position, pDiagnostic);
+        SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, operandValue.c_str(),
+        operandTable, extInstTable, namedIdTable, pInst, &dummyExpectedOperands,
+        pBound, position, pDiagnostic);
     if (error == SPV_FAILED_MATCH) {
       // It's not a literal number -- is it a literal string?
       error = spvTextEncodeOperand(

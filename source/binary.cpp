@@ -257,9 +257,8 @@ spv_result_t spvBinaryDecodeOperand(
       }
     }  // Fall through for the general case.
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_LITERAL:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
-    case SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE: {
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE: {
       // TODO: Need to support multiple word literals
       stream.get() << (color ? clr::red() : "");
       if (numWords > 2) {

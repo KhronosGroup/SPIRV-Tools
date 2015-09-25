@@ -128,11 +128,6 @@ typedef enum spv_opcode_flags_t {
 
 // The kinds of operands that an instruction may have.
 //
-// Sometimes an operand kind is very specific, e.g. SPV_OPERAND_TYPE_RESULT_ID
-// for a result ID in a value-generating instruction.
-// Other times they represent several options, e.g. a SPV_OPERAND_TYPE_LITERAL
-// could either be a literal number or a literal string, depending on context.
-//
 // In addition to determining what kind of value an operand may be, certain
 // enums capture the fact that an operand might be optional (may be absent,
 // or present exactly once), or might occure zero or more times.
@@ -144,10 +139,6 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  // TODO(antiagainst): Instructions in opcode.inc that use
-  // SPV_OPERAND_TYPE_LITERAL should in fact use LITERAL_NUMBER. So
-  // SPV_OPERAND_TYPE_LITERAL can be removed.
-  SPV_OPERAND_TYPE_LITERAL,  // Either a literal number or literal string
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
   // A literal number that can (but is not required to) expand multiple words.
   SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
@@ -190,9 +181,8 @@ typedef enum spv_operand_type_t {
   // An optional image operands mask.  A set bit in the mask may
   // imply that more arguments are required.
   SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
-  // A literal number or string, but optional.
-  // TODO(antiagainst): change to SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER.
-  SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
+  // An optional literal number.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
   // An optional memory access qualifier mask, e.g. Volatile, Aligned,
@@ -204,20 +194,20 @@ typedef enum spv_operand_type_t {
   // In an instruction definition, this may only appear at the end of the
   // operand types.
   SPV_OPERAND_TYPE_VARIABLE_ID,
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL,
-  // A sequence of zero or more pairs of (Literal, Id)
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID,
-  // A sequence of zero or more pairs of (Id, Literal)
-  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL,
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER,
+  // A sequence of zero or more pairs of (Literal number, Id)
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID,
+  // A sequence of zero or more pairs of (Id, Literal number)
+  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER,
   // A sequence of zero or more execution modes
   SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
 
   // An Id that is second or later in an optional tuple of operands.
   // This must be present if the first operand in the tuple is present.
   SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE,
-  // A Literal that is second or later in an optional tuple of operands.
+  // A Literal number that is second or later in an optional tuple of operands.
   // This must be present if the first operand in the tuple is present.
-  SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE,
+  SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.

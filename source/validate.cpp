@@ -167,7 +167,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
             words + index, wordCount - index, position, pDiagnostic));
         // NOTE: String literals are always at the end of Opcodes
         break;
-      } else if (SPV_OPERAND_TYPE_LITERAL == type) {
+      } else if (SPV_OPERAND_TYPE_LITERAL_NUMBER == type) {
         spvCheckReturn(spvValidateOperandsLiteral(
             words + index, wordCount - index, 2, position, pDiagnostic));
       } else {

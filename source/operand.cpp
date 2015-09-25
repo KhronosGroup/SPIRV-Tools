@@ -1435,8 +1435,6 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
       return "ID";
     case SPV_OPERAND_TYPE_RESULT_ID:
       return "result ID";
-    case SPV_OPERAND_TYPE_LITERAL:
-      return "literal";
     case SPV_OPERAND_TYPE_LITERAL_NUMBER:
       return "literal number";
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
@@ -1541,7 +1539,7 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
@@ -1555,9 +1553,9 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
 bool spvOperandIsVariable(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_VARIABLE_ID:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL:
-    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID:
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       return true;
     default:
@@ -1573,21 +1571,21 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
     case SPV_OPERAND_TYPE_VARIABLE_ID:
       pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_ID, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER:
       pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL, type});
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_ID:
-      // Represents Zero or more (Literal, Id) pairs.
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID:
+      // Represents Zero or more (Literal number, Id) pairs.
       pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL,
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
                        SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL:
-      // Represents Zero or more (Id, Literal) pairs.
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER:
+      // Represents Zero or more (Id, Literal number) pairs.
       pattern->insert(pattern->begin(),
                       {SPV_OPERAND_TYPE_OPTIONAL_ID,
-                       SPV_OPERAND_TYPE_LITERAL_IN_OPTIONAL_TUPLE, type});
+                       SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
