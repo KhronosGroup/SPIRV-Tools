@@ -58,6 +58,8 @@ INSTANTIATE_TEST_CASE_P(
     TextToBinaryMemorySemanticsTest, MemorySemanticsTest,
     ::testing::ValuesIn(std::vector<EnumCase<spv::MemorySemanticsMask>>{
         {spv::MemorySemanticsMaskNone, "None", {}},
+        // Relaxed is a synonym for None.
+        {spv::MemorySemanticsMaskNone, "Relaxed", {}},
         CASE(Acquire),
         CASE(Release),
         CASE(SequentiallyConsistent),

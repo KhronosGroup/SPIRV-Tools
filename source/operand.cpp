@@ -1046,6 +1046,14 @@ static const spv_operand_desc_t functionControlEntries[] = {
 };
 
 static const spv_operand_desc_t memorySemanticsEntries[] = {
+    // "Relaxed" should be a synonym for "None".
+    // Put the Relaxed entry first so that the disassembler
+    // will prefer to emit "Relaxed".
+    {"Relaxed",
+     MemorySemanticsMaskNone,
+     SPV_OPCODE_FLAGS_NONE,
+     0,
+     {SPV_OPERAND_TYPE_NONE}},
     {"None",
      MemorySemanticsMaskNone,
      SPV_OPCODE_FLAGS_NONE,
