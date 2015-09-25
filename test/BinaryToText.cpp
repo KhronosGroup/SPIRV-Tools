@@ -27,6 +27,11 @@
 
 #include "UnitSPIRV.h"
 
+#include "gmock/gmock.h"
+#include "TestFixture.h"
+
+using ::testing::Eq;
+
 namespace {
 
 class BinaryToText : public ::testing::Test {
@@ -263,5 +268,97 @@ TEST(BinaryToTextSmall, LiteralDouble) {
   EXPECT_EQ(output, text->str);
   spvTextDestroy(text);
 }
+
+using RoundTripInstructionsTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
+
+TEST_P(RoundTripInstructionsTest, Sample) {
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
+              Eq(GetParam()));
+};
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    MemoryAccessMasks, RoundTripInstructionsTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "OpStore %1 %2\n",       // 3 words long.
+        "OpStore %1 %2 None\n",  // 4 words long, explicit final 0.
+        "OpStore %1 %2 Volatile\n",
+        "OpStore %1 %2 Aligned 8\n",
+        "OpStore %1 %2 Nontemporal\n",
+        // Combinations show the names from LSB to MSB
+        "OpStore %1 %2 Volatile|Aligned 16\n",
+        "OpStore %1 %2 Volatile|Nontemporal\n",
+        "OpStore %1 %2 Volatile|Aligned|Nontemporal 32\n",
+    }));
+// clang-format on
+
+INSTANTIATE_TEST_CASE_P(
+    FPFastMathModeMasks, RoundTripInstructionsTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "OpDecorate %1 FPFastMathMode None\n",
+        "OpDecorate %1 FPFastMathMode NotNaN\n",
+        "OpDecorate %1 FPFastMathMode NotInf\n",
+        "OpDecorate %1 FPFastMathMode NSZ\n",
+        "OpDecorate %1 FPFastMathMode AllowRecip\n",
+        "OpDecorate %1 FPFastMathMode Fast\n",
+        // Combinations show the names from LSB to MSB
+        "OpDecorate %1 FPFastMathMode NotNaN|NotInf\n",
+        "OpDecorate %1 FPFastMathMode NSZ|AllowRecip\n",
+        "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ|AllowRecip|Fast\n",
+    }));
+
+INSTANTIATE_TEST_CASE_P(LoopControlMasks, RoundTripInstructionsTest,
+                        ::testing::ValuesIn(std::vector<std::string>{
+                            "OpLoopMerge %1 %2 None\n",
+                            "OpLoopMerge %1 %2 Unroll\n",
+                            "OpLoopMerge %1 %2 DontUnroll\n",
+                            "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
+                        }));
+
+INSTANTIATE_TEST_CASE_P(SelectionControlMasks, RoundTripInstructionsTest,
+                        ::testing::ValuesIn(std::vector<std::string>{
+                            "OpSelectionMerge %1 None\n",
+                            "OpSelectionMerge %1 Flatten\n",
+                            "OpSelectionMerge %1 DontFlatten\n",
+                            "OpSelectionMerge %1 Flatten|DontFlatten\n",
+                        }));
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    FunctionControlMasks, RoundTripInstructionsTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "%2 = OpFunction %1 None %3\n",
+        "%2 = OpFunction %1 Inline %3\n",
+        "%2 = OpFunction %1 DontInline %3\n",
+        "%2 = OpFunction %1 Pure %3\n",
+        "%2 = OpFunction %1 Const %3\n",
+        "%2 = OpFunction %1 Inline|Pure|Const %3\n",
+        "%2 = OpFunction %1 DontInline|Const %3\n",
+    }));
+// clang-format on
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    ImageMasks, RoundTripInstructionsTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "%2 = OpImageFetch %1 %3 %4\n",
+        "%2 = OpImageFetch %1 %3 %4 None\n",
+        "%2 = OpImageFetch %1 %3 %4 Bias %5\n",
+        "%2 = OpImageFetch %1 %3 %4 Lod %5\n",
+        "%2 = OpImageFetch %1 %3 %4 Grad %5 %6\n",
+        "%2 = OpImageFetch %1 %3 %4 ConstOffset %5\n",
+        "%2 = OpImageFetch %1 %3 %4 Offset %5\n",
+        "%2 = OpImageFetch %1 %3 %4 ConstOffsets %5\n",
+        "%2 = OpImageFetch %1 %3 %4 Sample %5\n",
+        "%2 = OpImageFetch %1 %3 %4 MinLod %5\n",
+        "%2 = OpImageFetch %1 %3 %4 Bias|Lod|Grad %5 %6 %7 %8\n",
+        "%2 = OpImageFetch %1 %3 %4 ConstOffset|Offset|ConstOffsets"
+              " %5 %6 %7\n",
+        "%2 = OpImageFetch %1 %3 %4 Sample|MinLod %5 %6\n",
+        "%2 = OpImageFetch %1 %3 %4"
+              " Bias|Lod|Grad|ConstOffset|Offset|ConstOffsets|Sample|MinLod"
+              " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"}));
+// clang-format on
 
 }  // anonymous namespace

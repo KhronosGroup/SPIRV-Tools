@@ -12,9 +12,9 @@ into other code bases directly.
 ### Assembler and disassembler
 
 * Based on SPIR-V 0.99 Revision 32
-  * Assembler supports core instructions and enumerants from Rev 32.
+  * Supports core instructions and enumerants from Rev 32.
   * Capability dependencies may be incomplete or incorrect.
-* Assembler supports all core instructions, for 32-bit code.
+* Supports all core instructions, for 32-bit code.
   * Handling of non-32-bit literal numbers has been recently clarified.
     Those changes have not been applied.
 * All GLSL std450 extended instructions are supported.
@@ -42,6 +42,8 @@ The validator is incomplete.  See the Future Work section for more information.
     same numeric ID as named ID `%foo`.
   * In particular, an ID with a number for a name doesn't necessarily
     map to that number. E.g. `%2` doesn't necessarily map to ID 2.
+* Disassembler emits mask expressions for mask combinations instead of
+  erroring out.
 
 2015-09-18
 * MILESTONE: This version of the assembler supports all of SPIR-V Rev31,

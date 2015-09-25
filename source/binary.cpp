@@ -305,18 +305,13 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
     case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
-    case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
     case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
     case SPV_OPERAND_TYPE_DECORATION:
     case SPV_OPERAND_TYPE_BUILT_IN:
-    case SPV_OPERAND_TYPE_SELECTION_CONTROL:
-    case SPV_OPERAND_TYPE_LOOP_CONTROL:
-    case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
@@ -326,11 +321,64 @@ spv_result_t spvBinaryDecodeOperand(
                                      spvFixWord(words[0], endian), &entry)) {
         DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
                    << words[0] << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return SPV_ERROR_INVALID_TEXT; // TODO(dneto): Surely this is invalid binary.
       }
       stream.get() << entry->name;
       // Prepare to accept operands to this operand, if needed.
       spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
+      position->index++;
+    } break;
+    case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
+    case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
+    case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
+      // This operand is a mask.
+      // Scan it from least significant bit to most significant bit.  For each
+      // set bit, emit the name of that bit and prepare to parse its operands,
+      // if any.
+      uint32_t remaining_word = spvFixWord(words[0], endian);
+      uint32_t mask;
+      int num_emitted = 0;
+      for (mask = 1; remaining_word; mask <<= 1) {
+        if (remaining_word & mask) {
+          remaining_word ^= mask;
+          spv_operand_desc entry;
+          if (spvOperandTableValueLookup(operandTable, type, mask, &entry)) {
+            DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
+                       << words[0] << "'.";
+            return SPV_ERROR_INVALID_BINARY;
+          }
+          if (num_emitted) stream.get() << "|";
+          stream.get() << entry->name;
+          num_emitted++;
+        }
+      }
+      if (!num_emitted) {
+        // An operand value of 0 was provided, so represent it by the name
+        // of the 0 value. In many cases, that's "None".
+        spv_operand_desc entry;
+        if (SPV_SUCCESS ==
+            spvOperandTableValueLookup(operandTable, type, 0, &entry)) {
+          stream.get() << entry->name;
+          // Prepare for its operands, if any.
+          spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
+        }
+      }
+      // Prepare for subsequent operands, if any.
+      // Scan from MSB to LSB since we can only prepend operands to a pattern.
+      remaining_word = spvFixWord(words[0], endian);
+      for (mask = (1u << 31); remaining_word; mask >>= 1) {
+        if (remaining_word & mask) {
+          remaining_word ^= mask;
+          spv_operand_desc entry;
+          if (SPV_SUCCESS ==
+              spvOperandTableValueLookup(operandTable, type, mask, &entry)) {
+            spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
+          }
+        }
+      }
       position->index++;
     } break;
     default: {
