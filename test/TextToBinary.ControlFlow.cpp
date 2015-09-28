@@ -35,6 +35,7 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::TextToBinaryTest;
 using ::testing::Eq;
 
 // Test OpSelectionMerge
@@ -98,6 +99,66 @@ TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, expected_mask})));
 }
+
+// Test OpSwitch
+
+TEST_F(TextToBinaryTest, SwitchGoodZeroTargets) {
+  EXPECT_THAT(CompiledInstructions("OpSwitch %selector %default"),
+              Eq(MakeInstruction(spv::OpSwitch, {1, 2})));
+}
+
+TEST_F(TextToBinaryTest, SwitchGoodOneTarget) {
+  EXPECT_THAT(CompiledInstructions("OpSwitch %selector %default 12 %target0"),
+              Eq(MakeInstruction(spv::OpSwitch, {1, 2, 12, 3})));
+}
+
+TEST_F(TextToBinaryTest, SwitchGoodTwoTargets) {
+  EXPECT_THAT(CompiledInstructions(
+                  "OpSwitch %selector %default 12 %target0 42 %target1"),
+              Eq(MakeInstruction(spv::OpSwitch, {1, 2, 12, 3, 42, 4})));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadMissingSelector) {
+  EXPECT_THAT(CompileFailure("OpSwitch"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadInvalidSelector) {
+  EXPECT_THAT(CompileFailure("OpSwitch 12"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadMissingDefault) {
+  EXPECT_THAT(CompileFailure("OpSwitch %selector"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadInvalidDefault) {
+  EXPECT_THAT(CompileFailure("OpSwitch %selector 12"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralDefaultFormat) {
+  // The assembler recognizes "OpSwitch %selector %default" as a complete
+  // instruction.  Then it tries to parse "%abc" as the start of an
+  // assignment form instruction, but can't since it hits the end
+  // of stream.
+  EXPECT_THAT(CompileFailure("OpSwitch %selector %default %abc"),
+              Eq("Expected '=', found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralCanonicalFormat) {
+  EXPECT_THAT(CompileWithFormatFailure("OpSwitch %selector %default %abc",
+                                       SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
+              Eq("Expected <opcode> at the beginning of an instruction, found "
+                 "'%abc'."));
+}
+
+TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
+  EXPECT_THAT(CompileFailure("OpSwitch %selector %default 12"),
+              Eq("Expected operand, found end of stream."));
+}
+
 
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge

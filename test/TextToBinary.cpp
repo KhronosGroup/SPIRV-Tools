@@ -420,55 +420,6 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
 }
 
-TEST_F(TextToBinaryTest, GoodSwitch) {
-  const SpirvVector code = CompileSuccessfully(R"(
-%i32      = OpTypeInt 32 0
-%fortytwo = OpConstant %i32 42
-%twelve   = OpConstant %i32 12
-%entry    = OpLabel
-            OpSwitch %fortytwo %default 42 %go42 12 %go12
-%go42     = OpLabel
-            OpBranch %default
-%go12     = OpLabel
-            OpBranch %default
-%default  = OpLabel
-)");
-
-  // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ((int(spv::OpSwitch) | (7 << 16)), code[14 + SPV_INDEX_INSTRUCTION]);
-}
-
-TEST_F(TextToBinaryTest, GoodSwitchZeroCasesOneDefault) {
-  const SpirvVector code = CompileSuccessfully(R"(
-%i32      = OpTypeInt 32 0
-%fortytwo = OpConstant %i32 42
-%entry    = OpLabel
-            OpSwitch %fortytwo %default
-%default  = OpLabel
-)");
-
-  // Minimal check: The OpSwitch opcode word is correct.
-  EXPECT_EQ((int(spv::OpSwitch) | (3 << 16)), code[10 + SPV_INDEX_INSTRUCTION]);
-}
-
-TEST_F(TextToBinaryTest, BadSwitchTruncatedCase) {
-  SetText(R"(
-%i32      = OpTypeInt 32 0
-%fortytwo = OpConstant %i32 42
-%entry    = OpLabel
-            OpSwitch %fortytwo %default 42 ; missing target!
-%default  = OpLabel
-)");
-
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
-  EXPECT_EQ(6, diagnostic->position.line + 1);
-  EXPECT_EQ(1, diagnostic->position.column + 1);
-  EXPECT_STREQ("Expected operand, found next instruction instead.",
-               diagnostic->error);
-}
-
 using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
 

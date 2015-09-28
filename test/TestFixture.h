@@ -84,15 +84,23 @@ class TextToBinaryTestBase : public T {
     return code_copy;
   }
 
-  // Compiles SPIR-V text, asserting compilation failure.  Returns the error
-  // message(s).
-  std::string CompileFailure(const std::string& text) {
+  // Compiles SPIR-V text with the given format, asserting compilation failure.
+  // Returns the error message(s).
+  std::string CompileWithFormatFailure(const std::string& text,
+                                       spv_assembly_syntax_format_t format) {
     EXPECT_NE(SPV_SUCCESS,
-              spvTextToBinary(text.c_str(), text.size(), opcodeTable,
-                              operandTable, extInstTable, &binary, &diagnostic))
+              spvTextWithFormatToBinary(text.c_str(), text.size(), format,
+                                        opcodeTable, operandTable, extInstTable,
+                                        &binary, &diagnostic))
         << text;
     DestroyBinary();
     return diagnostic->error;
+  }
+
+  // Compiles SPIR-V text using the default format, asserting compilation failure.
+  // Returns the error message(s).
+  std::string CompileFailure(const std::string& text) {
+    return CompileWithFormatFailure(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT);
   }
 
   // Encodes SPIR-V text into binary and then decodes the binary. Returns the
