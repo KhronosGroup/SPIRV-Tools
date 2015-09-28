@@ -13,7 +13,7 @@ into other code bases directly.
 
 * Based on SPIR-V 0.99 Revision 32
   * Supports core instructions and enumerants from Rev 32.
-  * Capability dependencies may be incomplete or incorrect.
+  * Capability dependencies for enumerants may be incomplete or incorrect.
 * Supports all core instructions, for 32-bit code.
   * Handling of non-32-bit literal numbers has been recently clarified.
     Those changes have not been applied.
