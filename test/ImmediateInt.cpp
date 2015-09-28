@@ -262,9 +262,9 @@ TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
 // !<integer> followed by, eg, an enum or '=' or a random bareword.
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
 // TODO(deki): uncomment assertions below and make them pass.
-#if 0
   EXPECT_THAT(CompileFailure("OpMemoryModel !0 OpenCL"), HasSubstr("OpenCL"));
   EXPECT_THAT(CompileFailure("!1 %0 = !2"), HasSubstr("="));
+#if 0
   // Immediate integers longer than one 32-bit word.
   EXPECT_THAT(CompileFailure("!5000000000"), HasSubstr("5000000000"));
   EXPECT_THAT(CompileFailure("!0x00020049 !5000000000"), HasSubstr("5000000000"));

@@ -152,4 +152,9 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
 /// operand type.
 spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
 
+/// Switches *pExpectedOperands to the post-immediate alternate pattern, which
+/// allows a limited set of operand types.
+void spvSwitchToAlternateParsingAfterImmediate(
+    spv_operand_pattern_t *pExpectedOperands);
+
 #endif

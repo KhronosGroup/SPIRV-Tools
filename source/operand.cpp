@@ -1543,6 +1543,7 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
+    case SPV_OPERAND_TYPE_OPTIONAL_CIV:
       return true;
     default:
       break;
@@ -1604,4 +1605,24 @@ spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern) 
     pattern->pop_front();
   } while(spvExpandOperandSequenceOnce(result, pattern));
   return result;
+}
+
+void spvSwitchToAlternateParsingAfterImmediate(
+    spv_operand_pattern_t* pExpectedOperands) {
+  if (pExpectedOperands->empty()) {
+    pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
+  } else if (pExpectedOperands->size() == 1 &&
+             (*pExpectedOperands)[0] == SPV_OPERAND_TYPE_RESULT_ID) {
+    // Must preserve the result-id position.
+    pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
+  } else {
+    // Must preserve the result-id position.
+    for (auto& operand : *pExpectedOperands) {
+      if (operand != SPV_OPERAND_TYPE_RESULT_ID) {
+        // This may end up inserting multiple SPV_OPERAND_TYPE_OPTIONAL_CIVs,
+        // but that's OK because it's an optional type.
+        operand = SPV_OPERAND_TYPE_OPTIONAL_CIV;
+      }
+    }
+  }
 }

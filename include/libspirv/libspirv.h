@@ -209,6 +209,12 @@ typedef enum spv_operand_type_t {
   // This must be present if the first operand in the tuple is present.
   SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE,
 
+  // An optional context-independent value, or CIV.  CIVs are tokens that we can
+  // assemble regardless of where they occur -- literals, IDs, immediate
+  // integers, etc.
+  SPV_OPERAND_TYPE_OPTIONAL_CIV,
+
+
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,

@@ -52,7 +52,7 @@ using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
 
 // Text API
 
-std::string spvGetWord(const char *str) {
+std::string spvGetWord(const char* str) {
   size_t index = 0;
   while (true) {
     switch (str[index]) {
@@ -71,8 +71,8 @@ std::string spvGetWord(const char *str) {
   return "";  // Make certain compilers happy.
 }
 
-uint32_t spvNamedIdAssignOrGet(spv_named_id_table* table, const char *textValue,
-                               uint32_t *pBound) {
+uint32_t spvNamedIdAssignOrGet(spv_named_id_table* table, const char* textValue,
+                               uint32_t* pBound) {
   if (table->end() == table->find(textValue)) {
     (*table)[std::string(textValue)] = *pBound;
   }
@@ -139,7 +139,7 @@ spv_result_t spvTextAdvance(const spv_text text, spv_position position) {
 }
 
 spv_result_t spvTextWordGet(const spv_text text,
-                            const spv_position startPosition, std::string &word,
+                            const spv_position startPosition, std::string& word,
                             spv_position endPosition) {
   if (!text->str || !text->length) return SPV_ERROR_INVALID_TEXT;
   if (!startPosition || !endPosition) return SPV_ERROR_INVALID_POINTER;
@@ -218,7 +218,7 @@ bool spvTextIsStartOfNewInst(const spv_text text, const spv_position position) {
 
 spv_result_t spvTextStringGet(const spv_text text,
                               const spv_position startPosition,
-                              std::string &string, spv_position endPosition) {
+                              std::string& string, spv_position endPosition) {
   if (!text->str || !text->length) return SPV_ERROR_INVALID_TEXT;
   if (!startPosition || !endPosition) return SPV_ERROR_INVALID_POINTER;
 
@@ -250,8 +250,8 @@ spv_result_t spvTextStringGet(const spv_text text,
   }
 }
 
-spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue) {
-  char *endPtr = nullptr;
+spv_result_t spvTextToUInt32(const char* textValue, uint32_t* pValue) {
+  char* endPtr = nullptr;
   *pValue = strtoul(textValue, &endPtr, 0);
   if (0 == *pValue && textValue == endPtr) {
     return SPV_ERROR_INVALID_TEXT;
@@ -259,7 +259,7 @@ spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue) {
   return SPV_SUCCESS;
 }
 
-spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
+spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral) {
   bool isSigned = false;
   int numPeriods = 0;
   bool isString = false;
@@ -345,11 +345,11 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
 
 spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
                                      const spv_operand_type_t type,
-                                     const char *textValue, uint32_t *pValue) {
+                                     const char* textValue, uint32_t* pValue) {
   if (textValue == nullptr) return SPV_ERROR_INVALID_TEXT;
   size_t text_length = strlen(textValue);
   if (text_length == 0) return SPV_ERROR_INVALID_TEXT;
-  const char *text_end = textValue + text_length;
+  const char* text_end = textValue + text_length;
 
   // We only support mask expressions in ASCII, so the separator value is a
   // char.
@@ -358,8 +358,8 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
   // Accumulate the result by interpreting one word at a time, scanning
   // from left to right.
   uint32_t value = 0;
-  const char *begin = textValue;  // The left end of the current word.
-  const char *end = nullptr;  // One character past the end of the current word.
+  const char* begin = textValue;  // The left end of the current word.
+  const char* end = nullptr;  // One character past the end of the current word.
   do {
     end = std::find(begin, text_end, separator);
 
@@ -378,8 +378,6 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
   return SPV_SUCCESS;
 }
 
-
-
 /// @brief Translate an Opcode operand to binary form
 ///
 /// @param[in] type of the operand
@@ -394,15 +392,15 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
 ///
 /// @return result code
 spv_result_t spvTextEncodeOperand(
-    const spv_operand_type_t type, const char *textValue,
+    const spv_operand_type_t type, const char* textValue,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table* namedIdTable, spv_instruction_t *pInst,
-    spv_operand_pattern_t *pExpectedOperands, uint32_t *pBound,
-    const spv_position position, spv_diagnostic *pDiagnostic) {
+    spv_named_id_table* namedIdTable, spv_instruction_t* pInst,
+    spv_operand_pattern_t* pExpectedOperands, uint32_t* pBound,
+    const spv_position position, spv_diagnostic* pDiagnostic) {
   // NOTE: Handle immediate int in the stream
   if ('!' == textValue[0]) {
-    const char *begin = textValue + 1;
-    char *end = nullptr;
+    const char* begin = textValue + 1;
+    char* end = nullptr;
     uint32_t immediateInt = strtoul(begin, &end, 0);
     size_t size = strlen(textValue);
     size_t length = (end - begin);
@@ -414,6 +412,7 @@ spv_result_t spvTextEncodeOperand(
     position->index += size;
     pInst->words[pInst->wordCount] = immediateInt;
     pInst->wordCount += 1;
+    spvSwitchToAlternateParsingAfterImmediate(pExpectedOperands);
     return SPV_SUCCESS;
   }
 
@@ -551,7 +550,35 @@ spv_result_t spvTextEncodeOperand(
       if (auto error = spvBinaryEncodeU32(value, pInst, position, pDiagnostic))
         return error;
       // Prepare to parse the operands for this logical operand.
-      spvPrependOperandTypesForMask(operandTable, type, value, pExpectedOperands);
+      spvPrependOperandTypesForMask(operandTable, type, value,
+                                    pExpectedOperands);
+    } break;
+    case SPV_OPERAND_TYPE_OPTIONAL_CIV: {
+      auto error = spvTextEncodeOperand(
+          SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, textValue, operandTable,
+          extInstTable, namedIdTable, pInst, pExpectedOperands, pBound,
+          position, pDiagnostic);
+      if (error == SPV_FAILED_MATCH) {
+        // It's not a literal number -- is it a literal string?
+        error = spvTextEncodeOperand(SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
+                                     textValue, operandTable, extInstTable,
+                                     namedIdTable, pInst, pExpectedOperands,
+                                     pBound, position, pDiagnostic);
+      }
+      if (error == SPV_FAILED_MATCH) {
+        // It's not a literal -- is it an ID?
+        error = spvTextEncodeOperand(SPV_OPERAND_TYPE_OPTIONAL_ID, textValue,
+                                     operandTable, extInstTable, namedIdTable,
+                                     pInst, pExpectedOperands, pBound, position,
+                                     pDiagnostic);
+      }
+      if (error) {
+        DIAGNOSTIC << "Invalid word following !<integer>: " << textValue;
+        return error;
+      }
+      if (pExpectedOperands->empty()) {
+        pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
+      }
     } break;
     default: {
       // NOTE: All non literal operands are handled here using the operand
@@ -586,8 +613,8 @@ namespace {
 spv_result_t encodeInstructionStartingWithImmediate(
     const spv_text text, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_named_id_table* namedIdTable,
-    uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
-    spv_diagnostic *pDiagnostic) {
+    uint32_t* pBound, spv_instruction_t* pInst, spv_position position,
+    spv_diagnostic* pDiagnostic) {
   std::string firstWord;
   spv_position_t nextPosition = {};
   auto error = spvTextWordGet(text, position, firstWord, &nextPosition);
@@ -597,8 +624,8 @@ spv_result_t encodeInstructionStartingWithImmediate(
   }
 
   assert(firstWord[0] == '!');
-  const char *begin = firstWord.data() + 1;
-  char *end = nullptr;
+  const char* begin = firstWord.data() + 1;
+  char* end = nullptr;
   uint32_t immediateInt = strtoul(begin, &end, 0);
   if ((begin + firstWord.size() - 1) != end) {
     DIAGNOSTIC << "Invalid immediate integer '" << firstWord << "'.";
@@ -629,27 +656,9 @@ spv_result_t encodeInstructionStartingWithImmediate(
     // expanded.
     spv_operand_pattern_t dummyExpectedOperands;
     error = spvTextEncodeOperand(
-        SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, operandValue.c_str(),
-        operandTable, extInstTable, namedIdTable, pInst, &dummyExpectedOperands,
-        pBound, position, pDiagnostic);
-    if (error == SPV_FAILED_MATCH) {
-      // It's not a literal number -- is it a literal string?
-      error = spvTextEncodeOperand(
-          SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING, operandValue.c_str(),
-          operandTable, extInstTable, namedIdTable, pInst,
-          &dummyExpectedOperands, pBound, position, pDiagnostic);
-    }
-    if (error == SPV_FAILED_MATCH) {
-      // It's not a literal -- is it an ID?
-      error = spvTextEncodeOperand(
-          SPV_OPERAND_TYPE_OPTIONAL_ID, operandValue.c_str(), operandTable,
-          extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
-          position, pDiagnostic);
-      if (error) {
-        DIAGNOSTIC << "Invalid word following " << firstWord << ": "
-                   << operandValue;
-      }
-    }
+        SPV_OPERAND_TYPE_OPTIONAL_CIV, operandValue.c_str(), operandTable,
+        extInstTable, namedIdTable, pInst, &dummyExpectedOperands, pBound,
+        position, pDiagnostic);
     if (error) return error;
     *position = nextPosition;
   }
@@ -675,9 +684,8 @@ spv_result_t spvTextEncodeOpcode(
     const spv_text text, spv_assembly_syntax_format_t format,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_named_id_table* namedIdTable,
-    uint32_t *pBound, spv_instruction_t *pInst, spv_position position,
-    spv_diagnostic *pDiagnostic) {
-
+    uint32_t* pBound, spv_instruction_t* pInst, spv_position position,
+    spv_diagnostic* pDiagnostic) {
   // Check for !<integer> first.
   if ('!' == text->str[position->index]) {
     return encodeInstructionStartingWithImmediate(
@@ -752,7 +760,7 @@ spv_result_t spvTextEncodeOpcode(
   }
 
   // NOTE: The table contains Opcode names without the "Op" prefix.
-  const char *pInstName = opcodeName.data() + 2;
+  const char* pInstName = opcodeName.data() + 2;
 
   spv_opcode_desc opcodeEntry;
   error = spvOpcodeTableNameLookup(opcodeTable, pInstName, &opcodeEntry);
@@ -861,8 +869,8 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
                                      const spv_opcode_table opcodeTable,
                                      const spv_operand_table operandTable,
                                      const spv_ext_inst_table extInstTable,
-                                     spv_binary *pBinary,
-                                     spv_diagnostic *pDiagnostic) {
+                                     spv_binary* pBinary,
+                                     spv_diagnostic* pDiagnostic) {
   spv_position_t position = {};
   if (!text->str || !text->length) {
     DIAGNOSTIC << "Text stream is empty.";
@@ -908,14 +916,14 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
   }
 
   size_t totalSize = SPV_INDEX_INSTRUCTION;
-  for (auto &inst : instructions) {
+  for (auto& inst : instructions) {
     totalSize += inst.wordCount;
   }
 
-  uint32_t *data = new uint32_t[totalSize];
+  uint32_t* data = new uint32_t[totalSize];
   if (!data) return SPV_ERROR_OUT_OF_MEMORY;
   uint64_t currentIndex = SPV_INDEX_INSTRUCTION;
-  for (auto &inst : instructions) {
+  for (auto& inst : instructions) {
     memcpy(data + currentIndex, inst.words, sizeof(uint32_t) * inst.wordCount);
     currentIndex += inst.wordCount;
   }
@@ -941,22 +949,22 @@ spv_result_t spvTextToBinaryInternal(const spv_text text,
 
 }  // anonymous namespace
 
-spv_result_t spvTextToBinary(const char *input_text,
+spv_result_t spvTextToBinary(const char* input_text,
                              const uint64_t input_text_size,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
-                             spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+                             spv_binary* pBinary, spv_diagnostic* pDiagnostic) {
   return spvTextWithFormatToBinary(
       input_text, input_text_size, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT,
       opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
 }
 
 spv_result_t spvTextWithFormatToBinary(
-    const char *input_text, const uint64_t input_text_size,
+    const char* input_text, const uint64_t input_text_size,
     spv_assembly_syntax_format_t format, const spv_opcode_table opcodeTable,
     const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_binary *pBinary, spv_diagnostic *pDiagnostic) {
+    spv_binary* pBinary, spv_diagnostic* pDiagnostic) {
   spv_text_t text = {input_text, input_text_size};
 
   spv_result_t result =
