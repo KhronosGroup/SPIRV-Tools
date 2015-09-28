@@ -43,6 +43,7 @@ otherwise generate an error.
   (This is supported by the assembler but not yet by the disassembler.
   TODO(dneto): Add disassembler support for emitting mask expressions.)
 * an injected immediate integer: `!<integer>`.  See [below](#immediate).
+* an ID, e.g. `%foo`. See [below](#id).
 
 ## Assignment-oriented Assembly Form
 <a name="assignment-form"></a>
@@ -70,18 +71,21 @@ can also be written as:
 ```
 
 ## ID Definitions & Usage
+<a name="id"></a>
 
-An ID definition pertains to the `<result-id>` of an OpCode, and ID usage is any
-input to an OpCode. All IDs are prefixed with `%`. To differentiate between
-defs and uses, we suggest using the second format shown in the above example.
+An ID definition pertains to the `<result-id>` of an OpCode, and ID usage is a
+use of an ID as an input to an OpCode.
 
-The ID names do not necessarily have to be numerical. Furthermore to avoid
-aliasing names, if a name is numerical, it will not necessarily map to the
-corresponding numerical id in the generated spirv.  The same ID definition and
-usage prefixes apply. Names may contain any character in
-['0-9|a-z|A-Z|\_'] The following example will result in identical SPIR-V binary
-as the example above.
+An ID in the assembly language begins with `%` and must be followed by a name
+consisting of one or more letters, numbers or underscore characters.
 
+For every ID in the assembly program, the assembler generates a unique number
+called the ID's internal number. Then each ID reference translates into its
+internal number in the SPIR-V output. Internal numbers are unique within the
+compilation unit: no two IDs in the same unit will share internal numbers.
+
+The disassembler generates IDs where the name is always a decimal number
+greater than 0.
 ```
           OpCapability Shader
           OpMemoryModel Logical Simple
@@ -94,8 +98,6 @@ as the example above.
           OpReturn
           OpFunctionEnd
 ```
-
-
 
 ## Arbitrary Integers
 <a name="immediate"></a>
@@ -155,10 +157,7 @@ follows:
   as defined in the SPIR-V specification for Literal Number.
 * If the word is a string literal, it outputs a sequence of words representing
   the string as defined in the SPIR-V specification for Literal String.
-* If the word is an ID, it outputs the ID's internal number.  If no such number
-  exists yet, a unique new one will be generated.  (Uniqueness is at the
-  translation-unit level: no other ID in the same translation unit will have the
-  same number.)
+* If the word is an ID, it outputs the ID's internal number.
 * If the word is another `!<integer>`, it outputs that integer.
 * Any other word causes the assembler to quit with an error.
 
@@ -178,8 +177,9 @@ Note that this has some interesting consequences, including:
   successful assembly.
 
 * The `<result-id>` on the left-hand side of an assignment cannot be
-  a`!<integer>`.  But it can be a number prefixed by `%`, which still gives the
-  user control over its value.
+  a `!<integer>`. The `<result-id>` can be still be manually
+  controlled if desired by using the
+  [Canonical Assembly Form](#assignment-form).
 
 * The `=` sign cannot be processed by the alternate parsing mode if the OpCode
   following it is a `!<integer>`.
