@@ -324,6 +324,21 @@ TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidTargetMemberNumber) {
               Eq("Invalid literal number '%id1'."));
 }
 
+TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetId) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id1 42 12"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateMissingSecondTargetMemberNumber) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0 42 %id1"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetMemberNumber) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0 42 %id1 %id2"),
+              Eq("Invalid literal number '%id2'."));
+}
+
 // TODO(dneto): OpMemberDecorate
 // TODO(dneto): OpDecorationGroup
 // TODO(dneto): OpGroupDecorate
