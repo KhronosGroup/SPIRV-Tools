@@ -42,11 +42,35 @@ using ::testing::Eq;
 
 using OpMemoryBarrier = spvtest::TextToBinaryTest;
 
-TEST_F(OpMemoryBarrier, Sample) {
+TEST_F(OpMemoryBarrier, Good) {
   std::string input = "OpMemoryBarrier %1 %2\n";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpMemoryBarrier, {1, 2})));
   EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
+}
+
+TEST_F(OpMemoryBarrier, BadMissingScopeId) {
+  std::string input = "OpMemoryBarrier\n";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(OpMemoryBarrier, BadInvalidScopeId) {
+  std::string input = "OpMemoryBarrier 99\n";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(OpMemoryBarrier, BadMissingMemorySemanticsId) {
+  std::string input = "OpMemoryBarrier %scope\n";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(OpMemoryBarrier, BadInvalidMemorySemanticsId) {
+  std::string input = "OpMemoryBarrier %scope 14\n";
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Expected id to start with %."));
 }
 
 // TODO(dneto): OpControlBarrier
