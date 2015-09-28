@@ -260,6 +260,18 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryCapability, OpCapabilityTest,
 #undef CASE
 // clang-format on
 
+using TextToBinaryCapability = spvtest::TextToBinaryTest;
+
+TEST_F(TextToBinaryCapability, BadMissingCapability) {
+  EXPECT_THAT(CompileFailure("OpCapability"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryCapability, BadInvalidCapability) {
+  EXPECT_THAT(CompileFailure("OpCapability 123"),
+              Eq("Invalid capability '123'."));
+}
+
 // TODO(dneto): OpExecutionMode
 
 }  // anonymous namespace
