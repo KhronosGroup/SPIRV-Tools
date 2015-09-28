@@ -81,6 +81,25 @@ TEST_P(OpSourceTest, AnyLanguage) {
 INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
                         ::testing::ValuesIn(kLanguageCases));
 
+TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
+  // In the grammar, the file id is an OperandOptionalId.
+  std::string input = "OpSource GLSL 450 %file_id";
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1})));
+};
+
+TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
+  std::string fake_source = "To be or not to be";
+  std::string input = "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
+  std::vector<uint32_t> expected_operands = {spv::SourceLanguageGLSL, 450, 1};
+  std::vector<uint32_t> encoded_source = MakeVector(fake_source);
+  expected_operands.insert(expected_operands.end(), encoded_source.begin(),
+                           encoded_source.end());
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(spv::OpSource, expected_operands)));
+};
+
 // Test OpSourceContinued
 
 using OpSourceContinuedTest =
