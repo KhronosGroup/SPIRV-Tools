@@ -284,9 +284,48 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
 #undef CASE
 // clang-format on
 
+
+// Test OpGroupMemberDecorate
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateGoodOneTarget) {
+  EXPECT_THAT(CompiledInstructions("OpGroupMemberDecorate %group %id0 42"),
+              Eq(MakeInstruction(spv::OpGroupMemberDecorate,
+                                {1, 2, 42})));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateGoodTwoTargets) {
+  EXPECT_THAT(CompiledInstructions("OpGroupMemberDecorate %group %id0 96 %id1 42"),
+              Eq(MakeInstruction(spv::OpGroupMemberDecorate,
+                                {1, 2, 96, 3, 42})));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateMissingGroupId) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidGroupId) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate 16"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidTargetId) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group 12"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateMissingTargetMemberNumber) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidTargetMemberNumber) {
+  EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0 %id1"),
+              Eq("Invalid literal number '%id1'."));
+}
+
 // TODO(dneto): OpMemberDecorate
 // TODO(dneto): OpDecorationGroup
 // TODO(dneto): OpGroupDecorate
-// TODO(dneto): OpGroupMemberDecorate
 
 }  // anonymous namespace
