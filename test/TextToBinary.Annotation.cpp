@@ -43,77 +43,68 @@ using ::testing::Eq;
 
 // Test OpDecorate
 
-// A single test case for a simple OpDecorate.
-// Simple decorations have no operands, or just literal numbers
-// as operands.
-struct DecorateSimpleCase {
-  // Place the enum value first, so it's easier to read the binary dumps when
-  // the test fails.
-  spv::Decoration decoration;
-  std::string name;
-  std::vector<uint32_t> operands;
-};
-
-using OpDecorateSimpleTest =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<DecorateSimpleCase>>;
+using OpDecorateSimpleTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<spv::Decoration>>>;
 
 TEST_P(OpDecorateSimpleTest, AnySimpleDecoration) {
   // This string should assemble, but should not validate.
   std::stringstream input;
-  input << "OpDecorate %1 " << GetParam().name;
-  for (auto operand : GetParam().operands) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, uint32_t(GetParam().decoration)};
-  expected_operands.insert(expected_operands.end(), GetParam().operands.begin(),
-                           GetParam().operands.end());
+  input << "OpDecorate %1 " << GetParam().name();
+  for (auto operand : GetParam().operands()) input << " " << operand;
+  std::vector<uint32_t> expected_operands{1, uint32_t(GetParam().value())};
+  expected_operands.insert(expected_operands.end(),
+                           GetParam().operands().begin(),
+                           GetParam().operands().end());
   EXPECT_THAT(CompiledInstructions(input.str()),
               Eq(MakeInstruction(spv::OpDecorate, expected_operands)));
 }
 
 #define CASE(NAME) spv::Decoration##NAME, #NAME
-INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimple, OpDecorateSimpleTest,
-                        ::testing::ValuesIn(std::vector<DecorateSimpleCase>{
-                          // The operand literal values are arbitrarily chosen,
-                          // but there are the right number of them.
-                            {CASE(RelaxedPrecision), {}},
-                            {CASE(SpecId), {100}},
-                            {CASE(Block), {}},
-                            {CASE(BufferBlock), {}},
-                            {CASE(RowMajor), {}},
-                            {CASE(ColMajor), {}},
-                            {CASE(ArrayStride), {4}},
-                            {CASE(MatrixStride), {16}},
-                            {CASE(GLSLShared), {}},
-                            {CASE(GLSLPacked), {}},
-                            {CASE(CPacked), {}},
-                            {CASE(Smooth), {}},
-                            {CASE(NoPerspective), {}},
-                            {CASE(Flat), {}},
-                            {CASE(Patch), {}},
-                            {CASE(Centroid), {}},
-                            {CASE(Sample), {}},
-                            {CASE(Invariant), {}},
-                            {CASE(Restrict), {}},
-                            {CASE(Aliased), {}},
-                            {CASE(Volatile), {}},
-                            {CASE(Constant), {}},
-                            {CASE(Coherent), {}},
-                            {CASE(NonWritable), {}},
-                            {CASE(NonReadable), {}},
-                            {CASE(Uniform), {}},
-                            {CASE(SaturatedConversion), {}},
-                            {CASE(Stream), {2}},
-                            {CASE(Location), {6}},
-                            {CASE(Component), {3}},
-                            {CASE(Index), {14}},
-                            {CASE(Binding), {19}},
-                            {CASE(DescriptorSet), {7}},
-                            {CASE(Offset), {12}},
-                            {CASE(XfbBuffer), {1}},
-                            {CASE(XfbStride), {8}},
-                            {CASE(NoContraction), {}},
-                            {CASE(InputTargetIndex), {}},
-                            {CASE(Alignment), {16}},
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryDecorateSimple, OpDecorateSimpleTest,
+    ::testing::ValuesIn(std::vector<EnumCase<spv::Decoration>>{
+        // The operand literal values are arbitrarily chosen,
+        // but there are the right number of them.
+        {CASE(RelaxedPrecision), {}},
+        {CASE(SpecId), {100}},
+        {CASE(Block), {}},
+        {CASE(BufferBlock), {}},
+        {CASE(RowMajor), {}},
+        {CASE(ColMajor), {}},
+        {CASE(ArrayStride), {4}},
+        {CASE(MatrixStride), {16}},
+        {CASE(GLSLShared), {}},
+        {CASE(GLSLPacked), {}},
+        {CASE(CPacked), {}},
+        {CASE(Smooth), {}},
+        {CASE(NoPerspective), {}},
+        {CASE(Flat), {}},
+        {CASE(Patch), {}},
+        {CASE(Centroid), {}},
+        {CASE(Sample), {}},
+        {CASE(Invariant), {}},
+        {CASE(Restrict), {}},
+        {CASE(Aliased), {}},
+        {CASE(Volatile), {}},
+        {CASE(Constant), {}},
+        {CASE(Coherent), {}},
+        {CASE(NonWritable), {}},
+        {CASE(NonReadable), {}},
+        {CASE(Uniform), {}},
+        {CASE(SaturatedConversion), {}},
+        {CASE(Stream), {2}},
+        {CASE(Location), {6}},
+        {CASE(Component), {3}},
+        {CASE(Index), {14}},
+        {CASE(Binding), {19}},
+        {CASE(DescriptorSet), {7}},
+        {CASE(Offset), {12}},
+        {CASE(XfbBuffer), {1}},
+        {CASE(XfbStride), {8}},
+        {CASE(NoContraction), {}},
+        {CASE(InputTargetIndex), {}},
+        {CASE(Alignment), {16}},
+    }));
 #undef CASE
 
 // A single test case for an enum decoration.
