@@ -77,10 +77,12 @@ TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
               Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
   EXPECT_THAT(CompiledInstructions("OpConstant  %a %b !123", kCAF),
               Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
-  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B %1 !2 123", kCAF));
+  EXPECT_THAT(CompiledInstructions("!0x0004002B %1 !2 123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
   EXPECT_THAT(CompiledInstructions("OpConstant !1 %b !123", kCAF),
-            Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
-  // EXPECT_EQ(original, CompileSuccessfully("!0x0004002B !1 !2 !123", kCAF));
+              Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
+  EXPECT_THAT(CompiledInstructions("!0x0004002B !1 !2 !123", kCAF),
+              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
 }
 
 TEST_F(ImmediateIntTest, AnyWordAfterEqualsAndOpCode) {
@@ -112,10 +114,9 @@ TEST_F(ImmediateIntTest, OpCodeInAssignment) {
 
 // Literal integers after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
-  const SpirvVector original = CompiledInstructions(
-      "OpTypeInt %1 8 1", kCAF);
+  const SpirvVector original = CompiledInstructions("OpTypeInt %1 8 1", kCAF);
   // TODO(deki): uncomment assertions below and make them pass.
-  // EXPECT_EQ(original, CompileSuccessfully("!0x00040015 1 8 1", kCAF));
+  EXPECT_EQ(original, CompiledInstructions("!0x00040015 1 8 1", kCAF));
   EXPECT_EQ(original, CompiledInstructions("OpTypeInt !1 8 1", kCAF));
 
   // 64-bit integer literal.
