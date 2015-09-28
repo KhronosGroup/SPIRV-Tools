@@ -343,26 +343,6 @@ spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral) {
   return SPV_SUCCESS;
 }
 
-namespace {
-
-// True if type is an ID type, false otherwise.
-bool isIdType(spv_operand_type_t type) {
-  switch (type) {
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
-    case SPV_OPERAND_TYPE_ID:
-    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_RESULT_ID:
-      return true;
-    default:
-      return false;
-  }
-  return false;
-}
-
-}  // anonymous namespace
-
 spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
                                      const spv_operand_type_t type,
                                      const char *textValue, uint32_t *pValue) {
