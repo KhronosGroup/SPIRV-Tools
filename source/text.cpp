@@ -182,7 +182,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar &grammar,
     context->seekForward(size);
     pInst->words[pInst->wordCount] = immediateInt;
     pInst->wordCount += 1;
-    spvSwitchToAlternateParsingAfterImmediate(pExpectedOperands);
+    *pExpectedOperands =
+        spvAlternatePatternFollowingImmediate(*pExpectedOperands);
     return SPV_SUCCESS;
   }
 

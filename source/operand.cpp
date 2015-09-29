@@ -1610,22 +1610,17 @@ spv_operand_type_t spvTakeFirstMatchableOperand(
   return result;
 }
 
-void spvSwitchToAlternateParsingAfterImmediate(
-    spv_operand_pattern_t* pExpectedOperands) {
-  if (pExpectedOperands->empty()) {
-    pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
-  } else if (pExpectedOperands->size() == 1 &&
-             (*pExpectedOperands)[0] == SPV_OPERAND_TYPE_RESULT_ID) {
-    // Must preserve the result-id position.
-    pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
-  } else {
-    // Must preserve the result-id position.
-    for (auto& operand : *pExpectedOperands) {
-      if (operand != SPV_OPERAND_TYPE_RESULT_ID) {
-        // This may end up inserting multiple SPV_OPERAND_TYPE_OPTIONAL_CIVs,
-        // but that's OK because it's an optional type.
-        operand = SPV_OPERAND_TYPE_OPTIONAL_CIV;
-      }
+spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
+    const spv_operand_pattern_t& pattern) {
+  spv_operand_pattern_t alternatePattern;
+  for (const auto& operand : pattern) {
+    if (operand == SPV_OPERAND_TYPE_RESULT_ID) {
+      alternatePattern.push_back(operand);
+      alternatePattern.push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
+      return alternatePattern;
     }
+    alternatePattern.push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
   }
+  // No result-id found, so just expect CIVs.
+  return {SPV_OPERAND_TYPE_OPTIONAL_CIV};
 }

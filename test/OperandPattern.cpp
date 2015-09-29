@@ -83,13 +83,16 @@ TEST_P(MaskExpansionTest, Sample) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
 
   spv_operand_pattern_t pattern(GetParam().initial);
-  spvPrependOperandTypesForMask(operandTable, GetParam().type, GetParam().mask, &pattern);
+  spvPrependOperandTypesForMask(operandTable, GetParam().type, GetParam().mask,
+                                &pattern);
   EXPECT_THAT(pattern, Eq(GetParam().expected));
 }
 
 // These macros let us write non-trivial examples without too much text.
-#define SUFFIX0  SPV_OPERAND_TYPE_NONE, SPV_OPERAND_TYPE_ID
-#define SUFFIX1  SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE, SPV_OPERAND_TYPE_STORAGE_CLASS
+#define SUFFIX0 SPV_OPERAND_TYPE_NONE, SPV_OPERAND_TYPE_ID
+#define SUFFIX1                                              \
+  SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE, \
+      SPV_OPERAND_TYPE_STORAGE_CLASS
 INSTANTIATE_TEST_CASE_P(
     OperandPattern, MaskExpansionTest,
     ::testing::ValuesIn(std::vector<MaskExpansionCase>{
@@ -112,7 +115,7 @@ INSTANTIATE_TEST_CASE_P(
          {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
         // Volatile with Aligned still has just one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-         spv::MemoryAccessVolatileMask| spv::MemoryAccessAlignedMask,
+         spv::MemoryAccessVolatileMask | spv::MemoryAccessAlignedMask,
          {SUFFIX1},
          {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
     }));
@@ -164,5 +167,112 @@ TEST_P(VariableOperandExpansionTest, NonMatchableOperandsExpand) {
 INSTANTIATE_TEST_CASE_P(NonMatchableOperandExpansion,
                         VariableOperandExpansionTest,
                         ::testing::ValuesIn(allOperandTypes()));
+
+TEST(AlternatePatternFollowingImmediate, Empty) {
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate({}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, SingleElement) {
+  // Spot-check a random selection of types.
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_CAPABILITY}),
+      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_LOOP_CONTROL}),
+      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, SingleResultId) {
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_RESULT_ID}),
+      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+                               SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, MultipleNonResultIds) {
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate(
+          {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER,
+           SPV_OPERAND_TYPE_CAPABILITY, SPV_OPERAND_TYPE_LOOP_CONTROL,
+           SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, SPV_OPERAND_TYPE_ID,
+           SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE}),
+      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, ResultIdFront) {
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_RESULT_ID,
+                   SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_DIMENSIONALITY,
+                   SPV_OPERAND_TYPE_LINKAGE_TYPE,
+                   SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
+                   SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
+                   SPV_OPERAND_TYPE_VARIABLE_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, ResultIdMiddle) {
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_FP_ROUNDING_MODE,
+                   SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate(
+          {SPV_OPERAND_TYPE_DIMENSIONALITY, SPV_OPERAND_TYPE_LINKAGE_TYPE,
+           SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
+           SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_FP_ROUNDING_MODE,
+           SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_VARIABLE_ID}),
+      Eq(spv_operand_pattern_t{
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_RESULT_ID,
+          SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
+
+TEST(AlternatePatternFollowingImmediate, ResultIdBack) {
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID}),
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
+                  {SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
+                   SPV_OPERAND_TYPE_RESULT_ID}),
+              Eq(spv_operand_pattern_t{
+                  SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                  SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+  EXPECT_THAT(
+      spvAlternatePatternFollowingImmediate(
+          {SPV_OPERAND_TYPE_DIMENSIONALITY, SPV_OPERAND_TYPE_LINKAGE_TYPE,
+           SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
+           SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
+           SPV_OPERAND_TYPE_VARIABLE_ID, SPV_OPERAND_TYPE_RESULT_ID}),
+      Eq(spv_operand_pattern_t{
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
+          SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+}
 
 }  // anonymous namespace
