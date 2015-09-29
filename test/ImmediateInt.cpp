@@ -68,7 +68,6 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
 using ImmediateIntTest = TextToBinaryTest;
 
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
-  // TODO(deki): uncomment assertions below and make them pass.
   EXPECT_THAT(CompiledInstructions("!0x0004002B %a %b 123", kCAF),
               Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
   EXPECT_THAT(CompiledInstructions("OpConstant !1 %b 123", kCAF),
@@ -115,7 +114,6 @@ TEST_F(ImmediateIntTest, OpCodeInAssignment) {
 // Literal integers after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   const SpirvVector original = CompiledInstructions("OpTypeInt %1 8 1", kCAF);
-  // TODO(deki): uncomment assertions below and make them pass.
   EXPECT_EQ(original, CompiledInstructions("!0x00040015 1 8 1", kCAF));
   EXPECT_EQ(original, CompiledInstructions("OpTypeInt !1 8 1", kCAF));
 
@@ -127,6 +125,7 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 -123", kCAF),
             CompiledInstructions("OpConstant %10 !2 -123", kCAF));
 
+  // TODO(deki): uncomment assertions below and make them pass.
   // Hex value(s).
   // EXPECT_EQ(CompileSuccessfully("OpConstant %10 %1 0x12345678", kCAF),
   //           CompileSuccessfully("OpConstant %10 !1 0x12345678", kCAF));
@@ -261,14 +260,14 @@ TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
 
 // !<integer> followed by, eg, an enum or '=' or a random bareword.
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
-// TODO(deki): uncomment assertions below and make them pass.
   EXPECT_THAT(CompileFailure("OpMemoryModel !0 OpenCL"), HasSubstr("OpenCL"));
   EXPECT_THAT(CompileFailure("!1 %0 = !2"), HasSubstr("="));
-#if 0
   // Immediate integers longer than one 32-bit word.
   EXPECT_THAT(CompileFailure("!5000000000"), HasSubstr("5000000000"));
-  EXPECT_THAT(CompileFailure("!0x00020049 !5000000000"), HasSubstr("5000000000"));
-#endif
+  EXPECT_THAT(CompileFailure("!999999999999999999"),
+              HasSubstr("999999999999999999"));
+  EXPECT_THAT(CompileFailure("!0x00020049 !5000000000"),
+              HasSubstr("5000000000"));
   EXPECT_THAT(CompileFailure("OpMemoryModel !0 random_bareword"),
               HasSubstr("random_bareword"));
 }
