@@ -1,0 +1,45 @@
+Operand type,Example instruction,Notes,example unit test
+,,,
+,,,
+"    OperandNone,",UNUSED,not in grammar,
+"    OperandId,",many,ID,too many to count
+"    OperandOptionalId,","Source, Variable",OPTIONAL_ID,OpSourceAcceptsOptionalFileId
+"    OperandOptionalImage,",ImageFetch,,ImageOperandsTest
+"    OperandVariableIds,",ExtInst,,
+"    OperandOptionalLiteral,",ExecutionMode,,AnyExecutionMode
+"    OperandOptionalLiteralString,",Source,,OpSourceAcceptsOptionalSourceText
+"    OperandVariableLiterals,",Decorate,,OpDecorateSimpleTest
+"    OperandVariableIdLiteral,",GroupMemberDecorate,,GroupMemberDecorate*
+"    OperandVariableLiteralId, // zero or more pairs of (Literal, Id)",Switch,,Switch*
+"    OperandLiteralNumber,","Source, Switch, ...",,Switch*
+"    OperandLiteralString,",SourceContinued,,OpSourceContinued
+"    OperandSource,",Source,,OpSource
+"    OperandExecutionModel,",EntryPoint,,OpEntryPointTest
+"    OperandAddressing,",OpMemoryModel,,OpMemoryModelTest
+"    OperandMemory,",OpMemoryModel,,OpMemoryModelTest
+"    OperandExecutionMode,",OpExecutionMode,,OpExecutionModeTest
+"    OperandStorage,","TypePointer, TypeForwardPointer, Variable",,StorageClassTest
+"    OperandDimensionality,",TypeImage,,DimTest/AnyDim
+"    OperandSamplerAddressingMode,",ConstantSampler,,SamplerAddressingModeTest
+"    OperandSamplerFilterMode,",ConstantSampler,,AnySamplerFilterMode
+"    OperandSamplerImageFormat,",TypeImage,SAMPLER_IMAGE_FORMAT,ImageFormatTest
+"    OperandImageChannelOrder,",UNUSED,returned as result value only,
+"    OperandImageChannelDataType,",UNUSED,returned as result value only,
+"    OperandImageOperands,",UNUSED,used to make a spec section,
+"    OperandFPFastMath,",OpDecorate,,CombinedFPFastMathMask
+"    OperandFPRoundingMode,",OpDecorate,,OpDecorateEnumTest
+"    OperandLinkageType,",OpDecorate,,OpDecorateLinkageTest
+"    OperandAccessQualifier,",OpTypePipe,,AnyAccessQualifier
+"    OperandFuncParamAttr,",OpDecorate,,TextToBinaryDecorateFuncParamAttr
+"    OperandDecoration,",OpDecorate,,AnyAccessQualifier
+"    OperandBuiltIn,",OpDecorate,,TextToBinaryDecorateBultIn
+"    OperandSelect,",SelectionMerge,,TextToBinarySelectionMerge
+"    OperandLoop,",LoopMerge,,CombinedLoopControlMask
+"    OperandFunction,",Function,,AnySingleFunctionControlMask
+"    OperandMemorySemantics,",OpMemoryBarrier,"it's an ID, not in grammar",OpMemoryBarrier*
+"    OperandMemoryAccess,",UNUSED,"should be on opstore, but hacked in opcode.cpp",
+"    OperandScope,",MemoryBarrier,"it's an ID, not in grammar",OpMemoryBarrier*
+"    OperandGroupOperation,",GroupIAdd,,GroupOperationTest
+"    OperandKernelEnqueueFlags,",OpEnqueueKernel,"it's an ID, not in grammar",should not have one
+"    OperandKernelProfilingInfo,",OpCaptureEventProfilingInfo,"it's an ID, not in grammar",should not have one
+"    OperandCapability,",Capability,,OpCapabilityTest
