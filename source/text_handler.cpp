@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <tuple>
 
 #include "binary.h"
 #include "ext_inst.h"
@@ -219,6 +220,12 @@ spv_result_t AssemblyGrammar::lookupOpcode(const char *name,
                                            spv_opcode_desc *desc) const {
   return spvOpcodeTableNameLookup(opcodeTable_, name, desc);
 }
+
+spv_result_t AssemblyGrammar::lookupOpcode(Op opcode,
+                                           spv_opcode_desc *desc) const {
+  return spvOpcodeTableValueLookup(opcodeTable_, opcode, desc);
+}
+
 spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
                                             const char *name, size_t name_len,
                                             spv_operand_desc *desc) const {
@@ -358,5 +365,61 @@ spv_result_t AssemblyContext::binaryEncodeString(
 
   return SPV_SUCCESS;
 }
+
+spv_result_t AssemblyContext::recordTypeDefinition(
+    const spv_instruction_t *pInst) {
+  uint32_t value = pInst->words[1];
+  if (types_.find(value) != types_.end()) {
+    diagnostic() << "Value " << value
+                 << " has already been used to generate a type";
+    return SPV_ERROR_INVALID_VALUE;
+  }
+
+  if (pInst->opcode == OpTypeInt) {
+    if (pInst->words.size() != 4) {
+      diagnostic() << "Invalid OpTypeInt instruction";
+      return SPV_ERROR_INVALID_VALUE;
+    }
+    types_[value] = { pInst->words[2], IdTypeClass::kScalarIntegerType };
+  } else if (pInst->opcode == OpTypeFloat) {
+    if (pInst->words.size() != 3) {
+      diagnostic() << "Invalid OpTypeFloat instruction";
+      return SPV_ERROR_INVALID_VALUE;
+    }
+    types_[value] = { pInst->words[2], IdTypeClass::kScalarFloatType };
+  } else {
+    types_[value] = { 0, IdTypeClass::kOtherType };
+  }
+  return SPV_SUCCESS;
+}
+
+IdType AssemblyContext::getTypeOfTypeGeneratingValue(uint32_t value) const {
+  auto type = types_.find(value);
+  if (type == types_.end()) {
+    return {0, IdTypeClass::kBottom};
+  }
+  return std::get<1>(*type);
+}
+
+IdType AssemblyContext::getTypeOfValueInstruction(uint32_t value) const {
+  auto type_value = value_types_.find(value);
+  if (type_value == value_types_.end()) {
+    return { 0, IdTypeClass::kBottom};
+  }
+  return getTypeOfTypeGeneratingValue(std::get<1>(*type_value));
+}
+
+spv_result_t AssemblyContext::recordTypeIdForValue(uint32_t value,
+                                                   uint32_t type) {
+  bool successfully_inserted = false;
+  std::tie(std::ignore, successfully_inserted) =
+      value_types_.insert(std::make_pair(value, type));
+  if (!successfully_inserted) {
+    diagnostic() << "Value is being defined a second time";
+    return SPV_ERROR_INVALID_VALUE;
+  }
+  return SPV_SUCCESS;
+}
+
 }
 

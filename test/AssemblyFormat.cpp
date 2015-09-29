@@ -31,7 +31,7 @@ namespace {
 using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, EncodeAAFTextAsAAF) {
-  SetText("%2 = OpConstant %1 1000");
+  SetText("%2 = OpTypeMatrix %1 1000");
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
@@ -42,7 +42,7 @@ TEST_F(TextToBinaryTest, EncodeAAFTextAsAAF) {
 }
 
 TEST_F(TextToBinaryTest, EncodeAAFTextAsCAF) {
-  SetText("%2 = OpConstant %1 1000");
+  SetText("%2 = OpTypeMatrix %1 1000");
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
@@ -55,7 +55,7 @@ TEST_F(TextToBinaryTest, EncodeAAFTextAsCAF) {
 }
 
 TEST_F(TextToBinaryTest, EncodeCAFTextAsCAF) {
-  SetText("OpConstant %1 %2 1000");
+  SetText("OpTypeMatrix %1 %2 1000");
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
@@ -66,7 +66,7 @@ TEST_F(TextToBinaryTest, EncodeCAFTextAsCAF) {
 }
 
 TEST_F(TextToBinaryTest, EncodeCAFTextAsAAF) {
-  SetText("OpConstant %1 %2 1000");
+  SetText("OpTypeMatrix %1 %2 1000");
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
@@ -74,13 +74,13 @@ TEST_F(TextToBinaryTest, EncodeCAFTextAsAAF) {
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <result-id> at the beginning of an instruction, found "
-      "'OpConstant'.",
+      "'OpTypeMatrix'.",
       diagnostic->error);
   EXPECT_EQ(0, diagnostic->position.line);
 }
 
 TEST_F(TextToBinaryTest, EncodeMixedTextAsAAF) {
-  SetText("OpConstant %1 %2 1000\n%3 = OpConstant %1 2000");
+  SetText("OpTypeMatrix %1 %2 1000\n%3 = OpTypeMatrix %1 2000");
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
@@ -88,13 +88,13 @@ TEST_F(TextToBinaryTest, EncodeMixedTextAsAAF) {
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <result-id> at the beginning of an instruction, found "
-      "'OpConstant'.",
+      "'OpTypeMatrix'.",
       diagnostic->error);
   EXPECT_EQ(0, diagnostic->position.line);
 }
 
 TEST_F(TextToBinaryTest, EncodeMixedTextAsCAF) {
-  SetText("OpConstant %1 %2 1000\n%3 = OpConstant %1 2000");
+  SetText("OpTypeMatrix %1 %2 1000\n%3 = OpTypeMatrix %1 2000");
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextWithFormatToBinary(
                 text.str, text.length, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
@@ -111,7 +111,7 @@ const char* kBound4Preamble =
 
 TEST_F(TextToBinaryTest, DecodeAAFAsAAF) {
   const std::string assembly =
-      "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n";
+      "%1 = OpTypeMatrix %2 1000\n%3 = OpTypeMatrix %2 2000\n";
   SetText(assembly);
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
@@ -130,7 +130,7 @@ TEST_F(TextToBinaryTest, DecodeAAFAsAAF) {
 
 TEST_F(TextToBinaryTest, DecodeAAFAsCAF) {
   const std::string assembly =
-      "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n";
+      "%1 = OpTypeMatrix %2 1000\n%3 = OpTypeMatrix %2 2000\n";
   SetText(assembly);
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
@@ -144,13 +144,14 @@ TEST_F(TextToBinaryTest, DecodeAAFAsCAF) {
                                       SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
                                       &decoded_text, &diagnostic));
   EXPECT_EQ(std::string(kBound4Preamble) +
-                "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n",
+                "OpTypeMatrix %1 %2 1000\nOpTypeMatrix %3 %2 2000\n",
             decoded_text->str);
   spvTextDestroy(decoded_text);
 }
 
 TEST_F(TextToBinaryTest, DecodeCAFAsAAF) {
-  const std::string assembly = "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n";
+  const std::string assembly =
+      "OpTypeMatrix %1 %2 1000\nOpTypeMatrix %3 %2 2000\n";
   SetText(assembly);
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
@@ -164,13 +165,14 @@ TEST_F(TextToBinaryTest, DecodeCAFAsAAF) {
                                       SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
                                       &decoded_text, &diagnostic));
   EXPECT_EQ(std::string(kBound4Preamble) +
-                "%2 = OpConstant %1 1000\n%3 = OpConstant %1 2000\n",
+                "%1 = OpTypeMatrix %2 1000\n%3 = OpTypeMatrix %2 2000\n",
             decoded_text->str);
   spvTextDestroy(decoded_text);
 }
 
 TEST_F(TextToBinaryTest, DecodeCAFAsCAF) {
-  const std::string assembly = "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n";
+  const std::string assembly =
+      "OpTypeMatrix %1 %2 1000\nOpTypeMatrix %3 %2 2000\n";
   SetText(assembly);
   EXPECT_EQ(SPV_SUCCESS,
             spvTextWithFormatToBinary(
@@ -184,7 +186,7 @@ TEST_F(TextToBinaryTest, DecodeCAFAsCAF) {
                                       SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
                                       &decoded_text, &diagnostic));
   EXPECT_EQ(std::string(kBound4Preamble) +
-                "OpConstant %1 %2 1000\nOpConstant %1 %3 2000\n",
+                "OpTypeMatrix %1 %2 1000\nOpTypeMatrix %3 %2 2000\n",
             decoded_text->str);
   spvTextDestroy(decoded_text);
 }

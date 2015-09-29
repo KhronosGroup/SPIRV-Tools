@@ -189,4 +189,11 @@ int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
 /// @return zero if false, non-zero otherwise
 int32_t spvOpcodeIsValue(Op opcode);
 
+/// @brief Determine if the Opcode generates a type
+///
+/// @param[in] opcode the opcode
+///
+/// @return zero if false, non-zero otherwise
+int32_t spvOpcodeGeneratesType(Op op);
+
 #endif

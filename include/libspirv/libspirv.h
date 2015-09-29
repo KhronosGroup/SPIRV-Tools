@@ -152,6 +152,7 @@ typedef enum spv_endianness_t {
 typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
+  SPV_OPERAND_TYPE_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
   SPV_OPERAND_TYPE_LITERAL_NUMBER,
   // A literal number that can (but is not required to) expand multiple words.

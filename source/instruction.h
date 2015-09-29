@@ -40,6 +40,9 @@ struct spv_instruction_t {
   Op opcode;
   spv_ext_inst_type_t extInstType;
 
+  // The Id of the result type, if this instruction has one.  Zero otherwise.
+  uint32_t resultTypeId;
+
   // The instruction, as a sequence of 32-bit words.
   // For a regular instruction the opcode and word count are combined
   // in words[0], as described in the SPIR-V spec.

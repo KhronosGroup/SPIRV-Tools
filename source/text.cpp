@@ -209,6 +209,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
   switch (type) {
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
@@ -224,6 +225,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         return SPV_ERROR_INVALID_TEXT;
       }
       const uint32_t id = context->spvNamedIdAssignOrGet(textValue);
+      if (type == SPV_OPERAND_TYPE_TYPE_ID) pInst->resultTypeId = id;
       spvInstructionAddWord(pInst, id);
     } break;
     case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
@@ -255,6 +257,40 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                               << "'.";
         return SPV_ERROR_INVALID_TEXT;
       }
+
+      // The encoding for OpConstant, OpSpecConstant and OpSwitch all
+      // depend on either their own result-id or the result-id of
+      // one of their parameters.
+      if (OpConstant == pInst->opcode || OpSpecConstant == pInst->opcode) {
+        // Special cases for encoding possibly non-32-bit literals here.
+        libspirv::IdType type =
+            context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
+        if (!libspirv::isScalarFloating(type) &&
+            !libspirv::isScalarIntegral(type)) {
+          spv_opcode_desc d;
+          const char* opcode_name = "opcode";
+          if (SPV_SUCCESS == grammar.lookupOpcode(pInst->opcode, &d)) {
+            opcode_name = d->name;
+          }
+          context->diagnostic()
+              << "Type for " << opcode_name
+              << " must be a scalar floating point or integer type";
+          return SPV_ERROR_INVALID_TEXT;
+        }
+      } else if (pInst->opcode == OpSwitch) {
+        // We need to know the value of the selector.
+        libspirv::IdType type =
+            context->getTypeOfValueInstruction(pInst->words[1]);
+        if (type.type_class != libspirv::IdTypeClass::kScalarIntegerType) {
+          context->diagnostic()
+              << "The selector operand for OpSwitch must be the result"
+                 " of an instruction that generates an integer scalar";
+          return SPV_ERROR_INVALID_TEXT;
+        }
+      }
+      // TODO(awoloszyn): Generate the correct assembly for arbitrary
+      // bitwidths here instead of falling though.
+
       switch (literal.type) {
         // We do not have to print diagnostics here because spvBinaryEncode*
         // prints diagnostic messages on failure.
@@ -437,7 +473,6 @@ spv_result_t encodeInstructionStartingWithImmediate(
   }
   return SPV_SUCCESS;
 }
-
 }  // anonymous namespace
 
 /// @brief Translate single Opcode and operands to binary form
@@ -622,6 +657,18 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
       context->setPosition(nextPosition);
     }
+  }
+
+  if (spvOpcodeGeneratesType(pInst->opcode)) {
+    if (context->recordTypeDefinition(pInst) != SPV_SUCCESS) {
+      return SPV_ERROR_INVALID_TEXT;
+    }
+  } else if (opcodeEntry->hasType) {
+    // SPIR-V dictates that if an instruction has both a return value and a
+    // type ID then the type id is first, and the return value is second.
+    assert(opcodeEntry->hasResult &&
+           "Unknown opcode: has a type but no result.");
+    context->recordTypeIdForValue(pInst->words[2], pInst->words[1]);
   }
 
   if (pInst->words.size() > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {

@@ -219,11 +219,11 @@ TEST(BinaryToTextSmall, LiteralInt64) {
   error = spvBinaryToText(binary->code, binary->wordCount,
                           SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                           operandTable, extInstTable, &text, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, error);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
   }
+  ASSERT_EQ(SPV_SUCCESS, error);
   const std::string header =
       "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
       "Bound: 3\n; Schema: 0\n";
@@ -252,11 +252,11 @@ TEST(BinaryToTextSmall, LiteralDouble) {
   error = spvBinaryToText(binary->code, binary->wordCount,
                           SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                           operandTable, extInstTable, &text, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, error);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
   }
+  ASSERT_EQ(SPV_SUCCESS, error);
   const std::string output =
       R"(; SPIR-V
 ; Version: 99

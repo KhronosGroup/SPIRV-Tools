@@ -119,6 +119,7 @@ inline std::vector<uint32_t> MakeInstruction(
   return result;
 }
 
+
 // Returns a vector of words representing a single instruction with the
 // given opcode and whose operands are the concatenation of the two given
 // argument lists.

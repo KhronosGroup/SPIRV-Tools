@@ -68,20 +68,20 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
 using ImmediateIntTest = TextToBinaryTest;
 
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
-  EXPECT_THAT(CompiledInstructions("!0x0004002B %a %b 123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
-  EXPECT_THAT(CompiledInstructions("OpConstant !1 %b 123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
-  EXPECT_THAT(CompiledInstructions("OpConstant %1 !2 123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
-  EXPECT_THAT(CompiledInstructions("OpConstant  %a %b !123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
-  EXPECT_THAT(CompiledInstructions("!0x0004002B %1 !2 123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
-  EXPECT_THAT(CompiledInstructions("OpConstant !1 %b !123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 1, 123})));
-  EXPECT_THAT(CompiledInstructions("!0x0004002B !1 !2 !123", kCAF),
-              Eq(MakeInstruction(spv::OpConstant, {1, 2, 123})));
+  EXPECT_THAT(CompiledInstructions("!0x00040018 %a %b %123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2,3 })));
+  EXPECT_THAT(CompiledInstructions("OpTypeMatrix !1 %b %123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 1, 2})));
+  EXPECT_THAT(CompiledInstructions("OpTypeMatrix %1 !2 %123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2, 2})));
+  EXPECT_THAT(CompiledInstructions("OpTypeMatrix  %a %b !123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2, 123})));
+  EXPECT_THAT(CompiledInstructions("!0x00040018 %1 !2 %123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2, 2})));
+  EXPECT_THAT(CompiledInstructions("OpTypeMatrix !1 %b !123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 1, 123})));
+  EXPECT_THAT(CompiledInstructions("!0x00040018 !1 !2 !123", kCAF),
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2, 123})));
 }
 
 TEST_F(ImmediateIntTest, AnyWordAfterEqualsAndOpCode) {
@@ -118,12 +118,16 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   EXPECT_EQ(original, CompiledInstructions("OpTypeInt !1 8 1", kCAF));
 
   // 64-bit integer literal.
-  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 5000000000", kCAF),
-            CompiledInstructions("OpConstant %10 !2 5000000000", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpTypeInt %i64 64 0\n"
+                                 "OpConstant %i64 %2 5000000000", kCAF),
+            CompiledInstructions("OpTypeInt %i64 64 0\n"
+                                 "OpConstant %i64 !2 5000000000", kCAF));
 
   // Negative integer.
-  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 -123", kCAF),
-            CompiledInstructions("OpConstant %10 !2 -123", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpTypeInt %i64 32 1\n"
+                                 "OpConstant %i64 %2 -123", kCAF),
+            CompiledInstructions("OpTypeInt %i64 32 1\n"
+                                 "OpConstant %i64 !2 -123", kCAF));
 
   // TODO(deki): uncomment assertions below and make them pass.
   // Hex value(s).
@@ -136,16 +140,16 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
 
 // Literal floats after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
-  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 0.123", kCAF),
-            CompiledInstructions("OpConstant %10 !2 0.123", kCAF));
-  EXPECT_EQ(CompiledInstructions("OpConstant %10 %2 -0.5", kCAF),
-            CompiledInstructions("OpConstant %10 !2 -0.5", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpTypeMatrix %10 %2 0.123", kCAF),
+            CompiledInstructions("OpTypeMatrix %10 !2 0.123", kCAF));
+  EXPECT_EQ(CompiledInstructions("OpTypeMatrix %10 %2 -0.5", kCAF),
+            CompiledInstructions("OpTypeMatrix %10 !2 -0.5", kCAF));
   // 64-bit float.
   EXPECT_EQ(
       CompiledInstructions(
-          "OpConstant %10 %2 9999999999999999999999999999999999999999.9", kCAF),
+          "OpTypeMatrix %10 %2 9999999999999999999999999999999999999999.9", kCAF),
       CompiledInstructions(
-          "OpConstant %10 !2 9999999999999999999999999999999999999999.9",
+          "OpTypeMatrix %10 !2 9999999999999999999999999999999999999999.9",
           kCAF));
 }
 

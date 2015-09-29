@@ -36,6 +36,7 @@ namespace {
 
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
+using spvtest::Concatenate;
 using spvtest::TextToBinaryTest;
 using ::testing::Eq;
 
@@ -100,7 +101,6 @@ TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, expected_mask})));
 }
-
 // Test OpSwitch
 
 TEST_F(TextToBinaryTest, SwitchGoodZeroTargets) {
@@ -109,14 +109,25 @@ TEST_F(TextToBinaryTest, SwitchGoodZeroTargets) {
 }
 
 TEST_F(TextToBinaryTest, SwitchGoodOneTarget) {
-  EXPECT_THAT(CompiledInstructions("OpSwitch %selector %default 12 %target0"),
-              Eq(MakeInstruction(spv::OpSwitch, {1, 2, 12, 3})));
+  EXPECT_THAT(CompiledInstructions("%1 = OpTypeInt 32 0\n"
+                                   "%2 = OpConstant %1 52\n"
+                                   "OpSwitch %2 %default 12 %target0"),
+              Eq(Concatenate({
+                  MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
+                  MakeInstruction(spv::OpConstant, {1, 2, 52}),
+                  MakeInstruction(spv::OpSwitch, {2, 3, 12, 4})})));
 }
 
 TEST_F(TextToBinaryTest, SwitchGoodTwoTargets) {
-  EXPECT_THAT(CompiledInstructions(
-                  "OpSwitch %selector %default 12 %target0 42 %target1"),
-              Eq(MakeInstruction(spv::OpSwitch, {1, 2, 12, 3, 42, 4})));
+  EXPECT_THAT(
+      CompiledInstructions("%1 = OpTypeInt 32 0\n"
+                           "%2 = OpConstant %1 52\n"
+                           "OpSwitch %2 %default 12 %target0 42 %target1"),
+      Eq(Concatenate({
+          MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
+          MakeInstruction(spv::OpConstant, {1, 2, 52}),
+          MakeInstruction(spv::OpSwitch, {2, 3, 12, 4, 42, 5}),
+      })));
 }
 
 TEST_F(TextToBinaryTest, SwitchBadMissingSelector) {
@@ -156,11 +167,97 @@ TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralCanonicalFormat) {
 }
 
 TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
-  EXPECT_THAT(CompileFailure("OpSwitch %selector %default 12"),
+  EXPECT_THAT(CompileFailure("%1 = OpTypeInt 32 0\n"
+                             "%2 = OpConstant %1 52\n"
+                             "OpSwitch %2 %default 12"),
               Eq("Expected operand, found end of stream."));
 }
 
+struct SwitchTestCase{
+  std::string constant_type_args;
+  std::vector<uint32_t> expected_instructions;
+};
 
+using OpSwitchValidTest = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<SwitchTestCase>>;
+
+TEST_P(OpSwitchValidTest, ValidTypes)
+{
+  std::string input =
+      "%1 = OpTypeInt " + GetParam().constant_type_args + "\n"
+      "%2 = OpConstant %1 0\n"
+      "OpSwitch %2 %default 32 %4\n";
+  std::vector<uint32_t> instructions;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(GetParam().expected_instructions));
+}
+// clang-format off
+#define CASE(integer_width, integer_signedness) \
+  { #integer_width " " #integer_signedness, \
+    { Concatenate({ \
+       MakeInstruction(spv::OpTypeInt, {1, integer_width, integer_signedness}),\
+       MakeInstruction(spv::OpConstant, {1, 2, 0} ), \
+       MakeInstruction(spv::OpSwitch, {2, 3, 32, 4} )})}}
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSwitchValid, OpSwitchValidTest,
+    ::testing::ValuesIn(std::vector<SwitchTestCase>{
+      CASE(32, 0),
+      CASE(16, 0),
+      // TODO(dneto): For a 64-bit selector, the literals should take up two
+      // words, in little-endian sequence.  In that case the OpSwitch operands
+      // would be {2, 3, 32, 0, 4}.
+      CASE(64, 0),
+      // TODO(dneto): Try signed cases also.
+    }));
+#undef CASE
+// clang-format on
+
+using OpSwitchInvalidTypeTestCase = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<std::string>>;
+
+TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes)
+{
+  std::string input =
+      "%1 = " + GetParam() + "\n"
+      "%3 = OpCopyObject %1 %2\n" // We only care the type of the expression
+      "%4 = OpSwitch %3 %default 32 %c\n";
+  EXPECT_THAT(CompileFailure(input),
+              Eq(std::string(
+                  "The selector operand for OpSwitch must be the result of an "
+                  "instruction that generates an integer scalar")));
+}
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSwitchInvalidTests, OpSwitchInvalidTypeTestCase,
+    ::testing::ValuesIn(std::vector<std::string>{
+      {"OpTypeVoid",
+       "OpTypeBool",
+       "OpTypeFloat 32",
+       "OpTypeVector %a 32",
+       "OpTypeMatrix %a 32",
+       "OpTypeImage %a 1D 0 0 0 0 Unknown",
+       "OpTypeSampler",
+       "OpTypeSampledImage %a",
+       "OpTypeArray %a %b",
+       "OpTypeRuntimeArray %a",
+       "OpTypeStruct %a",
+       "OpTypeOpaque \"Foo\"",
+       "OpTypePointer UniformConstant %a",
+       "OpTypeFunction %a %b",
+       "OpTypeEvent",
+       "OpTypeDeviceEvent",
+       "OpTypeReserveId",
+       "OpTypeQueue",
+       "OpTypePipe ReadOnly",
+       "OpTypeForwardPointer %a UniformConstant",
+           // At least one thing that isn't a type at all
+       "OpNot %a %b"
+      },
+    }));
+// clang-format on
+
+//TODO(awoloszyn): Add tests for switch with different operand widths
+//                 once non-32-bit support is in.
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge
 // TODO(dneto): OpLabel

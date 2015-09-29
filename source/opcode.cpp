@@ -180,7 +180,7 @@ void spvOpcodeTableInitialize() {
     opcode.numTypes = 0;
     // Type ID always comes first, if present.
     if (opcode.hasType)
-      opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_ID;
+      opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_TYPE_ID;
     // Result ID always comes next, if present
     if (opcode.hasResult)
       opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_RESULT_ID;
@@ -804,4 +804,33 @@ int32_t spvOpcodeIsValue(Op opcode) {
     default:
       return false;
   }
+}
+
+int32_t spvOpcodeGeneratesType(Op op) {
+  switch(op) {
+    case OpTypeVoid:
+    case OpTypeBool:
+    case OpTypeInt:
+    case OpTypeFloat:
+    case OpTypeVector:
+    case OpTypeMatrix:
+    case OpTypeImage:
+    case OpTypeSampler:
+    case OpTypeSampledImage:
+    case OpTypeArray:
+    case OpTypeRuntimeArray:
+    case OpTypeStruct:
+    case OpTypeOpaque:
+    case OpTypePointer:
+    case OpTypeFunction:
+    case OpTypeEvent:
+    case OpTypeDeviceEvent:
+    case OpTypeReserveId:
+    case OpTypeQueue:
+    case OpTypePipe:
+    case OpTypeForwardPointer:
+      return true;
+    default:;
+  }
+  return 0;
 }

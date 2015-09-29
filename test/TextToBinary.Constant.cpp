@@ -36,6 +36,7 @@ namespace {
 
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
+using spvtest::Concatenate;
 using ::testing::Eq;
 
 // Test Sampler Addressing Mode enum values
@@ -89,9 +90,89 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+
+struct ConstantTestCase {
+  std::string constant_type;
+  std::string constant_value;
+  std::vector<uint32_t> expected_instructions;
+};
+
+using OpConstantValidTest = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<ConstantTestCase>>;
+
+TEST_P(OpConstantValidTest, ValidTypes)
+{
+  std::string input =
+      "%1 = " + GetParam().constant_type + "\n"
+      "%2 = OpConstant %1 " + GetParam().constant_value + "\n";
+  std::vector<uint32_t> instructions;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(GetParam().expected_instructions));
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpConstantValid, OpConstantValidTest,
+    ::testing::ValuesIn(std::vector<ConstantTestCase>{
+      {"OpTypeInt 32 0", "42",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 42})})},
+      {"OpTypeInt 32 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, static_cast<uint32_t>(-32)})})},
+      {"OpTypeFloat 32", "1.0",
+        Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x3f800000})})},
+      {"OpTypeFloat 32", "10.0",
+        Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x41200000})})},
+    }));
+// clang-format on
+
+using OpConstantInvalidTypeTest = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<std::string>>;
+
+TEST_P(OpConstantInvalidTypeTest, InvalidTypes)
+{
+  std::string input =
+      "%1 = " + GetParam() + "\n"
+      "%2 = OpConstant %1 0\n";
+  EXPECT_THAT(
+      CompileFailure(input),
+      Eq("Type for Constant must be a scalar floating point or integer type"));
+}
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpConstantInvalidValidType, OpConstantInvalidTypeTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+      {"OpTypeVoid",
+       "OpTypeBool",
+       "OpTypeVector %a 32",
+       "OpTypeMatrix %a 32",
+       "OpTypeImage %a 1D 0 0 0 0 Unknown",
+       "OpTypeSampler",
+       "OpTypeSampledImage %a",
+       "OpTypeArray %a %b",
+       "OpTypeRuntimeArray %a",
+       "OpTypeStruct %a",
+       "OpTypeOpaque \"Foo\"",
+       "OpTypePointer UniformConstant %a",
+       "OpTypeFunction %a %b",
+       "OpTypeEvent",
+       "OpTypeDeviceEvent",
+       "OpTypeReserveId",
+       "OpTypeQueue",
+       "OpTypePipe ReadOnly",
+       "OpTypeForwardPointer %a UniformConstant",
+        // At least one thing that isn't a type at all
+       "OpNot %a %b"
+      },
+    }));
+// clang-format on
+
+
 // TODO(dneto): OpConstantTrue
 // TODO(dneto): OpConstantFalse
-// TODO(dneto): OpConstant
 // TODO(dneto): OpConstantComposite
 // TODO(dneto): OpConstantSampler: other variations Param is 0 or 1
 // TODO(dneto): OpConstantNull

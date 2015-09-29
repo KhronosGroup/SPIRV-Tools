@@ -177,6 +177,7 @@ spv_result_t spvBinaryDecodeOperand(
   switch (type) {
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:

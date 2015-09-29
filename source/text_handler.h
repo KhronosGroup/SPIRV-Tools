@@ -54,6 +54,16 @@ struct IdType {
   IdTypeClass type_class;
 };
 
+// Returns true if the type is a scalar integer type.
+inline bool isScalarIntegral(const IdType& type) {
+  return type.type_class == IdTypeClass::kScalarIntegerType;
+}
+
+// Returns true if the type is a scalar floating point type.
+inline bool isScalarFloating(const IdType& type) {
+  return type.type_class == IdTypeClass::kScalarFloatType;
+}
+
 // Encapsulates the grammar to use for SPIR-V assembly.
 // Contains methods to query for valid instructions and operands.
 class AssemblyGrammar {
@@ -72,6 +82,11 @@ class AssemblyGrammar {
   // of the given name. Returns SPV_SUCCESS if the opcode was found, and
   // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
   spv_result_t lookupOpcode(const char *name, spv_opcode_desc *desc) const;
+
+  // Fills in the desc parameter with the information about the opcode
+  // of the valid. Returns SPV_SUCCESS if the opcode was found, and
+  // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
+  spv_result_t lookupOpcode(Op opcode, spv_opcode_desc *desc) const;
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and
@@ -188,6 +203,27 @@ class AssemblyContext {
   // Returns SPV_SUCCESS if the value could be correctly inserted in the the
   // instruction.
   spv_result_t binaryEncodeString(const char *value, spv_instruction_t *pInst);
+
+  // Returns the IdType associated with this type-generating value.
+  // If the type has not been previously recorded with recordTypeDefinition,
+  // { 0, IdTypeClass::kBottom } will be returned.
+  IdType getTypeOfTypeGeneratingValue(uint32_t value) const;
+
+  // Returns the IdType that represents the return value of this Value
+  // generating instruction.
+  // If the value has not been recorded with recordTypeIdForValue, or the type
+  // could not be determined { 0, IdTypeClass::kBottom } will be returned.
+  IdType getTypeOfValueInstruction(uint32_t value) const;
+
+  // Tracks the type-defining instruction. The result of the tracking can
+  // later be queried using getValueType.
+  // pInst is expected to be completely filled in by the time this instruction
+  // is called.
+  // Returns SPV_SUCCESS on success, or SPV_ERROR_INVALID_VALUE on error.
+  spv_result_t recordTypeDefinition(const spv_instruction_t* pInst);
+
+  // Tracks the relationship between the value and its type.
+  spv_result_t recordTypeIdForValue(uint32_t value, uint32_t type);
 
  private:
   // Maps ID names to their corresponding numerical ids.
