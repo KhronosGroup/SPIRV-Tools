@@ -162,12 +162,12 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
   assert(*text == '!');
   const char* begin = text + 1;
   char* end = nullptr;
-  const uint64_t parseResult = std::strtoull(begin, &end, 0);
+  const uint64_t parseResult = strtoull(begin, &end, 0);
   size_t length = end - begin;
   if (length != strlen(begin)) {
     context->diagnostic() << "Invalid immediate integer '" << text << "'.";
     return SPV_ERROR_INVALID_TEXT;
-  } else if (length > 10 || parseResult > UINT32_MAX) {
+  } else if (length > 10 || (parseResult >> 32) != 0) {
     context->diagnostic() << "Immediate integer '" << text
                           << "' is over 32 bits.";
     return SPV_ERROR_INVALID_TEXT;
