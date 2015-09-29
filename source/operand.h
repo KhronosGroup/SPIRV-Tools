@@ -51,9 +51,9 @@ using spv_operand_pattern_t = std::deque<spv_operand_type_t>;
 /// @return result code
 spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
-                                       const char *name,
+                                       const char* name,
                                        const size_t nameLength,
-                                       spv_operand_desc *pEntry);
+                                       spv_operand_desc* pEntry);
 
 /// @brief Find the operand with value in the table
 ///
@@ -66,14 +66,14 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
 spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
-                                        spv_operand_desc *pEntry);
+                                        spv_operand_desc* pEntry);
 
 /// @brief Get the name string of the operand type
 ///
 /// @param type the type of the operand
 ///
 /// @return the string name of the operand
-const char *spvOperandTypeStr(spv_operand_type_t type);
+const char* spvOperandTypeStr(spv_operand_type_t type);
 
 /// @brief Returns true if an operand of the given type is optional.
 ///
@@ -98,8 +98,8 @@ bool spvOperandIsVariable(spv_operand_type_t type);
 ///
 /// @param[in] types source array of types, ending with SPV_OPERAND_TYPE_NONE.
 /// @param[in,out] pattern the destination sequence
-void spvPrependOperandTypes(const spv_operand_type_t *types,
-                            spv_operand_pattern_t *pattern);
+void spvPrependOperandTypes(const spv_operand_type_t* types,
+                            spv_operand_pattern_t* pattern);
 
 /// @brief Inserts the operands expected after the given typed mask onto the
 /// front of the given pattern.
@@ -117,7 +117,7 @@ void spvPrependOperandTypes(const spv_operand_type_t *types,
 void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
                                    const spv_operand_type_t type,
                                    const uint32_t mask,
-                                   spv_operand_pattern_t *pattern);
+                                   spv_operand_pattern_t* pattern);
 
 /// @brief Expands an operand type representing zero or more logical operands,
 /// exactly once.
@@ -155,6 +155,6 @@ spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
 /// Switches *pExpectedOperands to the post-immediate alternate pattern, which
 /// allows a limited set of operand types.
 void spvSwitchToAlternateParsingAfterImmediate(
-    spv_operand_pattern_t *pExpectedOperands);
+    spv_operand_pattern_t* pExpectedOperands);
 
 #endif

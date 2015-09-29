@@ -214,7 +214,6 @@ typedef enum spv_operand_type_t {
   // integers, etc.
   SPV_OPERAND_TYPE_OPTIONAL_CIV,
 
-
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,

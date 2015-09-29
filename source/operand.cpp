@@ -199,7 +199,7 @@ static const spv_operand_desc_t executionModeEntries[] = {
 #undef ExecMode1
 
 static const spv_operand_desc_t storageClassEntries[] = {
-  // TODO(dneto): There are more storage classes in Rev32 and later.
+    // TODO(dneto): There are more storage classes in Rev32 and later.
     {"UniformConstant",
      StorageClassUniformConstant,
      SPV_OPCODE_FLAGS_NONE,
@@ -263,7 +263,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
 };
 
 static const spv_operand_desc_t dimensionalityEntries[] = {
-  // TODO(dneto): Update capability dependencies for Rev32
+    // TODO(dneto): Update capability dependencies for Rev32
     {"1D", Dim1D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"2D", Dim2D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"3D", Dim3D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
@@ -337,7 +337,7 @@ static const spv_operand_desc_t samplerImageFormatEntries[] = {
       SPV_OPERAND_TYPE_NONE                                                    \
     }                                                                          \
   }
-  // clang-format off
+    // clang-format off
   CASE(Unknown),
   CASE(Rgba32f),
   CASE(Rgba16f),
@@ -378,7 +378,7 @@ static const spv_operand_desc_t samplerImageFormatEntries[] = {
   CASE(Rg8ui),
   CASE(R16ui),
   CASE(R8ui),
-  // clang-format on
+// clang-format on
 #undef CASE
 };
 
@@ -545,11 +545,11 @@ static const spv_operand_desc_t decorationEntries[] = {
      CapabilityShader,
      {SPV_OPERAND_TYPE_NONE}},
     {
-     "SpecId",
-     DecorationSpecId,
-     SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader,
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER},
+        "SpecId",
+        DecorationSpecId,
+        SPV_OPCODE_FLAGS_CAPABILITIES,
+        CapabilityShader,
+        {SPV_OPERAND_TYPE_LITERAL_NUMBER},
     },
     {"Block",
      DecorationBlock,
@@ -745,7 +745,8 @@ static const spv_operand_desc_t decorationEntries[] = {
      DecorationLinkageAttributes,
      SPV_OPCODE_FLAGS_CAPABILITIES,
      CapabilityLinkage,
-     {SPV_OPERAND_TYPE_LITERAL_STRING, SPV_OPERAND_TYPE_LINKAGE_TYPE, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_STRING, SPV_OPERAND_TYPE_LINKAGE_TYPE,
+      SPV_OPERAND_TYPE_NONE}},
     {"NoContraction",
      DecorationNoContraction,
      SPV_OPCODE_FLAGS_CAPABILITIES,
@@ -754,8 +755,9 @@ static const spv_operand_desc_t decorationEntries[] = {
     {"InputTargetIndex",
      DecorationInputTargetIndex,
      SPV_OPCODE_FLAGS_CAPABILITIES,
-     CapabilityShader, // TODO(dneto): Should this be CapabilityInputTarget?
-     {SPV_OPERAND_TYPE_NONE}}, // TODO(dneto): Should this have a literal number argument?
+     CapabilityShader,  // TODO(dneto): Should this be CapabilityInputTarget?
+     {SPV_OPERAND_TYPE_NONE}},  // TODO(dneto): Should this have a literal
+                                // number argument?
     {"Alignment",
      DecorationAlignment,
      SPV_OPCODE_FLAGS_CAPABILITIES,
@@ -1100,11 +1102,11 @@ static const spv_operand_desc_t memorySemanticsEntries[] = {
      CapabilityShader,
      {SPV_OPERAND_TYPE_NONE}},
     {
-     "ImageMemory",
-     MemorySemanticsImageMemoryMask,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_NONE},
+        "ImageMemory",
+        MemorySemanticsImageMemoryMask,
+        SPV_OPCODE_FLAGS_NONE,
+        0,
+        {SPV_OPERAND_TYPE_NONE},
     },
 };
 
@@ -1120,11 +1122,11 @@ static const spv_operand_desc_t memoryAccessEntries[] = {
      0,
      {SPV_OPERAND_TYPE_NONE}},
     {
-     "Aligned",
-     MemoryAccessAlignedMask,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE},
+        "Aligned",
+        MemoryAccessAlignedMask,
+        SPV_OPCODE_FLAGS_NONE,
+        0,
+        {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE},
     },
     {"Nontemporal",
      MemoryAccessNontemporalMask,
@@ -1151,11 +1153,11 @@ static const spv_operand_desc_t scopeEntries[] = {
      0,
      {SPV_OPERAND_TYPE_NONE}},
     {
-     "Invocation",
-     ScopeInvocation,
-     SPV_OPCODE_FLAGS_NONE,
-     0,
-     {SPV_OPERAND_TYPE_NONE},
+        "Invocation",
+        ScopeInvocation,
+        SPV_OPCODE_FLAGS_NONE,
+        0,
+        {SPV_OPERAND_TYPE_NONE},
     },
 };
 
@@ -1367,7 +1369,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
      capabilityInfoEntries},
 };
 
-spv_result_t spvOperandTableGet(spv_operand_table *pOperandTable) {
+spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
 
   static const spv_operand_table_t table = {
@@ -1408,7 +1410,7 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
 spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
-                                        spv_operand_desc *pEntry) {
+                                        spv_operand_desc* pEntry) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
@@ -1427,7 +1429,7 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
   return SPV_ERROR_INVALID_LOOKUP;
 }
 
-const char *spvOperandTypeStr(spv_operand_type_t type) {
+const char* spvOperandTypeStr(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
@@ -1509,7 +1511,7 @@ const char *spvOperandTypeStr(spv_operand_type_t type) {
 void spvPrependOperandTypes(const spv_operand_type_t* types,
                             spv_operand_pattern_t* pattern) {
   const spv_operand_type_t* endTypes;
-  for (endTypes = types ; *endTypes != SPV_OPERAND_TYPE_NONE ; ++endTypes)
+  for (endTypes = types; *endTypes != SPV_OPERAND_TYPE_NONE; ++endTypes)
     ;
   pattern->insert(pattern->begin(), types, endTypes);
 }
@@ -1533,8 +1535,7 @@ void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
 
 bool spvOperandIsOptional(spv_operand_type_t type) {
   // Variable means zero or more times.
-  if (spvOperandIsVariable(type))
-    return true;
+  if (spvOperandIsVariable(type)) return true;
 
   switch (type) {
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
@@ -1565,7 +1566,6 @@ bool spvOperandIsVariable(spv_operand_type_t type) {
   return false;
 }
 
-
 bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
                                   spv_operand_pattern_t* pattern) {
   switch (type) {
@@ -1584,12 +1584,14 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER:
       // Represents Zero or more (Id, Literal number) pairs.
-      pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_ID,
-                       SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE, type});
+      pattern->insert(
+          pattern->begin(),
+          {SPV_OPERAND_TYPE_OPTIONAL_ID,
+           SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
-      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
+      pattern->insert(pattern->begin(),
+                      {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
       return true;
     default:
       break;
@@ -1597,13 +1599,14 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
   return false;
 }
 
-spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern) {
+spv_operand_type_t spvTakeFirstMatchableOperand(
+    spv_operand_pattern_t* pattern) {
   assert(!pattern->empty());
   spv_operand_type_t result;
   do {
     result = pattern->front();
     pattern->pop_front();
-  } while(spvExpandOperandSequenceOnce(result, pattern));
+  } while (spvExpandOperandSequenceOnce(result, pattern));
   return result;
 }
 
