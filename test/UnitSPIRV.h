@@ -109,12 +109,22 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
 
 // Returns a vector of words representing a single instruction with the
 // given opcode and operand words as a vector.
-inline std::vector<uint32_t> MakeInstruction(spv::Op opcode,
-                                             std::vector<uint32_t> args) {
+inline std::vector<uint32_t> MakeInstruction(
+    spv::Op opcode, const std::vector<uint32_t>& args) {
   std::vector<uint32_t> result{
       spvOpcodeMake(uint16_t(args.size() + 1), opcode)};
   result.insert(result.end(), args.begin(), args.end());
   return result;
+}
+
+// Returns a vector of words representing a single instruction with the
+// given opcode and whose operands are the concatenation of the two given
+// argument lists.
+inline std::vector<uint32_t> MakeInstruction(
+    spv::Op opcode, std::vector<uint32_t> args,
+    const std::vector<uint32_t>& extra_args) {
+  args.insert(args.end(), extra_args.begin(), extra_args.end());
+  return MakeInstruction(opcode, args);
 }
 
 // Encodes a string as a sequence of words, using the SPIR-V encoding.
