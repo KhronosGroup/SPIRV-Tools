@@ -169,7 +169,7 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
     return SPV_ERROR_INVALID_TEXT;
   } else if (length > 10 || (parseResult >> 32) != 0) {
     context->diagnostic() << "Immediate integer '" << text
-                          << "' is over 32 bits.";
+                          << "' is outside the unsigned 32-bit range.";
     return SPV_ERROR_INVALID_TEXT;
   }
   context->binaryEncodeU32(parseResult, pInst);

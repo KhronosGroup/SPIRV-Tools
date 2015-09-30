@@ -102,8 +102,6 @@ greater than 0.
 ## Arbitrary Integers
 <a name="immediate"></a>
 
-*Warning: Not all of the following has been implemented*
-
 When writing tests it can be useful to emit an invalid 32 bit word into the
 binary stream at arbitrary positions within the assembly. To specify an
 arbitrary word into the stream the prefix `!` is used, this takes the form
@@ -113,8 +111,8 @@ arbitrary word into the stream the prefix `!` is used, this takes the form
 OpCapability !0x0000FF00
 ```
 
-Any word in a valid assembly program may be replaced by `!<integer>` -- even
-words that dictate how the rest of the instruction is parsed.  Consider, for
+Any token in a valid assembly program may be replaced by `!<integer>` -- even
+tokens that dictate how the rest of the instruction is parsed.  Consider, for
 example, the following assembly program:
 
 ```
@@ -122,44 +120,46 @@ example, the following assembly program:
 OpExecutionMode %3 InputLines
 ```
 
-The words `OpConstant`, `LocalSize`, and `InputLines` may be replaced by random
+The tokens `OpConstant`, `LocalSize`, and `InputLines` may be replaced by random
 `!<integer>` values, and the assembler will still assemble an output binary with
 three instructions.  It will not necessarily be valid SPIR-V, but it will
 faithfully reflect the input text.
 
 You may wonder how the assembler recognizes the instruction structure (including
-instruction boundaries) in the text with certain crucial words replaced by
+instruction boundaries) in the text with certain crucial tokens replaced by
 arbitrary integers.  If, say, `OpConstant` becomes a `!<integer>` whose value
 differs from the binary representation of `OpConstant` (remember that this
 feature is intended for fine-grain control in SPIR-V testing), the assembler
 generally has no idea what that value stands for.  So how does it know there is
 exactly one `<id>` and three number literals following in that instruction,
 before the next one begins?  And if `LocalSize` is replaced by an arbitrary
-`!<integer>`, how does it know to take the next three words (instead of zero or
+`!<integer>`, how does it know to take the next three tokens (instead of zero or
 one, both of which are possible in the absence of certainty that `LocalSize`
 provided)?  The answer is a simple rule governing the parsing of instructions
 with `!<integer>` in them:
 
-When a word in the assembly program is a `!<integer>`, that integer value is
+When a token in the assembly program is a `!<integer>`, that integer value is
 emitted into the binary output, and parsing proceeds differently than before:
-each subsequent word not recognized as an OpCode is emitted into the binary
+each subsequent token not recognized as an OpCode is emitted into the binary
 output without any checking; when a recognizable OpCode is eventually
 encountered, it begins a new instruction and parsing returns to normal.  (If a
 subsequent OpCode is never found, then this alternate parsing mode handles all
-the remaining words in the program.  If a subsequent OpCode is in an
+the remaining tokens in the program.  If a subsequent OpCode is in an
 [assignment form](#assignment-form), the ID preceding it begins a new
 instruction.)
 
-The assembler processes the words encountered in alternate parsing mode as
+The assembler processes the tokens encountered in alternate parsing mode as
 follows:
 
-* If the word is a number literal, it outputs that number as one or more words,
-  as defined in the SPIR-V specification for Literal Number.
-* If the word is a string literal, it outputs a sequence of words representing
+* If the token is a number literal, it outputs that number as one or more words,
+  as defined in the SPIR-V specification for Literal Number.  The number must
+  fit within the unsigned 32-bit range.  All formats supported by `strtoul()`
+  are accepted.
+* If the token is a string literal, it outputs a sequence of words representing
   the string as defined in the SPIR-V specification for Literal String.
-* If the word is an ID, it outputs the ID's internal number.
-* If the word is another `!<integer>`, it outputs that integer.
-* Any other word causes the assembler to quit with an error.
+* If the token is an ID, it outputs the ID's internal number.
+* If the token is another `!<integer>`, it outputs that integer.
+* Any other token causes the assembler to quit with an error.
 
 Note that this has some interesting consequences, including:
 
@@ -176,10 +176,11 @@ Note that this has some interesting consequences, including:
   by the alternate parsing mode.  They must be replaced by `!<integer>` for
   successful assembly.
 
-* The `<result-id>` on the left-hand side of an assignment cannot be
-  a `!<integer>`. The `<result-id>` can be still be manually
-  controlled if desired by using the
-  [Canonical Assembly Form](#assignment-form).
+* The `<result-id>` on the left-hand side of an assignment cannot be a
+  `!<integer>`. The `<result-id>` can be still be manually controlled if desired
+  by using the [Canonical Assembly Form](#assignment-form) or by simply
+  expressing the entire instruction as `!<integer>` tokens for its opcode and
+  operands.
 
 * The `=` sign cannot be processed by the alternate parsing mode if the OpCode
   following it is a `!<integer>`.

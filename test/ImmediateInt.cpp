@@ -262,14 +262,16 @@ TEST_F(ImmediateIntTest, ConsecutiveImmediateOpcodes) {
 TEST_F(ImmediateIntTest, ForbiddenOperands) {
   EXPECT_THAT(CompileFailure("OpMemoryModel !0 OpenCL"), HasSubstr("OpenCL"));
   EXPECT_THAT(CompileFailure("!1 %0 = !2"), HasSubstr("="));
+  EXPECT_THAT(CompileFailure("OpMemoryModel !0 random_bareword"),
+              HasSubstr("random_bareword"));
   // Immediate integers longer than one 32-bit word.
   EXPECT_THAT(CompileFailure("!5000000000"), HasSubstr("5000000000"));
   EXPECT_THAT(CompileFailure("!999999999999999999"),
               HasSubstr("999999999999999999"));
   EXPECT_THAT(CompileFailure("!0x00020049 !5000000000"),
               HasSubstr("5000000000"));
-  EXPECT_THAT(CompileFailure("OpMemoryModel !0 random_bareword"),
-              HasSubstr("random_bareword"));
+  // Negative numbers.
+  EXPECT_THAT(CompileFailure("!0x00020049 !-123"), HasSubstr("-123"));
 }
 
 TEST_F(ImmediateIntTest, NotInteger) {
