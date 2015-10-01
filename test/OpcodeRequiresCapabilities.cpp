@@ -65,6 +65,15 @@ TEST(OpcodeRequiresCapability, None) {
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
+/// Test SPV_CAPBILITY_AS_MASK
+
+TEST(CapabilityAsMaskMacro, Sample) {
+  EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(spv::CapabilityMatrix));
+  EXPECT_EQ(uint64_t(0x10000), SPV_CAPABILITY_AS_MASK(spv::CapabilityImageSRGBWrite));
+  EXPECT_EQ(uint64_t(0x100000000ULL), SPV_CAPABILITY_AS_MASK(spv::CapabilityClipDistance));
+  EXPECT_EQ(uint64_t(1) << 53, SPV_CAPABILITY_AS_MASK(spv::CapabilityTransformFeedback));
+};
+
 /// Capabilities required by an Opcode.
 struct ExpectedOpCodeCapabilities {
   spv::Op opcode;
