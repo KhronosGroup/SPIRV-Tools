@@ -49,11 +49,9 @@ TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
   std::stringstream input;
   input << "OpStore %ptr %value " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, 2, GetParam().value()};
-  expected_operands.insert(expected_operands.end(), GetParam().operands().begin(),
-                           GetParam().operands().end());
   EXPECT_THAT(CompiledInstructions(input.str()),
-              Eq(MakeInstruction(spv::OpStore, expected_operands)));
+              Eq(MakeInstruction(spv::OpStore, {1, 2, GetParam().value()},
+                                 GetParam().operands())));
 }
 
 INSTANTIATE_TEST_CASE_P(

@@ -104,14 +104,10 @@ TEST_P(OpEntryPointTest, AnyEntryPointCase) {
   // TODO(dneto): utf-8, escaping, quoting cases for entry point name.
   std::string input = "OpEntryPoint " + GetParam().execution_name + " %1 \"" +
                       GetParam().entry_point_name + "\"";
-  std::vector<uint32_t> expected_operands{GetParam().get_execution_value(), 1};
-  std::vector<uint32_t> encoded_entry_point_name =
-      MakeVector(GetParam().entry_point_name);
-  expected_operands.insert(expected_operands.end(),
-                           encoded_entry_point_name.begin(),
-                           encoded_entry_point_name.end());
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpEntryPoint, expected_operands)));
+              Eq(MakeInstruction(spv::OpEntryPoint,
+                                 {GetParam().get_execution_value(), 1},
+                                 MakeVector(GetParam().entry_point_name))));
 }
 
 // clang-format off
@@ -139,11 +135,9 @@ TEST_P(OpExecutionModeTest, AnyExecutionMode) {
   std::stringstream input;
   input << "OpExecutionMode %1 " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, GetParam().value()};
-  expected_operands.insert(expected_operands.end(), GetParam().operands().begin(),
-                           GetParam().operands().end());
   EXPECT_THAT(CompiledInstructions(input.str()),
-              Eq(MakeInstruction(spv::OpExecutionMode, expected_operands)));
+              Eq(MakeInstruction(spv::OpExecutionMode, {1, GetParam().value()},
+                                 GetParam().operands())));
 }
 
 #define CASE(NAME) spv::ExecutionMode##NAME, #NAME

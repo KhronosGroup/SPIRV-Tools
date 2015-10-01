@@ -52,12 +52,9 @@ using ImageOperandsTest = spvtest::TextToBinaryTestBase<
 TEST_P(ImageOperandsTest, Sample) {
   std::string input =
       "%result = OpImageFetch %type %image %coord " + GetParam().image_operands;
-  std::vector<uint32_t> expected_operands{1, 2, 3, 4};
-  expected_operands.insert(expected_operands.end(),
-                           GetParam().expected_mask_and_operands.begin(),
-                           GetParam().expected_mask_and_operands.end());
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpImageFetch, expected_operands)));
+              Eq(MakeInstruction(spv::OpImageFetch, {1, 2, 3, 4},
+                                 GetParam().expected_mask_and_operands)));
 }
 
 #define MASK(NAME) spv::ImageOperands##NAME##Mask

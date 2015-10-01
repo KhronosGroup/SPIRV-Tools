@@ -92,12 +92,10 @@ TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
 TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
   std::string fake_source = "To be or not to be";
   std::string input = "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
-  std::vector<uint32_t> expected_operands = {spv::SourceLanguageGLSL, 450, 1};
-  std::vector<uint32_t> encoded_source = MakeVector(fake_source);
-  expected_operands.insert(expected_operands.end(), encoded_source.begin(),
-                           encoded_source.end());
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpSource, expected_operands)));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1},
+                         MakeVector(fake_source))));
 };
 
 // Test OpSourceContinued
@@ -152,10 +150,8 @@ using OpStringTest =
 TEST_P(OpStringTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
   std::string input = std::string("%result = OpString \"") + GetParam() + "\"";
-  std::vector<uint32_t> expected_operands = MakeVector(GetParam());
-  expected_operands.insert(expected_operands.begin(), 1);  // The ID of the result.
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpString, expected_operands)));
+              Eq(MakeInstruction(spv::OpString, {1}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -169,10 +165,8 @@ using OpNameTest =
 TEST_P(OpNameTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
   std::string input = std::string("OpName %target \"") + GetParam() + "\"";
-  std::vector<uint32_t> expected_operands = MakeVector(GetParam());
-  expected_operands.insert(expected_operands.begin(), 1);  // The ID of the target.
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpName, expected_operands)));
+              Eq(MakeInstruction(spv::OpName, {1}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -187,12 +181,9 @@ TEST_P(OpMemberNameTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
   std::string input =
       std::string("OpMemberName %type 42 \"") + GetParam() + "\"";
-  std::vector<uint32_t> expected_operands = {1, 42};
-  std::vector<uint32_t> encoded_string = MakeVector(GetParam());
-  expected_operands.insert(expected_operands.end(), encoded_string.begin(),
-                           encoded_string.end());
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpMemberName, expected_operands)));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpMemberName, {1, 42}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping

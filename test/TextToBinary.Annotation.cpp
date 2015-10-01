@@ -51,12 +51,10 @@ TEST_P(OpDecorateSimpleTest, AnySimpleDecoration) {
   std::stringstream input;
   input << "OpDecorate %1 " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
-  std::vector<uint32_t> expected_operands{1, uint32_t(GetParam().value())};
-  expected_operands.insert(expected_operands.end(),
-                           GetParam().operands().begin(),
-                           GetParam().operands().end());
-  EXPECT_THAT(CompiledInstructions(input.str()),
-              Eq(MakeInstruction(spv::OpDecorate, expected_operands)));
+  EXPECT_THAT(
+      CompiledInstructions(input.str()),
+      Eq(MakeInstruction(spv::OpDecorate, {1, uint32_t(GetParam().value())},
+                         GetParam().operands())));
 }
 
 #define CASE(NAME) spv::Decoration##NAME, #NAME
