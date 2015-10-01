@@ -59,10 +59,13 @@ enum {
   I32_ENDIAN_BIG = 0x00010203ul,
 };
 
+// TODO(dneto): Using a union this way relies on undefined behaviour.
+// Replace this with uses of BitwiseCast from source/bitwisecast.h
 static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
+#define I32_ENDIAN_HOST (o32_host_order.value)
 
 // A namespace for utilities used in SPIR-V Tools unit tests.
 // TODO(dneto): Move other type declarations into this namespace.
@@ -180,6 +183,5 @@ class EnumCase {
   std::vector<uint32_t> operands_;
 };
 
-#define I32_ENDIAN_HOST (o32_host_order.value)
 
 #endif
