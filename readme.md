@@ -28,6 +28,12 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-10-02
+* Completed assembler support for [`!<integer>` syntax](syntax.md#immediate)
+  to inject arbitrary words into the binary. This feature is used
+  for testing.
+* Internal cleanups and additional tests.
+
 2015-09-25
 * Updated to Rev32 headers
   * Core instructions and enumerants from Rev 32 are supported by the
