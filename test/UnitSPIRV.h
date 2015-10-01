@@ -68,7 +68,6 @@ static const union {
 #define I32_ENDIAN_HOST (o32_host_order.value)
 
 // A namespace for utilities used in SPIR-V Tools unit tests.
-// TODO(dneto): Move other type declarations into this namespace.
 namespace spvtest {
 
 class WordVector;
@@ -153,8 +152,6 @@ inline std::vector<uint32_t> MakeVector(std::string input) {
   return result;
 }
 
-}  // namespace spvtest
-
 // A type for easily creating spv_text_t values, with an implicit conversion to
 // spv_text.
 struct AutoText {
@@ -183,5 +180,6 @@ class EnumCase {
   std::vector<uint32_t> operands_;
 };
 
+}  // namespace spvtest
 
 #endif

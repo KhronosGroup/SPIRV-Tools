@@ -29,6 +29,7 @@
 namespace {
 
 using libspirv::AssemblyContext;
+using spvtest::AutoText;
 
 TEST(TextAdvance, LeadingNewLines) {
   AutoText input("\n\nWord");

@@ -31,6 +31,7 @@
 #include "TestFixture.h"
 
 using ::testing::Eq;
+using spvtest::AutoText;
 
 namespace {
 

@@ -34,6 +34,7 @@
 
 namespace {
 
+using spvtest::EnumCase;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
 using ::testing::Eq;

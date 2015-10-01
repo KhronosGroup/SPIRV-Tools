@@ -33,9 +33,10 @@
 
 namespace {
 
-using spvtest::TextToBinaryTest;
 using libspirv::AssemblyContext;
 using libspirv::AssemblyGrammar;
+using spvtest::TextToBinaryTest;
+using spvtest::AutoText;
 
 TEST(GetWord, Simple) {
   EXPECT_EQ("", AssemblyContext(AutoText(""), nullptr).getWord());

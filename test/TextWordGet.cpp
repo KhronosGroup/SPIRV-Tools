@@ -29,6 +29,7 @@
 namespace {
 
 using libspirv::AssemblyContext;
+using spvtest::AutoText;
 
 #define TAB "\t"
 #define NEWLINE "\n"

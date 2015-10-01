@@ -28,7 +28,10 @@
 
 #include <string>
 
+namespace {
+
 using libspirv::AssemblyContext;
+using spvtest::AutoText;
 
 TEST(TextStartsWithOp, YesAtStart) {
   EXPECT_TRUE(
@@ -84,3 +87,5 @@ TEST(TextStartsWithOp, NoForNearlyValueGeneration) {
   EXPECT_FALSE(
       AssemblyContext(AutoText("%foo"), nullptr).isStartOfNewInst());
 }
+
+}  // anonymous namespace
