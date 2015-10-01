@@ -65,4 +65,57 @@ TEST(OpcodeRequiresCapability, None) {
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
+/// Capabilities required by an Opcode.
+struct ExpectedOpCodeCapabilities {
+  spv::Op opcode;
+  uint64_t capabilities;  //< Bitfield of spv::Capability.
+};
+
+using OpcodeTableCapabilitiesTest =
+    ::testing::TestWithParam<ExpectedOpCodeCapabilities>;
+
+TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
+  spv_opcode_table opcodeTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  spv_opcode_desc entry;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvOpcodeTableValueLookup(opcodeTable, GetParam().opcode, &entry));
+  EXPECT_EQ(GetParam().capabilities, entry->capabilities);
+}
+
+/// Translates a spv::Capability into a bitfield.
+inline uint64_t mask(spv::Capability c) { return SPV_CAPABILITY_AS_MASK(c); }
+
+/// Combines two spv::Capabilities into a bitfield.
+inline uint64_t mask(spv::Capability c1, spv::Capability c2) {
+  return SPV_CAPABILITY_AS_MASK(c1) | SPV_CAPABILITY_AS_MASK(c2);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TableRowTest, OpcodeTableCapabilitiesTest,
+    // Spot-check a few opcodes.
+    ::testing::Values(
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySize,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySizeLod,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQueryLevels,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySamples,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{spv::OpImageSparseSampleImplicitLod,
+                                   mask(spv::CapabilitySparseResidency)},
+        ExpectedOpCodeCapabilities{spv::OpCopyMemorySized,
+                                   mask(spv::CapabilityAddresses)},
+        ExpectedOpCodeCapabilities{spv::OpArrayLength,
+                                   mask(spv::CapabilityShader)},
+        ExpectedOpCodeCapabilities{spv::OpFunction, 0},
+        ExpectedOpCodeCapabilities{spv::OpConvertFToS, 0}));
+
+// TODO(deki): test operand-table capabilities.
+
 }  // anonymous namespace
