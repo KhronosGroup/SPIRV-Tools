@@ -176,6 +176,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandCapabilities.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeMake.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeRequiresCapabilities.cpp

@@ -127,17 +127,17 @@ static const spv_operand_desc_t memoryModelEntries[] = {
 };
 
 // Execution mode requiring the given capability and having no operands.
-#define ExecMode0(mode, cap)                                                  \
-  #mode, ExecutionMode##mode, SPV_OPCODE_FLAGS_CAPABILITIES, Capability##cap, \
-  {                                                                           \
-    SPV_OPERAND_TYPE_NONE                                                     \
+#define ExecMode0(mode, cap)                                 \
+  #mode, ExecutionMode##mode, SPV_OPCODE_FLAGS_CAPABILITIES, \
+      SPV_CAPABILITY_AS_MASK(Capability##cap), {             \
+    SPV_OPERAND_TYPE_NONE                                    \
   }
 // Execution mode requiring the given capability and having one literal number
 // operand.
-#define ExecMode1(mode, cap)                                                  \
-  #mode, ExecutionMode##mode, SPV_OPCODE_FLAGS_CAPABILITIES, Capability##cap, \
-  {                                                                           \
-    SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE                    \
+#define ExecMode1(mode, cap)                                 \
+  #mode, ExecutionMode##mode, SPV_OPCODE_FLAGS_CAPABILITIES, \
+      SPV_CAPABILITY_AS_MASK(Capability##cap), {             \
+    SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE   \
   }
 static const spv_operand_desc_t executionModeEntries[] = {
     {ExecMode1(Invocations, Geometry)},
@@ -251,7 +251,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
     {"AtomicCounter",
      StorageClassAtomicCounter,
      SPV_OPCODE_FLAGS_CAPABILITIES,
-     SPV_CAPABILITY_AS_MASK(CapabilityShader),
+     SPV_CAPABILITY_AS_MASK(CapabilityAtomicStorage),
      {SPV_OPERAND_TYPE_NONE}},
     {"Image",
      StorageClassImage,
@@ -261,8 +261,11 @@ static const spv_operand_desc_t storageClassEntries[] = {
 };
 
 static const spv_operand_desc_t dimensionalityEntries[] = {
-    // TODO(dneto): Update capability dependencies for Rev32
-    {"1D", Dim1D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"1D",
+     Dim1D,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     SPV_CAPABILITY_AS_MASK(CapabilitySampled1D),
+     {SPV_OPERAND_TYPE_NONE}},
     {"2D", Dim2D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"3D", Dim3D, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Cube",
@@ -273,9 +276,13 @@ static const spv_operand_desc_t dimensionalityEntries[] = {
     {"Rect",
      DimRect,
      SPV_OPCODE_FLAGS_CAPABILITIES,
-     SPV_CAPABILITY_AS_MASK(CapabilityShader),
+     SPV_CAPABILITY_AS_MASK(CapabilitySampledRect),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Buffer", DimBuffer, SPV_OPCODE_FLAGS_NONE, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Buffer",
+     DimBuffer,
+     SPV_OPCODE_FLAGS_CAPABILITIES,
+     SPV_CAPABILITY_AS_MASK(CapabilitySampledBuffer),
+     {SPV_OPERAND_TYPE_NONE}},
     {"InputTarget",
      DimInputTarget,
      SPV_OPCODE_FLAGS_CAPABILITIES,
@@ -325,60 +332,120 @@ static const spv_operand_desc_t samplerFilterModeEntries[] = {
 };
 
 static const spv_operand_desc_t samplerImageFormatEntries[] = {
-// In Rev31, all the cases depend on the Shader capability.
-// TODO(dneto): In Rev32, many of these depend on the AdvancedFormats
-// capability instead.
-#define CASE(NAME)                                           \
+#define CASE0(NAME)                                           \
+  {                                                           \
+    #NAME, ImageFormat##NAME, 0, 0, { SPV_OPERAND_TYPE_NONE } \
+  }
+#define CASE(NAME, CAP)                                      \
   {                                                          \
     #NAME, ImageFormat##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, \
-        SPV_CAPABILITY_AS_MASK(CapabilityShader), {          \
+        SPV_CAPABILITY_AS_MASK(Capability##CAP), {           \
       SPV_OPERAND_TYPE_NONE                                  \
     }                                                        \
   }
     // clang-format off
-  CASE(Unknown),
-  CASE(Rgba32f),
-  CASE(Rgba16f),
-  CASE(R32f),
-  CASE(Rgba8),
-  CASE(Rgba8Snorm),
-  CASE(Rg32f),
-  CASE(Rg16f),
-  CASE(R11fG11fB10f),
-  CASE(R16f),
-  CASE(Rgba16),
-  CASE(Rgb10A2),
-  CASE(Rg16),
-  CASE(Rg8),
-  CASE(R16),
-  CASE(R8),
-  CASE(Rgba16Snorm),
-  CASE(Rg16Snorm),
-  CASE(Rg8Snorm),
-  CASE(R16Snorm),
-  CASE(R8Snorm),
-  CASE(Rgba32i),
-  CASE(Rgba16i),
-  CASE(Rgba8i),
-  CASE(R32i),
-  CASE(Rg32i),
-  CASE(Rg16i),
-  CASE(Rg8i),
-  CASE(R16i),
-  CASE(R8i),
-  CASE(Rgba32ui),
-  CASE(Rgba16ui),
-  CASE(Rgba8ui),
-  CASE(R32ui),
-  CASE(Rgb10a2ui),
-  CASE(Rg32ui),
-  CASE(Rg16ui),
-  CASE(Rg8ui),
-  CASE(R16ui),
-  CASE(R8ui),
+  CASE0(Unknown),
+  CASE(Rgba32f, Shader),
+  CASE(Rgba16f, Shader),
+  CASE(R32f, Shader),
+  CASE(Rgba8, Shader),
+  CASE(Rgba8Snorm, Shader),
+  CASE(Rg32f, AdvancedFormats),
+  CASE(Rg16f, AdvancedFormats),
+  CASE(R11fG11fB10f, AdvancedFormats),
+  CASE(R16f, AdvancedFormats),
+  CASE(Rgba16, AdvancedFormats),
+  CASE(Rgb10A2, AdvancedFormats),
+  CASE(Rg16, AdvancedFormats),
+  CASE(Rg8, AdvancedFormats),
+  CASE(R16, AdvancedFormats),
+  CASE(R8, AdvancedFormats),
+  CASE(Rgba16Snorm, AdvancedFormats),
+  CASE(Rg16Snorm, AdvancedFormats),
+  CASE(Rg8Snorm, AdvancedFormats),
+  CASE(R16Snorm, AdvancedFormats),
+  CASE(R8Snorm, AdvancedFormats),
+  CASE(Rgba32i, Shader),
+  CASE(Rgba16i, Shader),
+  CASE(Rgba8i, Shader),
+  CASE(R32i, Shader),
+  CASE(Rg32i, AdvancedFormats),
+  CASE(Rg16i, AdvancedFormats),
+  CASE(Rg8i, AdvancedFormats),
+  CASE(R16i, AdvancedFormats),
+  CASE(R8i, AdvancedFormats),
+  CASE(Rgba32ui, Shader),
+  CASE(Rgba16ui, Shader),
+  CASE(Rgba8ui, Shader),
+  CASE(R32ui, Shader),
+  CASE(Rgb10a2ui, AdvancedFormats),
+  CASE(Rg32ui, AdvancedFormats),
+  CASE(Rg16ui, AdvancedFormats),
+  CASE(Rg8ui, AdvancedFormats),
+  CASE(R16ui, AdvancedFormats),
+  CASE(R8ui, AdvancedFormats),
 // clang-format on
 #undef CASE
 };
+
+// All image channel orders depend on the Kernel capability.
+#define CASE(NAME)                                                 \
+  {                                                                \
+    #NAME, ImageChannelOrder##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, \
+        SPV_CAPABILITY_AS_MASK(CapabilityKernel), {                \
+      SPV_OPERAND_TYPE_NONE                                        \
+    }                                                              \
+  }
+static const spv_operand_desc_t imageChannelOrderEntries[] = {
+  CASE(R),
+  CASE(A),
+  CASE(RG),
+  CASE(RA),
+  CASE(RGB),
+  CASE(RGBA),
+  CASE(BGRA),
+  CASE(ARGB),
+  CASE(Intensity),
+  CASE(Luminance),
+  CASE(Rx),
+  CASE(RGx),
+  CASE(RGBx),
+  CASE(Depth),
+  CASE(DepthStencil),
+  CASE(sRGB),
+  CASE(sRGBx),
+  CASE(sRGBA),
+  CASE(sBGRA),
+};
+#undef CASE
+
+// All image channel data types depend on the Kernel capability.
+#define CASE(NAME)                                                 \
+  {                                                                \
+    #NAME, ImageChannelDataType##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, \
+        SPV_CAPABILITY_AS_MASK(CapabilityKernel), {                \
+      SPV_OPERAND_TYPE_NONE                                        \
+    }                                                              \
+  }
+static const spv_operand_desc_t imageChannelDataTypeEntries[] = {
+  CASE(SnormInt8),
+  CASE(SnormInt16),
+  CASE(UnormInt8),
+  CASE(UnormInt16),
+  CASE(UnormShort565),
+  CASE(UnormShort555),
+  CASE(UnormInt101010),
+  CASE(SignedInt8),
+  CASE(SignedInt16),
+  CASE(SignedInt32),
+  CASE(UnsignedInt8),
+  CASE(UnsignedInt16),
+  CASE(UnsignedInt32),
+  CASE(HalfFloat),
+  CASE(Float),
+  CASE(UnormInt24),
+};
+#undef CASE
 
 // Image operand definitions.  Each enum value is a mask.  When that mask
 // bit is set, the instruction should have further ID operands.
@@ -718,12 +785,12 @@ static const spv_operand_desc_t decorationEntries[] = {
     {"XfbBuffer",
      DecorationXfbBuffer,
      SPV_OPCODE_FLAGS_CAPABILITIES,
-     SPV_CAPABILITY_AS_MASK(CapabilityShader),
+     SPV_CAPABILITY_AS_MASK(CapabilityTransformFeedback),
      {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
     {"XfbStride",
      DecorationXfbStride,
      SPV_OPCODE_FLAGS_CAPABILITIES,
-     SPV_CAPABILITY_AS_MASK(CapabilityShader),
+     SPV_CAPABILITY_AS_MASK(CapabilityTransformFeedback),
      {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
     {"FuncParamAttr",
      DecorationFuncParamAttr,
@@ -1318,6 +1385,12 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
      sizeof(samplerImageFormatEntries) / sizeof(spv_operand_desc_t),
      samplerImageFormatEntries},
+    {SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER,
+     sizeof(imageChannelOrderEntries) / sizeof(spv_operand_desc_t),
+     imageChannelOrderEntries},
+    {SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE,
+     sizeof(imageChannelDataTypeEntries) / sizeof(spv_operand_desc_t),
+     imageChannelDataTypeEntries},
     {SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
      sizeof(imageOperandEntries) / sizeof(spv_operand_desc_t),
      imageOperandEntries},
