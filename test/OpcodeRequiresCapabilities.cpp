@@ -125,6 +125,47 @@ INSTANTIATE_TEST_CASE_P(
         ExpectedOpCodeCapabilities{spv::OpFunction, 0},
         ExpectedOpCodeCapabilities{spv::OpConvertFToS, 0}));
 
-// TODO(deki): test operand-table capabilities.
+/// Utility to initialize the operand table and look up capabilities.
+class OperandCapabilitiesTest : public ::testing::Test {
+ protected:
+  OperandCapabilitiesTest() {
+    EXPECT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable_));
+  }
+
+  /// Looks up an operand's capabilities in the operand table.
+  uint64_t Capabilities(spv_operand_type_t type, uint32_t value) {
+    spv_operand_desc entry;
+    EXPECT_EQ(SPV_SUCCESS,
+              spvOperandTableValueLookup(operandTable_, type, value, &entry));
+    return entry->capabilities;
+  }
+
+ private:
+  spv_operand_table operandTable_;
+};
+
+TEST_F(OperandCapabilitiesTest, SpotCheckSomeRows) {
+  EXPECT_EQ(mask(CapabilityGeometry, CapabilityTessellation),
+            Capabilities(SPV_OPERAND_TYPE_EXECUTION_MODE,
+                         ExecutionModeInputTriangles));
+  EXPECT_EQ(mask(CapabilityGeometry, CapabilityTessellation),
+            Capabilities(SPV_OPERAND_TYPE_EXECUTION_MODE,
+                         ExecutionModeOutputVertices));
+  EXPECT_EQ(mask(CapabilityGeometry, CapabilityTessellation),
+            Capabilities(SPV_OPERAND_TYPE_BUILT_IN, BuiltInPrimitiveId));
+  EXPECT_EQ(mask(CapabilityGeometry, CapabilityTessellation),
+            Capabilities(SPV_OPERAND_TYPE_BUILT_IN, BuiltInInvocationId));
+  EXPECT_EQ(0, Capabilities(SPV_OPERAND_TYPE_FUNCTION_CONTROL,
+                            FunctionControlPureMask));
+  EXPECT_EQ(0, Capabilities(SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
+                            KernelProfilingInfoMaskNone));
+  EXPECT_EQ(mask(CapabilityKernel),
+            Capabilities(SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
+                         KernelProfilingInfoCmdExecTimeMask));
+  EXPECT_EQ(mask(CapabilityShader),
+            Capabilities(SPV_OPERAND_TYPE_STORAGE_CLASS, StorageClassOutput));
+  EXPECT_EQ(0, Capabilities(SPV_OPERAND_TYPE_STORAGE_CLASS,
+                            StorageClassWorkgroupGlobal));
+}
 
 }  // anonymous namespace
