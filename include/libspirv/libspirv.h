@@ -85,11 +85,16 @@ extern "C" {
 
 #define SPV_OPERAND_INVALID_RESULT_ID_INDEX -1
 
+// A bit mask representing a set of capabilities.
+// Currently there are 54 distinct capabilities, so 64 bits
+// should be enough.
+using spv_capability_mask_t = uint64_t;
+
 // Transforms spv::Capability into a mask for use in bitfields.  Should really
 // be a constexpr inline function, but some important versions of MSVC don't
 // support that yet.  Different from SPV_BIT, which doesn't guarantee 64-bit
 // values.
-#define SPV_CAPABILITY_AS_MASK(capability) (uint64_t(1) << (capability))
+#define SPV_CAPABILITY_AS_MASK(capability) (spv_capability_mask_t(1) << (capability))
 
 // Enumerations
 
@@ -278,8 +283,9 @@ typedef struct spv_header_t {
 typedef struct spv_opcode_desc_t {
   const char *name;
   const Op opcode;
-  const uint32_t flags;         // Bitfield of spv_opcode_flags_t
-  const uint64_t capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  const uint32_t flags;  // Bitfield of spv_opcode_flags_t
+  const spv_capability_mask_t
+      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
   // The operand types include result id and result-type id, followed by
   // the types of arguments.
@@ -300,8 +306,9 @@ typedef struct spv_opcode_table_t {
 typedef struct spv_operand_desc_t {
   const char *name;
   const uint32_t value;
-  const uint32_t flags;                       // Bitfield of spv_opcode_flags_t
-  const uint64_t capabilities;                // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  const uint32_t flags;  // Bitfield of spv_opcode_flags_t
+  const spv_capability_mask_t
+      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_operand_desc_t;
 
