@@ -37,13 +37,14 @@
 #include "diagnostic.h"
 #include "instruction.h"
 #include "operand.h"
+#include "text.h"
 
 namespace libspirv {
 // Structures
 
 // This is a lattice for tracking types.
 enum class IdTypeClass {
-  kBottom, // We have no information yet.
+  kBottom = 0, // We have no information yet.
   kScalarIntegerType,
   kScalarFloatType,
   kOtherType
@@ -55,8 +56,12 @@ enum class IdTypeClass {
 // kScalarFloatType.
 struct IdType {
   uint32_t bitwidth;  // Safe to assume that we will not have > 2^32 bits.
+  bool isSigned; // This is only significant if type_class is integral.
   IdTypeClass type_class;
 };
+
+// A value representing an unknown type.
+extern const IdType kUnknownType;
 
 // Returns true if the type is a scalar integer type.
 inline bool isScalarIntegral(const IdType& type) {
@@ -66,6 +71,23 @@ inline bool isScalarIntegral(const IdType& type) {
 // Returns true if the type is a scalar floating point type.
 inline bool isScalarFloating(const IdType& type) {
   return type.type_class == IdTypeClass::kScalarFloatType;
+}
+
+// Returns the number of bits in the type.
+// This is only valid for bottom, scalar integer, and scalar floating
+// classes.  For bottom, assume 32 bits.
+inline int assumedBitWidth(const IdType& type) {
+  switch(type.type_class) {
+    case IdTypeClass::kBottom:
+      return 32;
+    case IdTypeClass::kScalarIntegerType:
+    case IdTypeClass::kScalarFloatType:
+      return type.bitwidth;
+    default:
+      break;
+  }
+  // We don't care about this case.
+  return 0;
 }
 
 // Encapsulates the grammar to use for SPIR-V assembly.
@@ -202,27 +224,35 @@ class AssemblyContext {
   const spv_position_t &position() const { return current_position_; }
 
   // Appends the given 32-bit value to the given instruction.
-  // Returns SPV_SUCCESS if the value could be correctly inserted in the the
+  // Returns SPV_SUCCESS if the value could be correctly inserted in the
   // instruction.
   spv_result_t binaryEncodeU32(const uint32_t value, spv_instruction_t *pInst);
-  // Appends the given 64-bit value to the given instruction.
-  // Returns SPV_SUCCESS if the value could be correctly inserted in the the
-  // instruction.
-  spv_result_t binaryEncodeU64(const uint64_t value, spv_instruction_t *pInst);
+
   // Appends the given string to the given instruction.
-  // Returns SPV_SUCCESS if the value could be correctly inserted in the the
+  // Returns SPV_SUCCESS if the value could be correctly inserted in the
   // instruction.
   spv_result_t binaryEncodeString(const char *value, spv_instruction_t *pInst);
 
+  // Appends the given numeric literal to the given instruction.
+  // Validates and respects the bitwidth supplied in the IdType argument.
+  // If the type is of class kBottom the value will be encoded as a
+  // 32-bit integer.
+  // Returns SPV_SUCCESS if the value could be correctly added to the
+  // instruction.
+  spv_result_t binaryEncodeNumericLiteral(const char *numeric_literal,
+                                          bool optional,
+                                          const IdType &type,
+                                          spv_instruction_t *pInst);
+
   // Returns the IdType associated with this type-generating value.
   // If the type has not been previously recorded with recordTypeDefinition,
-  // { 0, IdTypeClass::kBottom } will be returned.
+  // kUnknownType  will be returned.
   IdType getTypeOfTypeGeneratingValue(uint32_t value) const;
 
   // Returns the IdType that represents the return value of this Value
   // generating instruction.
   // If the value has not been recorded with recordTypeIdForValue, or the type
-  // could not be determined { 0, IdTypeClass::kBottom } will be returned.
+  // could not be determined kUnknownType will be returned.
   IdType getTypeOfValueInstruction(uint32_t value) const;
 
   // Tracks the type-defining instruction. The result of the tracking can
@@ -278,6 +308,40 @@ class AssemblyContext {
   }
 
  private:
+  // Appends the given floating point literal to the given instruction.
+  // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
+  // an error code is returned, and a message is emitted if is_optional
+  // is false.  Only 32 and 64 bit floating point numbers are supported.
+  spv_result_t binaryEncodeFloatingPointLiteral(const char *numeric_literal,
+                                                bool optional,
+                                                const IdType& type,
+                                                spv_instruction_t *pInst);
+
+  // Appends the given integer literal to the given instruction.
+  // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
+  // an error code is returned, and a message is emitted if is_optional
+  // is false.  Integers up to 64 bits are supported.
+  spv_result_t binaryEncodeIntegerLiteral(const char *numeric_literal,
+                                          bool optional,
+                                          const IdType &type,
+                                          spv_instruction_t *pInst);
+
+  // Returns SPV_SUCCESS if the given value fits within the target scalar
+  // integral type.  The target type may have an unusual bit width.
+  // If the value was originally specified as a hexadecimal number, then
+  // the overflow bits should be zero.  If it was hex and the target type is
+  // signed, then return the sign-extended value through the
+  // updated_value_for_hex pointer argument.
+  // On failure, if is_optional is true then return SPV_FAILED_MATCH, otherwise
+  // emit a diagnostic and return SPV_ERROR_INVALID_TEXT.
+  template <typename T>
+  spv_result_t checkRangeAndIfHexThenSignExtend(T value, bool is_optional,
+                                                const IdType &type, bool is_hex,
+                                                T *updated_value_for_hex);
+
+  // Writes the given 64-bit literal value into the instruction.
+  // return SPV_SUCCESS if the value could be written in the instruction.
+  spv_result_t binaryEncodeU64(const uint64_t value, spv_instruction_t *pInst);
   // Maps ID names to their corresponding numerical ids.
   using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
   // Maps type-defining IDs to their IdType.

@@ -28,16 +28,20 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <tuple>
 
 #include "binary.h"
+#include "bitwisecast.h"
 #include "ext_inst.h"
 #include "instruction.h"
 #include "opcode.h"
 #include "text.h"
 
 namespace {
+
+using spvutils::BitwiseCast;
 
 /// @brief Advance text to the start of the next line
 ///
@@ -212,6 +216,8 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
 
 namespace libspirv {
 
+const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
+
 bool AssemblyGrammar::isValid() const {
   return operandTable_ && opcodeTable_ && extInstTable_;
 }
@@ -248,6 +254,8 @@ void AssemblyGrammar::prependOperandTypesForMask(
     spv_operand_pattern_t *pattern) const {
   spvPrependOperandTypesForMask(operandTable_, type, mask, pattern);
 }
+
+// TODO(dneto): Reorder AssemblyContext definitions to match declaration order.
 
 // This represents all of the data that is only valid for the duration of
 // a single compilation.
@@ -331,11 +339,35 @@ spv_result_t AssemblyContext::binaryEncodeU32(const uint32_t value,
 
 spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
                                                      spv_instruction_t *pInst) {
-  uint32_t low = (uint32_t)(0x00000000ffffffff & value);
-  uint32_t high = (uint32_t)((0xffffffff00000000 & value) >> 32);
+  uint32_t low = uint32_t(0x00000000ffffffff & value);
+  uint32_t high = uint32_t((0xffffffff00000000 & value) >> 32);
   binaryEncodeU32(low, pInst);
   binaryEncodeU32(high, pInst);
   return SPV_SUCCESS;
+}
+
+spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
+    const char *val, bool is_optional, const IdType &type,
+    spv_instruction_t *pInst) {
+  const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
+  const bool is_floating = libspirv::isScalarFloating(type);
+  const bool is_integer = libspirv::isScalarIntegral(type);
+
+  if (!is_bottom && !is_floating && !is_integer) {
+    return diagnostic(SPV_ERROR_INTERNAL)
+           << "The expected type is not a scalar integer or float type";
+  }
+
+  // If this is bottom, but looks like a float, we should treat it like a
+  // float.
+  const bool looks_like_float = is_bottom && strchr(val, '.');
+
+  // If we explicitly expect a floating-point number, we should handle that
+  // first.
+  if (is_floating || looks_like_float)
+    return binaryEncodeFloatingPointLiteral(val, is_optional, type, pInst);
+
+  return binaryEncodeIntegerLiteral(val, is_optional, type, pInst);
 }
 
 spv_result_t AssemblyContext::binaryEncodeString(
@@ -347,9 +379,8 @@ spv_result_t AssemblyContext::binaryEncodeString(
 
   // TODO(dneto): We can just defer this check until later.
   if (newWordCount > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    diagnostic() << "Instruction too long: more than "
-             << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << " words.";
-    return SPV_ERROR_INVALID_TEXT;
+    return diagnostic() << "Instruction too long: more than "
+                        << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << " words.";
   }
 
   pInst->words.resize(newWordCount);
@@ -368,25 +399,21 @@ spv_result_t AssemblyContext::recordTypeDefinition(
     const spv_instruction_t *pInst) {
   uint32_t value = pInst->words[1];
   if (types_.find(value) != types_.end()) {
-    diagnostic() << "Value " << value
-                 << " has already been used to generate a type";
-    return SPV_ERROR_INVALID_VALUE;
+    return diagnostic()
+           << "Value " << value << " has already been used to generate a type";
   }
 
   if (pInst->opcode == OpTypeInt) {
-    if (pInst->words.size() != 4) {
-      diagnostic() << "Invalid OpTypeInt instruction";
-      return SPV_ERROR_INVALID_VALUE;
-    }
-    types_[value] = { pInst->words[2], IdTypeClass::kScalarIntegerType };
+    if (pInst->words.size() != 4)
+      return diagnostic() << "Invalid OpTypeInt instruction";
+    types_[value] = {pInst->words[2], pInst->words[3] != 0,
+                     IdTypeClass::kScalarIntegerType};
   } else if (pInst->opcode == OpTypeFloat) {
-    if (pInst->words.size() != 3) {
-      diagnostic() << "Invalid OpTypeFloat instruction";
-      return SPV_ERROR_INVALID_VALUE;
-    }
-    types_[value] = { pInst->words[2], IdTypeClass::kScalarFloatType };
+    if (pInst->words.size() != 3)
+      return diagnostic() << "Invalid OpTypeFloat instruction";
+    types_[value] = {pInst->words[2], false, IdTypeClass::kScalarFloatType};
   } else {
-    types_[value] = { 0, IdTypeClass::kOtherType };
+    types_[value] = {0, false, IdTypeClass::kOtherType};
   }
   return SPV_SUCCESS;
 }
@@ -394,7 +421,7 @@ spv_result_t AssemblyContext::recordTypeDefinition(
 IdType AssemblyContext::getTypeOfTypeGeneratingValue(uint32_t value) const {
   auto type = types_.find(value);
   if (type == types_.end()) {
-    return {0, IdTypeClass::kBottom};
+    return kUnknownType;
   }
   return std::get<1>(*type);
 }
@@ -402,7 +429,7 @@ IdType AssemblyContext::getTypeOfTypeGeneratingValue(uint32_t value) const {
 IdType AssemblyContext::getTypeOfValueInstruction(uint32_t value) const {
   auto type_value = value_types_.find(value);
   if (type_value == value_types_.end()) {
-    return { 0, IdTypeClass::kBottom};
+    return { 0, false, IdTypeClass::kBottom};
   }
   return getTypeOfTypeGeneratingValue(std::get<1>(*type_value));
 }
@@ -412,12 +439,148 @@ spv_result_t AssemblyContext::recordTypeIdForValue(uint32_t value,
   bool successfully_inserted = false;
   std::tie(std::ignore, successfully_inserted) =
       value_types_.insert(std::make_pair(value, type));
-  if (!successfully_inserted) {
-    diagnostic() << "Value is being defined a second time";
-    return SPV_ERROR_INVALID_VALUE;
-  }
+  if (!successfully_inserted)
+    return diagnostic() << "Value is being defined a second time";
   return SPV_SUCCESS;
 }
 
+spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
+    const char *val, bool is_optional, const IdType &type,
+    spv_instruction_t *pInst) {
+  const auto bit_width = assumedBitWidth(type);
+  switch (bit_width) {
+    case 16:
+      return diagnostic(SPV_ERROR_INTERNAL)
+             << "Unsupported yet: 16-bit float constants.";
+    case 32: {
+      float fVal;
+      if (auto error = parseNumber(val, is_optional, &fVal,
+                                   "Invalid 32-bit float literal: "))
+        return error;
+      return binaryEncodeU32(BitwiseCast<uint32_t>(fVal), pInst);
+    } break;
+    case 64: {
+      double dVal;
+      if (auto error = parseNumber(val, is_optional, &dVal,
+                                   "Invalid 64-bit float literal: "))
+        return error;
+      return binaryEncodeU64(BitwiseCast<uint64_t>(dVal), pInst);
+    } break;
+    default:
+      break;
+  }
+  return diagnostic() << "Unsupported " << bit_width << "-bit float literals";
 }
 
+spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
+    const char *val, bool is_optional, const IdType &type,
+    spv_instruction_t *pInst) {
+  const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
+  const auto bit_width = assumedBitWidth(type);
+
+  if (bit_width > 64)
+    return diagnostic(SPV_ERROR_INTERNAL) << "Unsupported " << bit_width
+                                          << "-bit integer literals";
+
+  // Either we are expecting anything or integer.
+  bool is_negative = val[0] == '-';
+  bool can_be_signed = is_bottom || type.isSigned;
+
+  if (is_negative && !can_be_signed) {
+    return diagnostic()
+           << "Cannot put a negative number in an unsigned literal";
+  }
+
+  const bool is_hex = val[0] == '0' && (val[1] == 'x' || val[1] == 'X');
+
+  uint64_t decoded_bits;
+  if (is_negative) {
+    int64_t decoded_signed = 0;
+    if (auto error = parseNumber(val, is_optional, &decoded_signed,
+                                 "Invalid signed integer literal: "))
+      return error;
+    if (auto error = checkRangeAndIfHexThenSignExtend(
+            decoded_signed, is_optional, type, is_hex, &decoded_signed))
+      return error;
+    decoded_bits = decoded_signed;
+  } else {
+    // There's no leading minus sign, so parse it as an unsigned integer.
+    if (auto error = parseNumber(val, is_optional, &decoded_bits,
+                                 "Invalid unsigned integer literal: "))
+      return error;
+    if (auto error = checkRangeAndIfHexThenSignExtend(
+            decoded_bits, is_optional, type, is_hex, &decoded_bits))
+      return error;
+  }
+  if (bit_width > 32) {
+    return binaryEncodeU64(decoded_bits, pInst);
+  } else {
+    return binaryEncodeU32(uint32_t(decoded_bits), pInst);
+  }
+}
+
+template <typename T>
+spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
+    T value, bool is_optional, const IdType &type, bool is_hex,
+    T *updated_value_for_hex) {
+  // The encoded result has three regions of bits that are of interest, from
+  // least to most significant:
+  //   - magnitude bits, where the magnitude of the number would be stored if
+  //     we were using a signed-magnitude representation.
+  //   - an optional sign bit
+  //   - overflow bits, up to bit 63 of a 64-bit number
+  // For example:
+  //   Type                Overflow      Sign       Magnitude
+  //   ---------------     --------      ----       ---------
+  //   unsigned 8 bit      8-63          n/a        0-7
+  //   signed 8 bit        8-63          7          0-6
+  //   unsigned 16 bit     16-63         n/a        0-15
+  //   signed 16 bit       16-63         15         0-14
+
+  // We'll use masks to define the three regions.
+  // At first we'll assume the number is unsigned.
+  const uint32_t bit_width = assumedBitWidth(type);
+  uint64_t magnitude_mask =
+      (bit_width == 64) ? -1 : ((uint64_t(1) << bit_width) - 1);
+  uint64_t sign_mask = 0;
+  uint64_t overflow_mask = ~magnitude_mask;
+
+  if (value < 0 || type.isSigned) {
+    // Accommodate the sign bit.
+    magnitude_mask >>= 1;
+    sign_mask = magnitude_mask + 1;
+  }
+
+  bool failed = false;
+  if (value < 0) {
+    // The top bits must all be 1 for a negative signed value.
+    failed = ((value & overflow_mask) != overflow_mask) ||
+             ((value & sign_mask) != sign_mask);
+  } else {
+    if (is_hex) {
+      // Hex values are a bit special. They decode as unsigned values, but
+      // may represent a negative number.  In this case, the overflow bits
+      // should be zero.
+      failed = (value & overflow_mask);
+    } else {
+      // Check overflow in the ordinary case.
+      failed = (value & magnitude_mask) != value;
+    }
+  }
+
+  if (failed) {
+    if (is_optional) return SPV_FAILED_MATCH;
+    return diagnostic() << "Integer " << (is_hex ? std::hex : std::dec)
+                        << std::showbase << value << " does not fit in a "
+                        << std::dec << bit_width << "-bit "
+                        << (type.isSigned ? "signed" : "unsigned")
+                        << " integer";
+  }
+
+  // Sign extend hex the number.
+  if (is_hex && (value & sign_mask))
+    *updated_value_for_hex = (value | overflow_mask);
+
+  return SPV_SUCCESS;
+}
+} // namespace libspirv

@@ -351,7 +351,7 @@ TEST_F(TextToBinaryTest, GroupMemberDecorateMissingTargetMemberNumber) {
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidTargetMemberNumber) {
   EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0 %id1"),
-              Eq("Invalid literal number '%id1'."));
+              Eq("Invalid unsigned integer literal: %id1"));
 }
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetId) {
@@ -366,7 +366,7 @@ TEST_F(TextToBinaryTest, GroupMemberDecorateMissingSecondTargetMemberNumber) {
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetMemberNumber) {
   EXPECT_THAT(CompileFailure("OpGroupMemberDecorate %group %id0 42 %id1 %id2"),
-              Eq("Invalid literal number '%id2'."));
+              Eq("Invalid unsigned integer literal: %id2"));
 }
 
 // TODO(dneto): OpMemberDecorate

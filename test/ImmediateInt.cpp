@@ -144,13 +144,6 @@ TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
             CompiledInstructions("OpTypeMatrix %10 !2 0.123", kCAF));
   EXPECT_EQ(CompiledInstructions("OpTypeMatrix %10 %2 -0.5", kCAF),
             CompiledInstructions("OpTypeMatrix %10 !2 -0.5", kCAF));
-  // 64-bit float.
-  EXPECT_EQ(
-      CompiledInstructions(
-          "OpTypeMatrix %10 %2 9999999999999999999999999999999999999999.9", kCAF),
-      CompiledInstructions(
-          "OpTypeMatrix %10 !2 9999999999999999999999999999999999999999.9",
-          kCAF));
 }
 
 // Literal strings after !<integer> are handled correctly.
@@ -280,11 +273,11 @@ TEST_F(ImmediateIntTest, ForbiddenOperands) {
 
 TEST_F(ImmediateIntTest, NotInteger) {
   EXPECT_THAT(CompileFailure("!abc"),
-              StrEq("Invalid immediate integer '!abc'."));
+              StrEq("Invalid immediate integer: !abc"));
   EXPECT_THAT(CompileFailure("!12.3"),
-              StrEq("Invalid immediate integer '!12.3'."));
+              StrEq("Invalid immediate integer: !12.3"));
   EXPECT_THAT(CompileFailure("!12K"),
-              StrEq("Invalid immediate integer '!12K'."));
+              StrEq("Invalid immediate integer: !12K"));
 }
 
 }  // anonymous namespace

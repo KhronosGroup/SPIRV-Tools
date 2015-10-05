@@ -166,15 +166,20 @@ TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralDefaultFormat) {
   // instruction.  Then it tries to parse "%abc" as the start of an
   // assignment form instruction, but can't since it hits the end
   // of stream.
-  EXPECT_THAT(CompileFailure("OpSwitch %selector %default %abc"),
-              Eq("Expected '=', found end of stream."));
+  const auto input = R"(%i32 = OpTypeInt 32 0
+                        %selector = OpConstant %i32 42
+                        OpSwitch %selector %default %abc)";
+  EXPECT_THAT(CompileFailure(input), Eq("Expected '=', found end of stream."));
 }
 
 TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralCanonicalFormat) {
-  EXPECT_THAT(CompileWithFormatFailure("OpSwitch %selector %default %abc",
-                                       SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
-              Eq("Expected <opcode> at the beginning of an instruction, found "
-                 "'%abc'."));
+  const auto input = R"(OpTypeInt %i32 32 0
+                        OpConstant %i32 %selector 42
+                  OpSwitch %selector %default %abc)";
+  EXPECT_THAT(
+      CompileWithFormatFailure(input, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
+      Eq("Expected <opcode> at the beginning of an instruction, found "
+         "'%abc'."));
 }
 
 TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
@@ -184,43 +189,100 @@ TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
               Eq("Expected operand, found end of stream."));
 }
 
+// A test case for an OpSwitch.
+// It is also parameterized to test encodings OpConstant
+// integer literals.  This can capture both single and multi-word
+// integer literal tests.
 struct SwitchTestCase {
   std::string constant_type_args;
+  std::string constant_value_arg;
+  std::string case_value_arg;
   std::vector<uint32_t> expected_instructions;
 };
 
 using OpSwitchValidTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<SwitchTestCase>>;
 
+// Tests the encoding of OpConstant literal values, and also
+// the literal integer cases in an OpSwitch.  This can
+// test both single and multi-word integer literal encodings.
 TEST_P(OpSwitchValidTest, ValidTypes) {
   const std::string input = "%1 = OpTypeInt " + GetParam().constant_type_args +
                             "\n"
-                            "%2 = OpConstant %1 0\n"
-                            "OpSwitch %2 %default 32 %4\n";
+                            "%2 = OpConstant %1 " +
+                            GetParam().constant_value_arg +
+                            "\n"
+                            "OpSwitch %2 %default " +
+                            GetParam().case_value_arg + " %4\n";
   std::vector<uint32_t> instructions;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(GetParam().expected_instructions));
 }
-// clang-format off
-#define CASE(integer_width, integer_signedness) \
-  { #integer_width " " #integer_signedness, \
-    { Concatenate({ \
-       MakeInstruction(spv::OpTypeInt, {1, integer_width, integer_signedness}),\
-       MakeInstruction(spv::OpConstant, {1, 2, 0} ), \
-       MakeInstruction(spv::OpSwitch, {2, 3, 32, 4} )})}}
+
+// Constructs a SwitchTestCase from the given integer_width, signedness,
+// constant value string, and expected encoded constant.
+SwitchTestCase MakeSwitchTestCase(uint32_t integer_width,
+                                  uint32_t integer_signedness,
+                                  std::string constant_str,
+                                  std::vector<uint32_t> encoded_constant,
+                                  std::string case_value_str,
+                                  std::vector<uint32_t> encoded_case_value) {
+  std::stringstream ss;
+  ss << integer_width << " " << integer_signedness;
+  return SwitchTestCase{
+      ss.str(),
+      constant_str,
+      case_value_str,
+      {Concatenate(
+          {MakeInstruction(spv::OpTypeInt,
+                           {1, integer_width, integer_signedness}),
+           MakeInstruction(spv::OpConstant,
+                           Concatenate({{1, 2}, encoded_constant})),
+           MakeInstruction(spv::OpSwitch,
+                           Concatenate({{2, 3}, encoded_case_value, {4}}))})}};
+}
+
 INSTANTIATE_TEST_CASE_P(
-    TextToBinaryOpSwitchValid, OpSwitchValidTest,
-    ::testing::ValuesIn(std::vector<SwitchTestCase>{
-      CASE(32, 0),
-      CASE(16, 0),
-      // TODO(dneto): For a 64-bit selector, the literals should take up two
-      // words, in little-endian sequence.  In that case the OpSwitch operands
-      // would be {2, 3, 32, 0, 4}.
-      CASE(64, 0),
-      // TODO(dneto): Try signed cases also.
-    }));
-#undef CASE
-// clang-format on
+    TextToBinaryOpSwitchValid1Word, OpSwitchValidTest,
+    ::testing::ValuesIn(std::vector<SwitchTestCase>({
+        MakeSwitchTestCase(32, 0, "42", {42}, "100", {100}),
+        MakeSwitchTestCase(32, 1, "-1", {0xffffffff}, "100", {100}),
+        // SPIR-V 1.0 Rev 1 clarified that for an integer narrower than 32-bits,
+        // its bits will appear in the lower order bits of the 32-bit word, and
+        // a signed integer is sign-extended.
+        MakeSwitchTestCase(7, 0, "127", {127}, "100", {100}),
+        MakeSwitchTestCase(14, 0, "99", {99}, "100", {100}),
+        MakeSwitchTestCase(16, 0, "65535", {65535}, "100", {100}),
+        MakeSwitchTestCase(16, 1, "101", {101}, "100", {100}),
+        // Demonstrate sign extension
+        MakeSwitchTestCase(16, 1, "-2", {0xfffffffe}, "100", {100}),
+        // Hex cases
+        MakeSwitchTestCase(16, 1, "0x7ffe", {0x7ffe}, "0x1234", {0x1234}),
+        MakeSwitchTestCase(16, 1, "0x8000", {0xffff8000}, "0x8100",
+                           {0xffff8100}),
+        MakeSwitchTestCase(16, 0, "0x8000", {0x00008000}, "0x8100", {0x8100}),
+    })));
+
+// NB: The words LOW ORDER bits show up first.
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSwitchValid2Words, OpSwitchValidTest,
+    ::testing::ValuesIn(std::vector<SwitchTestCase>({
+        MakeSwitchTestCase(33, 0, "101", {101, 0}, "500", {500, 0}),
+        MakeSwitchTestCase(48, 1, "-1", {0xffffffff, 0xffffffff}, "900",
+                           {900, 0}),
+        MakeSwitchTestCase(64, 1, "-2", {0xfffffffe, 0xffffffff}, "-5",
+                           {0xfffffffb, uint32_t(-1)}),
+        // Hex cases
+        MakeSwitchTestCase(48, 1, "0x7fffffffffff", {0xffffffff, 0x00007fff},
+                           "100", {100, 0}),
+        MakeSwitchTestCase(48, 1, "0x800000000000", {0x00000000, 0xffff8000},
+                           "0x800000000000", {0x00000000, 0xffff8000}),
+        MakeSwitchTestCase(48, 0, "0x800000000000", {0x00000000, 0x00008000},
+                           "0x800000000000", {0x00000000, 0x00008000}),
+        MakeSwitchTestCase(63, 0, "0x500000000", {0, 5}, "12", {12, 0}),
+        MakeSwitchTestCase(64, 0, "0x600000000", { 0, 6 }, "12", {12, 0}),
+        MakeSwitchTestCase(64, 1, "0x700000123", { 0x123, 7 }, "12", {12, 0}),
+    })));
 
 using OpSwitchInvalidTypeTestCase =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;

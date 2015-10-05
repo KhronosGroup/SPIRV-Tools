@@ -123,18 +123,55 @@ TEST_P(OpConstantValidTest, ValidTypes) {
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpConstantValid, OpConstantValidTest,
     ::testing::ValuesIn(std::vector<ConstantTestCase>{
+      // Check 16 bits
+      {"OpTypeInt 16 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x1234})})},
+      {"OpTypeInt 16 0", "0x8000",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x8000})})},
+      {"OpTypeInt 16 1", "0x8000", // Test sign extension.
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0xffff8000})})},
+      {"OpTypeInt 16 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, uint32_t(-32)})})},
+      // Check 32 bits
       {"OpTypeInt 32 0", "42",
         Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
          MakeInstruction(spv::OpConstant, {1, 2, 42})})},
       {"OpTypeInt 32 1", "-32",
         Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 1}),
-         MakeInstruction(spv::OpConstant, {1, 2, static_cast<uint32_t>(-32)})})},
+         MakeInstruction(spv::OpConstant, {1, 2, uint32_t(-32)})})},
       {"OpTypeFloat 32", "1.0",
         Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
          MakeInstruction(spv::OpConstant, {1, 2, 0x3f800000})})},
       {"OpTypeFloat 32", "10.0",
         Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
          MakeInstruction(spv::OpConstant, {1, 2, 0x41200000})})},
+      // Check 48 bits
+      {"OpTypeInt 48 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 48 0", "0x800000000001",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 1, 0x00008000})})},
+      {"OpTypeInt 48 1", "0x800000000000", // Test sign extension.
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0, 0xffff8000})})},
+      {"OpTypeInt 48 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, uint32_t(-32), uint32_t(-1)})})},
+      // Check 64 bits
+      {"OpTypeInt 64 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 0}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 64 1", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 64 1", "-42",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 1}),
+         MakeInstruction(spv::OpConstant, {1, 2, uint32_t(-42), uint32_t(-1)})})},
     }));
 // clang-format on
 
@@ -149,9 +186,122 @@ TEST_P(OpConstantInvalidTypeTest, InvalidTypes) {
       CompileFailure(input),
       Eq("Type for Constant must be a scalar floating point or integer type"));
 }
+
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpConstantInvalidValidType, OpConstantInvalidTypeTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+      {"OpTypeVoid",
+       "OpTypeBool",
+       "OpTypeVector %a 32",
+       "OpTypeMatrix %a 32",
+       "OpTypeImage %a 1D 0 0 0 0 Unknown",
+       "OpTypeSampler",
+       "OpTypeSampledImage %a",
+       "OpTypeArray %a %b",
+       "OpTypeRuntimeArray %a",
+       "OpTypeStruct %a",
+       "OpTypeOpaque \"Foo\"",
+       "OpTypePointer UniformConstant %a",
+       "OpTypeFunction %a %b",
+       "OpTypeEvent",
+       "OpTypeDeviceEvent",
+       "OpTypeReserveId",
+       "OpTypeQueue",
+       "OpTypePipe ReadOnly",
+       "OpTypeForwardPointer %a UniformConstant",
+        // At least one thing that isn't a type at all
+       "OpNot %a %b"
+      },
+    }));
+// clang-format on
+
+using OpSpecConstantValidTest = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<ConstantTestCase>>;
+
+TEST_P(OpSpecConstantValidTest, ValidTypes)
+{
+  const std::string input = "%1 = " + GetParam().constant_type +
+                            "\n"
+                            "%2 = OpSpecConstant %1 " +
+                            GetParam().constant_value + "\n";
+  std::vector<uint32_t> instructions;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(GetParam().expected_instructions));
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSpecConstantValid, OpSpecConstantValidTest,
+    ::testing::ValuesIn(std::vector<ConstantTestCase>{
+      // Check 16 bits
+      {"OpTypeInt 16 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x1234})})},
+      {"OpTypeInt 16 0", "0x8000",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x8000})})},
+      {"OpTypeInt 16 1", "0x8000", // Test sign extension.
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0xffff8000})})},
+      {"OpTypeInt 16 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 16, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, uint32_t(-32)})})},
+      // Check 32 bits
+      {"OpTypeInt 32 0", "42",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 42})})},
+      {"OpTypeInt 32 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, uint32_t(-32)})})},
+      {"OpTypeFloat 32", "1.0",
+        Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x3f800000})})},
+      {"OpTypeFloat 32", "10.0",
+        Concatenate({MakeInstruction(spv::OpTypeFloat, {1, 32}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x41200000})})},
+      // Check 48 bits
+      {"OpTypeInt 48 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 48 0", "0x800000000001",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 1, 0x00008000})})},
+      {"OpTypeInt 48 1", "0x800000000000", // Test sign extension.
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0, 0xffff8000})})},
+      {"OpTypeInt 48 1", "-32",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 48, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, uint32_t(-32), uint32_t(-1)})})},
+      // Check 64 bits
+      {"OpTypeInt 64 0", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 0}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 64 1", "0x1234",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 64 1", "-42",
+        Concatenate({MakeInstruction(spv::OpTypeInt, {1, 64, 1}),
+         MakeInstruction(spv::OpSpecConstant, {1, 2, uint32_t(-42), uint32_t(-1)})})},
+    }));
+// clang-format on
+
+using OpSpecConstantInvalidTypeTest = spvtest::TextToBinaryTestBase<
+  ::testing::TestWithParam<std::string>>;
+
+TEST_P(OpSpecConstantInvalidTypeTest, InvalidTypes)
+{
+  const std::string input = "%1 = " + GetParam() +
+                            "\n"
+                            "%2 = OpSpecConstant %1 0\n";
+  EXPECT_THAT(
+      CompileFailure(input),
+      Eq("Type for SpecConstant must be a scalar floating point or integer type"));
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSpecConstantInvalidValidType, OpSpecConstantInvalidTypeTest,
     ::testing::ValuesIn(std::vector<std::string>{
       {"OpTypeVoid",
        "OpTypeBool",
@@ -185,7 +335,6 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(dneto): OpConstantNull
 // TODO(dneto): OpSpecConstantTrue
 // TODO(dneto): OpSpecConstantFalse
-// TODO(dneto): OpSpecConstant
 // TODO(dneto): OpSpecConstantComposite
 // TODO(dneto): OpSpecConstantOp
 

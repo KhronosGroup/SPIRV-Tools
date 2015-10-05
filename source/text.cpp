@@ -48,8 +48,6 @@
 #include "operand.h"
 #include "text_handler.h"
 
-using spvutils::BitwiseCast;
-
 bool spvIsValidIDCharacter(const char value) {
   return value == '_' || 0 != ::isalnum(value);
 }
@@ -161,17 +159,12 @@ namespace {
 spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
                              const char* text, spv_instruction_t* pInst) {
   assert(*text == '!');
-  const char* begin = text + 1;
-  char* end = nullptr;
-  const uint64_t parseResult = strtoull(begin, &end, 0);
-  size_t length = end - begin;
-  if (length != strlen(begin)) {
-    return context->diagnostic() << "Invalid immediate integer '" << text << "'.";
-  } else if (length > 10 || (parseResult >> 32) != 0) {
-    return context->diagnostic() << "Immediate integer '" << text
-                          << "' is outside the unsigned 32-bit range.";
-  }
-  context->binaryEncodeU32(parseResult, pInst);
+  uint32_t parse_result;
+  if (auto error =
+          context->parseNumber(text + 1, false, &parse_result,
+                               "Invalid immediate integer: !"))
+    return error;
+  context->binaryEncodeU32(parse_result, pInst);
   context->seekForward(strlen(text));
   return SPV_SUCCESS;
 }
@@ -243,24 +236,16 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER: {
-      spv_literal_t literal = {};
-      spv_result_t error = spvTextToLiteral(textValue, &literal);
-      if (error != SPV_SUCCESS) {
-        if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
-        if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
-        return context->diagnostic() << "Invalid literal number '" << textValue
-                                     << "'.";
-      }
-
+      libspirv::IdType expected_type = libspirv::kUnknownType;
       // The encoding for OpConstant, OpSpecConstant and OpSwitch all
       // depend on either their own result-id or the result-id of
       // one of their parameters.
       if (OpConstant == pInst->opcode || OpSpecConstant == pInst->opcode) {
         // Special cases for encoding possibly non-32-bit literals here.
-        libspirv::IdType type =
+        expected_type =
             context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
-        if (!libspirv::isScalarFloating(type) &&
-            !libspirv::isScalarIntegral(type)) {
+        if (!libspirv::isScalarFloating(expected_type) &&
+            !libspirv::isScalarIntegral(expected_type)) {
           spv_opcode_desc d;
           const char* opcode_name = "opcode";
           if (SPV_SUCCESS == grammar.lookupOpcode(pInst->opcode, &d)) {
@@ -271,53 +256,20 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                  << " must be a scalar floating point or integer type";
         }
       } else if (pInst->opcode == OpSwitch) {
-        // We need to know the value of the selector.
-        libspirv::IdType type =
-            context->getTypeOfValueInstruction(pInst->words[1]);
-        if (type.type_class != libspirv::IdTypeClass::kScalarIntegerType) {
-          return context->diagnostic()
-                 << "The selector operand for OpSwitch must be the result"
-                    " of an instruction that generates an integer scalar";
+        // We need to know the type of the selector.
+        expected_type = context->getTypeOfValueInstruction(pInst->words[1]);
+        if (!libspirv::isScalarIntegral(expected_type)) {
+          context->diagnostic()
+              << "The selector operand for OpSwitch must be the result"
+                 " of an instruction that generates an integer scalar";
+          return SPV_ERROR_INVALID_TEXT;
         }
       }
-      // TODO(awoloszyn): Generate the correct assembly for arbitrary
-      // bitwidths here instead of falling though.
 
-      switch (literal.type) {
-        // We do not have to print diagnostics here because spvBinaryEncode*
-        // prints diagnostic messages on failure.
-        case SPV_LITERAL_TYPE_INT_32:
-          context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.i32),
-                                   pInst);
-          break;
-        case SPV_LITERAL_TYPE_INT_64: {
-          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.i64),
-                                   pInst);
-        } break;
-        case SPV_LITERAL_TYPE_UINT_32: {
-          context->binaryEncodeU32(literal.value.u32, pInst);
-        } break;
-        case SPV_LITERAL_TYPE_UINT_64: {
-          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.u64),
-                                   pInst);
-        } break;
-        case SPV_LITERAL_TYPE_FLOAT_32: {
-          context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.f),
-                                   pInst);
-        } break;
-        case SPV_LITERAL_TYPE_FLOAT_64: {
-          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.d),
-                                   pInst);
-        } break;
-        case SPV_LITERAL_TYPE_STRING: {
-          return context->diagnostic(SPV_FAILED_MATCH)
-              << "Expected literal number, found literal string '" << textValue
-              << "'.";
-        } break;
-        default:
-          return context->diagnostic() << "Invalid literal number '"
-                                       << textValue << "'";
-      }
+      if (auto error = context->binaryEncodeNumericLiteral(
+               textValue, spvOperandIsOptional(type), expected_type, pInst)) {
+        return error;
+     }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
