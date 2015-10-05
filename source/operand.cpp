@@ -1288,11 +1288,12 @@ static const spv_operand_desc_t kernelProfilingInfoEntries[] = {
   }
 
 // A macro for defining a capability that depends on another.
-#define CASE_CAP(NAME, CAP)                                                    \
-  {                                                                            \
-    #NAME, Capability##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, Capability##CAP, { \
-      SPV_OPERAND_TYPE_NONE                                                    \
-    }                                                                          \
+#define CASE_CAP(NAME, CAP)                                 \
+  {                                                         \
+    #NAME, Capability##NAME, SPV_OPCODE_FLAGS_CAPABILITIES, \
+        SPV_CAPABILITY_AS_MASK(Capability##CAP), {          \
+      SPV_OPERAND_TYPE_NONE                                 \
+    }                                                       \
   }
 
 static const spv_operand_desc_t capabilityInfoEntries[] = {

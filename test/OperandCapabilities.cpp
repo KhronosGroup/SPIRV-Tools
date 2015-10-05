@@ -394,6 +394,209 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationAlignment, Kernel),
     }));
 
+// See SPIR-V Section 3.21 BuiltIn
+INSTANTIATE_TEST_CASE_P(
+    BuiltIn, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE1(BUILT_IN, BuiltInPosition, Shader),
+        CASE1(BUILT_IN, BuiltInPointSize, Shader),
+        // 2 is an intentional gap in the spec numbering.
+        CASE1(BUILT_IN, BuiltInClipDistance, Shader),
+        CASE1(BUILT_IN, BuiltInCullDistance, Shader),
+        CASE1(BUILT_IN, BuiltInVertexId, Shader),
+        CASE1(BUILT_IN, BuiltInInstanceId, Shader),
+        CASE2(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation),
+        CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
+        CASE1(BUILT_IN, BuiltInLayer, Geometry),
+        CASE1(BUILT_IN, BuiltInViewportIndex, Geometry),
+        CASE1(BUILT_IN, BuiltInTessLevelOuter, Tessellation),
+        CASE1(BUILT_IN, BuiltInTessLevelInner, Tessellation),
+        CASE1(BUILT_IN, BuiltInTessCoord, Tessellation),
+        CASE1(BUILT_IN, BuiltInPatchVertices, Tessellation),
+        CASE1(BUILT_IN, BuiltInFragCoord, Shader),
+        CASE1(BUILT_IN, BuiltInPointCoord, Shader),
+        CASE1(BUILT_IN, BuiltInFrontFacing, Shader),
+        CASE1(BUILT_IN, BuiltInSampleId, Shader),
+        CASE1(BUILT_IN, BuiltInSamplePosition, Shader),
+        CASE1(BUILT_IN, BuiltInSampleMask, Shader),
+        CASE1(BUILT_IN, BuiltInFragColor, Shader),
+        CASE1(BUILT_IN, BuiltInFragDepth, Shader),
+        CASE1(BUILT_IN, BuiltInHelperInvocation, Shader),
+        CASE0(BUILT_IN, BuiltInNumWorkgroups),
+        CASE0(BUILT_IN, BuiltInWorkgroupSize),
+        CASE0(BUILT_IN, BuiltInWorkgroupId),
+        CASE0(BUILT_IN, BuiltInLocalInvocationId),
+        CASE0(BUILT_IN, BuiltInGlobalInvocationId),
+        CASE1(BUILT_IN, BuiltInLocalInvocationIndex, Shader),
+        CASE1(BUILT_IN, BuiltInWorkDim, Kernel),
+        CASE1(BUILT_IN, BuiltInGlobalSize, Kernel),
+        CASE1(BUILT_IN, BuiltInEnqueuedWorkgroupSize, Kernel),
+        CASE1(BUILT_IN, BuiltInGlobalOffset, Kernel),
+        CASE1(BUILT_IN, BuiltInGlobalLinearId, Kernel),
+        CASE1(BUILT_IN, BuiltInWorkgroupLinearId, Kernel),
+        CASE1(BUILT_IN, BuiltInSubgroupSize, Kernel),
+        CASE1(BUILT_IN, BuiltInSubgroupMaxSize, Kernel),
+        CASE1(BUILT_IN, BuiltInNumSubgroups, Kernel),
+        CASE1(BUILT_IN, BuiltInNumEnqueuedSubgroups, Kernel),
+        CASE1(BUILT_IN, BuiltInSubgroupId, Kernel),
+        CASE1(BUILT_IN, BuiltInSubgroupLocalInvocationId, Kernel),
+        CASE1(BUILT_IN, BuiltInVertexIndex, Shader),
+        CASE1(BUILT_IN, BuiltInInstanceIndex, Shader),
+    }));
+
+// See SPIR-V Section 3.22 Selection Control
+INSTANTIATE_TEST_CASE_P(
+    SelectionControl, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(SELECTION_CONTROL, SelectionControlMaskNone),
+        CASE0(SELECTION_CONTROL, SelectionControlFlattenMask),
+        CASE0(SELECTION_CONTROL, SelectionControlDontFlattenMask),
+    }));
+
+// See SPIR-V Section 3.23 Loop Control
+INSTANTIATE_TEST_CASE_P(
+    LoopControl, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(LOOP_CONTROL, LoopControlMaskNone),
+        CASE0(LOOP_CONTROL, LoopControlUnrollMask),
+        CASE0(LOOP_CONTROL, LoopControlDontUnrollMask),
+    }));
+
+// See SPIR-V Section 3.24 Function Control
+INSTANTIATE_TEST_CASE_P(
+    FunctionControl, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(FUNCTION_CONTROL, FunctionControlMaskNone),
+        CASE0(FUNCTION_CONTROL, FunctionControlInlineMask),
+        CASE0(FUNCTION_CONTROL, FunctionControlDontInlineMask),
+        CASE0(FUNCTION_CONTROL, FunctionControlPureMask),
+        CASE0(FUNCTION_CONTROL, FunctionControlConstMask),
+    }));
+
+// See SPIR-V Section 3.25 Memory Semantics <id>
+INSTANTIATE_TEST_CASE_P(
+    MemorySemantics, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        // TODO(dneto): This enum is expanded and renumbered in SPIR-V 1.0 Rev 1.
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsMaskNone),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsAcquireMask),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsReleaseMask),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsSequentiallyConsistentMask),
+        CASE1(MEMORY_SEMANTICS, MemorySemanticsUniformMemoryMask, Shader),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsSubgroupMemoryMask),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsWorkgroupLocalMemoryMask),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsWorkgroupGlobalMemoryMask),
+        CASE1(MEMORY_SEMANTICS, MemorySemanticsAtomicCounterMemoryMask, Shader),
+        CASE0(MEMORY_SEMANTICS, MemorySemanticsImageMemoryMask),
+    }));
+
+// See SPIR-V Section 3.26 Memory Access
+INSTANTIATE_TEST_CASE_P(
+    MemoryAccess, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessMaskNone),
+        CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessVolatileMask),
+        CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessAlignedMask),
+        CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessNontemporalMask),
+    }));
+
+// See SPIR-V Section 3.27 Scope <id>
+INSTANTIATE_TEST_CASE_P(
+    Scope, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(EXECUTION_SCOPE, ScopeCrossDevice),
+        CASE0(EXECUTION_SCOPE, ScopeDevice),
+        CASE0(EXECUTION_SCOPE, ScopeWorkgroup),
+        CASE0(EXECUTION_SCOPE, ScopeSubgroup),
+        CASE0(EXECUTION_SCOPE, ScopeInvocation),
+    }));
+
+// See SPIR-V Section 3.28 Group Operation
+INSTANTIATE_TEST_CASE_P(
+    GroupOperation, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE1(GROUP_OPERATION, GroupOperationReduce, Kernel),
+        CASE1(GROUP_OPERATION, GroupOperationInclusiveScan, Kernel),
+        CASE1(GROUP_OPERATION, GroupOperationExclusiveScan, Kernel),
+    }));
+
+// See SPIR-V Section 3.29 Kernel Enqueue Flags
+INSTANTIATE_TEST_CASE_P(
+    KernelEnqueueFlags, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsNoWait, Kernel),
+        CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsWaitKernel, Kernel),
+        CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsWaitWorkGroup, Kernel),
+    }));
+
+// See SPIR-V Section 3.30 Kernel Profiling Info
+INSTANTIATE_TEST_CASE_P(
+    KernelProfilingInfo, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(KERNEL_PROFILING_INFO, KernelProfilingInfoMaskNone),
+        CASE1(KERNEL_PROFILING_INFO, KernelProfilingInfoCmdExecTimeMask, Kernel),
+    }));
+
+// See SPIR-V Section 3.31 Capability
+INSTANTIATE_TEST_CASE_P(
+    Capability, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(CAPABILITY, CapabilityMatrix),
+        CASE1(CAPABILITY, CapabilityShader, Matrix),
+        CASE1(CAPABILITY, CapabilityGeometry, Shader),
+        CASE1(CAPABILITY, CapabilityTessellation, Shader),
+        CASE0(CAPABILITY, CapabilityAddresses),
+        CASE0(CAPABILITY, CapabilityLinkage),
+        CASE0(CAPABILITY, CapabilityKernel),
+        CASE1(CAPABILITY, CapabilityVector16, Kernel),
+        CASE1(CAPABILITY, CapabilityFloat16Buffer, Kernel),
+        CASE1(CAPABILITY, CapabilityFloat16, Float16Buffer),
+        CASE0(CAPABILITY, CapabilityFloat64),
+        CASE0(CAPABILITY, CapabilityInt64),
+        CASE1(CAPABILITY, CapabilityInt64Atomics, Int64),
+        CASE1(CAPABILITY, CapabilityImageBasic, Kernel),
+        CASE1(CAPABILITY, CapabilityImageReadWrite, Kernel),
+        CASE1(CAPABILITY, CapabilityImageMipmap, Kernel),
+        CASE1(CAPABILITY, CapabilityImageSRGBWrite, Kernel),
+        CASE1(CAPABILITY, CapabilityPipes, Kernel),
+        CASE0(CAPABILITY, CapabilityGroups),
+        CASE1(CAPABILITY, CapabilityDeviceEnqueue, Kernel),
+        CASE1(CAPABILITY, CapabilityLiteralSampler, Kernel),
+        CASE1(CAPABILITY, CapabilityAtomicStorage, Shader),
+        CASE0(CAPABILITY, CapabilityInt16),
+        CASE1(CAPABILITY, CapabilityTessellationPointSize, Tessellation),
+        CASE1(CAPABILITY, CapabilityGeometryPointSize, Geometry),
+        CASE1(CAPABILITY, CapabilityImageGatherExtended, Shader),
+        CASE1(CAPABILITY, CapabilityStorageImageExtendedFormats, Shader),
+        CASE1(CAPABILITY, CapabilityStorageImageMultisample, Shader),
+        CASE1(CAPABILITY, CapabilityUniformBufferArrayDynamicIndexing, Shader),
+        CASE1(CAPABILITY, CapabilitySampledImageArrayDynamicIndexing, Shader),
+        CASE1(CAPABILITY, CapabilityStorageBufferArrayDynamicIndexing, Shader),
+        CASE1(CAPABILITY, CapabilityStorageImageArrayDynamicIndexing, Shader),
+        CASE1(CAPABILITY, CapabilityClipDistance, Shader),
+        CASE1(CAPABILITY, CapabilityCullDistance, Shader),
+        CASE1(CAPABILITY, CapabilityImageCubeArray, SampledCubeArray),
+        CASE1(CAPABILITY, CapabilitySampleRateShading, Shader),
+        CASE1(CAPABILITY, CapabilityImageRect, SampledRect),
+        CASE1(CAPABILITY, CapabilitySampledRect, Shader),
+        CASE1(CAPABILITY, CapabilityGenericPointer, Addresses),
+        CASE1(CAPABILITY, CapabilityInt8, Kernel),
+        CASE1(CAPABILITY, CapabilityInputTarget, Shader),
+        CASE1(CAPABILITY, CapabilitySparseResidency, Shader),
+        CASE1(CAPABILITY, CapabilityMinLod, Shader),
+        CASE1(CAPABILITY, CapabilitySampled1D, Shader),
+        CASE1(CAPABILITY, CapabilityImage1D, Sampled1D),
+        CASE1(CAPABILITY, CapabilitySampledCubeArray, Shader),
+        CASE1(CAPABILITY, CapabilitySampledBuffer, Shader),
+        CASE1(CAPABILITY, CapabilityImageBuffer, SampledBuffer),
+        CASE1(CAPABILITY, CapabilityImageMSArray, Shader),
+        CASE1(CAPABILITY, CapabilityAdvancedFormats, Shader),
+        CASE1(CAPABILITY, CapabilityImageQuery, Shader),
+        CASE1(CAPABILITY, CapabilityDerivativeControl, Shader),
+        CASE1(CAPABILITY, CapabilityInterpolationFunction, Shader),
+        CASE1(CAPABILITY, CapabilityTransformFeedback, Shader),
+    }));
+
 #undef CASE0
 #undef CASE1
 #undef CASE2

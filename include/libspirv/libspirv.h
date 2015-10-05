@@ -175,6 +175,8 @@ typedef enum spv_operand_type_t {
   // The ID for a memory semantics value.
   SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
   // The ID for an execution scope value.
+  // TODO(dneto): Rev 30 changed "Execution Scope" to "Scope".  We should
+  // probably do that here too.
   SPV_OPERAND_TYPE_EXECUTION_SCOPE,
 
   SPV_OPERAND_TYPE_GROUP_OPERATION,
