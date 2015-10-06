@@ -28,6 +28,7 @@
 #define _LIBSPIRV_UTIL_BINARY_H_
 
 #include <libspirv/libspirv.h>
+#include "instruction.h"
 #include "operand.h"
 #include "print.h"
 

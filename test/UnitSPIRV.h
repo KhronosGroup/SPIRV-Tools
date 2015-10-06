@@ -129,6 +129,17 @@ inline std::vector<uint32_t> MakeInstruction(
   return MakeInstruction(opcode, args);
 }
 
+// Returns the vector of words representing the concatenation
+// of all input vectors.
+inline std::vector<uint32_t> Concatenate(
+    const std::vector<std::vector<uint32_t>>& instructions) {
+  std::vector<uint32_t> result;
+  for (const auto& instruction : instructions) {
+    result.insert(result.end(), instruction.begin(), instruction.end());
+  }
+  return result;
+}
+
 // Encodes a string as a sequence of words, using the SPIR-V encoding.
 inline std::vector<uint32_t> MakeVector(std::string input) {
   std::vector<uint32_t> result;

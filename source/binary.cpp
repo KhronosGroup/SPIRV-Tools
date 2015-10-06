@@ -28,6 +28,7 @@
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
 
@@ -444,7 +445,7 @@ spv_result_t spvBinaryDecodeOpcode(
     }
 
     if (spvBinaryDecodeOperand(
-            opcodeEntry->opcode, type, pInst->words + index, numWords, endian,
+            opcodeEntry->opcode, type, &pInst->words[index], numWords, endian,
             options, operandTable, extInstTable, &expectedOperands,
             &pInst->extInstType,
             (isAssigmentFormat && !currentIsResultId ? no_result_id_stream

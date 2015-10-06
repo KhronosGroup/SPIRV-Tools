@@ -32,6 +32,7 @@
 
 #include "binary.h"
 #include "ext_inst.h"
+#include "instruction.h"
 #include "opcode.h"
 #include "text.h"
 
@@ -317,13 +318,7 @@ void AssemblyContext::seekForward(uint32_t size) {
 
 spv_result_t AssemblyContext::binaryEncodeU32(const uint32_t value,
                                                      spv_instruction_t *pInst) {
-  if (pInst->wordCount + 1 > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    diagnostic() << "Instruction word count '"
-             << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "' exceeded.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
-
-  pInst->words[pInst->wordCount++] = (uint32_t)value;
+  spvInstructionAddWord(pInst, value);
   return SPV_SUCCESS;
 }
 
@@ -340,18 +335,26 @@ spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
 
 spv_result_t AssemblyContext::binaryEncodeString(
     const char *value, spv_instruction_t *pInst) {
-  size_t length = strlen(value);
-  size_t wordCount = (length / 4) + 1;
-  if ((sizeof(uint32_t) * pInst->wordCount) + length >
-      sizeof(uint32_t) * SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
+  const size_t length = strlen(value);
+  const size_t wordCount = (length / 4) + 1;
+  const size_t oldWordCount = pInst->words.size();
+  const size_t newWordCount = oldWordCount + wordCount;
+
+  // TODO(dneto): We can just defer this check until later.
+  if (newWordCount > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
     diagnostic() << "Instruction word count '"
              << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "'exceeded.";
     return SPV_ERROR_INVALID_TEXT;
   }
 
-  char *dest = (char *)&pInst->words[pInst->wordCount];
+  pInst->words.resize(newWordCount);
+
+  // Make sure all the bytes in the last word are 0, in case we only
+  // write a partial word at the end.
+  pInst->words.back() = 0;
+
+  char *dest = (char *)&pInst->words[oldWordCount];
   strncpy(dest, value, length);
-  pInst->wordCount += (uint16_t)wordCount;
 
   return SPV_SUCCESS;
 }

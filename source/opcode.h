@@ -27,6 +27,7 @@
 #ifndef _LIBSPIRV_UTIL_OPCODE_H_
 #define _LIBSPIRV_UTIL_OPCODE_H_
 
+#include "instruction.h"
 #include <libspirv/libspirv.h>
 
 // Functions

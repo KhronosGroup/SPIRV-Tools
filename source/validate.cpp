@@ -27,6 +27,7 @@
 #include <libspirv/libspirv.h>
 #include "binary.h"
 #include "diagnostic.h"
+#include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
 #include "validate.h"
@@ -130,7 +131,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
                               spv_position position,
                               spv_diagnostic *pDiagnostic) {
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words;
+    const uint32_t *words = pInsts[instIndex].words.data();
     uint16_t wordCount;
     Op opcode;
     spvOpcodeSplit(words[0], &wordCount, &opcode);
@@ -150,7 +151,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
     }
 
     spv_operand_desc operandEntry = nullptr;
-    for (uint16_t index = 1; index < pInsts[instIndex].wordCount;
+    for (uint16_t index = 1; index < pInsts[instIndex].words.size();
          ++index, position->index++) {
       const uint32_t word = words[index];
 
@@ -191,7 +192,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
   std::vector<spv_id_info_t> idDefs;
 
   for (uint64_t instIndex = 0; instIndex < count; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words;
+    const uint32_t *words = pInsts[instIndex].words.data();
     Op opcode;
     spvOpcodeSplit(words[0], nullptr, &opcode);
 
@@ -203,7 +204,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
 
     spv_operand_desc operandEntry = nullptr;
     position->index++;  // NOTE: Account for Opcode word
-    for (uint16_t index = 1; index < pInsts[instIndex].wordCount;
+    for (uint16_t index = 1; index < pInsts[instIndex].words.size();
          ++index, position->index++) {
       const uint32_t word = words[index];
 

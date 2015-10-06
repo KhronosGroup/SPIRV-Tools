@@ -42,6 +42,7 @@
 #include "bitwisecast.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include "instruction.h"
 #include <libspirv/libspirv.h>
 #include "opcode.h"
 #include "operand.h"
@@ -223,7 +224,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         return SPV_ERROR_INVALID_TEXT;
       }
       const uint32_t id = context->spvNamedIdAssignOrGet(textValue);
-      pInst->words[pInst->wordCount++] = id;
+      spvInstructionAddWord(pInst, id);
     } break;
     case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
       // NOTE: Special case for extension instruction lookup
@@ -234,7 +235,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                                 << textValue << "'.";
           return SPV_ERROR_INVALID_TEXT;
         }
-        pInst->words[pInst->wordCount++] = extInst->ext_inst;
+        spvInstructionAddWord(pInst, extInst->ext_inst);
 
         // Prepare to parse the operands for the extended instructions.
         spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
@@ -546,7 +547,8 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   }
   pInst->opcode = opcodeEntry->opcode;
   context->setPosition(nextPosition);
-  pInst->wordCount++;
+  // Reserve the first word for the instruction.
+  spvInstructionAddWord(pInst, 0);
 
   // Maintains the ordered list of expected operand types.
   // For many instructions we only need the {numTypes, operandTypes}
@@ -622,7 +624,14 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     }
   }
 
-  pInst->words[0] = spvOpcodeMake(pInst->wordCount, opcodeEntry->opcode);
+  if (pInst->words.size() > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
+    context->diagnostic() << "Instruction too long: " << pInst->words.size()
+                          << " words, but the limit is "
+                          << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX;
+    return SPV_ERROR_INVALID_TEXT;
+  }
+
+  pInst->words[0] = spvOpcodeMake(pInst->words.size(), opcodeEntry->opcode);
 
   return SPV_SUCCESS;
 }
@@ -660,7 +669,8 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
 
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
   while (context.hasText()) {
-    spv_instruction_t inst = {};
+    instructions.push_back({});
+    spv_instruction_t& inst = instructions.back();
     inst.extInstType = extInstType;
 
     if (spvTextEncodeOpcode(grammar, &context, format, &inst)) {
@@ -668,22 +678,20 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
     }
     extInstType = inst.extInstType;
 
-    instructions.push_back(inst);
-
     if (context.advance()) break;
   }
 
   size_t totalSize = SPV_INDEX_INSTRUCTION;
   for (auto& inst : instructions) {
-    totalSize += inst.wordCount;
+    totalSize += inst.words.size();
   }
 
   uint32_t* data = new uint32_t[totalSize];
   if (!data) return SPV_ERROR_OUT_OF_MEMORY;
   uint64_t currentIndex = SPV_INDEX_INSTRUCTION;
   for (auto& inst : instructions) {
-    memcpy(data + currentIndex, inst.words, sizeof(uint32_t) * inst.wordCount);
-    currentIndex += inst.wordCount;
+    memcpy(data + currentIndex, inst.words.data(), sizeof(uint32_t) * inst.words.size());
+    currentIndex += inst.words.size();
   }
 
   spv_binary binary = new spv_binary_t();

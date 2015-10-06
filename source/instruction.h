@@ -24,37 +24,34 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-// Assembler tests for literal numbers and literal strings.
+#ifndef _LIBSPIRV_UTIL_INSTRUCTION_H_
+#define _LIBSPIRV_UTIL_INSTRUCTION_H_
 
-#include "TestFixture.h"
+#include <cstdint>
+#include <vector>
 
-namespace {
+#include <headers/spirv.hpp>
 
-using spvtest::TextToBinaryTest;
+// Describes an instruction.
+struct spv_instruction_t {
+  // Normally, both opcode and extInstType contain valid data.
+  // However, when the assembler parses !<number> as the first word in
+  // an instruction and opcode and extInstType are invalid.
+  Op opcode;
+  spv_ext_inst_type_t extInstType;
 
-TEST_F(TextToBinaryTest, LiteralStringInPlaceOfLiteralNumber) {
-  EXPECT_EQ(
-      R"(Expected literal number, found literal string '"I shouldn't be a string"'.)",
-      CompileFailure(R"(OpSource GLSL "I shouldn't be a string")"));
+  // The instruction, as a sequence of 32-bit words.
+  // For a regular instruction the opcode and word count are combined
+  // in words[0], as described in the SPIR-V spec.
+  // Otherwise, the first token was !<number>, and that number appears
+  // in words[0].  Subsequent elements are the result of parsing
+  // tokens in the alternate parsing mode as described in syntax.md.
+  std::vector<uint32_t> words;
+};
+
+// Appends a word to an instruction, without checking for overflow.
+inline void spvInstructionAddWord(spv_instruction_t* inst, uint32_t value) {
+  inst->words.push_back(value);
 }
 
-TEST_F(TextToBinaryTest, GarbageInPlaceOfLiteralString) {
-  EXPECT_EQ(
-      R"(Invalid literal string 'nice-source-code'.)",
-      CompileFailure(R"(OpSourceExtension nice-source-code)"));
-}
-
-TEST_F(TextToBinaryTest, LiteralNumberInPlaceOfLiteralString) {
-  EXPECT_EQ(
-      R"(Expected literal string, found literal number '1000'.)",
-      CompileFailure(R"(OpSourceExtension 1000)"));
-}
-
-TEST_F(TextToBinaryTest, LiteralStringTooLong) {
-  // SPIR-V allows strings up to 65535 characters.
-  const std::string code =
-      "OpSourceExtension \"" + std::string(65535, 'o') + "\"\n";
-  EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
-}
-
-}  // anonymous namespace
+#endif  // _LIBSPIRV_UTIL_INSTRUCTION_H_

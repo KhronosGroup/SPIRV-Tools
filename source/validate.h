@@ -27,6 +27,7 @@
 #ifndef _LIBSPIRV_UTIL_VALIDATE_H_
 #define _LIBSPIRV_UTIL_VALIDATE_H_
 
+#include "instruction.h"
 #include <libspirv/libspirv.h>
 
 // Structures

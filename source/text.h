@@ -54,7 +54,8 @@ typedef struct spv_literal_t {
     uint64_t u64;
     float f;
     double d;
-    char str[SPV_LIMIT_LITERAL_STRING_MAX];
+    // Allow room for the null terminator, and two surrounding quotes.
+    char str[SPV_LIMIT_LITERAL_STRING_MAX + 3];
   } value;
 } spv_literal_t;
 

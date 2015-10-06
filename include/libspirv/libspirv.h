@@ -56,10 +56,15 @@ extern "C" {
 
 // Universal limits
 
+// SPIR-V 1.0 limits
+#define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0xffff
+
 // NOTE: These are set to the minimum maximum values
+// TODO(dneto): Check these.
+
+// libspirv limits.
 #define SPV_LIMIT_LITERAL_NAME_MAX 0x00000400
 #define SPV_LIMIT_LITERAL_STRING_MAX 0x00010000
-#define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0x00000108
 #define SPV_LIMIT_RESULT_ID_BOUND 0x00400000
 #define SPV_LIMIT_CONTROL_FLOW_NEST_DEPTH 0x00000400
 #define SPV_LIMIT_GLOBAL_VARIABLES_MAX 0x00010000
@@ -349,22 +354,6 @@ typedef struct spv_text_t {
   const char *str;
   uint64_t length;
 } spv_text_t;
-
-// Describes an instruction.
-//
-// The wordCount and words[0..wordCount-1] always contain valid data.
-//
-// Normally, both opcode and extInstType contain valid data.
-// However, when the assembler parses !<number> as the first word in
-// an instruction, then opcode and extInstType are invalid, and
-//   wordCount == 1
-//   words[0] == <number>
-typedef struct spv_instruction_t {
-  uint16_t wordCount;
-  Op opcode;
-  spv_ext_inst_type_t extInstType;
-  uint32_t words[SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX];
-} spv_instruction_t;
 
 typedef struct spv_position_t {
   uint64_t line;

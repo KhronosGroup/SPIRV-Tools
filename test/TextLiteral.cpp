@@ -129,14 +129,14 @@ TEST(TextLiteral, GoodString) {
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
   std::string too_long = std::string("\"") +
-                         std::string(SPV_LIMIT_LITERAL_STRING_MAX - 2, 'a') +
+                         std::string(SPV_LIMIT_LITERAL_STRING_MAX + 1, 'a') +
                          "\"";
   EXPECT_EQ(SPV_ERROR_OUT_OF_MEMORY, spvTextToLiteral(too_long.data(), &l));
 }
 
 TEST(TextLiteral, GoodLongString) {
   spv_literal_t l;
-  std::string unquoted(SPV_LIMIT_LITERAL_STRING_MAX - 3, 'a');
+  std::string unquoted(SPV_LIMIT_LITERAL_STRING_MAX, 'a');
   std::string good_long = std::string("\"") + unquoted + "\"";
   EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);

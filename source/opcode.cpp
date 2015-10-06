@@ -26,6 +26,7 @@
 
 #include <libspirv/libspirv.h>
 #include "binary.h"
+#include "instruction.h"
 #include "opcode.h"
 
 #include <assert.h>
@@ -312,7 +313,7 @@ void spvInstructionCopy(const uint32_t *words, const Op opcode,
                         const uint16_t wordCount, const spv_endianness_t endian,
                         spv_instruction_t *pInst) {
   pInst->opcode = opcode;
-  pInst->wordCount = wordCount;
+  pInst->words.resize(wordCount);
   for (uint16_t wordIndex = 0; wordIndex < wordCount; ++wordIndex) {
     pInst->words[wordIndex] = spvFixWord(words[wordIndex], endian);
     if (!wordIndex) {

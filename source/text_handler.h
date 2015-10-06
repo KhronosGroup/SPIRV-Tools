@@ -31,11 +31,11 @@
 #include <unordered_map>
 
 #include "diagnostic.h"
+#include "instruction.h"
 #include "operand.h"
 
 namespace libspirv {
 // Structures
-
 
 // This is a lattice for tracking types.
 enum class IdTypeClass {

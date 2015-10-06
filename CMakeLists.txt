@@ -96,9 +96,11 @@ include_directories(
 
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/bitwisecast.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/bitwisecast.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.h
@@ -164,6 +166,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
 
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/AssemblyContext.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/AssemblyFormat.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryDestroy.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp

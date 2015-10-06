@@ -115,6 +115,7 @@ class TextToBinaryTestBase : public T {
       spvDiagnosticDestroy(diagnostic);
     }
     EXPECT_EQ(SPV_SUCCESS, error);
+    if (!binary) return "";
 
     spv_text decoded_text;
     error = spvBinaryToText(
