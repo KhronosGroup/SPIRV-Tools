@@ -13,7 +13,7 @@ into other code bases directly.
 
 * Based on SPIR-V 0.99 Revision 32
   * Supports core instructions and enumerants from Rev 32.
-  * Capability dependencies for enumerants may be incomplete or incorrect.
+  * Instructions are currently limited to 264 words.
 * Supports all core instructions, for 32-bit code.
   * Handling of non-32-bit literal numbers has been recently clarified.
     Those changes have not been applied.
@@ -27,6 +27,8 @@ into other code bases directly.
 The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
+
+* Capability dependencies for instructions and enums now match 0.99 Rev 32.
 
 2015-10-02
 * Completed assembler support for [`!<integer>` syntax](syntax.md#immediate)
@@ -275,12 +277,10 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* Encode literal numbers correctly, for widths other than 32-bits.
+* WIP: Encode literal numbers correctly, for widths other than 32-bits.
 * Support OpenCL extension library.
-* Enforce the parsing rules.
 * Support UTF-8 literal strings.
-* Disallow accidental conflict between numbered IDs and named IDs.
-  For example, %4 should not accidentally alias to %foo.
+* Support very long instructions.
 
 ### Validator
 
