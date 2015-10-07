@@ -40,8 +40,6 @@ otherwise generate an error.
 * a mask expression, consisting of one or more mask enum names separated
   by `|`.  For example, the expression `NotNaN|NotInf|NSZ` denotes the mask
   which is the combination of the `NotNaN`, `NotInf`, and `NSZ` flags.
-  (This is supported by the assembler but not yet by the disassembler.
-  TODO(dneto): Add disassembler support for emitting mask expressions.)
 * an injected immediate integer: `!<integer>`.  See [below](#immediate).
 * an ID, e.g. `%foo`. See [below](#id).
 
@@ -73,8 +71,8 @@ can also be written as:
 ## ID Definitions & Usage
 <a name="id"></a>
 
-An ID definition pertains to the `<result-id>` of an OpCode, and ID usage is a
-use of an ID as an input to an OpCode.
+An ID definition pertains to the `<result-id>` of an instruction, and ID usage is a
+use of an ID as an input to an instruction.
 
 An ID in the assembly language begins with `%` and must be followed by a name
 consisting of one or more letters, numbers or underscore characters.
@@ -86,6 +84,8 @@ compilation unit: no two IDs in the same unit will share internal numbers.
 
 The disassembler generates IDs where the name is always a decimal number
 greater than 0.
+
+So the example can be rewritten using more user-friendly names, as follows:
 ```
           OpCapability Shader
           OpMemoryModel Logical Simple
