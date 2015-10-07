@@ -88,7 +88,7 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
 /// the wordcount/opcode word.
 int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry);
 
-/// @brief Determine if the Opcode has capaspvity requirements
+/// @brief Determine if the Opcode has capability requirements.
 ///
 /// This function does not check if @a entry is valid.
 ///

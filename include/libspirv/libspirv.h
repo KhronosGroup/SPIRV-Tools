@@ -140,12 +140,6 @@ typedef enum spv_endianness_t {
   SPV_FORCE_32_BIT_ENUM(spv_endianness_t)
 } spv_endianness_t;
 
-typedef enum spv_opcode_flags_t {
-  SPV_OPCODE_FLAGS_NONE = 0,
-  SPV_OPCODE_FLAGS_CAPABILITIES = 1,
-  SPV_FORCE_32_BIT_ENUM(spv_opcode_flags_t)
-} spv_opcode_flags_t;
-
 // The kinds of operands that an instruction may have.
 //
 // In addition to determining what kind of value an operand may be, certain
@@ -292,7 +286,6 @@ typedef struct spv_header_t {
 typedef struct spv_opcode_desc_t {
   const char *name;
   const Op opcode;
-  const uint32_t flags;  // Bitfield of spv_opcode_flags_t
   const spv_capability_mask_t
       capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
@@ -315,7 +308,6 @@ typedef struct spv_opcode_table_t {
 typedef struct spv_operand_desc_t {
   const char *name;
   const uint32_t value;
-  const uint32_t flags;  // Bitfield of spv_opcode_flags_t
   const spv_capability_mask_t
       capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?

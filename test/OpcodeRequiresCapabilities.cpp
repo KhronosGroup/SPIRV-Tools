@@ -33,8 +33,7 @@ class Requires : public ::testing::TestWithParam<Capability> {
   Requires()
       : entry({nullptr,
                (Op)0,
-               SPV_OPCODE_FLAGS_CAPABILITIES,
-               GetParam(),
+               SPV_CAPABILITY_AS_MASK(GetParam()),
                0,
                {},
                false,
@@ -57,11 +56,20 @@ INSTANTIATE_TEST_CASE_P(Op, Requires,
                                           CapabilityGeometry,
                                           CapabilityTessellation,
                                           CapabilityAddresses,
-                                          CapabilityLinkage, CapabilityKernel));
+                                          CapabilityLinkage, CapabilityKernel,
+                                          // ClipDistance has enum value 32.
+                                          // So it tests that we are sensitive
+                                          // to more than just the least
+                                          // significant 32 bits of the
+                                          // capability mask.
+                                          CapabilityClipDistance,
+                                          // Transformfeedback has value 53,
+                                          // and is the last capability.
+                                          CapabilityTransformFeedback));
 
 TEST(OpcodeRequiresCapability, None) {
   spv_opcode_desc_t entry = {
-      nullptr, (Op)0, SPV_OPCODE_FLAGS_NONE, 0, 0, {}, false, false, {}};
+      nullptr, (Op)0, 0, 0, {}, false, false, {}};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 

@@ -52,7 +52,6 @@ spv_opcode_desc_t opcodeTableEntries[] = {
 #define Instruction(Name,HasResult,HasType,NumLogicalOperands,NumCapabilities,CapabilityRequired,IsVariable,LogicalArgsList) \
   { #Name, \
     Op##Name, \
-    (NumCapabilities) ? SPV_OPCODE_FLAGS_CAPABILITIES : 0, \
     (NumCapabilities) ? (CapabilityRequired) : 0, \
     0, {}, /* Filled in later. Operand list, including result id and type id, if needed */ \
     HasResult, \
@@ -305,8 +304,7 @@ int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry) {
 }
 
 int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry) {
-  return SPV_OPCODE_FLAGS_CAPABILITIES ==
-         (SPV_OPCODE_FLAGS_CAPABILITIES & entry->flags);
+  return entry->capabilities != 0;
 }
 
 void spvInstructionCopy(const uint32_t *words, const Op opcode,
