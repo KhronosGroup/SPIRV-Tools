@@ -58,13 +58,17 @@ extern "C" {
 
 // SPIR-V 1.0 limits
 #define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0xffff
+#define SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX 0xffff
+
+// A single Unicode character in UTF-8 encoding can take
+// up 4 bytes.
+#define SPV_LIMIT_LITERAL_STRING_BYTES_MAX \
+  (SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX * 4)
 
 // NOTE: These are set to the minimum maximum values
 // TODO(dneto): Check these.
 
 // libspirv limits.
-#define SPV_LIMIT_LITERAL_NAME_MAX 0x00000400
-#define SPV_LIMIT_LITERAL_STRING_MAX 0x00010000
 #define SPV_LIMIT_RESULT_ID_BOUND 0x00400000
 #define SPV_LIMIT_CONTROL_FLOW_NEST_DEPTH 0x00000400
 #define SPV_LIMIT_GLOBAL_VARIABLES_MAX 0x00010000

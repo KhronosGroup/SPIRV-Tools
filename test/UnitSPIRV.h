@@ -191,6 +191,21 @@ class EnumCase {
   std::vector<uint32_t> operands_;
 };
 
+// Returns a string with num_4_byte_chars Unicode characters,
+// each of which has a 4-byte UTF-8 encoding.
+inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
+  // An example of a longest valid UTF-8 character.
+  const std::string earth_africa("\U0001F30D");
+  EXPECT_EQ(4, earth_africa.size());
+  std::string result;
+  result.reserve(num_4_byte_chars * 4);
+  for (size_t i = 0; i < num_4_byte_chars; i++ ) {
+    result += earth_africa;
+  }
+  EXPECT_EQ(4 * num_4_byte_chars, result.size());
+  return result;
+}
+
 }  // namespace spvtest
 
 #endif

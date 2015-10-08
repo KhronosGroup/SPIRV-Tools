@@ -55,20 +55,23 @@ typedef struct spv_literal_t {
     float f;
     double d;
     // Allow room for the null terminator, and two surrounding quotes.
-    char str[SPV_LIMIT_LITERAL_STRING_MAX + 3];
+    // TODO(dneto): This is a very large array.  We should use a
+    // different kind of container.
+    char str[SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 3];
   } value;
 } spv_literal_t;
 
 
 // Functions
 
-/// @brief Convert the input text to one of the number types.
+/// @brief Convert the input text to one of the number types, or to
+/// a string.
 ///
 /// String literals must be surrounded by double-quotes ("), which are
 /// then stripped.
 ///
 /// @param[in] textValue input text to parse
-/// @param[out] pLiteral the returned literal number
+/// @param[out] pLiteral the returned literal
 ///
 /// @return result code
 spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral);

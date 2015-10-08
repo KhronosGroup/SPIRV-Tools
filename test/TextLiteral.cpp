@@ -129,15 +129,30 @@ TEST(TextLiteral, GoodString) {
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
   std::string too_long = std::string("\"") +
-                         std::string(SPV_LIMIT_LITERAL_STRING_MAX + 1, 'a') +
+                         std::string(SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 1, 'a') +
                          "\"";
   EXPECT_EQ(SPV_ERROR_OUT_OF_MEMORY, spvTextToLiteral(too_long.data(), &l));
 }
 
 TEST(TextLiteral, GoodLongString) {
   spv_literal_t l;
-  std::string unquoted(SPV_LIMIT_LITERAL_STRING_MAX, 'a');
+  // The universal limit of 65535 Unicode characters might make this
+  // fail validation, since SPV_LIMIT_LITERAL_STRING_BYTES_MAX is 4*65535.
+  // However, as an implementation detail, we'll allow the assembler
+  // to parse it.  Otherwise we'd have to scan the string for valid UTF-8
+  // characters.
+  std::string unquoted(SPV_LIMIT_LITERAL_STRING_BYTES_MAX, 'a');
   std::string good_long = std::string("\"") + unquoted + "\"";
+  EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
+  EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
+  EXPECT_STREQ(unquoted.data(), l.value.str);
+}
+
+TEST(TextLiteral, GoodUTF8String) {
+  const std::string unquoted =
+      spvtest::MakeLongUTF8String(SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX);
+  const std::string good_long = std::string("\"") + unquoted + "\"";
+  spv_literal_t l;
   EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
   EXPECT_STREQ(unquoted.data(), l.value.str);

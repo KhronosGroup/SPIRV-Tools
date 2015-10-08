@@ -50,11 +50,56 @@ TEST_F(TextToBinaryTest, LiteralNumberInPlaceOfLiteralString) {
       CompileFailure(R"(OpSourceExtension 1000)"));
 }
 
-TEST_F(TextToBinaryTest, LiteralStringTooLong) {
+TEST_F(TextToBinaryTest, LiteralStringASCIILong) {
   // SPIR-V allows strings up to 65535 characters.
+  // Test the simple case of UTF-8 code points corresponding
+  // to ASCII characters.
+  EXPECT_EQ(65535, SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX);
   const std::string code =
-      "OpSourceExtension \"" + std::string(65535, 'o') + "\"\n";
+      "OpSourceExtension \"" +
+      std::string(SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX, 'o') + "\"\n";
   EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
+}
+
+TEST_F(TextToBinaryTest, LiteralStringUTF8LongEncodings) {
+  // SPIR-V allows strings up to 65535 characters.
+  // Test the case of many Unicode characters, each of which has
+  // a 4-byte UTF-8 encoding.
+
+  // An instruction is at most 65535 words long. The first one
+  // contains the wordcount and opcode.  So the worst case number of
+  // 4-byte UTF-8 characters is 65533, since we also need to
+  // store a terminating null character.
+
+  // This string fits exactly into 65534 words.
+  const std::string good_string =
+      spvtest::MakeLongUTF8String(65533)
+      // The following single character has a 3 byte encoding,
+      // which fits snugly against the terminating null.
+      + "\u8000";
+
+  // These strings will overflow any instruction with 0 or 1 other
+  // arguments, respectively.
+  const std::string bad_0_arg_string = spvtest::MakeLongUTF8String(65534);
+  const std::string bad_1_arg_string = spvtest::MakeLongUTF8String(65533);
+
+  const std::string good_code = "OpSourceExtension \"" + good_string + "\"\n";
+  EXPECT_EQ(good_code, EncodeAndDecodeSuccessfully(good_code));
+
+  // Prove that it works on more than one instruction.
+  const std::string good_code_2 = "OpSourceContinued \"" + good_string + "\"\n";
+  EXPECT_EQ(good_code, EncodeAndDecodeSuccessfully(good_code));
+
+  // Failure cases.
+  EXPECT_EQ(
+      R"(Instruction too long: more than 65535 words.)",
+      CompileFailure("OpSourceExtension \"" + bad_0_arg_string + "\"\n"));
+  EXPECT_EQ(
+      R"(Instruction too long: more than 65535 words.)",
+      CompileFailure("OpSourceContinued \"" + bad_0_arg_string + "\"\n"));
+  EXPECT_EQ(
+      R"(Instruction too long: more than 65535 words.)",
+      CompileFailure("OpName %target \"" + bad_1_arg_string + "\"\n"));
 }
 
 }  // anonymous namespace

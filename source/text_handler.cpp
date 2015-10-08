@@ -342,8 +342,8 @@ spv_result_t AssemblyContext::binaryEncodeString(
 
   // TODO(dneto): We can just defer this check until later.
   if (newWordCount > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    diagnostic() << "Instruction word count '"
-             << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << "'exceeded.";
+    diagnostic() << "Instruction too long: more than "
+             << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX << " words.";
     return SPV_ERROR_INVALID_TEXT;
   }
 
