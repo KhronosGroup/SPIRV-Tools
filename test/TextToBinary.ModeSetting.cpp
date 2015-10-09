@@ -55,8 +55,8 @@ struct MemoryModelCase {
   std::string memory_name;
 };
 
-using OpMemoryModelTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<MemoryModelCase>>;
+using OpMemoryModelTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<MemoryModelCase>>;
 
 TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
   std::string input = "OpMemoryModel " + GetParam().addressing_name + " " +
@@ -98,8 +98,8 @@ struct EntryPointCase {
   std::string entry_point_name;
 };
 
-using OpEntryPointTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EntryPointCase>>;
+using OpEntryPointTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<EntryPointCase>>;
 
 TEST_P(OpEntryPointTest, AnyEntryPointCase) {
   // TODO(dneto): utf-8, escaping, quoting cases for entry point name.
@@ -125,6 +125,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryEntryPoint, OpEntryPointTest,
                         }));
 #undef CASE
 // clang-format on
+
+TEST_F(OpEntryPointTest, WrongModel) {
+  EXPECT_THAT(CompileFailure("OpEntryPoint xxyyzz %1 \"fun\""),
+              Eq("Invalid execution model 'xxyyzz'."));
+}
 
 // Test OpExecutionMode
 
