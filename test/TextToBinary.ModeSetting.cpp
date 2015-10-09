@@ -194,6 +194,11 @@ INSTANTIATE_TEST_CASE_P(
     }));
 #undef CASE
 
+TEST_F(OpExecutionModeTest, WrongMode) {
+  EXPECT_THAT(CompileFailure("OpExecutionMode %1 xxyyzz"),
+              Eq("Invalid execution mode 'xxyyzz'."));
+}
+
 // Test OpCapability
 
 using OpCapabilityTest = spvtest::TextToBinaryTestBase<
