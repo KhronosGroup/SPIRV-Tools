@@ -86,6 +86,13 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
 #undef CASE
 // clang-format on
 
+TEST_F(OpMemoryModelTest, WrongModel) {
+  EXPECT_THAT(CompileFailure("OpMemoryModel xxyyzz Simple"),
+              Eq("Invalid addressing model 'xxyyzz'."));
+  EXPECT_THAT(CompileFailure("OpMemoryModel Logical xxyyzz"),
+              Eq("Invalid memory model 'xxyyzz'."));
+}
+
 // Test OpEntryPoint
 
 // An example case for OpEntryPoint
