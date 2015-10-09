@@ -168,10 +168,16 @@ class AssemblyContext {
   bool isStartOfNewInst();
 
   // Returns a diagnostic object initialized with current position in the input
-  // stream. Any data written to this object will show up in pDiagnsotic on
-  // destruction.
+  // stream, and for the given error code. Any data written to this object will
+  // show up in pDiagnsotic on destruction.
+  DiagnosticStream diagnostic(spv_result_t error) {
+    return DiagnosticStream(&current_position_, pDiagnostic_, error);
+  }
+
+  // Returns a diagnostic object with the default assembly error code.
   DiagnosticStream diagnostic() {
-    return DiagnosticStream(&current_position_, pDiagnostic_);
+    // The default failure for assembly is invalid text.
+    return diagnostic(SPV_ERROR_INVALID_TEXT);
   }
 
   // Returns then next characted in the input stream.

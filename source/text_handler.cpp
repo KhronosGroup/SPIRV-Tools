@@ -333,11 +333,9 @@ spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
                                                      spv_instruction_t *pInst) {
   uint32_t low = (uint32_t)(0x00000000ffffffff & value);
   uint32_t high = (uint32_t)((0xffffffff00000000 & value) >> 32);
-  spv_result_t err = binaryEncodeU32(low, pInst);
-  if (err != SPV_SUCCESS) {
-    return err;
-  }
-  return binaryEncodeU32(high, pInst);
+  binaryEncodeU32(low, pInst);
+  binaryEncodeU32(high, pInst);
+  return SPV_SUCCESS;
 }
 
 spv_result_t AssemblyContext::binaryEncodeString(

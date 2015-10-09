@@ -166,12 +166,10 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
   const uint64_t parseResult = strtoull(begin, &end, 0);
   size_t length = end - begin;
   if (length != strlen(begin)) {
-    context->diagnostic() << "Invalid immediate integer '" << text << "'.";
-    return SPV_ERROR_INVALID_TEXT;
+    return context->diagnostic() << "Invalid immediate integer '" << text << "'.";
   } else if (length > 10 || (parseResult >> 32) != 0) {
-    context->diagnostic() << "Immediate integer '" << text
+    return context->diagnostic() << "Immediate integer '" << text
                           << "' is outside the unsigned 32-bit range.";
-    return SPV_ERROR_INVALID_TEXT;
   }
   context->binaryEncodeU32(parseResult, pInst);
   context->seekForward(strlen(text));
@@ -217,12 +215,10 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if ('%' == textValue[0]) {
         textValue++;
       } else {
-        context->diagnostic() << "Expected id to start with %.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Expected id to start with %.";
       }
       if (!spvIsValidID(textValue)) {
-        context->diagnostic() << "Invalid ID " << textValue;
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid ID " << textValue;
       }
       const uint32_t id = context->spvNamedIdAssignOrGet(textValue);
       if (type == SPV_OPERAND_TYPE_TYPE_ID) pInst->resultTypeId = id;
@@ -233,9 +229,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if (OpExtInst == pInst->opcode) {
         spv_ext_inst_desc extInst;
         if (grammar.lookupExtInst(pInst->extInstType, textValue, &extInst)) {
-          context->diagnostic() << "Invalid extended instruction name '"
-                                << textValue << "'.";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic() << "Invalid extended instruction name '"
+                                       << textValue << "'.";
         }
         spvInstructionAddWord(pInst, extInst->ext_inst);
 
@@ -253,9 +248,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if (error != SPV_SUCCESS) {
         if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
         if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
-        context->diagnostic() << "Invalid literal number '" << textValue
-                              << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid literal number '" << textValue
+                                     << "'.";
       }
 
       // The encoding for OpConstant, OpSpecConstant and OpSwitch all
@@ -272,20 +266,18 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
           if (SPV_SUCCESS == grammar.lookupOpcode(pInst->opcode, &d)) {
             opcode_name = d->name;
           }
-          context->diagnostic()
-              << "Type for " << opcode_name
-              << " must be a scalar floating point or integer type";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic()
+                 << "Type for " << opcode_name
+                 << " must be a scalar floating point or integer type";
         }
       } else if (pInst->opcode == OpSwitch) {
         // We need to know the value of the selector.
         libspirv::IdType type =
             context->getTypeOfValueInstruction(pInst->words[1]);
         if (type.type_class != libspirv::IdTypeClass::kScalarIntegerType) {
-          context->diagnostic()
-              << "The selector operand for OpSwitch must be the result"
-                 " of an instruction that generates an integer scalar";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic()
+                 << "The selector operand for OpSwitch must be the result"
+                    " of an instruction that generates an integer scalar";
         }
       }
       // TODO(awoloszyn): Generate the correct assembly for arbitrary
@@ -295,44 +287,36 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         // We do not have to print diagnostics here because spvBinaryEncode*
         // prints diagnostic messages on failure.
         case SPV_LITERAL_TYPE_INT_32:
-          if (context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.i32),
-                                       pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.i32),
+                                   pInst);
           break;
         case SPV_LITERAL_TYPE_INT_64: {
-          if (context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.i64),
-                                       pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.i64),
+                                   pInst);
         } break;
         case SPV_LITERAL_TYPE_UINT_32: {
-          if (context->binaryEncodeU32(literal.value.u32, pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU32(literal.value.u32, pInst);
         } break;
         case SPV_LITERAL_TYPE_UINT_64: {
-          if (context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.u64),
-                                       pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.u64),
+                                   pInst);
         } break;
         case SPV_LITERAL_TYPE_FLOAT_32: {
-          if (context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.f),
-                                       pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU32(BitwiseCast<uint32_t>(literal.value.f),
+                                   pInst);
         } break;
         case SPV_LITERAL_TYPE_FLOAT_64: {
-          if (context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.d),
-                                       pInst))
-            return SPV_ERROR_INVALID_TEXT;
+          context->binaryEncodeU64(BitwiseCast<uint64_t>(literal.value.d),
+                                   pInst);
         } break;
         case SPV_LITERAL_TYPE_STRING: {
-          context->diagnostic()
+          return context->diagnostic(SPV_FAILED_MATCH)
               << "Expected literal number, found literal string '" << textValue
               << "'.";
-          return SPV_FAILED_MATCH;
         } break;
         default:
-          context->diagnostic() << "Invalid literal number '" << textValue
-                                << "'";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic() << "Invalid literal number '"
+                                       << textValue << "'";
       }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
@@ -342,15 +326,13 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if (error != SPV_SUCCESS) {
         if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
         if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
-        context->diagnostic() << "Invalid literal string '" << textValue
-                              << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid literal string '" << textValue
+                                     << "'.";
       }
       if (literal.type != SPV_LITERAL_TYPE_STRING) {
-        context->diagnostic()
-            << "Expected literal string, found literal number '" << textValue
-            << "'.";
-        return SPV_FAILED_MATCH;
+        return context->diagnostic(SPV_FAILED_MATCH)
+               << "Expected literal string, found literal number '" << textValue
+               << "'.";
       }
 
       // NOTE: Special case for extended instruction library import
@@ -369,9 +351,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       uint32_t value;
       if (grammar.parseMaskOperand(type, textValue, &value)) {
-        context->diagnostic() << "Invalid " << spvOperandTypeStr(type) << " '"
-                              << textValue << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                                     << " '" << textValue << "'.";
       }
       if (auto error = context->binaryEncodeU32(value, pInst)) return error;
       // Prepare to parse the operands for this logical operand.
@@ -394,9 +375,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                                  textValue, pInst, pExpectedOperands);
       }
       if (error) {
-        context->diagnostic() << "Invalid word following !<integer>: "
-                              << textValue;
-        return error;
+        return context->diagnostic(error)
+               << "Invalid word following !<integer>: " << textValue;
       }
       if (pExpectedOperands->empty()) {
         pExpectedOperands->push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
@@ -407,14 +387,12 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       // table.
       spv_operand_desc entry;
       if (grammar.lookupOperand(type, textValue, strlen(textValue), &entry)) {
-        context->diagnostic() << "Invalid " << spvOperandTypeStr(type) << " '"
-                              << textValue << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                                     << " '" << textValue << "'.";
       }
       if (context->binaryEncodeU32(entry->value, pInst)) {
-        context->diagnostic() << "Invalid " << spvOperandTypeStr(type) << " '"
-                              << textValue << "'.";
-        return SPV_ERROR_INVALID_TEXT;
+        return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                                     << " '" << textValue << "'.";
       }
 
       // Prepare to parse the operands for this logical operand.
@@ -437,10 +415,7 @@ spv_result_t encodeInstructionStartingWithImmediate(
   std::string firstWord;
   spv_position_t nextPosition = {};
   auto error = context->getWord(firstWord, &nextPosition);
-  if (error) {
-    context->diagnostic() << "Internal Error";
-    return error;
-  }
+  if (error) return context->diagnostic(error) << "Internal Error";
 
   if ((error = encodeImmediate(context, firstWord.c_str(), pInst))) {
     return error;
@@ -452,15 +427,11 @@ spv_result_t encodeInstructionStartingWithImmediate(
     // Otherwise, there must be an operand that's either a literal, an ID, or
     // an immediate.
     std::string operandValue;
-    if ((error = context->getWord(operandValue, &nextPosition))) {
-      context->diagnostic() << "Internal Error";
-      return error;
-    }
+    if ((error = context->getWord(operandValue, &nextPosition)))
+      return context->diagnostic(error) << "Internal Error";
 
-    if (operandValue == "=") {
-      context->diagnostic() << firstWord << " not allowed before =.";
-      return SPV_ERROR_INVALID_TEXT;
-    }
+    if (operandValue == "=")
+      return context->diagnostic() << firstWord << " not allowed before =.";
 
     // Needed to pass to spvTextEncodeOpcode(), but it shouldn't ever be
     // expanded.
@@ -501,10 +472,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   std::string firstWord;
   spv_position_t nextPosition = {};
   spv_result_t error = context->getWord(firstWord, &nextPosition);
-  if (error) {
-    context->diagnostic() << "Internal Error";
-    return error;
-  }
+  if (error) return context->diagnostic() << "Internal Error";
 
   std::string opcodeName;
   std::string result_id;
@@ -515,49 +483,39 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     // If the first word of this instruction is not an opcode, we must be
     // processing AAF now.
     if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT != format) {
-      context->diagnostic()
-          << "Expected <opcode> at the beginning of an instruction, found '"
-          << firstWord << "'.";
-      return SPV_ERROR_INVALID_TEXT;
+      return context->diagnostic()
+             << "Expected <opcode> at the beginning of an instruction, found '"
+             << firstWord << "'.";
     }
 
     result_id = firstWord;
     if ('%' != result_id.front()) {
-      context->diagnostic()
-          << "Expected <opcode> or <result-id> at the beginning "
-             "of an instruction, found '"
-          << result_id << "'.";
-      return SPV_ERROR_INVALID_TEXT;
+      return context->diagnostic()
+             << "Expected <opcode> or <result-id> at the beginning "
+                "of an instruction, found '"
+             << result_id << "'.";
     }
     result_id_position = context->position();
 
     // The '=' sign.
     context->setPosition(nextPosition);
-    if (context->advance()) {
-      context->diagnostic() << "Expected '=', found end of stream.";
-      return SPV_ERROR_INVALID_TEXT;
-    }
+    if (context->advance())
+      return context->diagnostic() << "Expected '=', found end of stream.";
     std::string equal_sign;
     error = context->getWord(equal_sign, &nextPosition);
-    if ("=" != equal_sign) {
-      context->diagnostic() << "'=' expected after result id.";
-      return SPV_ERROR_INVALID_TEXT;
-    }
+    if ("=" != equal_sign)
+      return context->diagnostic() << "'=' expected after result id.";
 
     // The <opcode> after the '=' sign.
     context->setPosition(nextPosition);
-    if (context->advance()) {
-      context->diagnostic() << "Expected opcode, found end of stream.";
-      return SPV_ERROR_INVALID_TEXT;
-    }
+    if (context->advance())
+      return context->diagnostic() << "Expected opcode, found end of stream.";
     error = context->getWord(opcodeName, &nextPosition);
-    if (error) {
-      context->diagnostic() << "Internal Error";
-      return error;
-    }
+    if (error)
+      return context->diagnostic(error) << "Internal Error";
     if (!context->startsWithOp()) {
-      context->diagnostic() << "Invalid Opcode prefix '" << opcodeName << "'.";
-      return SPV_ERROR_INVALID_TEXT;
+      return context->diagnostic() << "Invalid Opcode prefix '" << opcodeName
+                                   << "'.";
     }
   }
 
@@ -567,17 +525,16 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   spv_opcode_desc opcodeEntry;
   error = grammar.lookupOpcode(pInstName, &opcodeEntry);
   if (error) {
-    context->diagnostic() << "Invalid Opcode name '" << context->getWord()
-                          << "'";
-    return error;
+    return context->diagnostic(error) << "Invalid Opcode name '"
+                                      << context->getWord() << "'";
   }
   if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format) {
     // If this instruction has <result-id>, check it follows AAF.
     if (opcodeEntry->hasResult && result_id.empty()) {
-      context->diagnostic() << "Expected <result-id> at the beginning of an "
-                               "instruction, found '"
-                            << firstWord << "'.";
-      return SPV_ERROR_INVALID_TEXT;
+      return context->diagnostic()
+             << "Expected <result-id> at the beginning of an "
+                "instruction, found '"
+             << firstWord << "'.";
     }
   }
   pInst->opcode = opcodeEntry->opcode;
@@ -624,8 +581,8 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
           // and we didn't find one.  We're finished parsing this instruction.
           break;
         } else {
-          context->diagnostic() << "Expected operand, found end of stream.";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic()
+                 << "Expected operand, found end of stream.";
         }
       }
       assert(error == SPV_SUCCESS && "Somebody added another way to fail");
@@ -634,18 +591,14 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
         if (spvOperandIsOptional(type)) {
           break;
         } else {
-          context->diagnostic()
-              << "Expected operand, found next instruction instead.";
-          return SPV_ERROR_INVALID_TEXT;
+          return context->diagnostic()
+                 << "Expected operand, found next instruction instead.";
         }
       }
 
       std::string operandValue;
       error = context->getWord(operandValue, &nextPosition);
-      if (error) {
-        context->diagnostic() << "Internal Error";
-        return error;
-      }
+      if (error) return context->diagnostic(error) << "Internal Error";
 
       error = spvTextEncodeOperand(grammar, context, type, operandValue.c_str(),
                                    pInst, &expectedOperands);
@@ -672,10 +625,10 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   }
 
   if (pInst->words.size() > SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX) {
-    context->diagnostic() << "Instruction too long: " << pInst->words.size()
-                          << " words, but the limit is "
-                          << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX;
-    return SPV_ERROR_INVALID_TEXT;
+    return context->diagnostic()
+           << "Instruction too long: " << pInst->words.size()
+           << " words, but the limit is "
+           << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX;
   }
 
   pInst->words[0] = spvOpcodeMake(pInst->words.size(), opcodeEntry->opcode);
@@ -695,10 +648,9 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
                                      spv_diagnostic* pDiagnostic) {
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
   libspirv::AssemblyContext context(text, pDiagnostic);
-  if (!text->str || !text->length) {
-    context.diagnostic() << "Text stream is empty.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
+  if (!text->str || !text->length)
+    return context.diagnostic() << "Text stream is empty.";
+
   if (!grammar.isValid()) {
     return SPV_ERROR_INVALID_TABLE;
   }
@@ -709,10 +661,7 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
 
   std::vector<spv_instruction_t> instructions;
 
-  if (context.advance()) {
-    context.diagnostic() << "Text stream is empty.";
-    return SPV_ERROR_INVALID_TEXT;
-  }
+  if (context.advance()) return context.diagnostic() << "Text stream is empty.";
 
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
   while (context.hasText()) {
