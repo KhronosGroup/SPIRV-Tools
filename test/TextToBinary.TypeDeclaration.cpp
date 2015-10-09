@@ -40,16 +40,16 @@ using ::testing::Eq;
 
 // Test Dim enums via OpTypeImage
 
-using DimTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::Dim>>>;
+using DimTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<spv::Dim>>>;
 
 TEST_P(DimTest, AnyDim) {
   std::string input = "%imageType = OpTypeImage %sampledType " +
                       GetParam().name() + " 2 3 0 4 Rgba8";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().value(), 2, 3, 0, 4,
-                                            spv::ImageFormatRgba8})));
+      Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().value(), 2, 3, 0,
+                                            4, spv::ImageFormatRgba8})));
 }
 
 // clang-format off
@@ -153,6 +153,48 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+using OpTypeForwardPointerTest = spvtest::TextToBinaryTest;
+
+#define CASE(storage_class)                                               \
+  do {                                                                    \
+    EXPECT_THAT(                                                          \
+        CompiledInstructions("OpTypeForwardPointer %pt " #storage_class), \
+        Eq(MakeInstruction(spv::OpTypeForwardPointer,                     \
+                           {1, StorageClass##storage_class})));           \
+  } while (0)
+
+TEST_F(OpTypeForwardPointerTest, ValidStorageClass) {
+  CASE(UniformConstant);
+  CASE(Input);
+  CASE(Uniform);
+  CASE(Output);
+  CASE(WorkgroupLocal);
+  CASE(WorkgroupGlobal);
+  CASE(PrivateGlobal);
+  CASE(Function);
+  CASE(Generic);
+  CASE(PushConstant);
+  CASE(AtomicCounter);
+  CASE(Image);
+}
+
+#undef CASE
+
+TEST_F(OpTypeForwardPointerTest, MissingType) {
+  EXPECT_THAT(CompileFailure("OpTypeForwardPointer"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(OpTypeForwardPointerTest, MissingClass) {
+  EXPECT_THAT(CompileFailure("OpTypeForwardPointer %pt"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(OpTypeForwardPointerTest, WrongClass) {
+  EXPECT_THAT(CompileFailure("OpTypeForwardPointer %pt xxyyzz"),
+              Eq("Invalid storage class 'xxyyzz'."));
+}
+
 // TODO(dneto): error message test for sampler addressing mode
 // TODO(dneto): error message test for sampler image format
 
@@ -175,6 +217,5 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(dneto): OpTypeDeviceEvent
 // TODO(dneto): OpTypeReserveId
 // TODO(dneto): OpTypeQueue
-// TODO(dneto): OpTypeForwardPointer
 
 }  // anonymous namespace
