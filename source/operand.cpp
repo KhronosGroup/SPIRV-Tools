@@ -1520,7 +1520,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_LITERAL_STRING:
       return "literal string";
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
-      return "source langauge";
+      return "source language";
     case SPV_OPERAND_TYPE_EXECUTION_MODEL:
       return "execution model";
     case SPV_OPERAND_TYPE_ADDRESSING_MODEL:

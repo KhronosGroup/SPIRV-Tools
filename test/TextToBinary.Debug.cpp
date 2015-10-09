@@ -73,13 +73,19 @@ using OpSourceTest =
 TEST_P(OpSourceTest, AnyLanguage) {
   std::string input = std::string("OpSource ") + GetParam().language_name +
                       " " + std::to_string(GetParam().version);
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpSource, {GetParam().get_language_value(),
-                                                 GetParam().version})));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(spv::OpSource, {GetParam().get_language_value(),
+                                         GetParam().version})));
 }
 
 INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
                         ::testing::ValuesIn(kLanguageCases));
+
+TEST_F(OpSourceTest, WrongLanguage) {
+  EXPECT_THAT(CompileFailure("OpSource xxyyzz 12345"),
+              Eq("Invalid source language 'xxyyzz'."));
+}
 
 TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
   // In the grammar, the file id is an OperandOptionalId.

@@ -1,4 +1,4 @@
-Operand type,Example instruction,Notes,example unit test
+Operand class,Example instruction,Notes,example unit test
 ,,,
 ,,,
 "    OperandNone,",UNUSED,not in grammar,
