@@ -131,7 +131,9 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
       // It is not used as an operand.
       break;
     case OperandImageOperands:
-      // This is not used. It's only an artifact of spec generation.
+      // This is not used in opcode.inc. It only exists to generate the
+      // corresponding spec section. In parsing, image operands meld into the
+      // OperandOptionalImage case.
       break;
     case OperandFPFastMath: return SPV_OPERAND_TYPE_FP_FAST_MATH_MODE;
     case OperandFPRoundingMode: return SPV_OPERAND_TYPE_FP_ROUNDING_MODE;
