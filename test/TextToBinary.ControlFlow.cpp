@@ -71,6 +71,12 @@ TEST_F(OpSelectionMergeTest, CombinedSelectionControlMask) {
               Eq(MakeInstruction(spv::OpSelectionMerge, {1, expected_mask})));
 }
 
+TEST_F(OpSelectionMergeTest, WrongSelectionControl) {
+  // Case sensitive: "flatten" != "Flatten" and thus wrong.
+  EXPECT_THAT(CompileFailure("OpSelectionMerge %1 flatten|DontFlatten"),
+              Eq("Invalid selection control 'flatten|DontFlatten'."));
+}
+
 // Test OpLoopMerge
 
 using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
