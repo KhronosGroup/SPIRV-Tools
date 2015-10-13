@@ -107,6 +107,12 @@ TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, expected_mask})));
 }
+
+TEST_F(OpLoopMergeTest, WrongLoopControl) {
+  EXPECT_THAT(CompileFailure("OpLoopMerge %m %c none"),
+              Eq("Invalid loop control 'none'."));
+}
+
 // Test OpSwitch
 
 TEST_F(TextToBinaryTest, SwitchGoodZeroTargets) {
