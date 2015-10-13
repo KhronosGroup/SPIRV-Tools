@@ -163,6 +163,11 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+TEST_F(OpTypePipeTest, WrongAccessQualifier) {
+  EXPECT_THAT(CompileFailure("%1 = OpTypePipe xxyyzz"),
+              Eq("Invalid access qualifier 'xxyyzz'."));
+}
+
 using OpTypeForwardPointerTest = spvtest::TextToBinaryTest;
 
 #define CASE(storage_class)                                               \
