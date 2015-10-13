@@ -1353,7 +1353,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_DECORATION:
       return "decoration";
     case SPV_OPERAND_TYPE_BUILT_IN:
-      return "built in";
+      return "built-in";
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
       return "selection control";
     case SPV_OPERAND_TYPE_LOOP_CONTROL:

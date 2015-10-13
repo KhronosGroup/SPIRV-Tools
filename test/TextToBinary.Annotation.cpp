@@ -186,6 +186,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
 #undef CASE
 // clang-format on
 
+TEST_F(OpDecorateEnumTest, WrongBuiltIn) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 BuiltIn xxyyzz"),
+              Eq("Invalid built-in 'xxyyzz'."));
+}
+
 // Test OpDecorate FuncParamAttr
 // clang-format off
 #define CASE(NAME) \
