@@ -106,6 +106,11 @@ INSTANTIATE_TEST_CASE_P(
     }));
 #undef CASE
 
+TEST_F(OpDecorateSimpleTest, WrongDecoration) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 xxyyzz"),
+              Eq("Invalid decoration 'xxyyzz'."));
+}
+
 // A single test case for an enum decoration.
 struct DecorateEnumCase {
   // Place the enum value first, so it's easier to read the binary dumps when
