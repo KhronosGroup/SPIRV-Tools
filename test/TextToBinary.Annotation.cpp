@@ -311,6 +311,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
 #undef CASE
 // clang-format on
 
+TEST_F(OpDecorateLinkageTest, WrongType) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 LinkageAttributes \"foo\" xxyyzz"),
+              Eq("Invalid linkage type 'xxyyzz'."));
+}
+
 // Test OpGroupMemberDecorate
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateGoodOneTarget) {
