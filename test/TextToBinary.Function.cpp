@@ -65,7 +65,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryFunctionTest, OpFunctionControlTest,
 #undef CASE
 // clang-format on
 
-TEST_F(TextToBinaryTest, CombinedFunctionControlMask) {
+TEST_F(OpFunctionControlTest, CombinedFunctionControlMask) {
   // Sample a single combination.  This ensures we've integrated
   // the instruction parsing logic with spvTextParseMask.
   const std::string input =
@@ -75,6 +75,11 @@ TEST_F(TextToBinaryTest, CombinedFunctionControlMask) {
                                  spv::FunctionControlConstMask;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpFunction, {1, 2, expected_mask, 3})));
+}
+
+TEST_F(OpFunctionControlTest, WrongFunctionControl) {
+  EXPECT_THAT(CompileFailure("%r = OpFunction %t Inline|Unroll %ft"),
+              Eq("Invalid function control 'Inline|Unroll'."));
 }
 
 // TODO(dneto): OpFunctionParameter
