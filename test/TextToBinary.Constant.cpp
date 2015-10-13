@@ -95,6 +95,11 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+TEST_F(SamplerFilterModeTest, WrongMode) {
+  EXPECT_THAT(CompileFailure("%r = OpConstantSampler %t Clamp 0 xxyyzz"),
+              Eq("Invalid sampler filter mode 'xxyyzz'."));
+}
+
 struct ConstantTestCase {
   std::string constant_type;
   std::string constant_value;
