@@ -27,7 +27,6 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include <algorithm>
-#include <iomanip>
 #include <utility>
 #include <vector>
 
@@ -450,5 +449,160 @@ INSTANTIATE_TEST_CASE_P(
         {"!0xff800000", 0xff800000},  // -inf
         {"!0xff800001", 0xff800001},  // NaN
     }));
+
+TEST(AssemblyContextParseNarrowSignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  int16_t i16;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &i16, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &i16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &i16, ""));
+  EXPECT_EQ(0, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("32767", true, &i16, ""));
+  EXPECT_EQ(32767, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32768", true, &i16, ""));
+  EXPECT_EQ(-32768, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", true, &i16, ""));
+  EXPECT_EQ(0, i16);
+
+  // These are out of range, so they should return an error.
+  // The error code depends on whether this is an optional value.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("32768", true, &i16, ""));
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            context.parseNumber("65535", false, &i16, ""));
+
+  // Check hex parsing.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0x7fff", true, &i16, ""));
+  EXPECT_EQ(32767, i16);
+  // This is out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0xffff", true, &i16, ""));
+}
+
+TEST(AssemblyContextParseNarrowUnsignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  uint16_t u16;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &u16, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &u16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("65535", true, &u16, ""));
+  EXPECT_EQ(65535, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("65536", true, &u16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", true, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", true, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0xffff", true, &u16, ""));
+  EXPECT_EQ(0xffff, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0x10000", true, &u16, ""));
+}
+
+TEST(AssemblyContextParseWideSignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  int64_t i64;
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &i64, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &i64, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &i64, ""));
+  EXPECT_EQ(0, i64);
+  EXPECT_EQ(SPV_SUCCESS,
+            context.parseNumber("0x7fffffffffffffff", true, &i64, ""));
+  EXPECT_EQ(0x7fffffffffffffff, i64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", true, &i64, ""));
+  EXPECT_EQ(0, i64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1", true, &i64, ""));
+  EXPECT_EQ(-1, i64);
+}
+
+TEST(AssemblyContextParseWideUnsignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  uint64_t u64;
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &u64, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &u64, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &u64, ""));
+  EXPECT_EQ(0, u64);
+  EXPECT_EQ(SPV_SUCCESS,
+            context.parseNumber("0xffffffffffffffff", true, &u64, ""));
+  EXPECT_EQ(0xffffffffffffffffULL, u64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", true, &u64, ""));
+  EXPECT_EQ(0, u64);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", true, &u64, ""));
+}
+
+TEST(AssemblyContextParseFloat, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  float f;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &f, ""));
+
+  // These values are exactly representatble.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &f, ""));
+  EXPECT_EQ(0.0f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("42", true, &f, ""));
+  EXPECT_EQ(42.0f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("2.5", true, &f, ""));
+  EXPECT_EQ(2.5f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32.5", true, &f, ""));
+  EXPECT_EQ(-32.5f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", true, &f, ""));
+  EXPECT_EQ(1e38f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", true, &f, ""));
+  EXPECT_EQ(-1e38f, f);
+
+  // Out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e40", true, &f, ""));
+}
+
+TEST(AssemblyContextParseDouble, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  double f;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", true, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", true, &f, ""));
+
+  // These values are exactly representatble.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", true, &f, ""));
+  EXPECT_EQ(0.0, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("42", true, &f, ""));
+  EXPECT_EQ(42.0, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("2.5", true, &f, ""));
+  EXPECT_EQ(2.5, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32.5", true, &f, ""));
+  EXPECT_EQ(-32.5, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", true, &f, ""));
+  EXPECT_EQ(1e38, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", true, &f, ""));
+  EXPECT_EQ(-1e38, f);
+  // These are out of range for 32-bit float, but in range for 64-bit float.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e40", true, &f, ""));
+  EXPECT_EQ(1e40, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", true, &f, ""));
+  EXPECT_EQ(-1e40, f);
+
+  // Out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", true, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", true, &f, ""));
+}
+
+TEST(AssemblyContextParseMessages, Errors) {
+  spv_diagnostic diag = nullptr;
+  AssemblyContext context(AutoText(""), &diag);
+  int16_t i16;
+
+  // No message is generated for a failure to parse an optional value.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("abc", true, &i16, "bad narrow int: "));
+  EXPECT_EQ(nullptr, diag);
+
+  // For a required value, use the message fragment.
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT, context.parseNumber("abc", false, &i16, "bad narrow int: "));
+  ASSERT_NE(nullptr, diag);
+  EXPECT_EQ("bad narrow int: abc", std::string(diag->error));
+  // Don't leak.
+  spvDiagnosticDestroy(diag);
+}
 
 }  // anonymous namespace

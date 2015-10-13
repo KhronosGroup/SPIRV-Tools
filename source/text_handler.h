@@ -27,9 +27,13 @@
 #ifndef _LIBSPIRV_UTIL_TEXT_HANDLER_H_
 #define _LIBSPIRV_UTIL_TEXT_HANDLER_H_
 
-#include <libspirv/libspirv.h>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+#include <type_traits>
 #include <unordered_map>
 
+#include <libspirv/libspirv.h>
 #include "diagnostic.h"
 #include "instruction.h"
 #include "operand.h"
@@ -230,6 +234,48 @@ class AssemblyContext {
 
   // Tracks the relationship between the value and its type.
   spv_result_t recordTypeIdForValue(uint32_t value, uint32_t type);
+
+  // Parses a numeric value of a given type from the given text.  The number
+  // should take up the entire string, and should be within bounds for the
+  // target type.  On success, returns SPV_SUCCESS and populates the object
+  // referenced by value_pointer. On failure, returns SPV_FAILED_MATCH if
+  // is_optional is true, and returns SPV_ERROR_INVALID_TEXT and emits a
+  // diagnostic otherwise.
+  template <typename T>
+  spv_result_t parseNumber(const char *text, bool is_optional, T *value_pointer,
+                           const char *error_message_fragment) {
+    // C++11 doesn't define std::istringstream(int8_t&), so calling this method
+    // with a single-byte type leads to implementation-defined behaviour.
+    // Similarly for uint8_t.
+    static_assert(sizeof(T) > 1, "Don't use a single-byte type this parse method");
+
+    std::istringstream text_stream(text);
+    // Allow both decimal and hex input for integers.
+    // It also allows octal input, but we don't care about that case.
+    text_stream >> std::setbase(0);
+    text_stream >> *value_pointer;
+    bool ok = true;
+
+    // We should have read something.
+    ok = (text[0] != 0) && !text_stream.bad();
+    // It should have been all the text.
+    ok = ok && text_stream.eof();
+    // It should have been in range.
+    ok = ok && !text_stream.fail();
+    // Work around a bug in the GNU C++11 library. It will happily parse
+    // "-1" for uint16_t as 65535.
+    if (ok && !std::is_signed<T>::value && (text[0] == '-') &&
+        *value_pointer != 0) {
+      ok = false;
+      // Match expected error behaviour of std::istringstream::operator>>
+      // on failure to parse.
+      *value_pointer = 0;
+    }
+
+    if (ok) return SPV_SUCCESS;
+    if (is_optional) return SPV_FAILED_MATCH;
+    return diagnostic() << error_message_fragment << text;
+  }
 
  private:
   // Maps ID names to their corresponding numerical ids.
