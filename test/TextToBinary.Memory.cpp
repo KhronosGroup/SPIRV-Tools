@@ -79,7 +79,7 @@ using StorageClassTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::StorageClass>>>;
 
 TEST_P(StorageClassTest, AnyStorageClass) {
-  std::string input = "%1 = OpVariable %2 " + GetParam().name();
+  const std::string input = "%1 = OpVariable %2 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpVariable, {1, 2, GetParam().value()})));
 }

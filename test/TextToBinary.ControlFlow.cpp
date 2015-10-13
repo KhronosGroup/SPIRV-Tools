@@ -46,7 +46,7 @@ using OpSelectionMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SelectionControlMask>>>;
 
 TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
-  std::string input = "OpSelectionMerge %1 " + GetParam().name();
+  const std::string input = "OpSelectionMerge %1 " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().value()})));
@@ -77,7 +77,7 @@ using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
-  std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
+  const std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, GetParam().value()})));
@@ -112,10 +112,9 @@ TEST_F(TextToBinaryTest, SwitchGoodOneTarget) {
   EXPECT_THAT(CompiledInstructions("%1 = OpTypeInt 32 0\n"
                                    "%2 = OpConstant %1 52\n"
                                    "OpSwitch %2 %default 12 %target0"),
-              Eq(Concatenate({
-                  MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
-                  MakeInstruction(spv::OpConstant, {1, 2, 52}),
-                  MakeInstruction(spv::OpSwitch, {2, 3, 12, 4})})));
+              Eq(Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
+                              MakeInstruction(spv::OpConstant, {1, 2, 52}),
+                              MakeInstruction(spv::OpSwitch, {2, 3, 12, 4})})));
 }
 
 TEST_F(TextToBinaryTest, SwitchGoodTwoTargets) {
@@ -173,20 +172,19 @@ TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
               Eq("Expected operand, found end of stream."));
 }
 
-struct SwitchTestCase{
+struct SwitchTestCase {
   std::string constant_type_args;
   std::vector<uint32_t> expected_instructions;
 };
 
-using OpSwitchValidTest = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<SwitchTestCase>>;
+using OpSwitchValidTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<SwitchTestCase>>;
 
-TEST_P(OpSwitchValidTest, ValidTypes)
-{
-  std::string input =
-      "%1 = OpTypeInt " + GetParam().constant_type_args + "\n"
-      "%2 = OpConstant %1 0\n"
-      "OpSwitch %2 %default 32 %4\n";
+TEST_P(OpSwitchValidTest, ValidTypes) {
+  const std::string input = "%1 = OpTypeInt " + GetParam().constant_type_args +
+                            "\n"
+                            "%2 = OpConstant %1 0\n"
+                            "OpSwitch %2 %default 32 %4\n";
   std::vector<uint32_t> instructions;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(GetParam().expected_instructions));
@@ -212,14 +210,14 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
-using OpSwitchInvalidTypeTestCase = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<std::string>>;
+using OpSwitchInvalidTypeTestCase =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
-TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes)
-{
-  std::string input =
-      "%1 = " + GetParam() + "\n"
-      "%3 = OpCopyObject %1 %2\n" // We only care the type of the expression
+TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes) {
+  const std::string input =
+      "%1 = " + GetParam() +
+      "\n"
+      "%3 = OpCopyObject %1 %2\n"  // We only care the type of the expression
       "%4 = OpSwitch %3 %default 32 %c\n";
   EXPECT_THAT(CompileFailure(input),
               Eq(std::string(
@@ -256,7 +254,7 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-//TODO(awoloszyn): Add tests for switch with different operand widths
+// TODO(awoloszyn): Add tests for switch with different operand widths
 //                 once non-32-bit support is in.
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge

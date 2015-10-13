@@ -84,7 +84,7 @@ using IdValidityTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<IdCheckCase>>;
 
 TEST_P(IdValidityTest, IdTypes) {
-  std::string input = GetParam().id + " = OpTypeVoid";
+  const std::string input = GetParam().id + " = OpTypeVoid";
   SetText(input);
   if (GetParam().valid) {
     CompileSuccessfully(input);

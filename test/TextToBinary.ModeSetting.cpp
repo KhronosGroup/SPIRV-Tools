@@ -59,8 +59,8 @@ using OpMemoryModelTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<MemoryModelCase>>;
 
 TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
-  std::string input = "OpMemoryModel " + GetParam().addressing_name + " " +
-                      GetParam().memory_name;
+  const std::string input = "OpMemoryModel " + GetParam().addressing_name +
+                            " " + GetParam().memory_name;
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpMemoryModel, {GetParam().get_addressing_value(),
@@ -110,8 +110,8 @@ using OpEntryPointTest =
 
 TEST_P(OpEntryPointTest, AnyEntryPointCase) {
   // TODO(dneto): utf-8, escaping, quoting cases for entry point name.
-  std::string input = "OpEntryPoint " + GetParam().execution_name + " %1 \"" +
-                      GetParam().entry_point_name + "\"";
+  const std::string input = "OpEntryPoint " + GetParam().execution_name +
+                            " %1 \"" + GetParam().entry_point_name + "\"";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpEntryPoint,
                                  {GetParam().get_execution_value(), 1},
@@ -205,7 +205,7 @@ using OpCapabilityTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::Capability>>>;
 
 TEST_P(OpCapabilityTest, AnyCapability) {
-  std::string input = "OpCapability " + GetParam().name();
+  const std::string input = "OpCapability " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpCapability, {GetParam().value()})));
 }

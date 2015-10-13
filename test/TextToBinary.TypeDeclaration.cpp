@@ -44,8 +44,8 @@ using DimTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<spv::Dim>>>;
 
 TEST_P(DimTest, AnyDim) {
-  std::string input = "%imageType = OpTypeImage %sampledType " +
-                      GetParam().name() + " 2 3 0 4 Rgba8";
+  const std::string input = "%imageType = OpTypeImage %sampledType " +
+                            GetParam().name() + " 2 3 0 4 Rgba8";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpTypeImage, {1, 2, GetParam().value(), 2, 3, 0,
@@ -79,7 +79,7 @@ using ImageFormatTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::ImageFormat>>>;
 
 TEST_P(ImageFormatTest, AnyImageFormat) {
-  std::string input =
+  const std::string input =
       "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpTypeImage, {1, 2, spv::Dim1D, 2, 3, 0,
@@ -141,7 +141,7 @@ using OpTypePipeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::AccessQualifier>>>;
 
 TEST_P(OpTypePipeTest, AnyAccessQualifier) {
-  std::string input = "%1 = OpTypePipe " + GetParam().name();
+  const std::string input = "%1 = OpTypePipe " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpTypePipe, {1, GetParam().value()})));
 }

@@ -45,7 +45,7 @@ using SamplerAddressingModeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SamplerAddressingMode>>>;
 
 TEST_P(SamplerAddressingModeTest, AnySamplerAddressingMode) {
-  std::string input =
+  const std::string input =
       "%result = OpConstantSampler %type " + GetParam().name() + " 0 Nearest";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
@@ -77,7 +77,7 @@ using SamplerFilterModeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::SamplerFilterMode>>>;
 
 TEST_P(SamplerFilterModeTest, AnySamplerFilterMode) {
-  std::string input =
+  const std::string input =
       "%result = OpConstantSampler %type Clamp 0 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpConstantSampler,
@@ -110,10 +110,10 @@ using OpConstantValidTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<ConstantTestCase>>;
 
 TEST_P(OpConstantValidTest, ValidTypes) {
-  std::string input = "%1 = " + GetParam().constant_type +
-                      "\n"
-                      "%2 = OpConstant %1 " +
-                      GetParam().constant_value + "\n";
+  const std::string input = "%1 = " + GetParam().constant_type +
+                            "\n"
+                            "%2 = OpConstant %1 " +
+                            GetParam().constant_value + "\n";
   std::vector<uint32_t> instructions;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(GetParam().expected_instructions));
@@ -142,9 +142,9 @@ using OpConstantInvalidTypeTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
 TEST_P(OpConstantInvalidTypeTest, InvalidTypes) {
-  std::string input = "%1 = " + GetParam() +
-                      "\n"
-                      "%2 = OpConstant %1 0\n";
+  const std::string input = "%1 = " + GetParam() +
+                            "\n"
+                            "%2 = OpConstant %1 0\n";
   EXPECT_THAT(
       CompileFailure(input),
       Eq("Type for Constant must be a scalar floating point or integer type"));

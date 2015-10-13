@@ -116,14 +116,16 @@ struct DecorateEnumCase {
   std::string enum_name;
 };
 
-using OpDecorateEnumTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<DecorateEnumCase>>;
+using OpDecorateEnumTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<DecorateEnumCase>>;
 
 TEST_P(OpDecorateEnumTest, AnyEnumDecoration) {
   // This string should assemble, but should not validate.
-  std::string input = "OpDecorate %1 " + GetParam().enum_name + " " + GetParam().name;
+  const std::string input =
+      "OpDecorate %1 " + GetParam().enum_name + " " + GetParam().name;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpDecorate, {1, GetParam().enum_value, GetParam().value})));
+              Eq(MakeInstruction(spv::OpDecorate, {1, GetParam().enum_value,
+                                                   GetParam().value})));
 }
 
 // Test OpDecorate BuiltIn.
@@ -234,7 +236,8 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
 TEST_F(TextToBinaryTest, CombinedFPFastMathMask) {
   // Sample a single combination.  This ensures we've integrated
   // the instruction parsing logic with spvTextParseMask.
-  const std::string input = "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ";
+  const std::string input =
+      "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ";
   const uint32_t expected_enum = spv::DecorationFPFastMathMode;
   const uint32_t expected_mask = spv::FPFastMathModeNotNaNMask |
                                  spv::FPFastMathModeNotInfMask |
@@ -258,8 +261,9 @@ using OpDecorateLinkageTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(OpDecorateLinkageTest, AnyLinkageDecoration) {
   // This string should assemble, but should not validate.
-  std::string input = "OpDecorate %1 LinkageAttributes \"" + GetParam().external_name +
-                      "\" " + GetParam().linkage_type_name;
+  const std::string input = "OpDecorate %1 LinkageAttributes \"" +
+                            GetParam().external_name + "\" " +
+                            GetParam().linkage_type_name;
   std::vector<uint32_t> expected_operands{1, spv::DecorationLinkageAttributes};
   std::vector<uint32_t> encoded_external_name =
       MakeVector(GetParam().external_name);
@@ -283,19 +287,17 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
 #undef CASE
 // clang-format on
 
-
 // Test OpGroupMemberDecorate
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateGoodOneTarget) {
   EXPECT_THAT(CompiledInstructions("OpGroupMemberDecorate %group %id0 42"),
-              Eq(MakeInstruction(spv::OpGroupMemberDecorate,
-                                {1, 2, 42})));
+              Eq(MakeInstruction(spv::OpGroupMemberDecorate, {1, 2, 42})));
 }
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateGoodTwoTargets) {
-  EXPECT_THAT(CompiledInstructions("OpGroupMemberDecorate %group %id0 96 %id1 42"),
-              Eq(MakeInstruction(spv::OpGroupMemberDecorate,
-                                {1, 2, 96, 3, 42})));
+  EXPECT_THAT(
+      CompiledInstructions("OpGroupMemberDecorate %group %id0 96 %id1 42"),
+      Eq(MakeInstruction(spv::OpGroupMemberDecorate, {1, 2, 96, 3, 42})));
 }
 
 TEST_F(TextToBinaryTest, GroupMemberDecorateMissingGroupId) {

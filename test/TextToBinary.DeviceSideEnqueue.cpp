@@ -48,7 +48,7 @@ using OpEnqueueKernelGood =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<KernelEnqueueCase>>;
 
 TEST_P(OpEnqueueKernelGood, Sample) {
-  std::string input =
+  const std::string input =
       "%result = OpEnqueueKernel %type %queue %flags %NDRange %num_events"
       " %wait_events %ret_event %invoke %param %param_size %param_align " +
       GetParam().local_size_source;

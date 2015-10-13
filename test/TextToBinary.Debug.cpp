@@ -71,8 +71,9 @@ using OpSourceTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<LanguageCase>>;
 
 TEST_P(OpSourceTest, AnyLanguage) {
-  std::string input = std::string("OpSource ") + GetParam().language_name +
-                      " " + std::to_string(GetParam().version);
+  const std::string input = std::string("OpSource ") +
+                            GetParam().language_name + " " +
+                            std::to_string(GetParam().version);
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSource, {GetParam().get_language_value(),
@@ -89,7 +90,7 @@ TEST_F(OpSourceTest, WrongLanguage) {
 
 TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
   // In the grammar, the file id is an OperandOptionalId.
-  std::string input = "OpSource GLSL 450 %file_id";
+  const std::string input = "OpSource GLSL 450 %file_id";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1})));
@@ -97,7 +98,8 @@ TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
 
 TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
   std::string fake_source = "To be or not to be";
-  std::string input = "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
+  const std::string input =
+      "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1},
@@ -111,7 +113,8 @@ using OpSourceContinuedTest =
 
 TEST_P(OpSourceContinuedTest, AnyExtension) {
   // TODO(dneto): utf-8, quoting, escaping
-  std::string input = std::string("OpSourceContinued \"") + GetParam() + "\"";
+  const std::string input =
+      std::string("OpSourceContinued \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSourceContinued, MakeVector(GetParam()))));
@@ -129,7 +132,8 @@ using OpSourceExtensionTest =
 
 TEST_P(OpSourceExtensionTest, AnyExtension) {
   // TODO(dneto): utf-8, quoting, escaping
-  std::string input = std::string("OpSourceExtension \"") + GetParam() + "\"";
+  const std::string input =
+      std::string("OpSourceExtension \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpSourceExtension, MakeVector(GetParam()))));
@@ -155,7 +159,8 @@ using OpStringTest =
 
 TEST_P(OpStringTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
-  std::string input = std::string("%result = OpString \"") + GetParam() + "\"";
+  const std::string input =
+      std::string("%result = OpString \"") + GetParam() + "\"";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpString, {1}, MakeVector(GetParam()))));
 }
@@ -170,7 +175,8 @@ using OpNameTest =
 
 TEST_P(OpNameTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
-  std::string input = std::string("OpName %target \"") + GetParam() + "\"";
+  const std::string input =
+      std::string("OpName %target \"") + GetParam() + "\"";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpName, {1}, MakeVector(GetParam()))));
 }
@@ -185,7 +191,7 @@ using OpMemberNameTest =
 
 TEST_P(OpMemberNameTest, AnyString) {
   // TODO(dneto): utf-8, quoting, escaping
-  std::string input =
+  const std::string input =
       std::string("OpMemberName %type 42 \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),

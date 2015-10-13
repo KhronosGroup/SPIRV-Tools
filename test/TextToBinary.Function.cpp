@@ -45,8 +45,8 @@ using OpFunctionControlTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<spv::FunctionControlMask>>>;
 
 TEST_P(OpFunctionControlTest, AnySingleFunctionControlMask) {
-  std::string input = "%result_id = OpFunction %result_type " +
-                      GetParam().name() + " %function_type ";
+  const std::string input = "%result_id = OpFunction %result_type " +
+                            GetParam().name() + " %function_type ";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpFunction, {1, 2, GetParam().value(), 3})));

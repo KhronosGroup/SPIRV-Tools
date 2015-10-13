@@ -46,11 +46,11 @@ struct ImageOperandsCase {
 
 // Test all kinds of image operands.
 
-using ImageOperandsTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<ImageOperandsCase>>;
+using ImageOperandsTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<ImageOperandsCase>>;
 
 TEST_P(ImageOperandsTest, Sample) {
-  std::string input =
+  const std::string input =
       "%result = OpImageFetch %type %image %coord " + GetParam().image_operands;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(spv::OpImageFetch, {1, 2, 3, 4},
