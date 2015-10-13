@@ -213,6 +213,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPRoundingMode, OpDecorateEnumTest,
 #undef CASE
 // clang-format on
 
+TEST_F(OpDecorateEnumTest, WrongFPRoundingMode) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 FPRoundingMode xxyyzz"),
+              Eq("Invalid floating-point rounding mode 'xxyyzz'."));
+}
+
 // Test OpDecorate FPFastMathMode.
 // These can by named enums for the single-bit masks.  However, we don't support
 // symbolic combinations of the masks.  Rather, they can use !<immediate>
