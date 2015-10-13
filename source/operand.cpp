@@ -1341,9 +1341,9 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
       return "image format";
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
-      return "floating pointer fast math mode";
+      return "floating-point fast math mode";
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
-      return "floating point rounding mode";
+      return "floating-point rounding mode";
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
       return "linkage type";
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:

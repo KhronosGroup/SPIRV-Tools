@@ -233,11 +233,10 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
 #undef CASE
 // clang-format on
 
-TEST_F(TextToBinaryTest, CombinedFPFastMathMask) {
+TEST_F(OpDecorateEnumTest, CombinedFPFastMathMask) {
   // Sample a single combination.  This ensures we've integrated
   // the instruction parsing logic with spvTextParseMask.
-  const std::string input =
-      "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ";
+  const std::string input = "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ";
   const uint32_t expected_enum = spv::DecorationFPFastMathMode;
   const uint32_t expected_mask = spv::FPFastMathModeNotNaNMask |
                                  spv::FPFastMathModeNotInfMask |
@@ -245,6 +244,11 @@ TEST_F(TextToBinaryTest, CombinedFPFastMathMask) {
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(spv::OpDecorate, {1, expected_enum, expected_mask})));
+}
+
+TEST_F(OpDecorateEnumTest, WrongFPFastMathMode) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 FPFastMathMode NotNaN|xxyyzz"),
+              Eq("Invalid floating-point fast math mode 'NotNaN|xxyyzz'."));
 }
 
 // Test OpDecorate Linkage
