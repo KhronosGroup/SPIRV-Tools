@@ -107,6 +107,11 @@ INSTANTIATE_TEST_CASE_P(
           5, 6, 7, 8, 9, 10, 11, 12}}}));
 #undef MASK
 
+TEST_F(ImageOperandsTest, WrongOperand) {
+  EXPECT_THAT(CompileFailure("%r = OpImageFetch %t %i %c xxyyzz"),
+              Eq("Invalid image operand 'xxyyzz'."));
+}
+
 // TODO(dneto): OpSampledImage
 // TODO(dneto): OpImageSampleImplicitLod
 // TODO(dneto): OpImageSampleExplicitLod
