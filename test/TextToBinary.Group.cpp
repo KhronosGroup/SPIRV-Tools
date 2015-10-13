@@ -62,6 +62,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryGroupOperation, GroupOperationTest,
 #undef CASE
 // clang-format on
 
+TEST_F(GroupOperationTest, WrongGroupOperation) {
+  EXPECT_THAT(CompileFailure("%r = OpGroupUMin %t %e xxyyzz %x"),
+              Eq("Invalid group operation 'xxyyzz'."));
+}
+
 // TODO(dneto): OpAsyncGroupCopy
 // TODO(dneto): OpWaitGroupEvents
 // TODO(dneto): OpGroupAll
