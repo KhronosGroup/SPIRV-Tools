@@ -1339,7 +1339,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
       return "sampler filter mode";
     case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
-      return "sampler image format";
+      return "image format";
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
       return "floating pointer fast math mode";
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:

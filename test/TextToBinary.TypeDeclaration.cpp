@@ -135,6 +135,11 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+TEST_F(ImageFormatTest, WrongFormat) {
+  EXPECT_THAT(CompileFailure("%r = OpTypeImage %t 1D  2 3 0 4 xxyyzz"),
+              Eq("Invalid image format 'xxyyzz'."));
+}
+
 // Test AccessQualifier enums via OpTypePipe.
 
 using OpTypePipeTest = spvtest::TextToBinaryTestBase<
@@ -199,9 +204,6 @@ TEST_F(OpTypeForwardPointerTest, WrongClass) {
   EXPECT_THAT(CompileFailure("OpTypeForwardPointer %pt xxyyzz"),
               Eq("Invalid storage class 'xxyyzz'."));
 }
-
-// TODO(dneto): error message test for sampler addressing mode
-// TODO(dneto): error message test for sampler image format
 
 // TODO(dneto): OpTypeVoid
 // TODO(dneto): OpTypeBool
