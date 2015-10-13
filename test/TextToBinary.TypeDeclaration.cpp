@@ -68,6 +68,11 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+TEST_F(DimTest, WrongDim) {
+  EXPECT_THAT(CompileFailure("%i = OpTypeImage %t xxyyzz 1 2 3 4 R8"),
+              Eq("Invalid dimensionality 'xxyyzz'."));
+}
+
 // Test ImageFormat enums via OpTypeImage
 
 using ImageFormatTest = spvtest::TextToBinaryTestBase<
