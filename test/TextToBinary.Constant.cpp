@@ -66,6 +66,11 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
+TEST_F(SamplerAddressingModeTest, WrongMode) {
+  EXPECT_THAT(CompileFailure("%r = OpConstantSampler %t xxyyzz 0 Nearest"),
+              Eq("Invalid addressing mode 'xxyyzz'."));
+}
+
 // Test Sampler Filter Mode enum values
 
 using SamplerFilterModeTest = spvtest::TextToBinaryTestBase<
@@ -90,21 +95,20 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE
 // clang-format on
 
-
 struct ConstantTestCase {
   std::string constant_type;
   std::string constant_value;
   std::vector<uint32_t> expected_instructions;
 };
 
-using OpConstantValidTest = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<ConstantTestCase>>;
+using OpConstantValidTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<ConstantTestCase>>;
 
-TEST_P(OpConstantValidTest, ValidTypes)
-{
-  std::string input =
-      "%1 = " + GetParam().constant_type + "\n"
-      "%2 = OpConstant %1 " + GetParam().constant_value + "\n";
+TEST_P(OpConstantValidTest, ValidTypes) {
+  std::string input = "%1 = " + GetParam().constant_type +
+                      "\n"
+                      "%2 = OpConstant %1 " +
+                      GetParam().constant_value + "\n";
   std::vector<uint32_t> instructions;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(GetParam().expected_instructions));
@@ -129,14 +133,13 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-using OpConstantInvalidTypeTest = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<std::string>>;
+using OpConstantInvalidTypeTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
-TEST_P(OpConstantInvalidTypeTest, InvalidTypes)
-{
-  std::string input =
-      "%1 = " + GetParam() + "\n"
-      "%2 = OpConstant %1 0\n";
+TEST_P(OpConstantInvalidTypeTest, InvalidTypes) {
+  std::string input = "%1 = " + GetParam() +
+                      "\n"
+                      "%2 = OpConstant %1 0\n";
   EXPECT_THAT(
       CompileFailure(input),
       Eq("Type for Constant must be a scalar floating point or integer type"));
@@ -169,7 +172,6 @@ INSTANTIATE_TEST_CASE_P(
       },
     }));
 // clang-format on
-
 
 // TODO(dneto): OpConstantTrue
 // TODO(dneto): OpConstantFalse
