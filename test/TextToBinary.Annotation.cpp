@@ -204,6 +204,11 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFuncParamAttr, OpDecorateEnumTest,
 #undef CASE
 // clang-format on
 
+TEST_F(OpDecorateEnumTest, WrongFuncParamAttr) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 FuncParamAttr xxyyzz"),
+              Eq("Invalid function parameter attribute 'xxyyzz'."));
+}
+
 // Test OpDecorate FPRoundingMode
 // clang-format off
 #define CASE(NAME) \
