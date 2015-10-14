@@ -105,31 +105,36 @@ TEST(TextLiteral, BadString) {
   EXPECT_EQ(SPV_FAILED_MATCH, spvTextToLiteral("a\"", &l));
 }
 
-TEST(TextLiteral, GoodString) {
+class GoodStringTest
+    : public ::testing::TestWithParam<std::pair<const char*, const char*>> {};
+
+TEST_P(GoodStringTest, GoodStrings) {
   spv_literal_t l;
 
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"-\"", &l));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral(std::get<0>(GetParam()), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ("-", l.value.str);
-
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"--\"", &l));
-  EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ("--", l.value.str);
-
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"1-2\"", &l));
-  EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ("1-2", l.value.str);
-
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"123a\"", &l));
-  EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ("123a", l.value.str);
-
-  ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("\"12.2.3\"", &l));
-  EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ("12.2.3", l.value.str);
-
-  // TODO(dneto): escaping in strings is not supported yet.
+  EXPECT_STREQ(std::get<1>(GetParam()), l.value.str);
 }
+
+#define CASE(NAME) spv::Decoration##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(
+    TextLiteral, GoodStringTest,
+    ::testing::ValuesIn(std::vector<std::pair<const char*, const char*>>{
+      {R"("-")", "-"},
+      {R"("--")", "--"},
+      {R"("1-2")", "1-2"},
+      {R"("123a")", "123a"},
+      {R"("12.2.3")", "12.2.3"},
+      {R"("\"")", "\""},
+      {R"("\\")", "\\"},
+      {"\"\\foo\nbar\"", "foo\nbar"},
+      {"\"\\foo\\\nbar\"", "foo\nbar"},
+      {"\"\U00E4BAB2\"", "\U00E4BAB2"},
+      {"\"\\\U00E4BAB2\"", "\U00E4BAB2"},
+      {"\"this \\\" and this \\\\ and \\\U00E4BAB2\"",
+        "this \" and this \\ and \U00E4BAB2"}
+    }));
+#undef CASE
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;

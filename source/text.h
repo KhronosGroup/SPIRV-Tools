@@ -54,10 +54,10 @@ typedef struct spv_literal_t {
     uint64_t u64;
     float f;
     double d;
-    // Allow room for the null terminator, and two surrounding quotes.
+    // Allow room for the null terminator
     // TODO(dneto): This is a very large array.  We should use a
     // different kind of container.
-    char str[SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 3];
+    char str[SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 1];
   } value;
 } spv_literal_t;
 

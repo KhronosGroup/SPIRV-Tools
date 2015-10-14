@@ -110,11 +110,23 @@ spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral) {
     // TODO(dneto): Allow escaping.
     if (len < 2 || textValue[0] != '"' || textValue[len - 1] != '"')
       return SPV_FAILED_MATCH;
+    bool escaping = false;
+    size_t write_index = 0;
+    for(const char* val = textValue + 1; val != textValue + len - 1; ++val) {
+      if ((*val == '\\') && (!escaping)) {
+        escaping = true;
+      } else {
+        // Have to save space for the null-terminator
+        if (write_index >= sizeof(pLiteral->value.str) - 1)
+          return SPV_ERROR_OUT_OF_MEMORY;
+        pLiteral->value.str[write_index] = *val;
+        escaping = false;
+        ++write_index;
+      }
+    }
+
     pLiteral->type = SPV_LITERAL_TYPE_STRING;
-    // Need room for the null-terminator.
-    if (len >= sizeof(pLiteral->value.str)) return SPV_ERROR_OUT_OF_MEMORY;
-    strncpy(pLiteral->value.str, textValue + 1, len - 2);
-    pLiteral->value.str[len - 2] = 0;
+    pLiteral->value.str[write_index] = '\0';
   } else if (numPeriods == 1) {
     double d = std::strtod(textValue, nullptr);
     float f = (float)d;

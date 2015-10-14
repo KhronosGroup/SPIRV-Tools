@@ -27,14 +27,16 @@ but the assembler does not enforce this rule.
 
 The opcode names and expected operands are described in section 3 of
 the SPIR-V specification.  An operand is one of:
-* a literal integer: A decimal integer, or a hexadecimal integer.
-  A hexadecimal integer is indicated by a leading `0x` or `0X`.  A hex
-  integer supplied for a signed integer value will be sign-extended.
-  For example, `0xffff` supplied as the literal for an `OpConstant`
-  on a signed 16-bit integer type will be interpreted as the value `-1`.
+* a literal integer: A decimal integer, or a hexadecimal integer
+  (indicated by a leading `0x`).
 * a literal floating point number.
-* a literal string, surrounded by double-quotes `"`. TODO: describe quoting and
-escaping rules.
+* a literal string.
+   * A literal string is everything following a double-quote `"` until the
+     following un-escaped double-quote, this includes special characters such as
+     newlines.
+   * A backslash `\` may be used to escape characters in the string. The `\`
+     may be used to escape a double-quote or a `\` but is simply ignored when
+     preceding any other character.
 * a named enumerated value, specific to that operand position.  For example,
 the `OpMemoryModel` takes a named Addressing Model operand (e.g. `Logical` or
 `Physical32`), and a named Memory Model operand (e.g. `Simple` or `OpenCL`).
@@ -154,11 +156,10 @@ instruction.)
 The assembler processes the tokens encountered in alternate parsing mode as
 follows:
 
-* If the token is a number literal, since context may be lost, the number
-  is interpreted as a 32-bit value and output as a single word.  In order to
-  specify multiple-word literals in alternate-parsing mode, further uses of
-  `!<integer>` tokens may be required.
-  All formats supported by `strtoul()` are accepted.
+* If the token is a number literal, it outputs that number as one or more words,
+  as defined in the SPIR-V specification for Literal Number.  The number must
+  fit within the unsigned 32-bit range.  All formats supported by `strtoul()`
+  are accepted.
 * If the token is a string literal, it outputs a sequence of words representing
   the string as defined in the SPIR-V specification for Literal String.
 * If the token is an ID, it outputs the ID's internal number.
