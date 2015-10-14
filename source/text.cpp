@@ -107,7 +107,6 @@ spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral) {
   pLiteral->type = spv_literal_type_t(99);
 
   if (isString || numPeriods > 1 || (isSigned && len == 1)) {
-    // TODO(dneto): Allow escaping.
     if (len < 2 || textValue[0] != '"' || textValue[len - 1] != '"')
       return SPV_FAILED_MATCH;
     bool escaping = false;

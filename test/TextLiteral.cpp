@@ -116,7 +116,6 @@ TEST_P(GoodStringTest, GoodStrings) {
   EXPECT_STREQ(std::get<1>(GetParam()), l.value.str);
 }
 
-#define CASE(NAME) spv::Decoration##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(
     TextLiteral, GoodStringTest,
     ::testing::ValuesIn(std::vector<std::pair<const char*, const char*>>{
@@ -134,7 +133,6 @@ INSTANTIATE_TEST_CASE_P(
       {"\"this \\\" and this \\\\ and \\\U00E4BAB2\"",
         "this \" and this \\ and \U00E4BAB2"}
     }));
-#undef CASE
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
