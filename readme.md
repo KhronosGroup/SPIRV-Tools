@@ -13,13 +13,10 @@ into other code bases directly.
 
 * Based on SPIR-V 0.99 Revision 32
   * Supports core instructions and enumerants from Rev 32.
-  * Instructions are currently limited to 264 words.
-* Supports all core instructions, for 32-bit code.
-  * Handling of non-32-bit literal numbers has been recently clarified.
-    Those changes have not been applied.
 * All GLSL std450 extended instructions are supported.
-* Assembler only does basic syntax checking.  No cross validation of IDs or
-  types is performed.
+* Assembler only does basic syntax checking.  No cross validation of
+  IDs or types is performed, except to check literal arguments to
+  `OpConstant`, `OpSpecConstant`, and `OpSwitch`.
 * OpenCL extended instructions are not supported.
 
 ### Validator
@@ -28,6 +25,14 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-10-14
+* Very long instructions are supported, up to SPIR-V universal limits.
+* 32 and 64-bit floating point literals are encoded properly.
+* Signed and unsigned integers up to 64 bits wide are supported and encoded
+  properly.
+* Hexadecimal literals are supported.  See `syntax.md`.
+* Numeric literal arguments to `OpConstant`, `OpSpecConstant`, and `OpSwitch`
+  are type- and range-checked.
 * Capability dependencies for instructions and enums now match 0.99 Rev 32.
 
 2015-10-02
@@ -277,10 +282,9 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* WIP: Encode literal numbers correctly, for widths other than 32-bits.
+* WIP: Support UTF-8 literal strings.
+* Support 16-bit floating point literals.
 * Support OpenCL extension library.
-* Support UTF-8 literal strings.
-* Support very long instructions.
 
 ### Validator
 
