@@ -29,6 +29,8 @@
 
 #include "UnitSPIRV.h"
 
+#include <cstdint>
+
 #include "gmock/gmock.h"
 #include "TestFixture.h"
 
@@ -327,6 +329,104 @@ INSTANTIATE_TEST_CASE_P(
       },
     }));
 // clang-format on
+
+using RoundTripTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
+
+const int64_t kMaxUnsigned48Bit = (int64_t(1) << 48) - 1;
+const int64_t kMaxSigned48Bit = (int64_t(1) << 47) - 1;
+const int64_t kMinSigned48Bit = -kMaxSigned48Bit - 1;
+
+TEST_P(RoundTripTest, Sample) {
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
+              Eq(GetParam()));
+}
+
+// TODO(dneto): Enable support once this works.
+INSTANTIATE_TEST_CASE_P(DISABLED_OpConstantRoundTrip, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        // 16 bit
+        "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 0\n",
+        "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 65535\n",
+        "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 -32768\n",
+        "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 32767\n",
+        "%1 = OpTypeInt 32 0\n%2 = OpConstant %1 0\n",
+        // 32 bit
+        std::string("%1 = OpTypeInt 32 0\n%2 = OpConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 32 0\n%2 = OpConstant %1 ") +
+            std::to_string(UINT32_MAX) + "\n",
+        std::string("%1 = OpTypeInt 32 1\n%2 = OpConstant %1 ") +
+            std::to_string(INT32_MAX) + "\n",
+        std::string("%1 = OpTypeInt 32 1\n%2 = OpConstant %1 ") +
+            std::to_string(INT32_MIN) + "\n",
+        // 48 bit
+        std::string("%1 = OpTypeInt 48 0\n%2 = OpConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 48 0\n%2 = OpConstant %1 ") +
+            std::to_string(kMaxUnsigned48Bit) + "\n",
+        std::string("%1 = OpTypeInt 48 1\n%2 = OpConstant %1 ") +
+            std::to_string(kMaxSigned48Bit) + "\n",
+        std::string("%1 = OpTypeInt 48 1\n%2 = OpConstant %1 ") +
+            std::to_string(kMinSigned48Bit) + "\n",
+        // 64 bit
+        std::string("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 ") +
+            std::to_string(UINT64_MAX) + "\n",
+        std::string("%1 = OpTypeInt 64 1\n%2 = OpConstant %1 ") +
+            std::to_string(INT64_MAX) + "\n",
+        std::string("%1 = OpTypeInt 64 1\n%2 = OpConstant %1 ") +
+            std::to_string(INT64_MIN) + "\n",
+        // 32-bit float
+        "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0\n",
+        "%1 = OpTypeFloat 32\n%2 = OpConstant %1 13.5\n",
+        "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -12.5\n",
+        // 64-bit float
+        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0\n",
+        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79769e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
+    }));
+
+// TODO(dneto): Enable support once this works.
+INSTANTIATE_TEST_CASE_P(DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        // 16 bit
+        "%1 = OpTypeInt 16 0\n%2 = OpSpecConstant %1 0\n",
+        "%1 = OpTypeInt 16 0\n%2 = OpSpecConstant %1 65535\n",
+        "%1 = OpTypeInt 16 1\n%2 = OpSpecConstant %1 -32768\n",
+        "%1 = OpTypeInt 16 1\n%2 = OpSpecConstant %1 32767\n",
+        "%1 = OpTypeInt 32 0\n%2 = OpSpecConstant %1 0\n",
+        // 32 bit
+        std::string("%1 = OpTypeInt 32 0\n%2 = OpSpecConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 32 0\n%2 = OpSpecConstant %1 ") +
+            std::to_string(UINT32_MAX) + "\n",
+        std::string("%1 = OpTypeInt 32 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(INT32_MAX) + "\n",
+        std::string("%1 = OpTypeInt 32 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(INT32_MIN) + "\n",
+        // 48 bit
+        std::string("%1 = OpTypeInt 48 0\n%2 = OpSpecConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 48 0\n%2 = OpSpecConstant %1 ") +
+            std::to_string(kMaxUnsigned48Bit) + "\n",
+        std::string("%1 = OpTypeInt 48 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(kMaxSigned48Bit) + "\n",
+        std::string("%1 = OpTypeInt 48 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(kMinSigned48Bit) + "\n",
+        // 64 bit
+        std::string("%1 = OpTypeInt 64 0\n%2 = OpSpecConstant %1 0\n"),
+        std::string("%1 = OpTypeInt 64 0\n%2 = OpSpecConstant %1 ") +
+            std::to_string(UINT64_MAX) + "\n",
+        std::string("%1 = OpTypeInt 64 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(INT64_MAX) + "\n",
+        std::string("%1 = OpTypeInt 64 1\n%2 = OpSpecConstant %1 ") +
+            std::to_string(INT64_MIN) + "\n",
+        // 32-bit float
+        "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 0\n",
+        "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 13.5\n",
+        "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 -12.5\n",
+        // 64-bit float
+        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 0\n",
+        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 1.79769e+308\n",
+        "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 -1.79769e+308\n",
+    }));
 
 // TODO(dneto): OpConstantTrue
 // TODO(dneto): OpConstantFalse

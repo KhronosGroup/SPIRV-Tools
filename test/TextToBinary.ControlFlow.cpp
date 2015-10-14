@@ -284,6 +284,56 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(64, 1, "0x700000123", { 0x123, 7 }, "12", {12, 0}),
     })));
 
+using RoundTripTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
+
+TEST_P(RoundTripTest, Sample) {
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
+              Eq(GetParam()));
+}
+
+// TODO(dneto): Enable this test.
+INSTANTIATE_TEST_CASE_P(
+    DISABLED_OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>({
+        // Unsigned 16-bit.
+        "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 65535\nOpSwitch %2 %3\n",
+        // Unsigned 32-bit, three non-default cases.
+        "%1 = OpTypeInt 32 0\n%2 = OpConstant %1 123456\n"
+        "OpSwitch %2 %3 100 %4 102 %5 1000000 %6\n",
+        // Unsigned 48-bit, three non-default cases.
+        "%1 = OpTypeInt 48 0\n%2 = OpConstant %1 5000000000\n"
+        "OpSwitch %2 %3 100 %4 102 %5 6000000000 %6\n",
+        // Unsigned 64-bit, three non-default cases.
+        "%1 = OpTypeInt 64 0\n%2 = OpConstant %1 9223372036854775807\n"
+        "OpSwitch %2 %3 100 %4 102 %5 9000000000000000000 %6\n",
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    DISABLED_OpSwitchRoundTripSignedIntegers, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        // Signed 16-bit, with two non-default cases
+        "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 32767\n"
+        "OpSwitch %2 %3 99 %4 -102 %5\n",
+        "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 -32768\n"
+        "OpSwitch %2 %3 99 %4 -102 %5\n",
+        // Signed 32-bit, two non-default cases.
+        "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 -123456\n"
+        "OpSwitch %2 %3 100 %4 -102\n",
+        "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 123456\n"
+        "OpSwitch %2 %3 100 %4 -102\n",
+        // Signed 48-bit, three non-default cases.
+        "%1 = OpTypeInt 48 1\n%2 = OpConstant %1 5000000000\n"
+        "OpSwitch %2 %3 100 %4 -7000000000 %5 6000000000 %6\n",
+        "%1 = OpTypeInt 48 1\n%2 = OpConstant %1 -5000000000\n"
+        "OpSwitch %2 %3 100 %4 -7000000000 %5 6000000000 %6\n",
+        // Signed 64-bit, three non-default cases.
+        "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 9223372036854775807\n"
+        "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
+        "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 -9223372036854775808\n"
+        "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
+    }));
+
 using OpSwitchInvalidTypeTestCase =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
@@ -328,8 +378,6 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-// TODO(awoloszyn): Add tests for switch with different operand widths
-//                 once non-32-bit support is in.
 // TODO(dneto): OpPhi
 // TODO(dneto): OpLoopMerge
 // TODO(dneto): OpLabel
