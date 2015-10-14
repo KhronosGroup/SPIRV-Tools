@@ -54,7 +54,8 @@ class diagnostic_helper {
 
 // A DiagnosticStream remembers the current position of the input and an error
 // code, and captures diagnostic messages via the left-shift operator.
-// Captured messages are emitted during the destructor.
+// If the error code is not SPV_FAILED_MATCH, then captured messages are
+// emitted during the destructor.
 // TODO(awoloszyn): This is very similar to diagnostic_helper, and hides
 //                  the data more easily. Replace diagnostic_helper elsewhere
 //                  eventually.

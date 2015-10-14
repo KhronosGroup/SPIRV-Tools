@@ -238,9 +238,10 @@ class AssemblyContext {
   // If the type is of class kBottom the value will be encoded as a
   // 32-bit integer.
   // Returns SPV_SUCCESS if the value could be correctly added to the
-  // instruction.
+  // instruction.  Returns the given error code on failure, and emits
+  // a diagnotic if that error code is not SPV_FAILED_MATCH.
   spv_result_t binaryEncodeNumericLiteral(const char *numeric_literal,
-                                          bool optional,
+                                          spv_result_t error_code,
                                           const IdType &type,
                                           spv_instruction_t *pInst);
 
@@ -268,11 +269,11 @@ class AssemblyContext {
   // Parses a numeric value of a given type from the given text.  The number
   // should take up the entire string, and should be within bounds for the
   // target type.  On success, returns SPV_SUCCESS and populates the object
-  // referenced by value_pointer. On failure, returns SPV_FAILED_MATCH if
-  // is_optional is true, and returns SPV_ERROR_INVALID_TEXT and emits a
-  // diagnostic otherwise.
+  // referenced by value_pointer. On failure, returns the given error code,
+  // and emits a diagnostic if that error code is not SPV_FAILED_MATCH.
   template <typename T>
-  spv_result_t parseNumber(const char *text, bool is_optional, T *value_pointer,
+  spv_result_t parseNumber(const char *text, spv_result_t error_code,
+                           T *value_pointer,
                            const char *error_message_fragment) {
     // C++11 doesn't define std::istringstream(int8_t&), so calling this method
     // with a single-byte type leads to implementation-defined behaviour.
@@ -303,26 +304,27 @@ class AssemblyContext {
     }
 
     if (ok) return SPV_SUCCESS;
-    if (is_optional) return SPV_FAILED_MATCH;
-    return diagnostic() << error_message_fragment << text;
+    return diagnostic(error_code) << error_message_fragment << text;
   }
 
  private:
   // Appends the given floating point literal to the given instruction.
   // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
-  // an error code is returned, and a message is emitted if is_optional
-  // is false.  Only 32 and 64 bit floating point numbers are supported.
+  // returns the given error code, and emits a diagnostic if that error
+  // code is not SPV_FAILED_MATCH.
+  // Only 32 and 64 bit floating point numbers are supported.
   spv_result_t binaryEncodeFloatingPointLiteral(const char *numeric_literal,
-                                                bool optional,
+                                                spv_result_t error_code,
                                                 const IdType& type,
                                                 spv_instruction_t *pInst);
 
   // Appends the given integer literal to the given instruction.
   // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
-  // an error code is returned, and a message is emitted if is_optional
-  // is false.  Integers up to 64 bits are supported.
+  // returns the given error code, and emits a diagnostic if that error
+  // code is not SPV_FAILED_MATCH.
+  // Integers up to 64 bits are supported.
   spv_result_t binaryEncodeIntegerLiteral(const char *numeric_literal,
-                                          bool optional,
+                                          spv_result_t error_code,
                                           const IdType &type,
                                           spv_instruction_t *pInst);
 
@@ -332,10 +334,10 @@ class AssemblyContext {
   // the overflow bits should be zero.  If it was hex and the target type is
   // signed, then return the sign-extended value through the
   // updated_value_for_hex pointer argument.
-  // On failure, if is_optional is true then return SPV_FAILED_MATCH, otherwise
-  // emit a diagnostic and return SPV_ERROR_INVALID_TEXT.
+  // On failure, return the given error code and emit a diagnostic if that error
+  // code is not SPV_FAILED_MATCH.
   template <typename T>
-  spv_result_t checkRangeAndIfHexThenSignExtend(T value, bool is_optional,
+  spv_result_t checkRangeAndIfHexThenSignExtend(T value, spv_result_t error_code,
                                                 const IdType &type, bool is_hex,
                                                 T *updated_value_for_hex);
 

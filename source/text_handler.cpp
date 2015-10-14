@@ -347,7 +347,7 @@ spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
 }
 
 spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
-    const char *val, bool is_optional, const IdType &type,
+    const char *val, spv_result_t error_code, const IdType &type,
     spv_instruction_t *pInst) {
   const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
   const bool is_floating = libspirv::isScalarFloating(type);
@@ -365,9 +365,9 @@ spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
   // If we explicitly expect a floating-point number, we should handle that
   // first.
   if (is_floating || looks_like_float)
-    return binaryEncodeFloatingPointLiteral(val, is_optional, type, pInst);
+    return binaryEncodeFloatingPointLiteral(val, error_code, type, pInst);
 
-  return binaryEncodeIntegerLiteral(val, is_optional, type, pInst);
+  return binaryEncodeIntegerLiteral(val, error_code, type, pInst);
 }
 
 spv_result_t AssemblyContext::binaryEncodeString(
@@ -445,7 +445,7 @@ spv_result_t AssemblyContext::recordTypeIdForValue(uint32_t value,
 }
 
 spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
-    const char *val, bool is_optional, const IdType &type,
+    const char *val, spv_result_t error_code, const IdType &type,
     spv_instruction_t *pInst) {
   const auto bit_width = assumedBitWidth(type);
   switch (bit_width) {
@@ -454,14 +454,14 @@ spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
              << "Unsupported yet: 16-bit float constants.";
     case 32: {
       float fVal;
-      if (auto error = parseNumber(val, is_optional, &fVal,
+      if (auto error = parseNumber(val, error_code, &fVal,
                                    "Invalid 32-bit float literal: "))
         return error;
       return binaryEncodeU32(BitwiseCast<uint32_t>(fVal), pInst);
     } break;
     case 64: {
       double dVal;
-      if (auto error = parseNumber(val, is_optional, &dVal,
+      if (auto error = parseNumber(val, error_code, &dVal,
                                    "Invalid 64-bit float literal: "))
         return error;
       return binaryEncodeU64(BitwiseCast<uint64_t>(dVal), pInst);
@@ -473,7 +473,7 @@ spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
 }
 
 spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
-    const char *val, bool is_optional, const IdType &type,
+    const char *val, spv_result_t error_code, const IdType &type,
     spv_instruction_t *pInst) {
   const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
   const auto bit_width = assumedBitWidth(type);
@@ -496,20 +496,20 @@ spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
   uint64_t decoded_bits;
   if (is_negative) {
     int64_t decoded_signed = 0;
-    if (auto error = parseNumber(val, is_optional, &decoded_signed,
+    if (auto error = parseNumber(val, error_code, &decoded_signed,
                                  "Invalid signed integer literal: "))
       return error;
     if (auto error = checkRangeAndIfHexThenSignExtend(
-            decoded_signed, is_optional, type, is_hex, &decoded_signed))
+            decoded_signed, error_code, type, is_hex, &decoded_signed))
       return error;
     decoded_bits = decoded_signed;
   } else {
     // There's no leading minus sign, so parse it as an unsigned integer.
-    if (auto error = parseNumber(val, is_optional, &decoded_bits,
+    if (auto error = parseNumber(val, error_code, &decoded_bits,
                                  "Invalid unsigned integer literal: "))
       return error;
     if (auto error = checkRangeAndIfHexThenSignExtend(
-            decoded_bits, is_optional, type, is_hex, &decoded_bits))
+            decoded_bits, error_code, type, is_hex, &decoded_bits))
       return error;
   }
   if (bit_width > 32) {
@@ -521,7 +521,7 @@ spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
 
 template <typename T>
 spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
-    T value, bool is_optional, const IdType &type, bool is_hex,
+    T value, spv_result_t error_code, const IdType &type, bool is_hex,
     T *updated_value_for_hex) {
   // The encoded result has three regions of bits that are of interest, from
   // least to most significant:
@@ -569,12 +569,10 @@ spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
   }
 
   if (failed) {
-    if (is_optional) return SPV_FAILED_MATCH;
-    return diagnostic() << "Integer " << (is_hex ? std::hex : std::dec)
-                        << std::showbase << value << " does not fit in a "
-                        << std::dec << bit_width << "-bit "
-                        << (type.isSigned ? "signed" : "unsigned")
-                        << " integer";
+    return diagnostic(error_code)
+           << "Integer " << (is_hex ? std::hex : std::dec) << std::showbase
+           << value << " does not fit in a " << std::dec << bit_width << "-bit "
+           << (type.isSigned ? "signed" : "unsigned") << " integer";
   }
 
   // Sign extend hex the number.

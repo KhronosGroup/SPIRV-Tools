@@ -187,9 +187,10 @@ std::vector<uint32_t> successfulEncode(const TextLiteralCase& test,
       test.is_signed,
       type
   };
-  EXPECT_EQ(SPV_SUCCESS, libspirv::AssemblyContext(nullptr, &diagnostic)
-                             .binaryEncodeNumericLiteral(test.text, false,
-                                                         expected_type, &inst))
+ EXPECT_EQ(SPV_SUCCESS,
+            libspirv::AssemblyContext(nullptr, &diagnostic)
+                .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
+                                            expected_type, &inst))
       << diagnostic->error;
   return inst.words;
 }
@@ -203,9 +204,10 @@ std::string failedEncode(const TextLiteralCase& test,
       test.is_signed,
       type
   };
-  EXPECT_NE(SPV_SUCCESS, libspirv::AssemblyContext(nullptr, &diagnostic)
-                             .binaryEncodeNumericLiteral(test.text, false,
-                                                         expected_type, &inst));
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            libspirv::AssemblyContext(nullptr, &diagnostic)
+                .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
+                                            expected_type, &inst));
   std::string ret_val;
   if (diagnostic) {
     ret_val = diagnostic->error;

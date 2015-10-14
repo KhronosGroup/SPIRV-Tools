@@ -172,7 +172,7 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
   assert(*text == '!');
   uint32_t parse_result;
   if (auto error =
-          context->parseNumber(text + 1, false, &parse_result,
+          context->parseNumber(text + 1, SPV_ERROR_INVALID_TEXT, &parse_result,
                                "Invalid immediate integer: !"))
     return error;
   context->binaryEncodeU32(parse_result, pInst);
@@ -207,6 +207,12 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         spvAlternatePatternFollowingImmediate(*pExpectedOperands);
     return SPV_SUCCESS;
   }
+
+  // Optional literal operands can fail to parse. In that case use
+  // SPV_FAILED_MATCH to avoid emitting a diagostic.  Use the following
+  // for those situations.
+  spv_result_t error_code_for_literals =
+      spvOperandIsOptional(type) ? SPV_FAILED_MATCH : SPV_ERROR_INVALID_TEXT;
 
   switch (type) {
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
@@ -278,9 +284,9 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       }
 
       if (auto error = context->binaryEncodeNumericLiteral(
-               textValue, spvOperandIsOptional(type), expected_type, pInst)) {
+              textValue, error_code_for_literals, expected_type, pInst)) {
         return error;
-     }
+      }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
@@ -288,12 +294,11 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       spv_result_t error = spvTextToLiteral(textValue, &literal);
       if (error != SPV_SUCCESS) {
         if (error == SPV_ERROR_OUT_OF_MEMORY) return error;
-        if (spvOperandIsOptional(type)) return SPV_FAILED_MATCH;
-        return context->diagnostic() << "Invalid literal string '" << textValue
-                                     << "'.";
+        return context->diagnostic(error_code_for_literals)
+               << "Invalid literal string '" << textValue << "'.";
       }
       if (literal.type != SPV_LITERAL_TYPE_STRING) {
-        return context->diagnostic(SPV_FAILED_MATCH)
+        return context->diagnostic()
                << "Expected literal string, found literal number '" << textValue
                << "'.";
       }
