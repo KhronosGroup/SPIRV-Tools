@@ -244,7 +244,12 @@ spv_result_t spvBinaryDecodeOperand(
 
       stream.get() << "\"";
       stream.get() << (color ? clr::green() : "");
-      stream.get() << string;
+      for (size_t i = 0; i < strlen(string); ++i) {
+        if(string[i] == '"' || string[i] == '\\') {
+          stream.get() << '\\';
+        }
+        stream.get() << string[i];
+      }
       stream.get() << (color ? clr::reset() : "");
       stream.get() << "\"";
       position->index += stringOperandCount;

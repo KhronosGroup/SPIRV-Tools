@@ -172,6 +172,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryEndianness.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryHeaderGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/BinaryToText.Literal.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticPrint.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticStream.cpp
