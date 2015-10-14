@@ -154,7 +154,7 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  SPV_OPERAND_TYPE_LITERAL_NUMBER,
+  SPV_OPERAND_TYPE_LITERAL_INTEGER,
   // A literal number that can (but is not required to) expand multiple words.
   SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
   SPV_OPERAND_TYPE_LITERAL_STRING,
@@ -200,8 +200,8 @@ typedef enum spv_operand_type_t {
   // An optional image operands mask.  A set bit in the mask may
   // imply that more arguments are required.
   SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
-  // An optional literal number.
-  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
+  // An optional literal integer.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
   // An optional memory access qualifier mask, e.g. Volatile, Aligned,
@@ -213,25 +213,28 @@ typedef enum spv_operand_type_t {
   // In an instruction definition, this may only appear at the end of the
   // operand types.
   SPV_OPERAND_TYPE_VARIABLE_ID,
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER,
-  // A sequence of zero or more pairs of (Literal number, Id)
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID,
-  // A sequence of zero or more pairs of (Id, Literal number)
-  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER,
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER,
+  // A sequence of zero or more pairs of (Literal integer, Id)
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID,
+  // A sequence of zero or more pairs of (Id, Literal integer)
+  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
   // A sequence of zero or more execution modes
   SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
 
   // An Id that is second or later in an optional tuple of operands.
   // This must be present if the first operand in the tuple is present.
   SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE,
-  // A Literal number that is second or later in an optional tuple of operands.
+  // A Literal integer that is second or later in an optional tuple of operands.
   // This must be present if the first operand in the tuple is present.
-  SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE,
+  SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE,
 
   // An optional context-independent value, or CIV.  CIVs are tokens that we can
   // assemble regardless of where they occur -- literals, IDs, immediate
   // integers, etc.
   SPV_OPERAND_TYPE_OPTIONAL_CIV,
+  // An optional literal number. This can expand to either a literal integer or
+  // a literal floating-point number.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.

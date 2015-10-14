@@ -102,8 +102,8 @@ include_directories(
 
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/util/bitwisecast.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/bitwisecast.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction.h

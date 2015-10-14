@@ -118,7 +118,7 @@ static const spv_operand_desc_t memoryModelEntries[] = {
 // operand.
 #define ExecMode1(mode, cap)                                             \
   #mode, ExecutionMode##mode, SPV_CAPABILITY_AS_MASK(Capability##cap), { \
-    SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE               \
+    SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE              \
   }
 static const spv_operand_desc_t executionModeEntries[] = {
     {ExecMode1(Invocations, Geometry)},
@@ -140,13 +140,13 @@ static const spv_operand_desc_t executionModeEntries[] = {
     {"LocalSize",
      ExecutionModeLocalSize,
      0,
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_LITERAL_NUMBER,
-      SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_LITERAL_INTEGER,
+      SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"LocalSizeHint",
      ExecutionModeLocalSizeHint,
      SPV_CAPABILITY_AS_MASK(CapabilityKernel),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_LITERAL_NUMBER,
-      SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_LITERAL_INTEGER,
+      SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {ExecMode0(InputPoints, Geometry)},
     {ExecMode0(InputLines, Geometry)},
     {ExecMode0(InputLinesAdjacency, Geometry)},
@@ -162,7 +162,7 @@ static const spv_operand_desc_t executionModeEntries[] = {
      ExecutionModeOutputVertices,
      SPV_CAPABILITY_AS_MASK(CapabilityGeometry) |
          SPV_CAPABILITY_AS_MASK(CapabilityTessellation),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {ExecMode0(OutputPoints, Geometry)},
     {ExecMode0(OutputLineStrip, Geometry)},
     {ExecMode0(OutputTriangleStrip, Geometry)},
@@ -542,7 +542,7 @@ static const spv_operand_desc_t decorationEntries[] = {
         "SpecId",
         DecorationSpecId,
         SPV_CAPABILITY_AS_MASK(CapabilityShader),
-        {SPV_OPERAND_TYPE_LITERAL_NUMBER},
+        {SPV_OPERAND_TYPE_LITERAL_INTEGER},
     },
     {"Block",
      DecorationBlock,
@@ -563,11 +563,11 @@ static const spv_operand_desc_t decorationEntries[] = {
     {"ArrayStride",
      DecorationArrayStride,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"MatrixStride",
      DecorationMatrixStride,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"GLSLShared",
      DecorationGLSLShared,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
@@ -651,39 +651,39 @@ static const spv_operand_desc_t decorationEntries[] = {
     {"Stream",
      DecorationStream,
      SPV_CAPABILITY_AS_MASK(CapabilityGeometry),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Location",
      DecorationLocation,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Component",
      DecorationComponent,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Index",
      DecorationIndex,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Binding",
      DecorationBinding,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"DescriptorSet",
      DecorationDescriptorSet,
      SPV_CAPABILITY_AS_MASK(CapabilityShader),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Offset",
      DecorationOffset,
      0,
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"XfbBuffer",
      DecorationXfbBuffer,
      SPV_CAPABILITY_AS_MASK(CapabilityTransformFeedback),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"XfbStride",
      DecorationXfbStride,
      SPV_CAPABILITY_AS_MASK(CapabilityTransformFeedback),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"FuncParamAttr",
      DecorationFuncParamAttr,
      SPV_CAPABILITY_AS_MASK(CapabilityKernel),
@@ -714,7 +714,7 @@ static const spv_operand_desc_t decorationEntries[] = {
     {"Alignment",
      DecorationAlignment,
      SPV_CAPABILITY_AS_MASK(CapabilityKernel),
-     {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE}},
+     {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t builtInEntries[] = {
@@ -1012,7 +1012,7 @@ static const spv_operand_desc_t memoryAccessEntries[] = {
         "Aligned",
         MemoryAccessAlignedMask,
         0,
-        {SPV_OPERAND_TYPE_LITERAL_NUMBER, SPV_OPERAND_TYPE_NONE},
+        {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE},
     },
     {"Nontemporal",
      MemoryAccessNontemporalMask,
@@ -1314,7 +1314,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "ID";
     case SPV_OPERAND_TYPE_RESULT_ID:
       return "result ID";
-    case SPV_OPERAND_TYPE_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER:
       return "literal number";
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
       return "multiple word literal number";
@@ -1418,6 +1418,7 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
@@ -1432,9 +1433,9 @@ bool spvOperandIsOptional(spv_operand_type_t type) {
 bool spvOperandIsVariable(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_VARIABLE_ID:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       return true;
     default:
@@ -1449,22 +1450,22 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
     case SPV_OPERAND_TYPE_VARIABLE_ID:
       pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_ID, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER:
       pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, type});
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID:
+    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
       // Represents Zero or more (Literal number, Id) pairs.
       pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
+                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
                        SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE, type});
       return true;
-    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
       // Represents Zero or more (Id, Literal number) pairs.
       pattern->insert(
           pattern->begin(),
           {SPV_OPERAND_TYPE_OPTIONAL_ID,
-           SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE, type});
+           SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       pattern->insert(pattern->begin(),

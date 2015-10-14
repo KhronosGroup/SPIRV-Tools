@@ -81,7 +81,7 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
       // NOTE: ID's are validated in SPV_VALIDATION_LEVEL_1, this is
       // SPV_VALIDATION_LEVEL_0
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
       // NOTE: Implicitly valid as they are encoded as 32 bit value
     } break;
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
@@ -168,7 +168,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
             words + index, wordCount - index, position, pDiagnostic));
         // NOTE: String literals are always at the end of Opcodes
         break;
-      } else if (SPV_OPERAND_TYPE_LITERAL_NUMBER == type) {
+      } else if (SPV_OPERAND_TYPE_LITERAL_INTEGER == type) {
         spvCheckReturn(spvValidateOperandsLiteral(
             words + index, wordCount - index, 2, position, pDiagnostic));
       } else {

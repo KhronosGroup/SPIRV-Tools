@@ -31,11 +31,14 @@
 #include <gmock/gmock.h>
 
 #include "TestFixture.h"
+#include "util/bitwisecast.h"
 
 namespace {
 
+using spvtest::Concatenate;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
+using spvutils::BitwiseCast;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
@@ -69,7 +72,7 @@ using ImmediateIntTest = TextToBinaryTest;
 
 TEST_F(ImmediateIntTest, AnyWordInSimpleStatement) {
   EXPECT_THAT(CompiledInstructions("!0x00040018 %a %b %123", kCAF),
-              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2,3 })));
+              Eq(MakeInstruction(spv::OpTypeMatrix, {1, 2, 3})));
   EXPECT_THAT(CompiledInstructions("OpTypeMatrix !1 %b %123", kCAF),
               Eq(MakeInstruction(spv::OpTypeMatrix, {1, 1, 2})));
   EXPECT_THAT(CompiledInstructions("OpTypeMatrix %1 !2 %123", kCAF),
@@ -117,17 +120,30 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
   EXPECT_EQ(original, CompiledInstructions("!0x00040015 1 8 1", kCAF));
   EXPECT_EQ(original, CompiledInstructions("OpTypeInt !1 8 1", kCAF));
 
-  // 64-bit integer literal.
-  EXPECT_EQ(CompiledInstructions("OpTypeInt %i64 64 0\n"
-                                 "OpConstant %i64 %2 5000000000", kCAF),
+  // With !<integer>, we can (and can only) accept 32-bit number literals,
+  // even when we declare the return type is 64-bit.
+  EXPECT_EQ(Concatenate({
+                MakeInstruction(OpTypeInt, {1, 64, 0}),
+                MakeInstruction(OpConstant, {1, 2, 4294967295}),
+            }),
             CompiledInstructions("OpTypeInt %i64 64 0\n"
-                                 "OpConstant %i64 !2 5000000000", kCAF));
+                                 "OpConstant %i64 !2 4294967295",
+                                 kCAF));
+  // 64-bit integer literal.
+  EXPECT_EQ("Invalid word following !<integer>: 5000000000",
+            CompileFailure("OpConstant !1 %2 5000000000", kCAF));
+  EXPECT_EQ("Invalid word following !<integer>: 5000000000",
+            CompileFailure("OpTypeInt %i64 64 0\n"
+                           "OpConstant %i64 !2 5000000000",
+                           kCAF));
 
   // Negative integer.
   EXPECT_EQ(CompiledInstructions("OpTypeInt %i64 32 1\n"
-                                 "OpConstant %i64 %2 -123", kCAF),
+                                 "OpConstant %i64 %2 -123",
+                                 kCAF),
             CompiledInstructions("OpTypeInt %i64 32 1\n"
-                                 "OpConstant %i64 !2 -123", kCAF));
+                                 "OpConstant %i64 !2 -123",
+                                 kCAF));
 
   // TODO(deki): uncomment assertions below and make them pass.
   // Hex value(s).
@@ -140,10 +156,28 @@ TEST_F(ImmediateIntTest, IntegerFollowingImmediate) {
 
 // Literal floats after !<integer> are handled correctly.
 TEST_F(ImmediateIntTest, FloatFollowingImmediate) {
-  EXPECT_EQ(CompiledInstructions("OpTypeMatrix %10 %2 0.123", kCAF),
-            CompiledInstructions("OpTypeMatrix %10 !2 0.123", kCAF));
-  EXPECT_EQ(CompiledInstructions("OpTypeMatrix %10 %2 -0.5", kCAF),
-            CompiledInstructions("OpTypeMatrix %10 !2 -0.5", kCAF));
+  EXPECT_EQ(
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant %1 %2 0.123", kCAF),
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant %1 !2 0.123", kCAF));
+  EXPECT_EQ(
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant %1 %2 -0.5", kCAF),
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant %1 !2 -0.5", kCAF));
+  EXPECT_EQ(
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant  %1 %2 0.123", kCAF),
+      CompiledInstructions("OpTypeFloat %1 32\n!0x0004002b %1 %2 0.123", kCAF));
+  EXPECT_EQ(
+      CompiledInstructions("OpTypeFloat %1 32\nOpConstant  %1 %2 -0.5", kCAF),
+      CompiledInstructions("OpTypeFloat %1 32\n!0x0004002b %1 %2 -0.5", kCAF));
+
+  EXPECT_EQ(
+      Concatenate({
+          MakeInstruction(OpTypeInt, {1, 64, 0}),
+          MakeInstruction(OpConstant, {1, 2, 0xb, 0xa}),
+          MakeInstruction(OpSwitch, {2, 1234, BitwiseCast<uint32_t>(2.5f), 3}),
+      }),
+      CompiledInstructions("%i64 = OpTypeInt 64 0\n"
+                           "%big = OpConstant %i64 0xa0000000b\n"
+                           "OpSwitch %big !1234 2.5 %target\n"));
 }
 
 // Literal strings after !<integer> are handled correctly.
@@ -272,12 +306,10 @@ TEST_F(ImmediateIntTest, ForbiddenOperands) {
 }
 
 TEST_F(ImmediateIntTest, NotInteger) {
-  EXPECT_THAT(CompileFailure("!abc"),
-              StrEq("Invalid immediate integer: !abc"));
+  EXPECT_THAT(CompileFailure("!abc"), StrEq("Invalid immediate integer: !abc"));
   EXPECT_THAT(CompileFailure("!12.3"),
               StrEq("Invalid immediate integer: !12.3"));
-  EXPECT_THAT(CompileFailure("!12K"),
-              StrEq("Invalid immediate integer: !12K"));
+  EXPECT_THAT(CompileFailure("!12K"), StrEq("Invalid immediate integer: !12K"));
 }
 
 }  // anonymous namespace

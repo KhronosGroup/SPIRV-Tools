@@ -106,11 +106,11 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     case OperandOptionalImage: return SPV_OPERAND_TYPE_OPTIONAL_IMAGE;
     case OperandVariableIds: return SPV_OPERAND_TYPE_VARIABLE_ID;
     // The spec only uses OptionalLiteral for an optional literal number.
-    case OperandOptionalLiteral: return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER;
+    case OperandOptionalLiteral: return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER;
     case OperandOptionalLiteralString: return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING;
     // This is only used for sequences of literal numbers.
-    case OperandVariableLiterals: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER;
-    case OperandLiteralNumber: return SPV_OPERAND_TYPE_LITERAL_NUMBER;
+    case OperandVariableLiterals: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER;
+    case OperandLiteralNumber: return SPV_OPERAND_TYPE_LITERAL_INTEGER;
     case OperandLiteralString: return SPV_OPERAND_TYPE_LITERAL_STRING;
     case OperandSource: return SPV_OPERAND_TYPE_SOURCE_LANGUAGE;
     case OperandExecutionModel: return SPV_OPERAND_TYPE_EXECUTION_MODEL;
@@ -159,10 +159,10 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     case OperandCapability: return SPV_OPERAND_TYPE_CAPABILITY;
 
     // Used by GroupMemberDecorate
-    case OperandVariableIdLiteral: return SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER;
+    case OperandVariableIdLiteral: return SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER;
 
     // Used by Switch
-    case OperandVariableLiteralId: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_NUMBER_ID;
+    case OperandVariableLiteralId: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID;
 
     // These exceptional cases shouldn't occur.
     case OperandCount:

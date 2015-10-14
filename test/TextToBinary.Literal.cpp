@@ -48,6 +48,27 @@ TEST_F(TextToBinaryTest, LiteralNumberInPlaceOfLiteralString) {
             CompileFailure("OpSourceExtension 1000"));
 }
 
+TEST_F(TextToBinaryTest, LiteralFloatInPlaceOfLiteralInteger) {
+  EXPECT_EQ("Invalid unsigned integer literal: 10.5",
+            CompileFailure("OpSource GLSL 10.5"));
+
+  EXPECT_EQ("Invalid unsigned integer literal: 0.2",
+            CompileFailure(R"(OpMemberName %type 0.2 "member0.2")"));
+
+  EXPECT_EQ("Invalid unsigned integer literal: 32.42",
+            CompileFailure("%int = OpTypeInt 32.42 0"));
+
+  EXPECT_EQ("Invalid unsigned integer literal: 4.5",
+            CompileFailure("%mat = OpTypeMatrix %vec 4.5"));
+
+  EXPECT_EQ("Invalid unsigned integer literal: 1.5",
+            CompileFailure("OpExecutionMode %main LocalSize 1.5 1.6 1.7"));
+
+  EXPECT_EQ("Invalid unsigned integer literal: 0.123",
+            CompileFailure("%i32 = OpTypeInt 32 1\n"
+                           "%c = OpConstant %i32 0.123"));
+}
+
 TEST_F(TextToBinaryTest, LiteralStringASCIILong) {
   // SPIR-V allows strings up to 65535 characters.
   // Test the simple case of UTF-8 code points corresponding

@@ -58,7 +58,7 @@ TEST(OperandPattern, PushFrontsAreOnTheLeft) {
 }
 
 TEST(OperandPattern, PopFrontsAreOnTheLeft) {
-  spv_operand_pattern_t pattern{SPV_OPERAND_TYPE_LITERAL_NUMBER,
+  spv_operand_pattern_t pattern{SPV_OPERAND_TYPE_LITERAL_INTEGER,
                                 SPV_OPERAND_TYPE_ID};
 
   pattern.pop_front();
@@ -112,12 +112,12 @@ INSTANTIATE_TEST_CASE_P(
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          spv::MemoryAccessAlignedMask,
          {SUFFIX1},
-         {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
+         {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
         // Volatile with Aligned still has just one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          spv::MemoryAccessVolatileMask | spv::MemoryAccessAlignedMask,
          {SUFFIX1},
-         {SPV_OPERAND_TYPE_LITERAL_NUMBER, SUFFIX1}},
+         {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
     }));
 #undef SUFFIX0
 #undef SUFFIX1
@@ -176,7 +176,7 @@ TEST(AlternatePatternFollowingImmediate, Empty) {
 TEST(AlternatePatternFollowingImmediate, SingleElement) {
   // Spot-check a random selection of types.
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
-                  {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER}),
+                  {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER}),
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(
       spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_CAPABILITY}),
@@ -185,7 +185,7 @@ TEST(AlternatePatternFollowingImmediate, SingleElement) {
       spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_LOOP_CONTROL}),
       Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
-                  {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER}),
+                  {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER}),
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_ID}),
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
@@ -204,9 +204,9 @@ TEST(AlternatePatternFollowingImmediate, SingleResultId) {
 TEST(AlternatePatternFollowingImmediate, MultipleNonResultIds) {
   EXPECT_THAT(
       spvAlternatePatternFollowingImmediate(
-          {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_NUMBER,
+          {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
            SPV_OPERAND_TYPE_CAPABILITY, SPV_OPERAND_TYPE_LOOP_CONTROL,
-           SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER, SPV_OPERAND_TYPE_ID,
+           SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, SPV_OPERAND_TYPE_ID,
            SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE}),
       Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
 }

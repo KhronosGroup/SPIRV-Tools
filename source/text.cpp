@@ -39,7 +39,6 @@
 #include <vector>
 
 #include "binary.h"
-#include "bitwisecast.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
 #include "instruction.h"
@@ -47,6 +46,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "text_handler.h"
+#include "util/bitwisecast.h"
 
 bool spvIsValidIDCharacter(const char value) {
   return value == '_' || 0 != ::isalnum(value);
@@ -111,7 +111,7 @@ spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral) {
       return SPV_FAILED_MATCH;
     bool escaping = false;
     size_t write_index = 0;
-    for(const char* val = textValue + 1; val != textValue + len - 1; ++val) {
+    for (const char* val = textValue + 1; val != textValue + len - 1; ++val) {
       if ((*val == '\\') && (!escaping)) {
         escaping = true;
       } else {
@@ -234,7 +234,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if (type == SPV_OPERAND_TYPE_TYPE_ID) pInst->resultTypeId = id;
       spvInstructionAddWord(pInst, id);
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
       // NOTE: Special case for extension instruction lookup
       if (OpExtInst == pInst->opcode) {
         spv_ext_inst_desc extInst;
@@ -251,35 +251,41 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       }
     }  // Fall through for the general case.
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_LITERAL_NUMBER_IN_OPTIONAL_TUPLE:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER: {
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER: {
       libspirv::IdType expected_type = libspirv::kUnknownType;
-      // The encoding for OpConstant, OpSpecConstant and OpSwitch all
-      // depend on either their own result-id or the result-id of
-      // one of their parameters.
-      if (OpConstant == pInst->opcode || OpSpecConstant == pInst->opcode) {
-        // Special cases for encoding possibly non-32-bit literals here.
-        expected_type =
-            context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
-        if (!libspirv::isScalarFloating(expected_type) &&
-            !libspirv::isScalarIntegral(expected_type)) {
-          spv_opcode_desc d;
-          const char* opcode_name = "opcode";
-          if (SPV_SUCCESS == grammar.lookupOpcode(pInst->opcode, &d)) {
-            opcode_name = d->name;
+      if (type != SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER) {
+        // From now, it's safe to assume that the current operand is an unsigned
+        // integer, apart from the special cases handled below.
+        expected_type = {32, false, libspirv::IdTypeClass::kScalarIntegerType};
+        // The encoding for OpConstant, OpSpecConstant and OpSwitch all
+        // depend on either their own result-id or the result-id of
+        // one of their parameters.
+        if (OpConstant == pInst->opcode || OpSpecConstant == pInst->opcode) {
+          // Special cases for encoding possibly non-32-bit literals here.
+          expected_type =
+              context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
+          if (!libspirv::isScalarFloating(expected_type) &&
+              !libspirv::isScalarIntegral(expected_type)) {
+            spv_opcode_desc d;
+            const char* opcode_name = "opcode";
+            if (SPV_SUCCESS == grammar.lookupOpcode(pInst->opcode, &d)) {
+              opcode_name = d->name;
+            }
+            return context->diagnostic()
+                   << "Type for " << opcode_name
+                   << " must be a scalar floating point or integer type";
           }
-          return context->diagnostic()
-                 << "Type for " << opcode_name
-                 << " must be a scalar floating point or integer type";
-        }
-      } else if (pInst->opcode == OpSwitch) {
-        // We need to know the type of the selector.
-        expected_type = context->getTypeOfValueInstruction(pInst->words[1]);
-        if (!libspirv::isScalarIntegral(expected_type)) {
-          context->diagnostic()
-              << "The selector operand for OpSwitch must be the result"
-                 " of an instruction that generates an integer scalar";
-          return SPV_ERROR_INVALID_TEXT;
+        } else if (pInst->opcode == OpSwitch) {
+          // We need to know the type of the selector.
+          expected_type = context->getTypeOfValueInstruction(pInst->words[1]);
+          if (!libspirv::isScalarIntegral(expected_type)) {
+            context->diagnostic()
+                << "The selector operand for OpSwitch must be the result"
+                   " of an instruction that generates an integer scalar";
+            return SPV_ERROR_INVALID_TEXT;
+          }
         }
       }
 
@@ -479,8 +485,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     if (context->advance())
       return context->diagnostic() << "Expected opcode, found end of stream.";
     error = context->getWord(opcodeName, &nextPosition);
-    if (error)
-      return context->diagnostic(error) << "Internal Error";
+    if (error) return context->diagnostic(error) << "Internal Error";
     if (!context->startsWithOp()) {
       return context->diagnostic() << "Invalid Opcode prefix '" << opcodeName
                                    << "'.";
@@ -654,7 +659,8 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
   if (!data) return SPV_ERROR_OUT_OF_MEMORY;
   uint64_t currentIndex = SPV_INDEX_INSTRUCTION;
   for (auto& inst : instructions) {
-    memcpy(data + currentIndex, inst.words.data(), sizeof(uint32_t) * inst.words.size());
+    memcpy(data + currentIndex, inst.words.data(),
+           sizeof(uint32_t) * inst.words.size());
     currentIndex += inst.words.size();
   }
 

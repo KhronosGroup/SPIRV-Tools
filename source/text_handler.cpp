@@ -33,11 +33,11 @@
 #include <tuple>
 
 #include "binary.h"
-#include "bitwisecast.h"
 #include "ext_inst.h"
 #include "instruction.h"
 #include "opcode.h"
 #include "text.h"
+#include "util/bitwisecast.h"
 
 namespace {
 
