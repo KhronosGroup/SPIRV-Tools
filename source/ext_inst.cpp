@@ -96,19 +96,24 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst2(InterpolateAtOffset)},
 };
 
-static const spv_ext_inst_desc_t openclStd12Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.12 instructions
-};
-
-static const spv_ext_inst_desc_t openclStd20Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.20 instructions
-};
-
-static const spv_ext_inst_desc_t openclStd21Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.21 instructions
+static const spv_ext_inst_desc_t openclEntries[] = {
+#define ExtInst(Name, Opcode, OperandList) {#Name, Opcode, OperandList},
+#define EmptyList \
+  {}
+#define List(...) \
+  { __VA_ARGS__ }
+#define OperandId SPV_OPERAND_TYPE_ID
+#define OperandLiteralNumber SPV_OPERAND_TYPE_LITERAL_NUMBER
+#define OperandFPRoundingMode SPV_OPERAND_TYPE_FP_ROUNDING_MODE
+#define OperandVariableIds SPV_OPERAND_TYPE_VARIABLE_ID
+#include "opencl_std_ext_inst.inc"
+#undef ExtList
+#undef EmptyList
+#undef List
+#undef OperandId
+#undef OperandLiteralNumber
+#undef OperandFPRoundingMode
+#undef OperandVariableIds
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
@@ -118,15 +123,9 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
       {SPV_EXT_INST_TYPE_GLSL_STD_450,
        sizeof(glslStd450Entries) / sizeof(spv_ext_inst_desc_t),
        glslStd450Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_12,
-       sizeof(openclStd12Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd12Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_20,
-       sizeof(openclStd20Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd20Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_21,
-       sizeof(openclStd21Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd21Entries},
+      {SPV_EXT_INST_TYPE_OPENCL_STD,
+       sizeof(openclEntries) / sizeof(spv_ext_inst_desc_t),
+       openclEntries},
   };
 
   static const spv_ext_inst_table_t table = {
@@ -138,17 +137,13 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
 }
 
 spv_ext_inst_type_t spvExtInstImportTypeGet(const char *name) {
+  // The names are specified by the respective extension instruction
+  // specifications.
   if (!strcmp("GLSL.std.450", name)) {
     return SPV_EXT_INST_TYPE_GLSL_STD_450;
   }
-  if (!strcmp("OpenCL.std.12", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_12;
-  }
-  if (!strcmp("OpenCL.std.20", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_20;
-  }
-  if (!strcmp("OpenCL.std.21", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_21;
+  if (!strcmp("OpenCL.std", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_STD;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }

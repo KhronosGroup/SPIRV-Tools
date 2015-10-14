@@ -246,9 +246,7 @@ typedef enum spv_operand_type_t {
 typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_NONE,
   SPV_EXT_INST_TYPE_GLSL_STD_450,
-  SPV_EXT_INST_TYPE_OPENCL_STD_12,
-  SPV_EXT_INST_TYPE_OPENCL_STD_20,
-  SPV_EXT_INST_TYPE_OPENCL_STD_21,
+  SPV_EXT_INST_TYPE_OPENCL_STD,
 
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;

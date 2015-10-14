@@ -182,6 +182,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticPrint.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticStream.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInst.OpenCL.std.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
