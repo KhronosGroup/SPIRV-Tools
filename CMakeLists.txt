@@ -52,6 +52,12 @@ endif()
 
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
+
+  # For good call stacks in profiles, keep the frame pointers.
+  if(NOT SPIRV_PERF STREQUAL "")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+  endif()
+
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
     set(SPIRV_USE_SANITIZER "" CACHE STRING
