@@ -76,6 +76,24 @@ TEST_P(ExtInstOpenCLStdRoundTripTest, ParameterizedExtInst) {
   {                                                                        \
     uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 %6", { 4, 5, 6 } \
   }
+#define CASE4(Enum, Name)                                           \
+  {                                                                 \
+    uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 %6 %7", { \
+      4, 5, 6, 7                                                    \
+    }                                                               \
+  }
+#define CASE2Lit(Enum, Name, LiteralNumber)                                   \
+  {                                                                           \
+    uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 " #LiteralNumber, { \
+      4, 5, LiteralNumber                                                     \
+    }                                                                         \
+  }
+#define CASE3Round(Enum, Name, Mode)                                    \
+  {                                                                     \
+    uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 %6 " #Mode, { \
+      4, 5, 6, uint32_t(spv::FPRoundingMode##Mode)                      \
+    }                                                                   \
+  }
 
 // clang-format off
 // OpenCL.std: 2.1 Math extended instructions
@@ -181,7 +199,45 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(Native_tan, native_tan), // enum value 94
     })));
 
-// TODO(dneto): OpenCL.std: 2.1 Integer instructions
+// OpenCL.std: 2.1 Integer instructions
+INSTANTIATE_TEST_CASE_P(
+    OpenCLInteger, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE1(SAbs, s_abs), // enum value 141
+        CASE2(SAbs_diff, s_abs_diff),
+        CASE2(SAdd_sat, s_add_sat),
+        CASE2(UAdd_sat, u_add_sat),
+        CASE2(SHadd, s_hadd),
+        CASE2(UHadd, u_hadd),
+        CASE2(SRhadd, s_rhadd),
+        CASE2(SRhadd, s_rhadd),
+        CASE3(SClamp, s_clamp),
+        CASE3(UClamp, u_clamp),
+        CASE1(Clz, clz),
+        CASE1(Ctz, ctz),
+        CASE3(SMad_hi, s_mad_hi),
+        CASE3(UMad_sat, u_mad_sat),
+        CASE3(SMad_sat, s_mad_sat),
+        CASE2(SMax, s_max),
+        CASE2(UMax, u_max),
+        CASE2(SMin, s_min),
+        CASE2(UMin, u_min),
+        CASE2(SMul_hi, s_mul_hi),
+        CASE2(Rotate, rotate),
+        CASE2(SSub_sat, s_sub_sat),
+        CASE2(USub_sat, u_sub_sat),
+        CASE2(U_Upsample, u_upsample),
+        CASE2(S_Upsample, s_upsample),
+        CASE1(Popcount, popcount),
+        CASE3(SMad24, s_mad24),
+        CASE3(UMad24, u_mad24),
+        CASE3(SMul24, s_mul24),
+        CASE3(UMul24, u_mul24), // enum value 170
+        CASE1(UAbs, u_abs), // enum value 201
+        CASE2(UAbs_diff, u_abs_diff),
+        CASE2(UMul_hi, u_mul_hi),
+        CASE3(UMad_hi, u_mad_hi), // enum value 204
+    })));
 
 // OpenCL.std: 2.3 Common instrucitons
 INSTANTIATE_TEST_CASE_P(
@@ -198,20 +254,132 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(Sign, sign), // enum value 103
     })));
 
-// TODO(dneto): OpenCL.std: 2.4 Geometric instructions
-// TODO(dneto): OpenCL.std: 2.5 Relational instructions
-// TODO(dneto): OpenCL.std: 2.6 Vector data load and store instructions
-// TODO(dneto): OpenCL.std: 2.7 Miscellaneous vector instructions
-// TODO(dneto): OpenCL.std: 2.8 Miscellaneous instructions
-// TODO(dneto): OpenCL.std: 2.9.1 Image encoding
-// TODO(dneto): OpenCL.std: 2.9.2 Sampler encoding
-// TODO(dneto): OpenCL.std: 2.9.3 Image read
-// TODO(dneto): OpenCL.std: 2.9.4 Image write
+// OpenCL.std: 2.4 Geometric instructions
+INSTANTIATE_TEST_CASE_P(
+    OpenCLGeometric, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE2(Cross, cross), // enum value 104
+        CASE2(Distance, distance),
+        CASE1(Length, length),
+        CASE1(Normalize, normalize),
+        CASE2(Fast_distance, fast_distance),
+        CASE1(Fast_length, fast_length),
+        CASE1(Fast_normalize, fast_normalize), // enum value 110
+    })));
+
+// OpenCL.std: 2.5 Relational instructions
+INSTANTIATE_TEST_CASE_P(
+    OpenCLRelational, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE3(Bitselect, bitselect), // enum value 186
+        CASE3(Select, select), // enum value 187
+    })));
+
+// OpenCL.std: 2.6 Vector data load and store instructions
+INSTANTIATE_TEST_CASE_P(
+    OpenCLVectorLoadStore, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        // The last argument to Vloadn must be one of 2, 3, 4, 8, 16.
+        CASE2Lit(Vloadn, vloadn, 2),
+        CASE2Lit(Vloadn, vloadn, 3),
+        CASE2Lit(Vloadn, vloadn, 4),
+        CASE2Lit(Vloadn, vloadn, 8),
+        CASE2Lit(Vloadn, vloadn, 16),
+        CASE3(Vstoren, vstoren),
+        CASE2(Vload_half, vload_half),
+        CASE2Lit(Vload_halfn, vload_halfn, 2),
+        CASE2Lit(Vload_halfn, vload_halfn, 3),
+        CASE2Lit(Vload_halfn, vload_halfn, 4),
+        CASE2Lit(Vload_halfn, vload_halfn, 8),
+        CASE2Lit(Vload_halfn, vload_halfn, 16),
+        CASE3(Vstore_half, vstore_half),
+        // Try all the rounding modes.
+        CASE3Round(Vstore_half_r, vstore_half_r, RTE),
+        CASE3Round(Vstore_half_r, vstore_half_r, RTZ),
+        CASE3Round(Vstore_half_r, vstore_half_r, RTP),
+        CASE3Round(Vstore_half_r, vstore_half_r, RTN),
+        CASE3(Vstore_halfn, vstore_halfn),
+        CASE3Round(Vstore_halfn_r, vstore_halfn_r, RTE),
+        CASE3Round(Vstore_halfn_r, vstore_halfn_r, RTZ),
+        CASE3Round(Vstore_halfn_r, vstore_halfn_r, RTP),
+        CASE3Round(Vstore_halfn_r, vstore_halfn_r, RTN),
+        CASE2Lit(Vloada_halfn, vloada_halfn, 2),
+        CASE2Lit(Vloada_halfn, vloada_halfn, 3),
+        CASE2Lit(Vloada_halfn, vloada_halfn, 4),
+        CASE2Lit(Vloada_halfn, vloada_halfn, 8),
+        CASE2Lit(Vloada_halfn, vloada_halfn, 16),
+        CASE3(Vstorea_halfn, vstorea_halfn),
+        CASE3Round(Vstorea_halfn_r, vstorea_halfn_r, RTE),
+        CASE3Round(Vstorea_halfn_r, vstorea_halfn_r, RTZ),
+        CASE3Round(Vstorea_halfn_r, vstorea_halfn_r, RTP),
+        CASE3Round(Vstorea_halfn_r, vstorea_halfn_r, RTN),
+    })));
+
+// OpenCL.std: 2.7 Miscellaneous vector instructions
+INSTANTIATE_TEST_CASE_P(
+    OpenCLMiscellaneousVector, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE2(Shuffle, shuffle),
+        CASE3(Shuffle2, shuffle2),
+    })));
+
+// OpenCL.std: 2.8 Miscellaneous instructions
+
+#define PREFIX uint32_t(OpenCLLIB::Entrypoints::Printf), "printf"
+INSTANTIATE_TEST_CASE_P(
+    OpenCLMiscPrintf, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+      // Printf is interesting becuase it takes a variable number of arguments.
+      // Start with zero optional arguments.
+      {PREFIX, "%4", {4}},
+      {PREFIX, "%4 %5", {4, 5}},
+      {PREFIX, "%4 %5 %6", {4, 5, 6}},
+      {PREFIX, "%4 %5 %6 %7", {4, 5, 6, 7}},
+      {PREFIX, "%4 %5 %6 %7 %8", {4, 5, 6, 7, 8}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9", {4, 5, 6, 7, 8, 9}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9 %10", {4, 5, 6, 7, 8, 9, 10}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9 %10 %11", {4, 5, 6, 7, 8, 9, 10, 11}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9 %10 %11 %12",
+        {4, 5, 6, 7, 8, 9, 10, 11, 12}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9 %10 %11 %12 %13",
+        {4, 5, 6, 7, 8, 9, 10, 11, 12, 13}},
+      {PREFIX, "%4 %5 %6 %7 %8 %9 %10 %11 %12 %13 %14",
+        {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}},
+    })));
+#undef PREFIX
+
+INSTANTIATE_TEST_CASE_P(
+    OpenCLMiscPrefetch, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE2(Prefetch, prefetch),
+    })));
+
+// OpenCL.std: 2.9.1 Image encoding
+// No new instructions defined in this section.
+
+// OpenCL.std: 2.9.2 Sampler encoding
+// No new instructions defined in this section.
+
+// OpenCL.std: 2.9.3 Image read
+// No new instructions defined in this section.
+// Use core instruction OpImageSampleExplicitLod instead.
+
+// OpenCL.std: 2.9.4 Image write
+INSTANTIATE_TEST_CASE_P(
+    OpenCLImageWrite, ExtInstOpenCLStdRoundTripTest,
+    ::testing::ValuesIn(std::vector<InstructionCase>({
+        CASE4(Write_imagef_mipmap_lod, write_imagef_mipmap_lod),
+        CASE4(Write_imagei_mipmap_lod, write_imagei_mipmap_lod),
+        CASE4(Write_imageui_mipmap_lod, write_imageui_mipmap_lod),
+    })));
 
 // clang-format on
 
 #undef CASE1
 #undef CASE2
 #undef CASE3
+#undef CASE4
+#undef CASE2Lit
+#undef CASE3Round
 
 }  // anonymous namespace
