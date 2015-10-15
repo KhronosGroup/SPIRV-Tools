@@ -176,10 +176,9 @@ TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralCanonicalFormat) {
   const auto input = R"(OpTypeInt %i32 32 0
                         OpConstant %i32 %selector 42
                   OpSwitch %selector %default %abc)";
-  EXPECT_THAT(
-      CompileWithFormatFailure(input, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
-      Eq("Expected <opcode> at the beginning of an instruction, found "
-         "'%abc'."));
+  EXPECT_THAT(CompileFailure(input, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
+              Eq("Expected <opcode> at the beginning of an instruction, found "
+                 "'%abc'."));
 }
 
 TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {
@@ -280,16 +279,15 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(48, 0, "0x800000000000", {0x00000000, 0x00008000},
                            "0x800000000000", {0x00000000, 0x00008000}),
         MakeSwitchTestCase(63, 0, "0x500000000", {0, 5}, "12", {12, 0}),
-        MakeSwitchTestCase(64, 0, "0x600000000", { 0, 6 }, "12", {12, 0}),
-        MakeSwitchTestCase(64, 1, "0x700000123", { 0x123, 7 }, "12", {12, 0}),
+        MakeSwitchTestCase(64, 0, "0x600000000", {0, 6}, "12", {12, 0}),
+        MakeSwitchTestCase(64, 1, "0x700000123", {0x123, 7}, "12", {12, 0}),
     })));
 
 using RoundTripTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
 TEST_P(RoundTripTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
-              Eq(GetParam()));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
 }
 
 // TODO(dneto): Enable this test.
