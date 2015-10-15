@@ -244,11 +244,11 @@ spv_result_t spvBinaryDecodeOperand(
 
       stream.get() << "\"";
       stream.get() << (color ? clr::green() : "");
-      for (size_t i = 0; i < strlen(string); ++i) {
-        if(string[i] == '"' || string[i] == '\\') {
+      for (const char* p = string; *p; ++p) {
+        if(*p == '"' || *p == '\\') {
           stream.get() << '\\';
         }
-        stream.get() << string[i];
+        stream.get() << *p;
       }
       stream.get() << (color ? clr::reset() : "");
       stream.get() << "\"";
