@@ -30,6 +30,7 @@
 #include "UnitSPIRV.h"
 
 #include <cstdint>
+#include <limits>
 
 #include "gmock/gmock.h"
 #include "TestFixture.h"
@@ -354,11 +355,11 @@ INSTANTIATE_TEST_CASE_P(DISABLED_OpConstantRoundTrip, RoundTripTest,
         // 32 bit
         std::string("%1 = OpTypeInt 32 0\n%2 = OpConstant %1 0\n"),
         std::string("%1 = OpTypeInt 32 0\n%2 = OpConstant %1 ") +
-            std::to_string(UINT32_MAX) + "\n",
+            std::to_string(std::numeric_limits<uint32_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 32 1\n%2 = OpConstant %1 ") +
-            std::to_string(INT32_MAX) + "\n",
+            std::to_string(std::numeric_limits<int32_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 32 1\n%2 = OpConstant %1 ") +
-            std::to_string(INT32_MIN) + "\n",
+            std::to_string(std::numeric_limits<int32_t>::min()) + "\n",
         // 48 bit
         std::string("%1 = OpTypeInt 48 0\n%2 = OpConstant %1 0\n"),
         std::string("%1 = OpTypeInt 48 0\n%2 = OpConstant %1 ") +
@@ -370,11 +371,11 @@ INSTANTIATE_TEST_CASE_P(DISABLED_OpConstantRoundTrip, RoundTripTest,
         // 64 bit
         std::string("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 0\n"),
         std::string("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 ") +
-            std::to_string(UINT64_MAX) + "\n",
+            std::to_string(std::numeric_limits<uint64_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 64 1\n%2 = OpConstant %1 ") +
-            std::to_string(INT64_MAX) + "\n",
+            std::to_string(std::numeric_limits<int64_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 64 1\n%2 = OpConstant %1 ") +
-            std::to_string(INT64_MIN) + "\n",
+            std::to_string(std::numeric_limits<int64_t>::min()) + "\n",
         // 32-bit float
         "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0\n",
         "%1 = OpTypeFloat 32\n%2 = OpConstant %1 13.5\n",
@@ -397,11 +398,11 @@ INSTANTIATE_TEST_CASE_P(DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
         // 32 bit
         std::string("%1 = OpTypeInt 32 0\n%2 = OpSpecConstant %1 0\n"),
         std::string("%1 = OpTypeInt 32 0\n%2 = OpSpecConstant %1 ") +
-            std::to_string(UINT32_MAX) + "\n",
+            std::to_string(std::numeric_limits<uint32_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 32 1\n%2 = OpSpecConstant %1 ") +
-            std::to_string(INT32_MAX) + "\n",
+            std::to_string(std::numeric_limits<int32_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 32 1\n%2 = OpSpecConstant %1 ") +
-            std::to_string(INT32_MIN) + "\n",
+            std::to_string(std::numeric_limits<int32_t>::min()) + "\n",
         // 48 bit
         std::string("%1 = OpTypeInt 48 0\n%2 = OpSpecConstant %1 0\n"),
         std::string("%1 = OpTypeInt 48 0\n%2 = OpSpecConstant %1 ") +
@@ -413,11 +414,11 @@ INSTANTIATE_TEST_CASE_P(DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
         // 64 bit
         std::string("%1 = OpTypeInt 64 0\n%2 = OpSpecConstant %1 0\n"),
         std::string("%1 = OpTypeInt 64 0\n%2 = OpSpecConstant %1 ") +
-            std::to_string(UINT64_MAX) + "\n",
+            std::to_string(std::numeric_limits<uint64_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 64 1\n%2 = OpSpecConstant %1 ") +
-            std::to_string(INT64_MAX) + "\n",
+            std::to_string(std::numeric_limits<int64_t>::max()) + "\n",
         std::string("%1 = OpTypeInt 64 1\n%2 = OpSpecConstant %1 ") +
-            std::to_string(INT64_MIN) + "\n",
+            std::to_string(std::numeric_limits<int64_t>::min()) + "\n",
         // 32-bit float
         "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 0\n",
         "%1 = OpTypeFloat 32\n%2 = OpSpecConstant %1 13.5\n",
