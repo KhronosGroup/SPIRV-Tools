@@ -234,22 +234,22 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       if (type == SPV_OPERAND_TYPE_TYPE_ID) pInst->resultTypeId = id;
       spvInstructionAddWord(pInst, id);
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
-      // NOTE: Special case for extension instruction lookup
-      if (OpExtInst == pInst->opcode) {
-        spv_ext_inst_desc extInst;
-        if (grammar.lookupExtInst(pInst->extInstType, textValue, &extInst)) {
-          return context->diagnostic() << "Invalid extended instruction name '"
-                                       << textValue << "'.";
-        }
-        spvInstructionAddWord(pInst, extInst->ext_inst);
-
-        // Prepare to parse the operands for the extended instructions.
-        spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
-
-        return SPV_SUCCESS;
+    case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
+      // The assembler accepts the symbolic name for an extended instruction,
+      // and emits its corresponding number.
+      spv_ext_inst_desc extInst;
+      if (grammar.lookupExtInst(pInst->extInstType, textValue, &extInst)) {
+        return context->diagnostic() << "Invalid extended instruction name '"
+                                     << textValue << "'.";
       }
-    }  // Fall through for the general case.
+      spvInstructionAddWord(pInst, extInst->ext_inst);
+
+      // Prepare to parse the operands for the extended instructions.
+      spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
+
+      return SPV_SUCCESS;
+    } break;
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:

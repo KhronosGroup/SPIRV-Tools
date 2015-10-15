@@ -236,6 +236,11 @@ typedef enum spv_operand_type_t {
   // a literal floating-point number.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
 
+  // The Instruction argument to OpExtInst. It's an unsigned 32-bit literal
+  // number indicating which instruction to use from an extended instruction
+  // set.
+  SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,

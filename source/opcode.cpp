@@ -110,7 +110,17 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     case OperandOptionalLiteralString: return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING;
     // This is only used for sequences of literal numbers.
     case OperandVariableLiterals: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER;
-    case OperandLiteralNumber: return SPV_OPERAND_TYPE_LITERAL_INTEGER;
+    case OperandLiteralNumber:
+      if (opcode == spv::OpExtInst) {
+        // We use a special operand type for the extension instruction number.
+        // For now, we assume there is only one LiteraNumber argument to OpExtInst,
+        // and it is the extension instruction argument.
+        // See the ExtInst entry in opcode.inc
+        // TODO(dneto): Use a function to confirm the assumption, and to verify
+        // that the index into the operandClass is 1, as expected.
+        return SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER;
+      }
+      return SPV_OPERAND_TYPE_LITERAL_INTEGER;
     case OperandLiteralString: return SPV_OPERAND_TYPE_LITERAL_STRING;
     case OperandSource: return SPV_OPERAND_TYPE_SOURCE_LANGUAGE;
     case OperandExecutionModel: return SPV_OPERAND_TYPE_EXECUTION_MODEL;

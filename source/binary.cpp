@@ -208,8 +208,7 @@ spv_result_t spvBinaryDecodeOperand(
       stream.get() << ((color) ? clr::reset() : "");
       position->index++;
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
-      // NOTE: Special case for extended instruction use
+    case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       if (OpExtInst == opcode) {
         spv_ext_inst_desc extInst;
         if (grammar.lookupExtInst(*pExtInstType, words[0], &extInst)) {
@@ -221,9 +220,14 @@ spv_result_t spvBinaryDecodeOperand(
         stream.get() << extInst->name;
         stream.get() << (color ? clr::reset() : "");
         position->index++;
-        break;
+      } else {
+        DIAGNOSTIC << "Internal error: grammar thinks we need an "
+                      "extension instruction number for opcode "
+                   << opcode;
+        return SPV_ERROR_INTERNAL;
       }
-    }  // Fall through for the general case.
+    } break;
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE: {
