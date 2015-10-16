@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include <sstream>
+#include <unordered_map>
 
 // Binary API
 
@@ -49,6 +50,9 @@ static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
+
+using id_to_type_id_map = std::unordered_map<uint32_t, uint32_t>;
+using type_id_to_type_map = std::unordered_map<uint32_t, libspirv::IdType>;
 
 #define I32_ENDIAN_HOST (o32_host_order.value)
 
@@ -363,6 +367,62 @@ spv_result_t spvBinaryDecodeOperand(
   return SPV_SUCCESS;
 }
 
+
+
+/// @brief Regsiters the given instruction with the type and id tracking
+///   tables.
+///
+/// @param[in] pInst the Opcode instruction stream
+/// @param[in] pOpcodeEntry the Opcode Entry describing the instruction
+/// @param[in, out] type_map the map of Ids to Types to be filled in
+/// @param[in, out] id_map the map of Ids to type Ids to be filled in
+/// @param[in, out] position position in the stream
+/// @param[out] pDiag return diagnostic on error
+///
+/// @return result code
+spv_result_t spvRegisterIdForOpcode(const spv_instruction_t* pInst,
+                                    const spv_opcode_desc_t* pOpcodeEntry,
+                                    type_id_to_type_map* type_map,
+                                    id_to_type_id_map* id_map,
+                                    spv_position position,
+                                    spv_diagnostic* pDiagnostic) {
+  libspirv::IdType detected_type = libspirv::kUnknownType;
+  if (spvOpcodeIsType(pOpcodeEntry->opcode)) {
+    if (spv::OpTypeInt == pOpcodeEntry->opcode) {
+      detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
+      detected_type.bitwidth = pInst->words[2];
+      detected_type.isSigned = (pInst->words[3] != 0);
+    } else if (spv::OpTypeFloat == pOpcodeEntry->opcode) {
+      detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
+      detected_type.bitwidth = pInst->words[2];
+      detected_type.isSigned = true;
+    } else {
+      detected_type.type_class = libspirv::IdTypeClass::kOtherType;
+    }
+  }
+
+  // We do not use else-if here so that we can still catch the case where an
+  // OpType* instruction shares the same ID as a non OpType* instruction.
+  if (pOpcodeEntry->hasResult) {
+    uint32_t value_id =
+        pOpcodeEntry->hasType ? pInst->words[2] : pInst->words[1];
+    if (id_map->find(value_id) != id_map->end()) {
+      DIAGNOSTIC << "Id " << value_id << " is defined more than once";
+      return SPV_ERROR_INVALID_BINARY;
+    }
+
+    (*id_map)[value_id] = pOpcodeEntry->hasType ? pInst->words[1] : 0;
+  }
+
+  if (detected_type != libspirv::kUnknownType) {
+    // This defines a new type.
+    uint32_t id = pInst->words[1];
+    (*type_map)[id] = detected_type;
+  }
+
+  return SPV_SUCCESS;
+}
+
 /// @brief Translate binary Opcode stream to textual form
 ///
 /// @param[in] pInst the Opcode instruction stream
@@ -379,6 +439,8 @@ spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
                                    const spv_endianness_t endian,
                                    const uint32_t options,
                                    const libspirv::AssemblyGrammar& grammar,
+                                   type_id_to_type_map* type_map,
+                                   id_to_type_id_map* id_map,
                                    spv_assembly_syntax_format_t format,
                                    out_stream &stream, spv_position position,
                                    spv_diagnostic *pDiagnostic) {
@@ -499,7 +561,10 @@ spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
   }
 
   stream.get() << no_result_id_strstream.str();
-
+  if (spv_result_t error = spvRegisterIdForOpcode(
+          pInst, opcodeEntry, type_map, id_map, position, pDiagnostic)) {
+    return error;
+  }
   return SPV_SUCCESS;
 }
 
@@ -574,6 +639,10 @@ spv_result_t spvBinaryToTextWithFormat(
   const uint32_t *words = binary.code;
   position.index = SPV_INDEX_INSTRUCTION;
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
+
+  id_to_type_id_map id_map;
+  type_id_to_type_map type_map;
+
   while (position.index < binary.wordCount) {
     uint64_t index = position.index;
     uint16_t wordCount;
@@ -586,8 +655,8 @@ spv_result_t spvBinaryToTextWithFormat(
     spvInstructionCopy(&words[position.index], opcode, wordCount, endian,
                        &inst);
 
-    if (spvBinaryDecodeOpcode(&inst, endian, options, grammar, format, stream,
-                              &position, pDiagnostic))
+    if (spvBinaryDecodeOpcode(&inst, endian, options, grammar, &type_map,
+                              &id_map, format, stream, &position, pDiagnostic))
       return SPV_ERROR_INVALID_BINARY;
     extInstType = inst.extInstType;
 

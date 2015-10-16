@@ -587,6 +587,7 @@ int32_t spvOpcodeIsType(const Op opcode) {
     case OpTypeVector:
     case OpTypeMatrix:
     case OpTypeSampler:
+    case OpTypeSampledImage:
     case OpTypeArray:
     case OpTypeRuntimeArray:
     case OpTypeStruct:

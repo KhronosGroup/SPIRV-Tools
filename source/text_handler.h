@@ -60,6 +60,18 @@ struct IdType {
   IdTypeClass type_class;
 };
 
+// Default equality operator for IdType. Tests if all members are the same.
+inline bool operator==(const IdType &first, const IdType &second) {
+  return (first.bitwidth == second.bitwidth) &&
+         (first.isSigned == second.isSigned) &&
+         (first.type_class == second.type_class);
+}
+
+// Tests whether any member of the IdTypes do not match.
+inline bool operator!=(const IdType &first, const IdType &second) {
+  return !(first == second);
+}
+
 // A value representing an unknown type.
 extern const IdType kUnknownType;
 

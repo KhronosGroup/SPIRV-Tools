@@ -131,6 +131,32 @@ class TextToBinaryTestBase : public T {
     return decoded_string.substr(preamble_end + schema0.size());
   }
 
+  // Encodes SPIR-V text into binary. This is expected to succeed.
+  // The given words are then appended to the binary, and the result
+  // is then decoded. This is expected to fail.
+  // Returns the error message.
+  std::string EncodeSuccessfullyDecodeFailed(
+      const std::string& text,
+      const SpirvVector& words_to_append) {
+    SpirvVector code = spvtest::Concatenate(
+        {CompileSuccessfully(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT),
+         words_to_append});
+
+    spv_text decoded_text;
+    EXPECT_NE(SPV_SUCCESS,
+              spvBinaryToText(code.data(), code.size(),
+                              SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                              operandTable, extInstTable, &decoded_text,
+                              &diagnostic));
+    if (diagnostic) {
+      std::string error_message = diagnostic->error;
+      spvDiagnosticDestroy(diagnostic);
+      diagnostic = nullptr;
+      return error_message;
+    }
+    return "";
+  }
+
   // Compiles SPIR-V text, asserts success, and returns the words representing
   // the instructions.  In particular, skip the words in the SPIR-V header.
   SpirvVector CompiledInstructions(const std::string& text,

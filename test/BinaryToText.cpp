@@ -138,6 +138,37 @@ TEST_F(BinaryToText, InvalidDiagnostic) {
                             operandTable, extInstTable, &text, nullptr));
 }
 
+struct FailedDecodeCase {
+  std::string source_text;
+  std::vector<uint32_t> appended_instruction;
+  std::string expected_error_message;
+};
+
+using BinaryToTextFail =
+    spvtest::TextToBinaryTestBase <
+    ::testing::TestWithParam<FailedDecodeCase>>;
+
+TEST_P(BinaryToTextFail, EncodeSuccessfullyDecodeFailed) {
+  EXPECT_THAT(EncodeSuccessfullyDecodeFailed(GetParam().source_text,
+                                             GetParam().appended_instruction),
+              Eq(GetParam().expected_error_message));
+}
+
+INSTANTIATE_TEST_CASE_P(InvalidIds, BinaryToTextFail,
+                        ::testing::ValuesIn(std::vector<FailedDecodeCase>{
+                            {"%1 = OpTypeVoid",
+                             spvtest::MakeInstruction(spv::OpTypeVoid, {1}),
+                             "Id 1 is defined more than once"},
+                            {"%1 = OpTypeVoid\n"
+                             "%2 = OpNot %1 %foo",
+                             spvtest::MakeInstruction(spv::OpNot, {1, 2, 3}),
+                             "Id 2 is defined more than once"},
+                            {"%1 = OpTypeVoid\n"
+                             "%2 = OpNot %1 %foo",
+                             spvtest::MakeInstruction(spv::OpNot, {1, 1, 3}),
+                             "Id 1 is defined more than once"},
+                        }));
+
 TEST(BinaryToTextSmall, OneInstruction) {
   // TODO(dneto): This test could/should be refactored.
   spv_opcode_table opcodeTable;
