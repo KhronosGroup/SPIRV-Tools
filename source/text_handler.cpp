@@ -238,6 +238,12 @@ spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
   return spvOperandTableNameLookup(operandTable_, type, name, name_len, desc);
 }
 
+spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
+                                            uint32_t operand,
+                                            spv_operand_desc *desc) const {
+  return spvOperandTableValueLookup(operandTable_, type, operand, desc);
+}
+
 spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,
                                                const char *textValue,
                                                uint32_t *pValue) const {
@@ -247,6 +253,12 @@ spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
                                             const char *textValue,
                                             spv_ext_inst_desc *extInst) const {
   return spvExtInstTableNameLookup(extInstTable_, type, textValue, extInst);
+}
+
+spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
+                                            uint32_t firstWord,
+                                            spv_ext_inst_desc *extInst) const {
+  return spvExtInstTableValueLookup(extInstTable_, type, firstWord, extInst);
 }
 
 void AssemblyGrammar::prependOperandTypesForMask(

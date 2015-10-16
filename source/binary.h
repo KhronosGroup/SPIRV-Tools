@@ -98,47 +98,4 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
                                         spv_operand_desc *pOperandEntry);
-
-/// @brief Translate a binary operand to the textual form
-///
-/// @param[in] opcode of the current instruction
-/// @param[in] type type of the operand to decode
-/// @param[in] words the binary stream of words
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] operandTable table of specified operands
-/// @param[in,out] pExpectedOperands the expected operand types
-/// @param[in,out] pExtInstType type of extended instruction library
-/// @param[in,out] stream the text output stream
-/// @param[in,out] position position in the binary stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOperand(
-    const Op opcode, const spv_operand_type_t type, const uint32_t *words,
-    uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
-    out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic);
-
-/// @brief Translate binary Opcode stream to textual form
-///
-/// @param[in] pInst the Opcode instruction stream
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[in] format the assembly syntax format to decode into
-/// @param[out] stream output text stream
-/// @param[in,out] position position in the stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOpcode(
-    spv_instruction_t *pInst, const spv_endianness_t endian,
-    const uint32_t options, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_assembly_syntax_format_t format, out_stream &stream,
-    spv_position position, spv_diagnostic *pDiag);
-
 #endif

@@ -120,6 +120,12 @@ class AssemblyGrammar {
   spv_result_t lookupOperand(spv_operand_type_t type, const char *name,
                              size_t name_len, spv_operand_desc *desc) const;
 
+  // Fills in the desc parameter with the information about the given
+  // operand. Returns SPV_SUCCESS if the operand was found, and
+  // SPV_ERROR_INVALID_LOOKUP otherwise.
+  spv_result_t lookupOperand(spv_operand_type_t type, uint32_t operand,
+                             spv_operand_desc *desc) const;
+
   // Parses a mask expression string for the given operand type.
   //
   // A mask expression is a sequence of one or more terms separated by '|',
@@ -137,6 +143,13 @@ class AssemblyGrammar {
   // parameter.
   // Returns SPV_SUCCESS if the value could be found.
   spv_result_t lookupExtInst(spv_ext_inst_type_t type, const char *textValue,
+                             spv_ext_inst_desc *extInst) const;
+
+  // Writes the extended operand with the given type and first encoded word
+  // to the *extInst parameter.
+  // Returns SPV_SUCCESS if the value could be found.
+  spv_result_t lookupExtInst(spv_ext_inst_type_t type,
+                             uint32_t firstWord,
                              spv_ext_inst_desc *extInst) const;
 
   // Inserts the operands expected after the given typed mask onto the front

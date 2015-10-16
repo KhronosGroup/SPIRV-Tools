@@ -31,6 +31,7 @@
 #include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
+#include "text_handler.h"
 
 #include <assert.h>
 #include <string.h>
@@ -161,10 +162,24 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
   return type;
 }
 
+
+/// @brief Translate a binary operand to the textual form
+///
+/// @param[in] opcode of the current instruction
+/// @param[in] type type of the operand to decode
+/// @param[in] words the binary stream of words
+/// @param[in] endian the endianness of the stream
+/// @param[in] options bitfield of spv_binary_to_text_options_t values
+/// @param[in] grammar the AssemblyGrammar to when decoding this operand
+/// @param[in,out] stream the text output stream
+/// @param[in,out] position position in the binary stream
+/// @param[out] pDiag return diagnostic on error
+///
+/// @return result code
 spv_result_t spvBinaryDecodeOperand(
     const Op opcode, const spv_operand_type_t type, const uint32_t *words,
     uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
+    const libspirv::AssemblyGrammar& grammar,
     spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
     out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
   if (!words || !position) return SPV_ERROR_INVALID_POINTER;
@@ -197,8 +212,7 @@ spv_result_t spvBinaryDecodeOperand(
       // NOTE: Special case for extended instruction use
       if (OpExtInst == opcode) {
         spv_ext_inst_desc extInst;
-        if (spvExtInstTableValueLookup(extInstTable, *pExtInstType, words[0],
-                                       &extInst)) {
+        if (grammar.lookupExtInst(*pExtInstType, words[0], &extInst)) {
           DIAGNOSTIC << "Invalid extended instruction '" << words[0] << "'.";
           return SPV_ERROR_INVALID_BINARY;
         }
@@ -275,8 +289,7 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       spv_operand_desc entry;
-      if (spvOperandTableValueLookup(operandTable, type,
-                                     spvFixWord(words[0], endian), &entry)) {
+      if (grammar.lookupOperand(type, spvFixWord(words[0], endian), &entry)) {
         DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
                    << words[0] << "'.";
         return SPV_ERROR_INVALID_TEXT; // TODO(dneto): Surely this is invalid binary.
@@ -303,7 +316,7 @@ spv_result_t spvBinaryDecodeOperand(
         if (remaining_word & mask) {
           remaining_word ^= mask;
           spv_operand_desc entry;
-          if (spvOperandTableValueLookup(operandTable, type, mask, &entry)) {
+          if (grammar.lookupOperand(type, mask, &entry)) {
             DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
                        << words[0] << "'.";
             return SPV_ERROR_INVALID_BINARY;
@@ -317,8 +330,7 @@ spv_result_t spvBinaryDecodeOperand(
         // An operand value of 0 was provided, so represent it by the name
         // of the 0 value. In many cases, that's "None".
         spv_operand_desc entry;
-        if (SPV_SUCCESS ==
-            spvOperandTableValueLookup(operandTable, type, 0, &entry)) {
+        if (SPV_SUCCESS == grammar.lookupOperand(type, 0, &entry)) {
           stream.get() << entry->name;
           // Prepare for its operands, if any.
           spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
@@ -331,8 +343,7 @@ spv_result_t spvBinaryDecodeOperand(
         if (remaining_word & mask) {
           remaining_word ^= mask;
           spv_operand_desc entry;
-          if (SPV_SUCCESS ==
-              spvOperandTableValueLookup(operandTable, type, mask, &entry)) {
+          if (SPV_SUCCESS == grammar.lookupOperand(type, mask, &entry)) {
             spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
           }
         }
@@ -348,15 +359,26 @@ spv_result_t spvBinaryDecodeOperand(
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryDecodeOpcode(
-    spv_instruction_t *pInst, const spv_endianness_t endian,
-    const uint32_t options, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_assembly_syntax_format_t format, out_stream &stream,
-    spv_position position, spv_diagnostic *pDiagnostic) {
+/// @brief Translate binary Opcode stream to textual form
+///
+/// @param[in] pInst the Opcode instruction stream
+/// @param[in] endian the endianness of the stream
+/// @param[in] options bitfield of spv_binary_to_text_options_t values
+/// @param[in] grammar the AssemblyGrammar to when decoding this operand
+/// @param[in] format the assembly syntax format to decode into
+/// @param[out] stream output text stream
+/// @param[in,out] position position in the stream
+/// @param[out] pDiag return diagnostic on error
+///
+/// @return result code
+spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
+                                   const spv_endianness_t endian,
+                                   const uint32_t options,
+                                   const libspirv::AssemblyGrammar& grammar,
+                                   spv_assembly_syntax_format_t format,
+                                   out_stream &stream, spv_position position,
+                                   spv_diagnostic *pDiagnostic) {
   if (!pInst || !position) return SPV_ERROR_INVALID_POINTER;
-  if (!opcodeTable || !operandTable || !extInstTable)
-    return SPV_ERROR_INVALID_TABLE;
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   spv_position_t instructionStart = *position;
@@ -366,14 +388,14 @@ spv_result_t spvBinaryDecodeOpcode(
   spvOpcodeSplit(spvFixWord(pInst->words[0], endian), &wordCount, &opcode);
 
   spv_opcode_desc opcodeEntry;
-  if (spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry)) {
+  if (grammar.lookupOpcode(opcode, &opcodeEntry)) {
     DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
     return SPV_ERROR_INVALID_BINARY;
   }
 
   // See if there are enough required words.
   // Some operands in the operand types are optional or could be zero length.
-  // The optional and zero length opeands must be at the end of the list.
+  // The optional and zero length operands must be at the end of the list.
   if (opcodeEntry->numTypes > wordCount &&
       !spvOperandIsOptional(opcodeEntry->operandTypes[wordCount])) {
     uint16_t numRequired;
@@ -452,7 +474,7 @@ spv_result_t spvBinaryDecodeOpcode(
 
     if (spvBinaryDecodeOperand(
             opcodeEntry->opcode, type, &pInst->words[index], numWords, endian,
-            options, operandTable, extInstTable, &expectedOperands,
+            options, grammar, &expectedOperands,
             &pInst->extInstType,
             (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
                                                      : stream),
@@ -515,6 +537,8 @@ spv_result_t spvBinaryToTextWithFormat(
     return SPV_ERROR_INVALID_BINARY;
   }
 
+  libspirv::AssemblyGrammar grammar(operandTable, opcodeTable, extInstTable);
+
   spv_header_t header;
   if (spvBinaryHeaderGet(&binary, endian, &header)) {
     DIAGNOSTIC << "Invalid SPIR-V header.";
@@ -558,9 +582,8 @@ spv_result_t spvBinaryToTextWithFormat(
     spvInstructionCopy(&words[position.index], opcode, wordCount, endian,
                        &inst);
 
-    if (spvBinaryDecodeOpcode(&inst, endian, options, opcodeTable, operandTable,
-                              extInstTable, format, stream, &position,
-                              pDiagnostic))
+    if (spvBinaryDecodeOpcode(&inst, endian, options, grammar, format, stream,
+                              &position, pDiagnostic))
       return SPV_ERROR_INVALID_BINARY;
     extInstType = inst.extInstType;
 
