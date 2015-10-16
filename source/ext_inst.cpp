@@ -103,7 +103,7 @@ static const spv_ext_inst_desc_t openclEntries[] = {
 #define List(...) \
   { __VA_ARGS__ }
 #define OperandId SPV_OPERAND_TYPE_ID
-#define OperandLiteralNumber SPV_OPERAND_TYPE_LITERAL_NUMBER
+#define OperandLiteralNumber SPV_OPERAND_TYPE_LITERAL_INTEGER
 #define OperandFPRoundingMode SPV_OPERAND_TYPE_FP_ROUNDING_MODE
 #define OperandVariableIds SPV_OPERAND_TYPE_VARIABLE_ID
 #include "opencl_std_ext_inst.inc"
