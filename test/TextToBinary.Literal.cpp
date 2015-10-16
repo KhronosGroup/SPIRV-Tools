@@ -39,15 +39,13 @@ TEST_F(TextToBinaryTest, LiteralStringInPlaceOfLiteralNumber) {
 }
 
 TEST_F(TextToBinaryTest, GarbageInPlaceOfLiteralString) {
-  EXPECT_EQ(
-      R"(Invalid literal string 'nice-source-code'.)",
-      CompileFailure(R"(OpSourceExtension nice-source-code)"));
+  EXPECT_EQ("Invalid literal string 'nice-source-code'.",
+            CompileFailure("OpSourceExtension nice-source-code"));
 }
 
 TEST_F(TextToBinaryTest, LiteralNumberInPlaceOfLiteralString) {
-  EXPECT_EQ(
-      R"(Expected literal string, found literal number '1000'.)",
-      CompileFailure(R"(OpSourceExtension 1000)"));
+  EXPECT_EQ("Expected literal string, found literal number '1000'.",
+            CompileFailure("OpSourceExtension 1000"));
 }
 
 TEST_F(TextToBinaryTest, LiteralStringASCIILong) {
@@ -91,15 +89,12 @@ TEST_F(TextToBinaryTest, LiteralStringUTF8LongEncodings) {
   EXPECT_EQ(good_code, EncodeAndDecodeSuccessfully(good_code));
 
   // Failure cases.
-  EXPECT_EQ(
-      R"(Instruction too long: more than 65535 words.)",
-      CompileFailure("OpSourceExtension \"" + bad_0_arg_string + "\"\n"));
-  EXPECT_EQ(
-      R"(Instruction too long: more than 65535 words.)",
-      CompileFailure("OpSourceContinued \"" + bad_0_arg_string + "\"\n"));
-  EXPECT_EQ(
-      R"(Instruction too long: more than 65535 words.)",
-      CompileFailure("OpName %target \"" + bad_1_arg_string + "\"\n"));
+  EXPECT_EQ("Instruction too long: more than 65535 words.",
+            CompileFailure("OpSourceExtension \"" + bad_0_arg_string + "\"\n"));
+  EXPECT_EQ("Instruction too long: more than 65535 words.",
+            CompileFailure("OpSourceContinued \"" + bad_0_arg_string + "\"\n"));
+  EXPECT_EQ("Instruction too long: more than 65535 words.",
+            CompileFailure("OpName %target \"" + bad_1_arg_string + "\"\n"));
 }
 
 }  // anonymous namespace
