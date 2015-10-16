@@ -17,7 +17,7 @@ into other code bases directly.
 * Assembler only does basic syntax checking.  No cross validation of
   IDs or types is performed, except to check literal arguments to
   `OpConstant`, `OpSpecConstant`, and `OpSwitch`.
-* OpenCL extended instructions are not supported.
+* OpenCL extended instructions are supported, from version 1.0 Revision 1.
 
 ### Validator
 
@@ -25,15 +25,20 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
-2015-10-14
-* Very long instructions are supported, up to SPIR-V universal limits.
-* 32 and 64-bit floating point literals are encoded properly.
-* Signed and unsigned integers up to 64 bits wide are supported and encoded
-  properly.
-* Hexadecimal literals are supported.  See `syntax.md`.
-* Numeric literal arguments to `OpConstant`, `OpSpecConstant`, and `OpSwitch`
-  are type- and range-checked.
+2015-10-16
+* OpenCL extended instructions are supported, from version 1.0 Revision 1.
 * Capability dependencies for instructions and enums now match 0.99 Rev 32.
+* Very long instructions are supported, up to SPIR-V universal limits.
+* UTF-8 literal strings are supported.
+* Assembler support for numeric literals:
+   * 32 and 64-bit floating point literals are encoded properly.
+   * Signed and unsigned integers of any width up to 64 bits are supported
+     and encoded properly.
+   * Hexadecimal literals are supported.  See `syntax.md`.
+   * Numeric literal arguments to `OpConstant`, `OpSpecConstant`, and `OpSwitch`
+     are type- and range-checked.
+     The assembler checks that other literal numbers are non-negative integers.
+     That's the grammar works, at least for now.
 
 2015-10-02
 * Completed assembler support for [`!<integer>` syntax](syntax.md#immediate)
@@ -282,9 +287,10 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* WIP: Support UTF-8 literal strings.
+* WIP: Fix disassembler support for non-32-bit numeric literals
+* WIP: Fix bug: Assembler can't use extended instructions from
+  two different extended instruction imports.
 * Support 16-bit floating point literals.
-* Support OpenCL extension library.
 
 ### Validator
 
