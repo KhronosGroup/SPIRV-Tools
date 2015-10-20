@@ -312,6 +312,7 @@ bool AssemblyContext::isStartOfNewInst() {
   if (::startsWithOp(text_, &startPosition)) return true;
   return false;
 }
+
 char AssemblyContext::peek() const {
   return text_->str[current_position_.index];
 }
@@ -319,8 +320,9 @@ char AssemblyContext::peek() const {
 bool AssemblyContext::hasText() const {
   return text_->length > current_position_.index;
 }
+
 std::string AssemblyContext::getWord() const {
-  size_t index = current_position_.index;
+  uint64_t index = current_position_.index;
   while (true) {
     switch (text_->str[index]) {
       case '\0':

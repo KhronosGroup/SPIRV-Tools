@@ -196,7 +196,7 @@ class EnumCase {
 // each of which has a 4-byte UTF-8 encoding.
 inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
   // An example of a longest valid UTF-8 character.
-  const std::string earth_africa("\U0001F30D");
+  const std::string earth_africa("\xF0\x9F\x8C\x8D");
   EXPECT_EQ(4, earth_africa.size());
   std::string result;
   result.reserve(num_4_byte_chars * 4);

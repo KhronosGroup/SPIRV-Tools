@@ -238,7 +238,7 @@ bool idUsage::isValid<OpGroupDecorate>(const spv_instruction_t *inst,
                << inst->words[decorationGroupIndex]
                << "' is not a decoration group.";
            return false);
-  for (uint64_t targetIndex = 2; targetIndex < inst->words.size(); ++targetIndex) {
+  for (size_t targetIndex = 2; targetIndex < inst->words.size(); ++targetIndex) {
     auto target = find(inst->words[targetIndex]);
     spvCheck(!found(target), DIAG(targetIndex)
                                  << "OpGroupDecorate Target <id> '"
@@ -454,7 +454,7 @@ bool idUsage::isValid<OpTypeRuntimeArray>(const spv_instruction_t *inst,
 template <>
 bool idUsage::isValid<OpTypeStruct>(const spv_instruction_t *inst,
                                     const spv_opcode_desc) {
-  for (uint64_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
+  for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
        ++memberTypeIndex) {
     auto memberType = find(inst->words[memberTypeIndex]);
     spvCheck(!found(memberType), DIAG(memberTypeIndex)
@@ -502,7 +502,7 @@ bool idUsage::isValid<OpTypeFunction>(const spv_instruction_t *inst,
                                  << inst->words[returnTypeIndex]
                                  << "' is not a type.";
            return false);
-  for (uint64_t paramTypeIndex = 3; paramTypeIndex < inst->words.size();
+  for (size_t paramTypeIndex = 3; paramTypeIndex < inst->words.size();
        ++paramTypeIndex) {
     auto paramType = find(inst->words[paramTypeIndex]);
     spvCheck(!found(paramType), DIAG(paramTypeIndex)
@@ -611,7 +611,7 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
           return false);
       auto componentType = find(resultType->second.inst->words[2]);
       spvCheck(!found(componentType), assert(0 && "Unreachable!"));
-      for (uint64_t constituentIndex = 3; constituentIndex < inst->words.size();
+      for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = find(inst->words[constituentIndex]);
         spvCheck(!found(constituent), assert(0 && "Unreachable!"));
@@ -649,7 +649,7 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
       auto componentType = find(columnType->second.inst->words[2]);
       spvCheck(!found(componentType), assert(0 && "Unreachable!"));
 
-      for (uint64_t constituentIndex = 3; constituentIndex < inst->words.size();
+      for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = find(inst->words[constituentIndex]);
         spvCheck(!found(constituent),
@@ -704,7 +704,7 @@ bool idUsage::isValid<OpConstantComposite>(const spv_instruction_t *inst,
                       "Result Type <id> '"
                    << resultType->second.id << "'s array length.";
                return false);
-      for (uint64_t constituentIndex = 3; constituentIndex < inst->words.size();
+      for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = find(inst->words[constituentIndex]);
         spvCheck(!found(constituent),
@@ -841,7 +841,7 @@ bool idUsage::isValid<OpConstantNull>(const spv_instruction_t *inst,
                return false);
     } break;
     case OpTypeStruct: {
-      for (uint64_t elementIndex = 2;
+      for (size_t elementIndex = 2;
            elementIndex < resultType->second.inst->words.size(); ++elementIndex) {
         auto element = find(resultType->second.inst->words[elementIndex]);
         spvCheck(!found(element), assert(0 && "Unreachable!"));
@@ -1216,7 +1216,7 @@ bool idUsage::isValid<OpFunctionParameter>(const spv_instruction_t *inst,
            return false);
   auto function = inst - 1;
   // NOTE: Find OpFunction & ensure OpFunctionParameter is not out of place.
-  uint64_t paramIndex = 0;
+  size_t paramIndex = 0;
   while (firstInst != function) {
     spvCheck(OpFunction != function->opcode &&
                  OpFunctionParameter != function->opcode,
@@ -1284,7 +1284,7 @@ bool idUsage::isValid<OpFunctionCall>(const spv_instruction_t *inst,
           << "OpFunctionCall Function <id>'s parameter count does not match "
              "the argument count.";
       return false);
-  for (uint64_t argumentIndex = 4, paramIndex = 3;
+  for (size_t argumentIndex = 4, paramIndex = 3;
        argumentIndex < inst->words.size(); argumentIndex++, paramIndex++) {
     auto argument = find(inst->words[argumentIndex]);
     spvCheck(!found(argument), DIAG(argumentIndex)

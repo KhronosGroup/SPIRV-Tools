@@ -128,10 +128,10 @@ INSTANTIATE_TEST_CASE_P(
       {R"("\\")", "\\"},
       {"\"\\foo\nbar\"", "foo\nbar"},
       {"\"\\foo\\\nbar\"", "foo\nbar"},
-      {"\"\U00E4BAB2\"", "\U00E4BAB2"},
-      {"\"\\\U00E4BAB2\"", "\U00E4BAB2"},
-      {"\"this \\\" and this \\\\ and \\\U00E4BAB2\"",
-        "this \" and this \\ and \U00E4BAB2"}
+      {"\"\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
+      {"\"\\\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
+      {"\"this \\\" and this \\\\ and \\\xE4\xBA\xB2\"",
+        "this \" and this \\ and \xE4\xBA\xB2"}
     }));
 
 TEST(TextLiteral, StringTooLong) {

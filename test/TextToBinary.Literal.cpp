@@ -95,7 +95,7 @@ TEST_F(TextToBinaryTest, LiteralStringUTF8LongEncodings) {
       spvtest::MakeLongUTF8String(65533)
       // The following single character has a 3 byte encoding,
       // which fits snugly against the terminating null.
-      + "\u8000";
+      + "\xe8\x80\x80";
 
   // These strings will overflow any instruction with 0 or 1 other
   // arguments, respectively.
