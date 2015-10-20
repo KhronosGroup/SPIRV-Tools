@@ -59,7 +59,7 @@ INSTANTIATE_TEST_CASE_P(
         "OpName %1 \"\n\n\nfoo\nbar\"\n",         // multiple newlines
         "OpName %1 \"\\\"foo\nbar\\\"\"\n",       // escaped quote
         "OpName %1 \"\\\\foo\nbar\\\\\"\n",       // escaped backslash
-        "OpName %1 \"xE4\xBA\xB2\"\n",             // UTF-8
+        "OpName %1 \"\xE4\xBA\xB2\"\n",             // UTF-8
     }));
 // clang-format on
 
