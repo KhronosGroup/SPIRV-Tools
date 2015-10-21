@@ -97,7 +97,7 @@ extern "C" {
 // A bit mask representing a set of capabilities.
 // Currently there are 54 distinct capabilities, so 64 bits
 // should be enough.
-using spv_capability_mask_t = uint64_t;
+typedef uint64_t spv_capability_mask_t;
 
 // Transforms spv::Capability into a mask for use in bitfields.  Should really
 // be a constexpr inline function, but some important versions of MSVC don't
