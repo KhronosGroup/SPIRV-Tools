@@ -151,15 +151,15 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
   target_link_libraries(spirv-val SPIRV-TOOLS)
 
-  set(GTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest)
-  if(EXISTS ${GTEST_DIR})
+  set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest/googlemock)
+  if(EXISTS ${GMOCK_DIR})
     if(WIN32)
       option(gtest_force_shared_crt
         "Use shared (DLL) run-time lib even when Google Test is built as static lib."
         ON)
     endif()
 
-    add_subdirectory(${GTEST_DIR})
+    add_subdirectory(${GMOCK_DIR})
   endif()
   if (TARGET gmock)
     message(STATUS "Found Google Mock, building tests.")
