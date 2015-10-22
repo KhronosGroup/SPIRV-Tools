@@ -342,10 +342,10 @@ TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes) {
       "%3 = OpCopyObject %1 %2\n"  // We only care the type of the expression
       "%4 = OpSwitch %3 %default 32 %c\n";
   EXPECT_THAT(CompileFailure(input),
-              Eq(std::string(
-                  "The selector operand for OpSwitch must be the result of an "
-                  "instruction that generates an integer scalar")));
+              Eq("The selector operand for OpSwitch must be the result of an "
+                 "instruction that generates an integer scalar"));
 }
+
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpSwitchInvalidTests, OpSwitchInvalidTypeTestCase,
