@@ -60,7 +60,7 @@ enum {
 };
 
 // TODO(dneto): Using a union this way relies on undefined behaviour.
-// Replace this with uses of BitwiseCast from source/bitwisecast.h
+// Replace this with uses of BitwiseCast from util/bitutils.h
 static const union {
   unsigned char bytes[4];
   uint32_t value;

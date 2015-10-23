@@ -31,7 +31,7 @@
 #include <gmock/gmock.h>
 
 #include "TestFixture.h"
-#include "util/bitwisecast.h"
+#include "util/bitutils.h"
 
 namespace {
 

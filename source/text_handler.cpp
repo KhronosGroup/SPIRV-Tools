@@ -37,7 +37,7 @@
 #include "instruction.h"
 #include "opcode.h"
 #include "text.h"
-#include "util/bitwisecast.h"
+#include "util/bitutils.h"
 
 namespace {
 

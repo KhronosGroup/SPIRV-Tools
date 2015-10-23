@@ -46,7 +46,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "text_handler.h"
-#include "util/bitwisecast.h"
+#include "util/bitutils.h"
 
 bool spvIsValidIDCharacter(const char value) {
   return value == '_' || 0 != ::isalnum(value);

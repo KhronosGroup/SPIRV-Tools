@@ -26,6 +26,8 @@
 
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
+#include "util/bitutils.h"
+
 #include <algorithm>
 #include <utility>
 #include <vector>
