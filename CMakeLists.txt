@@ -104,6 +104,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.h
@@ -190,6 +191,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/GeneratorMagicNumber.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/HexFloat.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
