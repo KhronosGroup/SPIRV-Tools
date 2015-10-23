@@ -28,6 +28,7 @@
 #define _LIBSPIRV_UTIL_HEX_FLOAT_H_
 
 #include <cassert>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
@@ -151,6 +152,19 @@ class HexFloat {
                 "The number of bits do not fit");
 };
 
+// Returns 4 bits represented by the hex character.
+inline uint8_t get_nibble_from_character(char character) {
+  const char* dec = "0123456789";
+  const char* lower = "abcdef";
+  const char* upper = "ABCDEF";
+  if (auto p = strchr(dec, character)) return p - dec;
+  if (auto p = strchr(lower, character)) return p - lower + 0xa;
+  if (auto p = strchr(upper, character)) return p - upper + 0xa;
+
+  assert(false && "This was called with a non-hex character");
+  return 0;
+}
+
 // Outputs the given HexFloat to the stream.
 template <typename T, typename Traits>
 std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
@@ -216,6 +230,227 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   }
   os << "p" << std::dec << (int_exponent >= 0 ? "+" : "") << int_exponent;
   return os;
+}
+
+template <typename T, typename Traits>
+inline std::istream& ParseNormalFloat(
+    std::istream& is, bool negate_value, HexFloat<T, Traits>& value) {
+  T val;
+  is >> val;
+  if (negate_value) {
+    val = -val;
+  }
+  value.set_value(val);
+  return is;
+}
+
+// Reads a HexFloat from the given stream.
+// If the float is not encoded as a hex-float then it will be parsed
+// as a regular float.
+// This may fail if your stream does not support at least one unget.
+// Nan values can be encoded with "0x1.<not zero>p+exponent_bias".
+// This would normally overflow a float and round to
+// infinity but this special pattern is the exact representation for a NaN,
+// and therefore is actually encoded as the correct NaN. To encode inf,
+// either 0x0p+exponent_bias can be spcified or any exponent greater than
+// exponent_bias.
+// Examples using IEEE 32-bit float encoding.
+//    0x1.0p+128 (+inf)
+//    -0x1.0p-128 (-inf)
+//
+//    0x1.1p+128 (+Nan)
+//    -0x1.1p+128 (-Nan)
+//
+//    0x1p+129 (+inf)
+//    -0x1p+129 (-inf)
+template <typename T, typename Traits>
+std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
+  using HF = HexFloat<T, Traits>;
+  using uint_type = typename HF::uint_type;
+  using int_type = typename HF::int_type;
+
+  value.set_value(T(0));
+
+  if (is.flags() & std::ios::skipws) {
+    // If the user wants to skip whitespace , then we should obey that.
+    while (std::isspace(is.peek())) {
+      is.get();
+    }
+  }
+
+  char next_char = is.peek();
+  bool negate_value = false;
+
+  if (next_char != '-' && next_char != '0') {
+      return ParseNormalFloat(is, negate_value, value);
+  }
+
+  if (next_char == '-') {
+    negate_value = true;
+    is.get();
+    next_char = is.peek();
+  }
+
+  if (next_char == '0') {
+    is.get();  // We may have to unget this.
+    char maybe_hex_start = is.peek();
+    if (maybe_hex_start != 'x' && maybe_hex_start != 'X') {
+      is.unget();
+      return ParseNormalFloat(is, negate_value, value);
+    } else {
+      is.get();  // Throw away the 'x';
+    }
+  } else {
+    return ParseNormalFloat(is, negate_value, value);
+  }
+
+  // This "looks" like a hex-float so treat it as one.
+  bool seen_p = false;
+  bool seen_dot = false;
+  uint_type fraction_index = 0;
+
+  uint_type fraction = 0;
+  int_type exponent = HF::exponent_bias;
+
+  // Strip off leading zeros so we don't have to special-case them later.
+  while ((next_char = is.peek()) == '0') {
+    is.get();
+  }
+
+  bool is_denorm =
+      true;  // Assume denorm "representation" until we hear otherwise.
+             // NB: This does not mean the value is actually denorm,
+             // it just means that it was written 0.
+  bool bits_written = false;  // Stays false until we write a bit.
+  while (!seen_p && !seen_dot) {
+    // Handle characters that are left of the fractional part.
+    if (next_char == '.') {
+      seen_dot = true;
+    } else if (next_char == 'p') {
+      seen_p = true;
+    } else if (::isxdigit(next_char)) {
+      // We know this is not denormalized since we have stripped all leading
+      // zeroes and we are not a ".".
+      is_denorm = false;
+      uint8_t number = get_nibble_from_character(next_char);
+      for (int i = 0; i < 4; ++i, number <<= 1) {
+        uint_type write_bit = (number & 0x8) ? 0x1 : 0x0;
+        if (bits_written) {
+          // If we are here the bits represented belong in the fractional
+          // part of the float, and we have to adjust the exponent accordingly.
+          fraction |= write_bit << (HF::top_bit_left_shift - fraction_index++);
+          exponent += 1;
+        }
+        bits_written |= write_bit;
+      }
+    } else {
+      // We have not found our exponent yet, so we have to fail.
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+    is.get();
+    next_char = is.peek();
+  }
+  bits_written = false;
+  while (seen_dot && !seen_p) {
+    // Handle only fractional parts now.
+    if (next_char == 'p') {
+      seen_p = true;
+    } else if (::isxdigit(next_char)) {
+      int number = get_nibble_from_character(next_char);
+      for (int i = 0; i < 4; ++i, number <<= 1) {
+        uint_type write_bit = (number & 0x8) ? 0x01 : 0x00;
+        bits_written |= write_bit;
+        if (is_denorm && !bits_written) {
+          // Handle modifying the exponent here this way we can handle
+          // an arbitrary number of hex values without overflowing our
+          // integer.
+          exponent -= 1;
+        } else {
+          fraction |= write_bit << (HF::top_bit_left_shift - fraction_index++);
+        }
+      }
+    } else {
+      // We still have not found our 'p' exponent yet, so this is not a valid
+      // hex-float.
+      is.setstate(std::ios::failbit);
+      return is;
+    }
+    is.get();
+    next_char = is.peek();
+  }
+
+  bool seen_sign = false;
+  int8_t exponent_sign = 1;
+  int_type written_exponent = 0;
+  while (true) {
+    if ((next_char == '-' || next_char == '+')) {
+      if (seen_sign) {
+        is.setstate(std::ios::failbit);
+        return is;
+      }
+      seen_sign = true;
+      exponent_sign = (next_char == '-') ? -1 : 1;
+    } else if (::isdigit(next_char)) {
+      // Hex-floats express their exponent as decimal.
+      written_exponent *= 10;
+      written_exponent += next_char - '0';
+    } else {
+      break;
+    }
+    is.get();
+    next_char = is.peek();
+  }
+
+  written_exponent *= exponent_sign;
+  exponent += written_exponent;
+
+  bool is_zero = is_denorm && (fraction == 0);
+  if (is_denorm && !is_zero) {
+    fraction <<= 1;
+    exponent -= 1;
+  } else if (is_zero) {
+    exponent = 0;
+  }
+
+  if (exponent <= 0 && !is_zero) {
+    fraction >>= 1;
+    fraction |= static_cast<uint_type>(1) << HF::top_bit_left_shift;
+  }
+
+  fraction = (fraction >> HF::fraction_right_shift) & HF::fraction_encode_mask;
+
+  const uint_type max_exponent =
+      SetBits<uint_type, 0, HF::num_exponent_bits>::get;
+
+  // Handle actual denorm numbers
+  while (exponent < 0 && !is_zero) {
+    fraction >>= 1;
+    exponent += 1;
+
+    fraction &= HF::fraction_encode_mask;
+    if (fraction == 0) {
+      // We have underflowed our fraction. We should clamp to zero.
+      is_zero = true;
+      exponent = 0;
+    }
+  }
+
+  // We have overflowed so we should be inf/-inf.
+  if (exponent > max_exponent) {
+    exponent = max_exponent;
+    fraction = 0;
+  }
+
+  uint_type output_bits = static_cast<uint_type>(negate_value ? 1 : 0)
+                          << HF::top_bit_left_shift;
+  output_bits |= fraction;
+  output_bits |= (exponent << HF::exponent_left_shift) & HF::exponent_mask;
+
+  T output_float = spvutils::BitwiseCast<T>(output_bits);
+  value.set_value(output_float);
+
+  return is;
 }
 }
 
