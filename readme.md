@@ -141,9 +141,6 @@ The validator is incomplete.  See the Future Work section for more information.
 The `master` branch of the repository is maintained by
 Kenneth Benzie `k.benzie@codeplay.com`.
 
-*You are looking at the `google` branch.*  Google plans to maintain a linear
-history of commits.
-
 Please submit any merge requests as stated in these
 [instructions](https://cvs.khronos.org/wiki/index.php/How_to_access_and_use_the_Khronos_Gitlab_Repository).
 
