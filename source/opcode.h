@@ -32,7 +32,10 @@
 
 // Functions
 
-/// @brief Get the name of the SPIR-V generator
+/// @brief Get the name of the SPIR-V generator.
+///
+/// See the registry at
+/// https://www.khronos.org/registry/spir-v/api/spir-v.xml
 ///
 /// @param[in] generator Khronos SPIR-V generator ID
 ///

@@ -107,11 +107,15 @@ typedef uint64_t spv_capability_mask_t;
 
 // Enumerations
 
+// Values mapping to registered vendors.  See the registry at
+// https://www.khronos.org/registry/spir-v/api/spir-v.xml
 typedef enum spv_generator_t {
   SPV_GENERATOR_KHRONOS = 0,
-  SPV_GENERATOR_VALVE = 1,
-  SPV_GENERATOR_LUNARG = 2,
+  SPV_GENERATOR_LUNARG = 1,
+  SPV_GENERATOR_VALVE = 2,
   SPV_GENERATOR_CODEPLAY = 3,
+  SPV_GENERATOR_NVIDIA = 4,
+  SPV_GENERATOR_ARM = 5,
   SPV_FORCE_32_BIT_ENUM(spv_generator_t)
 } spv_generator_t;
 

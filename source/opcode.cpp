@@ -227,12 +227,16 @@ const char *spvGeneratorStr(uint32_t generator) {
   switch (generator) {
     case SPV_GENERATOR_KHRONOS:
       return "Khronos";
-    case SPV_GENERATOR_VALVE:
-      return "Valve";
     case SPV_GENERATOR_LUNARG:
       return "LunarG";
+    case SPV_GENERATOR_VALVE:
+      return "Valve";
     case SPV_GENERATOR_CODEPLAY:
       return "Codeplay Software Ltd.";
+    case SPV_GENERATOR_NVIDIA:
+      return "NVIDIA";
+    case SPV_GENERATOR_ARM:
+      return "ARM";
     default:
       return "Unknown";
   }
