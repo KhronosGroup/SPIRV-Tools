@@ -24,20 +24,21 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <libspirv/libspirv.h>
 #include "binary.h"
+
+#include <cassert>
+#include <cstring>
+#include <sstream>
+#include <unordered_map>
+
+#include <libspirv/libspirv.h>
+#include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
 #include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
 #include "text_handler.h"
-
-#include <assert.h>
-#include <string.h>
-
-#include <sstream>
-#include <unordered_map>
 
 // Binary API
 

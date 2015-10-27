@@ -28,6 +28,7 @@
 #define _CODEPLAY_UNITBIL_H_
 
 #include <libspirv/libspirv.h>
+#include "../source/assembly_grammar.h"
 #include "../source/binary.h"
 #include "../source/diagnostic.h"
 #include "../source/opcode.h"

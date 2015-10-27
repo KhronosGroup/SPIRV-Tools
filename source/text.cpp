@@ -38,6 +38,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"

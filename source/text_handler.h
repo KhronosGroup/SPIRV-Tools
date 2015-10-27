@@ -36,7 +36,6 @@
 #include <libspirv/libspirv.h>
 #include "diagnostic.h"
 #include "instruction.h"
-#include "operand.h"
 #include "text.h"
 
 namespace libspirv {
@@ -101,86 +100,6 @@ inline int assumedBitWidth(const IdType& type) {
   // We don't care about this case.
   return 0;
 }
-
-// Encapsulates the grammar to use for SPIR-V assembly.
-// Contains methods to query for valid instructions and operands.
-class AssemblyGrammar {
- public:
-  AssemblyGrammar(const spv_operand_table operand_table,
-                  const spv_opcode_table opcode_table,
-                  const spv_ext_inst_table ext_inst_table)
-      : operandTable_(operand_table),
-        opcodeTable_(opcode_table),
-        extInstTable_(ext_inst_table) {}
-
-  // Returns true if the compilation_data has been initialized with valid data.
-  bool isValid() const;
-
-  // Fills in the desc parameter with the information about the opcode
-  // of the given name. Returns SPV_SUCCESS if the opcode was found, and
-  // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
-  spv_result_t lookupOpcode(const char *name, spv_opcode_desc *desc) const;
-
-  // Fills in the desc parameter with the information about the opcode
-  // of the valid. Returns SPV_SUCCESS if the opcode was found, and
-  // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
-  spv_result_t lookupOpcode(Op opcode, spv_opcode_desc *desc) const;
-
-  // Fills in the desc parameter with the information about the given
-  // operand. Returns SPV_SUCCESS if the operand was found, and
-  // SPV_ERROR_INVALID_LOOKUP otherwise.
-  spv_result_t lookupOperand(spv_operand_type_t type, const char *name,
-                             size_t name_len, spv_operand_desc *desc) const;
-
-  // Fills in the desc parameter with the information about the given
-  // operand. Returns SPV_SUCCESS if the operand was found, and
-  // SPV_ERROR_INVALID_LOOKUP otherwise.
-  spv_result_t lookupOperand(spv_operand_type_t type, uint32_t operand,
-                             spv_operand_desc *desc) const;
-
-  // Parses a mask expression string for the given operand type.
-  //
-  // A mask expression is a sequence of one or more terms separated by '|',
-  // where each term is a named enum value for a given type. No whitespace
-  // is permitted.
-  //
-  // On success, the value is written to pValue, and SPV_SUCCESS is returend.
-  // The operand type is defined by the type parameter, and the text to be
-  // parsed is defined by the textValue parameter.
-  spv_result_t parseMaskOperand(const spv_operand_type_t type,
-                                const char *textValue, uint32_t *pValue) const;
-
-
-  // Writes the extended operand with the given type and text to the *extInst
-  // parameter.
-  // Returns SPV_SUCCESS if the value could be found.
-  spv_result_t lookupExtInst(spv_ext_inst_type_t type, const char *textValue,
-                             spv_ext_inst_desc *extInst) const;
-
-  // Writes the extended operand with the given type and first encoded word
-  // to the *extInst parameter.
-  // Returns SPV_SUCCESS if the value could be found.
-  spv_result_t lookupExtInst(spv_ext_inst_type_t type,
-                             uint32_t firstWord,
-                             spv_ext_inst_desc *extInst) const;
-
-  // Inserts the operands expected after the given typed mask onto the front
-  // of the given pattern.
-  //
-  // Each set bit in the mask represents zero or more operand types that should
-  // be prepended onto the pattern. Opearnds for a less significant bit always
-  // appear before operands for a more significatn bit.
-  //
-  // If a set bit is unknown, then we assume it has no operands.
-  void prependOperandTypesForMask(const spv_operand_type_t type,
-                                  const uint32_t mask,
-                                  spv_operand_pattern_t *pattern) const;
-
- private:
-  const spv_operand_table operandTable_;
-  const spv_opcode_table opcodeTable_;
-  const spv_ext_inst_table extInstTable_;
-};
 
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {

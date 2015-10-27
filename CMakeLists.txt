@@ -103,6 +103,7 @@ include_directories(
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/bitutils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.h
@@ -113,6 +114,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.cpp

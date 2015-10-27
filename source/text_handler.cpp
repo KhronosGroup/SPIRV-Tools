@@ -26,12 +26,12 @@
 
 #include "text_handler.h"
 
-#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <tuple>
 
+#include "assembly_grammar.h"
 #include "binary.h"
 #include "ext_inst.h"
 #include "instruction.h"
@@ -163,109 +163,11 @@ bool startsWithOp(spv_text text, spv_position position) {
   return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
 }
 
-/// @brief Parses a mask expression string for the given operand type.
-///
-/// A mask expression is a sequence of one or more terms separated by '|',
-/// where each term a named enum value for the given type.  No whitespace
-/// is permitted.
-///
-/// On success, the value is written to pValue.
-///
-/// @param[in] operandTable operand lookup table
-/// @param[in] type of the operand
-/// @param[in] textValue word of text to be parsed
-/// @param[out] pValue where the resulting value is written
-///
-/// @return result code
-spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
-                                     const spv_operand_type_t type,
-                                     const char *textValue, uint32_t *pValue) {
-  if (textValue == nullptr) return SPV_ERROR_INVALID_TEXT;
-  size_t text_length = strlen(textValue);
-  if (text_length == 0) return SPV_ERROR_INVALID_TEXT;
-  const char *text_end = textValue + text_length;
-
-  // We only support mask expressions in ASCII, so the separator value is a
-  // char.
-  const char separator = '|';
-
-  // Accumulate the result by interpreting one word at a time, scanning
-  // from left to right.
-  uint32_t value = 0;
-  const char *begin = textValue;  // The left end of the current word.
-  const char *end = nullptr;  // One character past the end of the current word.
-  do {
-    end = std::find(begin, text_end, separator);
-
-    spv_operand_desc entry = nullptr;
-    if (spvOperandTableNameLookup(operandTable, type, begin, end - begin,
-                                  &entry)) {
-      return SPV_ERROR_INVALID_TEXT;
-    }
-    value |= entry->value;
-
-    // Advance to the next word by skipping over the separator.
-    begin = end + 1;
-  } while (end != text_end);
-
-  *pValue = value;
-  return SPV_SUCCESS;
-}
-
 }  // anonymous namespace
 
 namespace libspirv {
 
 const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
-
-bool AssemblyGrammar::isValid() const {
-  return operandTable_ && opcodeTable_ && extInstTable_;
-}
-
-spv_result_t AssemblyGrammar::lookupOpcode(const char *name,
-                                           spv_opcode_desc *desc) const {
-  return spvOpcodeTableNameLookup(opcodeTable_, name, desc);
-}
-
-spv_result_t AssemblyGrammar::lookupOpcode(Op opcode,
-                                           spv_opcode_desc *desc) const {
-  return spvOpcodeTableValueLookup(opcodeTable_, opcode, desc);
-}
-
-spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
-                                            const char *name, size_t name_len,
-                                            spv_operand_desc *desc) const {
-  return spvOperandTableNameLookup(operandTable_, type, name, name_len, desc);
-}
-
-spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
-                                            uint32_t operand,
-                                            spv_operand_desc *desc) const {
-  return spvOperandTableValueLookup(operandTable_, type, operand, desc);
-}
-
-spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,
-                                               const char *textValue,
-                                               uint32_t *pValue) const {
-  return spvTextParseMaskOperand(operandTable_, type, textValue, pValue);
-}
-spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
-                                            const char *textValue,
-                                            spv_ext_inst_desc *extInst) const {
-  return spvExtInstTableNameLookup(extInstTable_, type, textValue, extInst);
-}
-
-spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
-                                            uint32_t firstWord,
-                                            spv_ext_inst_desc *extInst) const {
-  return spvExtInstTableValueLookup(extInstTable_, type, firstWord, extInst);
-}
-
-void AssemblyGrammar::prependOperandTypesForMask(
-    const spv_operand_type_t type, const uint32_t mask,
-    spv_operand_pattern_t *pattern) const {
-  spvPrependOperandTypesForMask(operandTable_, type, mask, pattern);
-}
 
 // TODO(dneto): Reorder AssemblyContext definitions to match declaration order.
 
