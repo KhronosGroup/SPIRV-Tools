@@ -34,6 +34,7 @@
 #include <libspirv/libspirv.h>
 #include "assembly_grammar.h"
 #include "diagnostic.h"
+#include "endian.h"
 #include "ext_inst.h"
 #include "instruction.h"
 #include "opcode.h"
@@ -42,58 +43,8 @@
 
 // Binary API
 
-enum {
-  I32_ENDIAN_LITTLE = 0x03020100ul,
-  I32_ENDIAN_BIG = 0x00010203ul,
-};
-
-static const union {
-  unsigned char bytes[4];
-  uint32_t value;
-} o32_host_order = {{0, 1, 2, 3}};
-
 using id_to_type_id_map = std::unordered_map<uint32_t, uint32_t>;
 using type_id_to_type_map = std::unordered_map<uint32_t, libspirv::IdType>;
-
-#define I32_ENDIAN_HOST (o32_host_order.value)
-
-spv_result_t spvBinaryEndianness(const spv_binary binary,
-                                 spv_endianness_t *pEndian) {
-  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
-  if (!pEndian) return SPV_ERROR_INVALID_POINTER;
-
-  uint8_t bytes[4];
-  memcpy(bytes, binary->code, sizeof(uint32_t));
-
-  if (0x03 == bytes[0] && 0x02 == bytes[1] && 0x23 == bytes[2] &&
-      0x07 == bytes[3]) {
-    *pEndian = SPV_ENDIANNESS_LITTLE;
-    return SPV_SUCCESS;
-  }
-
-  if (0x07 == bytes[0] && 0x23 == bytes[1] && 0x02 == bytes[2] &&
-      0x03 == bytes[3]) {
-    *pEndian = SPV_ENDIANNESS_BIG;
-    return SPV_SUCCESS;
-  }
-
-  return SPV_ERROR_INVALID_BINARY;
-}
-
-uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian) {
-  if ((SPV_ENDIANNESS_LITTLE == endian && I32_ENDIAN_HOST == I32_ENDIAN_BIG) ||
-      (SPV_ENDIANNESS_BIG == endian && I32_ENDIAN_HOST == I32_ENDIAN_LITTLE)) {
-    return (word & 0x000000ff) << 24 | (word & 0x0000ff00) << 8 |
-           (word & 0x00ff0000) >> 8 | (word & 0xff000000) >> 24;
-  }
-
-  return word;
-}
-
-uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
-                          const spv_endianness_t endian) {
-  return (uint64_t(spvFixWord(high, endian)) << 32) | spvFixWord(low, endian);
-}
 
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,

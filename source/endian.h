@@ -24,39 +24,39 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_BINARY_H_
-#define _LIBSPIRV_UTIL_BINARY_H_
+#ifndef _LIBSPIRV_UTIL_ENDIAN_H_
+#define _LIBSPIRV_UTIL_ENDIAN_H_
 
 #include <libspirv/libspirv.h>
-#include "instruction.h"
-#include "operand.h"
-#include "print.h"
 
-// Functions
+/// @brief Fix the endianness of a word
+///
+/// @param[in] word whos endianness should be fixed
+/// @param[in] endian the desired endianness
+///
+/// @return word with host endianness correction
+uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian);
 
-/// @brief Grab the header from the SPV module
+/// @brief Fix the endianness of a double word
+///
+/// @param[in] low the lower 32-bit of the double word
+/// @param[in] high the higher 32-bit of the double word
+/// @param[in] endian the desired endianness
+///
+/// @return word with host endianness correction
+uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
+                          const spv_endianness_t endian);
+
+/// @brief Determine the endianness of the SPV binary
+///
+/// Gets the endianness of the SPV source. Returns SPV_ENDIANNESS_UNKNOWN if
+/// the
+/// SPV magic number is invalid, otherwise the determined endianness.
 ///
 /// @param[in] binary the binary module
-/// @param[in] endian the endianness of the module
-/// @param[out] pHeader the returned header
+/// @param[out] pEndian return the endianness of the SPV module
 ///
 /// @return result code
-spv_result_t spvBinaryHeaderGet(const spv_binary binary,
-                                const spv_endianness_t endian,
-                                spv_header_t *pHeader);
-
-/// @brief Determine the type of the desired operand
-///
-/// @param[in] word the operand value
-/// @param[in] index the word index in the instruction
-/// @param[in] opcodeEntry table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[in,out] pOperandEntry the entry in the operand table
-///
-/// @return type returned
-spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
-                                        const uint16_t index,
-                                        const spv_opcode_desc opcodeEntry,
-                                        const spv_operand_table operandTable,
-                                        spv_operand_desc *pOperandEntry);
+spv_result_t spvBinaryEndianness(const spv_binary binary,
+                                 spv_endianness_t *pEndian);
 #endif

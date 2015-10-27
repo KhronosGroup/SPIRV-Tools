@@ -106,6 +106,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.h
@@ -117,6 +118,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.cpp

@@ -25,7 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <libspirv/libspirv.h>
-#include "binary.h"
+#include "endian.h"
 #include "instruction.h"
 #include "opcode.h"
 

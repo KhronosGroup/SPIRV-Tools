@@ -27,6 +27,7 @@
 #include <libspirv/libspirv.h>
 #include "binary.h"
 #include "diagnostic.h"
+#include "endian.h"
 #include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
