@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _CODEPLAY_UNITBIL_H_
-#define _CODEPLAY_UNITBIL_H_
+#ifndef LIBSPIRV_TEST_UNITSPIRV_H_
+#define LIBSPIRV_TEST_UNITSPIRV_H_
 
 #include <libspirv/libspirv.h>
 #include "../source/assembly_grammar.h"
@@ -216,4 +216,4 @@ inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
 
 }  // namespace spvtest
 
-#endif
+#endif  // LIBSPIRV_TEST_UNITSPIRV_H_

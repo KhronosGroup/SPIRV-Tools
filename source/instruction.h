@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_INSTRUCTION_H_
-#define _LIBSPIRV_UTIL_INSTRUCTION_H_
+#ifndef LIBSPIRV_INSTRUCTION_H_
+#define LIBSPIRV_INSTRUCTION_H_
 
 #include <cstdint>
 #include <vector>
@@ -57,4 +57,4 @@ inline void spvInstructionAddWord(spv_instruction_t* inst, uint32_t value) {
   inst->words.push_back(value);
 }
 
-#endif  // _LIBSPIRV_UTIL_INSTRUCTION_H_
+#endif  // LIBSPIRV_INSTRUCTION_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_VALIDATE_H_
-#define _LIBSPIRV_UTIL_VALIDATE_H_
+#ifndef LIBSPIRV_VALIDATE_H_
+#define LIBSPIRV_VALIDATE_H_
 
 #include "instruction.h"
 #include <libspirv/libspirv.h>
@@ -81,4 +81,4 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInstructions,
                             const spv_ext_inst_table extInstTable,
                             spv_position position, spv_diagnostic *pDiagnostic);
 
-#endif
+#endif  // LIBSPIRV_VALIDATE_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _CODEPLAY_SPIRV_EXT_INST_H_
-#define _CODEPLAY_SPIRV_EXT_INST_H_
+#ifndef LIBSPIRV_EXT_INST_H_
+#define LIBSPIRV_EXT_INST_H_
 
 #include <libspirv/libspirv.h>
 
@@ -62,4 +62,4 @@ spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const uint32_t value,
                                         spv_ext_inst_desc *pEntry);
 
-#endif
+#endif  // LIBSPIRV_EXT_INST_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_PRINT_H_
-#define _LIBSPIRV_PRINT_H_
+#ifndef LIBSPIRV_PRINT_H_
+#define LIBSPIRV_PRINT_H_
 
 #include <iostream>
 #include <sstream>
@@ -74,4 +74,4 @@ struct blue {
 };
 }
 
-#endif
+#endif  // LIBSPIRV_PRINT_H_

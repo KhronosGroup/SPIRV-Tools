@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_DIAGNOSTIC_H_
-#define _LIBSPIRV_UTIL_DIAGNOSTIC_H_
+#ifndef LIBSPIRV_DIAGNOSTIC_H_
+#define LIBSPIRV_DIAGNOSTIC_H_
 
 #include <libspirv/libspirv.h>
 
@@ -99,4 +99,4 @@ class DiagnosticStream {
   diagnostic_helper helper(position, pDiagnostic); \
   helper.stream
 
-#endif
+#endif  // LIBSPIRV_DIAGNOSTIC_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_TEXT_H_
-#define _LIBSPIRV_UTIL_TEXT_H_
+#ifndef LIBSPIRV_TEXT_H_
+#define LIBSPIRV_TEXT_H_
 
 #include <libspirv/libspirv.h>
 #include "operand.h"
@@ -76,4 +76,4 @@ typedef struct spv_literal_t {
 /// @return result code
 spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral);
 
-#endif
+#endif  // LIBSPIRV_TEXT_H_

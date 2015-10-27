@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_BINARY_H_
-#define _LIBSPIRV_UTIL_BINARY_H_
+#ifndef LIBSPIRV_BINARY_H_
+#define LIBSPIRV_BINARY_H_
 
 #include <libspirv/libspirv.h>
 #include "instruction.h"
@@ -59,4 +59,4 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
                                         spv_operand_desc *pOperandEntry);
-#endif
+#endif // LIBSPIRV_BINARY_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_ENDIAN_H_
-#define _LIBSPIRV_UTIL_ENDIAN_H_
+#ifndef LIBSPIRV_ENDIAN_H_
+#define LIBSPIRV_ENDIAN_H_
 
 #include <libspirv/libspirv.h>
 
@@ -59,4 +59,5 @@ uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
 /// @return result code
 spv_result_t spvBinaryEndianness(const spv_binary binary,
                                  spv_endianness_t *pEndian);
-#endif
+
+#endif  // LIBSPIRV_ENDIAN_H_

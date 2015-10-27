@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_OPCODE_H_
-#define _LIBSPIRV_UTIL_OPCODE_H_
+#ifndef LIBSPIRV_OPCODE_H_
+#define LIBSPIRV_OPCODE_H_
 
 #include "instruction.h"
 #include <libspirv/libspirv.h>
@@ -199,4 +199,4 @@ int32_t spvOpcodeIsValue(Op opcode);
 /// @return zero if false, non-zero otherwise
 int32_t spvOpcodeGeneratesType(Op op);
 
-#endif
+#endif  // LIBSPIRV_OPCODE_H_

@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _CODEPLAY_SPIRV_SPIRV_H_
-#define _CODEPLAY_SPIRV_SPIRV_H_
+#ifndef LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
+#define LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
 
 #include <headers/spirv.hpp>
 #include <headers/spirv_operands.hpp>
@@ -550,4 +550,4 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic);
 }
 #endif
 
-#endif
+#endif  // LIBSPIRV_LIBSPIRV_LIBSPIRV_H_

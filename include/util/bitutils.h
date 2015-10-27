@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_BITUTILS_H_
-#define _LIBSPIRV_UTIL_BITUTILS_H_
+#ifndef LIBSPIRV_UTIL_BITUTILS_H_
+#define LIBSPIRV_UTIL_BITUTILS_H_
 
 #include <cstring>
 
@@ -86,4 +86,4 @@ static_assert(SetBits<uint64_t, 16, 31>::get == uint64_t(0x0000FFFF00000000LL),
 
 }  // namespace spvutils
 
-#endif
+#endif  // LIBSPIRV_UTIL_BITUTILS_H_

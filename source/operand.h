@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _CODEPLAY_SPIRV_OPERAND_H_
-#define _CODEPLAY_SPIRV_OPERAND_H_
+#ifndef LIBSPIRV_OPERAND_H_
+#define LIBSPIRV_OPERAND_H_
 
 #include <deque>
 
@@ -157,4 +157,4 @@ spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
 spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
     const spv_operand_pattern_t& pattern);
 
-#endif
+#endif  // LIBSPIRV_OPERAND_H_

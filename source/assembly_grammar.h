@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_ASSEMBLY_GRAMMAR_H_
-#define _LIBSPIRV_UTIL_ASSEMBLY_GRAMMAR_H_
+#ifndef LIBSPIRV_ASSEMBLY_GRAMMAR_H_
+#define LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 
 #include <libspirv/libspirv.h>
 #include "operand.h"
@@ -110,5 +110,5 @@ class AssemblyGrammar {
   const spv_ext_inst_table extInstTable_;
 };
 }
-#endif  // _LIBSPIRV_UTIL_ASSEMBLY_GRAMMAR_H_
 
+#endif  // LIBSPIRV_ASSEMBLY_GRAMMAR_H_
