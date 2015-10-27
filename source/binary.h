@@ -76,14 +76,6 @@ spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t *pHeader);
 
-/// @brief Populate a binary stream with this generators header
-///
-/// @param[in,out] binary the binary stream
-/// @param[in] bound the upper ID bound
-///
-/// @return result code
-spv_result_t spvBinaryHeaderSet(spv_binary binary, const uint32_t bound);
-
 /// @brief Determine the type of the desired operand
 ///
 /// @param[in] word the operand value

@@ -612,6 +612,25 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
 namespace {
 
+/// @brief Populate a binary stream with this generator's header.
+///
+/// @param[in,out] binary the binary stream
+/// @param[in] bound the upper ID bound
+///
+/// @return result code
+spv_result_t SetHeader(spv_binary_t* binary, const uint32_t bound) {
+  if (!binary) return SPV_ERROR_INVALID_BINARY;
+  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
+
+  binary->code[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
+  binary->code[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
+  binary->code[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
+  binary->code[SPV_INDEX_BOUND] = bound;
+  binary->code[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
+
+  return SPV_SUCCESS;
+}
+
 // Translates a given assembly language module into binary form.
 // If a diagnostic is generated, it is not yet marked as being
 // for a text-based input.
@@ -673,8 +692,7 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
   binary->code = data;
   binary->wordCount = totalSize;
 
-  spv_result_t error = spvBinaryHeaderSet(binary, context.getBound());
-  if (error) {
+  if (auto error = SetHeader(binary, context.getBound())) {
     spvBinaryDestroy(binary);
     return error;
   }

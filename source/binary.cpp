@@ -113,19 +113,6 @@ spv_result_t spvBinaryHeaderGet(const spv_binary binary,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryHeaderSet(spv_binary_t *binary, const uint32_t bound) {
-  if (!binary) return SPV_ERROR_INVALID_BINARY;
-  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
-
-  binary->code[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
-  binary->code[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
-  binary->code[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
-  binary->code[SPV_INDEX_BOUND] = bound;
-  binary->code[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
-
-  return SPV_SUCCESS;
-}
-
 // TODO(dneto): This API is not powerful enough in the case that the
 // number and type of operands are not known until partway through parsing
 // the operation.  This happens when enum operands might have different number
