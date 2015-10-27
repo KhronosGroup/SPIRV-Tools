@@ -501,17 +501,6 @@ spv_result_t spvBinaryDecodeOpcode(
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryToText(uint32_t* code, const uint64_t wordCount,
-                             const uint32_t options,
-                             const spv_opcode_table opcodeTable,
-                             const spv_operand_table operandTable,
-                             const spv_ext_inst_table extInstTable,
-                             spv_text* pText, spv_diagnostic* pDiagnostic) {
-  return spvBinaryToTextWithFormat(
-      code, wordCount, options, opcodeTable, operandTable, extInstTable,
-      SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT, pText, pDiagnostic);
-}
-
 spv_result_t spvBinaryToTextWithFormat(
     uint32_t* code, const uint64_t wordCount, const uint32_t options,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,

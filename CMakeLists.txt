@@ -118,6 +118,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.cpp
