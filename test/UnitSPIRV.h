@@ -32,6 +32,7 @@
 #include "../source/diagnostic.h"
 #include "../source/opcode.h"
 #include "../source/text.h"
+#include "../source/text_handler.h"
 #include "../source/validate.h"
 
 #include <iomanip>
@@ -39,7 +40,7 @@
 #ifdef __ANDROID__
 #include <sstream>
 namespace std {
-template<typename T>
+template <typename T>
 std::string to_string(const T& val) {
   std::ostringstream os;
   os << val;
@@ -58,39 +59,154 @@ enum {
   I32_ENDIAN_BIG = 0x00010203ul,
 };
 
+// TODO(dneto): Using a union this way relies on undefined behaviour.
+// Replace this with uses of BitwiseCast from source/bitwisecast.h
 static const union {
   unsigned char bytes[4];
   uint32_t value;
 } o32_host_order = {{0, 1, 2, 3}};
-
-inline ::std::ostream& operator<<(::std::ostream& os,
-                                  const spv_binary_t& binary) {
-  for (size_t i = 0; i < binary.wordCount; ++i) {
-    os << "0x" << std::setw(8) << std::setfill('0') << std::hex
-       << binary.code[i] << " ";
-    if (i % 8 == 7) {
-      os << std::endl;
-    }
-  }
-  os << std::endl;
-  return os;
-}
-
-namespace std {
-inline ::std::ostream& operator<<(::std::ostream& os,
-                                  const std::vector<uint32_t>& value) {
-  size_t count = 0;
-  for (size_t i : value) {
-    os << "0x" << std::setw(8) << std::setfill('0') << std::hex << i << " ";
-    if (count++ % 8 == 7) {
-      os << std::endl;
-    }
-  }
-  os << std::endl;
-  return os;
-}
-}
-
 #define I32_ENDIAN_HOST (o32_host_order.value)
+
+// A namespace for utilities used in SPIR-V Tools unit tests.
+namespace spvtest {
+
+class WordVector;
+
+// Emits the given word vector to the given stream.
+// This function can be used by the gtest value printer.
+void PrintTo(const WordVector& words, ::std::ostream* os);
+
+// A proxy class to allow us to easily write out vectors of SPIR-V words.
+class WordVector {
+ public:
+  explicit WordVector(const std::vector<uint32_t>& value) : value_(value) {}
+  explicit WordVector(const spv_binary_t& binary)
+      : value_(binary.code, binary.code + binary.wordCount) {}
+
+  // Returns the underlying vector.
+  const std::vector<uint32_t>& value() const { return value_; }
+
+  // Returns the string representation of this word vector.
+  std::string str() const {
+    std::ostringstream os;
+    PrintTo(*this, &os);
+    return os.str();
+  }
+
+ private:
+  const std::vector<uint32_t> value_;
+};
+
+inline void PrintTo(const WordVector& words, ::std::ostream* os) {
+  size_t count = 0;
+  for (uint32_t value : words.value()) {
+    *os << "0x" << std::setw(8) << std::setfill('0') << std::hex << value
+        << " ";
+    if (count++ % 8 == 7) {
+      *os << std::endl;
+    }
+  }
+  *os << std::endl;
+}
+
+// Returns a vector of words representing a single instruction with the
+// given opcode and operand words as a vector.
+inline std::vector<uint32_t> MakeInstruction(
+    spv::Op opcode, const std::vector<uint32_t>& args) {
+  std::vector<uint32_t> result{
+      spvOpcodeMake(uint16_t(args.size() + 1), opcode)};
+  result.insert(result.end(), args.begin(), args.end());
+  return result;
+}
+
+
+// Returns a vector of words representing a single instruction with the
+// given opcode and whose operands are the concatenation of the two given
+// argument lists.
+inline std::vector<uint32_t> MakeInstruction(
+    spv::Op opcode, std::vector<uint32_t> args,
+    const std::vector<uint32_t>& extra_args) {
+  args.insert(args.end(), extra_args.begin(), extra_args.end());
+  return MakeInstruction(opcode, args);
+}
+
+// Returns the vector of words representing the concatenation
+// of all input vectors.
+inline std::vector<uint32_t> Concatenate(
+    const std::vector<std::vector<uint32_t>>& instructions) {
+  std::vector<uint32_t> result;
+  for (const auto& instruction : instructions) {
+    result.insert(result.end(), instruction.begin(), instruction.end());
+  }
+  return result;
+}
+
+// Encodes a string as a sequence of words, using the SPIR-V encoding.
+inline std::vector<uint32_t> MakeVector(std::string input) {
+  std::vector<uint32_t> result;
+  uint32_t word = 0;
+  size_t num_bytes = input.size();
+  // SPIR-V strings are null-terminated.  The byte_index == num_bytes
+  // case is used to push the terminating null byte.
+  for (size_t byte_index = 0; byte_index <= num_bytes; byte_index++) {
+    const auto new_byte =
+        (byte_index < num_bytes ? uint8_t(input[byte_index]) : uint8_t(0));
+    word |= (new_byte << (8 * (byte_index % sizeof(uint32_t))));
+    if (3 == (byte_index % sizeof(uint32_t))) {
+      result.push_back(word);
+      word = 0;
+    }
+  }
+  // Emit a trailing partial word.
+  if ((num_bytes + 1) % sizeof(uint32_t)) {
+    result.push_back(word);
+  }
+  return result;
+}
+
+// A type for easily creating spv_text_t values, with an implicit conversion to
+// spv_text.
+struct AutoText {
+  AutoText(std::string value) : str(value), text({str.data(), str.size()}) {}
+  operator spv_text() { return &text; }
+  std::string str;
+  spv_text_t text;
+};
+
+// An example case for an enumerated value, optionally with operands.
+template <typename E>
+class EnumCase {
+ public:
+  EnumCase(E value, std::string name, std::vector<uint32_t> operands = {})
+      : enum_value_(value), name_(name), operands_(operands) {}
+  // Returns the enum value as a uint32_t.
+  uint32_t value() const { return static_cast<uint32_t>(enum_value_); }
+  // Returns the name of the enumerant.
+  const std::string& name() const { return name_; }
+  // Returns a reference to the operands.
+  const std::vector<uint32_t>& operands() const { return operands_; }
+
+ private:
+  E enum_value_;
+  std::string name_;
+  std::vector<uint32_t> operands_;
+};
+
+// Returns a string with num_4_byte_chars Unicode characters,
+// each of which has a 4-byte UTF-8 encoding.
+inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
+  // An example of a longest valid UTF-8 character.
+  const std::string earth_africa("\xF0\x9F\x8C\x8D");
+  EXPECT_EQ(4, earth_africa.size());
+  std::string result;
+  result.reserve(num_4_byte_chars * 4);
+  for (size_t i = 0; i < num_4_byte_chars; i++ ) {
+    result += earth_africa;
+  }
+  EXPECT_EQ(4 * num_4_byte_chars, result.size());
+  return result;
+}
+
+}  // namespace spvtest
 
 #endif

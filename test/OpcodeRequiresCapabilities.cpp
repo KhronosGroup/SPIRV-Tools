@@ -26,14 +26,18 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class Requires : public ::testing::TestWithParam<Capability> {
  public:
   Requires()
       : entry({nullptr,
-               0,
                (Op)0,
-               SPV_OPCODE_FLAGS_CAPABILITIES,
-               GetParam(),
+               SPV_CAPABILITY_AS_MASK(GetParam()),
+               0,
+               {},
+               false,
+               false,
                {}}) {}
 
   virtual void SetUp() {}
@@ -52,9 +56,81 @@ INSTANTIATE_TEST_CASE_P(Op, Requires,
                                           CapabilityGeometry,
                                           CapabilityTessellation,
                                           CapabilityAddresses,
-                                          CapabilityLinkage, CapabilityKernel));
+                                          CapabilityLinkage, CapabilityKernel,
+                                          // ClipDistance has enum value 32.
+                                          // So it tests that we are sensitive
+                                          // to more than just the least
+                                          // significant 32 bits of the
+                                          // capability mask.
+                                          CapabilityClipDistance,
+                                          // Transformfeedback has value 53,
+                                          // and is the last capability.
+                                          CapabilityTransformFeedback));
 
-TEST(OpcodeRequiresCapabilityaspvities, None) {
-  spv_opcode_desc_t entry = {nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_NONE, 0, {}};
+TEST(OpcodeRequiresCapability, None) {
+  spv_opcode_desc_t entry = {
+      nullptr, (Op)0, 0, 0, {}, false, false, {}};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
+
+/// Test SPV_CAPBILITY_AS_MASK
+
+TEST(CapabilityAsMaskMacro, Sample) {
+  EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(spv::CapabilityMatrix));
+  EXPECT_EQ(uint64_t(0x10000), SPV_CAPABILITY_AS_MASK(spv::CapabilityImageSRGBWrite));
+  EXPECT_EQ(uint64_t(0x100000000ULL), SPV_CAPABILITY_AS_MASK(spv::CapabilityClipDistance));
+  EXPECT_EQ(uint64_t(1) << 53, SPV_CAPABILITY_AS_MASK(spv::CapabilityTransformFeedback));
+};
+
+/// Capabilities required by an Opcode.
+struct ExpectedOpCodeCapabilities {
+  spv::Op opcode;
+  uint64_t capabilities;  //< Bitfield of spv::Capability.
+};
+
+using OpcodeTableCapabilitiesTest =
+    ::testing::TestWithParam<ExpectedOpCodeCapabilities>;
+
+TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
+  spv_opcode_table opcodeTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  spv_opcode_desc entry;
+  ASSERT_EQ(SPV_SUCCESS,
+            spvOpcodeTableValueLookup(opcodeTable, GetParam().opcode, &entry));
+  EXPECT_EQ(GetParam().capabilities, entry->capabilities);
+}
+
+/// Translates a spv::Capability into a bitfield.
+inline uint64_t mask(spv::Capability c) { return SPV_CAPABILITY_AS_MASK(c); }
+
+/// Combines two spv::Capabilities into a bitfield.
+inline uint64_t mask(spv::Capability c1, spv::Capability c2) {
+  return SPV_CAPABILITY_AS_MASK(c1) | SPV_CAPABILITY_AS_MASK(c2);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TableRowTest, OpcodeTableCapabilitiesTest,
+    // Spot-check a few opcodes.
+    ::testing::Values(
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySize,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySizeLod,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQueryLevels,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{
+            spv::OpImageQuerySamples,
+            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{spv::OpImageSparseSampleImplicitLod,
+                                   mask(spv::CapabilitySparseResidency)},
+        ExpectedOpCodeCapabilities{spv::OpCopyMemorySized,
+                                   mask(spv::CapabilityAddresses)},
+        ExpectedOpCodeCapabilities{spv::OpArrayLength,
+                                   mask(spv::CapabilityShader)},
+        ExpectedOpCodeCapabilities{spv::OpFunction, 0},
+        ExpectedOpCodeCapabilities{spv::OpConvertFToS, 0}));
+
+}  // anonymous namespace

@@ -29,9 +29,9 @@
 
 #include <libspirv/libspirv.h>
 
-#include <sstream>
-
 #include <iostream>
+#include <sstream>
+#include <utility>
 
 class diagnostic_helper {
  public:
@@ -50,6 +50,49 @@ class diagnostic_helper {
  private:
   spv_position position;
   spv_diagnostic *pDiagnostic;
+};
+
+// A DiagnosticStream remembers the current position of the input and an error
+// code, and captures diagnostic messages via the left-shift operator.
+// If the error code is not SPV_FAILED_MATCH, then captured messages are
+// emitted during the destructor.
+// TODO(awoloszyn): This is very similar to diagnostic_helper, and hides
+//                  the data more easily. Replace diagnostic_helper elsewhere
+//                  eventually.
+class DiagnosticStream {
+ public:
+  DiagnosticStream(spv_position position, spv_diagnostic *pDiagnostic,
+                   spv_result_t error)
+      : position_(position), pDiagnostic_(pDiagnostic), error_(error) {}
+
+  DiagnosticStream(DiagnosticStream &&other)
+      : stream_(other.stream_.str()),
+        position_(other.position_),
+        pDiagnostic_(other.pDiagnostic_),
+        error_(other.error_) {
+    // The other object's destructor will emit the text in its stream_
+    // member if its pDiagnostic_ member is non-null.  Prevent that,
+    // since emitting that text is now the responsibility of *this.
+    other.pDiagnostic_ = nullptr;
+  }
+
+  ~DiagnosticStream();
+
+  // Adds the given value to the diagnostic message to be written.
+  template <typename T>
+  DiagnosticStream &operator<<(const T &val) {
+    stream_ << val;
+    return *this;
+  }
+
+  // Conversion operator to spv_result, returning the error code.
+  operator spv_result_t() { return error_; }
+
+ private:
+  std::stringstream stream_;
+  spv_position position_;
+  spv_diagnostic *pDiagnostic_;
+  spv_result_t error_;
 };
 
 #define DIAGNOSTIC                                 \

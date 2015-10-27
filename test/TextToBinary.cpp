@@ -27,10 +27,108 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include <algorithm>
-#include <iomanip>
 #include <utility>
 #include <vector>
 
+namespace {
+
+using libspirv::AssemblyContext;
+using libspirv::AssemblyGrammar;
+using spvtest::TextToBinaryTest;
+using spvtest::AutoText;
+
+TEST(GetWord, Simple) {
+  EXPECT_EQ("", AssemblyContext(AutoText(""), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\0a"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText(" a"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\ta"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\va"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\ra"), nullptr).getWord());
+  EXPECT_EQ("", AssemblyContext(AutoText("\na"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc "), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\t"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\r"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\v"), nullptr).getWord());
+  EXPECT_EQ("abc",
+            AssemblyContext(AutoText("abc\n"), nullptr).getWord());
+}
+
+// An mask parsing test case.
+struct MaskCase {
+  spv_operand_type_t which_enum;
+  uint32_t expected_value;
+  const char* expression;
+};
+
+using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
+
+TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
+  spv_operand_table operandTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+
+  uint32_t value;
+  EXPECT_EQ(SPV_SUCCESS, AssemblyGrammar(operandTable, nullptr, nullptr)
+                             .parseMaskOperand(GetParam().which_enum,
+                                               GetParam().expression, &value));
+  EXPECT_EQ(GetParam().expected_value, value);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ParseMask, GoodMaskParseTest,
+    ::testing::ValuesIn(std::vector<MaskCase>{
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 0, "None"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 1, "NotNaN"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 2, "NotInf"},
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotNaN|NotInf"},
+        // Mask experssions are symmetric.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotInf|NotNaN"},
+        // Repeating a value has no effect.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 3, "NotInf|NotNaN|NotInf"},
+        // Using 3 operands still works.
+        {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, 0x13, "NotInf|NotNaN|Fast"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 1, "Flatten"},
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 2, "DontFlatten"},
+        // Weirdly, you can specify to flatten and don't flatten a selection.
+        {SPV_OPERAND_TYPE_SELECTION_CONTROL, 3, "Flatten|DontFlatten"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 1, "Unroll"},
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 2, "DontUnroll"},
+        // Weirdly, you can specify to unroll and don't unroll a loop.
+        {SPV_OPERAND_TYPE_LOOP_CONTROL, 3, "Unroll|DontUnroll"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0, "None"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 1, "Inline"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 2, "DontInline"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 4, "Pure"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 8, "Const"},
+        {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0xd, "Inline|Const|Pure"},
+    }));
+
+using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
+
+TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
+  spv_operand_table operandTable;
+  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+
+  uint32_t value;
+  EXPECT_NE(SPV_SUCCESS,
+            AssemblyGrammar(operandTable, nullptr, nullptr)
+                .parseMaskOperand(SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
+                                  GetParam(), &value));
+}
+
+INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
+                        ::testing::ValuesIn(std::vector<const char*>{
+                            nullptr, "", "NotValidEnum", "|", "NotInf|",
+                            "|NotInf", "NotInf||NotNaN",
+                            "Unroll"  // A good word, but for the wrong enum
+                        }));
+
+// TODO(dneto): Aliasing like this relies on undefined behaviour. Fix this.
 union char_word_t {
   char cs[4];
   uint32_t u;
@@ -41,11 +139,11 @@ TEST(TextToBinary, Default) {
   // little endian for encoding comparison!
   spv_endianness_t endian = SPV_ENDIANNESS_LITTLE;
 
-  const char *textStr = R"(
+  const char* textStr = R"(
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
-      OpEntryPoint Kernel %1
+      OpEntryPoint Kernel %1 "foo"
       OpExecutionMode %1 LocalSizeHint 1 1 1
  %2 = OpTypeVoid
  %3 = OpTypeBool
@@ -61,9 +159,8 @@ TEST(TextToBinary, Default) {
 %12 = OpTypeFloat 16
 %13 = OpTypeFloat 32
 %14 = OpTypeFloat 64
-%15 = OpTypeVector 4 2
+%15 = OpTypeVector %4 2
 )";
-  spv_text_t text = {textStr, strlen(textStr)};
 
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
@@ -76,8 +173,9 @@ TEST(TextToBinary, Default) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -85,14 +183,8 @@ TEST(TextToBinary, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
 
-  struct bin {
-    bin(spv_binary binary) : binary(binary) {}
-    ~bin() { spvBinaryDestroy(binary); }
-    spv_binary binary;
-  } bin(binary);
-
-  EXPECT_NE(nullptr, text.str);
-  EXPECT_NE(0, text.length);
+  EXPECT_NE(nullptr, binary->code);
+  EXPECT_NE(0, binary->wordCount);
 
   // TODO: Verify binary
   ASSERT_EQ(SPV_MAGIC_NUMBER, binary->code[SPV_INDEX_MAGIC_NUMBER]);
@@ -130,9 +222,11 @@ TEST(TextToBinary, Default) {
   ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
   ASSERT_EQ(0, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(3, OpEntryPoint), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, OpEntryPoint), binary->code[instIndex++]);
   ASSERT_EQ(ExecutionModelKernel, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
+  cw = {{'f', 'o', 'o', 0}};
+  ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
 
   ASSERT_EQ(spvOpcodeMake(6, OpExecutionMode), binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
@@ -206,177 +300,64 @@ TEST(TextToBinary, Default) {
 }
 
 TEST_F(TextToBinaryTest, InvalidText) {
-  spv_text_t text = {nullptr, 0};
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
+            spvTextToBinary(nullptr, 0, opcodeTable, operandTable, extInstTable,
                             &binary, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidTable) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText(
+      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(&text, nullptr, operandTable, extInstTable, &binary,
-                            &diagnostic));
+            spvTextToBinary(text.str, text.length, nullptr, operandTable,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(&text, opcodeTable, nullptr, extInstTable, &binary,
-                            &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, nullptr,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(&text, opcodeTable, operandTable, nullptr, &binary,
-                            &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            nullptr, &binary, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidPointer) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText(
+      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            nullptr, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
-  SetText("OpEntryPoint Kernel 0\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
+  SetText(
+      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, nullptr));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, nullptr));
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {
   SetText("Invalid");
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
 }
-
-TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
-  SetText("!0x00FF00FF");
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  EXPECT_EQ(0x00FF00FF, binary->code[5]);
-  spvBinaryDestroy(binary);
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
-}
-
-TEST_F(TextToBinaryTest, ImmediateIntOperand) {
-  SetText("OpCapability !0x00FF00FF");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  EXPECT_EQ(0x00FF00FF, binary->code[6]);
-  spvBinaryDestroy(binary);
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
-}
-
-struct InstValue {
-  const char* inst;
-  uint32_t value;
-};
-class GLSingleFloatTest
-    : public TextToBinaryTestBase<
-          ::testing::TestWithParam<InstValue>> {};
-
-TEST_P(GLSingleFloatTest, GLSLExtSingleFloatParamTest) {
-  const std::string spirv = R"(
-            OpCapability Shader
- %glsl450 = OpExtInstImport "GLSL.std.450"
-            OpMemoryModel Logical Simple
-            OpEntryPoint Vertex %main "main"
-    %void = OpTypeVoid
-   %float = OpTypeFloat 32
-%const1.5 = OpConstant %float 1.5
-  %fnMain = OpTypeFunction %void
-    %main = OpFunction %void None %fnMain
-  %lbMain = OpLabel
-  %result = OpExtInst %float %glsl450 )" +
-                            std::string(GetParam().inst) + R"( %const1.5
-            OpReturn
-            OpFunctionEnd
-)";
-
-  this->text.str = spirv.c_str();
-  this->text.length = spirv.size();
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&this->text, this->opcodeTable,
-                                         this->operandTable, this->extInstTable,
-                                         &this->binary, &this->diagnostic))
-      << "Source was: " << std::endl
-      << spirv << std::endl
-      << "Test case for : " << GetParam().inst << std::endl;
-  std::vector<uint32_t> expected_contains({
-    12/*OpExtInst*/ | 6 << 16, 4/*%float*/, 8 /*%result*/, 1 /*%glsl450*/,
-      GetParam().value, 5 /*const1.5*/});
-  EXPECT_TRUE(std::search(this->binary->code,
-                          this->binary->code + this->binary->wordCount,
-                          expected_contains.begin(), expected_contains.end()) !=
-              this->binary->code + this->binary->wordCount);
-  if (this->binary) {
-    spvBinaryDestroy(this->binary);
-  }
-  if (this->diagnostic) {
-    spvDiagnosticPrint(this->diagnostic);
-  }
-}
-
-INSTANTIATE_TEST_CASE_P(
-    SingleElementFloatingParams, GLSingleFloatTest,
-    ::testing::ValuesIn(std::vector<InstValue>({
-        {"Round", 1}, {"RoundEven", 2}, {"Trunc", 3}, {"FAbs", 4}, {"SAbs", 5},
-        {"FSign", 6}, {"SSign", 7}, {"Floor", 8}, {"Ceil", 9}, {"Fract", 10},
-        {"Radians", 11}, {"Degrees", 12}, {"Sin", 13}, {"Cos", 14}, {"Tan", 15},
-        {"Asin", 16}, {"Acos", 17}, {"Atan", 18}, {"Sinh", 19}, {"Cosh", 20},
-        {"Tanh", 21}, {"Asinh", 22}, {"Acosh", 23}, {"Atanh", 24}})));
 
 TEST_F(TextToBinaryTest, StringSpace) {
   SetText("OpSourceExtension \"string with spaces\"");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
 }
 
-// TODO(antiagainst): we might not want to support both instruction formats in
-// the future. Only the "<result-id> = <opcode> <operand>.." one may survive.
-TEST_F(TextToBinaryTest, InstructionTwoFormats) {
-  SetText(R"(
-            OpCapability Shader
- %glsl450 = OpExtInstImport "GLSL.std.450"
-            OpMemoryModel Logical Simple
-            OpTypeBool %3
-       %4 = OpTypeInt 8 0
-            OpTypeInt %5 8 1
-       %6 = OpTypeInt 16 0
-            OpTypeInt %7 16 1
-    %void = OpTypeVoid
-            OpTypeFloat %float 32
-%const1.5 = OpConstant %float 1.5
-            OpTypeFunction %fnMain %void
-    %main = OpFunction %void None %fnMain
-            OpLabel %lbMain
-  %result = OpExtInst $float $glsl450 Round $const1.5
-            OpReturn
-            OpFunctionEnd
-)");
-
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
-}
-
-TEST_F(TextToBinaryTest, UnknownBeginningOfInsruction) {
+TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
   SetText(R"(
      OpSource OpenCL 12
      OpMemoryModel Physical64 OpenCL
@@ -384,15 +365,14 @@ Google
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ(
       "Expected <opcode> or <result-id> at the beginning of an instruction, "
       "found 'Google'.",
       diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, NoEqualSign) {
@@ -403,12 +383,11 @@ TEST_F(TextToBinaryTest, NoEqualSign) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, NoOpCode) {
@@ -419,12 +398,11 @@ TEST_F(TextToBinaryTest, NoOpCode) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
 
 TEST_F(TextToBinaryTest, WrongOpCode) {
@@ -435,10 +413,205 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(&text, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(6, diagnostic->position.column + 1);
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
-  if (binary) spvBinaryDestroy(binary);
 }
+
+using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
+
+TEST_P(TextToBinaryFloatValueTest, NormalValues) {
+  const std::string assembly = "%1 = OpTypeFloat 32\n%2 = OpConstant %1 ";
+  const std::string input_string = assembly + GetParam().first;
+  const std::string expected_string =
+      assembly + std::to_string(GetParam().second) + "\n";
+  const std::string decoded_string = EncodeAndDecodeSuccessfully(input_string);
+  EXPECT_EQ(expected_string, decoded_string);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    FloatValues, TextToBinaryFloatValueTest,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
+        {"0.0", 0x00000000},          // +0
+        {"!0x00000001", 0x00000001},  // +denorm
+        {"!0x00800000", 0x00800000},  // +norm
+        {"1.5", 0x3fc00000},
+        {"!0x7f800000", 0x7f800000},  // +inf
+        {"!0x7f800001", 0x7f800001},  // NaN
+
+        {"-0.0", 0x80000000},         // -0
+        {"!0x80000001", 0x80000001},  // -denorm
+        {"!0x80800000", 0x80800000},  // -norm
+        {"-2.5", 0xc0200000},
+        {"!0xff800000", 0xff800000},  // -inf
+        {"!0xff800001", 0xff800001},  // NaN
+    }));
+
+TEST(AssemblyContextParseNarrowSignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  int16_t i16;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &i16, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &i16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &i16, ""));
+  EXPECT_EQ(0, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("32767", ec, &i16, ""));
+  EXPECT_EQ(32767, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32768", ec, &i16, ""));
+  EXPECT_EQ(-32768, i16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &i16, ""));
+  EXPECT_EQ(0, i16);
+
+  // These are out of range, so they should return an error.
+  // The error code depends on whether this is an optional value.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("32768", ec, &i16, ""));
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            context.parseNumber("65535", SPV_ERROR_INVALID_TEXT, &i16, ""));
+
+  // Check hex parsing.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0x7fff", ec, &i16, ""));
+  EXPECT_EQ(32767, i16);
+  // This is out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0xffff", ec, &i16, ""));
+}
+
+TEST(AssemblyContextParseNarrowUnsignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  uint16_t u16;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &u16, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &u16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("65535", ec, &u16, ""));
+  EXPECT_EQ(65535, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("65536", ec, &u16, ""));
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u16, ""));
+  EXPECT_EQ(0, u16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0xffff", ec, &u16, ""));
+  EXPECT_EQ(0xffff, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0x10000", ec, &u16, ""));
+}
+
+TEST(AssemblyContextParseWideSignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  int64_t i64;
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &i64, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &i64, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &i64, ""));
+  EXPECT_EQ(0, i64);
+  EXPECT_EQ(SPV_SUCCESS,
+            context.parseNumber("0x7fffffffffffffff", ec, &i64, ""));
+  EXPECT_EQ(0x7fffffffffffffff, i64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &i64, ""));
+  EXPECT_EQ(0, i64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1", ec, &i64, ""));
+  EXPECT_EQ(-1, i64);
+}
+
+TEST(AssemblyContextParseWideUnsignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  uint64_t u64;
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &u64, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &u64, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &u64, ""));
+  EXPECT_EQ(0, u64);
+  EXPECT_EQ(SPV_SUCCESS,
+            context.parseNumber("0xffffffffffffffff", ec, &u64, ""));
+  EXPECT_EQ(0xffffffffffffffffULL, u64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u64, ""));
+  EXPECT_EQ(0, u64);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u64, ""));
+}
+
+TEST(AssemblyContextParseFloat, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  float f;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &f, ""));
+
+  // These values are exactly representatble.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &f, ""));
+  EXPECT_EQ(0.0f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("42", ec, &f, ""));
+  EXPECT_EQ(42.0f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("2.5", ec, &f, ""));
+  EXPECT_EQ(2.5f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32.5", ec, &f, ""));
+  EXPECT_EQ(-32.5f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_EQ(1e38f, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_EQ(-1e38f, f);
+
+  // Out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e40", ec, &f, ""));
+}
+
+TEST(AssemblyContextParseDouble, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  double f;
+
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &f, ""));
+
+  // These values are exactly representatble.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &f, ""));
+  EXPECT_EQ(0.0, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("42", ec, &f, ""));
+  EXPECT_EQ(42.0, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("2.5", ec, &f, ""));
+  EXPECT_EQ(2.5, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-32.5", ec, &f, ""));
+  EXPECT_EQ(-32.5, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_EQ(1e38, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_EQ(-1e38, f);
+  // These are out of range for 32-bit float, but in range for 64-bit float.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_EQ(1e40, f);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_EQ(-1e40, f);
+
+  // Out of range.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", ec, &f, ""));
+}
+
+TEST(AssemblyContextParseMessages, Errors) {
+  spv_diagnostic diag = nullptr;
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  AssemblyContext context(AutoText(""), &diag);
+  int16_t i16;
+
+  // No message is generated for a failure to parse an optional value.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("abc", ec, &i16, "bad narrow int: "));
+  EXPECT_EQ(nullptr, diag);
+
+  // For a required value, use the message fragment.
+  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
+            context.parseNumber("abc", SPV_ERROR_INVALID_TEXT, &i16,
+                                "bad narrow int: "));
+  ASSERT_NE(nullptr, diag);
+  EXPECT_EQ("bad narrow int: abc", std::string(diag->error));
+  // Don't leak.
+  spvDiagnosticDestroy(diag);
+}
+
+}  // anonymous namespace

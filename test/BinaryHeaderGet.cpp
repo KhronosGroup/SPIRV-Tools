@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class BinaryHeaderGet : public ::testing::Test {
  public:
   BinaryHeaderGet() { memset(code, 0, sizeof(code)); }
@@ -74,3 +76,5 @@ TEST_F(BinaryHeaderGet, InvalidPointerHeader) {
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
             spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, nullptr));
 }
+
+}  // anonymous namespace

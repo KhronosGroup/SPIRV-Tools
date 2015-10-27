@@ -28,8 +28,9 @@
 #define _CODEPLAY_SPIRV_SPIRV_H_
 
 #include <headers/spirv.hpp>
+#include <headers/spirv_operands.hpp>
 #include <headers/GLSL.std.450.h>
-#include <headers/OpenCLLib.h>
+#include <headers/OpenCL.std.h>
 
 #ifdef __cplusplus
 using namespace spv;
@@ -55,10 +56,19 @@ extern "C" {
 
 // Universal limits
 
+// SPIR-V 1.0 limits
+#define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0xffff
+#define SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX 0xffff
+
+// A single Unicode character in UTF-8 encoding can take
+// up 4 bytes.
+#define SPV_LIMIT_LITERAL_STRING_BYTES_MAX \
+  (SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX * 4)
+
 // NOTE: These are set to the minimum maximum values
-#define SPV_LIMIT_LITERAL_NAME_MAX 0x00000400
-#define SPV_LIMIT_LITERAL_STRING_MAX 0x00010000
-#define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0x00000108
+// TODO(dneto): Check these.
+
+// libspirv limits.
 #define SPV_LIMIT_RESULT_ID_BOUND 0x00400000
 #define SPV_LIMIT_CONTROL_FLOW_NEST_DEPTH 0x00000400
 #define SPV_LIMIT_GLOBAL_VARIABLES_MAX 0x00010000
@@ -75,19 +85,6 @@ extern "C" {
 
 // Helpers
 
-#define spvCheck(condition, action) \
-  if (condition) {                  \
-    action;                         \
-  }
-
-#define spvCheckReturn(expression)     \
-  {                                    \
-    spv_result_t error = (expression); \
-    if (error) {                       \
-      return error;                    \
-    }                                  \
-  }
-
 #define spvIsInBitfield(value, bitfield) (value == (value & bitfield))
 
 #define SPV_BIT(shift) (1 << (shift))
@@ -96,6 +93,17 @@ extern "C" {
 #define SPV_FORCE_32_BIT_ENUM(name) _##name = 0x7fffffff
 
 #define SPV_OPERAND_INVALID_RESULT_ID_INDEX -1
+
+// A bit mask representing a set of capabilities.
+// Currently there are 54 distinct capabilities, so 64 bits
+// should be enough.
+using spv_capability_mask_t = uint64_t;
+
+// Transforms spv::Capability into a mask for use in bitfields.  Should really
+// be a constexpr inline function, but some important versions of MSVC don't
+// support that yet.  Different from SPV_BIT, which doesn't guarantee 64-bit
+// values.
+#define SPV_CAPABILITY_AS_MASK(capability) (spv_capability_mask_t(1) << (capability))
 
 // Enumerations
 
@@ -112,6 +120,7 @@ typedef enum spv_result_t {
   SPV_UNSUPPORTED = 1,
   SPV_END_OF_STREAM = 2,
   SPV_WARNING = 3,
+  SPV_FAILED_MATCH = 4,
   SPV_ERROR_INTERNAL = -1,
   SPV_ERROR_OUT_OF_MEMORY = -2,
   SPV_ERROR_INVALID_POINTER = -3,
@@ -131,19 +140,23 @@ typedef enum spv_endianness_t {
   SPV_FORCE_32_BIT_ENUM(spv_endianness_t)
 } spv_endianness_t;
 
-typedef enum spv_opcode_flags_t {
-  SPV_OPCODE_FLAGS_NONE = 0,
-  SPV_OPCODE_FLAGS_VARIABLE = 1,
-  SPV_OPCODE_FLAGS_CAPABILITIES = 2,
-  SPV_FORCE_32_BIT_ENUM(spv_opcode_flags_t)
-} spv_opcode_flags_t;
-
+// The kinds of operands that an instruction may have.
+//
+// In addition to determining what kind of value an operand may be, certain
+// enums capture the fact that an operand might be optional (may be absent,
+// or present exactly once), or might occure zero or more times.
+//
+// Sometimes we also need to be able to express the fact that an operand
+// is a member of an optional tuple of values.  In that case the first member
+// would be optional, and the subsequent members would be required.
 typedef enum spv_operand_type_t {
-  SPV_OPERAND_TYPE_NONE,
+  SPV_OPERAND_TYPE_NONE = 0,
   SPV_OPERAND_TYPE_ID,
+  SPV_OPERAND_TYPE_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  SPV_OPERAND_TYPE_LITERAL,
-  SPV_OPERAND_TYPE_LITERAL_NUMBER,
+  SPV_OPERAND_TYPE_LITERAL_INTEGER,
+  // A literal number that can (but is not required to) expand multiple words.
+  SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
   SPV_OPERAND_TYPE_LITERAL_STRING,
   SPV_OPERAND_TYPE_SOURCE_LANGUAGE,
   SPV_OPERAND_TYPE_EXECUTION_MODEL,
@@ -154,6 +167,9 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_DIMENSIONALITY,
   SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE,
   SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE,
+  SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
+  SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER,
+  SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE,
   SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
   SPV_OPERAND_TYPE_FP_ROUNDING_MODE,
   SPV_OPERAND_TYPE_LINKAGE_TYPE,
@@ -164,24 +180,78 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_SELECTION_CONTROL,
   SPV_OPERAND_TYPE_LOOP_CONTROL,
   SPV_OPERAND_TYPE_FUNCTION_CONTROL,
+
+  // The ID for a memory semantics value.
   SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
-  SPV_OPERAND_TYPE_MEMORY_ACCESS,
+  // The ID for an execution scope value.
+  // TODO(dneto): Rev 30 changed "Execution Scope" to "Scope".  We should
+  // probably do that here too.
   SPV_OPERAND_TYPE_EXECUTION_SCOPE,
+
   SPV_OPERAND_TYPE_GROUP_OPERATION,
   SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS,
-  SPV_OPERAND_TYPE_KERENL_PROFILING_INFO,
+  SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
   SPV_OPERAND_TYPE_CAPABILITY,
 
-  SPV_OPERAND_TYPE_ELLIPSIS,  // NOTE: Unspecified variable operands
+  // An optional operand represents zero or one logical operands.
+  // In an instruction definition, this may only appear at the end of the
+  // operand types.
+  SPV_OPERAND_TYPE_OPTIONAL_ID,
+  // An optional image operands mask.  A set bit in the mask may
+  // imply that more arguments are required.
+  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+  // An optional literal integer.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
+  // An optional literal string.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
+  // An optional memory access qualifier mask, e.g. Volatile, Aligned,
+  // or a combination.
+  SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+  // An optional execution mode
+  SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
+  // A variable operand represents zero or more logical operands.
+  // In an instruction definition, this may only appear at the end of the
+  // operand types.
+  SPV_OPERAND_TYPE_VARIABLE_ID,
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER,
+  // A sequence of zero or more pairs of (Literal integer, Id)
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID,
+  // A sequence of zero or more pairs of (Id, Literal integer)
+  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
+  // A sequence of zero or more execution modes
+  SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
+
+  // An Id that is second or later in an optional tuple of operands.
+  // This must be present if the first operand in the tuple is present.
+  SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE,
+  // A Literal integer that is second or later in an optional tuple of operands.
+  // This must be present if the first operand in the tuple is present.
+  SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE,
+
+  // An optional context-independent value, or CIV.  CIVs are tokens that we can
+  // assemble regardless of where they occur -- literals, IDs, immediate
+  // integers, etc.
+  SPV_OPERAND_TYPE_OPTIONAL_CIV,
+  // An optional literal number. This can expand to either a literal integer or
+  // a literal floating-point number.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
+
+  // The Instruction argument to OpExtInst. It's an unsigned 32-bit literal
+  // number indicating which instruction to use from an extended instruction
+  // set.
+  SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+
+  // This is a sentinel value, and does not represent an operand type.
+  // It should come last.
+  SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
+
   SPV_FORCE_32_BIT_ENUM(spv_operand_type_t)
 } spv_operand_type_t;
 
 typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_NONE,
   SPV_EXT_INST_TYPE_GLSL_STD_450,
-  SPV_EXT_INST_TYPE_OPENCL_STD_12,
-  SPV_EXT_INST_TYPE_OPENCL_STD_20,
-  SPV_EXT_INST_TYPE_OPENCL_STD_21,
+  SPV_EXT_INST_TYPE_OPENCL_STD,
 
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
@@ -192,6 +262,12 @@ typedef enum spv_binary_to_text_options_t {
   SPV_BINARY_TO_TEXT_OPTION_COLOR = SPV_BIT(2),
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
+
+typedef enum spv_assembly_syntax_format_t {
+  SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,  // Assignment Assembly Format
+  SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,   // Canonical Assembly Format
+  SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT = SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT,
+} spv_assembly_syntax_format_t;
 
 typedef enum spv_validate_options_t {
   SPV_VALIDATE_BASIC_BIT = SPV_BIT(0),
@@ -216,11 +292,19 @@ typedef struct spv_header_t {
 
 typedef struct spv_opcode_desc_t {
   const char *name;
-  const uint16_t wordCount;
   const Op opcode;
-  const uint32_t flags;                       // Bitfield of spv_opcode_flags_t
-  const uint32_t capabilities;                // spv_language_capabilities_t
-  const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  const spv_capability_mask_t
+      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  // operandTypes[0..numTypes-1] describe logical operands for the instruction.
+  // The operand types include result id and result-type id, followed by
+  // the types of arguments.
+  uint16_t numTypes;
+  spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
+  const bool hasResult;  // Does the instruction have a result ID operand?
+  const bool hasType;    // Does the instruction have a type ID operand?
+  // The operand class for each logical argument.  This does *not* include
+  // the result Id or type ID.  The list is terminated by SPV_OPERAND_TYPE_NONE.
+  const OperandClass operandClass[16];
 } spv_opcode_desc_t;
 
 typedef struct spv_opcode_table_t {
@@ -231,8 +315,8 @@ typedef struct spv_opcode_table_t {
 typedef struct spv_operand_desc_t {
   const char *name;
   const uint32_t value;
-  const uint32_t flags;                       // Bitfield of spv_opcode_flags_t
-  const uint32_t capabilities;                // spv_language_capabilities_t
+  const spv_capability_mask_t
+      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_operand_desc_t;
 
@@ -274,13 +358,6 @@ typedef struct spv_text_t {
   uint64_t length;
 } spv_text_t;
 
-typedef struct spv_instruction_t {
-  uint16_t wordCount;
-  Op opcode;
-  spv_ext_inst_type_t extInstType;
-  uint32_t words[SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX];
-} spv_instruction_t;
-
 typedef struct spv_position_t {
   uint64_t line;
   uint64_t column;
@@ -290,6 +367,7 @@ typedef struct spv_position_t {
 typedef struct spv_diagnostic_t {
   spv_position_t position;
   char *error;
+  bool isTextSource;
 } spv_diagnostic_t;
 
 // Type Definitions
@@ -335,6 +413,7 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @brief Entry point to covert text form to binary form
 ///
 /// @param[in] text input text
+/// @param[in] length of the input text
 /// @param[in] opcodeTable of specified Opcodes
 /// @param[in] operandTable of specified operands
 /// @param[in] extInstTable of specified extended instructions
@@ -342,13 +421,35 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextToBinary(const spv_text text,
+spv_result_t spvTextToBinary(const char *text, const uint64_t length,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_binary *pBinary, spv_diagnostic *pDiagnostic);
 
+/// @brief Entry point to covert text form to binary form
+///
+/// @param[in] text input text
+/// @param[in] length of the input text
+/// @param[in] format the assembly syntax format of text
+/// @param[in] opcodeTable of specified Opcodes
+/// @param[in] operandTable of specified operands
+/// @param[in] extInstTable of specified extended instructions
+/// @param[out] pBinary the binary module
+/// @param[out] pDiagnostic contains diagnostic on failure
+///
+/// @return result code
+spv_result_t spvTextWithFormatToBinary(const char *text, const uint64_t length,
+                                       spv_assembly_syntax_format_t format,
+                                       const spv_opcode_table opcodeTable,
+                                       const spv_operand_table operandTable,
+                                       const spv_ext_inst_table extInstTable,
+                                       spv_binary *pBinary,
+                                       spv_diagnostic *pDiagnostic);
+
 /// @brief Free an allocated text stream
+///
+/// This is a no-op if the text parameter is a null pointer.
 ///
 /// @param text the text object to be destored
 void spvTextDestroy(spv_text text);
@@ -357,7 +458,8 @@ void spvTextDestroy(spv_text text);
 
 /// @brief Entry point to convert binary to text form
 ///
-/// @param[in] binary the input binary stream
+/// @param[in] binary the input binary
+/// @param[in] wordCount the number of input words
 /// @param[in] options bitfield of spv_binary_to_text_options_t values
 /// @param[in] opcodeTable table of specified Opcodes
 /// @param[in] operandTable table of specified operands
@@ -366,13 +468,35 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(const spv_binary binary, const uint32_t options,
+spv_result_t spvBinaryToText(uint32_t *binary, const uint64_t wordCount,
+                             const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_text *pText, spv_diagnostic *pDiagnostic);
 
-/// @brief Free a binary stream from memory
+/// @brief Entry point to convert binary to text form
+///
+/// @param[in] binary the input binary
+/// @param[in] wordCount the number of input words
+/// @param[in] options bitfield of spv_binary_to_text_options_t values
+/// @param[in] opcodeTable table of specified Opcodes
+/// @param[in] operandTable table of specified operands
+/// @param[in] extInstTable of specified extended instructions
+/// @param[in] format the assembly syntax format of text
+/// @param[out] pText the textual form
+/// @param[out] pDiagnostic contains diagnostic on failure
+///
+/// @return result code
+spv_result_t spvBinaryToTextWithFormat(
+    uint32_t *binary, const uint64_t wordCount, const uint32_t options,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
+    spv_text *pText, spv_diagnostic *pDiagnostic);
+
+/// @brief Free a binary stream from memory.
+///
+/// This is a no-op if binary is a null pointer.
 ///
 /// @param binary stream to destroy
 void spvBinaryDestroy(spv_binary binary);

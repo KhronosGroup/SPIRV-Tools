@@ -26,6 +26,10 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
+TEST(TextDestroy, DestroyNull) { spvBinaryDestroy(nullptr); }
+
 TEST(TextDestroy, Default) {
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
@@ -36,31 +40,34 @@ TEST(TextDestroy, Default) {
   spv_ext_inst_table extInstTable;
   ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
 
-  char textStr[] =
-      "OpSource OpenCL 12\n"
-      "OpMemoryModel Physical64 OpenCL\n"
-      "OpSourceExtension \"PlaceholderExtensionName\"\n"
-      "OpEntryPoint Kernel 0\n"
-      "OpExecutionMode 0 LocalSizeHint 1 1 1\n"
-      "OpTypeVoid 1\n"
-      "OpTypeBool 2\n"
-      "OpTypeInt 3 8 0\n"
-      "OpTypeInt 4 8 1\n"
-      "OpTypeInt 5 16 0\n"
-      "OpTypeInt 6 16 1\n"
-      "OpTypeInt 7 32 0\n"
-      "OpTypeInt 8 32 1\n"
-      "OpTypeInt 9 64 0\n"
-      "OpTypeInt 10 64 1\n"
-      "OpTypeFloat 11 16\n"
-      "OpTypeFloat 12 32\n"
-      "OpTypeFloat 13 64\n"
-      "OpTypeVector 14 3 2\n";
-  spv_text_t text = {textStr, strlen(textStr)};
+  char textStr[] = R"(
+      OpSource OpenCL 12
+      OpMemoryModel Physical64 OpenCL
+      OpSourceExtension "PlaceholderExtensionName"
+      OpEntryPoint Kernel %0 ""
+      OpExecutionMode %0 LocalSizeHint 1 1 1
+      OpTypeVoid %1
+      OpTypeBool %2
+      OpTypeInt %3 8 0
+      OpTypeInt %4 8 1
+      OpTypeInt %5 16 0
+      OpTypeInt %6 16 1
+      OpTypeInt %7 32 0
+      OpTypeInt %8 32 1
+      OpTypeInt %9 64 0
+      OpTypeInt %10 64 1
+      OpTypeFloat %11 16
+      OpTypeFloat %12 32
+      OpTypeFloat %13 64
+      OpTypeVector %14 %3 2
+  )";
+
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextWithFormatToBinary(
+                textStr, strlen(textStr), SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
+                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
   EXPECT_NE(0, binary->wordCount);
@@ -70,16 +77,19 @@ TEST(TextDestroy, Default) {
   }
 
   spv_text resultText = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryToText(binary, 0, opcodeTable, operandTable, extInstTable,
-                            &resultText, &diagnostic));
+  EXPECT_EQ(
+      SPV_SUCCESS,
+      spvBinaryToText(binary->code, binary->wordCount, 0, opcodeTable,
+                      operandTable, extInstTable, &resultText, &diagnostic));
   spvBinaryDestroy(binary);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
     ASSERT_TRUE(false);
   }
-  EXPECT_NE(nullptr, text.str);
-  EXPECT_NE(0, text.length);
+  EXPECT_NE(nullptr, resultText->str);
+  EXPECT_NE(0, resultText->length);
   spvTextDestroy(resultText);
 }
+
+}  // anonymous namespace

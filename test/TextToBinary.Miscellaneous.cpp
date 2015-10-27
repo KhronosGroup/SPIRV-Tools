@@ -24,10 +24,32 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+// Assembler tests for instructions in the "Miscellaneous" section of the
+// SPIR-V spec.
+
 #include "UnitSPIRV.h"
 
-TEST(OpcodeIsVariable, Default) {
-  spv_opcode_desc_t entry = {
-      nullptr, 0, (Op)0, SPV_OPCODE_FLAGS_VARIABLE, 0, {}};
-  ASSERT_NE(0, spvOpcodeIsVariable(&entry));
+#include "gmock/gmock.h"
+#include "TestFixture.h"
+
+namespace {
+
+using SpirvVector = spvtest::TextToBinaryTest::SpirvVector;
+using spv::Op;
+using spvtest::MakeInstruction;
+using ::testing::Eq;
+using TextToBinaryMisc = spvtest::TextToBinaryTest;
+
+TEST_F(TextToBinaryMisc, OpNop) {
+  EXPECT_THAT(CompiledInstructions("OpNop"), Eq(MakeInstruction(OpNop, {})));
 }
+
+TEST_F(TextToBinaryMisc, OpUndef) {
+  const SpirvVector code = CompiledInstructions(R"(%f32 = OpTypeFloat 32
+                                                   %u = OpUndef %f32)");
+  const uint32_t typeID = 1;
+  EXPECT_THAT(code[1], Eq(typeID));
+  EXPECT_THAT(Subvector(code, 3), Eq(MakeInstruction(OpUndef, {typeID, 2})));
+}
+
+}  // anonymous namespace

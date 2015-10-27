@@ -26,66 +26,66 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
+using libspirv::AssemblyContext;
+using spvtest::AutoText;
+
 TEST(TextAdvance, LeadingNewLines) {
-  char textStr[] = "\n\nWord";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
-  ASSERT_EQ(0, position.column);
-  ASSERT_EQ(2, position.line);
-  ASSERT_EQ(2, position.index);
+  AutoText input("\n\nWord");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_SUCCESS, data.advance());
+  ASSERT_EQ(0, data.position().column);
+  ASSERT_EQ(2, data.position().line);
+  ASSERT_EQ(2, data.position().index);
 }
 
 TEST(TextAdvance, LeadingSpaces) {
-  char textStr[] = "    Word";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
-  ASSERT_EQ(4, position.column);
-  ASSERT_EQ(0, position.line);
-  ASSERT_EQ(4, position.index);
+  AutoText input("    Word");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_SUCCESS, data.advance());
+  ASSERT_EQ(4, data.position().column);
+  ASSERT_EQ(0, data.position().line);
+  ASSERT_EQ(4, data.position().index);
 }
 
 TEST(TextAdvance, LeadingTabs) {
-  char textStr[] = "\t\t\tWord";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
-  ASSERT_EQ(3, position.column);
-  ASSERT_EQ(0, position.line);
-  ASSERT_EQ(3, position.index);
+  AutoText input("\t\t\tWord");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_SUCCESS, data.advance());
+  ASSERT_EQ(3, data.position().column);
+  ASSERT_EQ(0, data.position().line);
+  ASSERT_EQ(3, data.position().index);
 }
 
 TEST(TextAdvance, LeadingNewLinesSpacesAndTabs) {
-  char textStr[] = "\n\n\t  Word";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
-  ASSERT_EQ(3, position.column);
-  ASSERT_EQ(2, position.line);
-  ASSERT_EQ(5, position.index);
+  AutoText input("\n\n\t  Word");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_SUCCESS, data.advance());
+  ASSERT_EQ(3, data.position().column);
+  ASSERT_EQ(2, data.position().line);
+  ASSERT_EQ(5, data.position().index);
 }
 
 TEST(TextAdvance, LeadingWhitespaceAfterCommentLine) {
-  char textStr[] = "; comment\n \t \tWord";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_SUCCESS, spvTextAdvance(&text, &position));
-  ASSERT_EQ(4, position.column);
-  ASSERT_EQ(1, position.line);
-  ASSERT_EQ(14, position.index);
+  AutoText input("; comment\n \t \tWord");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_SUCCESS, data.advance());
+  ASSERT_EQ(4,  data.position().column);
+  ASSERT_EQ(1,  data.position().line);
+  ASSERT_EQ(14, data.position().index);
 }
 
 TEST(TextAdvance, EOFAfterCommentLine) {
-  char textStr[] = "; comment";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_END_OF_STREAM, spvTextAdvance(&text, &position));
+  AutoText input("; comment");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }
 
 TEST(TextAdvance, NullTerminator) {
-  char textStr[] = "";
-  spv_text_t text = {textStr, strlen(textStr)};
-  spv_position_t position = {};
-  ASSERT_EQ(SPV_END_OF_STREAM, spvTextAdvance(&text, &position));
+  AutoText input("");
+  AssemblyContext data(input, nullptr);
+  ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }
+
+}  // anonymous namespace

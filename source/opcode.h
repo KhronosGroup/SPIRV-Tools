@@ -27,6 +27,7 @@
 #ifndef _LIBSPIRV_UTIL_OPCODE_H_
 #define _LIBSPIRV_UTIL_OPCODE_H_
 
+#include "instruction.h"
 #include <libspirv/libspirv.h>
 
 // Functions
@@ -61,7 +62,8 @@ void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, Op *opcode);
 ///
 /// @return result code
 spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
-                                    const char *name, spv_opcode_desc *pEntry);
+                                      const char *name,
+                                      spv_opcode_desc *pEntry);
 
 /// @brief Find the opcode ID in the table
 ///
@@ -71,16 +73,8 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 ///
 /// @return result code
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
-                                     const Op opcode, spv_opcode_desc *pEntry);
-
-/// @brief Determine if the Opcode has variable word count
-///
-/// This function does not check if @a entry is valid.
-///
-/// @param[in] entry the Opcode entry
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsVariable(spv_opcode_desc entry);
+                                       const Op opcode,
+                                       spv_opcode_desc *pEntry);
 
 /// @brief Get the argument index for the <result-id> operand, if any.
 ///
@@ -94,7 +88,7 @@ int32_t spvOpcodeIsVariable(spv_opcode_desc entry);
 /// the wordcount/opcode word.
 int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry);
 
-/// @brief Determine if the Opcode has capaspvity requirements
+/// @brief Determine if the Opcode has capability requirements.
 ///
 /// This function does not check if @a entry is valid.
 ///
@@ -194,5 +188,12 @@ int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
 ///
 /// @return zero if false, non-zero otherwise
 int32_t spvOpcodeIsValue(Op opcode);
+
+/// @brief Determine if the Opcode generates a type
+///
+/// @param[in] opcode the opcode
+///
+/// @return zero if false, non-zero otherwise
+int32_t spvOpcodeGeneratesType(Op op);
 
 #endif

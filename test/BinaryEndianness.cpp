@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(BinaryEndianness, InvalidCode) {
   uint32_t invalidMagicNumber[] = {0};
   spv_binary_t binary = {invalidMagicNumber, 1};
@@ -58,3 +60,5 @@ TEST(BinaryEndianness, Big) {
   ASSERT_EQ(SPV_SUCCESS, spvBinaryEndianness(&binary, &endian));
   ASSERT_EQ(SPV_ENDIANNESS_BIG, endian);
 }
+
+}  // anonymous namespace

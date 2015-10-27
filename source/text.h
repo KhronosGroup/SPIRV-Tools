@@ -28,6 +28,7 @@
 #define _LIBSPIRV_UTIL_TEXT_H_
 
 #include <libspirv/libspirv.h>
+#include "operand.h"
 
 #include <string>
 
@@ -53,141 +54,26 @@ typedef struct spv_literal_t {
     uint64_t u64;
     float f;
     double d;
-    char str[SPV_LIMIT_LITERAL_STRING_MAX];
+    // Allow room for the null terminator
+    // TODO(dneto): This is a very large array.  We should use a
+    // different kind of container.
+    char str[SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 1];
   } value;
 } spv_literal_t;
 
-struct spv_named_id_table_t;
-
-// Types
-
-typedef spv_named_id_table_t *spv_named_id_table;
 
 // Functions
 
-/// @brief Advance text to the start of the next line
+/// @brief Convert the input text to one of the number types, or to
+/// a string.
 ///
-/// @param[in] text to be parsed
-/// @param[in,out] pPosition position text has been advanced to
-///
-/// @return result code
-spv_result_t spvTextAdvanceLine(const spv_text text, spv_position_t *pPosition);
-
-/// @brief Advance text to first non white space character
-///
-/// If a null terminator is found during the text advance SPV_END_OF_STREAM is
-/// returned, SPV_SUCCESS otherwise. No error checking is performed on the
-/// parameters, its the users responsispvity to ensure these are non null.
-///
-/// @param[in] text to be parsed
-/// @param[in,out] pPosition position text has been advanced to
-///
-/// @return result code
-spv_result_t spvTextAdvance(const spv_text text, spv_position_t *pPosition);
-
-/// @brief Fetch the next word from the text stream
-///
-/// @param[in] text stream to read from
-/// @param[in] startPosition current position in text stream
-/// @param[out] word returned word
-/// @param[out] endPosition one past the end of the returned word
-///
-/// @return result code
-spv_result_t spvTextWordGet(const spv_text text,
-                            const spv_position startPosition, std::string &word,
-                            spv_position endPosition);
-
-/// @brief Fetch a string, including quotes, from the text stream
-///
-/// @param[in] text stream to read from
-/// @param[in] startPosition current position in text stream
-/// @param[out] string returned string
-/// @param[out] endPosition one past the end of the return string
-///
-/// @return result code
-spv_result_t spvTextStringGet(const spv_text text,
-                              const spv_position startPosition,
-                              std::string &string, spv_position endPosition);
-
-/// @brief Convert the input text to a unsigned 32 bit integer
+/// String literals must be surrounded by double-quotes ("), which are
+/// then stripped.
 ///
 /// @param[in] textValue input text to parse
-/// @param[out] pValue the returned integer
-///
-/// @return result code
-spv_result_t spvTextToUInt32(const char *textValue, uint32_t *pValue);
-
-/// @brief Convert the input text to one of the number types
-///
-/// @param[in] textValue input text to parse
-/// @param[out] pLiteral the returned literal number
+/// @param[out] pLiteral the returned literal
 ///
 /// @return result code
 spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral);
-
-/// @brief Create a named ID table
-///
-/// @return named ID table
-spv_named_id_table spvNamedIdTableCreate();
-
-/// @brief Free a named ID table
-///
-/// @param table named ID table
-void spvNamedIdTableDestory(spv_named_id_table table);
-
-/// @brief Lookup or assign a named ID
-///
-/// @param table named ID table
-/// @param textValue name value
-/// @param pBound upper ID bound, used for assigning new ID's
-///
-/// @return the new ID assossiated with the named ID
-uint32_t spvNamedIdAssignOrGet(spv_named_id_table table, const char *textValue,
-                               uint32_t *pBound);
-
-/// @brief Determine if a name has an assossiated ID
-///
-/// @param textValue name value
-///
-/// @return zero on failure, non-zero otherwise
-int32_t spvTextIsNamedId(const char *textValue);
-
-/// @brief Translate an Opcode operand to binary form
-///
-/// @param[in] type of the operand
-/// @param[in] textValue word of text to be parsed
-/// @param[in] operandTable operand lookup table
-/// @param[in,out] namedIdTable table of named ID's
-/// @param[out] pInst return binary Opcode
-/// @param[out] ppExtraOperands list of extra variable operands, if any
-/// @param[in,out] pBound current highest defined ID value
-/// @param[in] pPosition used in diagnostic on error
-/// @param[out] pDiagnostic populated on error
-///
-/// @return result code
-spv_result_t spvTextEncodeOperand(
-    const spv_operand_type_t type, const char *textValue,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, spv_instruction_t *pInst,
-    const spv_operand_type_t **ppExtraOperands, uint32_t *pBound,
-    const spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
-
-/// @brief Translate single Opcode and operands to binary form
-///
-/// @param[in] text stream to translate
-/// @param[in] opcodeTable Opcode lookup table
-/// @param[in] operandTable operand lookup table
-/// @param[in,out] namedIdTable table of named ID's
-/// @param[in,out] pBound current highest defined ID value
-/// @param[out] pInst returned binary Opcode
-/// @param[in,out] pPosition in the text stream
-/// @param[out] pDiagnostic populated on failure
-///
-/// @return result code
-spv_result_t spvTextEncodeOpcode(
-    const spv_text text, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_named_id_table namedIdTable, uint32_t *pBound, spv_instruction_t *pInst,
-    spv_position_t *pPosition, spv_diagnostic *pDiagnostic);
 
 #endif

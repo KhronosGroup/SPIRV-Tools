@@ -32,6 +32,8 @@
 // in stages, ID validation is only one of these stages. All validation stages
 // are stand alone.
 
+namespace {
+
 class ValidateID : public ::testing::Test {
  public:
   ValidateID() : opcodeTable(nullptr), operandTable(nullptr), binary() {}
@@ -50,23 +52,23 @@ class ValidateID : public ::testing::Test {
   spv_binary binary;
 };
 
-#define CHECK(str, expected)                                                \
-  spv_text_t text = {str, strlen(str)};                                     \
-  spv_diagnostic diagnostic;                                                \
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,    \
-                                       extInstTable, &binary, &diagnostic); \
-  if (error) {                                                              \
-    spvDiagnosticPrint(diagnostic);                                         \
-    spvDiagnosticDestroy(diagnostic);                                       \
-    ASSERT_EQ(SPV_SUCCESS, error);                                          \
-  }                                                                         \
-  spv_result_t result =                                                     \
-      spvValidate(binary, opcodeTable, operandTable, extInstTable,          \
-                  SPV_VALIDATE_ID_BIT, &diagnostic);                        \
-  if (SPV_SUCCESS != result) {                                              \
-    spvDiagnosticPrint(diagnostic);                                         \
-    spvDiagnosticDestroy(diagnostic);                                       \
-  }                                                                         \
+#define CHECK(str, expected)                                       \
+  spv_diagnostic diagnostic;                                       \
+  spv_result_t error =                                             \
+      spvTextToBinary(str, strlen(str), opcodeTable, operandTable, \
+                      extInstTable, &binary, &diagnostic);         \
+  if (error) {                                                     \
+    spvDiagnosticPrint(diagnostic);                                \
+    spvDiagnosticDestroy(diagnostic);                              \
+    ASSERT_EQ(SPV_SUCCESS, error);                                 \
+  }                                                                \
+  spv_result_t result =                                            \
+      spvValidate(binary, opcodeTable, operandTable, extInstTable, \
+                  SPV_VALIDATE_ID_BIT, &diagnostic);               \
+  if (SPV_SUCCESS != result) {                                     \
+    spvDiagnosticPrint(diagnostic);                                \
+    spvDiagnosticDestroy(diagnostic);                              \
+  }                                                                \
   ASSERT_EQ(expected, result);
 
 // TODO: OpUndef
@@ -104,7 +106,7 @@ TEST_F(ValidateID, OpMemberNameMemberBad) {
 TEST_F(ValidateID, OpLineGood) {
   const char *spirv = R"(
 %1 = OpString "/path/to/source.file"
-     OpLine %4 %1 0 0
+     OpLine %1 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Generic %2
 %4 = OpVariable %3 Generic)";
@@ -112,7 +114,7 @@ TEST_F(ValidateID, OpLineGood) {
 }
 TEST_F(ValidateID, OpLineFileBad) {
   const char *spirv = R"(
-     OpLine %4 %2 0 0
+     OpLine %2 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Generic %2
 %4 = OpVariable %3 Generic)";
@@ -187,7 +189,7 @@ TEST_F(ValidateID, OpGroupDecorateTargetBad) {
 
 TEST_F(ValidateID, OpEntryPointGood) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
@@ -199,13 +201,13 @@ TEST_F(ValidateID, OpEntryPointGood) {
 }
 TEST_F(ValidateID, OpEntryPointFunctionBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %1
+     OpEntryPoint GLCompute %1 ""
 %1 = OpTypeVoid)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpEntryPointParameterCountBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1 %1
 %3 = OpFunction %1 None %2
@@ -216,7 +218,7 @@ TEST_F(ValidateID, OpEntryPointParameterCountBad) {
 }
 TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
 %1 = OpTypeInt 32 0
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
@@ -228,7 +230,7 @@ TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
 
 TEST_F(ValidateID, OpExecutionModeGood) {
   const char *spirv = R"(
-     OpEntryPoint GLCompute %3
+     OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -279,16 +281,10 @@ TEST_F(ValidateID, OpTypeMatrixColumnTypeBad) {
 }
 
 TEST_F(ValidateID, OpTypeSamplerGood) {
+  // In Rev31, OpTypeSampler takes no arguments.
   const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpTypeSampler %1 2D 0 0 0 0)";
+%s = OpTypeSampler)";
   CHECK(spirv, SPV_SUCCESS);
-}
-TEST_F(ValidateID, OpTypeSamplerSampledTypeBad) {
-  const char *spirv = R"(
-%1 = OpTypeVoid
-%2 = OpTypeSampler %1 2D 0 0 0 0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpTypeArrayGood) {
@@ -386,15 +382,8 @@ TEST_F(ValidateID, OpTypePipeGood) {
   const char *spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 16
-%3 = OpTypePipe %2 ReadOnly)";
+%3 = OpTypePipe ReadOnly)";
   CHECK(spirv, SPV_SUCCESS);
-}
-TEST_F(ValidateID, OpTypePipeBad) {
-  const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpConstant %1 0
-%3 = OpTypePipe %2 ReadOnly)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantTrueGood) {
@@ -412,7 +401,7 @@ TEST_F(ValidateID, OpConstantTrueBad) {
 
 TEST_F(ValidateID, OpConstantFalseGood) {
   const char *spirv = R"(
-OpTypeBool %1
+%1 = OpTypeBool
 %2 = OpConstantTrue %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
@@ -432,7 +421,7 @@ TEST_F(ValidateID, OpConstantGood) {
 TEST_F(ValidateID, OpConstantBad) {
   const char *spirv = R"(
 %1 = OpTypeVoid
-%2 = OpConstant %1 0)";
+%2 = OpConstant !1 !0)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
@@ -468,7 +457,7 @@ TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
  %4 = OpConstant %1 1.0
- %5 = OpConstant %1 %5 0.0
+ %5 = OpConstant %1 0.0
  %6 = OpConstantComposite %2 %4 %5 %5 %5
  %7 = OpConstantComposite %2 %5 %4 %5 %5
  %8 = OpConstantComposite %2 %5 %5 %4 %5
@@ -554,9 +543,9 @@ TEST_F(ValidateID, OpConstantCompositeStructMemberBad) {
 
 TEST_F(ValidateID, OpConstantSamplerGood) {
   const char *spirv = R"(
-%1 = OpTypeFloat 32
-%2 = OpTypeSampler %1 2D 1 0 1 0
-%3 = OpConstantSampler %2 ClampToEdge 0 Nearest)";
+%float = OpTypeFloat 32
+%samplerType = OpTypeSampler
+%3 = OpConstantSampler %samplerType ClampToEdge 0 Nearest)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantSamplerResultTypeBad) {
@@ -604,9 +593,8 @@ TEST_F(ValidateID, OpConstantNullBasicBad) {
 }
 TEST_F(ValidateID, OpConstantNullArrayBad) {
   const char *spirv = R"(
-%1 = OpTypeInt 8 0
 %2 = OpTypeInt 32 0
-%3 = OpTypeSampler %1 2D 0 0 0 0
+%3 = OpTypeSampler
 %4 = OpConstant %2 4
 %5 = OpTypeArray %3 %4
 %6 = OpConstantNull %5)";
@@ -614,8 +602,7 @@ TEST_F(ValidateID, OpConstantNullArrayBad) {
 }
 TEST_F(ValidateID, OpConstantNullStructBad) {
   const char *spirv = R"(
-%1 = OpTypeInt 8 0
-%2 = OpTypeSampler %1 2D 0 0 0 0
+%2 = OpTypeSampler
 %3 = OpTypeStruct %2 %2
 %4 = OpConstantNull %3)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
@@ -656,7 +643,7 @@ TEST_F(ValidateID, OpSpecConstantGood) {
 TEST_F(ValidateID, OpSpecConstantBad) {
   const char *spirv = R"(
 %1 = OpTypeVoid
-%2 = OpSpecConstant %1 3.14)";
+%2 = OpSpecConstant !1 !4)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
@@ -1108,7 +1095,8 @@ TEST_F(ValidateID, OpFunctionCallArgumentCountBar) {
 }
 #endif
 
-// TODO: OpSampler
+// TODO: OpSampledImage
+// TODO: The many things that changed with how images are used.
 // TODO: OpTextureSample
 // TODO: OpTextureSampleDref
 // TODO: OpTextureSampleLod
@@ -1340,3 +1328,5 @@ TEST_F(ValidateID, OpReturnValueBad) {
 // TODO: OpGroupReserveWritePipePackets
 // TODO: OpGroupCommitReadPipe
 // TODO: OpGroupCommitWritePipe
+
+}  // anonymous namespace

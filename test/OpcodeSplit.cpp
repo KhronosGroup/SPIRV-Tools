@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 TEST(OpcodeSplit, Default) {
   uint32_t word = spvOpcodeMake(42, (Op)23);
   uint16_t wordCount = 0;
@@ -34,3 +36,5 @@ TEST(OpcodeSplit, Default) {
   ASSERT_EQ(42, wordCount);
   ASSERT_EQ(23, opcode);
 }
+
+}  // anonymous namespace

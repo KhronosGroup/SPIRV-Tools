@@ -27,6 +27,10 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 
+namespace {
+
+using spvtest::TextToBinaryTest;
+
 TEST_F(TextToBinaryTest, Whitespace) {
   SetText(R"(
 ; I'm a proud comment at the begining of the file
@@ -36,12 +40,12 @@ TEST_F(TextToBinaryTest, Whitespace) {
  %glsl450 = OpExtInstImport "GLSL.std.450"
             ; comment indented
 )");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
-  if (binary) {
-    spvBinaryDestroy(binary);
-  }
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
 }
+
+}  // anonymous namespace

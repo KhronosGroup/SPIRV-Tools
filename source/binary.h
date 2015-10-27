@@ -28,6 +28,8 @@
 #define _LIBSPIRV_UTIL_BINARY_H_
 
 #include <libspirv/libspirv.h>
+#include "instruction.h"
+#include "operand.h"
 #include "print.h"
 
 // Functions
@@ -39,6 +41,16 @@
 ///
 /// @return word with host endianness correction
 uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian);
+
+/// @brief Fix the endianness of a double word
+///
+/// @param[in] low the lower 32-bit of the double word
+/// @param[in] high the higher 32-bit of the double word
+/// @param[in] endian the desired endianness
+///
+/// @return word with host endianness correction
+uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
+                          const spv_endianness_t endian);
 
 /// @brief Determine the endianness of the SPV binary
 ///
@@ -72,42 +84,6 @@ spv_result_t spvBinaryHeaderGet(const spv_binary binary,
 /// @return result code
 spv_result_t spvBinaryHeaderSet(spv_binary binary, const uint32_t bound);
 
-/// @brief Append a single word into a binary stream
-///
-/// @param[in] value the word to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeU32(const uint32_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic);
-
-/// @brief Append two related words into the binary stream
-///
-/// @param[in] value the two words to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeU64(const uint64_t value, spv_instruction_t *pInst,
-                                const spv_position position,
-                                spv_diagnostic *pDiagnostic);
-
-/// @brief Append a string literal in the binary stream
-///
-/// @param[in] str the string to encode
-/// @param[in] pInst the stream to append to
-/// @param[in,out] position position in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryEncodeString(const char *str, spv_instruction_t *pInst,
-                                   const spv_position position,
-                                   spv_diagnostic *pDiagnostic);
-
 /// @brief Determine the type of the desired operand
 ///
 /// @param[in] word the operand value
@@ -122,45 +98,4 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
                                         spv_operand_desc *pOperandEntry);
-
-/// @brief Translate a binary operand to the textual form
-///
-/// @param[in] opcode of the current instruction
-/// @param[in] type type of the operand to decode
-/// @param[in] words the binary stream of words
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] operandTable table of specified operands
-/// @param[in,out] pExtInstType type of extended instruction library
-/// @param[in,out] stream the text output stream
-/// @param[in,out] position position in the binary stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOperand(
-    const Op opcode, const spv_operand_type_t type, const uint32_t *words,
-    const spv_endianness_t endian, const uint32_t options,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_ext_inst_type_t *pExtInstType, out_stream &stream,
-    spv_position position, spv_diagnostic *pDiag);
-
-/// @brief Translate binary Opcode stream to textual form
-///
-/// @param[in] pInst the Opcode instruction stream
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[out] stream output text stream
-/// @param[in,out] position position in the stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOpcode(
-    spv_instruction_t *pInst, const spv_endianness_t endian,
-    const uint32_t options, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    out_stream &stream, spv_position position, spv_diagnostic *pDiag);
-
 #endif
-

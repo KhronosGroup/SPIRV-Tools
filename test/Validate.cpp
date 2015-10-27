@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+namespace {
+
 class Validate : public ::testing::Test {
  public:
   Validate() : binary(), opcodeTable(nullptr), operandTable(nullptr) {}
@@ -47,7 +49,7 @@ class Validate : public ::testing::Test {
 TEST_F(Validate, DISABLED_Default) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 1 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 3 2
@@ -56,10 +58,10 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_SUCCESS,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
@@ -72,7 +74,7 @@ OpFunctionEnd
 TEST_F(Validate, DISABLED_InvalidIdUndefined) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 5 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 3 2
@@ -81,10 +83,10 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
@@ -96,7 +98,7 @@ OpFunctionEnd
 TEST_F(Validate, DISABLED_InvalidIdRedefined) {
   char str[] = R"(
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1
+OpEntryPoint GLCompute 1 ""
 OpExecutionMode 1 LocalSize 1 1 1
 OpTypeVoid 2
 OpTypeFunction 2 2
@@ -105,10 +107,10 @@ OpLabel 4
 OpReturn
 OpFunctionEnd
 )";
-  spv_text_t text = {str, strlen(str)};
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(&text, opcodeTable, operandTable,
-                                         extInstTable, &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   // TODO: Fix setting of bound in spvTextTo, then remove this!
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
             spvValidate(binary, opcodeTable, operandTable, extInstTable,
@@ -117,3 +119,5 @@ OpFunctionEnd
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);
 }
+
+}  // anonymous namespace

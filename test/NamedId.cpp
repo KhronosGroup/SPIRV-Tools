@@ -25,12 +25,17 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "UnitSPIRV.h"
+#include "TestFixture.h"
+
+#include <vector>
+
+namespace {
 
 TEST(NamedId, Default) {
   const char *spirv = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
-          OpEntryPoint Vertex %main
+          OpEntryPoint Vertex %main "foo"
   %void = OpTypeVoid
 %fnMain = OpTypeFunction %void
   %main = OpFunction %void None %fnMain
@@ -46,10 +51,11 @@ TEST(NamedId, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
   spv_ext_inst_table extInstTable;
   ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  spv_binary binary;
+  spv_binary binary = nullptr;
   spv_diagnostic diagnostic;
-  spv_result_t error = spvTextToBinary(&text, opcodeTable, operandTable,
-                                       extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
+                      extInstTable, &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -57,7 +63,8 @@ TEST(NamedId, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
   error = spvBinaryToText(
-      binary, SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
+      binary->code, binary->wordCount,
+      SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
       opcodeTable, operandTable, extInstTable, nullptr, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -67,3 +74,59 @@ TEST(NamedId, Default) {
   }
   spvBinaryDestroy(binary);
 }
+
+struct IdCheckCase {
+  std::string id;
+  bool valid;
+};
+
+using IdValidityTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<IdCheckCase>>;
+
+TEST_P(IdValidityTest, IdTypes) {
+  const std::string input = GetParam().id + " = OpTypeVoid";
+  SetText(input);
+  if (GetParam().valid) {
+    CompileSuccessfully(input);
+  } else {
+    CompileFailure(input);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ValidAndInvalidIds, IdValidityTest,
+    ::testing::ValuesIn(std::vector<IdCheckCase>({{"%1", true},
+                                                  {"%2abc", true},
+                                                  {"%3Def", true},
+                                                  {"%4GHI", true},
+                                                  {"%5_j_k", true},
+                                                  {"%6J_M", true},
+                                                  {"%n", true},
+                                                  {"%O", true},
+                                                  {"%p7", true},
+                                                  {"%Q8", true},
+                                                  {"%R_S", true},
+                                                  {"%T_10_U", true},
+                                                  {"%V_11", true},
+                                                  {"%W_X_13", true},
+                                                  {"%_A", true},
+                                                  {"%_", true},
+                                                  {"%__", true},
+                                                  {"%A_", true},
+                                                  {"%_A_", true},
+
+                                                  {"%@", false},
+                                                  {"%!", false},
+                                                  {"%ABC!", false},
+                                                  {"%__A__@", false},
+                                                  {"%%", false},
+                                                  {"%-", false},
+                                                  {"%foo_@_bar", false},
+                                                  {"%", false},
+
+                                                  {"5", false},
+                                                  {"32", false},
+                                                  {"foo", false},
+                                                  {"a%bar", false}})));
+
+}  // anonymous namespace

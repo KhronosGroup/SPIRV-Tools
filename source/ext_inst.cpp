@@ -2,67 +2,130 @@
 
 #include <string.h>
 
-#define GL450Inst(name) #name, GLSLstd450::GLSLstd450##name
+/// Generate a spv_ext_inst_desc_t literal for a GLSL std450 extended
+/// instruction with one/two/three <id> parameter(s).
+#define GLSL450Inst1(name) \
+  #name, GLSLstd450::GLSLstd450##name, { SPV_OPERAND_TYPE_ID }
+#define GLSL450Inst2(name)                   \
+  #name, GLSLstd450::GLSLstd450##name, {     \
+    SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
+  }
+#define GLSL450Inst3(name)                                        \
+  #name, GLSLstd450::GLSLstd450##name, {                          \
+    SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
+  }
 
 static const spv_ext_inst_desc_t glslStd450Entries[] = {
-    { GL450Inst(Round), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(RoundEven), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Trunc), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(FAbs), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(SAbs), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(FSign), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(SSign), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Floor), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Ceil), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Fract), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Radians), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Degrees), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Sin), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Cos), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Tan), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Asin), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Acos), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Atan), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Sinh), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Cosh), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Tanh), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Asinh), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Acosh), {SPV_OPERAND_TYPE_ID}, },
-    { GL450Inst(Atanh), {SPV_OPERAND_TYPE_ID}, },
-    // TODO: Add remaining GLSL.std.450 instructions
+    {GLSL450Inst1(Round)},
+    {GLSL450Inst1(RoundEven)},
+    {GLSL450Inst1(Trunc)},
+    {GLSL450Inst1(FAbs)},
+    {GLSL450Inst1(SAbs)},
+    {GLSL450Inst1(FSign)},
+    {GLSL450Inst1(SSign)},
+    {GLSL450Inst1(Floor)},
+    {GLSL450Inst1(Ceil)},
+    {GLSL450Inst1(Fract)},
+    {GLSL450Inst1(Radians)},
+    {GLSL450Inst1(Degrees)},
+    {GLSL450Inst1(Sin)},
+    {GLSL450Inst1(Cos)},
+    {GLSL450Inst1(Tan)},
+    {GLSL450Inst1(Asin)},
+    {GLSL450Inst1(Acos)},
+    {GLSL450Inst1(Atan)},
+    {GLSL450Inst1(Sinh)},
+    {GLSL450Inst1(Cosh)},
+    {GLSL450Inst1(Tanh)},
+    {GLSL450Inst1(Asinh)},
+    {GLSL450Inst1(Acosh)},
+    {GLSL450Inst1(Atanh)},
+    {GLSL450Inst2(Atan2)},
+    {GLSL450Inst2(Pow)},
+    {GLSL450Inst1(Exp)},
+    {GLSL450Inst1(Log)},
+    {GLSL450Inst1(Exp2)},
+    {GLSL450Inst1(Log2)},
+    {GLSL450Inst1(Sqrt)},
+    {GLSL450Inst1(InverseSqrt)},
+    {GLSL450Inst1(Determinant)},
+    {GLSL450Inst1(MatrixInverse)},
+    {GLSL450Inst2(Modf)},
+    {GLSL450Inst1(ModfStruct)},
+    {GLSL450Inst2(FMin)},
+    {GLSL450Inst2(UMin)},
+    {GLSL450Inst2(SMin)},
+    {GLSL450Inst2(FMax)},
+    {GLSL450Inst2(UMax)},
+    {GLSL450Inst2(SMax)},
+    {GLSL450Inst3(FClamp)},
+    {GLSL450Inst3(UClamp)},
+    {GLSL450Inst3(SClamp)},
+    {GLSL450Inst3(FMix)},
+    {GLSL450Inst3(IMix)},
+    {GLSL450Inst2(Step)},
+    {GLSL450Inst3(SmoothStep)},
+    {GLSL450Inst3(Fma)},
+    {GLSL450Inst2(Frexp)},
+    {GLSL450Inst1(FrexpStruct)},
+    {GLSL450Inst2(Ldexp)},
+    {GLSL450Inst1(PackSnorm4x8)},
+    {GLSL450Inst1(PackUnorm4x8)},
+    {GLSL450Inst1(PackSnorm2x16)},
+    {GLSL450Inst1(PackUnorm2x16)},
+    {GLSL450Inst1(PackHalf2x16)},
+    {GLSL450Inst1(PackDouble2x32)},
+    {GLSL450Inst1(UnpackSnorm2x16)},
+    {GLSL450Inst1(UnpackUnorm2x16)},
+    {GLSL450Inst1(UnpackHalf2x16)},
+    {GLSL450Inst1(UnpackSnorm4x8)},
+    {GLSL450Inst1(UnpackUnorm4x8)},
+    {GLSL450Inst1(UnpackDouble2x32)},
+    {GLSL450Inst1(Length)},
+    {GLSL450Inst2(Distance)},
+    {GLSL450Inst2(Cross)},
+    {GLSL450Inst1(Normalize)},
+    {GLSL450Inst3(FaceForward)},
+    {GLSL450Inst2(Reflect)},
+    {GLSL450Inst3(Refract)},
+    {GLSL450Inst1(FindILsb)},
+    {GLSL450Inst1(FindSMsb)},
+    {GLSL450Inst1(FindUMsb)},
+    {GLSL450Inst1(InterpolateAtCentroid)},
+    {GLSL450Inst2(InterpolateAtSample)},
+    {GLSL450Inst2(InterpolateAtOffset)},
 };
 
-static const spv_ext_inst_desc_t openclStd12Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.12 instructions
-};
-
-static const spv_ext_inst_desc_t openclStd20Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.20 instructions
-};
-
-static const spv_ext_inst_desc_t openclStd21Entries[] = {
-    {"placeholder", 0, {}},
-    // TODO: Add remaining OpenCL.std.21 instructions
+static const spv_ext_inst_desc_t openclEntries[] = {
+#define ExtInst(Name, Opcode, OperandList) {#Name, Opcode, OperandList},
+#define EmptyList \
+  {}
+#define List(...) \
+  { __VA_ARGS__ }
+#define OperandId SPV_OPERAND_TYPE_ID
+#define OperandLiteralNumber SPV_OPERAND_TYPE_LITERAL_INTEGER
+#define OperandFPRoundingMode SPV_OPERAND_TYPE_FP_ROUNDING_MODE
+#define OperandVariableIds SPV_OPERAND_TYPE_VARIABLE_ID
+#include "opencl_std_ext_inst.inc"
+#undef ExtList
+#undef EmptyList
+#undef List
+#undef OperandId
+#undef OperandLiteralNumber
+#undef OperandFPRoundingMode
+#undef OperandVariableIds
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
-  spvCheck(!pExtInstTable, return SPV_ERROR_INVALID_POINTER);
+  if (!pExtInstTable) return SPV_ERROR_INVALID_POINTER;
 
   static const spv_ext_inst_group_t groups[] = {
       {SPV_EXT_INST_TYPE_GLSL_STD_450,
        sizeof(glslStd450Entries) / sizeof(spv_ext_inst_desc_t),
        glslStd450Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_12,
-       sizeof(openclStd12Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd12Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_20,
-       sizeof(openclStd20Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd20Entries},
-      {SPV_EXT_INST_TYPE_OPENCL_STD_21,
-       sizeof(openclStd21Entries) / sizeof(spv_ext_inst_desc_t),
-       openclStd21Entries},
+      {SPV_EXT_INST_TYPE_OPENCL_STD,
+       sizeof(openclEntries) / sizeof(spv_ext_inst_desc_t),
+       openclEntries},
   };
 
   static const spv_ext_inst_table_t table = {
@@ -74,17 +137,13 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pExtInstTable) {
 }
 
 spv_ext_inst_type_t spvExtInstImportTypeGet(const char *name) {
+  // The names are specified by the respective extension instruction
+  // specifications.
   if (!strcmp("GLSL.std.450", name)) {
     return SPV_EXT_INST_TYPE_GLSL_STD_450;
   }
-  if (!strcmp("OpenCL.std.12", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_12;
-  }
-  if (!strcmp("OpenCL.std.20", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_20;
-  }
-  if (!strcmp("OpenCL.std.21", name)) {
-    return SPV_EXT_INST_TYPE_OPENCL_STD_21;
+  if (!strcmp("OpenCL.std", name)) {
+    return SPV_EXT_INST_TYPE_OPENCL_STD;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }
@@ -93,8 +152,8 @@ spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
                                        const char *name,
                                        spv_ext_inst_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
     auto &group = table->groups[groupIndex];
@@ -116,8 +175,8 @@ spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const spv_ext_inst_type_t type,
                                         const uint32_t value,
                                         spv_ext_inst_desc *pEntry) {
-  spvCheck(!table, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pEntry, return SPV_ERROR_INVALID_POINTER);
+  if (!table) return SPV_ERROR_INVALID_TABLE;
+  if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
     auto &group = table->groups[groupIndex];

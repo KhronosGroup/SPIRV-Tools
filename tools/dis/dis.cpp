@@ -27,15 +27,19 @@
 #include <libspirv/libspirv.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <vector>
 
 void print_usage(char *argv0) {
   printf(
       "Dissassemble a *.sv file into a *.svasm text file.\n\n"
       "USAGE: %s [options] <filename>\n\n"
-      "        -o <filename>   Set the output filename\n"
-      "        -p              Print dissassembly to stdout, this\n"
-      "                        overrides file output\n",
+      "  --assembly-format=[assignment|canonical]\n"
+      "                  set decoded assembly syntax format\n"
+      "                  (default: assignment)\n"
+      "  -o <filename>   set the output filename\n"
+      "  -p              print dissassembly to stdout, this\n"
+      "                  overrides file output\n",
       argv0);
 }
 
@@ -49,26 +53,42 @@ int main(int argc, char **argv) {
   const char *inFile = nullptr;
   const char *outFile = nullptr;
 
+  const char *assembly_format_prefix = "--assembly-format=";
+  spv_assembly_syntax_format_t format = SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT;
+
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
-      switch (argv[argi][1]) {
-        case 'o': {
-          if (!outFile && argi + 1 < argc) {
-            outFile = argv[++argi];
-          } else {
-            print_usage(argv[0]);
-            return 1;
-          }
-        } break;
-        case 'p': {
-          options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
-#ifdef SPV_COLOR_TERMINAL
-          options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
-#endif
-        } break;
-        default:
+      if (!strncmp(assembly_format_prefix, argv[argi],
+                   strlen(assembly_format_prefix))) {
+        const char *parameter = argv[argi] + strlen(assembly_format_prefix);
+        if (!strcmp("canonical", parameter)) {
+          format = SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL;
+        } else if (!strcmp("assignment", parameter)) {
+          format = SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT;
+        } else {
           print_usage(argv[0]);
           return 1;
+        }
+      } else {
+        switch (argv[argi][1]) {
+          case 'o': {
+            if (!outFile && argi + 1 < argc) {
+              outFile = argv[++argi];
+            } else {
+              print_usage(argv[0]);
+              return 1;
+            }
+          } break;
+          case 'p': {
+            options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
+#ifdef SPV_COLOR_TERMINAL
+            options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
+#endif
+          } break;
+          default:
+            print_usage(argv[0]);
+            return 1;
+        }
       }
     } else {
       if (!inFile) {
@@ -84,7 +104,10 @@ int main(int argc, char **argv) {
     outFile = "out.spvasm";
   }
 
-  spvCheck(!inFile, fprintf(stderr, "error: input file is empty.\n"); return 1);
+  if (!inFile) {
+    fprintf(stderr, "error: input file is empty.\n");
+    return 1;
+  }
 
   std::vector<uint32_t> contents;
   if (FILE *fp = fopen(inFile, "rb")) {
@@ -98,35 +121,50 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  spv_binary_t binary = {contents.data(), contents.size()};
-
   spv_opcode_table opcodeTable;
   spv_result_t error = spvOpcodeTableGet(&opcodeTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_operand_table operandTable;
   error = spvOperandTableGet(&operandTable);
-  spvCheck(error, fprintf(stderr, "error: internal malfunction\n");
-           return error);
+  if (error) {
+    fprintf(stderr, "error: internal malfunction\n");
+    return error;
+  }
 
   spv_ext_inst_table extInstTable;
   error = spvExtInstTableGet(&extInstTable);
-  spvCheck(error, fprintf(stderr, "error: Internal malfunction.\n"));
+  if (error) fprintf(stderr, "error: Internal malfunction.\n");
 
-  bool option_print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
+  // If the printing option is turned on, then spvBinaryToText should
+  // do the printing.  In particular, colour printing on Windows is
+  // controlled by modifying console objects synchronously while
+  // outputting to the stream rather than by injecting escape codes
+  // into the output stream.
+  // If the printing option is off, then save the text in memory, so
+  // it can be emitted later in this function.
+  const bool printOptionOn =
+      spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   spv_text text;
+  spv_text *textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  error = spvBinaryToText(&binary, options, opcodeTable, operandTable,
-                          extInstTable,
-                          option_print ? NULL : &text,
-                          &diagnostic);
-  spvCheck(error, spvDiagnosticPrint(diagnostic);
-           spvDiagnosticDestroy(diagnostic); return error);
+  error = spvBinaryToTextWithFormat(contents.data(), contents.size(), options,
+                                    opcodeTable, operandTable, extInstTable,
+                                    format, textOrNull, &diagnostic);
+  if (error) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+    return error;
+  }
 
-  if (!option_print) {
+  // Output the result.
+  if (!printOptionOn) {
     if (FILE *fp = fopen(outFile, "w")) {
-      size_t written = fwrite(text->str, sizeof(char), (size_t)text->length, fp);
+      size_t written =
+          fwrite(text->str, sizeof(char), (size_t)text->length, fp);
       if (text->length != written) {
         spvTextDestroy(text);
         fprintf(stderr, "error: could not write to file '%s'\n", outFile);

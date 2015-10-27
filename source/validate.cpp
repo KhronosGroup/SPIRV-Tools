@@ -27,6 +27,7 @@
 #include <libspirv/libspirv.h>
 #include "binary.h"
 #include "diagnostic.h"
+#include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
 #include "validate.h"
@@ -37,16 +38,20 @@
 
 #include <vector>
 
+#define spvCheckReturn(expression) \
+  if (spv_result_t error = (expression)) return error;
+
 spv_result_t spvValidateOperandsString(const uint32_t *words,
                                        const uint16_t wordCount,
                                        spv_position position,
                                        spv_diagnostic *pDiagnostic) {
   const char *str = (const char *)words;
   uint64_t strWordCount = strlen(str) / sizeof(uint32_t) + 1;
-  spvCheck(strWordCount < wordCount, DIAGNOSTIC << "Instruction word count is "
-                                                   "too short, string extends "
-                                                   "past end of instruction.";
-           return SPV_WARNING);
+  if (strWordCount < wordCount) {
+    DIAGNOSTIC << "Instruction word count is too short, string extends past "
+                  "end of instruction.";
+    return SPV_WARNING;
+  }
   return SPV_SUCCESS;
 }
 
@@ -76,7 +81,7 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
       // NOTE: ID's are validated in SPV_VALIDATION_LEVEL_1, this is
       // SPV_VALIDATION_LEVEL_0
     } break;
-    case SPV_OPERAND_TYPE_LITERAL_NUMBER: {
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
       // NOTE: Implicitly valid as they are encoded as 32 bit value
     } break;
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
@@ -99,17 +104,19 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
-    case SPV_OPERAND_TYPE_KERENL_PROFILING_INFO: {
+    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       spv_operand_desc operandEntry = nullptr;
       spv_result_t error =
           spvOperandTableValueLookup(operandTable, type, word, &operandEntry);
-      spvCheck(error, DIAGNOSTIC << "Invalid '" << spvOperandTypeStr(type)
-                                 << "' operand '" << word << "'.";
-               return error);
+      if (error) {
+        DIAGNOSTIC << "Invalid '" << spvOperandTypeStr(type) << "' operand '"
+                   << word << "'.";
+        return error;
+      }
     } break;
     default:
       assert(0 && "Invalid operand types should already have been caught!");
@@ -124,27 +131,36 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
                               spv_position position,
                               spv_diagnostic *pDiagnostic) {
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words;
+    const uint32_t *words = pInsts[instIndex].words.data();
     uint16_t wordCount;
     Op opcode;
     spvOpcodeSplit(words[0], &wordCount, &opcode);
 
     spv_opcode_desc opcodeEntry = nullptr;
-    spvCheck(spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry),
-             DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
-             return SPV_ERROR_INVALID_BINARY);
+    if (spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry)) {
+      DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
+      return SPV_ERROR_INVALID_BINARY;
+    }
     position->index++;
 
-    spvCheck(opcodeEntry->wordCount > wordCount,
-             DIAGNOSTIC << "Instruction word count '" << wordCount
-                        << "' is not small, expected at least '"
-                        << opcodeEntry->wordCount << "'.";
-             return SPV_ERROR_INVALID_BINARY);
+    if (opcodeEntry->numTypes > wordCount) {
+      DIAGNOSTIC << "Instruction word count '" << wordCount
+                 << "' is not small, expected at least '"
+                 << opcodeEntry->numTypes << "'.";
+      return SPV_ERROR_INVALID_BINARY;
+    }
 
     spv_operand_desc operandEntry = nullptr;
-    for (uint16_t index = 1; index < pInsts[instIndex].wordCount;
+    for (uint16_t index = 1; index < pInsts[instIndex].words.size();
          ++index, position->index++) {
       const uint32_t word = words[index];
+
+      // TODO(dneto): This strategy is inadequate for dealing with operations
+      // with varying kinds or numbers of logical operands.  See the definition
+      // of spvBinaryOperandInfo for more.
+      // We should really parse the instruction and capture and use
+      // the elaborated list of logical operands generated as a side effect
+      // of the parse.
       spv_operand_type_t type = spvBinaryOperandInfo(
           word, index, opcodeEntry, operandTable, &operandEntry);
       if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {
@@ -152,7 +168,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
             words + index, wordCount - index, position, pDiagnostic));
         // NOTE: String literals are always at the end of Opcodes
         break;
-      } else if (SPV_OPERAND_TYPE_LITERAL == type) {
+      } else if (SPV_OPERAND_TYPE_LITERAL_INTEGER == type) {
         spvCheckReturn(spvValidateOperandsLiteral(
             words + index, wordCount - index, 2, position, pDiagnostic));
       } else {
@@ -176,18 +192,19 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
   std::vector<spv_id_info_t> idDefs;
 
   for (uint64_t instIndex = 0; instIndex < count; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words;
+    const uint32_t *words = pInsts[instIndex].words.data();
     Op opcode;
     spvOpcodeSplit(words[0], nullptr, &opcode);
 
     spv_opcode_desc opcodeEntry = nullptr;
-    spvCheck(spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry),
-             DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
-             return SPV_ERROR_INVALID_BINARY);
+    if (spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry)) {
+      DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
+      return SPV_ERROR_INVALID_BINARY;
+    }
 
     spv_operand_desc operandEntry = nullptr;
     position->index++;  // NOTE: Account for Opcode word
-    for (uint16_t index = 1; index < pInsts[instIndex].wordCount;
+    for (uint16_t index = 1; index < pInsts[instIndex].words.size();
          ++index, position->index++) {
       const uint32_t word = words[index];
 
@@ -195,12 +212,15 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
           word, index, opcodeEntry, operandTable, &operandEntry);
 
       if (SPV_OPERAND_TYPE_RESULT_ID == type || SPV_OPERAND_TYPE_ID == type) {
-        spvCheck(0 == word, DIAGNOSTIC << "Invalid ID of '0' is not allowed.";
-                 return SPV_ERROR_INVALID_ID);
-        spvCheck(bound < word, DIAGNOSTIC << "Invalid ID '" << word
-                                          << "' exceeds the bound '" << bound
-                                          << "'.";
-                 return SPV_ERROR_INVALID_ID);
+        if (0 == word) {
+          DIAGNOSTIC << "Invalid ID of '0' is not allowed.";
+          return SPV_ERROR_INVALID_ID;
+        }
+        if (bound < word) {
+          DIAGNOSTIC << "Invalid ID '" << word << "' exceeds the bound '"
+                     << bound << "'.";
+          return SPV_ERROR_INVALID_ID;
+        }
       }
 
       if (SPV_OPERAND_TYPE_RESULT_ID == type) {
@@ -229,11 +249,11 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
 
   // NOTE: Validate ID usage, including use of undefined ID's
   position->index = SPV_INDEX_INSTRUCTION;
-  spvCheck(spvValidateInstructionIDs(pInsts, count, idUses.data(),
-                                     idUses.size(), idDefs.data(),
-                                     idDefs.size(), opcodeTable, operandTable,
-                                     extInstTable, position, pDiagnostic),
-           return SPV_ERROR_INVALID_ID);
+  if (spvValidateInstructionIDs(pInsts, count, idUses.data(), idUses.size(),
+                                idDefs.data(), idDefs.size(), opcodeTable,
+                                operandTable, extInstTable, position,
+                                pDiagnostic))
+    return SPV_ERROR_INVALID_ID;
 
   return SPV_SUCCESS;
 }
@@ -243,19 +263,21 @@ spv_result_t spvValidate(const spv_binary binary,
                          const spv_operand_table operandTable,
                          const spv_ext_inst_table extInstTable,
                          const uint32_t options, spv_diagnostic *pDiagnostic) {
-  spvCheck(!opcodeTable || !operandTable, return SPV_ERROR_INVALID_TABLE);
-  spvCheck(!pDiagnostic, return SPV_ERROR_INVALID_DIAGNOSTIC);
+  if (!opcodeTable || !operandTable) return SPV_ERROR_INVALID_TABLE;
+  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
   spv_endianness_t endian;
   spv_position_t position = {};
-  spvCheck(spvBinaryEndianness(binary, &endian),
-           DIAGNOSTIC << "Invalid SPIR-V magic number.";
-           return SPV_ERROR_INVALID_BINARY);
+  if (spvBinaryEndianness(binary, &endian)) {
+    DIAGNOSTIC << "Invalid SPIR-V magic number.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   spv_header_t header;
-  spvCheck(spvBinaryHeaderGet(binary, endian, &header),
-           DIAGNOSTIC << "Invalid SPIR-V header.";
-           return SPV_ERROR_INVALID_BINARY);
+  if (spvBinaryHeaderGet(binary, endian, &header)) {
+    DIAGNOSTIC << "Invalid SPIR-V header.";
+    return SPV_ERROR_INVALID_BINARY;
+  }
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
