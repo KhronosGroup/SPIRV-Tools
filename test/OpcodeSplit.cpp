@@ -29,9 +29,9 @@
 namespace {
 
 TEST(OpcodeSplit, Default) {
-  uint32_t word = spvOpcodeMake(42, (Op)23);
+  uint32_t word = spvOpcodeMake(42, (SpvOp)23);
   uint16_t wordCount = 0;
-  Op opcode;
+  SpvOp opcode;
   spvOpcodeSplit(word, &wordCount, &opcode);
   ASSERT_EQ(42, wordCount);
   ASSERT_EQ(23, opcode);

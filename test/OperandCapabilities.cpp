@@ -50,17 +50,17 @@ TEST_P(EnumCapabilityTest, Sample) {
 }
 
 #define CASE0(TYPE, VALUE) \
-  { SPV_OPERAND_TYPE_##TYPE, uint32_t(spv::VALUE), 0 }
-#define CASE1(TYPE, VALUE, CAP)                      \
-  {                                                  \
-    SPV_OPERAND_TYPE_##TYPE, uint32_t(spv::VALUE),   \
-        SPV_CAPABILITY_AS_MASK(spv::Capability##CAP) \
+  { SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), 0 }
+#define CASE1(TYPE, VALUE, CAP)                    \
+  {                                                \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), \
+        SPV_CAPABILITY_AS_MASK(SpvCapability##CAP) \
   }
-#define CASE2(TYPE, VALUE, CAP1, CAP2)                   \
-  {                                                      \
-    SPV_OPERAND_TYPE_##TYPE, uint32_t(spv::VALUE),       \
-        (SPV_CAPABILITY_AS_MASK(spv::Capability##CAP1) | \
-         SPV_CAPABILITY_AS_MASK(spv::Capability##CAP2))  \
+#define CASE2(TYPE, VALUE, CAP1, CAP2)                 \
+  {                                                    \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE),     \
+        (SPV_CAPABILITY_AS_MASK(SpvCapability##CAP1) | \
+         SPV_CAPABILITY_AS_MASK(SpvCapability##CAP2))  \
   }
 
 // See SPIR-V Section 3.3 Execution Model

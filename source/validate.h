@@ -34,7 +34,7 @@
 
 typedef struct spv_id_info_t {
   uint32_t id;
-  Op opcode;
+  SpvOp opcode;
   const spv_instruction_t *inst;
   spv_position_t position;
 } spv_id_info_t;

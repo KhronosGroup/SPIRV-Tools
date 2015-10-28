@@ -28,11 +28,11 @@
 
 namespace {
 
-class Requires : public ::testing::TestWithParam<Capability> {
+class Requires : public ::testing::TestWithParam<SpvCapability> {
  public:
   Requires()
       : entry({nullptr,
-               (Op)0,
+               (SpvOp)0,
                SPV_CAPABILITY_AS_MASK(GetParam()),
                0,
                {},
@@ -51,41 +51,43 @@ TEST_P(Requires, Capabilityabilities) {
   ASSERT_NE(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
-INSTANTIATE_TEST_CASE_P(Op, Requires,
-                        ::testing::Values(CapabilityMatrix, CapabilityShader,
-                                          CapabilityGeometry,
-                                          CapabilityTessellation,
-                                          CapabilityAddresses,
-                                          CapabilityLinkage, CapabilityKernel,
-                                          // ClipDistance has enum value 32.
-                                          // So it tests that we are sensitive
-                                          // to more than just the least
-                                          // significant 32 bits of the
-                                          // capability mask.
-                                          CapabilityClipDistance,
-                                          // Transformfeedback has value 53,
-                                          // and is the last capability.
-                                          CapabilityTransformFeedback));
+INSTANTIATE_TEST_CASE_P(
+    Op, Requires,
+    ::testing::Values(SpvCapabilityMatrix, SpvCapabilityShader,
+                      SpvCapabilityGeometry, SpvCapabilityTessellation,
+                      SpvCapabilityAddresses, SpvCapabilityLinkage,
+                      SpvCapabilityKernel,
+                      // ClipDistance has enum value 32.
+                      // So it tests that we are sensitive
+                      // to more than just the least
+                      // significant 32 bits of the
+                      // capability mask.
+                      SpvCapabilityClipDistance,
+                      // Transformfeedback has value 53,
+                      // and is the last capability.
+                      SpvCapabilityTransformFeedback));
 
 TEST(OpcodeRequiresCapability, None) {
-  spv_opcode_desc_t entry = {
-      nullptr, (Op)0, 0, 0, {}, false, false, {}};
+  spv_opcode_desc_t entry = {nullptr, (SpvOp)0, 0, 0, {}, false, false, {}};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
 /// Test SPV_CAPBILITY_AS_MASK
 
 TEST(CapabilityAsMaskMacro, Sample) {
-  EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(spv::CapabilityMatrix));
-  EXPECT_EQ(uint64_t(0x10000), SPV_CAPABILITY_AS_MASK(spv::CapabilityImageSRGBWrite));
-  EXPECT_EQ(uint64_t(0x100000000ULL), SPV_CAPABILITY_AS_MASK(spv::CapabilityClipDistance));
-  EXPECT_EQ(uint64_t(1) << 53, SPV_CAPABILITY_AS_MASK(spv::CapabilityTransformFeedback));
+  EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(SpvCapabilityMatrix));
+  EXPECT_EQ(uint64_t(0x10000),
+            SPV_CAPABILITY_AS_MASK(SpvCapabilityImageSRGBWrite));
+  EXPECT_EQ(uint64_t(0x100000000ULL),
+            SPV_CAPABILITY_AS_MASK(SpvCapabilityClipDistance));
+  EXPECT_EQ(uint64_t(1) << 53,
+            SPV_CAPABILITY_AS_MASK(SpvCapabilityTransformFeedback));
 };
 
 /// Capabilities required by an Opcode.
 struct ExpectedOpCodeCapabilities {
-  spv::Op opcode;
-  uint64_t capabilities;  //< Bitfield of spv::Capability.
+  SpvOp opcode;
+  uint64_t capabilities;  //< Bitfield of SpvCapability.
 };
 
 using OpcodeTableCapabilitiesTest =
@@ -100,11 +102,11 @@ TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
   EXPECT_EQ(GetParam().capabilities, entry->capabilities);
 }
 
-/// Translates a spv::Capability into a bitfield.
-inline uint64_t mask(spv::Capability c) { return SPV_CAPABILITY_AS_MASK(c); }
+/// Translates a SpvCapability into a bitfield.
+inline uint64_t mask(SpvCapability c) { return SPV_CAPABILITY_AS_MASK(c); }
 
-/// Combines two spv::Capabilities into a bitfield.
-inline uint64_t mask(spv::Capability c1, spv::Capability c2) {
+/// Combines two SpvCapabilities into a bitfield.
+inline uint64_t mask(SpvCapability c1, SpvCapability c2) {
   return SPV_CAPABILITY_AS_MASK(c1) | SPV_CAPABILITY_AS_MASK(c2);
 }
 
@@ -113,24 +115,23 @@ INSTANTIATE_TEST_CASE_P(
     // Spot-check a few opcodes.
     ::testing::Values(
         ExpectedOpCodeCapabilities{
-            spv::OpImageQuerySize,
-            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+            SpvOpImageQuerySize,
+            mask(SpvCapabilityKernel, SpvCapabilityImageQuery)},
         ExpectedOpCodeCapabilities{
-            spv::OpImageQuerySizeLod,
-            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+            SpvOpImageQuerySizeLod,
+            mask(SpvCapabilityKernel, SpvCapabilityImageQuery)},
         ExpectedOpCodeCapabilities{
-            spv::OpImageQueryLevels,
-            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
+            SpvOpImageQueryLevels,
+            mask(SpvCapabilityKernel, SpvCapabilityImageQuery)},
         ExpectedOpCodeCapabilities{
-            spv::OpImageQuerySamples,
-            mask(spv::CapabilityKernel, spv::CapabilityImageQuery)},
-        ExpectedOpCodeCapabilities{spv::OpImageSparseSampleImplicitLod,
-                                   mask(spv::CapabilitySparseResidency)},
-        ExpectedOpCodeCapabilities{spv::OpCopyMemorySized,
-                                   mask(spv::CapabilityAddresses)},
-        ExpectedOpCodeCapabilities{spv::OpArrayLength,
-                                   mask(spv::CapabilityShader)},
-        ExpectedOpCodeCapabilities{spv::OpFunction, 0},
-        ExpectedOpCodeCapabilities{spv::OpConvertFToS, 0}));
+            SpvOpImageQuerySamples,
+            mask(SpvCapabilityKernel, SpvCapabilityImageQuery)},
+        ExpectedOpCodeCapabilities{SpvOpImageSparseSampleImplicitLod,
+                                   mask(SpvCapabilitySparseResidency)},
+        ExpectedOpCodeCapabilities{SpvOpCopyMemorySized,
+                                   mask(SpvCapabilityAddresses)},
+        ExpectedOpCodeCapabilities{SpvOpArrayLength, mask(SpvCapabilityShader)},
+        ExpectedOpCodeCapabilities{SpvOpFunction, 0},
+        ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0}));
 
 }  // anonymous namespace

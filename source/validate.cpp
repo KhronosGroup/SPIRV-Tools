@@ -134,7 +134,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     const uint32_t *words = pInsts[instIndex].words.data();
     uint16_t wordCount;
-    Op opcode;
+    SpvOp opcode;
     spvOpcodeSplit(words[0], &wordCount, &opcode);
 
     spv_opcode_desc opcodeEntry = nullptr;
@@ -194,7 +194,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
 
   for (uint64_t instIndex = 0; instIndex < count; ++instIndex) {
     const uint32_t *words = pInsts[instIndex].words.data();
-    Op opcode;
+    SpvOp opcode;
     spvOpcodeSplit(words[0], nullptr, &opcode);
 
     spv_opcode_desc opcodeEntry = nullptr;
@@ -285,7 +285,7 @@ spv_result_t spvValidate(const spv_binary binary,
   uint64_t index = SPV_INDEX_INSTRUCTION;
   while (index < binary->wordCount) {
     uint16_t wordCount;
-    Op opcode;
+    SpvOp opcode;
     spvOpcodeSplit(spvFixWord(binary->code[index], endian), &wordCount,
                    &opcode);
     spv_instruction_t inst;

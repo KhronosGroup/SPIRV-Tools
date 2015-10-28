@@ -41,20 +41,20 @@ using ::testing::Eq;
 // Test GroupOperation enum
 
 using GroupOperationTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::GroupOperation>>>;
+    ::testing::TestWithParam<EnumCase<SpvGroupOperation>>>;
 
 TEST_P(GroupOperationTest, AnyGroupOperation) {
   const std::string input =
       "%result = OpGroupIAdd %type %scope " + GetParam().name() + " %x";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpGroupIAdd, {1, 2, 3, GetParam().value(), 4})));
+      Eq(MakeInstruction(SpvOpGroupIAdd, {1, 2, 3, GetParam().value(), 4})));
 }
 
 // clang-format off
-#define CASE(NAME) { spv::GroupOperation##NAME, #NAME}
+#define CASE(NAME) { SpvGroupOperation##NAME, #NAME}
 INSTANTIATE_TEST_CASE_P(TextToBinaryGroupOperation, GroupOperationTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<spv::GroupOperation>>{
+                        ::testing::ValuesIn(std::vector<EnumCase<SpvGroupOperation>>{
                             CASE(Reduce),
                             CASE(InclusiveScan),
                             CASE(ExclusiveScan),

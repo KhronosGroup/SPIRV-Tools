@@ -43,19 +43,19 @@ using ::testing::Eq;
 // Test OpSelectionMerge
 
 using OpSelectionMergeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::SelectionControlMask>>>;
+    ::testing::TestWithParam<EnumCase<SpvSelectionControlMask>>>;
 
 TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
   const std::string input = "OpSelectionMerge %1 " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSelectionMerge, {1, GetParam().value()})));
+      Eq(MakeInstruction(SpvOpSelectionMerge, {1, GetParam().value()})));
 }
 
 // clang-format off
-#define CASE(VALUE,NAME) { spv::SelectionControl##VALUE, NAME}
+#define CASE(VALUE,NAME) { SpvSelectionControl##VALUE, NAME}
 INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<spv::SelectionControlMask>>{
+                        ::testing::ValuesIn(std::vector<EnumCase<SpvSelectionControlMask>>{
                             CASE(MaskNone, "None"),
                             CASE(FlattenMask, "Flatten"),
                             CASE(DontFlattenMask, "DontFlatten"),
@@ -66,9 +66,9 @@ INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
 TEST_F(OpSelectionMergeTest, CombinedSelectionControlMask) {
   const std::string input = "OpSelectionMerge %1 Flatten|DontFlatten";
   const uint32_t expected_mask =
-      spv::SelectionControlFlattenMask | spv::SelectionControlDontFlattenMask;
+      SpvSelectionControlFlattenMask | SpvSelectionControlDontFlattenMask;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpSelectionMerge, {1, expected_mask})));
+              Eq(MakeInstruction(SpvOpSelectionMerge, {1, expected_mask})));
 }
 
 TEST_F(OpSelectionMergeTest, WrongSelectionControl) {
@@ -80,19 +80,19 @@ TEST_F(OpSelectionMergeTest, WrongSelectionControl) {
 // Test OpLoopMerge
 
 using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::LoopControlMask>>>;
+    ::testing::TestWithParam<EnumCase<SpvLoopControlMask>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
   const std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, GetParam().value()})));
+      Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, GetParam().value()})));
 }
 
 // clang-format off
-#define CASE(VALUE,NAME) { spv::LoopControl##VALUE, NAME}
+#define CASE(VALUE,NAME) { SpvLoopControl##VALUE, NAME}
 INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<spv::LoopControlMask>>{
+                        ::testing::ValuesIn(std::vector<EnumCase<SpvLoopControlMask>>{
                             CASE(MaskNone, "None"),
                             CASE(UnrollMask, "Unroll"),
                             CASE(DontUnrollMask, "DontUnroll"),
@@ -103,9 +103,9 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
 TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
   const std::string input = "OpLoopMerge %merge %continue Unroll|DontUnroll";
   const uint32_t expected_mask =
-      spv::LoopControlUnrollMask | spv::LoopControlDontUnrollMask;
+      SpvLoopControlUnrollMask | SpvLoopControlDontUnrollMask;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpLoopMerge, {1, 2, expected_mask})));
+              Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, expected_mask})));
 }
 
 TEST_F(OpLoopMergeTest, WrongLoopControl) {
@@ -117,16 +117,16 @@ TEST_F(OpLoopMergeTest, WrongLoopControl) {
 
 TEST_F(TextToBinaryTest, SwitchGoodZeroTargets) {
   EXPECT_THAT(CompiledInstructions("OpSwitch %selector %default"),
-              Eq(MakeInstruction(spv::OpSwitch, {1, 2})));
+              Eq(MakeInstruction(SpvOpSwitch, {1, 2})));
 }
 
 TEST_F(TextToBinaryTest, SwitchGoodOneTarget) {
   EXPECT_THAT(CompiledInstructions("%1 = OpTypeInt 32 0\n"
                                    "%2 = OpConstant %1 52\n"
                                    "OpSwitch %2 %default 12 %target0"),
-              Eq(Concatenate({MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
-                              MakeInstruction(spv::OpConstant, {1, 2, 52}),
-                              MakeInstruction(spv::OpSwitch, {2, 3, 12, 4})})));
+              Eq(Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 0}),
+                              MakeInstruction(SpvOpConstant, {1, 2, 52}),
+                              MakeInstruction(SpvOpSwitch, {2, 3, 12, 4})})));
 }
 
 TEST_F(TextToBinaryTest, SwitchGoodTwoTargets) {
@@ -135,9 +135,9 @@ TEST_F(TextToBinaryTest, SwitchGoodTwoTargets) {
                            "%2 = OpConstant %1 52\n"
                            "OpSwitch %2 %default 12 %target0 42 %target1"),
       Eq(Concatenate({
-          MakeInstruction(spv::OpTypeInt, {1, 32, 0}),
-          MakeInstruction(spv::OpConstant, {1, 2, 52}),
-          MakeInstruction(spv::OpSwitch, {2, 3, 12, 4, 42, 5}),
+          MakeInstruction(SpvOpTypeInt, {1, 32, 0}),
+          MakeInstruction(SpvOpConstant, {1, 2, 52}),
+          MakeInstruction(SpvOpSwitch, {2, 3, 12, 4, 42, 5}),
       })));
 }
 
@@ -233,11 +233,11 @@ SwitchTestCase MakeSwitchTestCase(uint32_t integer_width,
       constant_str,
       case_value_str,
       {Concatenate(
-          {MakeInstruction(spv::OpTypeInt,
+          {MakeInstruction(SpvOpTypeInt,
                            {1, integer_width, integer_signedness}),
-           MakeInstruction(spv::OpConstant,
+           MakeInstruction(SpvOpConstant,
                            Concatenate({{1, 2}, encoded_constant})),
-           MakeInstruction(spv::OpSwitch,
+           MakeInstruction(SpvOpSwitch,
                            Concatenate({{2, 3}, encoded_case_value, {4}}))})}};
 }
 

@@ -49,9 +49,9 @@ struct MemoryModelCase {
   uint32_t get_memory_value() const {
     return static_cast<uint32_t>(memory_value);
   }
-  spv::AddressingModel addressing_value;
+  SpvAddressingModel addressing_value;
   std::string addressing_name;
-  spv::MemoryModel memory_value;
+  SpvMemoryModel memory_value;
   std::string memory_name;
 };
 
@@ -63,13 +63,13 @@ TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
                             " " + GetParam().memory_name;
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpMemoryModel, {GetParam().get_addressing_value(),
+      Eq(MakeInstruction(SpvOpMemoryModel, {GetParam().get_addressing_value(),
                                               GetParam().get_memory_value()})));
 }
 
 #define CASE(ADDRESSING, MEMORY)                                             \
   {                                                                          \
-    spv::AddressingModel##ADDRESSING, #ADDRESSING, spv::MemoryModel##MEMORY, \
+    SpvAddressingModel##ADDRESSING, #ADDRESSING, SpvMemoryModel##MEMORY,     \
         #MEMORY                                                              \
   }
 // clang-format off
@@ -100,7 +100,7 @@ struct EntryPointCase {
   uint32_t get_execution_value() const {
     return static_cast<uint32_t>(execution_value);
   }
-  spv::ExecutionModel execution_value;
+  SpvExecutionModel execution_value;
   std::string execution_name;
   std::string entry_point_name;
 };
@@ -113,13 +113,13 @@ TEST_P(OpEntryPointTest, AnyEntryPointCase) {
   const std::string input = "OpEntryPoint " + GetParam().execution_name +
                             " %1 \"" + GetParam().entry_point_name + "\"";
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpEntryPoint,
+              Eq(MakeInstruction(SpvOpEntryPoint,
                                  {GetParam().get_execution_value(), 1},
                                  MakeVector(GetParam().entry_point_name))));
 }
 
 // clang-format off
-#define CASE(NAME) spv::ExecutionModel##NAME, #NAME
+#define CASE(NAME) SpvExecutionModel##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(TextToBinaryEntryPoint, OpEntryPointTest,
                         ::testing::ValuesIn(std::vector<EntryPointCase>{
                           { CASE(Vertex), "" },
@@ -141,7 +141,7 @@ TEST_F(OpEntryPointTest, WrongModel) {
 // Test OpExecutionMode
 
 using OpExecutionModeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::ExecutionMode>>>;
+    ::testing::TestWithParam<EnumCase<SpvExecutionMode>>>;
 
 TEST_P(OpExecutionModeTest, AnyExecutionMode) {
   // This string should assemble, but should not validate.
@@ -149,14 +149,14 @@ TEST_P(OpExecutionModeTest, AnyExecutionMode) {
   input << "OpExecutionMode %1 " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
   EXPECT_THAT(CompiledInstructions(input.str()),
-              Eq(MakeInstruction(spv::OpExecutionMode, {1, GetParam().value()},
+              Eq(MakeInstruction(SpvOpExecutionMode, {1, GetParam().value()},
                                  GetParam().operands())));
 }
 
-#define CASE(NAME) spv::ExecutionMode##NAME, #NAME
+#define CASE(NAME) SpvExecutionMode##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryExecutionMode, OpExecutionModeTest,
-    ::testing::ValuesIn(std::vector<EnumCase<spv::ExecutionMode>>{
+    ::testing::ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
         // The operand literal values are arbitrarily chosen,
         // but there are the right number of them.
         {CASE(Invocations), {101}},
@@ -202,18 +202,18 @@ TEST_F(OpExecutionModeTest, WrongMode) {
 // Test OpCapability
 
 using OpCapabilityTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::Capability>>>;
+    ::testing::TestWithParam<EnumCase<SpvCapability>>>;
 
 TEST_P(OpCapabilityTest, AnyCapability) {
   const std::string input = "OpCapability " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpCapability, {GetParam().value()})));
+              Eq(MakeInstruction(SpvOpCapability, {GetParam().value()})));
 }
 
 // clang-format off
-#define CASE(NAME) { spv::Capability##NAME, #NAME }
+#define CASE(NAME) { SpvCapability##NAME, #NAME }
 INSTANTIATE_TEST_CASE_P(TextToBinaryCapability, OpCapabilityTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<spv::Capability>>{
+                        ::testing::ValuesIn(std::vector<EnumCase<SpvCapability>>{
                             CASE(Matrix),
                             CASE(Shader),
                             CASE(Geometry),

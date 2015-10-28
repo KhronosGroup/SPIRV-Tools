@@ -48,14 +48,14 @@ const char *spvGeneratorStr(uint32_t generator);
 /// @param[in] opcode enumerant value
 ///
 /// @return Opcode word
-uint32_t spvOpcodeMake(uint16_t wordCount, Op opcode);
+uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode);
 
 /// @brief Split the binary opcode into its constituent parts
 ///
 /// @param[in] word binary opcode to split
 /// @param[out] wordCount the returned number of words (optional)
 /// @param[out] opcode the returned opcode enumerant (optional)
-void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, Op *opcode);
+void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, SpvOp *opcode);
 
 /// @brief Find the named Opcode in the table
 ///
@@ -76,7 +76,7 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 ///
 /// @return result code
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
-                                       const Op opcode,
+                                       const SpvOp opcode,
                                        spv_opcode_desc *pEntry);
 
 /// @brief Get the argument index for the <result-id> operand, if any.
@@ -107,7 +107,7 @@ int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry);
 /// @param[in] wordCount the number of words to copy
 /// @param[in] endian the endianness of the stream
 /// @param[out] pInst the returned instruction
-void spvInstructionCopy(const uint32_t *words, const Op opcode,
+void spvInstructionCopy(const uint32_t *words, const SpvOp opcode,
                         const uint16_t wordCount, const spv_endianness_t endian,
                         spv_instruction_t *pInst);
 
@@ -116,35 +116,35 @@ void spvInstructionCopy(const uint32_t *words, const Op opcode,
 /// @param[in] opcode the opcode
 ///
 /// @return the opcode string
-const char *spvOpcodeString(const Op opcode);
+const char *spvOpcodeString(const SpvOp opcode);
 
 /// @brief Determine if the Opcode is a type
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsType(const Op opcode);
+int32_t spvOpcodeIsType(const SpvOp opcode);
 
 /// @brief Determine if the OpCode is a scalar type
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsScalarType(const Op opcode);
+int32_t spvOpcodeIsScalarType(const SpvOp opcode);
 
 /// @brief Determine if the Opcode is a constant
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsConstant(const Op opcode);
+int32_t spvOpcodeIsConstant(const SpvOp opcode);
 
 /// @brief Determine if the Opcode is a composite type
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsComposite(const Op opcode);
+int32_t spvOpcodeIsComposite(const SpvOp opcode);
 
 /// @brief Deep comparison of type declaration instructions
 ///
@@ -160,21 +160,21 @@ int32_t spvOpcodeAreTypesEqual(const spv_instruction_t *pTypeInst0,
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsPointer(const Op opcode);
+int32_t spvOpcodeIsPointer(const SpvOp opcode);
 
 /// @brief Determine if the Opcode results in a instantation of a non-void type
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsObject(const Op opcode);
+int32_t spvOpcodeIsObject(const SpvOp opcode);
 
 /// @brief Determine if the scalar type Opcode is nullable
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsBasicTypeNullable(Op opcode);
+int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
 
 /// @brief Determine if instruction is in a basic block
 ///
@@ -190,13 +190,13 @@ int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsValue(Op opcode);
+int32_t spvOpcodeIsValue(SpvOp opcode);
 
 /// @brief Determine if the Opcode generates a type
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeGeneratesType(Op op);
+int32_t spvOpcodeGeneratesType(SpvOp op);
 
 #endif  // LIBSPIRV_OPCODE_H_

@@ -45,7 +45,7 @@ using OpMemoryBarrier = spvtest::TextToBinaryTest;
 TEST_F(OpMemoryBarrier, Good) {
   const std::string input = "OpMemoryBarrier %1 %2\n";
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpMemoryBarrier, {1, 2})));
+              Eq(MakeInstruction(SpvOpMemoryBarrier, {1, 2})));
   EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
 

@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
 #define LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
 
-#include <headers/spirv.hpp>
+#include <headers/spirv.h>
 #include <headers/spirv_operands.hpp>
 #include <headers/GLSL.std.450.h>
 #include <headers/OpenCL.std.h>
@@ -296,7 +296,7 @@ typedef struct spv_header_t {
 
 typedef struct spv_opcode_desc_t {
   const char *name;
-  const Op opcode;
+  const SpvOp opcode;
   const spv_capability_mask_t
       capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.

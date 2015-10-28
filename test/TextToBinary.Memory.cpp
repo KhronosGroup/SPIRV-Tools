@@ -44,51 +44,51 @@ using ::testing::Eq;
 // Test assembly of Memory Access masks
 
 using MemoryAccessTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::MemoryAccessMask>>>;
+    ::testing::TestWithParam<EnumCase<SpvMemoryAccessMask>>>;
 
 TEST_P(MemoryAccessTest, AnySingleMemoryAccessMask) {
   std::stringstream input;
   input << "OpStore %ptr %value " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
   EXPECT_THAT(CompiledInstructions(input.str()),
-              Eq(MakeInstruction(spv::OpStore, {1, 2, GetParam().value()},
+              Eq(MakeInstruction(SpvOpStore, {1, 2, GetParam().value()},
                                  GetParam().operands())));
 }
 
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryMemoryAccessTest, MemoryAccessTest,
-    ::testing::ValuesIn(std::vector<EnumCase<spv::MemoryAccessMask>>{
-        {spv::MemoryAccessMaskNone, "None", {}},
-        {spv::MemoryAccessVolatileMask, "Volatile", {}},
-        {spv::MemoryAccessAlignedMask, "Aligned", {16}},
-        {spv::MemoryAccessNontemporalMask, "Nontemporal", {}},
+    ::testing::ValuesIn(std::vector<EnumCase<SpvMemoryAccessMask>>{
+        {SpvMemoryAccessMaskNone, "None", {}},
+        {SpvMemoryAccessVolatileMask, "Volatile", {}},
+        {SpvMemoryAccessAlignedMask, "Aligned", {16}},
+        {SpvMemoryAccessNontemporalMask, "Nontemporal", {}},
     }));
 
 TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
   const std::string input = "OpStore %ptr %value Volatile|Aligned 16";
   const uint32_t expected_mask =
-      spv::MemoryAccessVolatileMask | spv::MemoryAccessAlignedMask;
+      SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask;
   EXPECT_THAT(expected_mask, Eq(3));
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpStore, {1, 2, expected_mask, 16})));
+              Eq(MakeInstruction(SpvOpStore, {1, 2, expected_mask, 16})));
 }
 
 // Test Storage Class enum values
 
 using StorageClassTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<spv::StorageClass>>>;
+    ::testing::TestWithParam<EnumCase<SpvStorageClass>>>;
 
 TEST_P(StorageClassTest, AnyStorageClass) {
   const std::string input = "%1 = OpVariable %2 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpVariable, {1, 2, GetParam().value()})));
+              Eq(MakeInstruction(SpvOpVariable, {1, 2, GetParam().value()})));
 }
 
 // clang-format off
-#define CASE(NAME) { spv::StorageClass##NAME, #NAME, {} }
+#define CASE(NAME) { SpvStorageClass##NAME, #NAME, {} }
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryStorageClassTest, StorageClassTest,
-    ::testing::ValuesIn(std::vector<EnumCase<spv::StorageClass>>{
+    ::testing::ValuesIn(std::vector<EnumCase<SpvStorageClass>>{
         CASE(UniformConstant),
         CASE(Input),
         CASE(Uniform),

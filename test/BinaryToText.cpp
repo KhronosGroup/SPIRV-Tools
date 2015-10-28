@@ -157,15 +157,15 @@ TEST_P(BinaryToTextFail, EncodeSuccessfullyDecodeFailed) {
 INSTANTIATE_TEST_CASE_P(InvalidIds, BinaryToTextFail,
                         ::testing::ValuesIn(std::vector<FailedDecodeCase>{
                             {"%1 = OpTypeVoid",
-                             spvtest::MakeInstruction(spv::OpTypeVoid, {1}),
+                             spvtest::MakeInstruction(SpvOpTypeVoid, {1}),
                              "Id 1 is defined more than once"},
                             {"%1 = OpTypeVoid\n"
                              "%2 = OpNot %1 %foo",
-                             spvtest::MakeInstruction(spv::OpNot, {1, 2, 3}),
+                             spvtest::MakeInstruction(SpvOpNot, {1, 2, 3}),
                              "Id 2 is defined more than once"},
                             {"%1 = OpTypeVoid\n"
                              "%2 = OpNot %1 %foo",
-                             spvtest::MakeInstruction(spv::OpNot, {1, 1, 3}),
+                             spvtest::MakeInstruction(SpvOpNot, {1, 1, 3}),
                              "Id 1 is defined more than once"},
                         }));
 

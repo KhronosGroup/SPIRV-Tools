@@ -197,17 +197,17 @@ TEST(TextToBinary, Default) {
 
   uint64_t instIndex = SPV_INDEX_INSTRUCTION;
 
-  ASSERT_EQ(spvOpcodeMake(3, OpSource), binary->code[instIndex++]);
-  ASSERT_EQ(SourceLanguageOpenCL, binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(3, SpvOpSource), binary->code[instIndex++]);
+  ASSERT_EQ(SpvSourceLanguageOpenCL, binary->code[instIndex++]);
   ASSERT_EQ(12, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(3, OpMemoryModel), binary->code[instIndex++]);
-  ASSERT_EQ(AddressingModelPhysical64, binary->code[instIndex++]);
-  ASSERT_EQ(MemoryModelOpenCL, binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(3, SpvOpMemoryModel), binary->code[instIndex++]);
+  ASSERT_EQ(SpvAddressingModelPhysical64, binary->code[instIndex++]);
+  ASSERT_EQ(SpvMemoryModelOpenCL, binary->code[instIndex++]);
 
   uint16_t sourceExtensionWordCount =
       (uint16_t)((strlen("PlaceholderExtensionName") / sizeof(uint32_t)) + 2);
-  ASSERT_EQ(spvOpcodeMake(sourceExtensionWordCount, OpSourceExtension),
+  ASSERT_EQ(spvOpcodeMake(sourceExtensionWordCount, SpvOpSourceExtension),
             binary->code[instIndex++]);
   // TODO: This only works on little endian systems!
   char_word_t cw = {{'P', 'l', 'a', 'c'}};
@@ -224,78 +224,78 @@ TEST(TextToBinary, Default) {
   ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
   ASSERT_EQ(0, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(4, OpEntryPoint), binary->code[instIndex++]);
-  ASSERT_EQ(ExecutionModelKernel, binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpEntryPoint), binary->code[instIndex++]);
+  ASSERT_EQ(SpvExecutionModelKernel, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
   cw = {{'f', 'o', 'o', 0}};
   ASSERT_EQ(spvFixWord(cw.u, endian), binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(6, OpExecutionMode), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(6, SpvOpExecutionMode), binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
-  ASSERT_EQ(ExecutionModeLocalSizeHint, binary->code[instIndex++]);
+  ASSERT_EQ(SpvExecutionModeLocalSizeHint, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
   ASSERT_EQ(1, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(2, OpTypeVoid), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(2, SpvOpTypeVoid), binary->code[instIndex++]);
   ASSERT_EQ(2, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(2, OpTypeBool), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(2, SpvOpTypeBool), binary->code[instIndex++]);
   ASSERT_EQ(3, binary->code[instIndex++]);
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(4, binary->code[instIndex++]);
   ASSERT_EQ(8, binary->code[instIndex++]);  // NOTE: 8 bits wide
   ASSERT_EQ(0, binary->code[instIndex++]);  // NOTE: Unsigned
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(5, binary->code[instIndex++]);
   ASSERT_EQ(8, binary->code[instIndex++]);  // NOTE: 8 bits wide
   ASSERT_EQ(1, binary->code[instIndex++]);  // NOTE: Signed
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(6, binary->code[instIndex++]);
   ASSERT_EQ(16, binary->code[instIndex++]);  // NOTE: 16 bits wide
   ASSERT_EQ(0, binary->code[instIndex++]);   // NOTE: Unsigned
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(7, binary->code[instIndex++]);
   ASSERT_EQ(16, binary->code[instIndex++]);  // NOTE: 16 bits wide
   ASSERT_EQ(1, binary->code[instIndex++]);   // NOTE: Signed
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(8, binary->code[instIndex++]);
   ASSERT_EQ(32, binary->code[instIndex++]);  // NOTE: 32 bits wide
   ASSERT_EQ(0, binary->code[instIndex++]);   // NOTE: Unsigned
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(9, binary->code[instIndex++]);
   ASSERT_EQ(32, binary->code[instIndex++]);  // NOTE: 32 bits wide
   ASSERT_EQ(1, binary->code[instIndex++]);   // NOTE: Signed
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(10, binary->code[instIndex++]);
   ASSERT_EQ(64, binary->code[instIndex++]);  // NOTE: 64 bits wide
   ASSERT_EQ(0, binary->code[instIndex++]);   // NOTE: Unsigned
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeInt), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeInt), binary->code[instIndex++]);
   ASSERT_EQ(11, binary->code[instIndex++]);
   ASSERT_EQ(64, binary->code[instIndex++]);  // NOTE: 64 bits wide
   ASSERT_EQ(1, binary->code[instIndex++]);   // NOTE: Signed
 
-  ASSERT_EQ(spvOpcodeMake(3, OpTypeFloat), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(3, SpvOpTypeFloat), binary->code[instIndex++]);
   ASSERT_EQ(12, binary->code[instIndex++]);
   ASSERT_EQ(16, binary->code[instIndex++]);  // NOTE: 16 bits wide
 
-  ASSERT_EQ(spvOpcodeMake(3, OpTypeFloat), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(3, SpvOpTypeFloat), binary->code[instIndex++]);
   ASSERT_EQ(13, binary->code[instIndex++]);
   ASSERT_EQ(32, binary->code[instIndex++]);  // NOTE: 32 bits wide
 
-  ASSERT_EQ(spvOpcodeMake(3, OpTypeFloat), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(3, SpvOpTypeFloat), binary->code[instIndex++]);
   ASSERT_EQ(14, binary->code[instIndex++]);
   ASSERT_EQ(64, binary->code[instIndex++]);  // NOTE: 64 bits wide
 
-  ASSERT_EQ(spvOpcodeMake(4, OpTypeVector), binary->code[instIndex++]);
+  ASSERT_EQ(spvOpcodeMake(4, SpvOpTypeVector), binary->code[instIndex++]);
   ASSERT_EQ(15, binary->code[instIndex++]);
   ASSERT_EQ(4, binary->code[instIndex++]);
   ASSERT_EQ(2, binary->code[instIndex++]);

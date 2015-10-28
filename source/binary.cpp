@@ -88,7 +88,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
     // NOTE: Use specified operand entry operand type for this word
     uint16_t index = operandIndex - opcodeEntry->numTypes;
     type = (*pOperandEntry)->operandTypes[index];
-  } else if (OpSwitch == opcodeEntry->opcode) {
+  } else if (SpvOpSwitch == opcodeEntry->opcode) {
     // NOTE: OpSwitch is a special case which expects a list of paired extra
     // operands
     assert(0 &&
@@ -120,7 +120,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
 ///
 /// @return result code
 spv_result_t spvBinaryDecodeOperand(
-    const Op opcode, const spv_operand_type_t type, const uint32_t *words,
+    const SpvOp opcode, const spv_operand_type_t type, const uint32_t *words,
     uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
     const libspirv::AssemblyGrammar& grammar,
     spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
@@ -152,7 +152,7 @@ spv_result_t spvBinaryDecodeOperand(
       position->index++;
     } break;
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
-      if (OpExtInst == opcode) {
+      if (SpvOpExtInst == opcode) {
         spv_ext_inst_desc extInst;
         if (grammar.lookupExtInst(*pExtInstType, words[0], &extInst)) {
           DIAGNOSTIC << "Invalid extended instruction '" << words[0] << "'.";
@@ -194,7 +194,7 @@ spv_result_t spvBinaryDecodeOperand(
       uint64_t stringOperandCount = (strlen(string) / 4) + 1;
 
       // NOTE: Special case for extended instruction import
-      if (OpExtInstImport == opcode) {
+      if (SpvOpExtInstImport == opcode) {
         *pExtInstType = spvExtInstImportTypeGet(string);
         if (SPV_EXT_INST_TYPE_NONE == *pExtInstType) {
           DIAGNOSTIC << "Invalid extended instruction import'" << string
@@ -327,11 +327,11 @@ spv_result_t spvRegisterIdForOpcode(const spv_instruction_t* pInst,
                                     spv_diagnostic* pDiagnostic) {
   libspirv::IdType detected_type = libspirv::kUnknownType;
   if (spvOpcodeIsType(pOpcodeEntry->opcode)) {
-    if (spv::OpTypeInt == pOpcodeEntry->opcode) {
+    if (SpvOpTypeInt == pOpcodeEntry->opcode) {
       detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
       detected_type.bitwidth = pInst->words[2];
       detected_type.isSigned = (pInst->words[3] != 0);
-    } else if (spv::OpTypeFloat == pOpcodeEntry->opcode) {
+    } else if (SpvOpTypeFloat == pOpcodeEntry->opcode) {
       detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
       detected_type.bitwidth = pInst->words[2];
       detected_type.isSigned = true;
@@ -389,7 +389,7 @@ spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
   spv_position_t instructionStart = *position;
 
   uint16_t wordCount;
-  Op opcode;
+  SpvOp opcode;
   spvOpcodeSplit(spvFixWord(pInst->words[0], endian), &wordCount, &opcode);
 
   spv_opcode_desc opcodeEntry;
@@ -585,7 +585,7 @@ spv_result_t spvBinaryToTextWithFormat(
   while (position.index < binary.wordCount) {
     uint64_t index = position.index;
     uint16_t wordCount;
-    Op opcode;
+    SpvOp opcode;
     spvOpcodeSplit(spvFixWord(words[position.index], endian), &wordCount,
                    &opcode);
 

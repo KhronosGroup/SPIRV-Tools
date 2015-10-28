@@ -263,7 +263,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         // The encoding for OpConstant, OpSpecConstant and OpSwitch all
         // depend on either their own result-id or the result-id of
         // one of their parameters.
-        if (OpConstant == pInst->opcode || OpSpecConstant == pInst->opcode) {
+        if (SpvOpConstant == pInst->opcode ||
+            SpvOpSpecConstant == pInst->opcode) {
           // Special cases for encoding possibly non-32-bit literals here.
           expected_type =
               context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
@@ -278,7 +279,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                    << "Type for " << opcode_name
                    << " must be a scalar floating point or integer type";
           }
-        } else if (pInst->opcode == OpSwitch) {
+        } else if (pInst->opcode == SpvOpSwitch) {
           // We need to know the type of the selector.
           expected_type = context->getTypeOfValueInstruction(pInst->words[1]);
           if (!libspirv::isScalarIntegral(expected_type)) {
@@ -311,7 +312,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       }
 
       // NOTE: Special case for extended instruction library import
-      if (OpExtInstImport == pInst->opcode) {
+      if (SpvOpExtInstImport == pInst->opcode) {
         pInst->extInstType = spvExtInstImportTypeGet(literal.value.str);
       }
 

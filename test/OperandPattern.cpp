@@ -105,17 +105,17 @@ INSTANTIATE_TEST_CASE_P(
          {SUFFIX1}},
         // Volatile has no operands.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-         spv::MemoryAccessVolatileMask,
+         SpvMemoryAccessVolatileMask,
          {SUFFIX0},
          {SUFFIX0}},
         // Aligned has one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-         spv::MemoryAccessAlignedMask,
+         SpvMemoryAccessAlignedMask,
          {SUFFIX1},
          {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
         // Volatile with Aligned still has just one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-         spv::MemoryAccessVolatileMask | spv::MemoryAccessAlignedMask,
+         SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask,
          {SUFFIX1},
          {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
     }));

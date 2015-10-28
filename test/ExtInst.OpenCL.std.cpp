@@ -57,8 +57,8 @@ TEST_P(ExtInstOpenCLStdRoundTripTest, ParameterizedExtInst) {
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(Concatenate(
-          {MakeInstruction(spv::OpExtInstImport, {1}, MakeVector("OpenCL.std")),
-           MakeInstruction(spv::OpExtInst, {2, 3, 1, GetParam().opcode},
+          {MakeInstruction(SpvOpExtInstImport, {1}, MakeVector("OpenCL.std")),
+           MakeInstruction(SpvOpExtInst, {2, 3, 1, GetParam().opcode},
                            GetParam().expected_operands)})))
       << input;
   // Now check the round trip through the disassembler.
@@ -92,7 +92,7 @@ TEST_P(ExtInstOpenCLStdRoundTripTest, ParameterizedExtInst) {
 #define CASE3Round(Enum, Name, Mode)                                    \
   {                                                                     \
     uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 %6 " #Mode, { \
-      4, 5, 6, uint32_t(spv::FPRoundingMode##Mode)                      \
+      4, 5, 6, uint32_t(SpvFPRoundingMode##Mode)                      \
     }                                                                   \
   }
 
@@ -394,13 +394,13 @@ TEST_F(TextToBinaryTest, DISABLED_ExtInstFromTwoDifferentImports) {
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(Concatenate({
-          MakeInstruction(spv::OpExtInstImport, {1}, MakeVector("OpenCL.std")),
-          MakeInstruction(spv::OpExtInstImport, {2},
+          MakeInstruction(SpvOpExtInstImport, {1}, MakeVector("OpenCL.std")),
+          MakeInstruction(SpvOpExtInstImport, {2},
                           MakeVector("GLSL.std.450")),
           MakeInstruction(
-              spv::OpExtInst,
+              SpvOpExtInst,
               {3, 4, 1, uint32_t(OpenCLLIB::Entrypoints::Native_sqrt), 5}),
-          MakeInstruction(spv::OpExtInst,
+          MakeInstruction(SpvOpExtInst,
                           {6, 7, 2, uint32_t(GLSLstd450MatrixInverse), 8}),
       })));
 }

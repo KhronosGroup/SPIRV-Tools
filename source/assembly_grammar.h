@@ -54,7 +54,7 @@ class AssemblyGrammar {
   // Fills in the desc parameter with the information about the opcode
   // of the valid. Returns SPV_SUCCESS if the opcode was found, and
   // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
-  spv_result_t lookupOpcode(Op opcode, spv_opcode_desc *desc) const;
+  spv_result_t lookupOpcode(SpvOp opcode, spv_opcode_desc *desc) const;
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and

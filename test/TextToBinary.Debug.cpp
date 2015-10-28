@@ -49,7 +49,7 @@ struct LanguageCase {
     return static_cast<uint32_t>(language_value);
   }
   const char* language_name;
-  spv::SourceLanguage language_value;
+  SpvSourceLanguage language_value;
   uint32_t version;
 };
 
@@ -57,7 +57,7 @@ struct LanguageCase {
 // The list of OpSource cases to use.
 const LanguageCase kLanguageCases[] = {
 #define CASE(NAME, VERSION) \
-  { #NAME, spv::SourceLanguage##NAME, VERSION }
+  { #NAME, SpvSourceLanguage##NAME, VERSION }
   CASE(Unknown, 0),
   CASE(Unknown, 999),
   CASE(ESSL, 310),
@@ -76,7 +76,7 @@ TEST_P(OpSourceTest, AnyLanguage) {
                             std::to_string(GetParam().version);
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSource, {GetParam().get_language_value(),
+      Eq(MakeInstruction(SpvOpSource, {GetParam().get_language_value(),
                                          GetParam().version})));
 }
 
@@ -93,7 +93,7 @@ TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalFileId) {
   const std::string input = "OpSource GLSL 450 %file_id";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1})));
+      Eq(MakeInstruction(SpvOpSource, {SpvSourceLanguageGLSL, 450, 1})));
 };
 
 TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
@@ -102,7 +102,7 @@ TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
       "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSource, {spv::SourceLanguageGLSL, 450, 1},
+      Eq(MakeInstruction(SpvOpSource, {SpvSourceLanguageGLSL, 450, 1},
                          MakeVector(fake_source))));
 };
 
@@ -117,7 +117,7 @@ TEST_P(OpSourceContinuedTest, AnyExtension) {
       std::string("OpSourceContinued \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSourceContinued, MakeVector(GetParam()))));
+      Eq(MakeInstruction(SpvOpSourceContinued, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -136,7 +136,7 @@ TEST_P(OpSourceExtensionTest, AnyExtension) {
       std::string("OpSourceExtension \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpSourceExtension, MakeVector(GetParam()))));
+      Eq(MakeInstruction(SpvOpSourceExtension, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -146,12 +146,12 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceExtensionTest,
 
 TEST_F(TextToBinaryTest, OpLine) {
   EXPECT_THAT(CompiledInstructions("OpLine %srcfile 42 99"),
-              Eq(MakeInstruction(spv::OpLine, {1, 42, 99})));
+              Eq(MakeInstruction(SpvOpLine, {1, 42, 99})));
 }
 
 TEST_F(TextToBinaryTest, OpNoLine) {
   EXPECT_THAT(CompiledInstructions("OpNoLine"),
-              Eq(MakeInstruction(spv::OpNoLine, {})));
+              Eq(MakeInstruction(SpvOpNoLine, {})));
 }
 
 using OpStringTest =
@@ -162,7 +162,7 @@ TEST_P(OpStringTest, AnyString) {
   const std::string input =
       std::string("%result = OpString \"") + GetParam() + "\"";
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpString, {1}, MakeVector(GetParam()))));
+              Eq(MakeInstruction(SpvOpString, {1}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -178,7 +178,7 @@ TEST_P(OpNameTest, AnyString) {
   const std::string input =
       std::string("OpName %target \"") + GetParam() + "\"";
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpName, {1}, MakeVector(GetParam()))));
+              Eq(MakeInstruction(SpvOpName, {1}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping
@@ -195,7 +195,7 @@ TEST_P(OpMemberNameTest, AnyString) {
       std::string("OpMemberName %type 42 \"") + GetParam() + "\"";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(spv::OpMemberName, {1, 42}, MakeVector(GetParam()))));
+      Eq(MakeInstruction(SpvOpMemberName, {1, 42}, MakeVector(GetParam()))));
 }
 
 // TODO(dneto): utf-8, quoting, escaping

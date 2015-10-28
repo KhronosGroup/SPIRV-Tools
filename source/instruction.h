@@ -30,14 +30,14 @@
 #include <cstdint>
 #include <vector>
 
-#include <headers/spirv.hpp>
+#include <headers/spirv.h>
 
 // Describes an instruction.
 struct spv_instruction_t {
   // Normally, both opcode and extInstType contain valid data.
   // However, when the assembler parses !<number> as the first word in
   // an instruction and opcode and extInstType are invalid.
-  Op opcode;
+  SpvOp opcode;
   spv_ext_inst_type_t extInstType;
 
   // The Id of the result type, if this instruction has one.  Zero otherwise.

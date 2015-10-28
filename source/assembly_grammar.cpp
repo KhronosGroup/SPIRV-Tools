@@ -95,7 +95,7 @@ spv_result_t AssemblyGrammar::lookupOpcode(const char *name,
   return spvOpcodeTableNameLookup(opcodeTable_, name, desc);
 }
 
-spv_result_t AssemblyGrammar::lookupOpcode(Op opcode,
+spv_result_t AssemblyGrammar::lookupOpcode(SpvOp opcode,
                                            spv_opcode_desc *desc) const {
   return spvOpcodeTableValueLookup(opcodeTable_, opcode, desc);
 }

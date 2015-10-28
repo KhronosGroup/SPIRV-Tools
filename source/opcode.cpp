@@ -46,12 +46,12 @@ namespace {
 spv_opcode_desc_t opcodeTableEntries[] = {
 #define EmptyList {}
 #define List(...) {__VA_ARGS__}
-#define Capability(X) SPV_CAPABILITY_AS_MASK(Capability##X)
+#define Capability(X) SPV_CAPABILITY_AS_MASK(SpvCapability##X)
 #define Capability2(X,Y) Capability(X)|Capability(Y)
-#define CapabilityNone 0  // Needed so Capability(None) still expands to valid syntax.
+#define SpvCapabilityNone 0  // Needed so Capability(None) still expands to valid syntax.
 #define Instruction(Name,HasResult,HasType,NumLogicalOperands,NumCapabilities,CapabilityRequired,IsVariable,LogicalArgsList) \
   { #Name, \
-    Op##Name, \
+    SpvOp##Name, \
     (NumCapabilities) ? (CapabilityRequired) : 0, \
     0, {}, /* Filled in later. Operand list, including result id and type id, if needed */ \
     HasResult, \
@@ -75,27 +75,27 @@ bool opcodeTableInitialized = false;
 // Converts the given operand class enum (from the SPIR-V document generation
 // logic) to the operand type required by the parser.
 // This only applies to logical operands.
-spv_operand_type_t convertOperandClassToType(spv::Op opcode,
-                                             spv::OperandClass operandClass) {
+spv_operand_type_t convertOperandClassToType(SpvOp opcode,
+                                             OperandClass operandClass) {
   // The spec document generator uses OptionalOperandLiteral for several kinds
   // of repeating values.  Our parser needs more specific information about
   // what is being repeated.
   if (operandClass == OperandOptionalLiteral) {
     switch (opcode) {
-      case spv::OpLoad:
-      case spv::OpStore:
-      case spv::OpCopyMemory:
-      case spv::OpCopyMemorySized:
+      case SpvOpLoad:
+      case SpvOpStore:
+      case SpvOpCopyMemory:
+      case SpvOpCopyMemorySized:
         // Expect an optional mask.  When the Aligned bit is set in the mask,
         // we will later add the expectation of a literal number operand.
         return SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS;
-      case spv::OpExecutionMode:
+      case SpvOpExecutionMode:
         return SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE;
       default:
         break;
     }
   } else if (operandClass == OperandVariableLiterals) {
-    if (opcode == spv::OpConstant || opcode == spv::OpSpecConstant)
+    if (opcode == SpvOpConstant || opcode == SpvOpSpecConstant)
       return SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER;
   }
 
@@ -111,7 +111,7 @@ spv_operand_type_t convertOperandClassToType(spv::Op opcode,
     // This is only used for sequences of literal numbers.
     case OperandVariableLiterals: return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER;
     case OperandLiteralNumber:
-      if (opcode == spv::OpExtInst) {
+      if (opcode == SpvOpExtInst) {
         // We use a special operand type for the extension instruction number.
         // For now, we assume there is only one LiteraNumber argument to OpExtInst,
         // and it is the extension instruction argument.
@@ -242,16 +242,16 @@ const char *spvGeneratorStr(uint32_t generator) {
   }
 }
 
-uint32_t spvOpcodeMake(uint16_t wordCount, Op opcode) {
+uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode) {
   return ((uint32_t)opcode) | (((uint32_t)wordCount) << 16);
 }
 
-void spvOpcodeSplit(const uint32_t word, uint16_t *pWordCount, Op *pOpcode) {
+void spvOpcodeSplit(const uint32_t word, uint16_t *pWordCount, SpvOp *pOpcode) {
   if (pWordCount) {
     *pWordCount = (uint16_t)((0xffff0000 & word) >> 16);
   }
   if (pOpcode) {
-    *pOpcode = (Op)(0x0000ffff & word);
+    *pOpcode = (SpvOp)(0x0000ffff & word);
   }
 }
 
@@ -295,7 +295,7 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 }
 
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
-                                       const Op opcode,
+                                       const SpvOp opcode,
                                        spv_opcode_desc *pEntry) {
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
@@ -323,7 +323,7 @@ int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry) {
   return entry->capabilities != 0;
 }
 
-void spvInstructionCopy(const uint32_t *words, const Op opcode,
+void spvInstructionCopy(const uint32_t *words, const SpvOp opcode,
                         const uint16_t wordCount, const spv_endianness_t endian,
                         spv_instruction_t *pInst) {
   pInst->opcode = opcode;
@@ -332,7 +332,7 @@ void spvInstructionCopy(const uint32_t *words, const Op opcode,
     pInst->words[wordIndex] = spvFixWord(words[wordIndex], endian);
     if (!wordIndex) {
       uint16_t thisWordCount;
-      Op thisOpcode;
+      SpvOp thisOpcode;
       spvOpcodeSplit(pInst->words[wordIndex], &thisWordCount, &thisOpcode);
       assert(opcode == thisOpcode && wordCount == thisWordCount &&
              "Endianness failed!");
@@ -340,9 +340,9 @@ void spvInstructionCopy(const uint32_t *words, const Op opcode,
   }
 }
 
-const char *spvOpcodeString(const Op opcode) {
+const char *spvOpcodeString(const SpvOp opcode) {
 #define CASE(OPCODE) \
-  case OPCODE:       \
+  case Spv##OPCODE:       \
     return #OPCODE;
   switch (opcode) {
     CASE(OpNop)
@@ -582,69 +582,69 @@ const char *spvOpcodeString(const Op opcode) {
   return "unknown";
 }
 
-int32_t spvOpcodeIsType(const Op opcode) {
+int32_t spvOpcodeIsType(const SpvOp opcode) {
   switch (opcode) {
-    case OpTypeVoid:
-    case OpTypeBool:
-    case OpTypeInt:
-    case OpTypeFloat:
-    case OpTypeVector:
-    case OpTypeMatrix:
-    case OpTypeSampler:
-    case OpTypeSampledImage:
-    case OpTypeArray:
-    case OpTypeRuntimeArray:
-    case OpTypeStruct:
-    case OpTypeOpaque:
-    case OpTypePointer:
-    case OpTypeFunction:
-    case OpTypeEvent:
-    case OpTypeDeviceEvent:
-    case OpTypeReserveId:
-    case OpTypeQueue:
-    case OpTypePipe:
+    case SpvOpTypeVoid:
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeSampler:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray:
+    case SpvOpTypeStruct:
+    case SpvOpTypeOpaque:
+    case SpvOpTypePointer:
+    case SpvOpTypeFunction:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+    case SpvOpTypePipe:
       return true;
     default:
       return false;
   }
 }
 
-int32_t spvOpcodeIsScalarType(const Op opcode) {
+int32_t spvOpcodeIsScalarType(const SpvOp opcode) {
   switch (opcode) {
-    case OpTypeInt:
-    case OpTypeFloat:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
       return true;
     default:
       return false;
   }
 }
 
-int32_t spvOpcodeIsConstant(const Op opcode) {
+int32_t spvOpcodeIsConstant(const SpvOp opcode) {
   switch (opcode) {
-    case OpConstantTrue:
-    case OpConstantFalse:
-    case OpConstant:
-    case OpConstantComposite:
-    case OpConstantSampler:
-    // case OpConstantNull:
-    case OpConstantNull:
-    case OpSpecConstantTrue:
-    case OpSpecConstantFalse:
-    case OpSpecConstant:
-    case OpSpecConstantComposite:
-      // case OpSpecConstantOp:
+    case SpvOpConstantTrue:
+    case SpvOpConstantFalse:
+    case SpvOpConstant:
+    case SpvOpConstantComposite:
+    case SpvOpConstantSampler:
+    // case SpvOpConstantNull:
+    case SpvOpConstantNull:
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstant:
+    case SpvOpSpecConstantComposite:
+      // case SpvOpSpecConstantOp:
       return true;
     default:
       return false;
   }
 }
 
-int32_t spvOpcodeIsComposite(const Op opcode) {
+int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   switch (opcode) {
-    case OpTypeVector:
-    case OpTypeMatrix:
-    case OpTypeArray:
-    case OpTypeStruct:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeArray:
+    case SpvOpTypeStruct:
       return true;
     default:
       return false;
@@ -658,143 +658,143 @@ int32_t spvOpcodeAreTypesEqual(const spv_instruction_t *pTypeInst0,
   return true;
 }
 
-int32_t spvOpcodeIsPointer(const Op opcode) {
+int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   switch (opcode) {
-    case OpVariable:
-    case OpAccessChain:
-    case OpInBoundsAccessChain:
-    case OpFunctionParameter:
+    case SpvOpVariable:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpFunctionParameter:
       return true;
     default:
       return false;
   }
 }
 
-int32_t spvOpcodeIsObject(const Op opcode) {
+int32_t spvOpcodeIsObject(const SpvOp opcode) {
   switch (opcode) {
-    case OpConstantTrue:
-    case OpConstantFalse:
-    case OpConstant:
-    case OpConstantComposite:
-    // TODO: case OpConstantSampler:
-    case OpConstantNull:
-    case OpSpecConstantTrue:
-    case OpSpecConstantFalse:
-    case OpSpecConstant:
-    case OpSpecConstantComposite:
-    // TODO: case OpSpecConstantOp:
-    case OpVariable:
-    case OpAccessChain:
-    case OpInBoundsAccessChain:
-    case OpConvertFToU:
-    case OpConvertFToS:
-    case OpConvertSToF:
-    case OpConvertUToF:
-    case OpUConvert:
-    case OpSConvert:
-    case OpFConvert:
-    case OpConvertPtrToU:
-    // TODO: case OpConvertUToPtr:
-    case OpPtrCastToGeneric:
-    // TODO: case OpGenericCastToPtr:
-    case OpBitcast:
-    // TODO: case OpGenericCastToPtrExplicit:
-    case OpSatConvertSToU:
-    case OpSatConvertUToS:
-    case OpVectorExtractDynamic:
-    case OpCompositeConstruct:
-    case OpCompositeExtract:
-    case OpCopyObject:
-    case OpTranspose:
-    case OpSNegate:
-    case OpFNegate:
-    case OpNot:
-    case OpIAdd:
-    case OpFAdd:
-    case OpISub:
-    case OpFSub:
-    case OpIMul:
-    case OpFMul:
-    case OpUDiv:
-    case OpSDiv:
-    case OpFDiv:
-    case OpUMod:
-    case OpSRem:
-    case OpSMod:
-    case OpVectorTimesScalar:
-    case OpMatrixTimesScalar:
-    case OpVectorTimesMatrix:
-    case OpMatrixTimesVector:
-    case OpMatrixTimesMatrix:
-    case OpOuterProduct:
-    case OpDot:
-    case OpShiftRightLogical:
-    case OpShiftRightArithmetic:
-    case OpShiftLeftLogical:
-    case OpBitwiseOr:
-    case OpBitwiseXor:
-    case OpBitwiseAnd:
-    case OpAny:
-    case OpAll:
-    case OpIsNan:
-    case OpIsInf:
-    case OpIsFinite:
-    case OpIsNormal:
-    case OpSignBitSet:
-    case OpLessOrGreater:
-    case OpOrdered:
-    case OpUnordered:
-    case OpLogicalOr:
-    case OpLogicalAnd:
-    case OpSelect:
-    case OpIEqual:
-    case OpFOrdEqual:
-    case OpFUnordEqual:
-    case OpINotEqual:
-    case OpFOrdNotEqual:
-    case OpFUnordNotEqual:
-    case OpULessThan:
-    case OpSLessThan:
-    case OpFOrdLessThan:
-    case OpFUnordLessThan:
-    case OpUGreaterThan:
-    case OpSGreaterThan:
-    case OpFOrdGreaterThan:
-    case OpFUnordGreaterThan:
-    case OpULessThanEqual:
-    case OpSLessThanEqual:
-    case OpFOrdLessThanEqual:
-    case OpFUnordLessThanEqual:
-    case OpUGreaterThanEqual:
-    case OpSGreaterThanEqual:
-    case OpFOrdGreaterThanEqual:
-    case OpFUnordGreaterThanEqual:
-    case OpDPdx:
-    case OpDPdy:
-    case OpFwidth:
-    case OpDPdxFine:
-    case OpDPdyFine:
-    case OpFwidthFine:
-    case OpDPdxCoarse:
-    case OpDPdyCoarse:
-    case OpFwidthCoarse:
-    case OpReturnValue:
+    case SpvOpConstantTrue:
+    case SpvOpConstantFalse:
+    case SpvOpConstant:
+    case SpvOpConstantComposite:
+    // TODO: case SpvOpConstantSampler:
+    case SpvOpConstantNull:
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstant:
+    case SpvOpSpecConstantComposite:
+    // TODO: case SpvOpSpecConstantOp:
+    case SpvOpVariable:
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpConvertFToU:
+    case SpvOpConvertFToS:
+    case SpvOpConvertSToF:
+    case SpvOpConvertUToF:
+    case SpvOpUConvert:
+    case SpvOpSConvert:
+    case SpvOpFConvert:
+    case SpvOpConvertPtrToU:
+    // TODO: case SpvOpConvertUToPtr:
+    case SpvOpPtrCastToGeneric:
+    // TODO: case SpvOpGenericCastToPtr:
+    case SpvOpBitcast:
+    // TODO: case SpvOpGenericCastToPtrExplicit:
+    case SpvOpSatConvertSToU:
+    case SpvOpSatConvertUToS:
+    case SpvOpVectorExtractDynamic:
+    case SpvOpCompositeConstruct:
+    case SpvOpCompositeExtract:
+    case SpvOpCopyObject:
+    case SpvOpTranspose:
+    case SpvOpSNegate:
+    case SpvOpFNegate:
+    case SpvOpNot:
+    case SpvOpIAdd:
+    case SpvOpFAdd:
+    case SpvOpISub:
+    case SpvOpFSub:
+    case SpvOpIMul:
+    case SpvOpFMul:
+    case SpvOpUDiv:
+    case SpvOpSDiv:
+    case SpvOpFDiv:
+    case SpvOpUMod:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpAny:
+    case SpvOpAll:
+    case SpvOpIsNan:
+    case SpvOpIsInf:
+    case SpvOpIsFinite:
+    case SpvOpIsNormal:
+    case SpvOpSignBitSet:
+    case SpvOpLessOrGreater:
+    case SpvOpOrdered:
+    case SpvOpUnordered:
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd:
+    case SpvOpSelect:
+    case SpvOpIEqual:
+    case SpvOpFOrdEqual:
+    case SpvOpFUnordEqual:
+    case SpvOpINotEqual:
+    case SpvOpFOrdNotEqual:
+    case SpvOpFUnordNotEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpFOrdLessThan:
+    case SpvOpFUnordLessThan:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpFOrdGreaterThan:
+    case SpvOpFUnordGreaterThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpFOrdLessThanEqual:
+    case SpvOpFUnordLessThanEqual:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+    case SpvOpFOrdGreaterThanEqual:
+    case SpvOpFUnordGreaterThanEqual:
+    case SpvOpDPdx:
+    case SpvOpDPdy:
+    case SpvOpFwidth:
+    case SpvOpDPdxFine:
+    case SpvOpDPdyFine:
+    case SpvOpFwidthFine:
+    case SpvOpDPdxCoarse:
+    case SpvOpDPdyCoarse:
+    case SpvOpFwidthCoarse:
+    case SpvOpReturnValue:
       return true;
     default:
       return false;
   }
 }
 
-int32_t spvOpcodeIsBasicTypeNullable(Op opcode) {
+int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode) {
   switch (opcode) {
-    case OpTypeBool:
-    case OpTypeInt:
-    case OpTypeFloat:
-    case OpTypePointer:
-    case OpTypeEvent:
-    case OpTypeDeviceEvent:
-    case OpTypeReserveId:
-    case OpTypeQueue:
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypePointer:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
       return true;
     default:
       return false;
@@ -804,18 +804,18 @@ int32_t spvOpcodeIsBasicTypeNullable(Op opcode) {
 int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
                                      const spv_instruction_t *pInst) {
   while (pFirstInst != pInst) {
-    if (OpFunction == pInst->opcode) break;
+    if (SpvOpFunction == pInst->opcode) break;
     pInst--;
   }
-  if (OpFunction != pInst->opcode) return false;
+  if (SpvOpFunction != pInst->opcode) return false;
   return true;
 }
 
-int32_t spvOpcodeIsValue(Op opcode) {
+int32_t spvOpcodeIsValue(SpvOp opcode) {
   if (spvOpcodeIsPointer(opcode)) return true;
   if (spvOpcodeIsConstant(opcode)) return true;
   switch (opcode) {
-    case OpLoad:
+    case SpvOpLoad:
       // TODO: Other Opcode's resulting in a value
       return true;
     default:
@@ -823,29 +823,29 @@ int32_t spvOpcodeIsValue(Op opcode) {
   }
 }
 
-int32_t spvOpcodeGeneratesType(Op op) {
+int32_t spvOpcodeGeneratesType(SpvOp op) {
   switch(op) {
-    case OpTypeVoid:
-    case OpTypeBool:
-    case OpTypeInt:
-    case OpTypeFloat:
-    case OpTypeVector:
-    case OpTypeMatrix:
-    case OpTypeImage:
-    case OpTypeSampler:
-    case OpTypeSampledImage:
-    case OpTypeArray:
-    case OpTypeRuntimeArray:
-    case OpTypeStruct:
-    case OpTypeOpaque:
-    case OpTypePointer:
-    case OpTypeFunction:
-    case OpTypeEvent:
-    case OpTypeDeviceEvent:
-    case OpTypeReserveId:
-    case OpTypeQueue:
-    case OpTypePipe:
-    case OpTypeForwardPointer:
+    case SpvOpTypeVoid:
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeArray:
+    case SpvOpTypeRuntimeArray:
+    case SpvOpTypeStruct:
+    case SpvOpTypeOpaque:
+    case SpvOpTypePointer:
+    case SpvOpTypeFunction:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+    case SpvOpTypePipe:
+    case SpvOpTypeForwardPointer:
       return true;
     default:;
   }

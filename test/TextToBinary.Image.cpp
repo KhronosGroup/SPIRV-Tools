@@ -53,11 +53,11 @@ TEST_P(ImageOperandsTest, Sample) {
   const std::string input =
       "%result = OpImageFetch %type %image %coord " + GetParam().image_operands;
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(spv::OpImageFetch, {1, 2, 3, 4},
+              Eq(MakeInstruction(SpvOpImageFetch, {1, 2, 3, 4},
                                  GetParam().expected_mask_and_operands)));
 }
 
-#define MASK(NAME) spv::ImageOperands##NAME##Mask
+#define MASK(NAME) SpvImageOperands##NAME##Mask
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryImageOperandsAny, ImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
@@ -76,7 +76,7 @@ INSTANTIATE_TEST_CASE_P(
         {"MinLod %17", {MASK(MinLod), 5}},
     }));
 #undef MASK
-#define MASK(NAME) static_cast<uint32_t>(spv::ImageOperands##NAME##Mask)
+#define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryImageOperandsCombination, ImageOperandsTest,
     ::testing::ValuesIn(std::vector<ImageOperandsCase>{
