@@ -32,7 +32,7 @@
 
 #include "libspirv/libspirv.h"
 
-spv_result_t spvBinaryToText(uint32_t* code, const uint64_t wordCount,
+spv_result_t spvBinaryToText(uint32_t const* code, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,

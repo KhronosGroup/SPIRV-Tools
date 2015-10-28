@@ -613,21 +613,20 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
 namespace {
 
-/// @brief Populate a binary stream with this generator's header.
+/// @brief Populate a binary stream's words with this generator's header.
 ///
-/// @param[in,out] binary the binary stream
+/// @param[in,out] words the array of words
 /// @param[in] bound the upper ID bound
 ///
 /// @return result code
-spv_result_t SetHeader(spv_binary_t* binary, const uint32_t bound) {
-  if (!binary) return SPV_ERROR_INVALID_BINARY;
-  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
+spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
+  if (!words) return SPV_ERROR_INVALID_BINARY;
 
-  binary->code[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
-  binary->code[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
-  binary->code[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
-  binary->code[SPV_INDEX_BOUND] = bound;
-  binary->code[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
+  words[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
+  words[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
+  words[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
+  words[SPV_INDEX_BOUND] = bound;
+  words[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
 
   return SPV_SUCCESS;
 }
@@ -686,6 +685,9 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
     currentIndex += inst.words.size();
   }
 
+  if (auto error = SetHeader(data, context.getBound()))
+    return error;
+
   spv_binary binary = new spv_binary_t();
   if (!binary) {
     delete[] data;
@@ -693,11 +695,6 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
   }
   binary->code = data;
   binary->wordCount = totalSize;
-
-  if (auto error = SetHeader(binary, context.getBound())) {
-    spvBinaryDestroy(binary);
-    return error;
-  }
 
   *pBinary = binary;
 

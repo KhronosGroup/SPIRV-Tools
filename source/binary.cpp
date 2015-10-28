@@ -502,7 +502,7 @@ spv_result_t spvBinaryDecodeOpcode(
 }
 
 spv_result_t spvBinaryToTextWithFormat(
-    uint32_t* code, const uint64_t wordCount, const uint32_t options,
+    uint32_t const* code, const uint64_t wordCount, const uint32_t options,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
     spv_text* pText, spv_diagnostic* pDiagnostic) {
