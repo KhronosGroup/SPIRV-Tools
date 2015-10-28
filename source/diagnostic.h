@@ -61,7 +61,7 @@ class diagnostic_helper {
 //                  eventually.
 class DiagnosticStream {
  public:
-  DiagnosticStream(spv_position position, spv_diagnostic* pDiagnostic,
+  DiagnosticStream(spv_position_t position, spv_diagnostic* pDiagnostic,
                    spv_result_t error)
       : position_(position), pDiagnostic_(pDiagnostic), error_(error) {}
 
@@ -90,7 +90,7 @@ class DiagnosticStream {
 
  private:
   std::stringstream stream_;
-  spv_position position_;
+  spv_position_t position_;
   spv_diagnostic* pDiagnostic_;
   spv_result_t error_;
 };

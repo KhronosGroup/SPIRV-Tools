@@ -31,16 +31,16 @@ namespace {
 TEST(DiagnosticStream, ConversionToResultType) {
   // Check after the DiagnosticStream object is destroyed.
   spv_result_t value;
-  { value = DiagnosticStream(0, 0, SPV_ERROR_INVALID_TEXT); }
+  { value = DiagnosticStream({}, 0, SPV_ERROR_INVALID_TEXT); }
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT, value);
 
   // Check implicit conversion via plain assignment.
-  value = DiagnosticStream(0, 0, SPV_SUCCESS);
+  value = DiagnosticStream({}, 0, SPV_SUCCESS);
   EXPECT_EQ(SPV_SUCCESS, value);
 
   // Check conversion via constructor.
   EXPECT_EQ(SPV_FAILED_MATCH,
-            spv_result_t(DiagnosticStream(0, 0, SPV_FAILED_MATCH)));
+            spv_result_t(DiagnosticStream({}, 0, SPV_FAILED_MATCH)));
 }
 
 }  // anonymous namespace

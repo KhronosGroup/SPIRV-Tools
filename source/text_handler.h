@@ -140,7 +140,7 @@ class AssemblyContext {
   // stream, and for the given error code. Any data written to this object will
   // show up in pDiagnsotic on destruction.
   DiagnosticStream diagnostic(spv_result_t error) {
-    return DiagnosticStream(&current_position_, pDiagnostic_, error);
+    return DiagnosticStream(current_position_, pDiagnostic_, error);
   }
 
   // Returns a diagnostic object with the default assembly error code.

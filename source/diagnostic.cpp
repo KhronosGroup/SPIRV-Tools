@@ -82,6 +82,6 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
 
 DiagnosticStream::~DiagnosticStream() {
   if (pDiagnostic_ && error_ != SPV_FAILED_MATCH) {
-    *pDiagnostic_ = spvDiagnosticCreate(position_, stream_.str().c_str());
+    *pDiagnostic_ = spvDiagnosticCreate(&position_, stream_.str().c_str());
   }
 }
