@@ -41,47 +41,49 @@ Dest BitwiseCast(Src source) {
   return dest;
 }
 
-// SetBits<T, First, Last> returns an integer of type <T> with the bits
-// between First and Last inclusive set and all other bits 0. This is indexed
-// from left to right So SetBits<unsigned long, 0, 1> would have the leftmost
-// two bits set.
-template<typename T, T First = 0, T Last = 0>
+// SetBits<T, First, Num> returns an integer of type <T> with bits set
+// for position <First> through <First + Num - 1>, counting from the least
+// significant bit. In particular when Num == 0, no positions are set to 1.
+template<typename T, size_t First = 0, size_t Num = 0>
 struct SetBits {
-  static_assert(First < Last, "The first bit must be before the last bit");
-  const static T get = (T(1) << ((sizeof(T) * 8) - First - 1)) |
-                       SetBits<T, First + 1, Last>::get;
+  const static T get = (T(1) << First) |
+                          SetBits<T, First+1, Num-1>::get;
 };
 
-template<typename T, T Last>
-struct SetBits<T, Last, Last> {
-  const static T get = T(1) << ((sizeof(T) * 8) - Last - 1);
+template<typename T, size_t  Last>
+struct SetBits<T, Last, 0> {
+  const static T get = T(0);
 };
 
 // This is all compile-time so we can put our tests right here.
-static_assert(SetBits<uint32_t, 0, 0>::get == uint32_t(0x80000000),
+static_assert(SetBits<uint32_t, 0, 0>::get == uint32_t(0x00000000),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 0, 1>::get == uint32_t(0xc0000000),
+static_assert(SetBits<uint32_t, 0, 1>::get == uint32_t(0x00000001),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 1, 2>::get == uint32_t(0x60000000),
+static_assert(SetBits<uint32_t, 31, 1>::get == uint32_t(0x80000000),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 31, 31>::get == uint32_t(0x00000001),
+static_assert(SetBits<uint32_t, 1, 2>::get == uint32_t(0x00000006),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 31, 32>::get == uint32_t(0x00000001),
+static_assert(SetBits<uint32_t, 30, 2>::get == uint32_t(0xc0000000),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 30, 31>::get == uint32_t(0x00000003),
+static_assert(SetBits<uint32_t, 31, 3>::get == uint32_t(0x80000000),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 0, 31>::get == uint32_t(0xFFFFFFFF),
+static_assert(SetBits<uint32_t, 0, 31>::get == uint32_t(0x7FFFFFFF),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 16, 31>::get == uint32_t(0x0000FFFF),
+static_assert(SetBits<uint32_t, 0, 32>::get == uint32_t(0xFFFFFFFF),
+              "SetBits failed");
+static_assert(SetBits<uint32_t, 16, 31>::get == uint32_t(0xFFFF0000),
               "SetBits failed");
 
-static_assert(SetBits<uint64_t, 0, 0>::get == uint64_t(0x8000000000000000LL),
+static_assert(SetBits<uint64_t, 0, 1>::get == uint64_t(0x0000000000000001LL),
               "SetBits failed");
-static_assert(SetBits<uint64_t, 0, 1>::get == uint64_t(0xc000000000000000LL),
+static_assert(SetBits<uint64_t, 63, 1>::get == uint64_t(0x8000000000000000LL),
               "SetBits failed");
-static_assert(SetBits<uint64_t, 32, 32>::get == uint64_t(0x0000000080000000LL),
+static_assert(SetBits<uint64_t, 62, 2>::get == uint64_t(0xc000000000000000LL),
               "SetBits failed");
-static_assert(SetBits<uint64_t, 16, 31>::get == uint64_t(0x0000FFFF00000000LL),
+static_assert(SetBits<uint64_t, 31, 1>::get == uint64_t(0x0000000080000000LL),
+              "SetBits failed");
+static_assert(SetBits<uint64_t, 16, 16>::get == uint64_t(0x00000000FFFF0000LL),
               "SetBits failed");
 
 }  // namespace spvutils
