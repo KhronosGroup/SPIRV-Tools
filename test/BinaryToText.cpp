@@ -27,8 +27,10 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
+#include <sstream>
+
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 using ::testing::Eq;
 using spvtest::AutoText;
@@ -79,6 +81,14 @@ class BinaryToText : public ::testing::Test {
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
 
+  // Compiles the given assembly text, and saves it into 'binary'.
+  void CompileSuccessfully(std::string text) {
+    spv_diagnostic diagnostic = nullptr;
+    EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(text.c_str(), text.size(),
+                                           opcodeTable, operandTable,
+                                           extInstTable, &binary, &diagnostic));
+  }
+
   spv_binary binary;
   spv_opcode_table opcodeTable;
   spv_operand_table operandTable;
@@ -96,18 +106,59 @@ TEST_F(BinaryToText, Default) {
   spvTextDestroy(text);
 }
 
-TEST_F(BinaryToText, InvalidCode) {
-  spv_binary_t binary = {nullptr, 42};
+TEST_F(BinaryToText, MissingModule) {
   spv_text text;
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(
+  EXPECT_EQ(
       SPV_ERROR_INVALID_BINARY,
       spvBinaryToText(nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
                       operandTable, extInstTable, &text, &diagnostic));
+  EXPECT_THAT(diagnostic->error, Eq(std::string("Missing module.")));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
   }
+}
+
+TEST_F(BinaryToText, TruncatedModule) {
+  // Make a valid module with zero instructions.
+  CompileSuccessfully("");
+  EXPECT_EQ(SPV_INDEX_INSTRUCTION, binary->wordCount);
+
+  for (int length = 0; length < SPV_INDEX_INSTRUCTION; length++) {
+    spv_text text = nullptr;
+    spv_diagnostic diagnostic = nullptr;
+    EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+              spvBinaryToText(binary->code, length,
+                              SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                              operandTable, extInstTable, &text, &diagnostic));
+    ASSERT_NE(nullptr, diagnostic);
+    std::stringstream expected;
+    expected << "Module has incomplete header: only " << length
+             << " words instead of " << SPV_INDEX_INSTRUCTION;
+    EXPECT_THAT(diagnostic->error, Eq(expected.str()));
+    spvDiagnosticDestroy(diagnostic);
+  }
+}
+
+TEST_F(BinaryToText, InvalidMagicNumber) {
+  CompileSuccessfully("");
+  std::vector<uint32_t> damaged_binary(binary->code,
+                                       binary->code + binary->wordCount);
+  damaged_binary[SPV_INDEX_MAGIC_NUMBER] ^= 123;
+
+  spv_diagnostic diagnostic = nullptr;
+  spv_text text;
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryToText(damaged_binary.data(), damaged_binary.size(),
+                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
+                            operandTable, extInstTable, &text, &diagnostic));
+  ASSERT_NE(nullptr, diagnostic);
+  std::stringstream expected;
+  expected << "Invalid SPIR-V magic number '" << std::hex
+           << damaged_binary[SPV_INDEX_MAGIC_NUMBER] << "'.";
+  EXPECT_THAT(diagnostic->error, Eq(expected.str()));
+  spvDiagnosticDestroy(diagnostic);
 }
 
 TEST_F(BinaryToText, InvalidTable) {
@@ -153,20 +204,48 @@ TEST_P(BinaryToTextFail, EncodeSuccessfullyDecodeFailed) {
               Eq(GetParam().expected_error_message));
 }
 
-INSTANTIATE_TEST_CASE_P(InvalidIds, BinaryToTextFail,
-                        ::testing::ValuesIn(std::vector<FailedDecodeCase>{
-                            {"%1 = OpTypeVoid",
-                             spvtest::MakeInstruction(SpvOpTypeVoid, {1}),
-                             "Id 1 is defined more than once"},
-                            {"%1 = OpTypeVoid\n"
-                             "%2 = OpNot %1 %foo",
-                             spvtest::MakeInstruction(SpvOpNot, {1, 2, 3}),
-                             "Id 2 is defined more than once"},
-                            {"%1 = OpTypeVoid\n"
-                             "%2 = OpNot %1 %foo",
-                             spvtest::MakeInstruction(SpvOpNot, {1, 1, 3}),
-                             "Id 1 is defined more than once"},
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    InvalidIds, BinaryToTextFail,
+    ::testing::ValuesIn(std::vector<FailedDecodeCase>{
+        {"", spvtest::MakeInstruction(SpvOpTypeVoid, {0}),
+         "Error: Result Id is 0"},
+        {"", spvtest::MakeInstruction(SpvOpConstant, {0, 1, 42}),
+         "Error: Type Id is 0"},
+        {"%1 = OpTypeVoid", spvtest::MakeInstruction(SpvOpTypeVoid, {1}),
+         "Id 1 is defined more than once"},
+        {"%1 = OpTypeVoid\n"
+         "%2 = OpNot %1 %foo",
+         spvtest::MakeInstruction(SpvOpNot, {1, 2, 3}),
+         "Id 2 is defined more than once"},
+        {"%1 = OpTypeVoid\n"
+         "%2 = OpNot %1 %foo",
+         spvtest::MakeInstruction(SpvOpNot, {1, 1, 3}),
+         "Id 1 is defined more than once"},
+        // The following are the two failure cases for
+        // Parser::setNumericTypeInfoForType.
+        {"", spvtest::MakeInstruction(SpvOpConstant, {500, 1, 42}),
+         "Type Id 500 is not a type"},
+        {"%1 = OpTypeInt 32 0\n"
+         "%2 = OpTypeVector %1 4",
+         spvtest::MakeInstruction(SpvOpConstant, {2, 3, 999}),
+         "Type Id 2 is not a scalar numeric type"},
+    }));
+
+INSTANTIATE_TEST_CASE_P(
+    InvalidIdsCheckedDuringLiteralCaseParsing, BinaryToTextFail,
+    ::testing::ValuesIn(std::vector<FailedDecodeCase>{
+        {"", spvtest::MakeInstruction(SpvOpSwitch, {1, 2, 3, 4}),
+         "Invalid OpSwitch: selector id 1 has no type"},
+        {"%1 = OpTypeVoid\n",
+         spvtest::MakeInstruction(SpvOpSwitch, {1, 2, 3, 4}),
+         "Invalid OpSwitch: selector id 1 is a type, not a value"},
+        {"%1 = OpConstantTrue !500",
+         spvtest::MakeInstruction(SpvOpSwitch, {1, 2, 3, 4}),
+         "Type Id 500 is not a type"},
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 1.5",
+         spvtest::MakeInstruction(SpvOpSwitch, {2, 3, 4, 5}),
+         "Invalid OpSwitch: selector id 2 is not a scalar integer"},
+    }));
 
 TEST(BinaryToTextSmall, OneInstruction) {
   // TODO(dneto): This test could/should be refactored.

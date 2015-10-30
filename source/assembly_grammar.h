@@ -43,7 +43,10 @@ class AssemblyGrammar {
         opcodeTable_(opcode_table),
         extInstTable_(ext_inst_table) {}
 
-  // Returns true if the compilation_data has been initialized with valid data.
+  // Constructor that gets the required data itself.
+  AssemblyGrammar();
+
+  // Returns true if the internal tables have been initialized with valid data.
   bool isValid() const;
 
   // Fills in the desc parameter with the information about the opcode

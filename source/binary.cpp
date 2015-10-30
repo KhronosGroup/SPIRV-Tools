@@ -28,7 +28,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <sstream>
+#include <limits>
 #include <unordered_map>
 
 #include <libspirv/libspirv.h>
@@ -36,20 +36,15 @@
 #include "diagnostic.h"
 #include "endian.h"
 #include "ext_inst.h"
-#include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
-#include "text_handler.h"
-
-// Binary API
-
-using id_to_type_id_map = std::unordered_map<uint32_t, uint32_t>;
-using type_id_to_type_map = std::unordered_map<uint32_t, libspirv::IdType>;
 
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t* pHeader) {
-  if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
+  if (!binary->code) return SPV_ERROR_INVALID_BINARY;
+  if (binary->wordCount < SPV_INDEX_INSTRUCTION)
+    return SPV_ERROR_INVALID_BINARY;
   if (!pHeader) return SPV_ERROR_INVALID_POINTER;
 
   // TODO: Validation checking?
@@ -105,122 +100,437 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
   return type;
 }
 
-/// @brief Translate a binary operand to the textual form
-///
-/// @param[in] opcode of the current instruction
-/// @param[in] type type of the operand to decode
-/// @param[in] words the binary stream of words
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] grammar the AssemblyGrammar to when decoding this operand
-/// @param[in,out] stream the text output stream
-/// @param[in,out] position position in the binary stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOperand(
-    const SpvOp opcode, const spv_operand_type_t type, const uint32_t* words,
-    uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
-    const libspirv::AssemblyGrammar& grammar,
-    spv_operand_pattern_t* pExpectedOperands, spv_ext_inst_type_t* pExtInstType,
-    out_stream& stream, spv_position position, spv_diagnostic* pDiagnostic) {
-  if (!words || !position) return SPV_ERROR_INVALID_POINTER;
-  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
+namespace {
 
-  bool print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
-  bool color =
-      print && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options);
+// A SPIR-V binary parser.  A parser instance communicates detailed parse
+// results via callbacks.
+class Parser {
+ public:
+  // The user_data value is provided to the callbacks as context.
+  Parser(void* user_data, spv_parsed_header_fn_t parsed_header_fn,
+         spv_parsed_instruction_fn_t parsed_instruction_fn)
+      : user_data_(user_data),
+        parsed_header_fn_(parsed_header_fn),
+        parsed_instruction_fn_(parsed_instruction_fn) {}
+
+  // Parses the specified binary SPIR-V module, issuing callbacks on a parsed
+  // header and for each parsed instruction.  Returns SPV_SUCCESS on success.
+  // Otherwise returns an error code and issues a diagnostic.
+  spv_result_t parse(const uint32_t* words, size_t num_words,
+                     spv_diagnostic* diagnostic);
+
+ private:
+  // All remaining methods work on the current module parse state.
+
+  // Like the parse method, but works on the current module parse state.
+  spv_result_t parseModule();
+
+  // Parses an instruction at the current position of the binary.  Assumes
+  // the header has been parsed, the endian has been set, and the word index is
+  // still in range.  Advances the parsing position past the instruction, and
+  // updates other parsing state for the current module.
+  // On success, returns SPV_SUCCESS and issues the parsed-instruction callback.
+  // On failure, returns an error code and issues a diagnostic.
+  spv_result_t parseInstruction();
+
+  // Parses an instruction operand with the given type.
+  // May update the expected_operands parameter, and the scalar members of the
+  // inst parameter. On success, returns SPV_SUCCESS, advances past the
+  // operand, and pushes a new entry on to the operands vector.  Otherwise
+  // returns an error code and issues a diagnostic.
+  spv_result_t parseOperand(spv_parsed_instruction_t* inst,
+                            const spv_operand_type_t type,
+                            std::vector<spv_parsed_operand_t>* operands,
+                            spv_operand_pattern_t* expected_operands);
+
+  // Records the numeric type for an operand according to the type information
+  // associated with the given non-zero type Id.  This can fail if the type Id
+  // is not a type Id, or if the type Id does not reference a scalar numeric
+  // type.  On success, return SPV_SUCCESS and populates the num_words,
+  // number_kind, and number_bit_width fields of parsed_operand.
+  spv_result_t setNumericTypeInfoForType(spv_parsed_operand_t* parsed_operand,
+                                         uint32_t type_id);
+
+  // Records the number type for an instruction if that instruction generates
+  // a type.  For types that aren't scalar numbers, record something with
+  // number kind SPV_NUMBER_NONE.
+  void recordNumberType(const spv_parsed_instruction_t* inst);
+
+  // Returns a diagnostic stream object initialized with current position in
+  // the input stream, and for the given error code. Any data written to the
+  // returned object will be propagated to the current parse's diagnostic
+  // object.
+  DiagnosticStream diagnostic(spv_result_t error) {
+    return DiagnosticStream({0, 0, _.word_index}, _.diagnostic, error);
+  }
+
+  // Returns a diagnostic stream object with the default parse error code.
+  DiagnosticStream diagnostic() {
+    // The default failure for parsing is invalid binary.
+    return diagnostic(SPV_ERROR_INVALID_BINARY);
+  }
+
+  // Returns the endian-corrected word at the current position.
+  uint32_t peek() const { return peekAt(_.word_index); }
+
+  // Returns the endian-corrected word at the given position.
+  uint32_t peekAt(size_t index) const {
+    assert(index < _.num_words);
+    return spvFixWord(_.words[index], _.endian);
+  }
+
+  // Data members
+
+  const libspirv::AssemblyGrammar grammar_;        // SPIR-V syntax utility.
+  void* const user_data_;                          // Context for the callbacks
+  const spv_parsed_header_fn_t parsed_header_fn_;  // Parsed header callback
+  const spv_parsed_instruction_fn_t
+      parsed_instruction_fn_;  // Parsed instruction callback
+
+  // Describes the format of a typed literal number.
+  struct NumberType {
+    spv_number_kind_t type;
+    uint32_t bit_width;
+  };
+
+  // The state used to parse a single SPIR-V binary module.
+  struct State {
+    State(const uint32_t* words_arg, size_t num_words_arg,
+          spv_diagnostic* diagnostic_arg)
+        : words(words_arg),
+          num_words(num_words_arg),
+          diagnostic(diagnostic_arg),
+          word_index(0),
+          endian() {}
+    State() : State(0, 0, nullptr) {}
+    const uint32_t* words;       // Words in the binary SPIR-V module.
+    size_t num_words;            // Number of words in the module.
+    spv_diagnostic* diagnostic;  // Where diagnostics go.
+    size_t word_index;           // The current position in words.
+    spv_endianness_t endian;     // The endianness of the binary.
+
+    // Maps a result ID to its type ID.  By convention:
+    //  - a result ID that is a type definition maps to itself.
+    //  - a result ID without a type maps to 0.  (E.g. for OpLabel)
+    std::unordered_map<uint32_t, uint32_t> id_to_type_id;
+    // Maps a type ID to its number type description.
+    std::unordered_map<uint32_t, NumberType> type_id_to_number_type_info;
+    // Maps an ExtInstImport id to the extended instruction type.
+    std::unordered_map<uint32_t, spv_ext_inst_type_t>
+        import_id_to_ext_inst_type;
+  } _;
+};
+
+spv_result_t Parser::parse(const uint32_t* words, size_t num_words,
+                           spv_diagnostic* diagnostic_arg) {
+  _ = State(words, num_words, diagnostic_arg);
+
+  const spv_result_t result = parseModule();
+
+  // Clear the module state.  The tables might be big.
+  _ = State();
+
+  return result;
+}
+
+spv_result_t Parser::parseModule() {
+  if (!_.words) return diagnostic() << "Missing module.";
+
+  if (_.num_words < SPV_INDEX_INSTRUCTION)
+    return diagnostic() << "Module has incomplete header: only " << _.num_words
+                        << " words instead of " << SPV_INDEX_INSTRUCTION;
+
+  // Check the magic number and detect the module's endianness.
+  spv_binary_t binary = {_.words, _.num_words};  // Can't make this const. :-(
+  if (spvBinaryEndianness(&binary, &_.endian)) {
+    return diagnostic() << "Invalid SPIR-V magic number '" << std::hex
+                        << _.words[0] << "'.";
+  }
+
+  // Process the header.
+  spv_header_t header;
+  if (spvBinaryHeaderGet(&binary, _.endian, &header)) {
+    // It turns out there is no way to trigger this error since the only
+    // failure cases are already handled above, with better messages.
+    return diagnostic(SPV_ERROR_INTERNAL)
+           << "Internal error: unhandled header parse failure";
+  }
+  if (parsed_header_fn_) {
+    if (auto error = parsed_header_fn_(user_data_, _.endian, header.magic,
+                                       header.version, header.generator,
+                                       header.bound, header.schema)) {
+      return error;
+    }
+  }
+
+  // Process the instructions.
+  _.word_index = SPV_INDEX_INSTRUCTION;
+  while (_.word_index < _.num_words)
+    if (auto error = parseInstruction()) return error;
+
+  // Running off the end should already have been reported earlier.
+  assert(_.word_index == _.num_words);
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t Parser::parseInstruction() {
+  // The zero values for all members except for opcode are the
+  // correct initial values.
+  spv_parsed_instruction_t inst = {};
+  inst.offset = _.word_index;
+
+  // After a successful parse of the instruction, the inst.operands member
+  // will point to this vector's storage.
+  // TODO(dneto): If it's too expensive to construct the operands vector for
+  // each instruction, then make this a class data member instead, and clear it
+  // here.
+  std::vector<spv_parsed_operand_t> operands;
+  // Most instructions have fewer than 25 logical operands.
+  operands.reserve(25);
+
+  assert(_.word_index < _.num_words);
+  // Decompose and check the first word.
+  uint16_t inst_word_count = 0;
+  spvOpcodeSplit(peek(), &inst_word_count, &inst.opcode);
+  if (inst_word_count < 1) {
+    return diagnostic() << "Invalid instruction word count: "
+                        << inst_word_count;
+  }
+  spv_opcode_desc opcode_desc;
+  if (grammar_.lookupOpcode(inst.opcode, &opcode_desc))
+    return diagnostic() << "Invalid opcode: " << int(inst.opcode);
+
+  _.word_index++;
+
+  // Maintains the ordered list of expected operand types.
+  // For many instructions we only need the {numTypes, operandTypes}
+  // entries in opcode_desc.  However, sometimes we need to modify
+  // the list as we parse the operands. This occurs when an operand
+  // has its own logical operands (such as the LocalSize operand for
+  // ExecutionMode), or for extended instructions that may have their
+  // own operands depending on the selected extended instruction.
+  spv_operand_pattern_t expected_operands(
+      opcode_desc->operandTypes,
+      opcode_desc->operandTypes + opcode_desc->numTypes);
+
+  while (_.word_index < inst.offset + inst_word_count) {
+    const uint16_t inst_word_index = _.word_index - inst.offset;
+    if (expected_operands.empty()) {
+      return diagnostic() << "Invalid instruction Op" << opcode_desc->name
+                          << " starting at word " << inst.offset
+                          << ": expected no more operands after "
+                          << inst_word_index
+                          << " words, but stated word count is "
+                          << inst_word_count << ".";
+    }
+
+    spv_operand_type_t type = spvTakeFirstMatchableOperand(&expected_operands);
+
+    if (auto error = parseOperand(&inst, type, &operands, &expected_operands))
+      return error;
+  }
+
+  if (!expected_operands.empty() &&
+      !spvOperandIsOptional(expected_operands.front())) {
+    return diagnostic() << "End of input reached while decoding Op"
+                        << opcode_desc->name << " starting at word "
+                        << inst.offset << ": expected more operands after "
+                        << inst_word_count << " words.";
+  }
+
+  if ((inst.offset + inst_word_count) != _.word_index) {
+    return diagnostic() << "Invalid word count: Instruction starting at word "
+                        << inst.offset << " says it has " << inst_word_count
+                        << " words, but found " << _.word_index - inst.offset
+                        << " words instead.";
+  }
+
+  recordNumberType(&inst);
+
+  // Must wait until here to set the inst.operands pointer because the vector
+  // might be resized while we accumulate itse elements.
+  inst.operands = operands.data();
+  inst.num_operands = operands.size();
+
+  // Issue the callback.  The callee should know that all the storage in inst
+  // is transient, and will disappear immediately afterward.
+  if (parsed_instruction_fn_) {
+    if (auto error = parsed_instruction_fn_(user_data_, &inst)) return error;
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
+                                  const spv_operand_type_t type,
+                                  std::vector<spv_parsed_operand_t>* operands,
+                                  spv_operand_pattern_t* expected_operands) {
+  // We'll fill in this result as we go along.
+  spv_parsed_operand_t parsed_operand;
+  parsed_operand.offset = _.word_index - inst->offset;
+  // Most operands occupy one word.  This might be be adjusted later.
+  parsed_operand.num_words = 1;
+  // The type argument is the one used by the grammar to parse the instruction.
+  // But it can exposes internal parser details such as whether an operand is
+  // optional or actually represents a variable-length sequence of operands.
+  // The resulting type should be adjusted to avoid those internal details.
+  // In most cases, the resulting operand type is the same as the grammar type.
+  parsed_operand.type = type;
+
+  // Assume non-numeric values.  This will be updated for literal numbers.
+  parsed_operand.number_kind = SPV_NUMBER_NONE;
+  parsed_operand.number_bit_width = 0;
+
+  const uint32_t word = peek();
 
   switch (type) {
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
-    case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_TYPE_ID:
+      if (!word) return diagnostic() << "Error: Type Id is 0";
+      inst->type_id = word;
+      break;
+
+    case SPV_OPERAND_TYPE_RESULT_ID:
+      if (!word) return diagnostic() << "Error: Result Id is 0";
+      inst->result_id = word;
+      // Save the result ID to type ID mapping.
+      // In the grammar, type ID always appears before result ID.
+      if (_.id_to_type_id.find(inst->result_id) != _.id_to_type_id.end())
+        return diagnostic() << "Id " << inst->result_id
+                            << " is defined more than once";
+      // Record it.
+      // A regular value maps to its type.  Some instructions (e.g. OpLabel)
+      // have no type Id, and will map to 0.  The result Id for a
+      // type-generating instruction (e.g. OpTypeInt) maps to itself.
+      _.id_to_type_id[inst->result_id] = spvOpcodeGeneratesType(inst->opcode)
+                                             ? inst->result_id
+                                             : inst->type_id;
+      break;
+
+    case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
+      if (!word) return diagnostic() << "Id is 0";
+      parsed_operand.type = SPV_OPERAND_TYPE_ID;
+
+      if (inst->opcode == SpvOpExtInst && parsed_operand.offset == 3) {
+        // The current word is the extended instruction set Id.
+        // Set the extended instruction set type for the current instruction.
+        auto ext_inst_type_iter = _.import_id_to_ext_inst_type.find(word);
+        if (ext_inst_type_iter == _.import_id_to_ext_inst_type.end()) {
+          return diagnostic()
+                 << "OpExtInst set Id " << word
+                 << " does not reference an OpExtInstImport result Id";
+        }
+        inst->ext_inst_type = ext_inst_type_iter->second;
+      }
+      break;
+
+    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
-    case SPV_OPERAND_TYPE_RESULT_ID: {
-      if (color) {
-        if (type == SPV_OPERAND_TYPE_RESULT_ID) {
-          stream.get() << clr::blue();
-        } else {
-          stream.get() << clr::yellow();
-        }
-      }
-      stream.get() << "%" << spvFixWord(words[0], endian);
-      stream.get() << ((color) ? clr::reset() : "");
-      position->index++;
-    } break;
+      if (!word) return diagnostic() << spvOperandTypeStr(type) << " Id is 0";
+      break;
+
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
-      if (SpvOpExtInst == opcode) {
-        spv_ext_inst_desc extInst;
-        if (grammar.lookupExtInst(*pExtInstType, words[0], &extInst)) {
-          DIAGNOSTIC << "Invalid extended instruction '" << words[0] << "'.";
-          return SPV_ERROR_INVALID_BINARY;
-        }
-        spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
-        stream.get() << (color ? clr::red() : "");
-        stream.get() << extInst->name;
-        stream.get() << (color ? clr::reset() : "");
-        position->index++;
-      } else {
-        DIAGNOSTIC << "Internal error: grammar thinks we need an "
-                      "extension instruction number for opcode "
-                   << opcode;
-        return SPV_ERROR_INTERNAL;
-      }
+      assert(SpvOpExtInst == inst->opcode);
+      assert(inst->ext_inst_type != SPV_EXT_INST_TYPE_NONE);
+      spv_ext_inst_desc ext_inst;
+      if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst))
+        return diagnostic() << "Invalid extended instruction number: " << word;
+      spvPrependOperandTypes(ext_inst->operandTypes, expected_operands);
     } break;
+
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE: {
-      // TODO: Need to support multiple word literals
-      stream.get() << (color ? clr::red() : "");
-      if (numWords > 2) {
-        DIAGNOSTIC << "Literal numbers larger than 64-bit not supported yet.";
-        return SPV_UNSUPPORTED;
-      } else if (numWords == 2) {
-        stream.get() << spvFixDoubleWord(words[0], words[1], endian);
-        position->index += 2;
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE:
+      // TODO(dneto): Type checking and validation?
+      parsed_operand.type = SPV_OPERAND_TYPE_LITERAL_INTEGER;
+      if (inst->opcode == SpvOpSwitch) {
+        // The literal operands have the same type as the value
+        // referenced by the selector Id.
+        const uint32_t selector_id = peekAt(inst->offset + 1);
+        auto type_id_iter = _.id_to_type_id.find(selector_id);
+        if (type_id_iter == _.id_to_type_id.end()) {
+          return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
+                              << " has no type";
+        }
+        uint32_t type_id = type_id_iter->second;
+
+        if (selector_id == type_id) {
+          // Recall that by convention, a result ID that is a type definition
+          // maps to itself.
+          return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
+                              << " is a type, not a value";
+        }
+        if (auto error = setNumericTypeInfoForType(&parsed_operand, type_id))
+          return error;
+        if (parsed_operand.number_kind != SPV_NUMBER_UNSIGNED_INT &&
+            parsed_operand.number_kind != SPV_NUMBER_SIGNED_INT) {
+          return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
+                              << " is not a scalar integer";
+        }
       } else {
-        stream.get() << spvFixWord(words[0], endian);
-        position->index++;
+        // These are regular single-word literal integer operands.
+        // Post-parsing validation should check the range.
+        parsed_operand.number_kind = SPV_NUMBER_UNSIGNED_INT;
+        parsed_operand.number_bit_width = 32;
       }
-      stream.get() << (color ? clr::reset() : "");
-    } break;
+      break;
+
+    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
+      // TODO(dneto): Consider creating a SPV_OPERAND_TYPE_LITERAL_FLOATING
+      // for the floating point OpConstant/OpSpecConstant case.
+      assert(inst->opcode == SpvOpConstant ||
+             inst->opcode == SpvOpSpecConstant);
+      if (auto error =
+              setNumericTypeInfoForType(&parsed_operand, inst->type_id))
+        return error;
+      break;
+
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
-      const char* string = (const char*)words;
-      uint64_t stringOperandCount = (strlen(string) / 4) + 1;
-
-      // NOTE: Special case for extended instruction import
-      if (SpvOpExtInstImport == opcode) {
-        *pExtInstType = spvExtInstImportTypeGet(string);
-        if (SPV_EXT_INST_TYPE_NONE == *pExtInstType) {
-          DIAGNOSTIC << "Invalid extended instruction import'" << string
-                     << "'.";
-          return SPV_ERROR_INVALID_BINARY;
-        }
+      // TODO(dneto): Make and use spvFixupString();
+      const char* string =
+          reinterpret_cast<const char*>(_.words + _.word_index);
+      size_t string_num_words = (strlen(string) / 4) + 1;  // Account for null.
+      // Make sure we can record the word count without overflow.
+      // We still might have a string that's 64K words, but would still
+      // make the instruction too long because of earlier operands.
+      // That will be caught later at the end of the instruciton.
+      if (string_num_words > std::numeric_limits<uint16_t>::max()) {
+        return diagnostic() << "Literal string is longer than "
+                            << std::numeric_limits<uint16_t>::max()
+                            << " words: " << string_num_words << " words long";
       }
+      parsed_operand.num_words = string_num_words;
+      parsed_operand.type = SPV_OPERAND_TYPE_LITERAL_STRING;
 
-      stream.get() << "\"";
-      stream.get() << (color ? clr::green() : "");
-      for (const char* p = string; *p; ++p) {
-        if (*p == '"' || *p == '\\') {
-          stream.get() << '\\';
+      if (SpvOpExtInstImport == inst->opcode) {
+        // Record the extended instruction type for the ID for this import.
+        // There is only one string literal argument to OpExtInstImport,
+        // so it's sufficient to guard this just on the opcode.
+        const spv_ext_inst_type_t ext_inst_type =
+            spvExtInstImportTypeGet(string);
+        if (SPV_EXT_INST_TYPE_NONE == ext_inst_type) {
+          return diagnostic() << "Invalid extended instruction import '"
+                              << string << "'";
         }
-        stream.get() << *p;
+        // We must have parsed a valid result ID.  It's a condition
+        // of the grammar, and we only accept non-zero result Ids.
+        assert(inst->result_id);
+        _.import_id_to_ext_inst_type[inst->result_id] = ext_inst_type;
       }
-      stream.get() << (color ? clr::reset() : "");
-      stream.get() << "\"";
-      position->index += stringOperandCount;
     } break;
+
+    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
+      parsed_operand.type = SPV_OPERAND_TYPE_EXECUTION_MODE;
+    // Fall through
     case SPV_OPERAND_TYPE_CAPABILITY:
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
     case SPV_OPERAND_TYPE_EXECUTION_MODEL:
     case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
     case SPV_OPERAND_TYPE_EXECUTION_MODE:
-    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
     case SPV_OPERAND_TYPE_STORAGE_CLASS:
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
@@ -234,18 +544,16 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
+      // A single word that is a plain enum value.
       spv_operand_desc entry;
-      if (grammar.lookupOperand(type, spvFixWord(words[0], endian), &entry)) {
-        DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
-                   << words[0] << "'.";
-        return SPV_ERROR_INVALID_TEXT;  // TODO(dneto): Surely this is invalid
-                                        // binary.
+      if (grammar_.lookupOperand(type, word, &entry)) {
+        return diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                            << " operand: " << word;
       }
-      stream.get() << entry->name;
       // Prepare to accept operands to this operand, if needed.
-      spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
-      position->index++;
+      spvPrependOperandTypes(entry->operandTypes, expected_operands);
     } break;
+
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
@@ -253,358 +561,97 @@ spv_result_t spvBinaryDecodeOperand(
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       // This operand is a mask.
-      // Scan it from least significant bit to most significant bit.  For each
-      // set bit, emit the name of that bit and prepare to parse its operands,
-      // if any.
-      uint32_t remaining_word = spvFixWord(words[0], endian);
-      uint32_t mask;
-      int num_emitted = 0;
-      for (mask = 1; remaining_word; mask <<= 1) {
+      // Check validity of set mask bits. Also prepare for operands for those
+      // masks if they have any.  To get operand order correct, scan from
+      // MSB to LSB since we can only prepend operands to a pattern.
+      // The only case in the grammar where you have more than one mask bit
+      // having an operand is for image operands.  See SPIR-V 3.14 Image
+      // Operands.
+      uint32_t remaining_word = word;
+      for (uint32_t mask = (1u << 31); remaining_word; mask >>= 1) {
         if (remaining_word & mask) {
-          remaining_word ^= mask;
           spv_operand_desc entry;
-          if (grammar.lookupOperand(type, mask, &entry)) {
-            DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
-                       << words[0] << "'.";
-            return SPV_ERROR_INVALID_BINARY;
+          if (grammar_.lookupOperand(type, mask, &entry)) {
+            return diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                                << " operand: " << word
+                                << " has invalid mask component " << mask;
           }
-          if (num_emitted) stream.get() << "|";
-          stream.get() << entry->name;
-          num_emitted++;
+          remaining_word ^= mask;
+          spvPrependOperandTypes(entry->operandTypes, expected_operands);
         }
       }
-      if (!num_emitted) {
-        // An operand value of 0 was provided, so represent it by the name
-        // of the 0 value. In many cases, that's "None".
+      if (word == 0) {
+        // An all-zeroes mask *might* also be valid.
         spv_operand_desc entry;
-        if (SPV_SUCCESS == grammar.lookupOperand(type, 0, &entry)) {
-          stream.get() << entry->name;
+        if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry)) {
           // Prepare for its operands, if any.
-          spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
+          spvPrependOperandTypes(entry->operandTypes, expected_operands);
         }
       }
-      // Prepare for subsequent operands, if any.
-      // Scan from MSB to LSB since we can only prepend operands to a pattern.
-      remaining_word = spvFixWord(words[0], endian);
-      for (mask = (1u << 31); remaining_word; mask >>= 1) {
-        if (remaining_word & mask) {
-          remaining_word ^= mask;
-          spv_operand_desc entry;
-          if (SPV_SUCCESS == grammar.lookupOperand(type, mask, &entry)) {
-            spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
-          }
-        }
-      }
-      position->index++;
     } break;
-    default: {
-      DIAGNOSTIC << "Invalid binary operand '" << type << "'";
-      return SPV_ERROR_INVALID_BINARY;
-    }
+    default:
+      return diagnostic() << "Internal error: Unhandled operand type: " << type;
   }
+
+  assert(int(SPV_OPERAND_TYPE_FIRST_CONCRETE_TYPE) <= int(parsed_operand.type));
+  assert(int(SPV_OPERAND_TYPE_LAST_CONCRETE_TYPE) >= int(parsed_operand.type));
+
+  operands->push_back(parsed_operand);
+
+  _.word_index += parsed_operand.num_words;
 
   return SPV_SUCCESS;
 }
 
-/// @brief Regsiters the given instruction with the type and id tracking
-///   tables.
-///
-/// @param[in] pInst the Opcode instruction stream
-/// @param[in] pOpcodeEntry the Opcode Entry describing the instruction
-/// @param[in, out] type_map the map of Ids to Types to be filled in
-/// @param[in, out] id_map the map of Ids to type Ids to be filled in
-/// @param[in, out] position position in the stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvRegisterIdForOpcode(const spv_instruction_t* pInst,
-                                    const spv_opcode_desc_t* pOpcodeEntry,
-                                    type_id_to_type_map* type_map,
-                                    id_to_type_id_map* id_map,
-                                    spv_position position,
-                                    spv_diagnostic* pDiagnostic) {
-  libspirv::IdType detected_type = libspirv::kUnknownType;
-  if (spvOpcodeGeneratesType(pOpcodeEntry->opcode)) {
-    if (SpvOpTypeInt == pOpcodeEntry->opcode) {
-      detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
-      detected_type.bitwidth = pInst->words[2];
-      detected_type.isSigned = (pInst->words[3] != 0);
-    } else if (SpvOpTypeFloat == pOpcodeEntry->opcode) {
-      detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
-      detected_type.bitwidth = pInst->words[2];
-      detected_type.isSigned = true;
-    } else {
-      detected_type.type_class = libspirv::IdTypeClass::kOtherType;
-    }
+spv_result_t Parser::setNumericTypeInfoForType(
+    spv_parsed_operand_t* parsed_operand, uint32_t type_id) {
+  assert(type_id);
+  auto type_info_iter = _.type_id_to_number_type_info.find(type_id);
+  if (type_info_iter == _.type_id_to_number_type_info.end()) {
+    return diagnostic() << "Type Id " << type_id << " is not a type";
+  }
+  const NumberType& info = type_info_iter->second;
+  if (info.type == SPV_NUMBER_NONE) {
+    // This is a valid type, but for something other than a scalar number.
+    return diagnostic() << "Type Id " << type_id
+                        << " is not a scalar numeric type";
   }
 
-  // We do not use else-if here so that we can still catch the case where an
-  // OpType* instruction shares the same ID as a non OpType* instruction.
-  if (pOpcodeEntry->hasResult) {
-    uint32_t value_id =
-        pOpcodeEntry->hasType ? pInst->words[2] : pInst->words[1];
-    if (id_map->find(value_id) != id_map->end()) {
-      DIAGNOSTIC << "Id " << value_id << " is defined more than once";
-      return SPV_ERROR_INVALID_BINARY;
-    }
-
-    (*id_map)[value_id] = pOpcodeEntry->hasType ? pInst->words[1] : 0;
-  }
-
-  if (detected_type != libspirv::kUnknownType) {
-    // This defines a new type.
-    uint32_t id = pInst->words[1];
-    (*type_map)[id] = detected_type;
-  }
-
+  parsed_operand->number_kind = info.type;
+  parsed_operand->number_bit_width = info.bit_width;
+  parsed_operand->num_words = info.bit_width / 32;
   return SPV_SUCCESS;
 }
 
-/// @brief Translate binary Opcode stream to textual form
-///
-/// @param[in] pInst the Opcode instruction stream
-/// @param[in] endian the endianness of the stream
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] grammar the AssemblyGrammar to when decoding this operand
-/// @param[in] format the assembly syntax format to decode into
-/// @param[out] stream output text stream
-/// @param[in,out] position position in the stream
-/// @param[out] pDiag return diagnostic on error
-///
-/// @return result code
-spv_result_t spvBinaryDecodeOpcode(
-    spv_instruction_t* pInst, const spv_endianness_t endian,
-    const uint32_t options, const libspirv::AssemblyGrammar& grammar,
-    type_id_to_type_map* type_map, id_to_type_id_map* id_map,
-    spv_assembly_syntax_format_t format, out_stream& stream,
-    spv_position position, spv_diagnostic* pDiagnostic) {
-  if (!pInst || !position) return SPV_ERROR_INVALID_POINTER;
-  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-
-  spv_position_t instructionStart = *position;
-
-  uint16_t wordCount;
-  SpvOp opcode;
-  spvOpcodeSplit(spvFixWord(pInst->words[0], endian), &wordCount, &opcode);
-
-  spv_opcode_desc opcodeEntry;
-  if (grammar.lookupOpcode(opcode, &opcodeEntry)) {
-    DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-
-  // See if there are enough required words.
-  // Some operands in the operand types are optional or could be zero length.
-  // The optional and zero length operands must be at the end of the list.
-  if (opcodeEntry->numTypes > wordCount &&
-      !spvOperandIsOptional(opcodeEntry->operandTypes[wordCount])) {
-    uint16_t numRequired;
-    for (numRequired = 0;
-         numRequired < opcodeEntry->numTypes &&
-         !spvOperandIsOptional(opcodeEntry->operandTypes[numRequired]);
-         numRequired++)
-      ;
-    DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-               << " word count '" << wordCount << "', expected at least '"
-               << numRequired << "'.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-
-  const bool isAssigmentFormat =
-      SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format;
-
-  // For Canonical Assembly Format, all words are written to stream in order.
-  // For Assignment Assembly Format, <result-id> and the equal sign are written
-  // to stream first, while the rest are written to no_result_id_stream. After
-  // processing all words, all words in no_result_id_stream are transcribed to
-  // stream.
-
-  std::stringstream no_result_id_strstream;
-  out_stream no_result_id_stream(no_result_id_strstream);
-  (isAssigmentFormat ? no_result_id_stream.get() : stream.get())
-      << "Op" << opcodeEntry->name;
-
-  const int16_t result_id_index = spvOpcodeResultIdIndex(opcodeEntry);
-  position->index++;
-
-  // Maintains the ordered list of expected operand types.
-  // For many instructions we only need the {numTypes, operandTypes}
-  // entries in opcodeEntry.  However, sometimes we need to modify
-  // the list as we parse the operands. This occurs when an operand
-  // has its own logical operands (such as the LocalSize operand for
-  // ExecutionMode), or for extended instructions that may have their
-  // own operands depending on the selected extended instruction.
-  spv_operand_pattern_t expectedOperands(
-      opcodeEntry->operandTypes,
-      opcodeEntry->operandTypes + opcodeEntry->numTypes);
-
-  for (uint16_t index = 1; index < wordCount; ++index) {
-    const uint64_t currentPosIndex = position->index;
-    const bool currentIsResultId = result_id_index == index - 1;
-
-    if (expectedOperands.empty()) {
-      DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-                 << " starting at word " << instructionStart.index
-                 << ": expected no more operands after " << index
-                 << " words, but word count is " << wordCount << ".";
-      return SPV_ERROR_INVALID_BINARY;
+void Parser::recordNumberType(const spv_parsed_instruction_t* inst) {
+  if (spvOpcodeGeneratesType(inst->opcode)) {
+    NumberType info = {SPV_NUMBER_NONE, 0};
+    if (SpvOpTypeInt == inst->opcode) {
+      const bool is_signed = peekAt(inst->offset + 3) != 0;
+      info.type = is_signed ? SPV_NUMBER_SIGNED_INT : SPV_NUMBER_UNSIGNED_INT;
+      info.bit_width = peekAt(inst->offset + 2);
+    } else if (SpvOpTypeFloat == inst->opcode) {
+      info.type = SPV_NUMBER_FLOATING;
+      info.bit_width = peekAt(inst->offset + 2);
     }
-
-    spv_operand_type_t type = spvTakeFirstMatchableOperand(&expectedOperands);
-
-    if (isAssigmentFormat) {
-      if (!currentIsResultId) no_result_id_stream.get() << " ";
-    } else {
-      stream.get() << " ";
-    }
-
-    uint16_t numWords = 1;
-    if (type == SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER) {
-      // Make sure this is the last operand for this instruction.
-      if (expectedOperands.empty()) {
-        numWords = wordCount - index;
-      } else {
-        // TODO(antiagainst): This may not be an error. The exact design has not
-        // been settled yet.
-        DIAGNOSTIC << "Multiple word literal numbers can only appear as the "
-                      "last operand of an instruction.";
-        return SPV_ERROR_INVALID_BINARY;
-      }
-    }
-
-    if (spvBinaryDecodeOperand(
-            opcodeEntry->opcode, type, &pInst->words[index], numWords, endian,
-            options, grammar, &expectedOperands, &pInst->extInstType,
-            (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
-                                                     : stream),
-            position, pDiagnostic)) {
-      DIAGNOSTIC << "UNEXPLAINED ERROR";
-      return SPV_ERROR_INVALID_BINARY;
-    }
-    if (isAssigmentFormat && currentIsResultId) stream.get() << " = ";
-    index += (uint16_t)(position->index - currentPosIndex - 1);
+    // The *result* Id of a type generating instruction is the type Id.
+    _.type_id_to_number_type_info[inst->result_id] = info;
   }
-  // TODO(dneto): There's an opportunity for a more informative message.
-  if (!expectedOperands.empty() &&
-      !spvOperandIsOptional(expectedOperands.front())) {
-    DIAGNOSTIC << "Invalid instruction Op" << opcodeEntry->name
-               << " starting at word " << instructionStart.index
-               << ": expected more operands after " << wordCount << " words.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-
-  stream.get() << no_result_id_strstream.str();
-  if (spv_result_t error = spvRegisterIdForOpcode(
-          pInst, opcodeEntry, type_map, id_map, position, pDiagnostic)) {
-    return error;
-  }
-  return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryToTextWithFormat(
-    uint32_t const* code, const uint64_t wordCount, const uint32_t options,
-    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
-    const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
-    spv_text* pText, spv_diagnostic* pDiagnostic) {
-  spv_binary_t binary = {code, wordCount};
+}  // anonymous namespace
 
-  spv_position_t position = {};
-  if (!binary.code || !binary.wordCount) {
-    DIAGNOSTIC << "Binary stream is empty.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-  if (!opcodeTable || !operandTable || !extInstTable)
-    return SPV_ERROR_INVALID_TABLE;
-  if (pText && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options))
-    return SPV_ERROR_INVALID_POINTER;
-  if (!pText && !spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options))
-    return SPV_ERROR_INVALID_POINTER;
-  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-
-  spv_endianness_t endian;
-  if (spvBinaryEndianness(&binary, &endian)) {
-    DIAGNOSTIC << "Invalid SPIR-V magic number '" << std::hex << binary.code[0]
-               << "'.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-
-  libspirv::AssemblyGrammar grammar(operandTable, opcodeTable, extInstTable);
-
-  spv_header_t header;
-  if (spvBinaryHeaderGet(&binary, endian, &header)) {
-    DIAGNOSTIC << "Invalid SPIR-V header.";
-    return SPV_ERROR_INVALID_BINARY;
-  }
-
-  bool print = spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
-  bool color =
-      print && spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options);
-
-  std::stringstream sstream;
-  out_stream stream(sstream);
-  if (print) {
-    stream = out_stream();
-  }
-
-  if (color) {
-    stream.get() << clr::grey();
-  }
-  stream.get() << "; SPIR-V\n"
-               << "; Version: " << header.version << "\n"
-               << "; Generator: " << spvGeneratorStr(header.generator) << "\n"
-               << "; Bound: " << header.bound << "\n"
-               << "; Schema: " << header.schema << "\n";
-  if (color) {
-    stream.get() << clr::reset();
-  }
-
-  const uint32_t* words = binary.code;
-  position.index = SPV_INDEX_INSTRUCTION;
-  spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
-
-  id_to_type_id_map id_map;
-  type_id_to_type_map type_map;
-
-  while (position.index < binary.wordCount) {
-    uint64_t index = position.index;
-    uint16_t wordCount;
-    SpvOp opcode;
-    spvOpcodeSplit(spvFixWord(words[position.index], endian), &wordCount,
-                   &opcode);
-
-    spv_instruction_t inst = {};
-    inst.extInstType = extInstType;
-    spvInstructionCopy(&words[position.index], opcode, wordCount, endian,
-                       &inst);
-
-    if (spvBinaryDecodeOpcode(&inst, endian, options, grammar, &type_map,
-                              &id_map, format, stream, &position, pDiagnostic))
-      return SPV_ERROR_INVALID_BINARY;
-    extInstType = inst.extInstType;
-
-    if ((index + wordCount) != position.index) {
-      DIAGNOSTIC << "Invalid word count.";
-      return SPV_ERROR_INVALID_BINARY;
-    }
-
-    stream.get() << "\n";
-  }
-
-  if (!print) {
-    size_t length = sstream.str().size();
-    char* str = new char[length + 1];
-    if (!str) return SPV_ERROR_OUT_OF_MEMORY;
-    strncpy(str, sstream.str().c_str(), length + 1);
-    spv_text text = new spv_text_t();
-    if (!text) return SPV_ERROR_OUT_OF_MEMORY;
-    text->str = str;
-    text->length = length;
-    *pText = text;
-  }
-
-  return SPV_SUCCESS;
+spv_result_t spvBinaryParse(void* user_data, const uint32_t* const code,
+                            const size_t num_words,
+                            spv_parsed_header_fn_t parsed_header,
+                            spv_parsed_instruction_fn_t parsed_instruction,
+                            spv_diagnostic* diagnostic) {
+  Parser parser(user_data, parsed_header, parsed_instruction);
+  return parser.parse(code, num_words, diagnostic);
 }
 
+// TODO(dneto): This probably belongs in text.cpp since that's the only place
+// that a spv_binary_t value is created.
 void spvBinaryDestroy(spv_binary binary) {
   if (!binary) return;
   if (binary->code) {

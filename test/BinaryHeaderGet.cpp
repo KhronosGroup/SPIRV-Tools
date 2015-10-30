@@ -77,4 +77,12 @@ TEST_F(BinaryHeaderGet, InvalidPointerHeader) {
             spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, nullptr));
 }
 
+TEST_F(BinaryHeaderGet, TruncatedHeader) {
+  for (int i = 1; i < SPV_INDEX_INSTRUCTION; i++) {
+    binary.wordCount = i;
+    ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
+              spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, nullptr));
+  }
+}
+
 }  // anonymous namespace

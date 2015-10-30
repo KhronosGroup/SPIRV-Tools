@@ -147,72 +147,95 @@ typedef enum spv_endianness_t {
 
 // The kinds of operands that an instruction may have.
 //
-// In addition to determining what kind of value an operand may be, certain
-// enums capture the fact that an operand might be optional (may be absent,
-// or present exactly once), or might occure zero or more times.
+// Some operand types are "concrete".  The binary parser uses a concrete
+// operand type to describe an operand of a parsed instruction.
+//
+// The assembler uses all operand types.  In addition to determining what
+// kind of value an operand may be, non-concrete operand types capture the
+// fact that an operand might be optional (may be absent, or present exactly
+// once), or might occure zero or more times.
 //
 // Sometimes we also need to be able to express the fact that an operand
 // is a member of an optional tuple of values.  In that case the first member
 // would be optional, and the subsequent members would be required.
 typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_NONE = 0,
-  SPV_OPERAND_TYPE_ID,
+
+#define FIRST_CONCRETE(ENUM) ENUM, SPV_OPERAND_TYPE_FIRST_CONCRETE_TYPE = ENUM
+#define LAST_CONCRETE(ENUM) ENUM, SPV_OPERAND_TYPE_LAST_CONCRETE_TYPE = ENUM
+
+  // Set 1:  Operands that are IDs.
+  FIRST_CONCRETE(SPV_OPERAND_TYPE_ID),
   SPV_OPERAND_TYPE_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
-  SPV_OPERAND_TYPE_LITERAL_INTEGER,
-  // A literal number that can (but is not required to) expand multiple words.
+  SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,  // SPIR-V Sec 3.25
+  SPV_OPERAND_TYPE_SCOPE_ID,             // SPIR-V Sec 3.27
+
+  // TODO(dneto): Remove these old names.
+  SPV_OPERAND_TYPE_MEMORY_SEMANTICS = SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,
+  SPV_OPERAND_TYPE_EXECUTION_SCOPE = SPV_OPERAND_TYPE_SCOPE_ID,
+
+  // Set 2:  Operands that are literal numbers.
+  SPV_OPERAND_TYPE_LITERAL_INTEGER,  // Always unsigned 32-bits.
+  // The Instruction argument to OpExtInst. It's an unsigned 32-bit literal
+  // number indicating which instruction to use from an extended instruction
+  // set.
+  SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+  // A literal number that occupies one or more words in binary form.
   SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
+
+  // Set 3:  The literal string operand type.
   SPV_OPERAND_TYPE_LITERAL_STRING,
-  SPV_OPERAND_TYPE_SOURCE_LANGUAGE,
-  SPV_OPERAND_TYPE_EXECUTION_MODEL,
-  SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-  SPV_OPERAND_TYPE_MEMORY_MODEL,
-  SPV_OPERAND_TYPE_EXECUTION_MODE,
-  SPV_OPERAND_TYPE_STORAGE_CLASS,
-  SPV_OPERAND_TYPE_DIMENSIONALITY,
-  SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE,
-  SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE,
-  SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,
-  SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER,
-  SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE,
-  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
-  SPV_OPERAND_TYPE_FP_ROUNDING_MODE,
-  SPV_OPERAND_TYPE_LINKAGE_TYPE,
-  SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
-  SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
-  SPV_OPERAND_TYPE_DECORATION,
-  SPV_OPERAND_TYPE_BUILT_IN,
-  SPV_OPERAND_TYPE_SELECTION_CONTROL,
-  SPV_OPERAND_TYPE_LOOP_CONTROL,
-  SPV_OPERAND_TYPE_FUNCTION_CONTROL,
 
-  // The ID for a memory semantics value.
-  SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
-  // The ID for an execution scope value.
-  // TODO(dneto): Rev 30 changed "Execution Scope" to "Scope".  We should
-  // probably do that here too.
-  SPV_OPERAND_TYPE_EXECUTION_SCOPE,
+  // Set 4:  Operands that are a single word enumerated value.
+  SPV_OPERAND_TYPE_SOURCE_LANGUAGE,               // SPIR-V Sec 3.2
+  SPV_OPERAND_TYPE_EXECUTION_MODEL,               // SPIR-V Sec 3.3
+  SPV_OPERAND_TYPE_ADDRESSING_MODEL,              // SPIR-V Sec 3.4
+  SPV_OPERAND_TYPE_MEMORY_MODEL,                  // SPIR-V Sec 3.5
+  SPV_OPERAND_TYPE_EXECUTION_MODE,                // SPIR-V Sec 3.6
+  SPV_OPERAND_TYPE_STORAGE_CLASS,                 // SPIR-V Sec 3.7
+  SPV_OPERAND_TYPE_DIMENSIONALITY,                // SPIR-V Sec 3.8
+  SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE,       // SPIR-V Sec 3.9
+  SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE,           // SPIR-V Sec 3.10
+  SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT,          // SPIR-V Sec 3.11
+  SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER,           // SPIR-V Sec 3.12
+  SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE,       // SPIR-V Sec 3.13
+  SPV_OPERAND_TYPE_FP_ROUNDING_MODE,              // SPIR-V Sec 3.16
+  SPV_OPERAND_TYPE_LINKAGE_TYPE,                  // SPIR-V Sec 3.17
+  SPV_OPERAND_TYPE_ACCESS_QUALIFIER,              // SPIR-V Sec 3.18
+  SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,  // SPIR-V Sec 3.19
+  SPV_OPERAND_TYPE_DECORATION,                    // SPIR-V Sec 3.20
+  SPV_OPERAND_TYPE_BUILT_IN,                      // SPIR-V Sec 3.21
+  SPV_OPERAND_TYPE_GROUP_OPERATION,               // SPIR-V Sec 3.28
+  SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS,              // SPIR-V Sec 3.29
+  SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,         // SPIR-V Sec 3.30
+  SPV_OPERAND_TYPE_CAPABILITY,                    // SPIR-V Sec 3.31
 
-  SPV_OPERAND_TYPE_GROUP_OPERATION,
-  SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS,
-  SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,
-  SPV_OPERAND_TYPE_CAPABILITY,
+  // Set 5:  Operands that are a single word bitmask.
+  // Sometimes a set bit indicates the instruction requires still more operands.
+  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,                         // SPIR-V Sec 3.14
+  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,                      // SPIR-V Sec 3.15
+  SPV_OPERAND_TYPE_SELECTION_CONTROL,                      // SPIR-V Sec 3.22
+  SPV_OPERAND_TYPE_LOOP_CONTROL,                           // SPIR-V Sec 3.23
+  SPV_OPERAND_TYPE_FUNCTION_CONTROL,                       // SPIR-V Sec 3.24
+  LAST_CONCRETE(SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS),  // SPIR-V Sec 3.26
+#undef FIRST_CONCRETE
+#undef LAST_CONCRETE
+
+  // The remaining operand types are only used internally by the assembler.
 
   // An optional operand represents zero or one logical operands.
   // In an instruction definition, this may only appear at the end of the
   // operand types.
   SPV_OPERAND_TYPE_OPTIONAL_ID,
-  // An optional image operands mask.  A set bit in the mask may
-  // imply that more arguments are required.
-  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+  // An optional literal number. This can expand to either a literal integer or
+  // a literal floating-point number.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
   // An optional literal integer.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
-  // An optional memory access qualifier mask, e.g. Volatile, Aligned,
-  // or a combination.
-  SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-  // An optional execution mode
+  // An optional execution mode.
   SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
   // A variable operand represents zero or more logical operands.
   // In an instruction definition, this may only appear at the end of the
@@ -237,14 +260,6 @@ typedef enum spv_operand_type_t {
   // assemble regardless of where they occur -- literals, IDs, immediate
   // integers, etc.
   SPV_OPERAND_TYPE_OPTIONAL_CIV,
-  // An optional literal number. This can expand to either a literal integer or
-  // a literal floating-point number.
-  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
-
-  // The Instruction argument to OpExtInst. It's an unsigned 32-bit literal
-  // number indicating which instruction to use from an extended instruction
-  // set.
-  SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
