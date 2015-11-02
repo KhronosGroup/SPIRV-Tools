@@ -85,12 +85,11 @@ TEST(TextWordGet, MultipleWords) {
   AssemblyContext data(input, nullptr);
 
   spv_position_t endPosition = {};
-  const char *words[] = {"Words", "in", "a", "sentence"};
+  const char* words[] = {"Words", "in", "a", "sentence"};
 
   std::string word;
   for (uint32_t wordIndex = 0; wordIndex < 4; ++wordIndex) {
-    ASSERT_EQ(SPV_SUCCESS,
-              data.getWord(word, &endPosition));
+    ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
     ASSERT_EQ(strlen(words[wordIndex]),
               endPosition.column - data.position().column);
     ASSERT_EQ(0, endPosition.line);
@@ -109,13 +108,12 @@ TEST(TextWordGet, MultipleWords) {
 
 TEST(TextWordGet, QuotesAreKept) {
   AutoText input(R"("quotes" "around words")");
-  const char *expected[] = {R"("quotes")", R"("around words")"};
+  const char* expected[] = {R"("quotes")", R"("around words")"};
   AssemblyContext data(input, nullptr);
 
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            data.getWord(word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
   EXPECT_EQ(8, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(8, endPosition.index);
@@ -125,8 +123,7 @@ TEST(TextWordGet, QuotesAreKept) {
   data.setPosition(endPosition);
   data.seekForward(1);
 
-  ASSERT_EQ(SPV_SUCCESS,
-            data.getWord(word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
   EXPECT_EQ(23, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(23, endPosition.index);
@@ -135,13 +132,12 @@ TEST(TextWordGet, QuotesAreKept) {
 
 TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
   AutoText input(R"(quotes" "between words)");
-  const char *expected[] = {R"(quotes" "between)", "words"};
+  const char* expected[] = {R"(quotes" "between)", "words"};
   AssemblyContext data(input, nullptr);
 
   std::string word;
   spv_position_t endPosition = {};
-  ASSERT_EQ(SPV_SUCCESS,
-            data.getWord(word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
   EXPECT_EQ(16, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(16, endPosition.index);
@@ -151,8 +147,7 @@ TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
   data.setPosition(endPosition);
   data.seekForward(1);
 
-  ASSERT_EQ(SPV_SUCCESS,
-            data.getWord(word, &endPosition));
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
   EXPECT_EQ(22, endPosition.column);
   EXPECT_EQ(0, endPosition.line);
   EXPECT_EQ(22, endPosition.index);

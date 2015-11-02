@@ -43,31 +43,30 @@ namespace libspirv {
 
 // This is a lattice for tracking types.
 enum class IdTypeClass {
-  kBottom = 0, // We have no information yet.
+  kBottom = 0,  // We have no information yet.
   kScalarIntegerType,
   kScalarFloatType,
   kOtherType
 };
-
 
 // Contains ID type information that needs to be tracked across all Ids.
 // Bitwidth is only valid when type_class is kScalarIntegerType or
 // kScalarFloatType.
 struct IdType {
   uint32_t bitwidth;  // Safe to assume that we will not have > 2^32 bits.
-  bool isSigned; // This is only significant if type_class is integral.
+  bool isSigned;      // This is only significant if type_class is integral.
   IdTypeClass type_class;
 };
 
 // Default equality operator for IdType. Tests if all members are the same.
-inline bool operator==(const IdType &first, const IdType &second) {
+inline bool operator==(const IdType& first, const IdType& second) {
   return (first.bitwidth == second.bitwidth) &&
          (first.isSigned == second.isSigned) &&
          (first.type_class == second.type_class);
 }
 
 // Tests whether any member of the IdTypes do not match.
-inline bool operator!=(const IdType &first, const IdType &second) {
+inline bool operator!=(const IdType& first, const IdType& second) {
   return !(first == second);
 }
 
@@ -88,7 +87,7 @@ inline bool isScalarFloating(const IdType& type) {
 // This is only valid for bottom, scalar integer, and scalar floating
 // classes.  For bottom, assume 32 bits.
 inline int assumedBitWidth(const IdType& type) {
-  switch(type.type_class) {
+  switch (type.type_class) {
     case IdTypeClass::kBottom:
       return 32;
     case IdTypeClass::kScalarIntegerType:
@@ -104,7 +103,7 @@ inline int assumedBitWidth(const IdType& type) {
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {
  public:
-  AssemblyContext(spv_text text, spv_diagnostic *diagnostic)
+  AssemblyContext(spv_text text, spv_diagnostic* diagnostic)
       : current_position_({}),
         pDiagnostic_(diagnostic),
         text_(text),
@@ -112,7 +111,7 @@ class AssemblyContext {
 
   // Assigns a new integer value to the given text ID, or returns the previously
   // assigned integer value if the ID has been seen before.
-  uint32_t spvNamedIdAssignOrGet(const char *textValue);
+  uint32_t spvNamedIdAssignOrGet(const char* textValue);
 
   // Returns the largest largest numeric ID that has been assigned.
   uint32_t getBound() const;
@@ -123,7 +122,7 @@ class AssemblyContext {
 
   // Sets word to the next word in the input text. Fills endPosition with
   // the next location past the end of the word.
-  spv_result_t getWord(std::string &word, spv_position endPosition);
+  spv_result_t getWord(std::string& word, spv_position endPosition);
 
   // Returns the next word in the input stream. It is invalid to call this
   // method if position has been set to a location in the stream that does not
@@ -160,22 +159,22 @@ class AssemblyContext {
   void seekForward(uint32_t size);
 
   // Sets the current position in the input stream to the given position.
-  void setPosition(const spv_position_t &newPosition) {
+  void setPosition(const spv_position_t& newPosition) {
     current_position_ = newPosition;
   }
 
   // Returns the current position in the input stream.
-  const spv_position_t &position() const { return current_position_; }
+  const spv_position_t& position() const { return current_position_; }
 
   // Appends the given 32-bit value to the given instruction.
   // Returns SPV_SUCCESS if the value could be correctly inserted in the
   // instruction.
-  spv_result_t binaryEncodeU32(const uint32_t value, spv_instruction_t *pInst);
+  spv_result_t binaryEncodeU32(const uint32_t value, spv_instruction_t* pInst);
 
   // Appends the given string to the given instruction.
   // Returns SPV_SUCCESS if the value could be correctly inserted in the
   // instruction.
-  spv_result_t binaryEncodeString(const char *value, spv_instruction_t *pInst);
+  spv_result_t binaryEncodeString(const char* value, spv_instruction_t* pInst);
 
   // Appends the given numeric literal to the given instruction.
   // Validates and respects the bitwidth supplied in the IdType argument.
@@ -184,10 +183,10 @@ class AssemblyContext {
   // Returns SPV_SUCCESS if the value could be correctly added to the
   // instruction.  Returns the given error code on failure, and emits
   // a diagnotic if that error code is not SPV_FAILED_MATCH.
-  spv_result_t binaryEncodeNumericLiteral(const char *numeric_literal,
+  spv_result_t binaryEncodeNumericLiteral(const char* numeric_literal,
                                           spv_result_t error_code,
-                                          const IdType &type,
-                                          spv_instruction_t *pInst);
+                                          const IdType& type,
+                                          spv_instruction_t* pInst);
 
   // Returns the IdType associated with this type-generating value.
   // If the type has not been previously recorded with recordTypeDefinition,
@@ -216,13 +215,14 @@ class AssemblyContext {
   // referenced by value_pointer. On failure, returns the given error code,
   // and emits a diagnostic if that error code is not SPV_FAILED_MATCH.
   template <typename T>
-  spv_result_t parseNumber(const char *text, spv_result_t error_code,
-                           T *value_pointer,
-                           const char *error_message_fragment) {
+  spv_result_t parseNumber(const char* text, spv_result_t error_code,
+                           T* value_pointer,
+                           const char* error_message_fragment) {
     // C++11 doesn't define std::istringstream(int8_t&), so calling this method
     // with a single-byte type leads to implementation-defined behaviour.
     // Similarly for uint8_t.
-    static_assert(sizeof(T) > 1, "Don't use a single-byte type this parse method");
+    static_assert(sizeof(T) > 1,
+                  "Don't use a single-byte type this parse method");
 
     std::istringstream text_stream(text);
     // Allow both decimal and hex input for integers.
@@ -257,20 +257,20 @@ class AssemblyContext {
   // returns the given error code, and emits a diagnostic if that error
   // code is not SPV_FAILED_MATCH.
   // Only 32 and 64 bit floating point numbers are supported.
-  spv_result_t binaryEncodeFloatingPointLiteral(const char *numeric_literal,
+  spv_result_t binaryEncodeFloatingPointLiteral(const char* numeric_literal,
                                                 spv_result_t error_code,
                                                 const IdType& type,
-                                                spv_instruction_t *pInst);
+                                                spv_instruction_t* pInst);
 
   // Appends the given integer literal to the given instruction.
   // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
   // returns the given error code, and emits a diagnostic if that error
   // code is not SPV_FAILED_MATCH.
   // Integers up to 64 bits are supported.
-  spv_result_t binaryEncodeIntegerLiteral(const char *numeric_literal,
+  spv_result_t binaryEncodeIntegerLiteral(const char* numeric_literal,
                                           spv_result_t error_code,
-                                          const IdType &type,
-                                          spv_instruction_t *pInst);
+                                          const IdType& type,
+                                          spv_instruction_t* pInst);
 
   // Returns SPV_SUCCESS if the given value fits within the target scalar
   // integral type.  The target type may have an unusual bit width.
@@ -281,13 +281,14 @@ class AssemblyContext {
   // On failure, return the given error code and emit a diagnostic if that error
   // code is not SPV_FAILED_MATCH.
   template <typename T>
-  spv_result_t checkRangeAndIfHexThenSignExtend(T value, spv_result_t error_code,
-                                                const IdType &type, bool is_hex,
-                                                T *updated_value_for_hex);
+  spv_result_t checkRangeAndIfHexThenSignExtend(T value,
+                                                spv_result_t error_code,
+                                                const IdType& type, bool is_hex,
+                                                T* updated_value_for_hex);
 
   // Writes the given 64-bit literal value into the instruction.
   // return SPV_SUCCESS if the value could be written in the instruction.
-  spv_result_t binaryEncodeU64(const uint64_t value, spv_instruction_t *pInst);
+  spv_result_t binaryEncodeU64(const uint64_t value, spv_instruction_t* pInst);
   // Maps ID names to their corresponding numerical ids.
   using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
   // Maps type-defining IDs to their IdType.
@@ -299,7 +300,7 @@ class AssemblyContext {
   spv_id_to_type_map types_;
   spv_id_to_type_id value_types_;
   spv_position_t current_position_;
-  spv_diagnostic *pDiagnostic_;
+  spv_diagnostic* pDiagnostic_;
   spv_text text_;
   uint32_t bound_;
 };

@@ -61,7 +61,6 @@ typedef struct spv_literal_t {
   } value;
 } spv_literal_t;
 
-
 // Functions
 
 /// @brief Convert the input text to one of the number types, or to
@@ -74,6 +73,6 @@ typedef struct spv_literal_t {
 /// @param[out] pLiteral the returned literal
 ///
 /// @return result code
-spv_result_t spvTextToLiteral(const char *textValue, spv_literal_t *pLiteral);
+spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral);
 
 #endif  // LIBSPIRV_TEXT_H_

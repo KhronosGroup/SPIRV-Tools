@@ -219,11 +219,10 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-using OpSpecConstantValidTest = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<ConstantTestCase>>;
+using OpSpecConstantValidTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<ConstantTestCase>>;
 
-TEST_P(OpSpecConstantValidTest, ValidTypes)
-{
+TEST_P(OpSpecConstantValidTest, ValidTypes) {
   const std::string input = "%1 = " + GetParam().constant_type +
                             "\n"
                             "%2 = OpSpecConstant %1 " +
@@ -289,17 +288,16 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-using OpSpecConstantInvalidTypeTest = spvtest::TextToBinaryTestBase<
-  ::testing::TestWithParam<std::string>>;
+using OpSpecConstantInvalidTypeTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
-TEST_P(OpSpecConstantInvalidTypeTest, InvalidTypes)
-{
+TEST_P(OpSpecConstantInvalidTypeTest, InvalidTypes) {
   const std::string input = "%1 = " + GetParam() +
                             "\n"
                             "%2 = OpSpecConstant %1 0\n";
-  EXPECT_THAT(
-      CompileFailure(input),
-      Eq("Type for SpecConstant must be a scalar floating point or integer type"));
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Type for SpecConstant must be a scalar floating point or "
+                 "integer type"));
 }
 
 // clang-format off
@@ -339,12 +337,12 @@ const int64_t kMaxSigned48Bit = (int64_t(1) << 47) - 1;
 const int64_t kMinSigned48Bit = -kMaxSigned48Bit - 1;
 
 TEST_P(RoundTripTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
-              Eq(GetParam()));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
 }
 
 // TODO(dneto): Enable support once this works.
-INSTANTIATE_TEST_CASE_P(DISABLED_OpConstantRoundTrip, RoundTripTest,
+INSTANTIATE_TEST_CASE_P(
+    DISABLED_OpConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
         "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 0\n",
@@ -387,7 +385,8 @@ INSTANTIATE_TEST_CASE_P(DISABLED_OpConstantRoundTrip, RoundTripTest,
     }));
 
 // TODO(dneto): Enable support once this works.
-INSTANTIATE_TEST_CASE_P(DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
+INSTANTIATE_TEST_CASE_P(
+    DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
         "%1 = OpTypeInt 16 0\n%2 = OpSpecConstant %1 0\n",

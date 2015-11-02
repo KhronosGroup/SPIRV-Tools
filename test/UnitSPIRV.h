@@ -121,7 +121,6 @@ inline std::vector<uint32_t> MakeInstruction(
   return result;
 }
 
-
 // Returns a vector of words representing a single instruction with the
 // given opcode and whose operands are the concatenation of the two given
 // argument lists.
@@ -207,7 +206,7 @@ inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
 
   std::string result;
   result.reserve(num_4_byte_chars * 4);
-  for (size_t i = 0; i < num_4_byte_chars; i++ ) {
+  for (size_t i = 0; i < num_4_byte_chars; i++) {
     result += earth_africa;
   }
   EXPECT_EQ(4 * num_4_byte_chars, result.size());

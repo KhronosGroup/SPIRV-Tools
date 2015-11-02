@@ -68,9 +68,7 @@ class FloatProxy {
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.
-  FloatProxy(T val) {
-    data_ = BitwiseCast<uint_type>(val);
-  }
+  FloatProxy(T val) { data_ = BitwiseCast<uint_type>(val); }
 
   // Intentionally non-explicit. This is a proxy type so
   // implicit conversions allow us to use it more transparently.

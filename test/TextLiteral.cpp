@@ -31,7 +31,6 @@
 
 #include <string>
 
-
 using ::testing::Eq;
 namespace {
 
@@ -119,26 +118,25 @@ TEST_P(GoodStringTest, GoodStrings) {
 INSTANTIATE_TEST_CASE_P(
     TextLiteral, GoodStringTest,
     ::testing::ValuesIn(std::vector<std::pair<const char*, const char*>>{
-      {R"("-")", "-"},
-      {R"("--")", "--"},
-      {R"("1-2")", "1-2"},
-      {R"("123a")", "123a"},
-      {R"("12.2.3")", "12.2.3"},
-      {R"("\"")", "\""},
-      {R"("\\")", "\\"},
-      {"\"\\foo\nbar\"", "foo\nbar"},
-      {"\"\\foo\\\nbar\"", "foo\nbar"},
-      {"\"\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
-      {"\"\\\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
-      {"\"this \\\" and this \\\\ and \\\xE4\xBA\xB2\"",
-        "this \" and this \\ and \xE4\xBA\xB2"}
-    }));
+        {R"("-")", "-"},
+        {R"("--")", "--"},
+        {R"("1-2")", "1-2"},
+        {R"("123a")", "123a"},
+        {R"("12.2.3")", "12.2.3"},
+        {R"("\"")", "\""},
+        {R"("\\")", "\\"},
+        {"\"\\foo\nbar\"", "foo\nbar"},
+        {"\"\\foo\\\nbar\"", "foo\nbar"},
+        {"\"\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
+        {"\"\\\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
+        {"\"this \\\" and this \\\\ and \\\xE4\xBA\xB2\"",
+         "this \" and this \\ and \xE4\xBA\xB2"}}));
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
-  std::string too_long = std::string("\"") +
-                         std::string(SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 1, 'a') +
-                         "\"";
+  std::string too_long =
+      std::string("\"") +
+      std::string(SPV_LIMIT_LITERAL_STRING_BYTES_MAX + 1, 'a') + "\"";
   EXPECT_EQ(SPV_ERROR_OUT_OF_MEMORY, spvTextToLiteral(too_long.data(), &l));
 }
 
@@ -175,19 +173,15 @@ struct TextLiteralCase {
   std::vector<uint32_t> expected_values;
 };
 
-using IntegerTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<TextLiteralCase>>;
+using IntegerTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<TextLiteralCase>>;
 
 std::vector<uint32_t> successfulEncode(const TextLiteralCase& test,
                                        libspirv::IdTypeClass type) {
   spv_instruction_t inst;
   spv_diagnostic diagnostic;
-  libspirv::IdType expected_type {
-      test.bitwidth,
-      test.is_signed,
-      type
-  };
- EXPECT_EQ(SPV_SUCCESS,
+  libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};
+  EXPECT_EQ(SPV_SUCCESS,
             libspirv::AssemblyContext(nullptr, &diagnostic)
                 .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
                                             expected_type, &inst))
@@ -199,11 +193,7 @@ std::string failedEncode(const TextLiteralCase& test,
                          libspirv::IdTypeClass type) {
   spv_instruction_t inst;
   spv_diagnostic diagnostic;
-  libspirv::IdType expected_type {
-      test.bitwidth,
-      test.is_signed,
-      type
-  };
+  libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
             libspirv::AssemblyContext(nullptr, &diagnostic)
                 .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
@@ -395,8 +385,7 @@ TEST(OverflowIntegerParse, Decimal) {
 
 TEST(OverflowIntegerParse, Hex) {
   std::string input = "0x10000000000000000";
-  std::string expected_message =
-      "Invalid unsigned integer literal: " + input;
+  std::string expected_message = "Invalid unsigned integer literal: " + input;
   EXPECT_THAT(failedEncode(Make_Bad_Signed(64, input.c_str()),
                            libspirv::IdTypeClass::kScalarIntegerType),
               Eq(expected_message));

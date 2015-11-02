@@ -48,8 +48,8 @@ TEST_P(DimTest, AnyDim) {
                             GetParam().name() + " 2 3 0 4 Rgba8";
   EXPECT_THAT(
       CompiledInstructions(input),
-      Eq(MakeInstruction(SpvOpTypeImage, {1, 2, GetParam().value(), 2, 3, 0,
-                                            4, SpvImageFormatRgba8})));
+      Eq(MakeInstruction(SpvOpTypeImage, {1, 2, GetParam().value(), 2, 3, 0, 4,
+                                          SpvImageFormatRgba8})));
 }
 
 // clang-format off
@@ -82,8 +82,8 @@ TEST_P(ImageFormatTest, AnyImageFormat) {
   const std::string input =
       "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name();
   EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(SpvOpTypeImage, {1, 2, SpvDim1D, 2, 3, 0,
-                                                    4, GetParam().value()})));
+              Eq(MakeInstruction(SpvOpTypeImage, {1, 2, SpvDim1D, 2, 3, 0, 4,
+                                                  GetParam().value()})));
 }
 
 // clang-format off

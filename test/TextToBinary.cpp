@@ -49,14 +49,10 @@ TEST(GetWord, Simple) {
   EXPECT_EQ("", AssemblyContext(AutoText("\na"), nullptr).getWord());
   EXPECT_EQ("abc", AssemblyContext(AutoText("abc"), nullptr).getWord());
   EXPECT_EQ("abc", AssemblyContext(AutoText("abc "), nullptr).getWord());
-  EXPECT_EQ("abc",
-            AssemblyContext(AutoText("abc\t"), nullptr).getWord());
-  EXPECT_EQ("abc",
-            AssemblyContext(AutoText("abc\r"), nullptr).getWord());
-  EXPECT_EQ("abc",
-            AssemblyContext(AutoText("abc\v"), nullptr).getWord());
-  EXPECT_EQ("abc",
-            AssemblyContext(AutoText("abc\n"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\t"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\r"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\v"), nullptr).getWord());
+  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\n"), nullptr).getWord());
 }
 
 // An mask parsing test case.
@@ -603,7 +599,8 @@ TEST(AssemblyContextParseMessages, Errors) {
   int16_t i16;
 
   // No message is generated for a failure to parse an optional value.
-  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("abc", ec, &i16, "bad narrow int: "));
+  EXPECT_EQ(SPV_FAILED_MATCH,
+            context.parseNumber("abc", ec, &i16, "bad narrow int: "));
   EXPECT_EQ(nullptr, diag);
 
   // For a required value, use the message fragment.

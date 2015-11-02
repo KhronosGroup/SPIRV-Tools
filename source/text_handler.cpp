@@ -111,7 +111,7 @@ spv_result_t advance(spv_text text, spv_position position) {
 /// @param[out] endPosition one past the end of the returned word
 ///
 /// @return result code
-spv_result_t getWord(spv_text text, spv_position position, std::string &word,
+spv_result_t getWord(spv_text text, spv_position position, std::string& word,
                      spv_position endPosition) {
   if (!text->str || !text->length) return SPV_ERROR_INVALID_TEXT;
   if (!position || !endPosition) return SPV_ERROR_INVALID_POINTER;
@@ -173,7 +173,7 @@ const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
 
 // This represents all of the data that is only valid for the duration of
 // a single compilation.
-uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char *textValue) {
+uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
   if (named_ids_.end() == named_ids_.find(textValue)) {
     named_ids_[std::string(textValue)] = bound_++;
   }
@@ -185,7 +185,7 @@ spv_result_t AssemblyContext::advance() {
   return ::advance(text_, &current_position_);
 }
 
-spv_result_t AssemblyContext::getWord(std::string &word,
+spv_result_t AssemblyContext::getWord(std::string& word,
                                       spv_position endPosition) {
   return ::getWord(text_, &current_position_, word, endPosition);
 }
@@ -248,13 +248,13 @@ void AssemblyContext::seekForward(uint32_t size) {
 }
 
 spv_result_t AssemblyContext::binaryEncodeU32(const uint32_t value,
-                                                     spv_instruction_t *pInst) {
+                                              spv_instruction_t* pInst) {
   spvInstructionAddWord(pInst, value);
   return SPV_SUCCESS;
 }
 
 spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
-                                                     spv_instruction_t *pInst) {
+                                              spv_instruction_t* pInst) {
   uint32_t low = uint32_t(0x00000000ffffffff & value);
   uint32_t high = uint32_t((0xffffffff00000000 & value) >> 32);
   binaryEncodeU32(low, pInst);
@@ -263,8 +263,8 @@ spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
 }
 
 spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
-    const char *val, spv_result_t error_code, const IdType &type,
-    spv_instruction_t *pInst) {
+    const char* val, spv_result_t error_code, const IdType& type,
+    spv_instruction_t* pInst) {
   const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
   const bool is_floating = libspirv::isScalarFloating(type);
   const bool is_integer = libspirv::isScalarIntegral(type);
@@ -286,8 +286,8 @@ spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
   return binaryEncodeIntegerLiteral(val, error_code, type, pInst);
 }
 
-spv_result_t AssemblyContext::binaryEncodeString(
-    const char *value, spv_instruction_t *pInst) {
+spv_result_t AssemblyContext::binaryEncodeString(const char* value,
+                                                 spv_instruction_t* pInst) {
   const size_t length = strlen(value);
   const size_t wordCount = (length / 4) + 1;
   const size_t oldWordCount = pInst->words.size();
@@ -305,18 +305,18 @@ spv_result_t AssemblyContext::binaryEncodeString(
   // write a partial word at the end.
   pInst->words.back() = 0;
 
-  char *dest = (char *)&pInst->words[oldWordCount];
+  char* dest = (char*)&pInst->words[oldWordCount];
   strncpy(dest, value, length);
 
   return SPV_SUCCESS;
 }
 
 spv_result_t AssemblyContext::recordTypeDefinition(
-    const spv_instruction_t *pInst) {
+    const spv_instruction_t* pInst) {
   uint32_t value = pInst->words[1];
   if (types_.find(value) != types_.end()) {
-    return diagnostic()
-           << "Value " << value << " has already been used to generate a type";
+    return diagnostic() << "Value " << value
+                        << " has already been used to generate a type";
   }
 
   if (pInst->opcode == SpvOpTypeInt) {
@@ -345,7 +345,7 @@ IdType AssemblyContext::getTypeOfTypeGeneratingValue(uint32_t value) const {
 IdType AssemblyContext::getTypeOfValueInstruction(uint32_t value) const {
   auto type_value = value_types_.find(value);
   if (type_value == value_types_.end()) {
-    return { 0, false, IdTypeClass::kBottom};
+    return {0, false, IdTypeClass::kBottom};
   }
   return getTypeOfTypeGeneratingValue(std::get<1>(*type_value));
 }
@@ -361,8 +361,8 @@ spv_result_t AssemblyContext::recordTypeIdForValue(uint32_t value,
 }
 
 spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
-    const char *val, spv_result_t error_code, const IdType &type,
-    spv_instruction_t *pInst) {
+    const char* val, spv_result_t error_code, const IdType& type,
+    spv_instruction_t* pInst) {
   const auto bit_width = assumedBitWidth(type);
   switch (bit_width) {
     case 16:
@@ -389,8 +389,8 @@ spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
 }
 
 spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
-    const char *val, spv_result_t error_code, const IdType &type,
-    spv_instruction_t *pInst) {
+    const char* val, spv_result_t error_code, const IdType& type,
+    spv_instruction_t* pInst) {
   const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
   const auto bit_width = assumedBitWidth(type);
 
@@ -437,8 +437,8 @@ spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
 
 template <typename T>
 spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
-    T value, spv_result_t error_code, const IdType &type, bool is_hex,
-    T *updated_value_for_hex) {
+    T value, spv_result_t error_code, const IdType& type, bool is_hex,
+    T* updated_value_for_hex) {
   // The encoded result has three regions of bits that are of interest, from
   // least to most significant:
   //   - magnitude bits, where the magnitude of the number would be stored if
@@ -497,4 +497,4 @@ spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
 
   return SPV_SUCCESS;
 }
-} // namespace libspirv
+}  // namespace libspirv

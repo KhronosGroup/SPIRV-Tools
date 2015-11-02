@@ -74,7 +74,7 @@ class ValidateID : public ::testing::Test {
 // TODO: OpUndef
 
 TEST_F(ValidateID, OpName) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpName %2 "name"
 %1 = OpTypeInt 32 0
 %2 = OpTypePointer UniformConstant %1
@@ -83,20 +83,20 @@ TEST_F(ValidateID, OpName) {
 }
 
 TEST_F(ValidateID, OpMemberNameGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberName %2 0 "foo"
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpMemberNameTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberName %1 0 "foo"
 %1 = OpTypeInt 32 0)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpMemberNameMemberBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberName %2 1 "foo"
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1)";
@@ -104,7 +104,7 @@ TEST_F(ValidateID, OpMemberNameMemberBad) {
 }
 
 TEST_F(ValidateID, OpLineGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpString "/path/to/source.file"
      OpLine %1 0 0
 %2 = OpTypeInt 32 0
@@ -113,7 +113,7 @@ TEST_F(ValidateID, OpLineGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLineFileBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpLine %2 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Generic %2
@@ -122,33 +122,33 @@ TEST_F(ValidateID, OpLineFileBad) {
 }
 
 TEST_F(ValidateID, OpDecorateGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpDecorate %2 GLSLShared
 %1 = OpTypeInt 64 0
 %2 = OpTypeStruct %1 %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpDecorateBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 OpDecorate %1 GLSLShared)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpMemberDecorateGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberDecorate %2 0 Uniform
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpMemberDecorateBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberDecorate %1 0 Uniform
 %1 = OpTypeInt 32 0)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpMemberDecorateMemberBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpMemberDecorate %2 3 Uniform
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
@@ -156,7 +156,7 @@ TEST_F(ValidateID, OpMemberDecorateMemberBad) {
 }
 
 TEST_F(ValidateID, OpGroupDecorateGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpDecorationGroup
      OpDecorate %1 Uniform
      OpDecorate %1 GLSLShared
@@ -167,7 +167,7 @@ TEST_F(ValidateID, OpGroupDecorateGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpGroupDecorateDecorationGroupBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpGroupDecorate %2 %3 %4
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 42
@@ -175,7 +175,7 @@ TEST_F(ValidateID, OpGroupDecorateDecorationGroupBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpGroupDecorateTargetBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpDecorationGroup
      OpDecorate %1 Uniform
      OpDecorate %1 GLSLShared
@@ -188,7 +188,7 @@ TEST_F(ValidateID, OpGroupDecorateTargetBad) {
 // TODO: OpExtInst
 
 TEST_F(ValidateID, OpEntryPointGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -200,13 +200,13 @@ TEST_F(ValidateID, OpEntryPointGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpEntryPointFunctionBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpEntryPoint GLCompute %1 ""
 %1 = OpTypeVoid)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpEntryPointParameterCountBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1 %1
@@ -217,7 +217,7 @@ TEST_F(ValidateID, OpEntryPointParameterCountBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeInt 32 0
 %2 = OpTypeFunction %1
@@ -229,7 +229,7 @@ TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
 }
 
 TEST_F(ValidateID, OpExecutionModeGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
@@ -241,7 +241,7 @@ TEST_F(ValidateID, OpExecutionModeGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -253,13 +253,13 @@ TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
 }
 
 TEST_F(ValidateID, OpTypeVectorGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypePointer UniformConstant %1
 %3 = OpTypeVector %2 4)";
@@ -267,14 +267,14 @@ TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
 }
 
 TEST_F(ValidateID, OpTypeMatrixGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeVector %1 2
 %3 = OpTypeMatrix %2 3)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeMatrixColumnTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeMatrix %1 3)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
@@ -282,27 +282,27 @@ TEST_F(ValidateID, OpTypeMatrixColumnTypeBad) {
 
 TEST_F(ValidateID, OpTypeSamplerGood) {
   // In Rev31, OpTypeSampler takes no arguments.
-  const char *spirv = R"(
+  const char* spirv = R"(
 %s = OpTypeSampler)";
   CHECK(spirv, SPV_SUCCESS);
 }
 
 TEST_F(ValidateID, OpTypeArrayGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1
 %3 = OpTypeArray %1 %2)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1
 %3 = OpTypeArray %2 %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpTypeArrayLengthBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeArray %1 %2)";
@@ -310,13 +310,13 @@ TEST_F(ValidateID, OpTypeArrayLengthBad) {
 }
 
 TEST_F(ValidateID, OpTypeRuntimeArrayGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeRuntimeArray %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeRuntimeArrayBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeRuntimeArray %2)";
@@ -326,7 +326,7 @@ TEST_F(ValidateID, OpTypeRuntimeArrayBad) {
 // Unifrom Storage Class
 
 TEST_F(ValidateID, OpTypeStructGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeFloat 64
 %3 = OpTypePointer Generic %1
@@ -334,7 +334,7 @@ TEST_F(ValidateID, OpTypeStructGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeStructMemberTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeFloat 64
 %3 = OpConstant %2 0.0
@@ -343,13 +343,13 @@ TEST_F(ValidateID, OpTypeStructMemberTypeBad) {
 }
 
 TEST_F(ValidateID, OpTypePointerGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypePointer Generic %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypePointerBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypePointer Generic %2)";
@@ -357,20 +357,20 @@ TEST_F(ValidateID, OpTypePointerBad) {
 }
 
 TEST_F(ValidateID, OpTypeFunctionGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypeFunctionReturnTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeFunction %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpTypeFunctionParameterBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 0
@@ -379,7 +379,7 @@ TEST_F(ValidateID, OpTypeFunctionParameterBad) {
 }
 
 TEST_F(ValidateID, OpTypePipeGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 16
 %3 = OpTypePipe ReadOnly)";
@@ -387,46 +387,46 @@ TEST_F(ValidateID, OpTypePipeGood) {
 }
 
 TEST_F(ValidateID, OpConstantTrueGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeBool
 %2 = OpConstantTrue %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantTrueBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantTrue %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantFalseGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeBool
 %2 = OpConstantTrue %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantFalseBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantFalse %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstant !1 !0)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantCompositeVectorGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpConstant %1 3.14
@@ -434,7 +434,7 @@ TEST_F(ValidateID, OpConstantCompositeVectorGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpConstant %1 3.14
@@ -442,7 +442,7 @@ TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeVectorConstituentBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
@@ -452,7 +452,7 @@ TEST_F(ValidateID, OpConstantCompositeVectorConstituentBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -466,7 +466,7 @@ TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantCompositeMatrixConstituentBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
 %11 = OpTypeVector %1 3
@@ -481,7 +481,7 @@ TEST_F(ValidateID, OpConstantCompositeMatrixConstituentBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeMatrixColumnTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeVector %1 2
@@ -495,7 +495,7 @@ TEST_F(ValidateID, OpConstantCompositeMatrixColumnTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeArrayGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
@@ -503,7 +503,7 @@ TEST_F(ValidateID, OpConstantCompositeArrayGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantCompositeArrayConstConstituentBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
@@ -511,7 +511,7 @@ TEST_F(ValidateID, OpConstantCompositeArrayConstConstituentBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeArrayConstituentBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
@@ -521,7 +521,7 @@ TEST_F(ValidateID, OpConstantCompositeArrayConstituentBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeStructGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
@@ -531,7 +531,7 @@ TEST_F(ValidateID, OpConstantCompositeStructGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantCompositeStructMemberBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
@@ -542,21 +542,21 @@ TEST_F(ValidateID, OpConstantCompositeStructMemberBad) {
 }
 
 TEST_F(ValidateID, OpConstantSamplerGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %float = OpTypeFloat 32
 %samplerType = OpTypeSampler
 %3 = OpConstantSampler %samplerType ClampToEdge 0 Nearest)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantSamplerResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpConstantSampler %1 Clamp 0 Nearest)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpConstantNullGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeBool
  %2 = OpConstantNull %1
  %3 = OpTypeInt 32 0
@@ -586,13 +586,13 @@ TEST_F(ValidateID, OpConstantNullGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpConstantNullBasicBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantNull %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantNullArrayBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %2 = OpTypeInt 32 0
 %3 = OpTypeSampler
 %4 = OpConstant %2 4
@@ -601,7 +601,7 @@ TEST_F(ValidateID, OpConstantNullArrayBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantNullStructBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %2 = OpTypeSampler
 %3 = OpTypeStruct %2 %2
 %4 = OpConstantNull %3)";
@@ -609,39 +609,39 @@ TEST_F(ValidateID, OpConstantNullStructBad) {
 }
 
 TEST_F(ValidateID, OpSpecConstantTrueGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeBool
 %2 = OpSpecConstantTrue %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpSpecConstantTrueBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstantTrue %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpSpecConstantFalseGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeBool
 %2 = OpSpecConstantFalse %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpSpecConstantFalseBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstantFalse %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, OpSpecConstantGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpSpecConstant %1 42)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpSpecConstantBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstant !1 !4)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
@@ -651,14 +651,14 @@ TEST_F(ValidateID, OpSpecConstantBad) {
 // TODO: OpSpecConstantOp
 
 TEST_F(ValidateID, OpVariableGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Generic %1
 %3 = OpVariable %2 Generic)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpVariableInitializerGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Generic %1
 %3 = OpConstant %1 42
@@ -667,13 +667,13 @@ TEST_F(ValidateID, OpVariableInitializerGood) {
 }
 // TODO: Positive test OpVariable with OpConstantNull of OpTypePointer
 TEST_F(ValidateID, OpVariableResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 1
 %2 = OpVariable %1 Generic)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpVariableInitializerBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Generic %1
 %3 = OpVariable %2 Generic %2)";
@@ -681,7 +681,7 @@ TEST_F(ValidateID, OpVariableInitializerBad) {
 }
 
 TEST_F(ValidateID, OpLoadGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 1
  %3 = OpTypePointer UniformConstant %2
@@ -696,7 +696,7 @@ TEST_F(ValidateID, OpLoadGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLoadResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -711,7 +711,7 @@ TEST_F(ValidateID, OpLoadResultTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpLoadPointerBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %9 = OpTypeFloat 32
@@ -727,7 +727,7 @@ TEST_F(ValidateID, OpLoadPointerBad) {
 }
 
 TEST_F(ValidateID, OpStoreGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -742,7 +742,7 @@ TEST_F(ValidateID, OpStoreGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpStorePointerBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -757,7 +757,7 @@ TEST_F(ValidateID, OpStorePointerBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpStoreObjectGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -772,7 +772,7 @@ TEST_F(ValidateID, OpStoreObjectGood) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpStoreTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %9 = OpTypeFloat 32
@@ -789,7 +789,7 @@ TEST_F(ValidateID, OpStoreTypeBad) {
 }
 
 TEST_F(ValidateID, OpCopyMemoryGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -807,7 +807,7 @@ TEST_F(ValidateID, OpCopyMemoryGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpCopyMemoryBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -828,7 +828,7 @@ TEST_F(ValidateID, OpCopyMemoryBad) {
 
 // TODO: OpCopyMemorySized
 TEST_F(ValidateID, OpCopyMemorySizedGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -845,7 +845,7 @@ TEST_F(ValidateID, OpCopyMemorySizedGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpCopyMemorySizedTargetBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
@@ -861,7 +861,7 @@ TEST_F(ValidateID, OpCopyMemorySizedTargetBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpCopyMemorySizedSourceBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
@@ -877,7 +877,7 @@ TEST_F(ValidateID, OpCopyMemorySizedSourceBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpCopyMemorySizedSizeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -894,7 +894,7 @@ TEST_F(ValidateID, OpCopyMemorySizedSizeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpCopyMemorySizedSizeTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -920,7 +920,7 @@ TEST_F(ValidateID, OpCopyMemorySizedSizeTypeBad) {
 // TODO: OpGenericPtrMemSemantics
 
 TEST_F(ValidateID, OpFunctionGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypeFunction %1 %2 %2
@@ -929,7 +929,7 @@ TEST_F(ValidateID, OpFunctionGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpFunctionResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %5 = OpConstant %2 42
@@ -939,7 +939,7 @@ TEST_F(ValidateID, OpFunctionResultTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpFunctionFunctionTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %4 = OpFunction %1 None %2
@@ -948,7 +948,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateID, OpFunctionParameterGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2
@@ -960,7 +960,7 @@ TEST_F(ValidateID, OpFunctionParameterGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2
@@ -972,7 +972,7 @@ TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpFunctionParameterOrderBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2
@@ -987,7 +987,7 @@ TEST_F(ValidateID, OpFunctionParameterOrderBad) {
 }
 
 TEST_F(ValidateID, OpFunctionCallGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1009,7 +1009,7 @@ TEST_F(ValidateID, OpFunctionCallGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpFunctionCallResultTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1031,7 +1031,7 @@ TEST_F(ValidateID, OpFunctionCallResultTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpFunctionCallFunctionBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1046,7 +1046,7 @@ TEST_F(ValidateID, OpFunctionCallFunctionBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpFunctionCallArgumentTypeBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1227,7 +1227,7 @@ TEST_F(ValidateID, OpFunctionCallArgumentCountBar) {
 // TODO: OpSwitch
 
 TEST_F(ValidateID, OpReturnValueConstantGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1239,7 +1239,7 @@ TEST_F(ValidateID, OpReturnValueConstantGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpReturnValueVariableGood) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0 ;10
 %3 = OpTypeFunction %2 %2 ;14
@@ -1253,7 +1253,7 @@ TEST_F(ValidateID, OpReturnValueVariableGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpReturnValueBad) {
-  const char *spirv = R"(
+  const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2

@@ -57,8 +57,7 @@ TEST_F(OpMemoryBarrier, BadMissingScopeId) {
 
 TEST_F(OpMemoryBarrier, BadInvalidScopeId) {
   const std::string input = "OpMemoryBarrier 99\n";
-  EXPECT_THAT(CompileFailure(input),
-              Eq("Expected id to start with %."));
+  EXPECT_THAT(CompileFailure(input), Eq("Expected id to start with %."));
 }
 
 TEST_F(OpMemoryBarrier, BadMissingMemorySemanticsId) {
@@ -69,8 +68,7 @@ TEST_F(OpMemoryBarrier, BadMissingMemorySemanticsId) {
 
 TEST_F(OpMemoryBarrier, BadInvalidMemorySemanticsId) {
   const std::string input = "OpMemoryBarrier %scope 14\n";
-  EXPECT_THAT(CompileFailure(input),
-              Eq("Expected id to start with %."));
+  EXPECT_THAT(CompileFailure(input), Eq("Expected id to start with %."));
 }
 
 // TODO(dneto): OpControlBarrier

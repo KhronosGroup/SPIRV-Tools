@@ -27,21 +27,21 @@
 #include "print.h"
 
 #if defined(SPIRV_LINUX) || defined(SPIRV_MAC)
-clr::reset::operator const char *() { return "\e[0m"; }
+clr::reset::operator const char*() { return "\e[0m"; }
 
-clr::grey::operator const char *() { return "\e[1;30m"; }
+clr::grey::operator const char*() { return "\e[1;30m"; }
 
-clr::red::operator const char *() { return "\e[31m"; }
+clr::red::operator const char*() { return "\e[31m"; }
 
-clr::green::operator const char *() { return "\e[32m"; }
+clr::green::operator const char*() { return "\e[32m"; }
 
-clr::yellow::operator const char *() { return "\e[33m"; }
+clr::yellow::operator const char*() { return "\e[33m"; }
 
-clr::blue::operator const char *() { return "\e[34m"; }
+clr::blue::operator const char*() { return "\e[34m"; }
 #elif defined(SPIRV_WINDOWS)
 #include <Windows.h>
 
-clr::reset::operator const char *() {
+clr::reset::operator const char*() {
   const DWORD color = 0Xf;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -51,7 +51,7 @@ clr::reset::operator const char *() {
   return "";
 }
 
-clr::grey::operator const char *() {
+clr::grey::operator const char*() {
   const DWORD color = 0x8;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -61,7 +61,7 @@ clr::grey::operator const char *() {
   return "";
 }
 
-clr::red::operator const char *() {
+clr::red::operator const char*() {
   const DWORD color = 0x4;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -71,7 +71,7 @@ clr::red::operator const char *() {
   return "";
 }
 
-clr::green::operator const char *() {
+clr::green::operator const char*() {
   const DWORD color = 0x2;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -81,7 +81,7 @@ clr::green::operator const char *() {
   return "";
 }
 
-clr::yellow::operator const char *() {
+clr::yellow::operator const char*() {
   const DWORD color = 0x6;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -91,7 +91,7 @@ clr::yellow::operator const char *() {
   return "";
 }
 
-clr::blue::operator const char *() {
+clr::blue::operator const char*() {
   const DWORD color = 0x1;
   HANDLE hConsole;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);

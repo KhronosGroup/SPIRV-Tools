@@ -46,11 +46,11 @@ class idUsage {
  public:
   idUsage(const spv_opcode_table opcodeTable,
           const spv_operand_table operandTable,
-          const spv_ext_inst_table extInstTable, const spv_id_info_t *pIdUses,
-          const uint64_t idUsesCount, const spv_id_info_t *pIdDefs,
-          const uint64_t idDefsCount, const spv_instruction_t *pInsts,
+          const spv_ext_inst_table extInstTable, const spv_id_info_t* pIdUses,
+          const uint64_t idUsesCount, const spv_id_info_t* pIdDefs,
+          const uint64_t idDefsCount, const spv_instruction_t* pInsts,
           const uint64_t instCount, spv_position position,
-          spv_diagnostic *pDiagnostic)
+          spv_diagnostic* pDiagnostic)
       : opcodeTable(opcodeTable),
         operandTable(operandTable),
         extInstTable(extInstTable),
@@ -66,17 +66,17 @@ class idUsage {
     }
   }
 
-  bool isValid(const spv_instruction_t *inst);
+  bool isValid(const spv_instruction_t* inst);
 
   template <SpvOp>
-  bool isValid(const spv_instruction_t *inst, const spv_opcode_desc);
+  bool isValid(const spv_instruction_t* inst, const spv_opcode_desc);
 
   std::unordered_map<uint32_t, spv_id_info_t>::iterator find(
-      const uint32_t &id) {
+      const uint32_t& id) {
     return idDefs.find(id);
   }
   std::unordered_map<uint32_t, spv_id_info_t>::const_iterator find(
-      const uint32_t &id) const {
+      const uint32_t& id) const {
     return idDefs.find(id);
   }
 
@@ -88,11 +88,11 @@ class idUsage {
   }
 
   std::unordered_map<uint32_t, std::vector<spv_id_info_t>>::iterator findUses(
-      const uint32_t &id) {
+      const uint32_t& id) {
     return idUses.find(id);
   }
   std::unordered_map<uint32_t, std::vector<spv_id_info_t>>::const_iterator
-  findUses(const uint32_t &id) const {
+  findUses(const uint32_t& id) const {
     return idUses.find(id);
   }
 
@@ -109,10 +109,10 @@ class idUsage {
   const spv_opcode_table opcodeTable;
   const spv_operand_table operandTable;
   const spv_ext_inst_table extInstTable;
-  const spv_instruction_t *const firstInst;
+  const spv_instruction_t* const firstInst;
   const uint64_t instCount;
   spv_position position;
-  spv_diagnostic *pDiagnostic;
+  spv_diagnostic* pDiagnostic;
   std::unordered_map<uint32_t, std::vector<spv_id_info_t>> idUses;
   std::unordered_map<uint32_t, spv_id_info_t> idDefs;
 };
@@ -131,7 +131,7 @@ bool idUsage::isValid<SpvOpUndef>(const spv_instruction_t *inst,
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpName>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpName>(const spv_instruction_t* inst,
                                  const spv_opcode_desc) {
   auto targetIndex = 1;
   auto target = find(inst->words[targetIndex]);
@@ -143,7 +143,7 @@ bool idUsage::isValid<SpvOpName>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto typeIndex = 1;
   auto type = find(inst->words[typeIndex]);
@@ -169,7 +169,7 @@ bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpLine>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpLine>(const spv_instruction_t* inst,
                                  const spv_opcode_desc) {
   auto fileIndex = 1;
   auto file = find(inst->words[fileIndex]);
@@ -185,7 +185,7 @@ bool idUsage::isValid<SpvOpLine>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
   auto targetIndex = 1;
   auto target = find(inst->words[targetIndex]);
@@ -197,7 +197,7 @@ bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
                                            const spv_opcode_desc) {
   auto structTypeIndex = 1;
   auto structType = find(inst->words[structTypeIndex]);
@@ -223,7 +223,7 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t* inst,
                                           const spv_opcode_desc) {
   auto decorationGroupIndex = 1;
   auto decorationGroup = find(inst->words[decorationGroupIndex]);
@@ -238,7 +238,8 @@ bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t *inst,
                << inst->words[decorationGroupIndex]
                << "' is not a decoration group.";
            return false);
-  for (size_t targetIndex = 2; targetIndex < inst->words.size(); ++targetIndex) {
+  for (size_t targetIndex = 2; targetIndex < inst->words.size();
+       ++targetIndex) {
     auto target = find(inst->words[targetIndex]);
     spvCheck(!found(target), DIAG(targetIndex)
                                  << "OpGroupDecorate Target <id> '"
@@ -262,7 +263,7 @@ bool idUsage::isValid<SpvOpExtInst>(const spv_instruction_t *inst,
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto entryPointIndex = 2;
   auto entryPoint = find(inst->words[entryPointIndex]);
@@ -296,7 +297,7 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpExecutionMode>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpExecutionMode>(const spv_instruction_t* inst,
                                           const spv_opcode_desc) {
   auto entryPointIndex = 1;
   auto entryPoint = find(inst->words[entryPointIndex]);
@@ -323,7 +324,7 @@ bool idUsage::isValid<SpvOpExecutionMode>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeVector>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeVector>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto componentIndex = 2;
   auto componentType = find(inst->words[componentIndex]);
@@ -341,7 +342,7 @@ bool idUsage::isValid<SpvOpTypeVector>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeMatrix>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeMatrix>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto columnTypeIndex = 2;
   auto columnType = find(inst->words[columnTypeIndex]);
@@ -359,14 +360,14 @@ bool idUsage::isValid<SpvOpTypeMatrix>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t *,
+bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
                                         const spv_opcode_desc) {
   // OpTypeSampler takes no arguments in Rev31 and beyond.
   return true;
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
                                       const spv_opcode_desc) {
   auto elementTypeIndex = 2;
   auto elementType = find(inst->words[elementTypeIndex]);
@@ -434,7 +435,7 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t* inst,
                                              const spv_opcode_desc) {
   auto elementTypeIndex = 2;
   auto elementType = find(inst->words[elementTypeIndex]);
@@ -452,7 +453,7 @@ bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
        ++memberTypeIndex) {
@@ -472,7 +473,7 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypePointer>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypePointer>(const spv_instruction_t* inst,
                                         const spv_opcode_desc) {
   auto typeIndex = 3;
   auto type = find(inst->words[typeIndex]);
@@ -488,7 +489,7 @@ bool idUsage::isValid<SpvOpTypePointer>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto returnTypeIndex = 2;
   auto returnType = find(inst->words[returnTypeIndex]);
@@ -520,14 +521,14 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpTypePipe>(const spv_instruction_t *,
+bool idUsage::isValid<SpvOpTypePipe>(const spv_instruction_t*,
                                      const spv_opcode_desc) {
   // OpTypePipe has no ID arguments.
   return true;
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantTrue>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstantTrue>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -545,7 +546,7 @@ bool idUsage::isValid<SpvOpConstantTrue>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantFalse>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstantFalse>(const spv_instruction_t* inst,
                                           const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -563,7 +564,7 @@ bool idUsage::isValid<SpvOpConstantFalse>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstant>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstant>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -582,7 +583,7 @@ bool idUsage::isValid<SpvOpConstant>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -773,7 +774,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
                                             const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -791,7 +792,7 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantNull>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpConstantNull>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -842,7 +843,8 @@ bool idUsage::isValid<SpvOpConstantNull>(const spv_instruction_t *inst,
     } break;
     case SpvOpTypeStruct: {
       for (size_t elementIndex = 2;
-           elementIndex < resultType->second.inst->words.size(); ++elementIndex) {
+           elementIndex < resultType->second.inst->words.size();
+           ++elementIndex) {
         auto element = find(resultType->second.inst->words[elementIndex]);
         spvCheck(!found(element), assert(0 && "Unreachable!"));
         spvCheck(!spvOpcodeIsBasicTypeNullable(element->second.inst->opcode),
@@ -858,7 +860,7 @@ bool idUsage::isValid<SpvOpConstantNull>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpSpecConstantTrue>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpSpecConstantTrue>(const spv_instruction_t* inst,
                                              const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -876,7 +878,7 @@ bool idUsage::isValid<SpvOpSpecConstantTrue>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpSpecConstantFalse>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpSpecConstantFalse>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -894,7 +896,7 @@ bool idUsage::isValid<SpvOpSpecConstantFalse>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpSpecConstant>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpSpecConstant>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -923,7 +925,7 @@ bool idUsage::isValid<SpvOpSpecConstantOp>(const spv_instruction_t *inst) {}
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t* inst,
                                      const spv_opcode_desc opcodeEntry) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -955,7 +957,7 @@ bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
                                  const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -987,7 +989,7 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpStore>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
                                   const spv_opcode_desc) {
   auto pointerIndex = 1;
   auto pointer = find(inst->words[pointerIndex]);
@@ -1004,10 +1006,10 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t *inst,
   spvCheck(!found(pointerType), assert(0 && "Unreachable!"));
   auto type = find(pointerType->second.inst->words[3]);
   spvCheck(!found(type), assert(0 && "Unreachable!"));
-  spvCheck(SpvOpTypeVoid == type->second.opcode, DIAG(pointerIndex)
-                                                  << "OpStore Pointer <id> '"
-                                                  << inst->words[pointerIndex]
-                                                  << "'s type is void.";
+  spvCheck(SpvOpTypeVoid == type->second.opcode,
+           DIAG(pointerIndex) << "OpStore Pointer <id> '"
+                              << inst->words[pointerIndex]
+                              << "'s type is void.";
            return false);
 
   auto objectIndex = 2;
@@ -1038,7 +1040,7 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpCopyMemory>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpCopyMemory>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   auto targetIndex = 1;
   auto target = find(inst->words[targetIndex]);
@@ -1071,7 +1073,7 @@ bool idUsage::isValid<SpvOpCopyMemory>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
                                             const spv_opcode_desc) {
   auto targetIndex = 1;
   auto target = find(inst->words[targetIndex]);
@@ -1172,7 +1174,7 @@ bool idUsage::isValid<SpvOpGenericPtrMemSemantics>(
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t* inst,
                                      const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -1205,7 +1207,7 @@ bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -1244,7 +1246,7 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t *inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = find(inst->words[resultTypeIndex]);
@@ -1935,7 +1937,7 @@ bool idUsage::isValid<OpSwitch>(const spv_instruction_t *inst,
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t *inst,
+bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                                         const spv_opcode_desc) {
   auto valueIndex = 1;
   auto value = find(inst->words[valueIndex]);
@@ -1951,7 +1953,7 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t *inst,
   auto valueType = find(value->second.inst->words[1]);
   spvCheck(!found(valueType), assert(0 && "Unreachable!"));
   // NOTE: Find OpFunction
-  const spv_instruction_t *function = inst - 1;
+  const spv_instruction_t* function = inst - 1;
   while (firstInst != function) {
     spvCheck(SpvOpFunction == function->opcode, break);
     function--;
@@ -2364,12 +2366,12 @@ bool idUsage::isValid<OpGroupCommitWritePipe>(
 
 #undef DIAG
 
-bool idUsage::isValid(const spv_instruction_t *inst) {
+bool idUsage::isValid(const spv_instruction_t* inst) {
   spv_opcode_desc opcodeEntry = nullptr;
   spvCheck(spvOpcodeTableValueLookup(opcodeTable, inst->opcode, &opcodeEntry),
            return false);
-#define CASE(OpCode)                                     \
-  case Spv##OpCode:                                      \
+#define CASE(OpCode) \
+  case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
 #define FAIL(OpCode)                                     \
   case Spv##OpCode:                                      \
@@ -2592,12 +2594,12 @@ bool idUsage::isValid(const spv_instruction_t *inst) {
 }  // anonymous namespace
 
 spv_result_t spvValidateInstructionIDs(
-    const spv_instruction_t *pInsts, const uint64_t instCount,
-    const spv_id_info_t *pIdUses, const uint64_t idUsesCount,
-    const spv_id_info_t *pIdDefs, const uint64_t idDefsCount,
+    const spv_instruction_t* pInsts, const uint64_t instCount,
+    const spv_id_info_t* pIdUses, const uint64_t idUsesCount,
+    const spv_id_info_t* pIdDefs, const uint64_t idDefsCount,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_position position,
-    spv_diagnostic *pDiag) {
+    spv_diagnostic* pDiag) {
   idUsage idUsage(opcodeTable, operandTable, extInstTable, pIdUses, idUsesCount,
                   pIdDefs, idDefsCount, pInsts, instCount, position, pDiag);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {

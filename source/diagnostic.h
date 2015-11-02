@@ -35,10 +35,10 @@
 
 class diagnostic_helper {
  public:
-  diagnostic_helper(spv_position_t &position, spv_diagnostic *pDiagnostic)
+  diagnostic_helper(spv_position_t& position, spv_diagnostic* pDiagnostic)
       : position(&position), pDiagnostic(pDiagnostic) {}
 
-  diagnostic_helper(spv_position position, spv_diagnostic *pDiagnostic)
+  diagnostic_helper(spv_position position, spv_diagnostic* pDiagnostic)
       : position(position), pDiagnostic(pDiagnostic) {}
 
   ~diagnostic_helper() {
@@ -49,7 +49,7 @@ class diagnostic_helper {
 
  private:
   spv_position position;
-  spv_diagnostic *pDiagnostic;
+  spv_diagnostic* pDiagnostic;
 };
 
 // A DiagnosticStream remembers the current position of the input and an error
@@ -61,11 +61,11 @@ class diagnostic_helper {
 //                  eventually.
 class DiagnosticStream {
  public:
-  DiagnosticStream(spv_position position, spv_diagnostic *pDiagnostic,
+  DiagnosticStream(spv_position position, spv_diagnostic* pDiagnostic,
                    spv_result_t error)
       : position_(position), pDiagnostic_(pDiagnostic), error_(error) {}
 
-  DiagnosticStream(DiagnosticStream &&other)
+  DiagnosticStream(DiagnosticStream&& other)
       : stream_(other.stream_.str()),
         position_(other.position_),
         pDiagnostic_(other.pDiagnostic_),
@@ -80,7 +80,7 @@ class DiagnosticStream {
 
   // Adds the given value to the diagnostic message to be written.
   template <typename T>
-  DiagnosticStream &operator<<(const T &val) {
+  DiagnosticStream& operator<<(const T& val) {
     stream_ << val;
     return *this;
   }
@@ -91,7 +91,7 @@ class DiagnosticStream {
  private:
   std::stringstream stream_;
   spv_position position_;
-  spv_diagnostic *pDiagnostic_;
+  spv_diagnostic* pDiagnostic_;
   spv_result_t error_;
 };
 

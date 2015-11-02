@@ -40,7 +40,7 @@
 /// @param[in] generator Khronos SPIR-V generator ID
 ///
 /// @return string name
-const char *spvGeneratorStr(uint32_t generator);
+const char* spvGeneratorStr(uint32_t generator);
 
 /// @brief Combine word count and Opcode enumerant in single word
 ///
@@ -55,7 +55,7 @@ uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode);
 /// @param[in] word binary opcode to split
 /// @param[out] wordCount the returned number of words (optional)
 /// @param[out] opcode the returned opcode enumerant (optional)
-void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, SpvOp *opcode);
+void spvOpcodeSplit(const uint32_t word, uint16_t* wordCount, SpvOp* opcode);
 
 /// @brief Find the named Opcode in the table
 ///
@@ -65,8 +65,8 @@ void spvOpcodeSplit(const uint32_t word, uint16_t *wordCount, SpvOp *opcode);
 ///
 /// @return result code
 spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
-                                      const char *name,
-                                      spv_opcode_desc *pEntry);
+                                      const char* name,
+                                      spv_opcode_desc* pEntry);
 
 /// @brief Find the opcode ID in the table
 ///
@@ -77,7 +77,7 @@ spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
 /// @return result code
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                        const SpvOp opcode,
-                                       spv_opcode_desc *pEntry);
+                                       spv_opcode_desc* pEntry);
 
 /// @brief Get the argument index for the <result-id> operand, if any.
 ///
@@ -107,16 +107,16 @@ int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry);
 /// @param[in] wordCount the number of words to copy
 /// @param[in] endian the endianness of the stream
 /// @param[out] pInst the returned instruction
-void spvInstructionCopy(const uint32_t *words, const SpvOp opcode,
+void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
                         const uint16_t wordCount, const spv_endianness_t endian,
-                        spv_instruction_t *pInst);
+                        spv_instruction_t* pInst);
 
 /// @brief Get the string of an OpCode
 ///
 /// @param[in] opcode the opcode
 ///
 /// @return the opcode string
-const char *spvOpcodeString(const SpvOp opcode);
+const char* spvOpcodeString(const SpvOp opcode);
 
 /// @brief Determine if the Opcode is a type
 ///
@@ -152,8 +152,8 @@ int32_t spvOpcodeIsComposite(const SpvOp opcode);
 /// @param[in] pTypeInst1 type definition one
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvOpcodeAreTypesEqual(const spv_instruction_t *pTypeInst0,
-                               const spv_instruction_t *pTypeInst1);
+int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* pTypeInst0,
+                               const spv_instruction_t* pTypeInst1);
 
 /// @brief Determine if the Opcode results in a pointer
 ///
@@ -182,8 +182,8 @@ int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
 /// @param[in] pInst current instruction
 ///
 /// @return zero if false, non-zero otherwise
-int32_t spvInstructionIsInBasicBlock(const spv_instruction_t *pFirstInst,
-                                     const spv_instruction_t *pInst);
+int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* pFirstInst,
+                                     const spv_instruction_t* pInst);
 
 /// @brief Determine if the Opcode contains a value
 ///

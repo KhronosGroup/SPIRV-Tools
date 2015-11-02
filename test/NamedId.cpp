@@ -32,7 +32,7 @@
 namespace {
 
 TEST(NamedId, Default) {
-  const char *spirv = R"(
+  const char* spirv = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
           OpEntryPoint Vertex %main "foo"

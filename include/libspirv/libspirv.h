@@ -103,7 +103,8 @@ typedef uint64_t spv_capability_mask_t;
 // be a constexpr inline function, but some important versions of MSVC don't
 // support that yet.  Different from SPV_BIT, which doesn't guarantee 64-bit
 // values.
-#define SPV_CAPABILITY_AS_MASK(capability) (spv_capability_mask_t(1) << (capability))
+#define SPV_CAPABILITY_AS_MASK(capability) \
+  (spv_capability_mask_t(1) << (capability))
 
 // Enumerations
 
@@ -291,11 +292,11 @@ typedef struct spv_header_t {
   uint32_t generator;
   uint32_t bound;
   uint32_t schema;               // NOTE: Reserved
-  const uint32_t *instructions;  // NOTE: Unfixed pointer to instruciton stream
+  const uint32_t* instructions;  // NOTE: Unfixed pointer to instruciton stream
 } spv_header_t;
 
 typedef struct spv_opcode_desc_t {
-  const char *name;
+  const char* name;
   const SpvOp opcode;
   const spv_capability_mask_t
       capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
@@ -313,11 +314,11 @@ typedef struct spv_opcode_desc_t {
 
 typedef struct spv_opcode_table_t {
   const uint32_t count;
-  const spv_opcode_desc_t *entries;
+  const spv_opcode_desc_t* entries;
 } spv_opcode_table_t;
 
 typedef struct spv_operand_desc_t {
-  const char *name;
+  const char* name;
   const uint32_t value;
   const spv_capability_mask_t
       capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
@@ -327,16 +328,16 @@ typedef struct spv_operand_desc_t {
 typedef struct spv_operand_desc_group_t {
   const spv_operand_type_t type;
   const uint32_t count;
-  const spv_operand_desc_t *entries;
+  const spv_operand_desc_t* entries;
 } spv_operand_desc_group_t;
 
 typedef struct spv_operand_table_t {
   const uint32_t count;
-  const spv_operand_desc_group_t *types;
+  const spv_operand_desc_group_t* types;
 } spv_operand_table_t;
 
 typedef struct spv_ext_inst_desc_t {
-  const char *name;
+  const char* name;
   const uint32_t ext_inst;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_ext_inst_desc_t;
@@ -344,21 +345,21 @@ typedef struct spv_ext_inst_desc_t {
 typedef struct spv_ext_inst_group_t {
   const spv_ext_inst_type_t type;
   const uint32_t count;
-  const spv_ext_inst_desc_t *entries;
+  const spv_ext_inst_desc_t* entries;
 } spv_ext_inst_group_t;
 
 typedef struct spv_ext_inst_table_t {
   const uint32_t count;
-  const spv_ext_inst_group_t *groups;
+  const spv_ext_inst_group_t* groups;
 } spv_ext_inst_table_t;
 
 typedef struct spv_binary_t {
-  uint32_t *code;
+  uint32_t* code;
   uint64_t wordCount;
 } spv_binary_t;
 
 typedef struct spv_text_t {
-  const char *str;
+  const char* str;
   uint64_t length;
 } spv_text_t;
 
@@ -370,22 +371,22 @@ typedef struct spv_position_t {
 
 typedef struct spv_diagnostic_t {
   spv_position_t position;
-  char *error;
+  char* error;
   bool isTextSource;
 } spv_diagnostic_t;
 
 // Type Definitions
 
-typedef const spv_opcode_desc_t *spv_opcode_desc;
-typedef const spv_opcode_table_t *spv_opcode_table;
-typedef const spv_operand_desc_t *spv_operand_desc;
-typedef const spv_operand_table_t *spv_operand_table;
-typedef const spv_ext_inst_desc_t *spv_ext_inst_desc;
-typedef const spv_ext_inst_table_t *spv_ext_inst_table;
-typedef spv_binary_t *spv_binary;
-typedef spv_text_t *spv_text;
-typedef spv_position_t *spv_position;
-typedef spv_diagnostic_t *spv_diagnostic;
+typedef const spv_opcode_desc_t* spv_opcode_desc;
+typedef const spv_opcode_table_t* spv_opcode_table;
+typedef const spv_operand_desc_t* spv_operand_desc;
+typedef const spv_operand_table_t* spv_operand_table;
+typedef const spv_ext_inst_desc_t* spv_ext_inst_desc;
+typedef const spv_ext_inst_table_t* spv_ext_inst_table;
+typedef spv_binary_t* spv_binary;
+typedef spv_text_t* spv_text;
+typedef spv_position_t* spv_position;
+typedef spv_diagnostic_t* spv_diagnostic;
 
 // Platform API
 
@@ -396,21 +397,21 @@ typedef spv_diagnostic_t *spv_diagnostic;
 /// @param[out] pOpcodeTable table to be populated
 ///
 /// @return result code
-spv_result_t spvOpcodeTableGet(spv_opcode_table *pOpcodeTable);
+spv_result_t spvOpcodeTableGet(spv_opcode_table* pOpcodeTable);
 
 /// @brief Populate the operand table
 ///
 /// @param[in] pOperandTable table to be populated
 ///
 /// @return result code
-spv_result_t spvOperandTableGet(spv_operand_table *pOperandTable);
+spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable);
 
 /// @brief Populate the extended instruction table
 ///
 /// @param pTable table to be populated
 ///
 /// @return result code
-spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
+spv_result_t spvExtInstTableGet(spv_ext_inst_table* pTable);
 
 // Text API
 
@@ -425,11 +426,11 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table *pTable);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextToBinary(const char *text, const uint64_t length,
+spv_result_t spvTextToBinary(const char* text, const uint64_t length,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
-                             spv_binary *pBinary, spv_diagnostic *pDiagnostic);
+                             spv_binary* pBinary, spv_diagnostic* pDiagnostic);
 
 /// @brief Entry point to covert text form to binary form
 ///
@@ -443,13 +444,13 @@ spv_result_t spvTextToBinary(const char *text, const uint64_t length,
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextWithFormatToBinary(const char *text, const uint64_t length,
+spv_result_t spvTextWithFormatToBinary(const char* text, const uint64_t length,
                                        spv_assembly_syntax_format_t format,
                                        const spv_opcode_table opcodeTable,
                                        const spv_operand_table operandTable,
                                        const spv_ext_inst_table extInstTable,
-                                       spv_binary *pBinary,
-                                       spv_diagnostic *pDiagnostic);
+                                       spv_binary* pBinary,
+                                       spv_diagnostic* pDiagnostic);
 
 /// @brief Free an allocated text stream
 ///
@@ -472,12 +473,12 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(uint32_t *binary, const uint64_t wordCount,
+spv_result_t spvBinaryToText(uint32_t* binary, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
-                             spv_text *pText, spv_diagnostic *pDiagnostic);
+                             spv_text* pText, spv_diagnostic* pDiagnostic);
 
 /// @brief Entry point to convert binary to text form
 ///
@@ -493,10 +494,10 @@ spv_result_t spvBinaryToText(uint32_t *binary, const uint64_t wordCount,
 ///
 /// @return result code
 spv_result_t spvBinaryToTextWithFormat(
-    uint32_t *binary, const uint64_t wordCount, const uint32_t options,
+    uint32_t* binary, const uint64_t wordCount, const uint32_t options,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
-    spv_text *pText, spv_diagnostic *pDiagnostic);
+    spv_text* pText, spv_diagnostic* pDiagnostic);
 
 /// @brief Free a binary stream from memory.
 ///
@@ -521,7 +522,7 @@ spv_result_t spvValidate(const spv_binary binary,
                          const spv_opcode_table opcodeTable,
                          const spv_operand_table operandTable,
                          const spv_ext_inst_table extInstTable,
-                         const uint32_t options, spv_diagnostic *pDiagnostic);
+                         const uint32_t options, spv_diagnostic* pDiagnostic);
 
 // Diagnostic API
 
@@ -532,7 +533,7 @@ spv_result_t spvValidate(const spv_binary binary,
 ///
 /// @return the diagnostic object
 spv_diagnostic spvDiagnosticCreate(const spv_position position,
-                                   const char *message);
+                                   const char* message);
 
 /// @brief Destroy a diagnostic object
 ///

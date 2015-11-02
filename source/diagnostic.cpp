@@ -35,7 +35,7 @@
 // Diagnostic API
 
 spv_diagnostic spvDiagnosticCreate(const spv_position position,
-                                   const char *message) {
+                                   const char* message) {
   spv_diagnostic diagnostic = new spv_diagnostic_t;
   if (!diagnostic) return nullptr;
   size_t length = strlen(message) + 1;
@@ -80,10 +80,8 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
   return SPV_ERROR_INVALID_VALUE;
 }
 
-
 DiagnosticStream::~DiagnosticStream() {
   if (pDiagnostic_ && error_ != SPV_FAILED_MATCH) {
     *pDiagnostic_ = spvDiagnosticCreate(position_, stream_.str().c_str());
   }
 }
-

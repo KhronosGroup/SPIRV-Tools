@@ -71,8 +71,8 @@ TEST(TextAdvance, LeadingWhitespaceAfterCommentLine) {
   AutoText input("; comment\n \t \tWord");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(4,  data.position().column);
-  ASSERT_EQ(1,  data.position().line);
+  ASSERT_EQ(4, data.position().column);
+  ASSERT_EQ(1, data.position().line);
   ASSERT_EQ(14, data.position().index);
 }
 

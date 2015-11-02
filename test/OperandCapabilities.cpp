@@ -66,10 +66,11 @@ TEST_P(EnumCapabilityTest, Sample) {
 // See SPIR-V Section 3.3 Execution Model
 INSTANTIATE_TEST_CASE_P(
     ExecutionModel, EnumCapabilityTest,
-    ::testing::ValuesIn( std::vector<EnumCapabilityCase>{
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
         CASE1(EXECUTION_MODEL, ExecutionModelVertex, Shader),
         CASE1(EXECUTION_MODEL, ExecutionModelTessellationControl, Tessellation),
-        CASE1(EXECUTION_MODEL, ExecutionModelTessellationEvaluation, Tessellation),
+        CASE1(EXECUTION_MODEL, ExecutionModelTessellationEvaluation,
+              Tessellation),
         CASE1(EXECUTION_MODEL, ExecutionModelGeometry, Geometry),
         CASE1(EXECUTION_MODEL, ExecutionModelFragment, Shader),
         CASE1(EXECUTION_MODEL, ExecutionModelGLCompute, Shader),
@@ -86,13 +87,12 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.5 Memory Model
-INSTANTIATE_TEST_CASE_P(
-    MemoryModel, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE1(MEMORY_MODEL, MemoryModelSimple, Shader),
-        CASE1(MEMORY_MODEL, MemoryModelGLSL450, Shader),
-        CASE1(MEMORY_MODEL, MemoryModelOpenCL, Kernel),
-    }));
+INSTANTIATE_TEST_CASE_P(MemoryModel, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE1(MEMORY_MODEL, MemoryModelSimple, Shader),
+                            CASE1(MEMORY_MODEL, MemoryModelGLSL450, Shader),
+                            CASE1(MEMORY_MODEL, MemoryModelOpenCL, Kernel),
+                        }));
 
 // See SPIR-V Section 3.6 Execution Mode
 INSTANTIATE_TEST_CASE_P(
@@ -119,11 +119,13 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(EXECUTION_MODE, ExecutionModeInputPoints, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeInputLines, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeInputLinesAdjacency, Geometry),
-        CASE2(EXECUTION_MODE, ExecutionModeInputTriangles, Geometry, Tessellation),
+        CASE2(EXECUTION_MODE, ExecutionModeInputTriangles, Geometry,
+              Tessellation),
         CASE1(EXECUTION_MODE, ExecutionModeInputTrianglesAdjacency, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeInputQuads, Tessellation),
         CASE1(EXECUTION_MODE, ExecutionModeInputIsolines, Tessellation),
-        CASE2(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry, Tessellation),
+        CASE2(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry,
+              Tessellation),
         CASE1(EXECUTION_MODE, ExecutionModeOutputPoints, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeOutputLineStrip, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeOutputTriangleStrip, Geometry),
@@ -154,10 +156,8 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     Dim, EnumCapabilityTest,
     ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE1(DIMENSIONALITY, Dim1D, Sampled1D),
-        CASE0(DIMENSIONALITY, Dim2D),
-        CASE0(DIMENSIONALITY, Dim3D),
-        CASE1(DIMENSIONALITY, DimCube, Shader),
+        CASE1(DIMENSIONALITY, Dim1D, Sampled1D), CASE0(DIMENSIONALITY, Dim2D),
+        CASE0(DIMENSIONALITY, Dim3D), CASE1(DIMENSIONALITY, DimCube, Shader),
         CASE1(DIMENSIONALITY, DimRect, SampledRect),
         CASE1(DIMENSIONALITY, DimBuffer, SampledBuffer),
         CASE1(DIMENSIONALITY, DimInputTarget, InputTarget),
@@ -168,10 +168,12 @@ INSTANTIATE_TEST_CASE_P(
     SamplerAddressingMode, EnumCapabilityTest,
     ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
         CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeNone, Kernel),
-        CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeClampToEdge, Kernel),
+        CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeClampToEdge,
+              Kernel),
         CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeClamp, Kernel),
         CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeRepeat, Kernel),
-        CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeRepeatMirrored, Kernel),
+        CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeRepeatMirrored,
+              Kernel),
     }));
 
 // See SPIR-V Section 3.10 Sampler Filter Mode
@@ -261,15 +263,21 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeSnormInt16, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt8, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt16, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormShort565, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormShort555, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt101010, Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormShort565,
+              Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormShort555,
+              Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt101010,
+              Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeSignedInt8, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeSignedInt16, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeSignedInt32, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt8, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt16, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt32, Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt8,
+              Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt16,
+              Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnsignedInt32,
+              Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeHalfFloat, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeFloat, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt24, Kernel),
@@ -303,22 +311,20 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.16 FP Rounding Mode
-INSTANTIATE_TEST_CASE_P(
-    FPRoundingMode, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE1(FP_ROUNDING_MODE, FPRoundingModeRTE, Kernel),
-        CASE1(FP_ROUNDING_MODE, FPRoundingModeRTZ, Kernel),
-        CASE1(FP_ROUNDING_MODE, FPRoundingModeRTP, Kernel),
-        CASE1(FP_ROUNDING_MODE, FPRoundingModeRTN, Kernel),
-    }));
+INSTANTIATE_TEST_CASE_P(FPRoundingMode, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE1(FP_ROUNDING_MODE, FPRoundingModeRTE, Kernel),
+                            CASE1(FP_ROUNDING_MODE, FPRoundingModeRTZ, Kernel),
+                            CASE1(FP_ROUNDING_MODE, FPRoundingModeRTP, Kernel),
+                            CASE1(FP_ROUNDING_MODE, FPRoundingModeRTN, Kernel),
+                        }));
 
 // See SPIR-V Section 3.17 Linkage Type
-INSTANTIATE_TEST_CASE_P(
-    LinkageType, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE1(LINKAGE_TYPE, LinkageTypeExport, Linkage),
-        CASE1(LINKAGE_TYPE, LinkageTypeImport, Linkage),
-    }));
+INSTANTIATE_TEST_CASE_P(LinkageType, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE1(LINKAGE_TYPE, LinkageTypeExport, Linkage),
+                            CASE1(LINKAGE_TYPE, LinkageTypeImport, Linkage),
+                        }));
 
 // See SPIR-V Section 3.18 Access Qualifier
 INSTANTIATE_TEST_CASE_P(
@@ -330,18 +336,26 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.19 Function Parameter Attribute
-INSTANTIATE_TEST_CASE_P(
-    FunctionParameterAttribute, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeZext, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeSext, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeByVal, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeSret, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeNoAlias, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeNoCapture, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeNoWrite, Kernel),
-        CASE1(FUNCTION_PARAMETER_ATTRIBUTE, FunctionParameterAttributeNoReadWrite, Kernel),
-    }));
+INSTANTIATE_TEST_CASE_P(FunctionParameterAttribute, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeZext, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeSext, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeByVal, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeSret, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeNoAlias, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeNoCapture, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeNoWrite, Kernel),
+                            CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
+                                  FunctionParameterAttributeNoReadWrite,
+                                  Kernel),
+                        }));
 
 // See SPIR-V Section 3.20 Decoration
 INSTANTIATE_TEST_CASE_P(
@@ -390,7 +404,9 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationFPFastMathMode, Kernel),
         CASE1(DECORATION, DecorationLinkageAttributes, Linkage),
         CASE1(DECORATION, DecorationNoContraction, Shader),
-        CASE1(DECORATION, DecorationInputTargetIndex, Shader), // TODO(dneto): Should be InputTarget. Fixed in 1.0 Rev 2
+        CASE1(
+            DECORATION, DecorationInputTargetIndex,
+            Shader),  // TODO(dneto): Should be InputTarget. Fixed in 1.0 Rev 2
         CASE1(DECORATION, DecorationAlignment, Kernel),
     }));
 
@@ -454,30 +470,30 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.23 Loop Control
-INSTANTIATE_TEST_CASE_P(
-    LoopControl, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE0(LOOP_CONTROL, LoopControlMaskNone),
-        CASE0(LOOP_CONTROL, LoopControlUnrollMask),
-        CASE0(LOOP_CONTROL, LoopControlDontUnrollMask),
-    }));
+INSTANTIATE_TEST_CASE_P(LoopControl, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE0(LOOP_CONTROL, LoopControlMaskNone),
+                            CASE0(LOOP_CONTROL, LoopControlUnrollMask),
+                            CASE0(LOOP_CONTROL, LoopControlDontUnrollMask),
+                        }));
 
 // See SPIR-V Section 3.24 Function Control
-INSTANTIATE_TEST_CASE_P(
-    FunctionControl, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE0(FUNCTION_CONTROL, FunctionControlMaskNone),
-        CASE0(FUNCTION_CONTROL, FunctionControlInlineMask),
-        CASE0(FUNCTION_CONTROL, FunctionControlDontInlineMask),
-        CASE0(FUNCTION_CONTROL, FunctionControlPureMask),
-        CASE0(FUNCTION_CONTROL, FunctionControlConstMask),
-    }));
+INSTANTIATE_TEST_CASE_P(FunctionControl, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE0(FUNCTION_CONTROL, FunctionControlMaskNone),
+                            CASE0(FUNCTION_CONTROL, FunctionControlInlineMask),
+                            CASE0(FUNCTION_CONTROL,
+                                  FunctionControlDontInlineMask),
+                            CASE0(FUNCTION_CONTROL, FunctionControlPureMask),
+                            CASE0(FUNCTION_CONTROL, FunctionControlConstMask),
+                        }));
 
 // See SPIR-V Section 3.25 Memory Semantics <id>
 INSTANTIATE_TEST_CASE_P(
     MemorySemantics, EnumCapabilityTest,
     ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        // TODO(dneto): This enum is expanded and renumbered in SPIR-V 1.0 Rev 1.
+        // TODO(dneto): This enum is expanded and renumbered in SPIR-V 1.0 Rev
+        // 1.
         CASE0(MEMORY_SEMANTICS, MemorySemanticsMaskNone),
         CASE0(MEMORY_SEMANTICS, MemorySemanticsAcquireMask),
         CASE0(MEMORY_SEMANTICS, MemorySemanticsReleaseMask),
@@ -501,15 +517,14 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.27 Scope <id>
-INSTANTIATE_TEST_CASE_P(
-    Scope, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE0(EXECUTION_SCOPE, ScopeCrossDevice),
-        CASE0(EXECUTION_SCOPE, ScopeDevice),
-        CASE0(EXECUTION_SCOPE, ScopeWorkgroup),
-        CASE0(EXECUTION_SCOPE, ScopeSubgroup),
-        CASE0(EXECUTION_SCOPE, ScopeInvocation),
-    }));
+INSTANTIATE_TEST_CASE_P(Scope, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE0(EXECUTION_SCOPE, ScopeCrossDevice),
+                            CASE0(EXECUTION_SCOPE, ScopeDevice),
+                            CASE0(EXECUTION_SCOPE, ScopeWorkgroup),
+                            CASE0(EXECUTION_SCOPE, ScopeSubgroup),
+                            CASE0(EXECUTION_SCOPE, ScopeInvocation),
+                        }));
 
 // See SPIR-V Section 3.28 Group Operation
 INSTANTIATE_TEST_CASE_P(
@@ -530,12 +545,13 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.30 Kernel Profiling Info
-INSTANTIATE_TEST_CASE_P(
-    KernelProfilingInfo, EnumCapabilityTest,
-    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE0(KERNEL_PROFILING_INFO, KernelProfilingInfoMaskNone),
-        CASE1(KERNEL_PROFILING_INFO, KernelProfilingInfoCmdExecTimeMask, Kernel),
-    }));
+INSTANTIATE_TEST_CASE_P(KernelProfilingInfo, EnumCapabilityTest,
+                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+                            CASE0(KERNEL_PROFILING_INFO,
+                                  KernelProfilingInfoMaskNone),
+                            CASE1(KERNEL_PROFILING_INFO,
+                                  KernelProfilingInfoCmdExecTimeMask, Kernel),
+                        }));
 
 // See SPIR-V Section 3.31 Capability
 INSTANTIATE_TEST_CASE_P(

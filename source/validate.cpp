@@ -42,11 +42,11 @@
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
 
-spv_result_t spvValidateOperandsString(const uint32_t *words,
+spv_result_t spvValidateOperandsString(const uint32_t* words,
                                        const uint16_t wordCount,
                                        spv_position position,
-                                       spv_diagnostic *pDiagnostic) {
-  const char *str = (const char *)words;
+                                       spv_diagnostic* pDiagnostic) {
+  const char* str = (const char*)words;
   uint64_t strWordCount = strlen(str) / sizeof(uint32_t) + 1;
   if (strWordCount < wordCount) {
     DIAGNOSTIC << "Instruction word count is too short, string extends past "
@@ -56,11 +56,11 @@ spv_result_t spvValidateOperandsString(const uint32_t *words,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvValidateOperandsLiteral(const uint32_t *words,
+spv_result_t spvValidateOperandsLiteral(const uint32_t* words,
                                         const uint32_t length,
                                         const uint16_t maxLength,
                                         spv_position position,
-                                        spv_diagnostic *pDiagnostic) {
+                                        spv_diagnostic* pDiagnostic) {
   // NOTE: A literal could either be a number consuming up to 2 words or a
   // null terminated string.
   (void)words;
@@ -75,7 +75,7 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
                                      const uint32_t word,
                                      const spv_operand_table operandTable,
                                      spv_position position,
-                                     spv_diagnostic *pDiagnostic) {
+                                     spv_diagnostic* pDiagnostic) {
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_RESULT_ID: {
@@ -125,14 +125,14 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
+spv_result_t spvValidateBasic(const spv_instruction_t* pInsts,
                               const uint64_t instCount,
                               const spv_opcode_table opcodeTable,
                               const spv_operand_table operandTable,
                               spv_position position,
-                              spv_diagnostic *pDiagnostic) {
+                              spv_diagnostic* pDiagnostic) {
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words.data();
+    const uint32_t* words = pInsts[instIndex].words.data();
     uint16_t wordCount;
     SpvOp opcode;
     spvOpcodeSplit(words[0], &wordCount, &opcode);
@@ -182,18 +182,18 @@ spv_result_t spvValidateBasic(const spv_instruction_t *pInsts,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvValidateIDs(const spv_instruction_t *pInsts,
+spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
                             const uint64_t count, const uint32_t bound,
                             const spv_opcode_table opcodeTable,
                             const spv_operand_table operandTable,
                             const spv_ext_inst_table extInstTable,
                             spv_position position,
-                            spv_diagnostic *pDiagnostic) {
+                            spv_diagnostic* pDiagnostic) {
   std::vector<spv_id_info_t> idUses;
   std::vector<spv_id_info_t> idDefs;
 
   for (uint64_t instIndex = 0; instIndex < count; ++instIndex) {
-    const uint32_t *words = pInsts[instIndex].words.data();
+    const uint32_t* words = pInsts[instIndex].words.data();
     SpvOp opcode;
     spvOpcodeSplit(words[0], nullptr, &opcode);
 
@@ -263,7 +263,7 @@ spv_result_t spvValidate(const spv_binary binary,
                          const spv_opcode_table opcodeTable,
                          const spv_operand_table operandTable,
                          const spv_ext_inst_table extInstTable,
-                         const uint32_t options, spv_diagnostic *pDiagnostic) {
+                         const uint32_t options, spv_diagnostic* pDiagnostic) {
   if (!opcodeTable || !operandTable) return SPV_ERROR_INVALID_TABLE;
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 

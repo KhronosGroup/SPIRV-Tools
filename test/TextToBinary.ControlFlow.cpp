@@ -84,9 +84,8 @@ using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
   const std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
-  EXPECT_THAT(
-      CompiledInstructions(input),
-      Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, GetParam().value()})));
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, GetParam().value()})));
 }
 
 // clang-format off

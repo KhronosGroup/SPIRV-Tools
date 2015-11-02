@@ -30,22 +30,10 @@
 #include <string.h>
 
 static const spv_operand_desc_t sourceLanguageEntries[] = {
-    {"Unknown",
-     SpvSourceLanguageUnknown,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"ESSL",
-     SpvSourceLanguageESSL,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"GLSL",
-     SpvSourceLanguageGLSL,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"OpenCL",
-     SpvSourceLanguageOpenCL,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Unknown", SpvSourceLanguageUnknown, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"ESSL", SpvSourceLanguageESSL, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"GLSL", SpvSourceLanguageGLSL, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"OpenCL", SpvSourceLanguageOpenCL, 0, {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t executionModelEntries[] = {
@@ -80,10 +68,7 @@ static const spv_operand_desc_t executionModelEntries[] = {
 };
 
 static const spv_operand_desc_t addressingModelEntries[] = {
-    {"Logical",
-     SpvAddressingModelLogical,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Logical", SpvAddressingModelLogical, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Physical32",
      SpvAddressingModelPhysical32,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityAddresses),
@@ -203,10 +188,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
      SpvStorageClassPrivateGlobal,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Function",
-     SpvStorageClassFunction,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Function", SpvStorageClassFunction, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Generic",
      SpvStorageClassGeneric,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel),
@@ -219,10 +201,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
      SpvStorageClassAtomicCounter,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityAtomicStorage),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Image",
-     SpvStorageClassImage,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Image", SpvStorageClassImage, 0, {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t dimensionalityEntries[] = {
@@ -341,33 +320,18 @@ static const spv_operand_desc_t samplerImageFormatEntries[] = {
 };
 
 // All image channel orders depend on the Kernel capability.
-#define CASE(NAME)                                                            \
-  {                                                                           \
-    #NAME, SpvImageChannelOrder##NAME, SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel), \
-    {                                                                         \
-      SPV_OPERAND_TYPE_NONE                                                   \
-    }                                                                         \
+#define CASE(NAME)                                     \
+  {                                                    \
+    #NAME, SpvImageChannelOrder##NAME,                 \
+        SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel), { \
+      SPV_OPERAND_TYPE_NONE                            \
+    }                                                  \
   }
 static const spv_operand_desc_t imageChannelOrderEntries[] = {
-  CASE(R),
-  CASE(A),
-  CASE(RG),
-  CASE(RA),
-  CASE(RGB),
-  CASE(RGBA),
-  CASE(BGRA),
-  CASE(ARGB),
-  CASE(Intensity),
-  CASE(Luminance),
-  CASE(Rx),
-  CASE(RGx),
-  CASE(RGBx),
-  CASE(Depth),
-  CASE(DepthStencil),
-  CASE(sRGB),
-  CASE(sRGBx),
-  CASE(sRGBA),
-  CASE(sBGRA),
+    CASE(R),    CASE(A),     CASE(RG),    CASE(RA),        CASE(RGB),
+    CASE(RGBA), CASE(BGRA),  CASE(ARGB),  CASE(Intensity), CASE(Luminance),
+    CASE(Rx),   CASE(RGx),   CASE(RGBx),  CASE(Depth),     CASE(DepthStencil),
+    CASE(sRGB), CASE(sRGBx), CASE(sRGBA), CASE(sBGRA),
 };
 #undef CASE
 
@@ -380,22 +344,12 @@ static const spv_operand_desc_t imageChannelOrderEntries[] = {
     }                                                  \
   }
 static const spv_operand_desc_t imageChannelDataTypeEntries[] = {
-  CASE(SnormInt8),
-  CASE(SnormInt16),
-  CASE(UnormInt8),
-  CASE(UnormInt16),
-  CASE(UnormShort565),
-  CASE(UnormShort555),
-  CASE(UnormInt101010),
-  CASE(SignedInt8),
-  CASE(SignedInt16),
-  CASE(SignedInt32),
-  CASE(UnsignedInt8),
-  CASE(UnsignedInt16),
-  CASE(UnsignedInt32),
-  CASE(HalfFloat),
-  CASE(Float),
-  CASE(UnormInt24),
+    CASE(SnormInt8),      CASE(SnormInt16),    CASE(UnormInt8),
+    CASE(UnormInt16),     CASE(UnormShort565), CASE(UnormShort555),
+    CASE(UnormInt101010), CASE(SignedInt8),    CASE(SignedInt16),
+    CASE(SignedInt32),    CASE(UnsignedInt8),  CASE(UnsignedInt16),
+    CASE(UnsignedInt32),  CASE(HalfFloat),     CASE(Float),
+    CASE(UnormInt24),
 };
 #undef CASE
 
@@ -404,10 +358,8 @@ static const spv_operand_desc_t imageChannelDataTypeEntries[] = {
 // Some mask values depend on a capability.
 static const spv_operand_desc_t imageOperandEntries[] = {
 // Rev32 and later adds many more enums.
-#define CASE(NAME) \
-  #NAME, SpvImageOperands##NAME##Mask, 0
-#define CASE_CAP(NAME, CAP) \
-  #NAME, SpvImageOperands##NAME##Mask, CAP
+#define CASE(NAME) #NAME, SpvImageOperands##NAME##Mask, 0
+#define CASE_CAP(NAME, CAP) #NAME, SpvImageOperands##NAME##Mask, CAP
 #define ID SPV_OPERAND_TYPE_ID
 #define NONE SPV_OPERAND_TYPE_NONE
     {"None", SpvImageOperandsMaskNone, 0, {NONE}},
@@ -427,10 +379,7 @@ static const spv_operand_desc_t imageOperandEntries[] = {
 };
 
 static const spv_operand_desc_t fpFastMathModeEntries[] = {
-    {"None",
-     SpvFPFastMathModeMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvFPFastMathModeMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
     {"NotNaN",
      SpvFPFastMathModeNotNaNMask,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel),
@@ -612,34 +561,16 @@ static const spv_operand_desc_t decorationEntries[] = {
      SpvDecorationInvariant,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Restrict",
-     SpvDecorationRestrict,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Aliased",
-     SpvDecorationAliased,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Volatile",
-     SpvDecorationVolatile,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Restrict", SpvDecorationRestrict, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Aliased", SpvDecorationAliased, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Volatile", SpvDecorationVolatile, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Constant",
      SpvDecorationConstant,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Coherent",
-     SpvDecorationCoherent,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"NonWritable",
-     SpvDecorationNonWritable,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"NonReadable",
-     SpvDecorationNonReadable,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Coherent", SpvDecorationCoherent, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"NonWritable", SpvDecorationNonWritable, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"NonReadable", SpvDecorationNonReadable, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Uniform",
      SpvDecorationUniform,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
@@ -707,8 +638,9 @@ static const spv_operand_desc_t decorationEntries[] = {
      {SPV_OPERAND_TYPE_NONE}},
     {"InputTargetIndex",
      SpvDecorationInputTargetIndex,
-     SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),  // TODO(dneto): Should this be
-                                                   // SpvCapabilityInputTarget?
+     SPV_CAPABILITY_AS_MASK(
+         SpvCapabilityShader),  // TODO(dneto): Should this be
+                                // SpvCapabilityInputTarget?
      {SPV_OPERAND_TYPE_NONE}},  // TODO(dneto): Should this have a literal
                                 // number argument?
     {"Alignment",
@@ -812,18 +744,9 @@ static const spv_operand_desc_t builtInEntries[] = {
      SpvBuiltInHelperInvocation,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
      {SPV_OPERAND_TYPE_NONE}},
-    {"NumWorkgroups",
-     SpvBuiltInNumWorkgroups,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"WorkgroupSize",
-     SpvBuiltInWorkgroupSize,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"WorkgroupId",
-     SpvBuiltInWorkgroupId,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"NumWorkgroups", SpvBuiltInNumWorkgroups, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"WorkgroupSize", SpvBuiltInWorkgroupSize, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"WorkgroupId", SpvBuiltInWorkgroupId, 0, {SPV_OPERAND_TYPE_NONE}},
     {"LocalInvocationId",
      SpvBuiltInLocalInvocationId,
      0,
@@ -895,14 +818,8 @@ static const spv_operand_desc_t builtInEntries[] = {
 };
 
 static const spv_operand_desc_t selectionControlEntries[] = {
-    {"None",
-     SpvSelectionControlMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Flatten",
-     SpvSelectionControlFlattenMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvSelectionControlMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Flatten", SpvSelectionControlFlattenMask, 0, {SPV_OPERAND_TYPE_NONE}},
     {"DontFlatten",
      SpvSelectionControlDontFlattenMask,
      0,
@@ -910,67 +827,34 @@ static const spv_operand_desc_t selectionControlEntries[] = {
 };
 
 static const spv_operand_desc_t loopControlEntries[] = {
-    {"None",
-     SpvLoopControlMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Unroll",
-     SpvLoopControlUnrollMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"DontUnroll",
-     SpvLoopControlDontUnrollMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvLoopControlMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Unroll", SpvLoopControlUnrollMask, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"DontUnroll", SpvLoopControlDontUnrollMask, 0, {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t functionControlEntries[] = {
-    {"None",
-     SpvFunctionControlMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Inline",
-     SpvFunctionControlInlineMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvFunctionControlMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Inline", SpvFunctionControlInlineMask, 0, {SPV_OPERAND_TYPE_NONE}},
     {"DontInline",
      SpvFunctionControlDontInlineMask,
      0,
      {SPV_OPERAND_TYPE_NONE}},
-    {"Pure",
-     SpvFunctionControlPureMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Const",
-     SpvFunctionControlConstMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Pure", SpvFunctionControlPureMask, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Const", SpvFunctionControlConstMask, 0, {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t memorySemanticsEntries[] = {
     // "Relaxed" should be a synonym for "None".
     // Put the Relaxed entry first so that the disassembler
     // will prefer to emit "Relaxed".
-    {"Relaxed",
-     SpvMemorySemanticsMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"None",
-     SpvMemorySemanticsMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Relaxed", SpvMemorySemanticsMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvMemorySemanticsMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
     {"SequentiallyConsistent",
      SpvMemorySemanticsSequentiallyConsistentMask,
      0,
      {SPV_OPERAND_TYPE_NONE}},
-    {"Acquire",
-     SpvMemorySemanticsAcquireMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Release",
-     SpvMemorySemanticsReleaseMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Acquire", SpvMemorySemanticsAcquireMask, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Release", SpvMemorySemanticsReleaseMask, 0, {SPV_OPERAND_TYPE_NONE}},
     {"UniformMemory",
      SpvMemorySemanticsUniformMemoryMask,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
@@ -1000,45 +884,24 @@ static const spv_operand_desc_t memorySemanticsEntries[] = {
 };
 
 static const spv_operand_desc_t memoryAccessEntries[] = {
-    {"None",
-     SpvMemoryAccessMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Volatile",
-     SpvMemoryAccessVolatileMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvMemoryAccessMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Volatile", SpvMemoryAccessVolatileMask, 0, {SPV_OPERAND_TYPE_NONE}},
     {
         "Aligned",
         SpvMemoryAccessAlignedMask,
         0,
         {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE},
     },
-    {"Nontemporal",
-     SpvMemoryAccessNontemporalMask,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Nontemporal", SpvMemoryAccessNontemporalMask, 0, {SPV_OPERAND_TYPE_NONE}},
 };
 
 static const spv_operand_desc_t scopeEntries[] = {
-    {"CrossDevice",
-     SpvScopeCrossDevice,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"CrossDevice", SpvScopeCrossDevice, 0, {SPV_OPERAND_TYPE_NONE}},
     {"Device", SpvScopeDevice, 0, {SPV_OPERAND_TYPE_NONE}},
-    {"Workgroup",
-     SpvScopeWorkgroup,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
-    {"Subgroup",
-     SpvScopeSubgroup,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Workgroup", SpvScopeWorkgroup, 0, {SPV_OPERAND_TYPE_NONE}},
+    {"Subgroup", SpvScopeSubgroup, 0, {SPV_OPERAND_TYPE_NONE}},
     {
-        "Invocation",
-        SpvScopeInvocation,
-        0,
-        {SPV_OPERAND_TYPE_NONE},
+        "Invocation", SpvScopeInvocation, 0, {SPV_OPERAND_TYPE_NONE},
     },
 };
 
@@ -1073,10 +936,7 @@ static const spv_operand_desc_t kernelKernelEnqueueFlagssEntries[] = {
 };
 
 static const spv_operand_desc_t kernelProfilingInfoEntries[] = {
-    {"None",
-     SpvKernelProfilingInfoMaskNone,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"None", SpvKernelProfilingInfoMaskNone, 0, {SPV_OPERAND_TYPE_NONE}},
     {"CmdExecTime",
      SpvKernelProfilingInfoCmdExecTimeMask,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel),

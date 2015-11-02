@@ -50,11 +50,11 @@ namespace {
 /// @return result code
 spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
                                      const spv_operand_type_t type,
-                                     const char *textValue, uint32_t *pValue) {
+                                     const char* textValue, uint32_t* pValue) {
   if (textValue == nullptr) return SPV_ERROR_INVALID_TEXT;
   size_t text_length = strlen(textValue);
   if (text_length == 0) return SPV_ERROR_INVALID_TEXT;
-  const char *text_end = textValue + text_length;
+  const char* text_end = textValue + text_length;
 
   // We only support mask expressions in ASCII, so the separator value is a
   // char.
@@ -63,8 +63,8 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
   // Accumulate the result by interpreting one word at a time, scanning
   // from left to right.
   uint32_t value = 0;
-  const char *begin = textValue;  // The left end of the current word.
-  const char *end = nullptr;  // One character past the end of the current word.
+  const char* begin = textValue;  // The left end of the current word.
+  const char* end = nullptr;  // One character past the end of the current word.
   do {
     end = std::find(begin, text_end, separator);
 
@@ -90,48 +90,48 @@ bool AssemblyGrammar::isValid() const {
   return operandTable_ && opcodeTable_ && extInstTable_;
 }
 
-spv_result_t AssemblyGrammar::lookupOpcode(const char *name,
-                                           spv_opcode_desc *desc) const {
+spv_result_t AssemblyGrammar::lookupOpcode(const char* name,
+                                           spv_opcode_desc* desc) const {
   return spvOpcodeTableNameLookup(opcodeTable_, name, desc);
 }
 
 spv_result_t AssemblyGrammar::lookupOpcode(SpvOp opcode,
-                                           spv_opcode_desc *desc) const {
+                                           spv_opcode_desc* desc) const {
   return spvOpcodeTableValueLookup(opcodeTable_, opcode, desc);
 }
 
 spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
-                                            const char *name, size_t name_len,
-                                            spv_operand_desc *desc) const {
+                                            const char* name, size_t name_len,
+                                            spv_operand_desc* desc) const {
   return spvOperandTableNameLookup(operandTable_, type, name, name_len, desc);
 }
 
 spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
                                             uint32_t operand,
-                                            spv_operand_desc *desc) const {
+                                            spv_operand_desc* desc) const {
   return spvOperandTableValueLookup(operandTable_, type, operand, desc);
 }
 
 spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,
-                                               const char *textValue,
-                                               uint32_t *pValue) const {
+                                               const char* textValue,
+                                               uint32_t* pValue) const {
   return spvTextParseMaskOperand(operandTable_, type, textValue, pValue);
 }
 spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
-                                            const char *textValue,
-                                            spv_ext_inst_desc *extInst) const {
+                                            const char* textValue,
+                                            spv_ext_inst_desc* extInst) const {
   return spvExtInstTableNameLookup(extInstTable_, type, textValue, extInst);
 }
 
 spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
                                             uint32_t firstWord,
-                                            spv_ext_inst_desc *extInst) const {
+                                            spv_ext_inst_desc* extInst) const {
   return spvExtInstTableValueLookup(extInstTable_, type, firstWord, extInst);
 }
 
 void AssemblyGrammar::prependOperandTypesForMask(
     const spv_operand_type_t type, const uint32_t mask,
-    spv_operand_pattern_t *pattern) const {
+    spv_operand_pattern_t* pattern) const {
   spvPrependOperandTypesForMask(operandTable_, type, mask, pattern);
 }
 }  // namespace libspirv

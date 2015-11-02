@@ -130,7 +130,7 @@ TEST_P(OpDecorateEnumTest, AnyEnumDecoration) {
       "OpDecorate %1 " + GetParam().enum_name + " " + GetParam().name;
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(SpvOpDecorate, {1, GetParam().enum_value,
-                                                   GetParam().value})));
+                                                 GetParam().value})));
 }
 
 // Test OpDecorate BuiltIn.

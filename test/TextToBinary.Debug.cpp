@@ -74,10 +74,9 @@ TEST_P(OpSourceTest, AnyLanguage) {
   const std::string input = std::string("OpSource ") +
                             GetParam().language_name + " " +
                             std::to_string(GetParam().version);
-  EXPECT_THAT(
-      CompiledInstructions(input),
-      Eq(MakeInstruction(SpvOpSource, {GetParam().get_language_value(),
-                                         GetParam().version})));
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(SpvOpSource, {GetParam().get_language_value(),
+                                               GetParam().version})));
 }
 
 INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpSourceTest,
@@ -100,10 +99,9 @@ TEST_F(TextToBinaryTest, OpSourceAcceptsOptionalSourceText) {
   std::string fake_source = "To be or not to be";
   const std::string input =
       "OpSource GLSL 450 %file_id \"" + fake_source + "\"";
-  EXPECT_THAT(
-      CompiledInstructions(input),
-      Eq(MakeInstruction(SpvOpSource, {SpvSourceLanguageGLSL, 450, 1},
-                         MakeVector(fake_source))));
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(SpvOpSource, {SpvSourceLanguageGLSL, 450, 1},
+                                 MakeVector(fake_source))));
 };
 
 // Test OpSourceContinued

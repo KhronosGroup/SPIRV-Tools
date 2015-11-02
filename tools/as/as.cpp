@@ -30,7 +30,7 @@
 #include <string.h>
 #include <vector>
 
-void print_usage(char *argv0) {
+void print_usage(char* argv0) {
   printf(
       "Assemble a *.svasm file into a *.sv binary.\n\n"
       "USAGE: %s [options] <filename>\n\n"
@@ -40,23 +40,23 @@ void print_usage(char *argv0) {
       argv0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (2 > argc) {
     print_usage(argv[0]);
     return 1;
   }
 
-  const char *inFile = nullptr;
-  const char *outFile = nullptr;
+  const char* inFile = nullptr;
+  const char* outFile = nullptr;
 
-  const char *assembly_format_prefix = "--assembly-format=";
+  const char* assembly_format_prefix = "--assembly-format=";
   spv_assembly_syntax_format_t format = SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       if (!strncmp(assembly_format_prefix, argv[argi],
                    strlen(assembly_format_prefix))) {
-        const char *parameter = argv[argi] + strlen(assembly_format_prefix);
+        const char* parameter = argv[argi] + strlen(assembly_format_prefix);
         if (!strcmp("canonical", parameter)) {
           format = SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL;
         } else if (!strcmp("assignment", parameter)) {
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<char> contents;
-  if (FILE *fp = fopen(inFile, "r")) {
+  if (FILE* fp = fopen(inFile, "r")) {
     char buf[1024];
     while (size_t len = fread(buf, 1, sizeof(buf), fp))
       contents.insert(contents.end(), buf, buf + len);
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     return error;
   }
 
-  if (FILE *fp = fopen(outFile, "wb")) {
+  if (FILE* fp = fopen(outFile, "wb")) {
     size_t written =
         fwrite(binary->code, sizeof(uint32_t), (size_t)binary->wordCount, fp);
     if (binary->wordCount != written) {

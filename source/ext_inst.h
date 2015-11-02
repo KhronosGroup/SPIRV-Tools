@@ -34,7 +34,7 @@
 /// @param name of the library
 ///
 /// @return type of the extended instruction library
-spv_ext_inst_type_t spvExtInstImportTypeGet(const char *name);
+spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name);
 
 /// @brief Find the extented instruction with value in the table
 ///
@@ -46,8 +46,8 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char *name);
 /// @return result code
 spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
-                                       const char *name,
-                                       spv_ext_inst_desc *pEntry);
+                                       const char* name,
+                                       spv_ext_inst_desc* pEntry);
 
 /// @brief Find the extented instruction with value in the table
 ///
@@ -60,6 +60,6 @@ spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
 spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const spv_ext_inst_type_t type,
                                         const uint32_t value,
-                                        spv_ext_inst_desc *pEntry);
+                                        spv_ext_inst_desc* pEntry);
 
 #endif  // LIBSPIRV_EXT_INST_H_

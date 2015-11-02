@@ -35,7 +35,7 @@
 typedef struct spv_id_info_t {
   uint32_t id;
   SpvOp opcode;
-  const spv_instruction_t *inst;
+  const spv_instruction_t* inst;
   spv_position_t position;
 } spv_id_info_t;
 
@@ -56,12 +56,12 @@ typedef struct spv_id_info_t {
 ///
 /// @return result code
 spv_result_t spvValidateInstructionIDs(
-    const spv_instruction_t *pInsts, const uint64_t instCount,
-    const spv_id_info_t *pIdUses, const uint64_t idUsesCount,
-    const spv_id_info_t *pIdDefs, const uint64_t idDefsCount,
+    const spv_instruction_t* pInsts, const uint64_t instCount,
+    const spv_id_info_t* pIdUses, const uint64_t idUsesCount,
+    const spv_id_info_t* pIdDefs, const uint64_t idDefsCount,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_position position,
-    spv_diagnostic *pDiag);
+    spv_diagnostic* pDiag);
 
 /// @brief Validate the ID's within a SPIR-V binary
 ///
@@ -74,11 +74,11 @@ spv_result_t spvValidateInstructionIDs(
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvValidateIDs(const spv_instruction_t *pInstructions,
+spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const uint64_t count, const uint32_t bound,
                             const spv_opcode_table opcodeTable,
                             const spv_operand_table operandTable,
                             const spv_ext_inst_table extInstTable,
-                            spv_position position, spv_diagnostic *pDiagnostic);
+                            spv_position position, spv_diagnostic* pDiagnostic);
 
 #endif  // LIBSPIRV_VALIDATE_H_

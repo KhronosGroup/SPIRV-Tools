@@ -43,7 +43,7 @@
 /// @return result code
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
-                                spv_header_t *pHeader);
+                                spv_header_t* pHeader);
 
 /// @brief Determine the type of the desired operand
 ///
@@ -58,5 +58,5 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const uint16_t index,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
-                                        spv_operand_desc *pOperandEntry);
-#endif // LIBSPIRV_BINARY_H_
+                                        spv_operand_desc* pOperandEntry);
+#endif  // LIBSPIRV_BINARY_H_

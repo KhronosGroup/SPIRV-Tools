@@ -38,8 +38,7 @@ using RoundTripLiteralsTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
 TEST_P(RoundTripLiteralsTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
-              Eq(GetParam()));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
 }
 
 // clang-format off

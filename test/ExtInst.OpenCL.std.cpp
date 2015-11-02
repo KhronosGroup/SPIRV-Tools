@@ -92,7 +92,7 @@ TEST_P(ExtInstOpenCLStdRoundTripTest, ParameterizedExtInst) {
 #define CASE3Round(Enum, Name, Mode)                                    \
   {                                                                     \
     uint32_t(OpenCLLIB::Entrypoints::Enum), #Name, "%4 %5 %6 " #Mode, { \
-      4, 5, 6, uint32_t(SpvFPRoundingMode##Mode)                      \
+      4, 5, 6, uint32_t(SpvFPRoundingMode##Mode)                        \
     }                                                                   \
   }
 
@@ -395,8 +395,7 @@ TEST_F(TextToBinaryTest, DISABLED_ExtInstFromTwoDifferentImports) {
       CompiledInstructions(input),
       Eq(Concatenate({
           MakeInstruction(SpvOpExtInstImport, {1}, MakeVector("OpenCL.std")),
-          MakeInstruction(SpvOpExtInstImport, {2},
-                          MakeVector("GLSL.std.450")),
+          MakeInstruction(SpvOpExtInstImport, {2}, MakeVector("GLSL.std.450")),
           MakeInstruction(
               SpvOpExtInst,
               {3, 4, 1, uint32_t(OpenCLLIB::Entrypoints::Native_sqrt), 5}),

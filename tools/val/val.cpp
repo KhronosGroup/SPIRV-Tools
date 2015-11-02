@@ -32,7 +32,7 @@
 
 #include <vector>
 
-void print_usage(char *argv0) {
+void print_usage(char* argv0) {
   printf(
       "Validate a SPIR-V binary file.\n\n"
       "USAGE: %s [options] <filename>\n\n"
@@ -45,13 +45,13 @@ void print_usage(char *argv0) {
       argv0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (2 > argc) {
     print_usage(argv[0]);
     return 1;
   }
 
-  const char *inFile = nullptr;
+  const char* inFile = nullptr;
   uint32_t options = 0;
 
   for (int argi = 1; argi < argc; ++argi) {
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<uint32_t> contents;
-  if (FILE *fp = fopen(inFile, "rb")) {
+  if (FILE* fp = fopen(inFile, "rb")) {
     uint32_t buf[1024];
     while (size_t len = fread(buf, sizeof(uint32_t),
                               sizeof(buf) / sizeof(uint32_t), fp)) {

@@ -48,7 +48,7 @@ using type_id_to_type_map = std::unordered_map<uint32_t, libspirv::IdType>;
 
 spv_result_t spvBinaryHeaderGet(const spv_binary binary,
                                 const spv_endianness_t endian,
-                                spv_header_t *pHeader) {
+                                spv_header_t* pHeader) {
   if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
   if (!pHeader) return SPV_ERROR_INVALID_POINTER;
 
@@ -72,7 +72,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const uint16_t operandIndex,
                                         const spv_opcode_desc opcodeEntry,
                                         const spv_operand_table operandTable,
-                                        spv_operand_desc *pOperandEntry) {
+                                        spv_operand_desc* pOperandEntry) {
   spv_operand_type_t type;
   if (operandIndex < opcodeEntry->numTypes) {
     // NOTE: Do operand table lookup to set operandEntry if successful
@@ -105,7 +105,6 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
   return type;
 }
 
-
 /// @brief Translate a binary operand to the textual form
 ///
 /// @param[in] opcode of the current instruction
@@ -120,11 +119,11 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
 ///
 /// @return result code
 spv_result_t spvBinaryDecodeOperand(
-    const SpvOp opcode, const spv_operand_type_t type, const uint32_t *words,
+    const SpvOp opcode, const spv_operand_type_t type, const uint32_t* words,
     uint16_t numWords, const spv_endianness_t endian, const uint32_t options,
     const libspirv::AssemblyGrammar& grammar,
-    spv_operand_pattern_t *pExpectedOperands, spv_ext_inst_type_t *pExtInstType,
-    out_stream &stream, spv_position position, spv_diagnostic *pDiagnostic) {
+    spv_operand_pattern_t* pExpectedOperands, spv_ext_inst_type_t* pExtInstType,
+    out_stream& stream, spv_position position, spv_diagnostic* pDiagnostic) {
   if (!words || !position) return SPV_ERROR_INVALID_POINTER;
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
@@ -190,7 +189,7 @@ spv_result_t spvBinaryDecodeOperand(
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
-      const char *string = (const char *)words;
+      const char* string = (const char*)words;
       uint64_t stringOperandCount = (strlen(string) / 4) + 1;
 
       // NOTE: Special case for extended instruction import
@@ -206,7 +205,7 @@ spv_result_t spvBinaryDecodeOperand(
       stream.get() << "\"";
       stream.get() << (color ? clr::green() : "");
       for (const char* p = string; *p; ++p) {
-        if(*p == '"' || *p == '\\') {
+        if (*p == '"' || *p == '\\') {
           stream.get() << '\\';
         }
         stream.get() << *p;
@@ -239,7 +238,8 @@ spv_result_t spvBinaryDecodeOperand(
       if (grammar.lookupOperand(type, spvFixWord(words[0], endian), &entry)) {
         DIAGNOSTIC << "Invalid " << spvOperandTypeStr(type) << " operand '"
                    << words[0] << "'.";
-        return SPV_ERROR_INVALID_TEXT; // TODO(dneto): Surely this is invalid binary.
+        return SPV_ERROR_INVALID_TEXT;  // TODO(dneto): Surely this is invalid
+                                        // binary.
       }
       stream.get() << entry->name;
       // Prepare to accept operands to this operand, if needed.
@@ -305,8 +305,6 @@ spv_result_t spvBinaryDecodeOperand(
 
   return SPV_SUCCESS;
 }
-
-
 
 /// @brief Regsiters the given instruction with the type and id tracking
 ///   tables.
@@ -374,15 +372,12 @@ spv_result_t spvRegisterIdForOpcode(const spv_instruction_t* pInst,
 /// @param[out] pDiag return diagnostic on error
 ///
 /// @return result code
-spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
-                                   const spv_endianness_t endian,
-                                   const uint32_t options,
-                                   const libspirv::AssemblyGrammar& grammar,
-                                   type_id_to_type_map* type_map,
-                                   id_to_type_id_map* id_map,
-                                   spv_assembly_syntax_format_t format,
-                                   out_stream &stream, spv_position position,
-                                   spv_diagnostic *pDiagnostic) {
+spv_result_t spvBinaryDecodeOpcode(
+    spv_instruction_t* pInst, const spv_endianness_t endian,
+    const uint32_t options, const libspirv::AssemblyGrammar& grammar,
+    type_id_to_type_map* type_map, id_to_type_id_map* id_map,
+    spv_assembly_syntax_format_t format, out_stream& stream,
+    spv_position position, spv_diagnostic* pDiagnostic) {
   if (!pInst || !position) return SPV_ERROR_INVALID_POINTER;
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
@@ -479,8 +474,7 @@ spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
 
     if (spvBinaryDecodeOperand(
             opcodeEntry->opcode, type, &pInst->words[index], numWords, endian,
-            options, grammar, &expectedOperands,
-            &pInst->extInstType,
+            options, grammar, &expectedOperands, &pInst->extInstType,
             (isAssigmentFormat && !currentIsResultId ? no_result_id_stream
                                                      : stream),
             position, pDiagnostic)) {
@@ -507,22 +501,22 @@ spv_result_t spvBinaryDecodeOpcode(spv_instruction_t* pInst,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvBinaryToText(uint32_t *code, const uint64_t wordCount,
+spv_result_t spvBinaryToText(uint32_t* code, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
-                             spv_text *pText, spv_diagnostic *pDiagnostic) {
+                             spv_text* pText, spv_diagnostic* pDiagnostic) {
   return spvBinaryToTextWithFormat(
       code, wordCount, options, opcodeTable, operandTable, extInstTable,
       SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT, pText, pDiagnostic);
 }
 
 spv_result_t spvBinaryToTextWithFormat(
-    uint32_t *code, const uint64_t wordCount, const uint32_t options,
+    uint32_t* code, const uint64_t wordCount, const uint32_t options,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
-    spv_text *pText, spv_diagnostic *pDiagnostic) {
+    spv_text* pText, spv_diagnostic* pDiagnostic) {
   spv_binary_t binary = {code, wordCount};
 
   spv_position_t position = {};
@@ -575,7 +569,7 @@ spv_result_t spvBinaryToTextWithFormat(
     stream.get() << clr::reset();
   }
 
-  const uint32_t *words = binary.code;
+  const uint32_t* words = binary.code;
   position.index = SPV_INDEX_INSTRUCTION;
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
 
@@ -609,7 +603,7 @@ spv_result_t spvBinaryToTextWithFormat(
 
   if (!print) {
     size_t length = sstream.str().size();
-    char *str = new char[length + 1];
+    char* str = new char[length + 1];
     if (!str) return SPV_ERROR_OUT_OF_MEMORY;
     strncpy(str, sstream.str().c_str(), length + 1);
     spv_text text = new spv_text_t();

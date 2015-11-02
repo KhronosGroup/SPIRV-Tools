@@ -34,9 +34,9 @@
 class out_stream {
  public:
   out_stream() : pStream(nullptr) {}
-  out_stream(std::stringstream &stream) : pStream(&stream) {}
+  out_stream(std::stringstream& stream) : pStream(&stream) {}
 
-  std::ostream &get() {
+  std::ostream& get() {
     if (pStream) {
       return *pStream;
     }
@@ -44,33 +44,33 @@ class out_stream {
   }
 
  private:
-  std::stringstream *pStream;
+  std::stringstream* pStream;
 };
 
 namespace clr {
 /// @brief Reset console color
 struct reset {
-  operator const char *();
+  operator const char*();
 };
 /// @brief Set console color to grey
 struct grey {
-  operator const char *();
+  operator const char*();
 };
 /// @brief Set console color to red
 struct red {
-  operator const char *();
+  operator const char*();
 };
 /// @brief Set console color to green
 struct green {
-  operator const char *();
+  operator const char*();
 };
 /// @brief Set console color to yellow
 struct yellow {
-  operator const char *();
+  operator const char*();
 };
 /// @brief Set console color to blue
 struct blue {
-  operator const char *();
+  operator const char*();
 };
 }
 

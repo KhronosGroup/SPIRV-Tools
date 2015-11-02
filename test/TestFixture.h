@@ -137,8 +137,7 @@ class TextToBinaryTestBase : public T {
   // is then decoded. This is expected to fail.
   // Returns the error message.
   std::string EncodeSuccessfullyDecodeFailed(
-      const std::string& text,
-      const SpirvVector& words_to_append) {
+      const std::string& text, const SpirvVector& words_to_append) {
     SpirvVector code = spvtest::Concatenate(
         {CompileSuccessfully(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT),
          words_to_append});

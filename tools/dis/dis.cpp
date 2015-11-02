@@ -30,7 +30,7 @@
 #include <string.h>
 #include <vector>
 
-void print_usage(char *argv0) {
+void print_usage(char* argv0) {
   printf(
       "Dissassemble a *.sv file into a *.svasm text file.\n\n"
       "USAGE: %s [options] <filename>\n\n"
@@ -43,24 +43,24 @@ void print_usage(char *argv0) {
       argv0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (2 > argc) {
     print_usage(argv[0]);
     return 1;
   }
 
   uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
-  const char *inFile = nullptr;
-  const char *outFile = nullptr;
+  const char* inFile = nullptr;
+  const char* outFile = nullptr;
 
-  const char *assembly_format_prefix = "--assembly-format=";
+  const char* assembly_format_prefix = "--assembly-format=";
   spv_assembly_syntax_format_t format = SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       if (!strncmp(assembly_format_prefix, argv[argi],
                    strlen(assembly_format_prefix))) {
-        const char *parameter = argv[argi] + strlen(assembly_format_prefix);
+        const char* parameter = argv[argi] + strlen(assembly_format_prefix);
         if (!strcmp("canonical", parameter)) {
           format = SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL;
         } else if (!strcmp("assignment", parameter)) {
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<uint32_t> contents;
-  if (FILE *fp = fopen(inFile, "rb")) {
+  if (FILE* fp = fopen(inFile, "rb")) {
     uint32_t buf[1024];
     while (size_t len = fread(buf, sizeof(uint32_t), 1024, fp)) {
       contents.insert(contents.end(), buf, buf + len);
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
   const bool printOptionOn =
       spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   spv_text text;
-  spv_text *textOrNull = printOptionOn ? nullptr : &text;
+  spv_text* textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
   error = spvBinaryToTextWithFormat(contents.data(), contents.size(), options,
                                     opcodeTable, operandTable, extInstTable,
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
 
   // Output the result.
   if (!printOptionOn) {
-    if (FILE *fp = fopen(outFile, "w")) {
+    if (FILE* fp = fopen(outFile, "w")) {
       size_t written =
           fwrite(text->str, sizeof(char), (size_t)text->length, fp);
       if (text->length != written) {

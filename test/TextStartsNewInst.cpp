@@ -34,12 +34,9 @@ using libspirv::AssemblyContext;
 using spvtest::AutoText;
 
 TEST(TextStartsWithOp, YesAtStart) {
-  EXPECT_TRUE(
-      AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
-  EXPECT_TRUE(
-      AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
-  EXPECT_TRUE(
-      AssemblyContext(AutoText("OpEnCL"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(AssemblyContext(AutoText("OpFoo"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(AssemblyContext(AutoText("OpEnCL"), nullptr).isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, YesAtMiddle) {
@@ -62,30 +59,25 @@ TEST(TextStartsWithOp, NoIfTooFar) {
 }
 
 TEST(TextStartsWithOp, NoRegular) {
-  EXPECT_FALSE(AssemblyContext(AutoText("Fee Fi Fo Fum"), nullptr)
-                   .isStartOfNewInst());
   EXPECT_FALSE(
-      AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
-  EXPECT_FALSE(
-      AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
-  EXPECT_FALSE(
-      AssemblyContext(AutoText("OpenCL"), nullptr).isStartOfNewInst());
+      AssemblyContext(AutoText("Fee Fi Fo Fum"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(AssemblyContext(AutoText("123456"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(AssemblyContext(AutoText("OpenCL"), nullptr).isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, YesForValueGenerationForm) {
-  EXPECT_TRUE(AssemblyContext(AutoText("%foo = OpAdd"), nullptr)
-                  .isStartOfNewInst());
-  EXPECT_TRUE(AssemblyContext(AutoText("%foo  =  OpAdd"), nullptr)
-                  .isStartOfNewInst());
+  EXPECT_TRUE(
+      AssemblyContext(AutoText("%foo = OpAdd"), nullptr).isStartOfNewInst());
+  EXPECT_TRUE(
+      AssemblyContext(AutoText("%foo  =  OpAdd"), nullptr).isStartOfNewInst());
 }
 
 TEST(TextStartsWithOp, NoForNearlyValueGeneration) {
   EXPECT_FALSE(
       AssemblyContext(AutoText("%foo = "), nullptr).isStartOfNewInst());
-  EXPECT_FALSE(
-      AssemblyContext(AutoText("%foo "), nullptr).isStartOfNewInst());
-  EXPECT_FALSE(
-      AssemblyContext(AutoText("%foo"), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(AssemblyContext(AutoText("%foo "), nullptr).isStartOfNewInst());
+  EXPECT_FALSE(AssemblyContext(AutoText("%foo"), nullptr).isStartOfNewInst());
 }
 
 }  // anonymous namespace

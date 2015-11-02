@@ -145,8 +145,7 @@ struct FailedDecodeCase {
 };
 
 using BinaryToTextFail =
-    spvtest::TextToBinaryTestBase <
-    ::testing::TestWithParam<FailedDecodeCase>>;
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<FailedDecodeCase>>;
 
 TEST_P(BinaryToTextFail, EncodeSuccessfullyDecodeFailed) {
   EXPECT_THAT(EncodeSuccessfullyDecodeFailed(GetParam().source_text,
@@ -305,8 +304,7 @@ using RoundTripInstructionsTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
 TEST_P(RoundTripInstructionsTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()),
-              Eq(GetParam()));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
 };
 
 // clang-format off

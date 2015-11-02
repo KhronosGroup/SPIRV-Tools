@@ -64,13 +64,13 @@ TEST_P(OpMemoryModelTest, AnyMemoryModelCase) {
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(SpvOpMemoryModel, {GetParam().get_addressing_value(),
-                                              GetParam().get_memory_value()})));
+                                            GetParam().get_memory_value()})));
 }
 
-#define CASE(ADDRESSING, MEMORY)                                             \
-  {                                                                          \
-    SpvAddressingModel##ADDRESSING, #ADDRESSING, SpvMemoryModel##MEMORY,     \
-        #MEMORY                                                              \
+#define CASE(ADDRESSING, MEMORY)                                         \
+  {                                                                      \
+    SpvAddressingModel##ADDRESSING, #ADDRESSING, SpvMemoryModel##MEMORY, \
+        #MEMORY                                                          \
   }
 // clang-format off
 INSTANTIATE_TEST_CASE_P(TextToBinaryMemoryModel, OpMemoryModelTest,
@@ -112,10 +112,10 @@ TEST_P(OpEntryPointTest, AnyEntryPointCase) {
   // TODO(dneto): utf-8, escaping, quoting cases for entry point name.
   const std::string input = "OpEntryPoint " + GetParam().execution_name +
                             " %1 \"" + GetParam().entry_point_name + "\"";
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(SpvOpEntryPoint,
-                                 {GetParam().get_execution_value(), 1},
-                                 MakeVector(GetParam().entry_point_name))));
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(MakeInstruction(SpvOpEntryPoint, {GetParam().get_execution_value(), 1},
+                         MakeVector(GetParam().entry_point_name))));
 }
 
 // clang-format off

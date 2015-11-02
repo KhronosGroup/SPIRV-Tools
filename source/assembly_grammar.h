@@ -49,24 +49,24 @@ class AssemblyGrammar {
   // Fills in the desc parameter with the information about the opcode
   // of the given name. Returns SPV_SUCCESS if the opcode was found, and
   // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
-  spv_result_t lookupOpcode(const char *name, spv_opcode_desc *desc) const;
+  spv_result_t lookupOpcode(const char* name, spv_opcode_desc* desc) const;
 
   // Fills in the desc parameter with the information about the opcode
   // of the valid. Returns SPV_SUCCESS if the opcode was found, and
   // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
-  spv_result_t lookupOpcode(SpvOp opcode, spv_opcode_desc *desc) const;
+  spv_result_t lookupOpcode(SpvOp opcode, spv_opcode_desc* desc) const;
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and
   // SPV_ERROR_INVALID_LOOKUP otherwise.
-  spv_result_t lookupOperand(spv_operand_type_t type, const char *name,
-                             size_t name_len, spv_operand_desc *desc) const;
+  spv_result_t lookupOperand(spv_operand_type_t type, const char* name,
+                             size_t name_len, spv_operand_desc* desc) const;
 
   // Fills in the desc parameter with the information about the given
   // operand. Returns SPV_SUCCESS if the operand was found, and
   // SPV_ERROR_INVALID_LOOKUP otherwise.
   spv_result_t lookupOperand(spv_operand_type_t type, uint32_t operand,
-                             spv_operand_desc *desc) const;
+                             spv_operand_desc* desc) const;
 
   // Parses a mask expression string for the given operand type.
   //
@@ -78,19 +78,19 @@ class AssemblyGrammar {
   // The operand type is defined by the type parameter, and the text to be
   // parsed is defined by the textValue parameter.
   spv_result_t parseMaskOperand(const spv_operand_type_t type,
-                                const char *textValue, uint32_t *pValue) const;
+                                const char* textValue, uint32_t* pValue) const;
 
   // Writes the extended operand with the given type and text to the *extInst
   // parameter.
   // Returns SPV_SUCCESS if the value could be found.
-  spv_result_t lookupExtInst(spv_ext_inst_type_t type, const char *textValue,
-                             spv_ext_inst_desc *extInst) const;
+  spv_result_t lookupExtInst(spv_ext_inst_type_t type, const char* textValue,
+                             spv_ext_inst_desc* extInst) const;
 
   // Writes the extended operand with the given type and first encoded word
   // to the *extInst parameter.
   // Returns SPV_SUCCESS if the value could be found.
   spv_result_t lookupExtInst(spv_ext_inst_type_t type, uint32_t firstWord,
-                             spv_ext_inst_desc *extInst) const;
+                             spv_ext_inst_desc* extInst) const;
 
   // Inserts the operands expected after the given typed mask onto the front
   // of the given pattern.
@@ -102,7 +102,7 @@ class AssemblyGrammar {
   // If a set bit is unknown, then we assume it has no operands.
   void prependOperandTypesForMask(const spv_operand_type_t type,
                                   const uint32_t mask,
-                                  spv_operand_pattern_t *pattern) const;
+                                  spv_operand_pattern_t* pattern) const;
 
  private:
   const spv_operand_table operandTable_;

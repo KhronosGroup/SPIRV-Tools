@@ -65,8 +65,8 @@ OpEntryPoint Vertex %2 "main"
 %4 = OpTypeFunction %3
 %2 = OpFunction %3 None %5
 %6 = OpLabel
-%8 = OpExtInst %7 %1 )" + std::string(GetParam().extInstOpName) + " " +
-                            GetParam().extInstOperandVars + R"(
+%8 = OpExtInst %7 %1 )" + std::string(GetParam().extInstOpName) +
+                            " " + GetParam().extInstOperandVars + R"(
 OpReturn
 OpFunctionEnd
 )";
