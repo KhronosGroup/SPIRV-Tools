@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 #include "UnitSPIRV.h"
 #include "util/bitutils.h"
 
@@ -38,6 +39,7 @@ using libspirv::AssemblyContext;
 using libspirv::AssemblyGrammar;
 using spvtest::TextToBinaryTest;
 using spvtest::AutoText;
+using testing::Eq;
 
 TEST(GetWord, Simple) {
   EXPECT_EQ("", AssemblyContext(AutoText(""), nullptr).getWord());
@@ -302,6 +304,8 @@ TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextToBinary(nullptr, 0, opcodeTable, operandTable, extInstTable,
                             &binary, &diagnostic));
+  EXPECT_NE(nullptr, diagnostic);
+  EXPECT_THAT(diagnostic->error, Eq(std::string("Missing assembly text.")));
 }
 
 TEST_F(TextToBinaryTest, InvalidTable) {
@@ -343,6 +347,12 @@ TEST_F(TextToBinaryTest, InvalidPrefix) {
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
+}
+
+TEST_F(TextToBinaryTest, EmptyAssemblyString) {
+  // An empty assembly module is valid!
+  // It should produce a valid module with zero instructions.
+  EXPECT_THAT(CompiledInstructions(""), Eq(std::vector<uint32_t>{}));
 }
 
 TEST_F(TextToBinaryTest, StringSpace) {

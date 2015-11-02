@@ -62,7 +62,7 @@ class TextToBinaryTestBase : public T {
 
   // Returns subvector v[from:end).
   SpirvVector Subvector(const SpirvVector& v, SpirvVector::size_type from) {
-    assert(from < v.size());
+    assert(from <= v.size());
     return SpirvVector(v.begin() + from, v.end());
   }
 

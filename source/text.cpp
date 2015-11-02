@@ -642,8 +642,8 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
                                      spv_diagnostic* pDiagnostic) {
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
   libspirv::AssemblyContext context(text, pDiagnostic);
-  if (!text->str || !text->length)
-    return context.diagnostic() << "Text stream is empty.";
+  if (!text->str)
+    return context.diagnostic() << "Missing assembly text.";
 
   if (!grammar.isValid()) {
     return SPV_ERROR_INVALID_TABLE;
@@ -655,7 +655,8 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
 
   std::vector<spv_instruction_t> instructions;
 
-  if (context.advance()) return context.diagnostic() << "Text stream is empty.";
+  // Skip past whitespace and comments.
+  context.advance();
 
   spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
   while (context.hasText()) {

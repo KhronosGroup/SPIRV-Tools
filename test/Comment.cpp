@@ -24,28 +24,35 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "gmock/gmock.h"
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 
 namespace {
 
+using spvtest::Concatenate;
+using spvtest::MakeInstruction;
+using spvtest::MakeVector;
 using spvtest::TextToBinaryTest;
+using testing::Eq;
 
 TEST_F(TextToBinaryTest, Whitespace) {
-  SetText(R"(
+  std::string input = R"(
 ; I'm a proud comment at the begining of the file
 ; I hide:   OpCapability Shader
             OpMemoryModel Logical Simple ; comment after instruction
 ;;;;;;;; many ;'s
  %glsl450 = OpExtInstImport "GLSL.std.450"
             ; comment indented
-)");
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
+)";
+
+  EXPECT_THAT(
+      CompiledInstructions(input),
+      Eq(Concatenate({MakeInstruction(SpvOpMemoryModel,
+                                      {uint32_t(SpvAddressingModelLogical),
+                                       uint32_t(SpvMemoryModelSimple)}),
+                      MakeInstruction(SpvOpExtInstImport, {1},
+                                      MakeVector("GLSL.std.450"))})));
 }
 
 }  // anonymous namespace
