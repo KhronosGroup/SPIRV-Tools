@@ -118,13 +118,6 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 /// @return the opcode string
 const char* spvOpcodeString(const SpvOp opcode);
 
-/// @brief Determine if the Opcode is a type
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeIsType(const SpvOp opcode);
-
 /// @brief Determine if the OpCode is a scalar type
 ///
 /// @param[in] opcode the opcode

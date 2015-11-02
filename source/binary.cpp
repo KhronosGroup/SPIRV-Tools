@@ -324,7 +324,7 @@ spv_result_t spvRegisterIdForOpcode(const spv_instruction_t* pInst,
                                     spv_position position,
                                     spv_diagnostic* pDiagnostic) {
   libspirv::IdType detected_type = libspirv::kUnknownType;
-  if (spvOpcodeIsType(pOpcodeEntry->opcode)) {
+  if (spvOpcodeGeneratesType(pOpcodeEntry->opcode)) {
     if (SpvOpTypeInt == pOpcodeEntry->opcode) {
       detected_type.type_class = libspirv::IdTypeClass::kScalarIntegerType;
       detected_type.bitwidth = pInst->words[2];

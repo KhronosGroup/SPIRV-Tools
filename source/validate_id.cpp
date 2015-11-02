@@ -376,7 +376,7 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
                                     << inst->words[elementTypeIndex]
                                     << "' is not defined.";
            return false);
-  spvCheck(!spvOpcodeIsType(elementType->second.opcode),
+  spvCheck(!spvOpcodeGeneratesType(elementType->second.opcode),
            DIAG(elementTypeIndex) << "OpTypeArray Element Type <id> '"
                                   << inst->words[elementTypeIndex]
                                   << "' is not a type.";
@@ -444,7 +444,7 @@ bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t* inst,
                                     << inst->words[elementTypeIndex]
                                     << "' is not defined.";
            return false);
-  spvCheck(!spvOpcodeIsType(elementType->second.opcode),
+  spvCheck(!spvOpcodeGeneratesType(elementType->second.opcode),
            DIAG(elementTypeIndex) << "OpTypeRuntimeArray Element Type <id> '"
                                   << inst->words[elementTypeIndex]
                                   << "' is not a type.";
@@ -463,7 +463,7 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
                                      << inst->words[memberTypeIndex]
                                      << "' is not defined.";
              return false);
-    spvCheck(!spvOpcodeIsType(memberType->second.opcode),
+    spvCheck(!spvOpcodeGeneratesType(memberType->second.opcode),
              DIAG(memberTypeIndex) << "OpTypeStruct Member Type <id> '"
                                    << inst->words[memberTypeIndex]
                                    << "' is not a type.";
@@ -481,7 +481,7 @@ bool idUsage::isValid<SpvOpTypePointer>(const spv_instruction_t* inst,
                                          << inst->words[typeIndex]
                                          << "' is not defined.";
            return false);
-  spvCheck(!spvOpcodeIsType(type->second.opcode),
+  spvCheck(!spvOpcodeGeneratesType(type->second.opcode),
            DIAG(typeIndex) << "OpTypePointer Type <id> '"
                            << inst->words[typeIndex] << "' is not a type.";
            return false);
@@ -498,7 +498,7 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
                                    << inst->words[returnTypeIndex]
                                    << "' is not defined";
            return false);
-  spvCheck(!spvOpcodeIsType(returnType->second.opcode),
+  spvCheck(!spvOpcodeGeneratesType(returnType->second.opcode),
            DIAG(returnTypeIndex) << "OpTypeFunction Return Type <id> '"
                                  << inst->words[returnTypeIndex]
                                  << "' is not a type.";
@@ -511,7 +511,7 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
                                     << inst->words[paramTypeIndex]
                                     << "' is not defined.";
              return false);
-    spvCheck(!spvOpcodeIsType(paramType->second.opcode),
+    spvCheck(!spvOpcodeGeneratesType(paramType->second.opcode),
              DIAG(paramTypeIndex) << "OpTypeFunction Parameter Type <id> '"
                                   << inst->words[paramTypeIndex]
                                   << "' is not a type.";

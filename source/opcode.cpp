@@ -625,33 +625,6 @@ const char* spvOpcodeString(const SpvOp opcode) {
   return "unknown";
 }
 
-int32_t spvOpcodeIsType(const SpvOp opcode) {
-  switch (opcode) {
-    case SpvOpTypeVoid:
-    case SpvOpTypeBool:
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-    case SpvOpTypeSampler:
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeArray:
-    case SpvOpTypeRuntimeArray:
-    case SpvOpTypeStruct:
-    case SpvOpTypeOpaque:
-    case SpvOpTypePointer:
-    case SpvOpTypeFunction:
-    case SpvOpTypeEvent:
-    case SpvOpTypeDeviceEvent:
-    case SpvOpTypeReserveId:
-    case SpvOpTypeQueue:
-    case SpvOpTypePipe:
-      return true;
-    default:
-      return false;
-  }
-}
-
 int32_t spvOpcodeIsScalarType(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeInt:
@@ -888,9 +861,12 @@ int32_t spvOpcodeGeneratesType(SpvOp op) {
     case SpvOpTypeReserveId:
     case SpvOpTypeQueue:
     case SpvOpTypePipe:
-    case SpvOpTypeForwardPointer:
       return true;
-    default:;
+    default:
+      // In particular, OpTypeForwardPointer does not generate a type,
+      // but declares a storage class for a pointer type generated
+      // by a different instruction.
+      break;
   }
   return 0;
 }
