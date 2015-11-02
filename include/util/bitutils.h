@@ -44,6 +44,8 @@ Dest BitwiseCast(Src source) {
 // SetBits<T, First, Num> returns an integer of type <T> with bits set
 // for position <First> through <First + Num - 1>, counting from the least
 // significant bit. In particular when Num == 0, no positions are set to 1.
+// A static assert will be triggered if First + Num > sizeof(T) * 8, that is,
+// a bit that will not fit in the underlying type is set.
 template <typename T, size_t First = 0, size_t Num = 0>
 struct SetBits {
   static_assert(First < sizeof(T) * 8,
