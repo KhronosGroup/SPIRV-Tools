@@ -42,22 +42,36 @@ using HexFloatTest =
     ::testing::TestWithParam<std::pair<FloatProxy<float>, std::string>>;
 using DecodeHexFloatTest =
     ::testing::TestWithParam<std::pair<std::string, FloatProxy<float>>>;
+using HexDoubleTest =
+    ::testing::TestWithParam<std::pair<FloatProxy<double>, std::string>>;
+using DecodeHexDoubleTest =
+    ::testing::TestWithParam<std::pair<std::string, FloatProxy<double>>>;
 
-TEST_P(HexFloatTest, EncodeCorrectly) {
+template <typename ParamType>
+void EncodeTestHelper(const ParamType& param) {
   std::stringstream ss;
-  ss << spvutils::HexFloat<FloatProxy<float>>(std::get<0>(GetParam()));
-  EXPECT_THAT(ss.str(), Eq(std::get<1>(GetParam())));
+  ss << spvutils::HexFloat<typename ParamType::first_type>(std::get<0>(param));
+  EXPECT_THAT(ss.str(), Eq(std::get<1>(param)));
 }
 
-TEST_P(HexFloatTest, DecodeCorrectly) {
-  std::stringstream ss(std::get<1>(GetParam()));
-  spvutils::HexFloat<FloatProxy<float>> myFloat(0.f);
+TEST_P(HexFloatTest, EncodeCorrectly) { EncodeTestHelper(GetParam()); }
+
+TEST_P(HexDoubleTest, EncodeCorrectly) { EncodeTestHelper(GetParam()); }
+
+template <typename ParamType>
+void DecodeTestHelper(const ParamType& param) {
+  std::stringstream ss(std::get<1>(param));
+  spvutils::HexFloat<typename ParamType::first_type> myFloat(0.f);
   ss >> myFloat;
-  FloatProxy<float> expected = std::get<0>(GetParam());
+  typename ParamType::first_type expected = std::get<0>(param);
   // Check that the two floats are bitwise equal. We do it this way because
   // nan != nan, and so the test would fail even if they were exactly the same.
   EXPECT_THAT(myFloat.value(), Eq(expected));
 }
+
+TEST_P(HexFloatTest, DecodeCorrectly) { DecodeTestHelper(GetParam()); }
+
+TEST_P(HexDoubleTest, DecodeCorrectly) { DecodeTestHelper(GetParam()); }
 
 INSTANTIATE_TEST_CASE_P(
     Float32Tests, HexFloatTest,
@@ -129,15 +143,106 @@ INSTANTIATE_TEST_CASE_P(
         {uint32_t(0x7FFFFFFF), "0x1.fffffep+128"},   // +nan
     })));
 
+INSTANTIATE_TEST_CASE_P(
+    Float64Tests, HexDoubleTest,
+    ::testing::ValuesIn(
+        std::vector<std::pair<FloatProxy<double>, std::string>>({
+            {0., "0x0p+0"},
+            {1., "0x1p+0"},
+            {2., "0x1p+1"},
+            {3., "0x1.8p+1"},
+            {0.5, "0x1p-1"},
+            {0.25, "0x1p-2"},
+            {0.75, "0x1.8p-1"},
+            {-0., "-0x0p+0"},
+            {-1., "-0x1p+0"},
+            {-0.5, "-0x1p-1"},
+            {-0.25, "-0x1p-2"},
+            {-0.75, "-0x1.8p-1"},
+
+            // Larger numbers
+            {512., "0x1p+9"},
+            {-512., "-0x1p+9"},
+            {1024., "0x1p+10"},
+            {-1024., "-0x1p+10"},
+            {1024. + 8., "0x1.02p+10"},
+            {-1024. - 8., "-0x1.02p+10"},
+
+            // Large outside the range of normal floats
+            {ldexp(1.0, 128), "0x1p+128"},
+            {ldexp(1.0, 129), "0x1p+129"},
+            {ldexp(-1.0, 128), "-0x1p+128"},
+            {ldexp(-1.0, 129), "-0x1p+129"},
+            {ldexp(1.0, 128) + ldexp(1.0, 90), "0x1.0000000004p+128"},
+            {ldexp(1.0, 129) + ldexp(1.0, 120), "0x1.008p+129"},
+            {ldexp(-1.0, 128) + ldexp(1.0, 90), "-0x1.fffffffff8p+127"},
+            {ldexp(-1.0, 129) + ldexp(1.0, 120), "-0x1.ffp+128"},
+
+            // Small numbers
+            {1.0 / 512., "0x1p-9"},
+            {1.0 / -512., "-0x1p-9"},
+            {1.0 / 1024., "0x1p-10"},
+            {1.0 / -1024., "-0x1p-10"},
+            {1.0 / 1024. + 1.0 / 8., "0x1.02p-3"},
+            {1.0 / -1024. - 1.0 / 8., "-0x1.02p-3"},
+
+            // Small outside the range of normal floats
+            {ldexp(1.0, -128), "0x1p-128"},
+            {ldexp(1.0, -129), "0x1p-129"},
+            {ldexp(-1.0, -128), "-0x1p-128"},
+            {ldexp(-1.0, -129), "-0x1p-129"},
+            {ldexp(1.0, -128) + ldexp(1.0, -90), "0x1.0000000004p-90"},
+            {ldexp(1.0, -129) + ldexp(1.0, -120), "0x1.008p-120"},
+            {ldexp(-1.0, -128) + ldexp(1.0, -90), "0x1.fffffffff8p-91"},
+            {ldexp(-1.0, -129) + ldexp(1.0, -120), "0x1.ffp-121"},
+
+            // lowest non-denorm
+            {ldexp(1.0, -1022), "0x1p-1022"},
+            {ldexp(-1.0, -1022), "-0x1p-1022"},
+
+            // Denormalized values
+            {ldexp(1.0, -1023), "0x1p-1023"},
+            {ldexp(1.0, -1023) / 2.0, "0x1p-1024"},
+            {ldexp(1.0, -1023) / 4.0, "0x1p-1025"},
+            {ldexp(1.0, -1023) / 8.0, "0x1p-1026"},
+            {ldexp(-1.0, -1024), "-0x1p-1024"},
+            {ldexp(-1.0, -1024) / 2.0, "-0x1p-1025"},
+            {ldexp(-1.0, -1024) / 4.0, "-0x1p-1026"},
+            {ldexp(-1.0, -1024) / 8.0, "-0x1p-1027"},
+
+            {ldexp(1.0, -1023) + (ldexp(1.0, -1023) / 2.0), "0x1.8p-1023"},
+            {ldexp(1.0, -1023) / 2.0 + (ldexp(1.0, -1023) / 4.0),
+             "0x1.8p-1024"},
+
+        })));
+
+INSTANTIATE_TEST_CASE_P(
+    Float64NanTests, HexDoubleTest,
+    ::testing::ValuesIn(std::vector<
+                        std::pair<FloatProxy<double>, std::string>>({
+        // Various NAN and INF cases
+        {uint64_t(0xFFF0000000000000LL), "-0x1p+1024"},                //-inf
+        {uint64_t(0x7FF0000000000000LL), "0x1p+1024"},                 //+inf
+        {uint64_t(0xFFF8000000000000LL), "-0x1.8p+1024"},              // -nan
+        {uint64_t(0xFFF0F00000000000LL), "-0x1.0fp+1024"},             // -nan
+        {uint64_t(0xFFF0000000000001LL), "-0x1.0000000000001p+1024"},  // -nan
+        {uint64_t(0xFFF0000300000000LL), "-0x1.00003p+1024"},          // -nan
+        {uint64_t(0xFFFFFFFFFFFFFFFFLL), "-0x1.fffffffffffffp+1024"},  // -nan
+        {uint64_t(0x7FF8000000000000LL), "0x1.8p+1024"},               // +nan
+        {uint64_t(0x7FF0F00000000000LL), "0x1.0fp+1024"},              // +nan
+        {uint64_t(0x7FF0000000000001LL), "0x1.0000000000001p+1024"},   // -nan
+        {uint64_t(0x7FF0000300000000LL), "0x1.00003p+1024"},           // -nan
+        {uint64_t(0x7FFFFFFFFFFFFFFFLL), "0x1.fffffffffffffp+1024"},   // -nan
+    })));
+
 TEST_P(DecodeHexFloatTest, DecodeCorrectly) {
-  std::stringstream ss(std::get<0>(GetParam()));
-  spvutils::HexFloat<FloatProxy<float>> myFloat(0.f);
-  ss >> myFloat;
-  FloatProxy<float> expected = std::get<1>(GetParam());
-  // Check that the two floats are bitwise equal. We do it this way because
-  // nan != nan, and so the test would fail even if they were exactly the same.
-  EXPECT_THAT(BitwiseCast<uint32_t>(myFloat.value()),
-              Eq(BitwiseCast<uint32_t>(expected)));
+  DecodeTestHelper(
+      std::make_pair(std::get<1>(GetParam()), std::get<0>(GetParam())));
+}
+
+TEST_P(DecodeHexDoubleTest, DecodeCorrectly) {
+  DecodeTestHelper(
+      std::make_pair(std::get<1>(GetParam()), std::get<0>(GetParam())));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -152,10 +257,10 @@ INSTANTIATE_TEST_CASE_P(
         {"-0x1p-500", -0.f},
         {"0x0.00000000001p-126", 0.f},  // Fraction causes underflow.
         {"-0x0.0000000001p-127", -0.f},
-        {"-0x0.01p-142", -0.f},  // Fraction causes undeflow to underflow more.
+        {"-0x0.01p-142", -0.f},  // Fraction causes undeflow to underflow.
         {"0x0.01p-142", 0.f},
 
-        // Some floats that do not encode the same way as the decode.
+        // Some floats that do not encode the same way as they decode.
         {"0x2p+0", 2.f},
         {"0xFFp+0", 255.f},
         {"0x0.8p+0", 0.5f},
@@ -171,6 +276,40 @@ INSTANTIATE_TEST_CASE_P(
         {"0x32p+500", uint32_t(0x7F800000)},   // inf
         {"-0x32p+127", uint32_t(0xFF800000)},  // -inf
     })));
+
+INSTANTIATE_TEST_CASE_P(
+    Float64DecodeTests, DecodeHexDoubleTest,
+    ::testing::ValuesIn(
+        std::vector<std::pair<std::string, FloatProxy<double>>>({
+            {"0x0p+000", 0.},
+            {"0x0p0", 0.},
+            {"0x0p-0", 0.},
+
+            // flush to zero cases
+            {"0x1p-5000", 0.},  // Exponent underflows.
+            {"-0x1p-5000", -0.},
+            {"0x0.0000000000000001p-1023", 0.},  // Fraction causes underflow.
+            {"-0x0.000000000000001p-1024", -0.},
+            {"-0x0.01p-1090", -0.f},  // Fraction causes undeflow to underflow.
+            {"0x0.01p-1090", 0.},
+
+            // Some floats that do not encode the same way as they decode.
+            {"0x2p+0", 2.},
+            {"0xFFp+0", 255.},
+            {"0x0.8p+0", 0.5},
+            {"0x0.4p+0", 0.25},
+        })));
+
+INSTANTIATE_TEST_CASE_P(
+    Float64DecodeInfTests, DecodeHexDoubleTest,
+    ::testing::ValuesIn(
+        std::vector<std::pair<std::string, FloatProxy<double>>>({
+            // inf cases
+            {"-0x1p+1024", uint64_t(0xFFF0000000000000)},   // -inf
+            {"0x32p+1023", uint64_t(0x7FF0000000000000)},   // inf
+            {"0x32p+5000", uint64_t(0x7FF0000000000000)},   // inf
+            {"-0x32p+1023", uint64_t(0xFFF0000000000000)},  // -inf
+        })));
 
 TEST(FloatProxy, ValidConversion) {
   EXPECT_THAT(FloatProxy<float>(1.f).getAsFloat(), Eq(1.0f));
@@ -241,6 +380,5 @@ TEST(FloatProxy, Negation) {
               Eq(std::numeric_limits<float>::infinity()));
 }
 
-// TODO(awoloszyn): Add double tests
 // TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
 }

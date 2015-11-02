@@ -187,7 +187,8 @@ class HexFloat {
   // The representation of the fraction, not the actual bits. This
   // includes the leading bit that is usually implicit.
   static const uint_type fraction_represent_mask =
-      spvutils::SetBits<uint_type, 0, num_fraction_bits + 1>::get;
+      spvutils::SetBits<uint_type, 0,
+                        num_fraction_bits + num_overflow_bits>::get;
 
   // The topmost bit in the fraction. (The first non-implicit bit).
   static const uint_type fraction_top_bit =
@@ -246,8 +247,6 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
                 "num_exponent_bits must be non-zero for a valid float");
   static_assert(HF::num_fraction_bits != 0,
                 "num_fractin_bits must be non-zero for a valid float");
-  static_assert(HF::num_overflow_bits != 0,
-                "num_exponent_bits must be non-zero for a valid float");
 
   const uint_type bits = spvutils::BitwiseCast<uint_type>(value.value());
   const char* const sign = (bits & HF::sign_mask) ? "-" : "";
