@@ -25,6 +25,14 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-11-02
+* Progress toward making `libspirv.h` a C API:
+   * Use C header `spirv.h` instead of C++ header `spirv.hpp`
+* Fixed UTF-8 tests on Windows
+* Fixed "Generator" enums (SPIR-V module word 2)
+* Fixed CMake location of Google Mock
+* Other internal cleanups
+
 2015-10-16
 * OpenCL extended instructions are supported, from version 1.0 Revision 1.
 * Capability dependencies for instructions and enums now match 0.99 Rev 32.
