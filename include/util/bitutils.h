@@ -44,13 +44,15 @@ Dest BitwiseCast(Src source) {
 // SetBits<T, First, Num> returns an integer of type <T> with bits set
 // for position <First> through <First + Num - 1>, counting from the least
 // significant bit. In particular when Num == 0, no positions are set to 1.
-template<typename T, size_t First = 0, size_t Num = 0>
+template <typename T, size_t First = 0, size_t Num = 0>
 struct SetBits {
-  const static T get = (T(1) << First) |
-                          SetBits<T, First+1, Num-1>::get;
+  static_assert(First < sizeof(T) * 8,
+                "Tried to set a bit that is shifted too far.");
+  const static T get =
+      (T(1) << First) | SetBits<T, First + 1, Num - 1>::get;
 };
 
-template<typename T, size_t  Last>
+template <typename T, size_t Last>
 struct SetBits<T, Last, 0> {
   const static T get = T(0);
 };
@@ -66,13 +68,11 @@ static_assert(SetBits<uint32_t, 1, 2>::get == uint32_t(0x00000006),
               "SetBits failed");
 static_assert(SetBits<uint32_t, 30, 2>::get == uint32_t(0xc0000000),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 31, 3>::get == uint32_t(0x80000000),
-              "SetBits failed");
 static_assert(SetBits<uint32_t, 0, 31>::get == uint32_t(0x7FFFFFFF),
               "SetBits failed");
 static_assert(SetBits<uint32_t, 0, 32>::get == uint32_t(0xFFFFFFFF),
               "SetBits failed");
-static_assert(SetBits<uint32_t, 16, 31>::get == uint32_t(0xFFFF0000),
+static_assert(SetBits<uint32_t, 16, 16>::get == uint32_t(0xFFFF0000),
               "SetBits failed");
 
 static_assert(SetBits<uint64_t, 0, 1>::get == uint64_t(0x0000000000000001LL),

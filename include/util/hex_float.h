@@ -39,6 +39,75 @@
 
 namespace spvutils {
 
+template <typename T>
+struct FloatProxyTraits {
+  typedef void uint_type;
+};
+
+template <>
+struct FloatProxyTraits<float> {
+  typedef uint32_t uint_type;
+};
+
+template <>
+struct FloatProxyTraits<double> {
+  typedef uint64_t uint_type;
+};
+
+// Since copying a floating point number (especially if it is NaN)
+// does not guarantee that bits are preserved, this class lets us
+// store the type and use it as a float when necessary.
+template <typename T>
+class FloatProxy {
+ public:
+  using uint_type = typename FloatProxyTraits<T>::uint_type;
+
+  // Since this is to act similar to the normal floats,
+  // do not initialize the data by default.
+  FloatProxy() = default;
+
+  // Intentionally non-explicit. This is a proxy type so
+  // implicit conversions allow us to use it more transparently.
+  FloatProxy(T val) {
+    data_ = BitwiseCast<uint_type>(val);
+  }
+
+  // Intentionally non-explicit. This is a proxy type so
+  // implicit conversions allow us to use it more transparently.
+  FloatProxy(uint_type val) { data_ = val; }
+
+  // This is helpful to have and is guaranteed not to stomp bits.
+  FloatProxy<T> operator-() const {
+    return data_ ^ (uint_type(0x1) << (sizeof(T) * 8 - 1));
+  }
+
+  // Returns the data as a floating point value.
+  T getAsFloat() const { return BitwiseCast<T>(data_); }
+
+  // Returns the raw data.
+  uint_type data() const { return data_; }
+
+  // Returns true if the value represents any type of NaN.
+  bool isNan() { return std::isnan(getAsFloat()); }
+
+ private:
+  uint_type data_;
+};
+
+template <typename T>
+bool operator==(const FloatProxy<T>& first, const FloatProxy<T>& second) {
+  return first.data() == second.data();
+}
+
+// Convenience to read the value as a normal float.
+template <typename T>
+std::istream& operator>>(std::istream& is, FloatProxy<T>& value) {
+  T float_val;
+  is >> float_val;
+  value = FloatProxy<T>(float_val);
+  return is;
+}
+
 // This is an example traits. It is not meant to be used in practice, but will
 // be the default for any non-specialized type.
 template <typename T>
@@ -63,7 +132,7 @@ struct HexFloatTraits {
 // Traits for IEEE float.
 // 1 sign bit, 8 exponent bits, 23 fractional bits.
 template <>
-struct HexFloatTraits<float> {
+struct HexFloatTraits<FloatProxy<float>> {
   typedef uint32_t uint_type;
   typedef int32_t int_type;
   static const uint_type num_used_bits = 32;
@@ -75,7 +144,7 @@ struct HexFloatTraits<float> {
 // Traits for IEEE double.
 // 1 sign bit, 11 exponent bits, 52 fractional bits.
 template <>
-struct HexFloatTraits<double> {
+struct HexFloatTraits<FloatProxy<double>> {
   typedef uint64_t uint_type;
   typedef int64_t int_type;
   static const uint_type num_used_bits = 64;
@@ -94,6 +163,7 @@ class HexFloat {
   using int_type = typename Traits::int_type;
 
   explicit HexFloat(T f) : value_(f) {}
+
   T value() const { return value_; }
   void set_value(T f) { value_ = f; }
 
@@ -114,7 +184,7 @@ class HexFloat {
   // then we have to left-shift to get rid of leading 0s. This is the amount
   // we have to shift (might be 0).
   static const uint32_t num_overflow_bits =
-      fraction_nibbles * 4 -  num_fraction_bits;
+      fraction_nibbles * 4 - num_fraction_bits;
 
   // The representation of the fraction, not the actual bits. This
   // includes the leading bit that is usually implicit.
@@ -123,7 +193,7 @@ class HexFloat {
 
   // The topmost bit in the fraction. (The first non-implicit bit).
   static const uint_type fraction_top_bit =
-      uint_type(1) << num_fraction_bits + num_overflow_bits - 1;
+      uint_type(1) << (num_fraction_bits + num_overflow_bits - 1);
 
   // The mask for the encoded fraction. It does not include the
   // implicit bit.
@@ -142,7 +212,7 @@ class HexFloat {
 
   // How far from the right edge the fraction is shifted.
   static const uint32_t fraction_right_shift =
-      (sizeof(uint_type)*8) - num_fraction_bits;
+      (sizeof(uint_type) * 8) - num_fraction_bits;
 
  private:
   T value_;
@@ -183,7 +253,8 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
 
   const uint_type bits = spvutils::BitwiseCast<uint_type>(value.value());
   const char* const sign = (bits & HF::sign_mask) ? "-" : "";
-  const uint_type exponent = (bits & HF::exponent_mask) >> HF::num_fraction_bits;
+  const uint_type exponent =
+      (bits & HF::exponent_mask) >> HF::num_fraction_bits;
 
   uint_type fraction = (bits & HF::fraction_encode_mask)
                        << HF::num_overflow_bits;
@@ -233,8 +304,8 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
 }
 
 template <typename T, typename Traits>
-inline std::istream& ParseNormalFloat(
-    std::istream& is, bool negate_value, HexFloat<T, Traits>& value) {
+inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
+                                      HexFloat<T, Traits>& value) {
   T val;
   is >> val;
   if (negate_value) {
@@ -269,7 +340,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
   using uint_type = typename HF::uint_type;
   using int_type = typename HF::int_type;
 
-  value.set_value(T(0));
+  value.set_value(T(0.f));
 
   if (is.flags() & std::ios::skipws) {
     // If the user wants to skip whitespace , then we should obey that.
@@ -282,7 +353,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
   bool negate_value = false;
 
   if (next_char != '-' && next_char != '0') {
-      return ParseNormalFloat(is, negate_value, value);
+    return ParseNormalFloat(is, negate_value, value);
   }
 
   if (next_char == '-') {
@@ -341,7 +412,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
           fraction |= write_bit << (HF::top_bit_left_shift - fraction_index++);
           exponent += 1;
         }
-        bits_written |= write_bit;
+        bits_written |= write_bit != 0;
       }
     } else {
       // We have not found our exponent yet, so we have to fail.
@@ -360,7 +431,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
       int number = get_nibble_from_character(next_char);
       for (int i = 0; i < 4; ++i, number <<= 1) {
         uint_type write_bit = (number & 0x8) ? 0x01 : 0x00;
-        bits_written |= write_bit;
+        bits_written |= write_bit != 0;
         if (is_denorm && !bits_written) {
           // Handle modifying the exponent here this way we can handle
           // an arbitrary number of hex values without overflowing our
