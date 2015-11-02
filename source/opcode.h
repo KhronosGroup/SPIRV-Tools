@@ -111,7 +111,7 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
                         const uint16_t wordCount, const spv_endianness_t endian,
                         spv_instruction_t* pInst);
 
-/// @brief Get the string of an OpCode
+/// @brief Get the name of an instruction, without the "Op" prefix.
 ///
 /// @param[in] opcode the opcode
 ///
