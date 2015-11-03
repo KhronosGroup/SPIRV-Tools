@@ -354,7 +354,7 @@ typedef struct spv_ext_inst_table_t {
 } spv_ext_inst_table_t;
 
 typedef struct spv_binary_t {
-  uint32_t const* code;
+  const uint32_t* code;
   uint64_t wordCount;
 } spv_binary_t;
 
@@ -473,7 +473,7 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(uint32_t const* binary, const uint64_t wordCount,
+spv_result_t spvBinaryToText(const uint32_t* binary, const uint64_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
@@ -494,7 +494,7 @@ spv_result_t spvBinaryToText(uint32_t const* binary, const uint64_t wordCount,
 ///
 /// @return result code
 spv_result_t spvBinaryToTextWithFormat(
-    uint32_t const* binary, const uint64_t wordCount, const uint32_t options,
+    const uint32_t* binary, const uint64_t wordCount, const uint32_t options,
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, spv_assembly_syntax_format_t format,
     spv_text* pText, spv_diagnostic* pDiagnostic);
