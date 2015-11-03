@@ -264,7 +264,7 @@ INSTANTIATE_TEST_CASE_P(
         {"-0x1p-500", -0.f},
         {"0x0.00000000001p-126", 0.f},  // Fraction causes underflow.
         {"-0x0.0000000001p-127", -0.f},
-        {"-0x0.01p-142", -0.f},  // Fraction causes undeflow to underflow.
+        {"-0x0.01p-142", -0.f},  // Fraction causes additional underflow.
         {"0x0.01p-142", 0.f},
 
         // Some floats that do not encode the same way as they decode.
@@ -297,7 +297,7 @@ INSTANTIATE_TEST_CASE_P(
             {"-0x1p-5000", -0.},
             {"0x0.0000000000000001p-1023", 0.},  // Fraction causes underflow.
             {"-0x0.000000000000001p-1024", -0.},
-            {"-0x0.01p-1090", -0.f},  // Fraction causes undeflow to underflow.
+            {"-0x0.01p-1090", -0.f},  // Fraction causes additional underflow.
             {"0x0.01p-1090", 0.},
 
             // Some floats that do not encode the same way as they decode.
