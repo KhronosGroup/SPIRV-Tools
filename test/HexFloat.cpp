@@ -47,31 +47,40 @@ using HexDoubleTest =
 using DecodeHexDoubleTest =
     ::testing::TestWithParam<std::pair<std::string, FloatProxy<double>>>;
 
-template <typename ParamType>
-void EncodeTestHelper(const ParamType& param) {
+// Hex-encodes a float value.
+template <typename T>
+std::string Encode(const T& value) {
   std::stringstream ss;
-  ss << spvutils::HexFloat<typename ParamType::first_type>(std::get<0>(param));
-  EXPECT_THAT(ss.str(), Eq(std::get<1>(param)));
+  ss << spvutils::HexFloat<T>(value);
+  return ss.str();
 }
 
-TEST_P(HexFloatTest, EncodeCorrectly) { EncodeTestHelper(GetParam()); }
+// The following two tests can't be DRY because they take different parameter
+// types.
 
-TEST_P(HexDoubleTest, EncodeCorrectly) { EncodeTestHelper(GetParam()); }
-
-template <typename ParamType>
-void DecodeTestHelper(const ParamType& param) {
-  std::stringstream ss(std::get<1>(param));
-  spvutils::HexFloat<typename ParamType::first_type> myFloat(0.f);
-  ss >> myFloat;
-  typename ParamType::first_type expected = std::get<0>(param);
-  // Check that the two floats are bitwise equal. We do it this way because
-  // nan != nan, and so the test would fail even if they were exactly the same.
-  EXPECT_THAT(myFloat.value(), Eq(expected));
+TEST_P(HexFloatTest, EncodeCorrectly) {
+  EXPECT_THAT(Encode(GetParam().first), Eq(GetParam().second));
 }
 
-TEST_P(HexFloatTest, DecodeCorrectly) { DecodeTestHelper(GetParam()); }
+TEST_P(HexDoubleTest, EncodeCorrectly) {
+  EXPECT_THAT(Encode(GetParam().first), Eq(GetParam().second));
+}
 
-TEST_P(HexDoubleTest, DecodeCorrectly) { DecodeTestHelper(GetParam()); }
+// Decodes a hex-float string.
+template <typename T>
+FloatProxy<T> Decode(const std::string& str) {
+  spvutils::HexFloat<FloatProxy<T>> decoded(0.f);
+  std::stringstream(str) >> decoded;
+  return decoded.value();
+}
+
+TEST_P(HexFloatTest, DecodeCorrectly) {
+  EXPECT_THAT(Decode<float>(GetParam().second), Eq(GetParam().first));
+}
+
+TEST_P(HexDoubleTest, DecodeCorrectly) {
+  EXPECT_THAT(Decode<double>(GetParam().second), Eq(GetParam().first));
+}
 
 INSTANTIATE_TEST_CASE_P(
     Float32Tests, HexFloatTest,
@@ -236,13 +245,11 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 TEST_P(DecodeHexFloatTest, DecodeCorrectly) {
-  DecodeTestHelper(
-      std::make_pair(std::get<1>(GetParam()), std::get<0>(GetParam())));
+  EXPECT_THAT(Decode<float>(GetParam().first), Eq(GetParam().second));
 }
 
 TEST_P(DecodeHexDoubleTest, DecodeCorrectly) {
-  DecodeTestHelper(
-      std::make_pair(std::get<1>(GetParam()), std::get<0>(GetParam())));
+  EXPECT_THAT(Decode<double>(GetParam().first), Eq(GetParam().second));
 }
 
 INSTANTIATE_TEST_CASE_P(
