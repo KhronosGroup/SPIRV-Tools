@@ -191,7 +191,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       stream_ << ext_inst->name;
     } break;
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER: {
+    case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER: {
       SetRed();
       // TODO(dneto): Emit values according to type.
       if (operand.num_words == 1)
@@ -221,7 +221,6 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
     case SPV_OPERAND_TYPE_EXECUTION_MODE:
-    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
     case SPV_OPERAND_TYPE_STORAGE_CLASS:
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
@@ -243,8 +242,8 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
-    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
-    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_IMAGE:
+    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
       EmitMaskOperand(operand.type, word);
       break;

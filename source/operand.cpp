@@ -1053,7 +1053,10 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE,
      sizeof(imageChannelDataTypeEntries) / sizeof(spv_operand_desc_t),
      imageChannelDataTypeEntries},
-    {SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+    {SPV_OPERAND_TYPE_IMAGE,
+     sizeof(imageOperandEntries) / sizeof(spv_operand_desc_t),
+     imageOperandEntries},
+    {SPV_OPERAND_TYPE_OPTIONAL_IMAGE,  // Same as *_IMAGE
      sizeof(imageOperandEntries) / sizeof(spv_operand_desc_t),
      imageOperandEntries},
     {SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
@@ -1087,7 +1090,10 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
      sizeof(memorySemanticsEntries) / sizeof(spv_operand_desc_t),
      memorySemanticsEntries},
-    {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
+    {SPV_OPERAND_TYPE_MEMORY_ACCESS,
+     sizeof(memoryAccessEntries) / sizeof(spv_operand_desc_t),
+     memoryAccessEntries},
+    {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,  // Same as *_MEMORY_ACCESS
      sizeof(memoryAccessEntries) / sizeof(spv_operand_desc_t),
      memoryAccessEntries},
     {SPV_OPERAND_TYPE_EXECUTION_SCOPE,
@@ -1170,15 +1176,23 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
       return "ID";
+    case SPV_OPERAND_TYPE_TYPE_ID:
+      return "type ID";
     case SPV_OPERAND_TYPE_RESULT_ID:
       return "result ID";
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
       return "literal number";
-    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
-      return "multiple word literal number";
+    case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER:
+      return "possibly multi-word literal integer";
+    case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
+      return "possibly multi-word literal number";
+    case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER:
+      return "extension instruction number";
     case SPV_OPERAND_TYPE_LITERAL_STRING:
+    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
       return "literal string";
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
       return "source language";
@@ -1189,6 +1203,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
       return "memory model";
     case SPV_OPERAND_TYPE_EXECUTION_MODE:
+    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
       return "execution mode";
     case SPV_OPERAND_TYPE_STORAGE_CLASS:
       return "storage class";
@@ -1222,6 +1237,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "function control";
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
       return "memory semantics";
+    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
       return "memory access";
     case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
@@ -1234,8 +1250,20 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "kernel profiling info";
     case SPV_OPERAND_TYPE_CAPABILITY:
       return "capability";
+    case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
       return "image operand";
+    case SPV_OPERAND_TYPE_OPTIONAL_CIV:
+      return "context-insensitive value";
+
+    // The next values are for values returned from an instruction, not actually
+    // an operand.  So the specific strings don't matter.  But let's add them
+    // for completeness and ease of testing.
+    case SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER:
+      return "image channel order";
+    case SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE:
+      return "image channel data type";
+
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
     default:
@@ -1271,37 +1299,13 @@ void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
 }
 
 bool spvOperandIsOptional(spv_operand_type_t type) {
-  // Variable means zero or more times.
-  if (spvOperandIsVariable(type)) return true;
-
-  switch (type) {
-    case SPV_OPERAND_TYPE_OPTIONAL_ID:
-    case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
-    case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
-    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
-    case SPV_OPERAND_TYPE_OPTIONAL_CIV:
-      return true;
-    default:
-      break;
-  }
-  return false;
+  return SPV_OPERAND_TYPE_FIRST_OPTIONAL_TYPE <= type &&
+         type <= SPV_OPERAND_TYPE_LAST_OPTIONAL_TYPE;
 }
 
 bool spvOperandIsVariable(spv_operand_type_t type) {
-  switch (type) {
-    case SPV_OPERAND_TYPE_VARIABLE_ID:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
-    case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
-      return true;
-    default:
-      break;
-  }
-  return false;
+  return SPV_OPERAND_TYPE_FIRST_VARIABLE_TYPE <= type &&
+         type <= SPV_OPERAND_TYPE_LAST_VARIABLE_TYPE;
 }
 
 bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
@@ -1315,17 +1319,17 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
                       {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
-      // Represents Zero or more (Literal number, Id) pairs.
+      // Represents Zero or more (Literal number, Id) pairs,
+      // where the literal number must be a scalar integer.
       pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
-                       SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE, type});
+                      {SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER,
+                       SPV_OPERAND_TYPE_ID, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
       // Represents Zero or more (Id, Literal number) pairs.
-      pattern->insert(
-          pattern->begin(),
-          {SPV_OPERAND_TYPE_OPTIONAL_ID,
-           SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE, type});
+      pattern->insert(pattern->begin(),
+                      {SPV_OPERAND_TYPE_OPTIONAL_ID,
+                       SPV_OPERAND_TYPE_LITERAL_INTEGER, type});
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
       pattern->insert(pattern->begin(),

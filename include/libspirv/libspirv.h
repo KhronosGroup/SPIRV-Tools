@@ -159,6 +159,7 @@ typedef enum spv_endianness_t {
 // is a member of an optional tuple of values.  In that case the first member
 // would be optional, and the subsequent members would be required.
 typedef enum spv_operand_type_t {
+  // A sentinel value.
   SPV_OPERAND_TYPE_NONE = 0,
 
 #define FIRST_CONCRETE(ENUM) ENUM, SPV_OPERAND_TYPE_FIRST_CONCRETE_TYPE = ENUM
@@ -181,8 +182,12 @@ typedef enum spv_operand_type_t {
   // number indicating which instruction to use from an extended instruction
   // set.
   SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
-  // A literal number that occupies one or more words in binary form.
-  SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER,
+  // A literal number whose format and size are determined by a previous operand
+  // in the same instruction.  It's a signed integer, an unsigned integer, or a
+  // floating point number.  It also has a specified bit width.  The width
+  // may be larger than 32, which would require such a typed literal value to
+  // occupy multiple SPIR-V words.
+  SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
 
   // Set 3:  The literal string operand type.
   SPV_OPERAND_TYPE_LITERAL_STRING,
@@ -213,53 +218,66 @@ typedef enum spv_operand_type_t {
 
   // Set 5:  Operands that are a single word bitmask.
   // Sometimes a set bit indicates the instruction requires still more operands.
-  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,                         // SPIR-V Sec 3.14
-  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,                      // SPIR-V Sec 3.15
-  SPV_OPERAND_TYPE_SELECTION_CONTROL,                      // SPIR-V Sec 3.22
-  SPV_OPERAND_TYPE_LOOP_CONTROL,                           // SPIR-V Sec 3.23
-  SPV_OPERAND_TYPE_FUNCTION_CONTROL,                       // SPIR-V Sec 3.24
-  LAST_CONCRETE(SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS),  // SPIR-V Sec 3.26
+  SPV_OPERAND_TYPE_IMAGE,                         // SPIR-V Sec 3.14
+  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,             // SPIR-V Sec 3.15
+  SPV_OPERAND_TYPE_SELECTION_CONTROL,             // SPIR-V Sec 3.22
+  SPV_OPERAND_TYPE_LOOP_CONTROL,                  // SPIR-V Sec 3.23
+  SPV_OPERAND_TYPE_FUNCTION_CONTROL,              // SPIR-V Sec 3.24
+  LAST_CONCRETE(SPV_OPERAND_TYPE_MEMORY_ACCESS),  // SPIR-V Sec 3.26
 #undef FIRST_CONCRETE
 #undef LAST_CONCRETE
 
   // The remaining operand types are only used internally by the assembler.
+  // There are two categories:
+  //    Optional : expands to 0 or 1 operand, like ? in regular expressions.
+  //    Variable : expands to 0, 1 or many operands or pairs of operands.
+  //               This is similar to * in regular expressions.
+
+// Macros for defining bounds on optional and variable operand types.
+// Any variable operand type is also optional.
+#define FIRST_OPTIONAL(ENUM) ENUM, SPV_OPERAND_TYPE_FIRST_OPTIONAL_TYPE = ENUM
+#define FIRST_VARIABLE(ENUM) ENUM, SPV_OPERAND_TYPE_FIRST_VARIABLE_TYPE = ENUM
+#define LAST_VARIABLE(ENUM)                         \
+  ENUM, SPV_OPERAND_TYPE_LAST_VARIABLE_TYPE = ENUM, \
+        SPV_OPERAND_TYPE_LAST_OPTIONAL_TYPE = ENUM
 
   // An optional operand represents zero or one logical operands.
   // In an instruction definition, this may only appear at the end of the
   // operand types.
-  SPV_OPERAND_TYPE_OPTIONAL_ID,
-  // An optional literal number. This can expand to either a literal integer or
-  // a literal floating-point number.
-  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
+  FIRST_OPTIONAL(SPV_OPERAND_TYPE_OPTIONAL_ID),
+  // An optional image operand type.
+  SPV_OPERAND_TYPE_OPTIONAL_IMAGE,
+  // An optional memory access type.
+  SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
   // An optional literal integer.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER,
+  // An optional literal number, which may be either integer or floating point.
+  SPV_OPERAND_TYPE_OPTIONAL_LITERAL_NUMBER,
+  // Like SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, but optional, and integral.
+  SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
   // An optional execution mode.
   SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
-  // A variable operand represents zero or more logical operands.
-  // In an instruction definition, this may only appear at the end of the
-  // operand types.
-  SPV_OPERAND_TYPE_VARIABLE_ID,
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER,
-  // A sequence of zero or more pairs of (Literal integer, Id)
-  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID,
-  // A sequence of zero or more pairs of (Id, Literal integer)
-  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
-  // A sequence of zero or more execution modes
-  SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE,
-
-  // An Id that is second or later in an optional tuple of operands.
-  // This must be present if the first operand in the tuple is present.
-  SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE,
-  // A Literal integer that is second or later in an optional tuple of operands.
-  // This must be present if the first operand in the tuple is present.
-  SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE,
-
   // An optional context-independent value, or CIV.  CIVs are tokens that we can
   // assemble regardless of where they occur -- literals, IDs, immediate
   // integers, etc.
   SPV_OPERAND_TYPE_OPTIONAL_CIV,
+
+  // A variable operand represents zero or more logical operands.
+  // In an instruction definition, this may only appear at the end of the
+  // operand types.
+  FIRST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_ID),
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER,
+  // A sequence of zero or more pairs of (typed literal integer, Id).
+  // Expands to zero or more:
+  //  (SPV_OPERAND_TYPE_TYPED_LITERAL_INTEGER, SPV_OPERAND_TYPE_ID)
+  // where the literal number must always be an integer of some sort.
+  SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID,
+  // A sequence of zero or more pairs of (Id, Literal integer)
+  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
+  // A sequence of zero or more execution modes
+  LAST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE),
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.

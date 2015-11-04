@@ -68,7 +68,7 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
                                         const uint32_t value,
                                         spv_operand_desc* pEntry);
 
-/// @brief Get the name string of the operand type
+/// @brief Get the name string of the non-variable operand type
 ///
 /// @param type the type of the operand
 ///

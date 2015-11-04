@@ -189,30 +189,30 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Comment.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticPrint.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/DiagnosticStream.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInst.OpenCL.std.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInstGLSLstd450.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ExtInst.OpenCL.std.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/FixWord.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/GeneratorMagicNumber.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/HexFloat.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ImmediateInt.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/LibspirvMacros.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/NamedId.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandCapabilities.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeMake.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeRequiresCapabilities.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeSplit.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/OpcodeTableGet.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandTableGet.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandCapabilities.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/Operand.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/OperandPattern.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextAdvance.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextDestroy.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextLiteral.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextStartsNewInst.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Annotation.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Barrier.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Constant.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.ControlFlow.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Debug.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.DeviceSideEnqueue.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Function.cpp
@@ -228,6 +228,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
+
     target_link_libraries(UnitSPIRV SPIRV-TOOLS gmock)
   else()
     message(STATUS "Did not find googletest, tests will not be built."

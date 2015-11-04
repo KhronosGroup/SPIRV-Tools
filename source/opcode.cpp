@@ -52,17 +52,13 @@ spv_opcode_desc_t opcodeTableEntries[] = {
 #define Capability2(X, Y) Capability(X) | Capability(Y)
 #define SpvCapabilityNone \
   0  // Needed so Capability(None) still expands to valid syntax.
-#define Instruction(Name, HasResult, HasType, NumLogicalOperands,            \
-                    NumCapabilities, CapabilityRequired, IsVariable,         \
-                    LogicalArgsList)                                         \
-  {                                                                          \
-    #Name, SpvOp##Name,                                                      \
-        (NumCapabilities) ? (CapabilityRequired) : 0, 0,                     \
-                             {}, /* Filled in later. Operand list, including \
-                                    result id and type id, if needed */      \
-                              HasResult, HasType, LogicalArgsList            \
-  }                                                                          \
-  ,
+#define Instruction(Name, HasResult, HasType, NumLogicalOperands,        \
+                    NumCapabilities, CapabilityRequired, IsVariable,     \
+                    LogicalArgsList)                                     \
+  {#Name,     SpvOp##Name, (NumCapabilities) ? (CapabilityRequired) : 0, \
+   0,         {}, /* Filled in later. Operand list, including            \
+                     result id and type id, if needed */                 \
+   HasResult, HasType,     LogicalArgsList},
 #include "opcode.inc"
 #undef EmptyList
 #undef List
@@ -101,8 +97,10 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
         break;
     }
   } else if (operandClass == OperandVariableLiterals) {
-    if (opcode == SpvOpConstant || opcode == SpvOpSpecConstant)
-      return SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER;
+    if (opcode == SpvOpConstant || opcode == SpvOpSpecConstant) {
+      // The number type is determined by the type Id operand.
+      return SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
+    }
   }
 
   switch (operandClass) {
@@ -384,7 +382,7 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 }
 
 const char* spvOpcodeString(const SpvOp opcode) {
-  // Use the syntax table so it's sure to be complete.
+// Use the syntax table so it's sure to be complete.
 #define Instruction(Name, ...) \
   case SpvOp##Name:            \
     return #Name;

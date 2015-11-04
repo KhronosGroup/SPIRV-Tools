@@ -408,7 +408,6 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
       break;
 
     case SPV_OPERAND_TYPE_ID:
-    case SPV_OPERAND_TYPE_ID_IN_OPTIONAL_TUPLE:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
       if (!word) return diagnostic() << "Id is 0";
       parsed_operand.type = SPV_OPERAND_TYPE_ID;
@@ -442,9 +441,16 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
 
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
-    case SPV_OPERAND_TYPE_LITERAL_INTEGER_IN_OPTIONAL_TUPLE:
-      // TODO(dneto): Type checking and validation?
+      // These are regular single-word literal integer operands.
+      // Post-parsing validation should check the range of the parsed value.
       parsed_operand.type = SPV_OPERAND_TYPE_LITERAL_INTEGER;
+      // It turns out they are always unsigned integers!
+      parsed_operand.number_kind = SPV_NUMBER_UNSIGNED_INT;
+      parsed_operand.number_bit_width = 32;
+      break;
+
+    case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER:
       if (inst->opcode == SpvOpSwitch) {
         // The literal operands have the same type as the value
         // referenced by the selector Id.
@@ -470,21 +476,15 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
                               << " is not a scalar integer";
         }
       } else {
-        // These are regular single-word literal integer operands.
-        // Post-parsing validation should check the range.
-        parsed_operand.number_kind = SPV_NUMBER_UNSIGNED_INT;
-        parsed_operand.number_bit_width = 32;
+        assert(inst->opcode == SpvOpConstant ||
+               inst->opcode == SpvOpSpecConstant);
+        // The literal number type is determined by the type Id for the
+        // constant.
+        assert(inst->type_id);
+        if (auto error =
+                setNumericTypeInfoForType(&parsed_operand, inst->type_id))
+          return error;
       }
-      break;
-
-    case SPV_OPERAND_TYPE_MULTIWORD_LITERAL_NUMBER:
-      // TODO(dneto): Consider creating a SPV_OPERAND_TYPE_LITERAL_FLOATING
-      // for the floating point OpConstant/OpSpecConstant case.
-      assert(inst->opcode == SpvOpConstant ||
-             inst->opcode == SpvOpSpecConstant);
-      if (auto error =
-              setNumericTypeInfoForType(&parsed_operand, inst->type_id))
-        return error;
       break;
 
     case SPV_OPERAND_TYPE_LITERAL_STRING:
@@ -547,7 +547,8 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
       // A single word that is a plain enum value.
       spv_operand_desc entry;
       if (grammar_.lookupOperand(type, word, &entry)) {
-        return diagnostic() << "Invalid " << spvOperandTypeStr(type)
+        return diagnostic() << "Invalid "
+                            << spvOperandTypeStr(parsed_operand.type)
                             << " operand: " << word;
       }
       // Prepare to accept operands to this operand, if needed.
@@ -561,6 +562,13 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       // This operand is a mask.
+
+      // Map an optional operand type to its corresponding concrete type.
+      if (type == SPV_OPERAND_TYPE_OPTIONAL_IMAGE)
+        parsed_operand.type = SPV_OPERAND_TYPE_IMAGE;
+      else if (type == SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS)
+        parsed_operand.type = SPV_OPERAND_TYPE_MEMORY_ACCESS;
+
       // Check validity of set mask bits. Also prepare for operands for those
       // masks if they have any.  To get operand order correct, scan from
       // MSB to LSB since we can only prepend operands to a pattern.
@@ -572,9 +580,10 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
         if (remaining_word & mask) {
           spv_operand_desc entry;
           if (grammar_.lookupOperand(type, mask, &entry)) {
-            return diagnostic() << "Invalid " << spvOperandTypeStr(type)
-                                << " operand: " << word
-                                << " has invalid mask component " << mask;
+            return diagnostic()
+                   << "Invalid " << spvOperandTypeStr(parsed_operand.type)
+                   << " operand: " << word << " has invalid mask component "
+                   << mask;
           }
           remaining_word ^= mask;
           spvPrependOperandTypes(entry->operandTypes, expected_operands);
@@ -605,7 +614,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
 
 spv_result_t Parser::setNumericTypeInfoForType(
     spv_parsed_operand_t* parsed_operand, uint32_t type_id) {
-  assert(type_id);
+  assert(type_id != 0);
   auto type_info_iter = _.type_id_to_number_type_info.find(type_id);
   if (type_info_iter == _.type_id_to_number_type_info.end()) {
     return diagnostic() << "Type Id " << type_id << " is not a type";
