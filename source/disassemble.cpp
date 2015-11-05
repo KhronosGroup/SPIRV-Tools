@@ -47,12 +47,10 @@ namespace {
 class Disassembler {
  public:
   Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t const* words,
-               size_t num_words, spv_assembly_syntax_format_t format,
-               uint32_t options)
+               size_t num_words, uint32_t options)
       : words_(words),
         num_words_(num_words),
         grammar_(grammar),
-        format_(format),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
                spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
@@ -81,12 +79,6 @@ class Disassembler {
 
   // Emits a mask expression for the given mask word of the specified type.
   void EmitMaskOperand(const spv_operand_type_t type, const uint32_t word);
-
-  // Returns true if using the assignment-oriented format.
-  // Otherwise, emit canonical form.
-  bool IsAssignmentForm() const {
-    return format_ == SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT;
-  }
 
   // Resets the output color, if color is turned on.
   void ResetColor() {
@@ -118,7 +110,6 @@ class Disassembler {
   const uint32_t* const words_;
   const size_t num_words_;
   const libspirv::AssemblyGrammar& grammar_;
-  const spv_assembly_syntax_format_t format_;
   const bool print_;  // Should we also print to the standard output stream?
   const bool color_;  // Should we print in colour?
   spv_endianness_t endian_;  // The detected endianness of the binary.
@@ -145,7 +136,7 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
 
 spv_result_t Disassembler::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
-  if (IsAssignmentForm() && inst.result_id) {
+  if (inst.result_id) {
     SetBlue();
     stream_ << "%" << inst.result_id << " = ";
     ResetColor();
@@ -156,7 +147,7 @@ spv_result_t Disassembler::HandleInstruction(
   for (uint16_t i = 0; i < inst.num_operands; i++) {
     const spv_operand_type_t type = inst.operands[i].type;
     assert(type != SPV_OPERAND_TYPE_NONE);
-    if (type == SPV_OPERAND_TYPE_RESULT_ID && IsAssignmentForm()) continue;
+    if (type == SPV_OPERAND_TYPE_RESULT_ID) continue;
     stream_ << " ";
     EmitOperand(inst, i);
   }
@@ -173,6 +164,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
   const uint32_t word = spvFixWord(words_[index], endian_);
   switch (operand.type) {
     case SPV_OPERAND_TYPE_RESULT_ID:
+      assert(false && "<result-id> is not supposed to be handled here");
       SetBlue();
       stream_ << "%" << word;
       break;
@@ -319,21 +311,10 @@ spv_result_t DisassembleInstruction(
 
 spv_result_t spvBinaryToText(const uint32_t* code, const uint64_t wordCount,
                              const uint32_t options,
-                             const spv_opcode_table opcodeTable,
-                             const spv_operand_table operandTable,
-                             const spv_ext_inst_table extInstTable,
+                             const spv_opcode_table opcode_table,
+                             const spv_operand_table operand_table,
+                             const spv_ext_inst_table ext_inst_table,
                              spv_text* pText, spv_diagnostic* pDiagnostic) {
-  return spvBinaryToTextWithFormat(
-      code, wordCount, options, opcodeTable, operandTable, extInstTable,
-      SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT, pText, pDiagnostic);
-}
-
-spv_result_t spvBinaryToTextWithFormat(
-    uint32_t const* code, const uint64_t wordCount, const uint32_t options,
-    const spv_opcode_table opcode_table, const spv_operand_table operand_table,
-    const spv_ext_inst_table ext_inst_table,
-    spv_assembly_syntax_format_t format, spv_text* pText,
-    spv_diagnostic* pDiagnostic) {
   // Invalid arguments return error codes, but don't necessarily generate
   // diagnostics.  These are programmer errors, not user errors.
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
@@ -341,7 +322,7 @@ spv_result_t spvBinaryToTextWithFormat(
                                           ext_inst_table);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  Disassembler disassembler(grammar, code, wordCount, format, options);
+  Disassembler disassembler(grammar, code, wordCount, options);
   if (auto error =
           spvBinaryParse(&disassembler, code, wordCount, DisassembleHeader,
                          DisassembleInstruction, pDiagnostic)) {

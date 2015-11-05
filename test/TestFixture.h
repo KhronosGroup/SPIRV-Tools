@@ -68,12 +68,10 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text in the given assembly syntax format, asserting
   // compilation success. Returns the compiled code.
-  SpirvVector CompileSuccessfully(const std::string& text,
-                                  spv_assembly_syntax_format_t format =
-                                      SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT) {
-    spv_result_t status = spvTextWithFormatToBinary(
-        text.c_str(), text.size(), format, opcodeTable, operandTable,
-        extInstTable, &binary, &diagnostic);
+  SpirvVector CompileSuccessfully(const std::string& text) {
+    spv_result_t status =
+        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
+                        extInstTable, &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -87,13 +85,10 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text with the given format, asserting compilation failure.
   // Returns the error message(s).
-  std::string CompileFailure(const std::string& text,
-                             spv_assembly_syntax_format_t format =
-                                 SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT) {
+  std::string CompileFailure(const std::string& text) {
     EXPECT_NE(SPV_SUCCESS,
-              spvTextWithFormatToBinary(text.c_str(), text.size(), format,
-                                        opcodeTable, operandTable, extInstTable,
-                                        &binary, &diagnostic))
+              spvTextToBinary(text.c_str(), text.size(), opcodeTable,
+                              operandTable, extInstTable, &binary, &diagnostic))
         << text;
     DestroyBinary();
     return diagnostic->error;
@@ -138,9 +133,8 @@ class TextToBinaryTestBase : public T {
   // Returns the error message.
   std::string EncodeSuccessfullyDecodeFailed(
       const std::string& text, const SpirvVector& words_to_append) {
-    SpirvVector code = spvtest::Concatenate(
-        {CompileSuccessfully(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT),
-         words_to_append});
+    SpirvVector code =
+        spvtest::Concatenate({CompileSuccessfully(text), words_to_append});
 
     spv_text decoded_text;
     EXPECT_NE(SPV_SUCCESS,
@@ -159,9 +153,8 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text, asserts success, and returns the words representing
   // the instructions.  In particular, skip the words in the SPIR-V header.
-  SpirvVector CompiledInstructions(const std::string& text,
-                                   spv_assembly_syntax_format_t format) {
-    const SpirvVector code = CompileSuccessfully(text, format);
+  SpirvVector CompiledInstructions(const std::string& text) {
+    const SpirvVector code = CompileSuccessfully(text);
     SpirvVector result;
     // Extract just the instructions.
     // If the code fails to compile, then return the empty vector.
@@ -169,13 +162,6 @@ class TextToBinaryTestBase : public T {
     if (code.size() >= kFirstInstruction)
       result = Subvector(code, kFirstInstruction);
     return result;
-  }
-
-  // Compiles SPIR-V text with the default assembly format, asserts success, and
-  // returns the words representing the instructions.  In particular, skip the
-  // words in the SPIR-V header.
-  SpirvVector CompiledInstructions(const std::string& text) {
-    return CompiledInstructions(text, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT);
   }
 
   void SetText(const std::string& code) {

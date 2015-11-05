@@ -46,28 +46,27 @@ TEST(TextDestroy, Default) {
       OpSourceExtension "PlaceholderExtensionName"
       OpEntryPoint Kernel %0 ""
       OpExecutionMode %0 LocalSizeHint 1 1 1
-      OpTypeVoid %1
-      OpTypeBool %2
-      OpTypeInt %3 8 0
-      OpTypeInt %4 8 1
-      OpTypeInt %5 16 0
-      OpTypeInt %6 16 1
-      OpTypeInt %7 32 0
-      OpTypeInt %8 32 1
-      OpTypeInt %9 64 0
-      OpTypeInt %10 64 1
-      OpTypeFloat %11 16
-      OpTypeFloat %12 32
-      OpTypeFloat %13 64
-      OpTypeVector %14 %3 2
+      %1  = OpTypeVoid
+      %2  = OpTypeBool
+      %3  = OpTypeInt 8 0
+      %4  = OpTypeInt 8 1
+      %5  = OpTypeInt 16 0
+      %6  = OpTypeInt 16 1
+      %7  = OpTypeInt 32 0
+      %8  = OpTypeInt 32 1
+      %9  = OpTypeInt 64 0
+      %10 = OpTypeInt 64 1
+      %11 = OpTypeFloat 16
+      %12 = OpTypeFloat 32
+      %13 = OpTypeFloat 64
+      %14 = OpTypeVector %3 2
   )";
 
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
   EXPECT_EQ(SPV_SUCCESS,
-            spvTextWithFormatToBinary(
-                textStr, strlen(textStr), SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL,
-                opcodeTable, operandTable, extInstTable, &binary, &diagnostic));
+            spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
+                            extInstTable, &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
   EXPECT_NE(0, binary->wordCount);

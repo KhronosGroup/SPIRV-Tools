@@ -442,23 +442,17 @@ spv_result_t encodeInstructionStartingWithImmediate(
 /// @param[in] grammar the grammar to use for compilation
 /// @param[in, out] context the dynamic compilation info
 /// @param[in] text stream to translate
-/// @param[in] format the assembly syntax format of text
 /// @param[out] pInst returned binary Opcode
 /// @param[in,out] pPosition in the text stream
 ///
 /// @return result code
 spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
                                  libspirv::AssemblyContext* context,
-                                 spv_assembly_syntax_format_t format,
                                  spv_instruction_t* pInst) {
   // Check for !<integer> first.
   if ('!' == context->peek()) {
     return encodeInstructionStartingWithImmediate(grammar, context, pInst);
   }
-
-  // An assembly instruction has two possible formats:
-  // 1(CAF): <opcode> <operand>..., e.g., "OpTypeVoid %void".
-  // 2(AAF): <result-id> = <opcode> <operand>..., e.g., "%void = OpTypeVoid".
 
   std::string firstWord;
   spv_position_t nextPosition = {};
@@ -471,14 +465,6 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   if (context->startsWithOp()) {
     opcodeName = firstWord;
   } else {
-    // If the first word of this instruction is not an opcode, we must be
-    // processing AAF now.
-    if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT != format) {
-      return context->diagnostic()
-             << "Expected <opcode> at the beginning of an instruction, found '"
-             << firstWord << "'.";
-    }
-
     result_id = firstWord;
     if ('%' != result_id.front()) {
       return context->diagnostic()
@@ -518,14 +504,10 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     return context->diagnostic(error) << "Invalid Opcode name '"
                                       << context->getWord() << "'";
   }
-  if (SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT == format) {
-    // If this instruction has <result-id>, check it follows AAF.
-    if (opcodeEntry->hasResult && result_id.empty()) {
-      return context->diagnostic()
-             << "Expected <result-id> at the beginning of an "
-                "instruction, found '"
-             << firstWord << "'.";
-    }
+  if (opcodeEntry->hasResult && result_id.empty()) {
+    return context->diagnostic()
+           << "Expected <result-id> at the beginning of an instruction, found '"
+           << firstWord << "'.";
   }
   pInst->opcode = opcodeEntry->opcode;
   context->setPosition(nextPosition);
@@ -650,9 +632,7 @@ spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
 // If a diagnostic is generated, it is not yet marked as being
 // for a text-based input.
 spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
-                                     const spv_text text,
-                                     spv_assembly_syntax_format_t format,
-                                     spv_binary* pBinary,
+                                     const spv_text text, spv_binary* pBinary,
                                      spv_diagnostic* pDiagnostic) {
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
   libspirv::AssemblyContext context(text, pDiagnostic);
@@ -677,7 +657,7 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
     spv_instruction_t& inst = instructions.back();
     inst.extInstType = extInstType;
 
-    if (spvTextEncodeOpcode(grammar, &context, format, &inst)) {
+    if (spvTextEncodeOpcode(grammar, &context, &inst)) {
       return SPV_ERROR_INVALID_TEXT;
     }
     extInstType = inst.extInstType;
@@ -722,21 +702,11 @@ spv_result_t spvTextToBinary(const char* input_text,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
                              spv_binary* pBinary, spv_diagnostic* pDiagnostic) {
-  return spvTextWithFormatToBinary(
-      input_text, input_text_size, SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT,
-      opcodeTable, operandTable, extInstTable, pBinary, pDiagnostic);
-}
-
-spv_result_t spvTextWithFormatToBinary(
-    const char* input_text, const uint64_t input_text_size,
-    spv_assembly_syntax_format_t format, const spv_opcode_table opcodeTable,
-    const spv_operand_table operandTable, const spv_ext_inst_table extInstTable,
-    spv_binary* pBinary, spv_diagnostic* pDiagnostic) {
   spv_text_t text = {input_text, input_text_size};
-
   libspirv::AssemblyGrammar grammar(operandTable, opcodeTable, extInstTable);
+
   spv_result_t result =
-      spvTextToBinaryInternal(grammar, &text, format, pBinary, pDiagnostic);
+      spvTextToBinaryInternal(grammar, &text, pBinary, pDiagnostic);
   if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
 
   return result;

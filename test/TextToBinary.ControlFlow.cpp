@@ -160,24 +160,14 @@ TEST_F(TextToBinaryTest, SwitchBadInvalidDefault) {
               Eq("Expected id to start with %."));
 }
 
-TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralDefaultFormat) {
+TEST_F(TextToBinaryTest, SwitchBadInvalidLiteral) {
   // The assembler recognizes "OpSwitch %selector %default" as a complete
-  // instruction.  Then it tries to parse "%abc" as the start of an
-  // assignment form instruction, but can't since it hits the end
-  // of stream.
+  // instruction.  Then it tries to parse "%abc" as the start of a new
+  // instruction, but can't since it hits the end of stream.
   const auto input = R"(%i32 = OpTypeInt 32 0
                         %selector = OpConstant %i32 42
                         OpSwitch %selector %default %abc)";
   EXPECT_THAT(CompileFailure(input), Eq("Expected '=', found end of stream."));
-}
-
-TEST_F(TextToBinaryTest, SwitchBadInvalidLiteralCanonicalFormat) {
-  const auto input = R"(OpTypeInt %i32 32 0
-                        OpConstant %i32 %selector 42
-                  OpSwitch %selector %default %abc)";
-  EXPECT_THAT(CompileFailure(input, SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL),
-              Eq("Expected <opcode> at the beginning of an instruction, found "
-                 "'%abc'."));
 }
 
 TEST_F(TextToBinaryTest, SwitchBadMissingTarget) {

@@ -27,16 +27,12 @@
 #include <libspirv/libspirv.h>
 
 #include <stdio.h>
-#include <string.h>
 #include <vector>
 
 void print_usage(char* argv0) {
   printf(
       "Dissassemble a *.sv file into a *.svasm text file.\n\n"
       "USAGE: %s [options] <filename>\n\n"
-      "  --assembly-format=[assignment|canonical]\n"
-      "                  set decoded assembly syntax format\n"
-      "                  (default: assignment)\n"
       "  -o <filename>   set the output filename\n"
       "  -p              print dissassembly to stdout, this\n"
       "                  overrides file output\n",
@@ -53,42 +49,26 @@ int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr;
 
-  const char* assembly_format_prefix = "--assembly-format=";
-  spv_assembly_syntax_format_t format = SPV_ASSEMBLY_SYNTAX_FORMAT_DEFAULT;
-
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
-      if (!strncmp(assembly_format_prefix, argv[argi],
-                   strlen(assembly_format_prefix))) {
-        const char* parameter = argv[argi] + strlen(assembly_format_prefix);
-        if (!strcmp("canonical", parameter)) {
-          format = SPV_ASSEMBLY_SYNTAX_FORMAT_CANONICAL;
-        } else if (!strcmp("assignment", parameter)) {
-          format = SPV_ASSEMBLY_SYNTAX_FORMAT_ASSIGNMENT;
-        } else {
-          print_usage(argv[0]);
-          return 1;
-        }
-      } else {
-        switch (argv[argi][1]) {
-          case 'o': {
-            if (!outFile && argi + 1 < argc) {
-              outFile = argv[++argi];
-            } else {
-              print_usage(argv[0]);
-              return 1;
-            }
-          } break;
-          case 'p': {
-            options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
-#ifdef SPV_COLOR_TERMINAL
-            options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
-#endif
-          } break;
-          default:
+      switch (argv[argi][1]) {
+        case 'o': {
+          if (!outFile && argi + 1 < argc) {
+            outFile = argv[++argi];
+          } else {
             print_usage(argv[0]);
             return 1;
-        }
+          }
+        } break;
+        case 'p': {
+          options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
+#ifdef SPV_COLOR_TERMINAL
+          options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
+#endif
+        } break;
+        default:
+          print_usage(argv[0]);
+          return 1;
       }
     } else {
       if (!inFile) {
@@ -151,9 +131,9 @@ int main(int argc, char** argv) {
   spv_text text;
   spv_text* textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  error = spvBinaryToTextWithFormat(contents.data(), contents.size(), options,
-                                    opcodeTable, operandTable, extInstTable,
-                                    format, textOrNull, &diagnostic);
+  error =
+      spvBinaryToText(contents.data(), contents.size(), options, opcodeTable,
+                      operandTable, extInstTable, textOrNull, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
