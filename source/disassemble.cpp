@@ -204,8 +204,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
-      // Assumes little-endian.
-      // TODO(dneto): Make and use spvFixString(&words_[index], endian_);
+      // Strings are always little-endian.
       const std::string string(reinterpret_cast<const char*>(&words_[index]));
       stream_ << "\"";
       SetGreen();
