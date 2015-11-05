@@ -63,6 +63,7 @@ typedef enum spv_result_t {
   SPV_END_OF_STREAM = 2,
   SPV_WARNING = 3,
   SPV_FAILED_MATCH = 4,
+  SPV_REQUESTED_TERMINATION = 5, // Success, but signals early termination.
   SPV_ERROR_INTERNAL = -1,
   SPV_ERROR_OUT_OF_MEMORY = -2,
   SPV_ERROR_INVALID_POINTER = -3,

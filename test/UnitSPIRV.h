@@ -106,7 +106,6 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
       *os << std::endl;
     }
   }
-  *os << std::endl;
 }
 
 // Returns a vector of words representing a single instruction with the
