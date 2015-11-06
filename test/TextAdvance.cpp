@@ -88,4 +88,12 @@ TEST(TextAdvance, NullTerminator) {
   ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }
 
+TEST(TextAdvance, NoNullTerminator) {
+  spv_text_t text = {"OpNop\nSomething else in memory", 6};
+  AssemblyContext data(&text, nullptr);
+  const spv_position_t line_break = {1, 5, 5};
+  data.setPosition(line_break);
+  ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
+}
+
 }  // anonymous namespace

@@ -78,6 +78,7 @@ spv_result_t advanceLine(spv_text text, spv_position position) {
 /// @return result code
 spv_result_t advance(spv_text text, spv_position position) {
   // NOTE: Consume white space, otherwise don't advance.
+  if (position->index >= text->length) return SPV_END_OF_STREAM;
   switch (text->str[position->index]) {
     case '\0':
       return SPV_END_OF_STREAM;
