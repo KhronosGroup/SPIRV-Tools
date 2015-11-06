@@ -152,6 +152,18 @@ INSTANTIATE_TEST_CASE_P(
       {"OpTypeFloat 32", "10.0",
         Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
          MakeInstruction(SpvOpConstant, {1, 2, 0x41200000})})},
+      {"OpTypeFloat 32", "-0x1p+128", // -infinity
+        Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xFF800000})})},
+      {"OpTypeFloat 32", "0x1p+128", // +infinity
+        Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0x7F800000})})},
+      {"OpTypeFloat 32", "-0x1.8p+128", // A -NaN
+        Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xFFC00000})})},
+      {"OpTypeFloat 32", "-0x1.0002p+128", // A +NaN
+        Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xFF800100})})},
       // Check 48 bits
       {"OpTypeInt 48 0", "0x1234",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 48, 0}),
@@ -383,6 +395,38 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79769e+308\n",
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
     }));
+
+// clang-format off
+// (Clang-format really wants to break up these strings across lines.
+INSTANTIATE_TEST_CASE_P(
+    OpConstantRoundTripNonFinite, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128\n",         // -inf
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1p+128\n",          // inf
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.8p+128\n",       // -nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0002p+128\n",    // -nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0018p+128\n",    // -nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.01ep+128\n",     // -nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.fffffep+128\n",  // -nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.8p+128\n",        // +nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.0002p+128\n",     // +nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.0018p+128\n",     // +nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.01ep+128\n",      // +nan
+  "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.fffffep+128\n",   // +nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1p+1024\n",                //-inf
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1p+1024\n",                 //+inf
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.8p+1024\n",              // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0fp+1024\n",             // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0000000000001p+1024\n",  // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.00003p+1024\n",          // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.fffffffffffffp+1024\n",  // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.8p+1024\n",               // +nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.0fp+1024\n",              // +nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.0000000000001p+1024\n",   // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.00003p+1024\n",           // -nan
+  "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.fffffffffffffp+1024\n",   // -nan
+    }));
+// clang-format on
 
 INSTANTIATE_TEST_CASE_P(
     OpSpecConstantRoundTrip, RoundTripTest,

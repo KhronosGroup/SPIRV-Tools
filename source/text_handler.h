@@ -28,7 +28,6 @@
 #define LIBSPIRV_TEXT_HANDLER_H_
 
 #include <iomanip>
-#include <limits>
 #include <sstream>
 #include <type_traits>
 #include <unordered_map>
@@ -99,6 +98,32 @@ inline int assumedBitWidth(const IdType& type) {
   // We don't care about this case.
   return 0;
 }
+
+// A templated class with a static member function Clamp, where Clamp
+// sets a referenced value of type T to 0 if T is an unsigned
+// integer type, and returns true if it modified the referenced
+// value.
+template <typename T, typename = void>
+class ClampToZeroIfUnsignedType {
+ public:
+  // The default specialization does not clamp the value.
+  static bool Clamp(T*) { return false; }
+};
+
+// The specialization of ClampToZeroIfUnsignedType for unsigned integer
+// types.
+template <typename T>
+class ClampToZeroIfUnsignedType<
+    T, typename std::enable_if<std::is_unsigned<T>::value>::type> {
+ public:
+  static bool Clamp(T* value_pointer) {
+    if (*value_pointer) {
+      *value_pointer = 0;
+      return true;
+    }
+    return false;
+  }
+};
 
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {
@@ -237,15 +262,11 @@ class AssemblyContext {
     ok = ok && text_stream.eof();
     // It should have been in range.
     ok = ok && !text_stream.fail();
+
     // Work around a bug in the GNU C++11 library. It will happily parse
     // "-1" for uint16_t as 65535.
-    if (ok && !std::is_signed<T>::value && (text[0] == '-') &&
-        *value_pointer != 0) {
-      ok = false;
-      // Match expected error behaviour of std::istringstream::operator>>
-      // on failure to parse.
-      *value_pointer = 0;
-    }
+    if (ok && text[0] == '-')
+      ok = !ClampToZeroIfUnsignedType<T>::Clamp(value_pointer);
 
     if (ok) return SPV_SUCCESS;
     return diagnostic(error_code) << error_message_fragment << text;

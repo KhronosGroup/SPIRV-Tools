@@ -38,10 +38,13 @@
 #include "opcode.h"
 #include "text.h"
 #include "util/bitutils.h"
+#include "util/hex_float.h"
 
 namespace {
 
 using spvutils::BitwiseCast;
+using spvutils::FloatProxy;
+using spvutils::HexFloat;
 
 /// @brief Advance text to the start of the next line
 ///
@@ -370,14 +373,14 @@ spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
       return diagnostic(SPV_ERROR_INTERNAL)
              << "Unsupported yet: 16-bit float constants.";
     case 32: {
-      float fVal;
+      spvutils::HexFloat<FloatProxy<float>> fVal(0.0f);
       if (auto error = parseNumber(val, error_code, &fVal,
                                    "Invalid 32-bit float literal: "))
         return error;
       return binaryEncodeU32(BitwiseCast<uint32_t>(fVal), pInst);
     } break;
     case 64: {
-      double dVal;
+      spvutils::HexFloat<FloatProxy<double>> dVal(0.0);
       if (auto error = parseNumber(val, error_code, &dVal,
                                    "Invalid 64-bit float literal: "))
         return error;

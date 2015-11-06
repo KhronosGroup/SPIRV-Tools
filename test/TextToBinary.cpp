@@ -24,14 +24,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include "TestFixture.h"
 #include "gmock/gmock.h"
 #include "UnitSPIRV.h"
 #include "util/bitutils.h"
-
-#include <algorithm>
-#include <utility>
-#include <vector>
 
 namespace {
 
