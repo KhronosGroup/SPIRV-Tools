@@ -24,19 +24,23 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "UnitSPIRV.h"
-#include "util/hex_float.h"
-
-#include <gmock/gmock.h>
 #include <cmath>
+#include <cstdio>
 #include <sstream>
 #include <string>
 #include <tuple>
+
+#include <gmock/gmock.h>
+#include "UnitSPIRV.h"
+#include "util/hex_float.h"
 
 namespace {
 using ::testing::Eq;
 using spvutils::BitwiseCast;
 using spvutils::FloatProxy;
+
+// In this file "encode" means converting a number into a string,
+// and "decode" means converting a string into a number.
 
 using HexFloatTest =
     ::testing::TestWithParam<std::pair<FloatProxy<float>, std::string>>;
@@ -49,7 +53,7 @@ using DecodeHexDoubleTest =
 
 // Hex-encodes a float value.
 template <typename T>
-std::string Encode(const T& value) {
+std::string EncodeViaHexFloat(const T& value) {
   std::stringstream ss;
   ss << spvutils::HexFloat<T>(value);
   return ss.str();
@@ -59,18 +63,18 @@ std::string Encode(const T& value) {
 // types.
 
 TEST_P(HexFloatTest, EncodeCorrectly) {
-  EXPECT_THAT(Encode(GetParam().first), Eq(GetParam().second));
+  EXPECT_THAT(EncodeViaHexFloat(GetParam().first), Eq(GetParam().second));
 }
 
 TEST_P(HexDoubleTest, EncodeCorrectly) {
-  EXPECT_THAT(Encode(GetParam().first), Eq(GetParam().second));
+  EXPECT_THAT(EncodeViaHexFloat(GetParam().first), Eq(GetParam().second));
 }
 
 // Decodes a hex-float string.
 template <typename T>
 FloatProxy<T> Decode(const std::string& str) {
   spvutils::HexFloat<FloatProxy<T>> decoded(0.f);
-  std::stringstream(str) >> decoded;
+  EXPECT_TRUE((std::stringstream(str) >> decoded).eof());
   return decoded.value();
 }
 
@@ -386,6 +390,143 @@ TEST(FloatProxy, Negation) {
                   .getAsFloat(),
               Eq(std::numeric_limits<float>::infinity()));
 }
+
+// Test conversion of FloatProxy values to strings.
+//
+// In previous cases, we always wrapped the FloatProxy value in a HexFloat
+// before conversion to a string.  In the following cases, the FloatProxy
+// decides for itself whether to print as a regular number or as a hex float.
+
+using FloatProxyFloatTest =
+    ::testing::TestWithParam<std::pair<FloatProxy<float>, std::string>>;
+using FloatProxyDoubleTest =
+    ::testing::TestWithParam<std::pair<FloatProxy<double>, std::string>>;
+
+// Converts a float value to a string via a FloatProxy.
+template <typename T>
+std::string EncodeViaFloatProxy(const T& value) {
+  std::stringstream ss;
+  ss << value;
+  return ss.str();
+}
+
+// Converts a floating point string so that the exponent prefix
+// is 'e', and the exponent value does not have leading zeros.
+// The Microsoft runtime library likes to write things like "2.5E+010".
+// Convert that to "2.5e+10".
+// We don't care what happens to strings that are not floating point
+// strings.
+std::string NormalizeExponentInFloatString(std::string in) {
+  std::string result;
+  // Reserve one spot for the terminating null, even when the sscanf fails.
+  char prefix[in.size() + 1];
+  char e;
+  char plus_or_minus;
+  int exponent;  // in base 10
+  if ((4 == std::sscanf(in.c_str(), "%[-+.0123456789]%c%c%d", prefix, &e,
+                        &plus_or_minus, &exponent)) &&
+      (e == 'e' || e == 'E') &&
+      (plus_or_minus == '-' || plus_or_minus == '+')) {
+    // It looks like a floating point value with exponent.
+    std::stringstream out;
+    out << prefix << 'e' << plus_or_minus << exponent;
+    result = out.str();
+  } else {
+    result = in;
+  }
+  return result;
+}
+
+TEST(NormalizeFloat, Sample) {
+  EXPECT_THAT(NormalizeExponentInFloatString(""), Eq(""));
+  EXPECT_THAT(NormalizeExponentInFloatString("1e-12"), Eq("1e-12"));
+  EXPECT_THAT(NormalizeExponentInFloatString("1E+14"), Eq("1e+14"));
+  EXPECT_THAT(NormalizeExponentInFloatString("1e-0012"), Eq("1e-12"));
+  EXPECT_THAT(NormalizeExponentInFloatString("1.263E+014"), Eq("1.263e+14"));
+}
+
+// The following two tests can't be DRY because they take different parameter
+// types.
+TEST_P(FloatProxyFloatTest, EncodeCorrectly) {
+  EXPECT_THAT(
+      NormalizeExponentInFloatString(EncodeViaFloatProxy(GetParam().first)),
+      Eq(GetParam().second));
+}
+
+TEST_P(FloatProxyDoubleTest, EncodeCorrectly) {
+  EXPECT_THAT(
+      NormalizeExponentInFloatString(EncodeViaFloatProxy(GetParam().first)),
+      Eq(GetParam().second));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Float32Tests, FloatProxyFloatTest,
+    ::testing::ValuesIn(std::vector<std::pair<FloatProxy<float>, std::string>>({
+        // Zero
+        {0.f, "0"},
+        // Normal numbers
+        {1.f, "1"},
+        {-0.25f, "-0.25"},
+        {1000.0f, "1000"},
+
+        // Still normal numbers, but with large magnitude exponents.
+        {float(ldexp(1.f, 126)), "8.50706e+37"},
+        {float(ldexp(-1.f, -126)), "-1.17549e-38"},
+
+        // denormalized values are printed as hex floats.
+        {float(ldexp(1.0f, -127)), "0x1p-127"},
+        {float(ldexp(1.5f, -128)), "0x1.8p-128"},
+        {float(ldexp(1.25, -129)), "0x1.4p-129"},
+        {float(ldexp(1.125, -130)), "0x1.2p-130"},
+        {float(ldexp(-1.0f, -127)), "-0x1p-127"},
+        {float(ldexp(-1.0f, -128)), "-0x1p-128"},
+        {float(ldexp(-1.0f, -129)), "-0x1p-129"},
+        {float(ldexp(-1.5f, -130)), "-0x1.8p-130"},
+
+        // NaNs
+        {FloatProxy<float>(uint32_t(0xFFC00000)), "-0x1.8p+128"},
+        {FloatProxy<float>(uint32_t(0xFF800100)), "-0x1.0002p+128"},
+
+        {std::numeric_limits<float>::infinity(), "0x1p+128"},
+        {-std::numeric_limits<float>::infinity(), "-0x1p+128"},
+    })));
+
+INSTANTIATE_TEST_CASE_P(
+    Float64Tests, FloatProxyDoubleTest,
+    ::testing::ValuesIn(
+        std::vector<std::pair<FloatProxy<double>, std::string>>({
+            {0., "0"},
+            {1., "1"},
+            {-0.25, "-0.25"},
+            {1000.0, "1000"},
+
+            // Large outside the range of normal floats
+            {ldexp(1.0, 128), "3.40282366920938e+38"},
+            {ldexp(1.5, 129), "1.02084710076282e+39"},
+            {ldexp(-1.0, 128), "-3.40282366920938e+38"},
+            {ldexp(-1.5, 129), "-1.02084710076282e+39"},
+
+            // Small outside the range of normal floats
+            {ldexp(1.5, -129), "2.20405190779179e-39"},
+            {ldexp(-1.5, -129), "-2.20405190779179e-39"},
+
+            // lowest non-denorm
+            {ldexp(1.0, -1022), "2.2250738585072e-308"},
+            {ldexp(-1.0, -1022), "-2.2250738585072e-308"},
+
+            // Denormalized values
+            {ldexp(1.125, -1023), "0x1.2p-1023"},
+            {ldexp(-1.375, -1024), "-0x1.6p-1024"},
+
+            // NaNs
+            {uint64_t(0x7FF8000000000000LL), "0x1.8p+1024"},
+            {uint64_t(0xFFF0F00000000000LL), "-0x1.0fp+1024"},
+
+            // Infinity
+            {std::numeric_limits<double>::infinity(), "0x1p+1024"},
+            {-std::numeric_limits<double>::infinity(), "-0x1p+1024"},
+
+        })));
 
 // TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
 }

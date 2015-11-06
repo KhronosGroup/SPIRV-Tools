@@ -39,6 +39,7 @@
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "print.h"
+#include "util/hex_float.h"
 
 namespace {
 
@@ -185,12 +186,40 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER: {
       SetRed();
-      // TODO(dneto): Emit values according to type.
-      if (operand.num_words == 1)
-        stream_ << word;
-      else if (operand.num_words == 2)
-        stream_ << spvFixDoubleWord(words_[index], words_[index + 1], endian_);
-      else {
+      if (operand.num_words == 1) {
+        switch (operand.number_kind) {
+          case SPV_NUMBER_SIGNED_INT:
+            stream_ << int32_t(word);
+            break;
+          case SPV_NUMBER_UNSIGNED_INT:
+            stream_ << uint32_t(word);
+            break;
+          case SPV_NUMBER_FLOATING:
+            // Assume only 32-bit floats.
+            // TODO(dneto): Handle 16-bit floats also.
+            stream_ << spvutils::FloatProxy<float>(word);
+            break;
+          default:
+            assert(false && "Unreachable");
+        }
+      } else if (operand.num_words == 2) {
+        uint64_t bits =
+            spvFixDoubleWord(words_[index], words_[index + 1], endian_);
+        switch (operand.number_kind) {
+          case SPV_NUMBER_SIGNED_INT:
+            stream_ << int64_t(bits);
+            break;
+          case SPV_NUMBER_UNSIGNED_INT:
+            stream_ << uint64_t(bits);
+            break;
+          case SPV_NUMBER_FLOATING:
+            // Assume only 64-bit floats.
+            stream_ << spvutils::FloatProxy<double>(bits);
+            break;
+          default:
+            assert(false && "Unreachable");
+        }
+      } else {
         // TODO(dneto): Support more than 64-bits at a time.
         assert("Unhandled");
       }

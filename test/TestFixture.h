@@ -116,7 +116,7 @@ class TextToBinaryTestBase : public T {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
     }
-    EXPECT_EQ(SPV_SUCCESS, error);
+    EXPECT_EQ(SPV_SUCCESS, error) << text;
 
     const std::string decoded_string = decoded_text->str;
     spvTextDestroy(decoded_text);

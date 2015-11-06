@@ -32,8 +32,8 @@
 #include <cstdint>
 #include <limits>
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
@@ -337,12 +337,12 @@ const int64_t kMaxSigned48Bit = (int64_t(1) << 47) - 1;
 const int64_t kMinSigned48Bit = -kMaxSigned48Bit - 1;
 
 TEST_P(RoundTripTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()))
+      << GetParam();
 }
 
-// TODO(dneto): Enable support once this works.
 INSTANTIATE_TEST_CASE_P(
-    DISABLED_OpConstantRoundTrip, RoundTripTest,
+    OpConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
         "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 0\n",
@@ -384,9 +384,8 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
     }));
 
-// TODO(dneto): Enable support once this works.
 INSTANTIATE_TEST_CASE_P(
-    DISABLED_OpSpecConstantRoundTrip, RoundTripTest,
+    OpSpecConstantRoundTrip, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // 16 bit
         "%1 = OpTypeInt 16 0\n%2 = OpSpecConstant %1 0\n",

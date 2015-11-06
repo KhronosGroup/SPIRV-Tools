@@ -37,8 +37,10 @@ namespace {
 
 using libspirv::AssemblyContext;
 using libspirv::AssemblyGrammar;
-using spvtest::TextToBinaryTest;
 using spvtest::AutoText;
+using spvtest::Concatenate;
+using spvtest::MakeInstruction;
+using spvtest::TextToBinaryTest;
 using testing::Eq;
 
 TEST(GetWord, Simple) {
@@ -431,13 +433,13 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
 using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
 
-TEST_P(TextToBinaryFloatValueTest, NormalValues) {
-  const std::string assembly = "%1 = OpTypeFloat 32\n%2 = OpConstant %1 ";
-  const std::string input_string = assembly + GetParam().first;
-  const std::string expected_string =
-      assembly + std::to_string(GetParam().second) + "\n";
-  const std::string decoded_string = EncodeAndDecodeSuccessfully(input_string);
-  EXPECT_EQ(expected_string, decoded_string);
+TEST_P(TextToBinaryFloatValueTest, Samples) {
+  const std::string input =
+      "%1 = OpTypeFloat 32\n%2 = OpConstant %1 " + GetParam().first;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
+                              MakeInstruction(SpvOpConstant,
+                                              {1, 2, GetParam().second})})));
 }
 
 INSTANTIATE_TEST_CASE_P(

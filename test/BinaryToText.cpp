@@ -350,7 +350,6 @@ TEST(BinaryToTextSmall, LiteralDouble) {
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
 
-  // Pi: 3.1415926535897930 => 0x400921fb54442d18 => 4614256656552045848
   AutoText input(
       "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 3.1415926535897930");
   spv_result_t error =
@@ -373,9 +372,9 @@ TEST(BinaryToTextSmall, LiteralDouble) {
 ; Bound: 3
 ; Schema: 0
 %1 = OpTypeFloat 64
-%2 = OpSpecConstant %1 4614256656552045848
+%2 = OpSpecConstant %1 3.14159265358979
 )";
-  EXPECT_EQ(output, text->str);
+  EXPECT_EQ(output, text->str) << text->str;
   spvTextDestroy(text);
 }
 

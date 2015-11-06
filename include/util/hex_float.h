@@ -97,7 +97,7 @@ bool operator==(const FloatProxy<T>& first, const FloatProxy<T>& second) {
   return first.data() == second.data();
 }
 
-// Convenience to read the value as a normal float.
+// Reads a FloatProxy value as a normal float from a stream.
 template <typename T>
 std::istream& operator>>(std::istream& is, FloatProxy<T>& value) {
   T float_val;
@@ -519,6 +519,28 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
   value.set_value(output_float);
 
   return is;
+}
+
+// Writes a FloatProxy value to a stream.
+// Zero and normal numbers are printed in the usual notation, but with
+// enough digits to fully reproduce the value.  Other values (subnormal,
+// NaN, and infinity) are printed as a hex float.
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value) {
+  auto float_val = value.getAsFloat();
+  switch (std::fpclassify(float_val)) {
+    case FP_ZERO:
+    case FP_NORMAL: {
+      auto saved_precision = os.precision();
+      os.precision(std::numeric_limits<T>::digits10);
+      os << float_val;
+      os.precision(saved_precision);
+    } break;
+    default:
+      os << HexFloat<FloatProxy<T>>(value);
+      break;
+  }
+  return os;
 }
 }
 
