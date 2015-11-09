@@ -233,6 +233,19 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       const uint32_t id = context->spvNamedIdAssignOrGet(textValue);
       if (type == SPV_OPERAND_TYPE_TYPE_ID) pInst->resultTypeId = id;
       spvInstructionAddWord(pInst, id);
+
+      // Set the extended instruction type.
+      // The import set id is the 3rd operand of OpExtInst.
+      if (pInst->opcode == SpvOpExtInst && pInst->words.size() == 4) {
+        auto ext_inst_type = context->getExtInstTypeForId(pInst->words[3]);
+        if (ext_inst_type == SPV_EXT_INST_TYPE_NONE) {
+          return context->diagnostic()
+                 << "Invalid extended instruction import Id "
+                 << pInst->words[2];
+        }
+        pInst->extInstType = ext_inst_type;
+      }
+
     } break;
 
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
@@ -328,7 +341,15 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
 
       // NOTE: Special case for extended instruction library import
       if (SpvOpExtInstImport == pInst->opcode) {
-        pInst->extInstType = spvExtInstImportTypeGet(literal.value.str);
+        const spv_ext_inst_type_t ext_inst_type =
+            spvExtInstImportTypeGet(literal.value.str);
+        if (SPV_EXT_INST_TYPE_NONE == ext_inst_type) {
+          return context->diagnostic()
+                 << "Invalid extended instruction import '" << literal.value.str
+                 << "'";
+        }
+        if (auto error = context->recordIdAsExtInstImport(pInst->words[1], ext_inst_type))
+          return error;
       }
 
       if (context->binaryEncodeString(literal.value.str, pInst))
@@ -651,16 +672,13 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
   // Skip past whitespace and comments.
   context.advance();
 
-  spv_ext_inst_type_t extInstType = SPV_EXT_INST_TYPE_NONE;
   while (context.hasText()) {
     instructions.push_back({});
     spv_instruction_t& inst = instructions.back();
-    inst.extInstType = extInstType;
 
     if (spvTextEncodeOpcode(grammar, &context, &inst)) {
       return SPV_ERROR_INVALID_TEXT;
     }
-    extInstType = inst.extInstType;
 
     if (context.advance()) break;
   }

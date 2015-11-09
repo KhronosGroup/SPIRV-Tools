@@ -234,6 +234,15 @@ class AssemblyContext {
   // Tracks the relationship between the value and its type.
   spv_result_t recordTypeIdForValue(uint32_t value, uint32_t type);
 
+  // Records the given Id as being the import of the given extended instruction
+  // type.
+  spv_result_t recordIdAsExtInstImport(uint32_t id, spv_ext_inst_type_t type);
+
+  // Returns the extended instruction type corresponding to the import with
+  // the given Id, if it exists.  Returns SPV_EXT_INST_TYPE_NONE if the
+  // id is not the id for an extended instruction type.
+  spv_ext_inst_type_t getExtInstTypeForId(uint32_t id) const;
+
   // Parses a numeric value of a given type from the given text.  The number
   // should take up the entire string, and should be within bounds for the
   // target type.  On success, returns SPV_SUCCESS and populates the object
@@ -320,6 +329,8 @@ class AssemblyContext {
   spv_named_id_table named_ids_;
   spv_id_to_type_map types_;
   spv_id_to_type_id value_types_;
+  // Maps an extended instruction import Id to the extended instruction type.
+  std::unordered_map<uint32_t, spv_ext_inst_type_t> import_id_to_ext_inst_type_;
   spv_position_t current_position_;
   spv_diagnostic* pDiagnostic_;
   spv_text text_;

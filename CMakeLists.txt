@@ -215,6 +215,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Debug.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.DeviceSideEnqueue.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Extension.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Function.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Group.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.Image.cpp

@@ -287,7 +287,7 @@ typedef enum spv_operand_type_t {
 } spv_operand_type_t;
 
 typedef enum spv_ext_inst_type_t {
-  SPV_EXT_INST_TYPE_NONE,
+  SPV_EXT_INST_TYPE_NONE = 0,
   SPV_EXT_INST_TYPE_GLSL_STD_450,
   SPV_EXT_INST_TYPE_OPENCL_STD,
 

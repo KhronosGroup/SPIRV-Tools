@@ -364,6 +364,24 @@ spv_result_t AssemblyContext::recordTypeIdForValue(uint32_t value,
   return SPV_SUCCESS;
 }
 
+spv_result_t AssemblyContext::recordIdAsExtInstImport(
+    uint32_t id, spv_ext_inst_type_t type) {
+  bool successfully_inserted = false;
+  std::tie(std::ignore, successfully_inserted) =
+      import_id_to_ext_inst_type_.insert(std::make_pair(id, type));
+  if (!successfully_inserted)
+    return diagnostic() << "Import Id is being defined a second time";
+  return SPV_SUCCESS;
+}
+
+spv_ext_inst_type_t AssemblyContext::getExtInstTypeForId(uint32_t id) const {
+  auto type = import_id_to_ext_inst_type_.find(id);
+  if (type == import_id_to_ext_inst_type_.end()) {
+    return SPV_EXT_INST_TYPE_NONE;
+  }
+  return std::get<1>(*type);
+}
+
 spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
     const char* val, spv_result_t error_code, const IdType& type,
     spv_instruction_t* pInst) {

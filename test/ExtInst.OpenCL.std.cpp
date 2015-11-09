@@ -383,25 +383,4 @@ INSTANTIATE_TEST_CASE_P(
 #undef CASE2Lit
 #undef CASE3Round
 
-// TODO(dneto): Fix this functionality.
-TEST_F(TextToBinaryTest, DISABLED_ExtInstFromTwoDifferentImports) {
-  const std::string input =
-      R"(%1 = OpExtInstImport "OpenCL.std"
-%2 = OpExtInstImport "GLSL.std.450"
-%4 = OpExtInst %3 %1 native_sqrt %5
-%7 = OpExtInst %6 %2 MatrixInverse %8
-)";
-  EXPECT_THAT(
-      CompiledInstructions(input),
-      Eq(Concatenate({
-          MakeInstruction(SpvOpExtInstImport, {1}, MakeVector("OpenCL.std")),
-          MakeInstruction(SpvOpExtInstImport, {2}, MakeVector("GLSL.std.450")),
-          MakeInstruction(
-              SpvOpExtInst,
-              {3, 4, 1, uint32_t(OpenCLLIB::Entrypoints::Native_sqrt), 5}),
-          MakeInstruction(SpvOpExtInst,
-                          {6, 7, 2, uint32_t(GLSLstd450MatrixInverse), 8}),
-      })));
-}
-
 }  // anonymous namespace
