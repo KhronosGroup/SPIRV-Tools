@@ -25,6 +25,19 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+2015-11-10
+* Refactored the SPIR-V binary parser:
+  * The binary parser issues callbacks to a parser client.
+  * Disassembler is a parser client.
+  * Restructured `spv_operand_type_t` into concrete, optional, and
+    variable groups.
+* Support literal integers of any width up to 64 bits.
+* Support both 32-bit and 64-bit floating point literal numbers.
+* Support a single module with both OpenCL and GLSL extended
+  instructions.
+* Support a module with no instructions.
+* Removed support for "canonical assembly format".
+
 2015-11-02
 * Progress toward making `libspirv.h` a C API:
    * Use C header `spirv.h` instead of C++ header `spirv.hpp`
@@ -292,9 +305,6 @@ done so previously, CMake will detect the existence of
 
 ### Assembler and disassembler
 
-* WIP: Fix disassembler support for non-32-bit numeric literals
-* WIP: Fix bug: Assembler can't use extended instructions from
-  two different extended instruction imports.
 * Support 16-bit floating point literals.
 
 ### Validator
