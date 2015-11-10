@@ -102,7 +102,7 @@ by using the maximum representable exponent for the bit width.
 
 For example, in 32-bit floating point, 8 bits are used for the exponent, and the
 exponent bias is 127.  So the maximum representable unbiased exponent is 128.
-Therefore, we represent the infinities and a some NaNs as follows:
+Therefore, we represent the infinities and some NaNs as follows:
 
 ```
 %float32 = OpTypeFloat 32
@@ -112,8 +112,8 @@ Therefore, we represent the infinities and a some NaNs as follows:
 %moreNaN = OpConstant %float32 -0x1.0002p+128
 ```
 The assembler preserves all the bits of a NaN value.  For example, the encoding
-of `%aNaN` in the previous example is the same as `!0x7fc00000`, and `%moreNaN`
-is encoded as `!0xff800100`.
+of `%aNaN` in the previous example is the same as the word with bits
+`0x7fc00000`, and `%moreNaN` is encoded as `0xff800100`.
 
 The disassembler prints infinite, NaN, and subnormal values in hexadecimal form.
 Zero and normal values are printed in decimal form with enough digits
