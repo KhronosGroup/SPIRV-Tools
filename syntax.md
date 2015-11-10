@@ -36,7 +36,8 @@ the SPIR-V specification.  An operand is one of:
   integer supplied for a signed integer value will be sign-extended.
   For example, `0xffff` supplied as the literal for an `OpConstant`
   on a signed 16-bit integer type will be interpreted as the value `-1`.
-* a literal floating point number.
+* a literal floating point number, in decimal or hexadecimal form.
+  See [below](#floats).
 * a literal string.
    * A literal string is everything following a double-quote `"` until the
      following un-escaped double-quote. This includes special characters such
@@ -45,10 +46,10 @@ the SPIR-V specification.  An operand is one of:
      may be used to escape a double-quote or a `\` but is simply ignored when
      preceding any other character.
 * a named enumerated value, specific to that operand position.  For example,
-the `OpMemoryModel` takes a named Addressing Model operand (e.g. `Logical` or
-`Physical32`), and a named Memory Model operand (e.g. `Simple` or `OpenCL`).
-Named enumerated values are only meaningful in specific positions, and will
-otherwise generate an error.
+  the `OpMemoryModel` takes a named Addressing Model operand (e.g. `Logical` or
+  `Physical32`), and a named Memory Model operand (e.g. `Simple` or `OpenCL`).
+  Named enumerated values are only meaningful in specific positions, and will
+  otherwise generate an error.
 * a mask expression, consisting of one or more mask enum names separated
   by `|`.  For example, the expression `NotNaN|NotInf|NSZ` denotes the mask
   which is the combination of the `NotNaN`, `NotInf`, and `NSZ` flags.
@@ -85,6 +86,38 @@ So the example can be rewritten using more user-friendly names, as follows:
           OpReturn
           OpFunctionEnd
 ```
+
+## Floating point literals
+<a name="floats"></a>
+
+The assembler and disassembler support floating point literals in both
+decimal and hexadecimal form.
+
+The syntax for a floating point literal is the same as floating point
+constants in the C programming language, except:
+* An optional leading minus (`-`) is part of the literal.
+* An optional type specifier suffix is not allowed.
+Infinity and NaN values are expressed in hexadecimal float literals
+by using the maximum representable exponent for the bit width.
+
+For example, in 32-bit floating point, 8 bits are used for the exponent, and the
+exponent bias is 127.  So the maximum representable unbiased exponent is 128.
+Therefore, we represent the infinities and a some NaNs as follows:
+
+```
+%float32 = OpTypeFloat 32
+%inf     = OpConstant %float32 0x1p+128
+%neginf  = OpConstant %float32 -0x1p+128
+%aNaN    = OpConstant %float32 0x1.8p+128
+%moreNaN = OpConstant %float32 -0x1.0002p+128
+```
+The assembler preserves all the bits of a NaN value.  For example, the encoding
+of `%aNaN` in the previous example is the same as `!0x7fc00000`, and `%moreNaN`
+is encoded as `!0xff800100`.
+
+The disassembler prints infinite, NaN, and subnormal values in hexadecimal form.
+Zero and normal values are printed in decimal form with enough digits
+to preserve all significand bits.
 
 ## Arbitrary Integers
 <a name="immediate"></a>
