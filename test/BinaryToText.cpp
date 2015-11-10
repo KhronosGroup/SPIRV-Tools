@@ -497,4 +497,14 @@ TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
                  " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"));
 }
 
+using OperandTypeTest = spvtest::TextToBinaryTest;
+
+TEST_F(OperandTypeTest, OptionalTypedLiteralNumber) {
+  const std::string input =
+      "%1 = OpTypeInt 32 0\n"
+      "%2 = OpConstant %1 42\n"
+      "OpSwitch %2 %3 100 %4\n";
+  EXPECT_EQ(input, EncodeAndDecodeSuccessfully(input));
+}
+
 }  // anonymous namespace

@@ -451,6 +451,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
 
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER:
+      parsed_operand.type = SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
       if (inst->opcode == SpvOpSwitch) {
         // The literal operands have the same type as the value
         // referenced by the selector Id.
