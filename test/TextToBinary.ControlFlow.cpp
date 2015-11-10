@@ -279,9 +279,8 @@ TEST_P(RoundTripTest, Sample) {
   EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
 }
 
-// TODO(dneto): Enable this test.
 INSTANTIATE_TEST_CASE_P(
-    DISABLED_OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
+    OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>({
         // Unsigned 16-bit.
         "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 65535\nOpSwitch %2 %3\n",
@@ -297,7 +296,7 @@ INSTANTIATE_TEST_CASE_P(
     })));
 
 INSTANTIATE_TEST_CASE_P(
-    DISABLED_OpSwitchRoundTripSignedIntegers, RoundTripTest,
+    OpSwitchRoundTripSignedIntegers, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>{
         // Signed 16-bit, with two non-default cases
         "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 32767\n"
@@ -306,9 +305,9 @@ INSTANTIATE_TEST_CASE_P(
         "OpSwitch %2 %3 99 %4 -102 %5\n",
         // Signed 32-bit, two non-default cases.
         "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 -123456\n"
-        "OpSwitch %2 %3 100 %4 -102\n",
+        "OpSwitch %2 %3 100 %4 -123456 %5\n",
         "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 123456\n"
-        "OpSwitch %2 %3 100 %4 -102\n",
+        "OpSwitch %2 %3 100 %4 123456 %5\n",
         // Signed 48-bit, three non-default cases.
         "%1 = OpTypeInt 48 1\n%2 = OpConstant %1 5000000000\n"
         "OpSwitch %2 %3 100 %4 -7000000000 %5 6000000000 %6\n",
