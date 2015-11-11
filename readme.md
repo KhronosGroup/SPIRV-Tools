@@ -311,7 +311,6 @@ done so previously, CMake will detect the existence of
 <a name="future"></a>
 
 Required to complete 1.0 support:
-* Add `OpImage` instruction
 * Changes related to capabilities:
   * Check changes in dependencies on capabilities since 0.99 Rev32.
   * `GeometryStream`.

@@ -35,6 +35,7 @@
 namespace {
 
 using spvtest::MakeInstruction;
+using spvtest::TextToBinaryTest;
 using ::testing::Eq;
 
 // An example case for a mask value with operands.
@@ -110,6 +111,48 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(ImageOperandsTest, WrongOperand) {
   EXPECT_THAT(CompileFailure("%r = OpImageFetch %t %i %c xxyyzz"),
               Eq("Invalid image operand 'xxyyzz'."));
+}
+
+// Test OpImage
+
+using OpImageTest = TextToBinaryTest;
+
+TEST_F(OpImageTest, Valid) {
+  const std::string input = "%2 = OpImage %1 %3\n";
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(SpvOpImage, {1, 2, 3})));
+
+  // Test the disassembler.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), input);
+}
+
+TEST_F(OpImageTest, InvalidTypeOperand) {
+  EXPECT_THAT(CompileFailure("%2 = OpImage 42"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(OpImageTest, MissingSampledImageOperand) {
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1"),
+              Eq("Expected operand, found end of stream."));
+}
+
+TEST_F(OpImageTest, InvalidSampledImageOperand) {
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1 1000"),
+              Eq("Expected id to start with %."));
+}
+
+TEST_F(OpImageTest, TooManyOperands) {
+  // We should improve this message, to say what instruction we're trying to
+  // parse.
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 %4"), // an Id
+              Eq("Expected '=', found end of stream."));
+
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 99"),  // a number
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '99'."));
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 \"abc\""),  // a string
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '\"abc\"'."));
 }
 
 // TODO(dneto): OpSampledImage
