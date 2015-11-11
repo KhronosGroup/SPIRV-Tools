@@ -28,6 +28,7 @@
 #define LIBSPIRV_TABLE_H_
 
 #include "libspirv/libspirv.h"
+#include "spirv_definition.h"
 
 typedef struct spv_opcode_desc_t {
   const char* name;

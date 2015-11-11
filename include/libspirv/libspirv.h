@@ -49,18 +49,6 @@ extern "C" {
 #define SPV_FORCE_16_BIT_ENUM(name) _##name = 0x7fff
 #define SPV_FORCE_32_BIT_ENUM(name) _##name = 0x7fffffff
 
-// A bit mask representing a set of capabilities.
-// Currently there are 54 distinct capabilities, so 64 bits
-// should be enough.
-typedef uint64_t spv_capability_mask_t;
-
-// Transforms spv::Capability into a mask for use in bitfields.  Should really
-// be a constexpr inline function, but some important versions of MSVC don't
-// support that yet.  Different from SPV_BIT, which doesn't guarantee 64-bit
-// values.
-#define SPV_CAPABILITY_AS_MASK(capability) \
-  (spv_capability_mask_t(1) << (capability))
-
 // Enumerations
 
 typedef enum spv_result_t {
@@ -259,15 +247,6 @@ typedef enum spv_validate_options_t {
 } spv_validate_options_t;
 
 // Structures
-
-typedef struct spv_header_t {
-  uint32_t magic;
-  uint32_t version;
-  uint32_t generator;
-  uint32_t bound;
-  uint32_t schema;               // NOTE: Reserved
-  const uint32_t* instructions;  // NOTE: Unfixed pointer to instruciton stream
-} spv_header_t;
 
 typedef struct spv_const_binary_t {
   const uint32_t* code;
