@@ -380,19 +380,25 @@ typedef struct spv_ext_inst_table_t {
 } spv_ext_inst_table_t;
 
 typedef struct spv_binary_t {
-  const uint32_t* code;
-  uint64_t wordCount;
+  uint32_t* code;
+  size_t wordCount;
 } spv_binary_t;
+
+typedef struct spv_const_binary_t {
+  const uint32_t* code;
+  const size_t wordCount;
+} spv_const_binary_t;
+
 
 typedef struct spv_text_t {
   const char* str;
-  uint64_t length;
+  size_t length;
 } spv_text_t;
 
 typedef struct spv_position_t {
-  uint64_t line;
-  uint64_t column;
-  uint64_t index;
+  size_t line;
+  size_t column;
+  size_t index;
 } spv_position_t;
 
 typedef struct spv_diagnostic_t {
@@ -409,6 +415,7 @@ typedef const spv_operand_desc_t* spv_operand_desc;
 typedef const spv_operand_table_t* spv_operand_table;
 typedef const spv_ext_inst_desc_t* spv_ext_inst_desc;
 typedef const spv_ext_inst_table_t* spv_ext_inst_table;
+typedef spv_const_binary_t* spv_const_binary;
 typedef spv_binary_t* spv_binary;
 typedef spv_text_t* spv_text;
 typedef spv_position_t* spv_position;
@@ -452,7 +459,7 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table* pTable);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvTextToBinary(const char* text, const uint64_t length,
+spv_result_t spvTextToBinary(const char* text, const size_t length,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,
@@ -505,7 +512,7 @@ void spvBinaryDestroy(spv_binary binary);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvValidate(const spv_binary binary,
+spv_result_t spvValidate(const spv_const_binary binary,
                          const spv_opcode_table opcodeTable,
                          const spv_operand_table operandTable,
                          const spv_ext_inst_table extInstTable,

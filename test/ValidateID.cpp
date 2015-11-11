@@ -45,7 +45,9 @@ class ValidateID : public ::testing::Test {
   }
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
-
+  spv_const_binary get_const_binary() {
+      return spv_const_binary(binary);
+  }
   spv_opcode_table opcodeTable;
   spv_operand_table operandTable;
   spv_ext_inst_table extInstTable;
@@ -63,8 +65,8 @@ class ValidateID : public ::testing::Test {
     ASSERT_EQ(SPV_SUCCESS, error);                                 \
   }                                                                \
   spv_result_t result =                                            \
-      spvValidate(binary, opcodeTable, operandTable, extInstTable, \
-                  SPV_VALIDATE_ID_BIT, &diagnostic);               \
+      spvValidate(get_const_binary(), opcodeTable, operandTable,   \
+                  extInstTable, SPV_VALIDATE_ID_BIT, &diagnostic); \
   if (SPV_SUCCESS != result) {                                     \
     spvDiagnosticPrint(diagnostic);                                \
     spvDiagnosticDestroy(diagnostic);                              \

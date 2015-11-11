@@ -737,7 +737,7 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
 }  // anonymous namespace
 
 spv_result_t spvTextToBinary(const char* input_text,
-                             const uint64_t input_text_size,
+                             const size_t input_text_size,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,
                              const spv_ext_inst_table extInstTable,

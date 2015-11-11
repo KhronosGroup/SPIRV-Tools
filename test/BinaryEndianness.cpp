@@ -30,7 +30,7 @@ namespace {
 
 TEST(BinaryEndianness, InvalidCode) {
   uint32_t invalidMagicNumber[] = {0};
-  spv_binary_t binary = {invalidMagicNumber, 1};
+  spv_const_binary_t binary = {invalidMagicNumber, 1};
   spv_endianness_t endian;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, spvBinaryEndianness(&binary, &endian));
 }
@@ -42,7 +42,7 @@ TEST(BinaryEndianness, Little) {
   } else {
     magicNumber = 0x03022307;
   }
-  spv_binary_t binary = {&magicNumber, 1};
+  spv_const_binary_t binary = {&magicNumber, 1};
   spv_endianness_t endian;
   ASSERT_EQ(SPV_SUCCESS, spvBinaryEndianness(&binary, &endian));
   ASSERT_EQ(SPV_ENDIANNESS_LITTLE, endian);
@@ -55,7 +55,7 @@ TEST(BinaryEndianness, Big) {
   } else {
     magicNumber = 0x03022307;
   }
-  spv_binary_t binary = {&magicNumber, 1};
+  spv_const_binary_t binary = {&magicNumber, 1};
   spv_endianness_t endian;
   ASSERT_EQ(SPV_SUCCESS, spvBinaryEndianness(&binary, &endian));
   ASSERT_EQ(SPV_ENDIANNESS_BIG, endian);

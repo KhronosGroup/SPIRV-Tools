@@ -39,7 +39,7 @@
 #include "opcode.h"
 #include "operand.h"
 
-spv_result_t spvBinaryHeaderGet(const spv_binary binary,
+spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t* pHeader) {
   if (!binary->code) return SPV_ERROR_INVALID_BINARY;
@@ -241,7 +241,7 @@ spv_result_t Parser::parseModule() {
                         << " words instead of " << SPV_INDEX_INSTRUCTION;
 
   // Check the magic number and detect the module's endianness.
-  spv_binary_t binary = {_.words, _.num_words};  // Can't make this const. :-(
+  spv_const_binary_t binary{_.words, _.num_words};
   if (spvBinaryEndianness(&binary, &_.endian)) {
     return diagnostic() << "Invalid SPIR-V magic number '" << std::hex
                         << _.words[0] << "'.";
@@ -671,7 +671,7 @@ void Parser::recordNumberType(const spv_parsed_instruction_t* inst) {
 
 }  // anonymous namespace
 
-spv_result_t spvBinaryParse(void* user_data, const uint32_t* const code,
+spv_result_t spvBinaryParse(void* user_data, const uint32_t* code,
                             const size_t num_words,
                             spv_parsed_header_fn_t parsed_header,
                             spv_parsed_instruction_fn_t parsed_instruction,

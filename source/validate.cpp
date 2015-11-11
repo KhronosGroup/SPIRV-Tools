@@ -259,7 +259,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvValidate(const spv_binary binary,
+spv_result_t spvValidate(const spv_const_binary binary,
                          const spv_opcode_table opcodeTable,
                          const spv_operand_table operandTable,
                          const spv_ext_inst_table extInstTable,

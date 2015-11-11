@@ -43,7 +43,9 @@ class BinaryHeaderGet : public ::testing::Test {
     binary.code = code;
     binary.wordCount = 6;
   }
-
+  spv_const_binary_t get_const_binary() {
+    return spv_const_binary_t{binary.code, binary.wordCount};
+  }
   virtual void TearDown() {}
 
   uint32_t code[6];
@@ -52,10 +54,11 @@ class BinaryHeaderGet : public ::testing::Test {
 
 TEST_F(BinaryHeaderGet, Default) {
   spv_endianness_t endian;
-  ASSERT_EQ(SPV_SUCCESS, spvBinaryEndianness(&binary, &endian));
+  spv_const_binary_t const_bin = get_const_binary();
+  ASSERT_EQ(SPV_SUCCESS, spvBinaryEndianness(&const_bin, &endian));
 
   spv_header_t header;
-  ASSERT_EQ(SPV_SUCCESS, spvBinaryHeaderGet(&binary, endian, &header));
+  ASSERT_EQ(SPV_SUCCESS, spvBinaryHeaderGet(&const_bin, endian, &header));
 
   ASSERT_EQ(static_cast<uint32_t>(SpvMagicNumber), header.magic);
   ASSERT_EQ(99u, header.version);
@@ -66,22 +69,24 @@ TEST_F(BinaryHeaderGet, Default) {
 }
 
 TEST_F(BinaryHeaderGet, InvalidCode) {
-  spv_binary_t binary = {nullptr, 0};
+  spv_const_binary_t binary = {nullptr, 0};
   spv_header_t header;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
             spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, &header));
 }
 
 TEST_F(BinaryHeaderGet, InvalidPointerHeader) {
+  spv_const_binary_t const_bin = get_const_binary();
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
-            spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, nullptr));
+            spvBinaryHeaderGet(&const_bin, SPV_ENDIANNESS_LITTLE, nullptr));
 }
 
 TEST_F(BinaryHeaderGet, TruncatedHeader) {
   for (int i = 1; i < SPV_INDEX_INSTRUCTION; i++) {
     binary.wordCount = i;
+    spv_const_binary_t const_bin = get_const_binary();
     ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
-              spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, nullptr));
+              spvBinaryHeaderGet(&const_bin, SPV_ENDIANNESS_LITTLE, nullptr));
   }
 }
 

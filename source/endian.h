@@ -57,7 +57,7 @@ uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
 /// @param[out] pEndian return the endianness of the SPV module
 ///
 /// @return result code
-spv_result_t spvBinaryEndianness(const spv_binary binary,
+spv_result_t spvBinaryEndianness(const spv_const_binary binary,
                                  spv_endianness_t* pEndian);
 
 #endif  // LIBSPIRV_ENDIAN_H_

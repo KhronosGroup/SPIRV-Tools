@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spv_binary_t binary = {contents.data(), contents.size()};
+  spv_const_binary_t binary = {contents.data(), contents.size()};
 
   spv_opcode_table opcodeTable;
   spv_result_t error = spvOpcodeTableGet(&opcodeTable);

@@ -39,6 +39,9 @@ class Validate : public ::testing::Test {
   }
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
+  spv_const_binary get_const_binary() {
+      return spv_const_binary(binary);
+  }
 
   spv_binary binary;
   spv_opcode_table opcodeTable;
@@ -63,7 +66,7 @@ OpFunctionEnd
             spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
                             extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_SUCCESS,
-            spvValidate(binary, opcodeTable, operandTable, extInstTable,
+            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
@@ -88,7 +91,7 @@ OpFunctionEnd
             spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
                             extInstTable, &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(binary, opcodeTable, operandTable, extInstTable,
+            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);
@@ -113,7 +116,7 @@ OpFunctionEnd
                             extInstTable, &binary, &diagnostic));
   // TODO: Fix setting of bound in spvTextTo, then remove this!
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(binary, opcodeTable, operandTable, extInstTable,
+            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
                         SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);

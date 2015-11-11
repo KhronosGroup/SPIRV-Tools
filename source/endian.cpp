@@ -56,7 +56,7 @@ uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
   return (uint64_t(spvFixWord(high, endian)) << 32) | spvFixWord(low, endian);
 }
 
-spv_result_t spvBinaryEndianness(const spv_binary binary,
+spv_result_t spvBinaryEndianness(spv_const_binary binary,
                                  spv_endianness_t* pEndian) {
   if (!binary->code || !binary->wordCount) return SPV_ERROR_INVALID_BINARY;
   if (!pEndian) return SPV_ERROR_INVALID_POINTER;

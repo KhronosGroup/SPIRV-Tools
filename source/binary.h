@@ -107,7 +107,7 @@ typedef spv_result_t (*spv_parsed_instruction_fn_t)(
 // returns SPV_ERROR_INVALID_BINARY and emits a diagnostic.  If a callback
 // returns anything other than SPV_SUCCESS, then that error code is returned
 // and parsing terminates early.
-spv_result_t spvBinaryParse(void* user_data, const uint32_t* const words,
+spv_result_t spvBinaryParse(void* user_data, const uint32_t* words,
                             const size_t num_words,
                             spv_parsed_header_fn_t parse_header,
                             spv_parsed_instruction_fn_t parse_instruction,
@@ -124,7 +124,7 @@ spv_result_t spvBinaryParse(void* user_data, const uint32_t* const words,
 /// @param[out] pHeader the returned header
 ///
 /// @return result code
-spv_result_t spvBinaryHeaderGet(const spv_binary binary,
+spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t* pHeader);
 
