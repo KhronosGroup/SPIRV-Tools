@@ -112,7 +112,7 @@ TEST_P(GoodStringTest, GoodStrings) {
 
   ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral(std::get<0>(GetParam()), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ(std::get<1>(GetParam()), l.value.str);
+  EXPECT_EQ(std::get<1>(GetParam()), l.str);
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -151,7 +151,7 @@ TEST(TextLiteral, GoodLongString) {
   std::string good_long = std::string("\"") + unquoted + "\"";
   EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ(unquoted.data(), l.value.str);
+  EXPECT_EQ(unquoted.data(), l.str);
 }
 
 TEST(TextLiteral, GoodUTF8String) {
@@ -161,7 +161,7 @@ TEST(TextLiteral, GoodUTF8String) {
   spv_literal_t l;
   EXPECT_EQ(SPV_SUCCESS, spvTextToLiteral(good_long.data(), &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_STRING, l.type);
-  EXPECT_STREQ(unquoted.data(), l.value.str);
+  EXPECT_EQ(unquoted.data(), l.str);
 }
 
 // A test case for parsing literal numbers.

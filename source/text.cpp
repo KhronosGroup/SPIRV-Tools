@@ -112,22 +112,19 @@ spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral) {
     if (len < 2 || textValue[0] != '"' || textValue[len - 1] != '"')
       return SPV_FAILED_MATCH;
     bool escaping = false;
-    size_t write_index = 0;
     for (const char* val = textValue + 1; val != textValue + len - 1; ++val) {
       if ((*val == '\\') && (!escaping)) {
         escaping = true;
       } else {
         // Have to save space for the null-terminator
-        if (write_index >= sizeof(pLiteral->value.str) - 1)
+        if (pLiteral->str.size() >= SPV_LIMIT_LITERAL_STRING_BYTES_MAX)
           return SPV_ERROR_OUT_OF_MEMORY;
-        pLiteral->value.str[write_index] = *val;
+        pLiteral->str.push_back(*val);
         escaping = false;
-        ++write_index;
       }
     }
 
     pLiteral->type = SPV_LITERAL_TYPE_STRING;
-    pLiteral->value.str[write_index] = '\0';
   } else if (numPeriods == 1) {
     double d = std::strtod(textValue, nullptr);
     float f = (float)d;
@@ -364,10 +361,10 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       // NOTE: Special case for extended instruction library import
       if (SpvOpExtInstImport == pInst->opcode) {
         const spv_ext_inst_type_t ext_inst_type =
-            spvExtInstImportTypeGet(literal.value.str);
+            spvExtInstImportTypeGet(literal.str.c_str());
         if (SPV_EXT_INST_TYPE_NONE == ext_inst_type) {
           return context->diagnostic()
-                 << "Invalid extended instruction import '" << literal.value.str
+                 << "Invalid extended instruction import '" << literal.str
                  << "'";
         }
         if (auto error = context->recordIdAsExtInstImport(pInst->words[1],
@@ -375,7 +372,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
           return error;
       }
 
-      if (context->binaryEncodeString(literal.value.str, pInst))
+      if (context->binaryEncodeString(literal.str.c_str(), pInst))
         return SPV_ERROR_INVALID_TEXT;
     } break;
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
