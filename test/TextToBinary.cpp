@@ -28,10 +28,12 @@
 #include <utility>
 #include <vector>
 
-#include "TestFixture.h"
 #include "gmock/gmock.h"
+
+#include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include "util/bitutils.h"
+#include "../source/spirv_constant.h"
 
 namespace {
 

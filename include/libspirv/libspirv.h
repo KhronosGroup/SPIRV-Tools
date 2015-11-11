@@ -40,44 +40,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-// Header indices
-
-#define SPV_INDEX_MAGIC_NUMBER 0u
-#define SPV_INDEX_VERSION_NUMBER 1u
-#define SPV_INDEX_GENERATOR_NUMBER 2u
-#define SPV_INDEX_BOUND 3u
-#define SPV_INDEX_SCHEMA 4u
-#define SPV_INDEX_INSTRUCTION 5u
-
-// Universal limits
-
-// SPIR-V 1.0 limits
-#define SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX 0xffff
-#define SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX 0xffff
-
-// A single Unicode character in UTF-8 encoding can take
-// up 4 bytes.
-#define SPV_LIMIT_LITERAL_STRING_BYTES_MAX \
-  (SPV_LIMIT_LITERAL_STRING_UTF8_CHARS_MAX * 4)
-
-// NOTE: These are set to the minimum maximum values
-// TODO(dneto): Check these.
-
-// libspirv limits.
-#define SPV_LIMIT_RESULT_ID_BOUND 0x00400000
-#define SPV_LIMIT_CONTROL_FLOW_NEST_DEPTH 0x00000400
-#define SPV_LIMIT_GLOBAL_VARIABLES_MAX 0x00010000
-#define SPV_LIMIT_LOCAL_VARIABLES_MAX 0x00080000
-// TODO: Decorations per target ID max, depends on decoration table size
-#define SPV_LIMIT_EXECUTION_MODE_PER_ENTRY_POINT_MAX 0x00000100
-#define SPV_LIMIT_INDICIES_MAX_ACCESS_CHAIN_COMPOSITE_MAX 0x00000100
-#define SPV_LIMIT_FUNCTION_PARAMETERS_PER_FUNCTION_DECL 0x00000100
-#define SPV_LIMIT_FUNCTION_CALL_ARGUMENTS_MAX 0x00000100
-#define SPV_LIMIT_EXT_FUNCTION_CALL_ARGUMENTS_MAX 0x00000100
-#define SPV_LIMIT_SWITCH_LITERAL_LABEL_PAIRS_MAX 0x00004000
-#define SPV_LIMIT_STRUCT_MEMBERS_MAX 0x0000400
-#define SPV_LIMIT_STRUCT_NESTING_DEPTH_MAX 0x00000100
-
 // Helpers
 
 #define spvIsInBitfield(value, bitfield) (value == (value & bitfield))
@@ -86,8 +48,6 @@ extern "C" {
 
 #define SPV_FORCE_16_BIT_ENUM(name) _##name = 0x7fff
 #define SPV_FORCE_32_BIT_ENUM(name) _##name = 0x7fffffff
-
-#define SPV_OPERAND_INVALID_RESULT_ID_INDEX -1
 
 // A bit mask representing a set of capabilities.
 // Currently there are 54 distinct capabilities, so 64 bits
@@ -102,18 +62,6 @@ typedef uint64_t spv_capability_mask_t;
   (spv_capability_mask_t(1) << (capability))
 
 // Enumerations
-
-// Values mapping to registered vendors.  See the registry at
-// https://www.khronos.org/registry/spir-v/api/spir-v.xml
-typedef enum spv_generator_t {
-  SPV_GENERATOR_KHRONOS = 0,
-  SPV_GENERATOR_LUNARG = 1,
-  SPV_GENERATOR_VALVE = 2,
-  SPV_GENERATOR_CODEPLAY = 3,
-  SPV_GENERATOR_NVIDIA = 4,
-  SPV_GENERATOR_ARM = 5,
-  SPV_FORCE_32_BIT_ENUM(spv_generator_t)
-} spv_generator_t;
 
 typedef enum spv_result_t {
   SPV_SUCCESS = 0,

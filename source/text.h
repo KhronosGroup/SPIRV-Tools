@@ -31,6 +31,7 @@
 
 #include "libspirv/libspirv.h"
 #include "operand.h"
+#include "spirv_constant.h"
 
 // Structures
 

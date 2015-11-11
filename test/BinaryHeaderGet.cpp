@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "UnitSPIRV.h"
+#include "../source/spirv_constant.h"
 
 namespace {
 

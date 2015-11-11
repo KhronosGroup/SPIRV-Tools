@@ -28,8 +28,10 @@
 
 #include <sstream>
 
-#include "TestFixture.h"
 #include "gmock/gmock.h"
+
+#include "TestFixture.h"
+#include "../source/spirv_constant.h"
 
 using ::testing::Eq;
 using spvtest::AutoText;

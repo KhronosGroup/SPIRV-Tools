@@ -38,6 +38,7 @@
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
+#include "spirv_constant.h"
 
 spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,

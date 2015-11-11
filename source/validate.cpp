@@ -39,6 +39,7 @@
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
+#include "spirv_constant.h"
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;

@@ -113,6 +113,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/spirv_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.h

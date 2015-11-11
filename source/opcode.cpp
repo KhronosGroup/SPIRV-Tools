@@ -32,6 +32,7 @@
 #include "endian.h"
 #include "instruction.h"
 #include "libspirv/libspirv.h"
+#include "spirv_constant.h"
 
 namespace {
 
@@ -370,13 +371,6 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   }
 
   return SPV_ERROR_INVALID_LOOKUP;
-}
-
-int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry) {
-  for (int16_t i = 0; i < entry->numTypes; ++i) {
-    if (SPV_OPERAND_TYPE_RESULT_ID == entry->operandTypes[i]) return i;
-  }
-  return SPV_OPERAND_INVALID_RESULT_ID_INDEX;
 }
 
 int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry) {
