@@ -29,6 +29,7 @@
 
 #include <libspirv/libspirv.h>
 #include "operand.h"
+#include "table.h"
 
 namespace libspirv {
 

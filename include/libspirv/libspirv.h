@@ -321,73 +321,15 @@ typedef struct spv_header_t {
   const uint32_t* instructions;  // NOTE: Unfixed pointer to instruciton stream
 } spv_header_t;
 
-typedef struct spv_opcode_desc_t {
-  const char* name;
-  const SpvOp opcode;
-  const spv_capability_mask_t
-      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
-  // operandTypes[0..numTypes-1] describe logical operands for the instruction.
-  // The operand types include result id and result-type id, followed by
-  // the types of arguments.
-  uint16_t numTypes;
-  spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
-  const bool hasResult;  // Does the instruction have a result ID operand?
-  const bool hasType;    // Does the instruction have a type ID operand?
-  // The operand class for each logical argument.  This does *not* include
-  // the result Id or type ID.  The list is terminated by SPV_OPERAND_TYPE_NONE.
-  const OperandClass operandClass[16];
-} spv_opcode_desc_t;
-
-typedef struct spv_opcode_table_t {
-  const uint32_t count;
-  const spv_opcode_desc_t* entries;
-} spv_opcode_table_t;
-
-typedef struct spv_operand_desc_t {
-  const char* name;
-  const uint32_t value;
-  const spv_capability_mask_t
-      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
-  const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
-} spv_operand_desc_t;
-
-typedef struct spv_operand_desc_group_t {
-  const spv_operand_type_t type;
-  const uint32_t count;
-  const spv_operand_desc_t* entries;
-} spv_operand_desc_group_t;
-
-typedef struct spv_operand_table_t {
-  const uint32_t count;
-  const spv_operand_desc_group_t* types;
-} spv_operand_table_t;
-
-typedef struct spv_ext_inst_desc_t {
-  const char* name;
-  const uint32_t ext_inst;
-  const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
-} spv_ext_inst_desc_t;
-
-typedef struct spv_ext_inst_group_t {
-  const spv_ext_inst_type_t type;
-  const uint32_t count;
-  const spv_ext_inst_desc_t* entries;
-} spv_ext_inst_group_t;
-
-typedef struct spv_ext_inst_table_t {
-  const uint32_t count;
-  const spv_ext_inst_group_t* groups;
-} spv_ext_inst_table_t;
+typedef struct spv_const_binary_t {
+  const uint32_t* code;
+  const size_t wordCount;
+} spv_const_binary_t;
 
 typedef struct spv_binary_t {
   uint32_t* code;
   size_t wordCount;
 } spv_binary_t;
-
-typedef struct spv_const_binary_t {
-  const uint32_t* code;
-  const size_t wordCount;
-} spv_const_binary_t;
 
 typedef struct spv_text_t {
   const char* str;
@@ -408,12 +350,6 @@ typedef struct spv_diagnostic_t {
 
 // Type Definitions
 
-typedef const spv_opcode_desc_t* spv_opcode_desc;
-typedef const spv_opcode_table_t* spv_opcode_table;
-typedef const spv_operand_desc_t* spv_operand_desc;
-typedef const spv_operand_table_t* spv_operand_table;
-typedef const spv_ext_inst_desc_t* spv_ext_inst_desc;
-typedef const spv_ext_inst_table_t* spv_ext_inst_table;
 typedef spv_const_binary_t* spv_const_binary;
 typedef spv_binary_t* spv_binary;
 typedef spv_text_t* spv_text;

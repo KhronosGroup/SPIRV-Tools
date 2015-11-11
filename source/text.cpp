@@ -46,6 +46,7 @@
 #include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
+#include "table.h"
 #include "text_handler.h"
 #include "util/bitutils.h"
 

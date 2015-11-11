@@ -1,4 +1,4 @@
-#include <libspirv/libspirv.h>
+#include "ext_inst.h"
 
 #include <string.h>
 

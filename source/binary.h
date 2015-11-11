@@ -28,7 +28,7 @@
 #define LIBSPIRV_BINARY_H_
 
 #include "libspirv/libspirv.h"
-
+#include "table.h"
 
 // TODO(dneto): Move spvBinaryParse and related type definitions to libspirv.h
 extern "C" {
