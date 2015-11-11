@@ -91,28 +91,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spv_opcode_table opcodeTable;
-  spv_result_t error = spvOpcodeTableGet(&opcodeTable);
-  if (error) {
-    fprintf(stderr, "error: internal malfunction\n");
-    return error;
-  }
-
-  spv_operand_table operandTable;
-  error = spvOperandTableGet(&operandTable);
-  if (error) {
-    fprintf(stderr, "error: internal malfunction\n");
-    return error;
-  }
-
-  spv_ext_inst_table extInstTable;
-  error = spvExtInstTableGet(&extInstTable);
-  if (error) fprintf(stderr, "error: Internal malfunction.\n");
-
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  error = spvTextToBinary(contents.data(), contents.size(), opcodeTable,
-                          operandTable, extInstTable, &binary, &diagnostic);
+  spv_result_t error =
+      spvTextToBinary(contents.data(), contents.size(), &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

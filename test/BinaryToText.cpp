@@ -39,13 +39,7 @@ namespace {
 
 class BinaryToText : public ::testing::Test {
  public:
-  BinaryToText() : binary(), opcodeTable(nullptr), operandTable(nullptr) {}
-
   virtual void SetUp() {
-    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-
     const char* textStr = R"(
       OpSource OpenCL 12
       OpMemoryModel Physical64 OpenCL
@@ -70,8 +64,7 @@ class BinaryToText : public ::testing::Test {
     spv_text_t text = {textStr, strlen(textStr)};
     spv_diagnostic diagnostic = nullptr;
     spv_result_t error =
-        spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                        extInstTable, &binary, &diagnostic);
+        spvTextToBinary(text.str, text.length, &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -84,24 +77,19 @@ class BinaryToText : public ::testing::Test {
   // Compiles the given assembly text, and saves it into 'binary'.
   void CompileSuccessfully(std::string text) {
     spv_diagnostic diagnostic = nullptr;
-    EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(text.c_str(), text.size(),
-                                           opcodeTable, operandTable,
-                                           extInstTable, &binary, &diagnostic));
+    EXPECT_EQ(SPV_SUCCESS,
+              spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic));
   }
 
   spv_binary binary;
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
 };
 
 TEST_F(BinaryToText, Default) {
   spv_text text = nullptr;
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS,
-            spvBinaryToText(binary->code, binary->wordCount,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            operandTable, extInstTable, &text, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS, spvBinaryToText(binary->code, binary->wordCount,
+                                         SPV_BINARY_TO_TEXT_OPTION_NONE, &text,
+                                         &diagnostic));
   printf("%s", text->str);
   spvTextDestroy(text);
 }
@@ -109,10 +97,9 @@ TEST_F(BinaryToText, Default) {
 TEST_F(BinaryToText, MissingModule) {
   spv_text text;
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_BINARY,
-      spvBinaryToText(nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                      operandTable, extInstTable, &text, &diagnostic));
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryToText(nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE, &text,
+                            &diagnostic));
   EXPECT_THAT(diagnostic->error, Eq(std::string("Missing module.")));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
@@ -128,10 +115,10 @@ TEST_F(BinaryToText, TruncatedModule) {
   for (int length = 0; length < SPV_INDEX_INSTRUCTION; length++) {
     spv_text text = nullptr;
     spv_diagnostic diagnostic = nullptr;
-    EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-              spvBinaryToText(binary->code, length,
-                              SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                              operandTable, extInstTable, &text, &diagnostic));
+    EXPECT_EQ(
+        SPV_ERROR_INVALID_BINARY,
+        spvBinaryToText(binary->code, length, SPV_BINARY_TO_TEXT_OPTION_NONE,
+                        &text, &diagnostic));
     ASSERT_NE(nullptr, diagnostic);
     std::stringstream expected;
     expected << "Module has incomplete header: only " << length
@@ -149,10 +136,10 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
 
   spv_diagnostic diagnostic = nullptr;
   spv_text text;
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryToText(damaged_binary.data(), damaged_binary.size(),
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            operandTable, extInstTable, &text, &diagnostic));
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_BINARY,
+      spvBinaryToText(damaged_binary.data(), damaged_binary.size(),
+                      SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   std::stringstream expected;
   expected << "Invalid SPIR-V magic number '" << std::hex
@@ -161,32 +148,11 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
   spvDiagnosticDestroy(diagnostic);
 }
 
-TEST_F(BinaryToText, InvalidTable) {
-  spv_text text;
-  spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvBinaryToText(binary->code, binary->wordCount, 0, nullptr,
-                            operandTable, extInstTable, &text, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvBinaryToText(binary->code, binary->wordCount,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            nullptr, extInstTable, &text, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvBinaryToText(binary->code, binary->wordCount,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            operandTable, nullptr, &text, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-}
-
 TEST_F(BinaryToText, InvalidDiagnostic) {
   spv_text text;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
             spvBinaryToText(binary->code, binary->wordCount,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                            operandTable, extInstTable, &text, nullptr));
+                            SPV_BINARY_TO_TEXT_OPTION_NONE, &text, nullptr));
 }
 
 struct FailedDecodeCase {
@@ -249,23 +215,15 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST(BinaryToTextSmall, OneInstruction) {
   // TODO(dneto): This test could/should be refactored.
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
   const char* input = "OpSource OpenCL 12";
   spv_result_t error =
-      spvTextToBinary(input, strlen(input), opcodeTable, operandTable,
-                      extInstTable, &binary, &diagnostic);
+      spvTextToBinary(input, strlen(input), &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
   spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                          operandTable, extInstTable, &text, &diagnostic);
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
   EXPECT_EQ(SPV_SUCCESS, error);
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -278,12 +236,6 @@ TEST(BinaryToTextSmall, OneInstruction) {
 // This could detect problems in updating the expected-set-of-operands
 // list.
 TEST(BinaryToTextSmall, OperandWithOperands) {
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
 
@@ -293,14 +245,12 @@ TEST(BinaryToTextSmall, OperandWithOperands) {
                  %fnType = OpTypeFunction %void
                  %fn = OpFunction %void None %fnType
                  )");
-  spv_result_t error =
-      spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
-                      operandTable, extInstTable, &binary, &diagnostic);
+  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
+                                       &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
   spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                          operandTable, extInstTable, &text, &diagnostic);
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
   EXPECT_EQ(SPV_SUCCESS, error);
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -310,24 +260,16 @@ TEST(BinaryToTextSmall, OperandWithOperands) {
 }
 
 TEST(BinaryToTextSmall, LiteralInt64) {
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
 
   AutoText input("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 123456789021\n");
-  spv_result_t error =
-      spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
-                      operandTable, extInstTable, &binary, &diagnostic);
+  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
+                                       &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
   spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                          operandTable, extInstTable, &text, &diagnostic);
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -341,25 +283,17 @@ TEST(BinaryToTextSmall, LiteralInt64) {
 }
 
 TEST(BinaryToTextSmall, LiteralDouble) {
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
 
   AutoText input(
       "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 3.1415926535897930");
-  spv_result_t error =
-      spvTextToBinary(input.str.c_str(), input.str.length(), opcodeTable,
-                      operandTable, extInstTable, &binary, &diagnostic);
+  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
+                                       &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
   spv_text text = nullptr;
   error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                          operandTable, extInstTable, &text, &diagnostic);
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

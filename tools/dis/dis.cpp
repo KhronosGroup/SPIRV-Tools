@@ -101,24 +101,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  spv_opcode_table opcodeTable;
-  spv_result_t error = spvOpcodeTableGet(&opcodeTable);
-  if (error) {
-    fprintf(stderr, "error: internal malfunction\n");
-    return error;
-  }
-
-  spv_operand_table operandTable;
-  error = spvOperandTableGet(&operandTable);
-  if (error) {
-    fprintf(stderr, "error: internal malfunction\n");
-    return error;
-  }
-
-  spv_ext_inst_table extInstTable;
-  error = spvExtInstTableGet(&extInstTable);
-  if (error) fprintf(stderr, "error: Internal malfunction.\n");
-
   // If the printing option is turned on, then spvBinaryToText should
   // do the printing.  In particular, colour printing on Windows is
   // controlled by modifying console objects synchronously while
@@ -131,9 +113,8 @@ int main(int argc, char** argv) {
   spv_text text;
   spv_text* textOrNull = printOptionOn ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  error =
-      spvBinaryToText(contents.data(), contents.size(), options, opcodeTable,
-                      operandTable, extInstTable, textOrNull, &diagnostic);
+  spv_result_t error = spvBinaryToText(contents.data(), contents.size(),
+                                       options, textOrNull, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

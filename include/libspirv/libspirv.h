@@ -389,7 +389,6 @@ typedef struct spv_const_binary_t {
   const size_t wordCount;
 } spv_const_binary_t;
 
-
 typedef struct spv_text_t {
   const char* str;
   size_t length;
@@ -452,17 +451,11 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table* pTable);
 ///
 /// @param[in] text input text
 /// @param[in] length of the input text
-/// @param[in] opcodeTable of specified Opcodes
-/// @param[in] operandTable of specified operands
-/// @param[in] extInstTable of specified extended instructions
 /// @param[out] pBinary the binary module
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
 spv_result_t spvTextToBinary(const char* text, const size_t length,
-                             const spv_opcode_table opcodeTable,
-                             const spv_operand_table operandTable,
-                             const spv_ext_inst_table extInstTable,
                              spv_binary* pBinary, spv_diagnostic* pDiagnostic);
 
 /// @brief Free an allocated text stream
@@ -479,19 +472,13 @@ void spvTextDestroy(spv_text text);
 /// @param[in] binary the input binary
 /// @param[in] wordCount the number of input words
 /// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[in] extInstTable of specified extended instructions
 /// @param[out] pText the textual form
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
 spv_result_t spvBinaryToText(const uint32_t* binary, const size_t wordCount,
-                             const uint32_t options,
-                             const spv_opcode_table opcodeTable,
-                             const spv_operand_table operandTable,
-                             const spv_ext_inst_table extInstTable,
-                             spv_text* pText, spv_diagnostic* pDiagnostic);
+                             const uint32_t options, spv_text* pText,
+                             spv_diagnostic* pDiagnostic);
 
 /// @brief Free a binary stream from memory.
 ///
@@ -505,18 +492,12 @@ void spvBinaryDestroy(spv_binary binary);
 /// @brief Validate a SPIR-V binary for correctness
 ///
 /// @param[in] binary the input binary stream
-/// @param[in] opcodeTable table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[in] extInstTable of specified extended instructions
 /// @param[in] options bitfield of spv_validation_options_t
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvValidate(const spv_const_binary binary,
-                         const spv_opcode_table opcodeTable,
-                         const spv_operand_table operandTable,
-                         const spv_ext_inst_table extInstTable,
-                         const uint32_t options, spv_diagnostic* pDiagnostic);
+spv_result_t spvValidate(const spv_const_binary binary, const uint32_t options,
+                         spv_diagnostic* pDiagnostic);
 
 // Diagnostic API
 

@@ -36,41 +36,26 @@ namespace {
 
 class ValidateID : public ::testing::Test {
  public:
-  ValidateID() : opcodeTable(nullptr), operandTable(nullptr), binary() {}
-
-  virtual void SetUp() {
-    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  }
-
   virtual void TearDown() { spvBinaryDestroy(binary); }
-  spv_const_binary get_const_binary() {
-      return spv_const_binary(binary);
-  }
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
+  spv_const_binary get_const_binary() { return spv_const_binary(binary); }
   spv_binary binary;
 };
 
-#define CHECK(str, expected)                                       \
-  spv_diagnostic diagnostic;                                       \
-  spv_result_t error =                                             \
-      spvTextToBinary(str, strlen(str), opcodeTable, operandTable, \
-                      extInstTable, &binary, &diagnostic);         \
-  if (error) {                                                     \
-    spvDiagnosticPrint(diagnostic);                                \
-    spvDiagnosticDestroy(diagnostic);                              \
-    ASSERT_EQ(SPV_SUCCESS, error);                                 \
-  }                                                                \
-  spv_result_t result =                                            \
-      spvValidate(get_const_binary(), opcodeTable, operandTable,   \
-                  extInstTable, SPV_VALIDATE_ID_BIT, &diagnostic); \
-  if (SPV_SUCCESS != result) {                                     \
-    spvDiagnosticPrint(diagnostic);                                \
-    spvDiagnosticDestroy(diagnostic);                              \
-  }                                                                \
+#define CHECK(str, expected)                                             \
+  spv_diagnostic diagnostic;                                             \
+  spv_result_t error =                                                   \
+      spvTextToBinary(str, strlen(str), &binary, &diagnostic);           \
+  if (error) {                                                           \
+    spvDiagnosticPrint(diagnostic);                                      \
+    spvDiagnosticDestroy(diagnostic);                                    \
+    ASSERT_EQ(SPV_SUCCESS, error);                                       \
+  }                                                                      \
+  spv_result_t result =                                                  \
+      spvValidate(get_const_binary(), SPV_VALIDATE_ID_BIT, &diagnostic); \
+  if (SPV_SUCCESS != result) {                                           \
+    spvDiagnosticPrint(diagnostic);                                      \
+    spvDiagnosticDestroy(diagnostic);                                    \
+  }                                                                      \
   ASSERT_EQ(expected, result);
 
 // TODO: OpUndef

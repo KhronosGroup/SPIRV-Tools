@@ -30,23 +30,12 @@ namespace {
 
 class Validate : public ::testing::Test {
  public:
-  Validate() : binary(), opcodeTable(nullptr), operandTable(nullptr) {}
-
-  virtual void SetUp() {
-    ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-  }
+  Validate() : binary() {}
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
-  spv_const_binary get_const_binary() {
-      return spv_const_binary(binary);
-  }
+  spv_const_binary get_const_binary() { return spv_const_binary(binary); }
 
   spv_binary binary;
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
 };
 
 TEST_F(Validate, DISABLED_Default) {
@@ -63,11 +52,9 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
   ASSERT_EQ(SPV_SUCCESS,
-            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
-                        SPV_VALIDATE_ALL, &diagnostic));
+            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -88,11 +75,9 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
-                        SPV_VALIDATE_ALL, &diagnostic));
+            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);
@@ -112,12 +97,10 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
   // TODO: Fix setting of bound in spvTextTo, then remove this!
   ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(get_const_binary(), opcodeTable, operandTable, extInstTable,
-                        SPV_VALIDATE_ALL, &diagnostic));
+            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);

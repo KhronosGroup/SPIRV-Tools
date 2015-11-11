@@ -49,13 +49,6 @@ struct ExtInstContext {
 using ExtInstGLSLstd450RoundTripTest = ::testing::TestWithParam<ExtInstContext>;
 
 TEST_P(ExtInstGLSLstd450RoundTripTest, ParameterizedExtInst) {
-  spv_opcode_table opcodeTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-  spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-
   const std::string spirv = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -79,8 +72,7 @@ OpFunctionEnd
   spv_binary binary;
   spv_diagnostic diagnostic;
   spv_result_t error =
-      spvTextToBinary(spirv.c_str(), spirv.size(), opcodeTable, operandTable,
-                      extInstTable, &binary, &diagnostic);
+      spvTextToBinary(spirv.c_str(), spirv.size(), &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -106,9 +98,9 @@ OpFunctionEnd
 
   // Check round trip gives the same text.
   spv_text output_text = nullptr;
-  error = spvBinaryToText(
-      binary->code, binary->wordCount, SPV_BINARY_TO_TEXT_OPTION_NONE,
-      opcodeTable, operandTable, extInstTable, &output_text, &diagnostic);
+  error = spvBinaryToText(binary->code, binary->wordCount,
+                          SPV_BINARY_TO_TEXT_OPTION_NONE, &output_text,
+                          &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);

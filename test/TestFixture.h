@@ -42,15 +42,7 @@ class TextToBinaryTestBase : public T {
   // Offset into a SpirvVector at which the first instruction starts.
   const SpirvVector::size_type kFirstInstruction = 5;
 
-  TextToBinaryTestBase()
-      : opcodeTable(nullptr),
-        operandTable(nullptr),
-        diagnostic(nullptr),
-        text(),
-        binary(nullptr) {
-    EXPECT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-    EXPECT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-    EXPECT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
+  TextToBinaryTestBase() : diagnostic(nullptr), text(), binary(nullptr) {
     char textStr[] = "substitute the text member variable with your test";
     text = {textStr, strlen(textStr)};
   }
@@ -70,8 +62,7 @@ class TextToBinaryTestBase : public T {
   // compilation success. Returns the compiled code.
   SpirvVector CompileSuccessfully(const std::string& text) {
     spv_result_t status =
-        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
-                        extInstTable, &binary, &diagnostic);
+        spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -87,8 +78,7 @@ class TextToBinaryTestBase : public T {
   // Returns the error message(s).
   std::string CompileFailure(const std::string& text) {
     EXPECT_NE(SPV_SUCCESS,
-              spvTextToBinary(text.c_str(), text.size(), opcodeTable,
-                              operandTable, extInstTable, &binary, &diagnostic))
+              spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic))
         << text;
     DestroyBinary();
     return diagnostic->error;
@@ -99,8 +89,7 @@ class TextToBinaryTestBase : public T {
   std::string EncodeAndDecodeSuccessfully(const std::string& text) {
     DestroyBinary();
     spv_result_t error =
-        spvTextToBinary(text.c_str(), text.size(), opcodeTable, operandTable,
-                        extInstTable, &binary, &diagnostic);
+        spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -109,9 +98,9 @@ class TextToBinaryTestBase : public T {
     if (!binary) return "";
 
     spv_text decoded_text;
-    error = spvBinaryToText(
-        binary->code, binary->wordCount, SPV_BINARY_TO_TEXT_OPTION_NONE,
-        opcodeTable, operandTable, extInstTable, &decoded_text, &diagnostic);
+    error = spvBinaryToText(binary->code, binary->wordCount,
+                            SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
+                            &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -137,11 +126,9 @@ class TextToBinaryTestBase : public T {
         spvtest::Concatenate({CompileSuccessfully(text), words_to_append});
 
     spv_text decoded_text;
-    EXPECT_NE(SPV_SUCCESS,
-              spvBinaryToText(code.data(), code.size(),
-                              SPV_BINARY_TO_TEXT_OPTION_NONE, opcodeTable,
-                              operandTable, extInstTable, &decoded_text,
-                              &diagnostic));
+    EXPECT_NE(SPV_SUCCESS, spvBinaryToText(code.data(), code.size(),
+                                           SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                           &decoded_text, &diagnostic));
     if (diagnostic) {
       std::string error_message = diagnostic->error;
       spvDiagnosticDestroy(diagnostic);
@@ -176,9 +163,6 @@ class TextToBinaryTestBase : public T {
     binary = nullptr;
   }
 
-  spv_opcode_table opcodeTable;
-  spv_operand_table operandTable;
-  spv_ext_inst_table extInstTable;
   spv_diagnostic diagnostic;
 
   std::string textString;

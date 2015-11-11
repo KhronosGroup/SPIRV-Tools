@@ -259,13 +259,20 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
   return SPV_SUCCESS;
 }
 
-spv_result_t spvValidate(const spv_const_binary binary,
-                         const spv_opcode_table opcodeTable,
-                         const spv_operand_table operandTable,
-                         const spv_ext_inst_table extInstTable,
-                         const uint32_t options, spv_diagnostic* pDiagnostic) {
-  if (!opcodeTable || !operandTable) return SPV_ERROR_INVALID_TABLE;
+spv_result_t spvValidate(const spv_const_binary binary, const uint32_t options,
+                         spv_diagnostic* pDiagnostic) {
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
+  spv_opcode_table opcode_table = nullptr;
+  spvOpcodeTableGet(&opcode_table);
+  assert(opcode_table);
+
+  spv_operand_table operand_table = nullptr;
+  spvOperandTableGet(&operand_table);
+  assert(operand_table);
+
+  spv_ext_inst_table ext_inst_table = nullptr;
+  spvExtInstTableGet(&ext_inst_table);
+  assert(ext_inst_table);
 
   spv_endianness_t endian;
   spv_position_t position = {};
@@ -298,7 +305,7 @@ spv_result_t spvValidate(const spv_const_binary binary,
     position.index = SPV_INDEX_INSTRUCTION;
     // TODO: Imcomplete implementation
     spvCheckReturn(spvValidateBasic(instructions.data(), instructions.size(),
-                                    opcodeTable, operandTable, &position,
+                                    opcode_table, operand_table, &position,
                                     pDiagnostic));
   }
 
@@ -310,8 +317,8 @@ spv_result_t spvValidate(const spv_const_binary binary,
   if (spvIsInBitfield(SPV_VALIDATE_ID_BIT, options)) {
     position.index = SPV_INDEX_INSTRUCTION;
     spvCheckReturn(spvValidateIDs(instructions.data(), instructions.size(),
-                                  header.bound, opcodeTable, operandTable,
-                                  extInstTable, &position, pDiagnostic));
+                                  header.bound, opcode_table, operand_table,
+                                  ext_inst_table, &position, pDiagnostic));
   }
 
   if (spvIsInBitfield(SPV_VALIDATE_RULES_BIT, options)) {

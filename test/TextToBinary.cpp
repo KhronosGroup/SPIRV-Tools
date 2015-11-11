@@ -164,20 +164,10 @@ TEST(TextToBinary, Default) {
 %15 = OpTypeVector %4 2
 )";
 
-  spv_opcode_table opcodeTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
-
-  spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
-
-  spv_ext_inst_table extInstTable;
-  ASSERT_EQ(SPV_SUCCESS, spvExtInstTableGet(&extInstTable));
-
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
   spv_result_t error =
-      spvTextToBinary(textStr, strlen(textStr), opcodeTable, operandTable,
-                      extInstTable, &binary, &diagnostic);
+      spvTextToBinary(textStr, strlen(textStr), &binary, &diagnostic);
 
   if (error) {
     spvDiagnosticPrint(diagnostic);
@@ -304,32 +294,16 @@ TEST(TextToBinary, Default) {
 TEST_F(TextToBinaryTest, InvalidText) {
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(nullptr, 0, opcodeTable, operandTable, extInstTable,
-                            &binary, &diagnostic));
+            spvTextToBinary(nullptr, 0, &binary, &diagnostic));
   EXPECT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(std::string("Missing assembly text.")));
-}
-
-TEST_F(TextToBinaryTest, InvalidTable) {
-  SetText(
-      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(text.str, text.length, nullptr, operandTable,
-                            extInstTable, &binary, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(text.str, text.length, opcodeTable, nullptr,
-                            extInstTable, &binary, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_TABLE,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            nullptr, &binary, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidPointer) {
   SetText(
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, nullptr, &diagnostic));
+            spvTextToBinary(text.str, text.length, nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
@@ -337,15 +311,13 @@ TEST_F(TextToBinaryTest, InvalidDiagnostic) {
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, nullptr));
+            spvTextToBinary(text.str, text.length, &binary, nullptr));
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {
   SetText("Invalid");
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -360,8 +332,7 @@ TEST_F(TextToBinaryTest, EmptyAssemblyString) {
 TEST_F(TextToBinaryTest, StringSpace) {
   SetText("OpSourceExtension \"string with spaces\"");
   EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -375,8 +346,7 @@ Google
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ(
@@ -393,8 +363,7 @@ TEST_F(TextToBinaryTest, NoEqualSign) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
@@ -408,8 +377,7 @@ TEST_F(TextToBinaryTest, NoOpCode) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
   EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
@@ -423,8 +391,7 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
 )");
 
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, opcodeTable, operandTable,
-                            extInstTable, &binary, &diagnostic));
+            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(6, diagnostic->position.column + 1);
   EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);

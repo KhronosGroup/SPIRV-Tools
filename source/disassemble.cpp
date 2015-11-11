@@ -346,16 +346,12 @@ spv_result_t DisassembleInstruction(
 }  // anonymous namespace
 
 spv_result_t spvBinaryToText(const uint32_t* code, const size_t wordCount,
-                             const uint32_t options,
-                             const spv_opcode_table opcode_table,
-                             const spv_operand_table operand_table,
-                             const spv_ext_inst_table ext_inst_table,
-                             spv_text* pText, spv_diagnostic* pDiagnostic) {
+                             const uint32_t options, spv_text* pText,
+                             spv_diagnostic* pDiagnostic) {
   // Invalid arguments return error codes, but don't necessarily generate
   // diagnostics.  These are programmer errors, not user errors.
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-  const libspirv::AssemblyGrammar grammar(operand_table, opcode_table,
-                                          ext_inst_table);
+  const libspirv::AssemblyGrammar grammar;
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
   Disassembler disassembler(grammar, code, wordCount, options);
