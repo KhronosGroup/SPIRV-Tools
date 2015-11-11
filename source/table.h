@@ -29,6 +29,7 @@
 
 #include "libspirv/libspirv.h"
 #include "spirv_definition.h"
+#include "spirv_operands.h"
 
 typedef struct spv_opcode_desc_t {
   const char* name;
