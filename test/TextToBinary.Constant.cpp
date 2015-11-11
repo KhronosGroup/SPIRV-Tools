@@ -471,6 +471,177 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 -1.79769e+308\n",
     }));
 
+// Test OpSpecConstantOp
+
+using OpSpecConstantOpTestWithIds =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<SpvOp>>>;
+
+// The operands to the OpSpecConstantOp opcode are all Ids.
+TEST_P(OpSpecConstantOpTestWithIds, Assembly) {
+  std::stringstream input;
+  input << "%2 = OpSpecConstantOp %1 " << GetParam().name();
+  for (auto id : GetParam().operands()) input << " %" << id;
+  input << "\n";
+
+  EXPECT_THAT(CompiledInstructions(input.str()),
+              Eq(MakeInstruction(SpvOpSpecConstantOp,
+                                 {1, 2, uint32_t(GetParam().value())},
+                                 GetParam().operands())));
+}
+
+// clang-format off
+#define CASE1(NAME) { SpvOp##NAME, #NAME, {3} }
+#define CASE2(NAME) { SpvOp##NAME, #NAME, {3, 4} }
+#define CASE3(NAME) { SpvOp##NAME, #NAME, {3, 4, 5} }
+#define CASE4(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6} }
+#define CASE5(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6, 7} }
+#define CASE6(NAME) { SpvOp##NAME, #NAME, {3, 4, 5, 6, 7, 8} }
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSpecConstantOp, OpSpecConstantOpTestWithIds,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
+        // Conversion
+        CASE1(SConvert),
+        CASE1(FConvert),
+        CASE1(ConvertFToS),
+        CASE1(ConvertSToF),
+        CASE1(ConvertFToU),
+        CASE1(ConvertUToF),
+        CASE1(UConvert),
+        CASE1(ConvertPtrToU),
+        CASE1(ConvertUToPtr),
+        CASE1(PtrCastToGeneric),
+        CASE1(Bitcast),
+        CASE1(QuantizeToF16),
+        // Arithmetic
+        CASE1(SNegate),
+        CASE1(Not),
+        CASE2(IAdd),
+        CASE2(ISub),
+        CASE2(IMul),
+        CASE2(UDiv),
+        CASE2(SDiv),
+        CASE2(UMod),
+        CASE2(SRem),
+        CASE2(SMod),
+        CASE2(ShiftRightLogical),
+        CASE2(ShiftRightArithmetic),
+        CASE2(ShiftLeftLogical),
+        CASE2(BitwiseOr),
+        CASE2(BitwiseAnd),
+        CASE1(FNegate),
+        CASE2(FAdd),
+        CASE2(FSub),
+        CASE2(FMul),
+        CASE2(FDiv),
+        CASE2(FRem),
+        CASE2(FMod),
+        // Composite operations use literal numbers. So they're in another test.
+        // Logical
+        CASE2(LogicalOr),
+        CASE2(LogicalAnd),
+        CASE1(LogicalNot),
+        CASE2(LogicalEqual),
+        CASE2(LogicalNotEqual),
+        CASE3(Select),
+        // Comparison
+        CASE2(IEqual),
+        CASE2(ULessThan),
+        CASE2(SLessThan),
+        CASE2(UGreaterThan),
+        CASE2(SGreaterThan),
+        CASE2(ULessThanEqual),
+        CASE2(SLessThanEqual),
+        CASE2(SLessThanEqual),
+        CASE2(UGreaterThanEqual),
+        CASE2(SGreaterThanEqual),
+        // Memory
+        // For AccessChain, there is a base Id, then a sequence of index Ids.
+        // Having no index Ids is a corner case.
+        CASE1(AccessChain),
+        CASE2(AccessChain),
+        CASE6(AccessChain),
+        CASE1(InBoundsAccessChain),
+        CASE2(InBoundsAccessChain),
+        CASE6(InBoundsAccessChain),
+        // PtrAccessChain also has an element Id.
+        CASE2(PtrAccessChain),
+        CASE3(PtrAccessChain),
+        CASE6(PtrAccessChain),
+        CASE2(InBoundsPtrAccessChain),
+        CASE3(InBoundsPtrAccessChain),
+        CASE6(InBoundsPtrAccessChain),
+    }));
+#undef CASE1
+#undef CASE2
+#undef CASE3
+#undef CASE4
+#undef CASE5
+#undef CASE6
+// clang-format on
+
+using OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<SpvOp>>>;
+
+// The operands to the OpSpecConstantOp opcode are two Ids followed by a
+// sequence of literal numbers.
+TEST_P(OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers, Assembly) {
+  std::stringstream input;
+  input << "%2 = OpSpecConstantOp %1 " << GetParam().name() << " %3 %4";
+  for (auto number : GetParam().operands()) input << " " << number;
+  input << "\n";
+
+  EXPECT_THAT(CompiledInstructions(input.str()),
+              Eq(MakeInstruction(SpvOpSpecConstantOp,
+                                 {1, 2, uint32_t(GetParam().value()), 3, 4},
+                                 GetParam().operands())));
+}
+
+#define CASE(NAME) SpvOp##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSpecConstantOp,
+    OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
+        // For VectorShuffle, there are two vector operands, and at least
+        // two selector Ids.  OpenCL can have up to 16-element vectors.
+        {CASE(VectorShuffle), {0, 0}},
+        {CASE(VectorShuffle), {4, 3, 2, 1}},
+        {CASE(VectorShuffle), {0, 2, 4, 6, 1, 3, 5, 7}},
+        {CASE(VectorShuffle),
+         {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}},
+        // For CompositeInsert, there is an object to insert, the target
+        // composite, and then literal indices.
+        {CASE(CompositeInsert), {0}},
+        {CASE(CompositeInsert), {4, 3, 99, 1}},
+    }));
+
+using OpSpecConstantOpTestWithOneIdThenLiteralNumbers =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<SpvOp>>>;
+
+// The operands to the OpSpecConstantOp opcode are one Id followed by a
+// sequence of literal numbers.
+TEST_P(OpSpecConstantOpTestWithOneIdThenLiteralNumbers, Assembly) {
+  std::stringstream input;
+  input << "%2 = OpSpecConstantOp %1 " << GetParam().name() << " %3";
+  for (auto number : GetParam().operands()) input << " " << number;
+  input << "\n";
+
+  EXPECT_THAT(CompiledInstructions(input.str()),
+              Eq(MakeInstruction(SpvOpSpecConstantOp,
+                                 {1, 2, uint32_t(GetParam().value()), 3},
+                                 GetParam().operands())));
+}
+
+#define CASE(NAME) SpvOp##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpSpecConstantOp,
+    OpSpecConstantOpTestWithOneIdThenLiteralNumbers,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvOp>>{
+        // For CompositeExtract, the universal limit permits up to 255 literal
+        // indices.  Let's only test a few.
+        {CASE(CompositeExtract), {0}},
+        {CASE(CompositeExtract), {0, 99, 42, 16, 17, 12, 19}},
+    }));
+
 // TODO(dneto): OpConstantTrue
 // TODO(dneto): OpConstantFalse
 // TODO(dneto): OpConstantComposite
@@ -479,6 +650,6 @@ INSTANTIATE_TEST_CASE_P(
 // TODO(dneto): OpSpecConstantTrue
 // TODO(dneto): OpSpecConstantFalse
 // TODO(dneto): OpSpecConstantComposite
-// TODO(dneto): OpSpecConstantOp
+// TODO(dneto): Negative tests for OpSpecConstantOp
 
 }  // anonymous namespace

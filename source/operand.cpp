@@ -1191,6 +1191,8 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "possibly multi-word literal number";
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER:
       return "extension instruction number";
+    case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER:
+      return "OpSpecConstantOp opcode";
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING:
       return "literal string";

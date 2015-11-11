@@ -38,12 +38,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include <libspirv/libspirv.h>
 #include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
 #include "instruction.h"
-#include <libspirv/libspirv.h>
 #include "opcode.h"
 #include "operand.h"
 #include "text_handler.h"
@@ -245,7 +245,6 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
         }
         pInst->extInstType = ext_inst_type;
       }
-
     } break;
 
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
@@ -260,8 +259,30 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
 
       // Prepare to parse the operands for the extended instructions.
       spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
+    } break;
 
-      return SPV_SUCCESS;
+    case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
+      // The assembler accepts the symbolic name for the opcode, but without
+      // the "Op" prefix.  For example, "IAdd" is accepted.  The number
+      // of the opcode is emitted.
+      SpvOp opcode;
+      if (grammar.lookupSpecConstantOpcode(textValue, &opcode)) {
+        return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
+                                     << " '" << textValue << "'.";
+      }
+      spv_opcode_desc opcodeEntry = nullptr;
+      if (grammar.lookupOpcode(opcode, &opcodeEntry)) {
+        return context->diagnostic(SPV_ERROR_INTERNAL)
+               << "OpSpecConstant opcode table out of sync";
+      }
+      spvInstructionAddWord(pInst, uint32_t(opcodeEntry->opcode));
+
+      // Prepare to parse the operands for the opcode.  Except skip the
+      // type Id and result Id, since they've already been processed.
+      assert(opcodeEntry->hasType);
+      assert(opcodeEntry->hasResult);
+      assert(opcodeEntry->numTypes >= 2);
+      spvPrependOperandTypes(opcodeEntry->operandTypes + 2, pExpectedOperands);
     } break;
 
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
@@ -348,7 +369,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                  << "Invalid extended instruction import '" << literal.value.str
                  << "'";
         }
-        if (auto error = context->recordIdAsExtInstImport(pInst->words[1], ext_inst_type))
+        if (auto error = context->recordIdAsExtInstImport(pInst->words[1],
+                                                          ext_inst_type))
           return error;
       }
 

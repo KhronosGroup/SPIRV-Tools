@@ -71,6 +71,13 @@ class AssemblyGrammar {
   spv_result_t lookupOperand(spv_operand_type_t type, uint32_t operand,
                              spv_operand_desc* desc) const;
 
+  // Finds the opcode for the given OpSpecConstantOp opcode name. The name
+  // should not have the "Op" prefix.  For example, "IAdd" corresponds to
+  // the integer add opcode for OpSpecConstantOp.  On success, returns
+  // SPV_SUCCESS and sends the discovered operation code through the opcode
+  // parameter.  On failure, returns SPV_ERROR_INVALID_LOOKUP.
+  spv_result_t lookupSpecConstantOpcode(const char* name, SpvOp* opcode) const;
+
   // Parses a mask expression string for the given operand type.
   //
   // A mask expression is a sequence of one or more terms separated by '|',

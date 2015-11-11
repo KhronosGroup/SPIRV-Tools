@@ -182,6 +182,10 @@ typedef enum spv_operand_type_t {
   // number indicating which instruction to use from an extended instruction
   // set.
   SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER,
+  // The Opcode argument to OpSpecConstantOp. It determines the operation
+  // to be performed on constant operands to compute a specialization constant
+  // result.
+  SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER,
   // A literal number whose format and size are determined by a previous operand
   // in the same instruction.  It's a signed integer, an unsigned integer, or a
   // floating point number.  It also has a specified bit width.  The width
@@ -227,11 +231,11 @@ typedef enum spv_operand_type_t {
 #undef FIRST_CONCRETE
 #undef LAST_CONCRETE
 
-  // The remaining operand types are only used internally by the assembler.
-  // There are two categories:
-  //    Optional : expands to 0 or 1 operand, like ? in regular expressions.
-  //    Variable : expands to 0, 1 or many operands or pairs of operands.
-  //               This is similar to * in regular expressions.
+// The remaining operand types are only used internally by the assembler.
+// There are two categories:
+//    Optional : expands to 0 or 1 operand, like ? in regular expressions.
+//    Variable : expands to 0, 1 or many operands or pairs of operands.
+//               This is similar to * in regular expressions.
 
 // Macros for defining bounds on optional and variable operand types.
 // Any variable operand type is also optional.

@@ -109,6 +109,89 @@ spv_ext_inst_table GetDefaultExtInstTable() {
   return result;
 }
 
+// Associates an opcode with its name.
+struct SpecConstantOpcodeEntry {
+  SpvOp opcode;
+  const char* name;
+};
+
+// All the opcodes allowed as the operation for OpSpecConstantOp.
+// The name does not have the usual "Op" prefix. For example opcode SpvOpIAdd
+// is associated with the name "IAdd".
+//
+// clang-format off
+#define CASE(NAME) { SpvOp##NAME, #NAME }
+const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
+    // Conversion
+    CASE(SConvert),
+    CASE(FConvert),
+    CASE(ConvertFToS),
+    CASE(ConvertSToF),
+    CASE(ConvertFToU),
+    CASE(ConvertUToF),
+    CASE(UConvert),
+    CASE(ConvertPtrToU),
+    CASE(ConvertUToPtr),
+    CASE(PtrCastToGeneric),
+    CASE(Bitcast),
+    CASE(QuantizeToF16),
+    // Arithmetic
+    CASE(SNegate),
+    CASE(Not),
+    CASE(IAdd),
+    CASE(ISub),
+    CASE(IMul),
+    CASE(UDiv),
+    CASE(SDiv),
+    CASE(UMod),
+    CASE(SRem),
+    CASE(SMod),
+    CASE(ShiftRightLogical),
+    CASE(ShiftRightArithmetic),
+    CASE(ShiftLeftLogical),
+    CASE(BitwiseOr),
+    CASE(BitwiseAnd),
+    CASE(FNegate),
+    CASE(FAdd),
+    CASE(FSub),
+    CASE(FMul),
+    CASE(FDiv),
+    CASE(FRem),
+    CASE(FMod),
+    // Composite
+    CASE(VectorShuffle),
+    CASE(CompositeExtract),
+    CASE(CompositeInsert),
+    // Logical
+    CASE(LogicalOr),
+    CASE(LogicalAnd),
+    CASE(LogicalNot),
+    CASE(LogicalEqual),
+    CASE(LogicalNotEqual),
+    CASE(Select),
+    // Comparison
+    CASE(IEqual),
+    CASE(ULessThan),
+    CASE(SLessThan),
+    CASE(UGreaterThan),
+    CASE(SGreaterThan),
+    CASE(ULessThanEqual),
+    CASE(SLessThanEqual),
+    CASE(SLessThanEqual),
+    CASE(UGreaterThanEqual),
+    CASE(SGreaterThanEqual),
+    // Memory
+    CASE(AccessChain),
+    CASE(InBoundsAccessChain),
+    CASE(PtrAccessChain),
+    CASE(InBoundsPtrAccessChain),
+};
+#undef CASE
+// clang-format on
+
+const size_t kNumOpSpecConstantOpcodes =
+    sizeof(kOpSpecConstantOpcodes) / sizeof(kOpSpecConstantOpcodes[0]);
+
 }  // anonymous namespace
 
 namespace libspirv {
@@ -143,6 +226,19 @@ spv_result_t AssemblyGrammar::lookupOperand(spv_operand_type_t type,
                                             uint32_t operand,
                                             spv_operand_desc* desc) const {
   return spvOperandTableValueLookup(operandTable_, type, operand, desc);
+}
+
+spv_result_t AssemblyGrammar::lookupSpecConstantOpcode(const char* name,
+                                                       SpvOp* opcode) const {
+  const auto* last = kOpSpecConstantOpcodes + kNumOpSpecConstantOpcodes;
+  const auto* found =
+      std::find_if(kOpSpecConstantOpcodes, last,
+                   [name](const SpecConstantOpcodeEntry& entry) {
+                     return 0 == strcmp(name, entry.name);
+                   });
+  if (found == last) return SPV_ERROR_INVALID_LOOKUP;
+  *opcode = found->opcode;
+  return SPV_SUCCESS;
 }
 
 spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,

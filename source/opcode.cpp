@@ -75,7 +75,8 @@ bool opcodeTableInitialized = false;
 // Opcode API
 
 // Converts the given operand class enum (from the SPIR-V document generation
-// logic) to the operand type required by the parser.
+// logic) to the operand type required by the parser.  The SPV_OPERAND_TYPE_NONE
+// value indicates there is no current operand and no further operands.
 // This only applies to logical operands.
 spv_operand_type_t convertOperandClassToType(SpvOp opcode,
                                              OperandClass operandClass) {
@@ -113,6 +114,13 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
     case OperandOptionalImage:
       return SPV_OPERAND_TYPE_OPTIONAL_IMAGE;
     case OperandVariableIds:
+      if (opcode == SpvOpSpecConstantOp) {
+        // These are the operands to the specialization constant opcode.
+        // The assembler and binary parser set up the extra Id and literal
+        // arguments when processing the opcode operand.  So don't add
+        // an operand type for them here.
+        return SPV_OPERAND_TYPE_NONE;
+      }
       return SPV_OPERAND_TYPE_VARIABLE_ID;
     // The spec only uses OptionalLiteral for an optional literal number.
     case OperandOptionalLiteral:
@@ -131,6 +139,12 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
         // TODO(dneto): Use a function to confirm the assumption, and to verify
         // that the index into the operandClass is 1, as expected.
         return SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER;
+      } else if (opcode == SpvOpSpecConstantOp) {
+        // Use a special operand type for the opcode operand, so we can
+        // use mnemonic names instead of the numbers.  For example, the
+        // assembler should accept "IAdd" instead of the numeric value of
+        // SpvOpIAdd.
+        return SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER;
       }
       return SPV_OPERAND_TYPE_LITERAL_INTEGER;
     case OperandLiteralString:
@@ -245,16 +259,20 @@ void spvOpcodeTableInitialize() {
          opcode.numTypes < maxNumOperands && classIndex < maxNumClasses;
          classIndex++) {
       const OperandClass operandClass = opcode.operandClass[classIndex];
-      opcode.operandTypes[opcode.numTypes++] =
+      const auto operandType =
           convertOperandClassToType(opcode.opcode, operandClass);
+      opcode.operandTypes[opcode.numTypes++] = operandType;
       // The OperandNone value is not explicitly represented in the .inc file.
       // However, it is the zero value, and is created via implicit value
-      // initialization.
-      if (operandClass == OperandNone) {
+      // initialization.  It converts to SPV_OPERAND_TYPE_NONE.
+      // The SPV_OPERAND_TYPE_NONE operand type indicates no current or futher
+      // operands.
+      if (operandType == SPV_OPERAND_TYPE_NONE) {
         opcode.numTypes--;
         break;
       }
     }
+
     // We should have written the terminating SPV_OPERAND_TYPE_NONE entry, but
     // also without overflowing.
     assert((opcode.numTypes < maxNumOperands) &&
