@@ -32,6 +32,8 @@
 
 #include <headers/spirv.h>
 
+#include "table.h"
+
 // Describes an instruction.
 struct spv_instruction_t {
   // Normally, both opcode and extInstType contain valid data.

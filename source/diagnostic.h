@@ -27,11 +27,11 @@
 #ifndef LIBSPIRV_DIAGNOSTIC_H_
 #define LIBSPIRV_DIAGNOSTIC_H_
 
-#include <libspirv/libspirv.h>
-
 #include <iostream>
 #include <sstream>
 #include <utility>
+
+#include "libspirv/libspirv.h"
 
 class diagnostic_helper {
  public:

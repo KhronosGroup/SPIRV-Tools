@@ -27,10 +27,10 @@
 #ifndef LIBSPIRV_TEXT_H_
 #define LIBSPIRV_TEXT_H_
 
-#include <libspirv/libspirv.h>
-#include "operand.h"
-
 #include <string>
+
+#include "libspirv/libspirv.h"
+#include "operand.h"
 
 // Structures
 

@@ -31,11 +31,11 @@
 #include <limits>
 #include <unordered_map>
 
-#include <libspirv/libspirv.h>
 #include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "endian.h"
 #include "ext_inst.h"
+#include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
 

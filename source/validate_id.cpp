@@ -24,17 +24,17 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <libspirv/libspirv.h>
-#include "diagnostic.h"
-#include "instruction.h"
-#include "opcode.h"
-#include "validate.h"
-
 #include <assert.h>
 
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+
+#include "diagnostic.h"
+#include "instruction.h"
+#include "libspirv/libspirv.h"
+#include "opcode.h"
+#include "validate.h"
 
 #define spvCheck(condition, action) \
   if (condition) {                  \

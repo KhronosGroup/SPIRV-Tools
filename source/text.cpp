@@ -38,12 +38,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include <libspirv/libspirv.h>
 #include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
 #include "instruction.h"
+#include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
 #include "table.h"

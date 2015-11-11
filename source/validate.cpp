@@ -24,13 +24,6 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <libspirv/libspirv.h>
-#include "binary.h"
-#include "diagnostic.h"
-#include "endian.h"
-#include "instruction.h"
-#include "opcode.h"
-#include "operand.h"
 #include "validate.h"
 
 #include <assert.h>
@@ -38,6 +31,14 @@
 #include <stdio.h>
 
 #include <vector>
+
+#include "binary.h"
+#include "diagnostic.h"
+#include "endian.h"
+#include "instruction.h"
+#include "libspirv/libspirv.h"
+#include "opcode.h"
+#include "operand.h"
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;

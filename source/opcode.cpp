@@ -24,13 +24,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <libspirv/libspirv.h>
-#include "endian.h"
-#include "instruction.h"
 #include "opcode.h"
 
 #include <assert.h>
 #include <string.h>
+
+#include "endian.h"
+#include "instruction.h"
+#include "libspirv/libspirv.h"
 
 namespace {
 

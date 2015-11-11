@@ -24,10 +24,11 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <libspirv/libspirv.h>
-
 #include <stdio.h>
+
 #include <vector>
+
+#include "libspirv/libspirv.h"
 
 void print_usage(char* argv0) {
   printf(

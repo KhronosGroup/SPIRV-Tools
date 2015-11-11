@@ -32,9 +32,9 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include <libspirv/libspirv.h>
 #include "diagnostic.h"
 #include "instruction.h"
+#include "libspirv/libspirv.h"
 #include "text.h"
 
 namespace libspirv {

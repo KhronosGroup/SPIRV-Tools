@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_EXT_INST_H_
 #define LIBSPIRV_EXT_INST_H_
 
-#include <libspirv/libspirv.h>
+#include "libspirv/libspirv.h"
 #include "table.h"
 
 /// @brief Get the type from the extended instruction library string

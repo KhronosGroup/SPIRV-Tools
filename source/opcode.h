@@ -28,7 +28,7 @@
 #define LIBSPIRV_OPCODE_H_
 
 #include "instruction.h"
-#include <libspirv/libspirv.h>
+#include "libspirv/libspirv.h"
 #include "table.h"
 
 // Functions

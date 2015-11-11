@@ -27,7 +27,11 @@
 #ifndef LIBSPIRV_TEST_UNITSPIRV_H_
 #define LIBSPIRV_TEST_UNITSPIRV_H_
 
-#include <libspirv/libspirv.h>
+#include <stdint.h>
+
+#include <iomanip>
+
+#include "libspirv/libspirv.h"
 #include "../source/assembly_grammar.h"
 #include "../source/binary.h"
 #include "../source/diagnostic.h"
@@ -37,7 +41,7 @@
 #include "../source/text_handler.h"
 #include "../source/validate.h"
 
-#include <iomanip>
+#include <gtest/gtest.h>
 
 #ifdef __ANDROID__
 #include <sstream>
@@ -50,10 +54,6 @@ std::string to_string(const T& val) {
 }
 }
 #endif
-
-#include <gtest/gtest.h>
-
-#include <stdint.h>
 
 // Determine endianness & predicate tests on it
 enum {

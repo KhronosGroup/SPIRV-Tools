@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_ENDIAN_H_
 #define LIBSPIRV_ENDIAN_H_
 
-#include <libspirv/libspirv.h>
+#include "libspirv/libspirv.h"
 
 /// @brief Fix the endianness of a word
 ///
