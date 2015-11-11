@@ -55,6 +55,12 @@ the SPIR-V specification.  An operand is one of:
   which is the combination of the `NotNaN`, `NotInf`, and `NSZ` flags.
 * an injected immediate integer: `!<integer>`.  See [below](#immediate).
 * an ID, e.g. `%foo`. See [below](#id).
+* the name of an extended instruction.  For example, `sqrt` in an extended
+  instruction such as `%f = OpExtInst %f32 %OpenCLImport sqrt %arg`
+* the name of an opcode for OpSpecConstantOp, but where the `Op` prefix
+  is removed.  For example, the following indicates the use of an integer
+  addition in a specialization constant computation:
+  `%sum = OpSpecConstantOp %i32 IAdd %a %b`
 
 ## ID Definitions & Usage
 <a name="id"></a>

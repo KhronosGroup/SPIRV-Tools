@@ -241,6 +241,17 @@ spv_result_t AssemblyGrammar::lookupSpecConstantOpcode(const char* name,
   return SPV_SUCCESS;
 }
 
+spv_result_t AssemblyGrammar::lookupSpecConstantOpcode(SpvOp opcode) const {
+  const auto* last = kOpSpecConstantOpcodes + kNumOpSpecConstantOpcodes;
+  const auto* found =
+      std::find_if(kOpSpecConstantOpcodes, last,
+                   [opcode](const SpecConstantOpcodeEntry& entry) {
+                     return opcode == entry.opcode;
+                   });
+  if (found == last) return SPV_ERROR_INVALID_LOOKUP;
+  return SPV_SUCCESS;
+}
+
 spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,
                                                const char* textValue,
                                                uint32_t* pValue) const {

@@ -439,6 +439,26 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
       spvPrependOperandTypes(ext_inst->operandTypes, expected_operands);
     } break;
 
+    case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
+      assert(SpvOpSpecConstantOp == inst->opcode);
+      if (grammar_.lookupSpecConstantOpcode(SpvOp(word))) {
+        return diagnostic() << "Invalid " << spvOperandTypeStr(type) << ": "
+                            << word;
+      }
+      spv_opcode_desc opcode_entry = nullptr;
+      if (grammar_.lookupOpcode(SpvOp(word), &opcode_entry)) {
+        return diagnostic(SPV_ERROR_INTERNAL)
+               << "OpSpecConstant opcode table out of sync";
+      }
+      // OpSpecConstant opcodes must have a type and result. We've already
+      // processed them, so skip them when preparing to parse the other
+      // operants for the opcode.
+      assert(opcode_entry->hasType);
+      assert(opcode_entry->hasResult);
+      assert(opcode_entry->numTypes >= 2);
+      spvPrependOperandTypes(opcode_entry->operandTypes + 2, expected_operands);
+    } break;
+
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER:
       // These are regular single-word literal integer operands.

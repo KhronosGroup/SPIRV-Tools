@@ -487,6 +487,9 @@ TEST_P(OpSpecConstantOpTestWithIds, Assembly) {
               Eq(MakeInstruction(SpvOpSpecConstantOp,
                                  {1, 2, uint32_t(GetParam().value())},
                                  GetParam().operands())));
+
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), input.str());
 }
 
 // clang-format off
@@ -594,6 +597,9 @@ TEST_P(OpSpecConstantOpTestWithTwoIdsThenLiteralNumbers, Assembly) {
               Eq(MakeInstruction(SpvOpSpecConstantOp,
                                  {1, 2, uint32_t(GetParam().value()), 3, 4},
                                  GetParam().operands())));
+
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), input.str());
 }
 
 #define CASE(NAME) SpvOp##NAME, #NAME
@@ -629,6 +635,9 @@ TEST_P(OpSpecConstantOpTestWithOneIdThenLiteralNumbers, Assembly) {
               Eq(MakeInstruction(SpvOpSpecConstantOp,
                                  {1, 2, uint32_t(GetParam().value()), 3},
                                  GetParam().operands())));
+
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), input.str());
 }
 
 #define CASE(NAME) SpvOp##NAME, #NAME

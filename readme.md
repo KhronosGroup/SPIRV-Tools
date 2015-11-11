@@ -25,6 +25,9 @@ The validator is incomplete.  See the Future Work section for more information.
 
 ## CHANGES (for tools hackers)
 
+* Support `OpSpecConstantOp`.
+  The opcode operand uses the opcode name, but without the `Op` prefix.
+
 2015-11-10
 * Refactored the SPIR-V binary parser:
   * The binary parser issues callbacks to a parser client.

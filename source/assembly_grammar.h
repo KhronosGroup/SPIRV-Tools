@@ -78,6 +78,10 @@ class AssemblyGrammar {
   // parameter.  On failure, returns SPV_ERROR_INVALID_LOOKUP.
   spv_result_t lookupSpecConstantOpcode(const char* name, SpvOp* opcode) const;
 
+  // Returns SPV_SUCCESS if the given opcode is valid as the opcode operand
+  // to OpSpecConstantOp.
+  spv_result_t lookupSpecConstantOpcode(SpvOp opcode) const;
+
   // Parses a mask expression string for the given operand type.
   //
   // A mask expression is a sequence of one or more terms separated by '|',

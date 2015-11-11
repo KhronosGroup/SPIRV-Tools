@@ -183,6 +183,13 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       SetRed();
       stream_ << ext_inst->name;
     } break;
+    case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
+      spv_opcode_desc opcode_desc;
+      if (grammar_.lookupOpcode(SpvOp(word), &opcode_desc))
+        assert(false && "should have caught this earlier");
+      SetRed();
+      stream_ << opcode_desc->name;
+    } break;
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER: {
       SetRed();
