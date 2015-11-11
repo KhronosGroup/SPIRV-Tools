@@ -63,7 +63,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE(Cube),
         CASE(Rect),
         CASE(Buffer),
-        CASE(InputTarget),
+        CASE(SubpassData),
     }));
 #undef CASE
 // clang-format on
@@ -183,9 +183,9 @@ TEST_F(OpTypeForwardPointerTest, ValidStorageClass) {
   CASE(Input);
   CASE(Uniform);
   CASE(Output);
-  CASE(WorkgroupLocal);
-  CASE(WorkgroupGlobal);
-  CASE(PrivateGlobal);
+  CASE(Workgroup);
+  CASE(CrossWorkgroup);
+  CASE(Private);
   CASE(Function);
   CASE(Generic);
   CASE(PushConstant);

@@ -62,7 +62,10 @@ const LanguageCase kLanguageCases[] = {
   CASE(Unknown, 999),
   CASE(ESSL, 310),
   CASE(GLSL, 450),
-  CASE(OpenCL, 210),
+  CASE(OpenCL_C, 120),
+  CASE(OpenCL_C, 200),
+  CASE(OpenCL_C, 210),
+  CASE(OpenCL_CPP, 210),
 #undef CASE
 };
 // clang-format on

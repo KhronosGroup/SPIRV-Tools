@@ -67,8 +67,8 @@ TEST_F(GroupOperationTest, WrongGroupOperation) {
               Eq("Invalid group operation 'xxyyzz'."));
 }
 
-// TODO(dneto): OpAsyncGroupCopy
-// TODO(dneto): OpWaitGroupEvents
+// TODO(dneto): OpGroupAsyncCopy
+// TODO(dneto): OpGroupWaitEvents
 // TODO(dneto): OpGroupAll
 // TODO(dneto): OpGroupAny
 // TODO(dneto): OpGroupBroadcast

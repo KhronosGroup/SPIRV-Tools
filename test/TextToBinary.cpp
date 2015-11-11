@@ -144,7 +144,7 @@ TEST(TextToBinary, Default) {
   spv_endianness_t endian = SPV_ENDIANNESS_LITTLE;
 
   const char* textStr = R"(
-      OpSource OpenCL 12
+      OpSource OpenCL_C 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
       OpEntryPoint Kernel %1 "foo"
@@ -190,7 +190,7 @@ TEST(TextToBinary, Default) {
   uint64_t instIndex = SPV_INDEX_INSTRUCTION;
 
   ASSERT_EQ(spvOpcodeMake(3, SpvOpSource), binary->code[instIndex++]);
-  ASSERT_EQ(SpvSourceLanguageOpenCL, binary->code[instIndex++]);
+  ASSERT_EQ(SpvSourceLanguageOpenCL_C, binary->code[instIndex++]);
   ASSERT_EQ(12, binary->code[instIndex++]);
 
   ASSERT_EQ(spvOpcodeMake(3, SpvOpMemoryModel), binary->code[instIndex++]);
@@ -342,7 +342,7 @@ TEST_F(TextToBinaryTest, StringSpace) {
 
 TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
   SetText(R"(
-     OpSource OpenCL 12
+     OpSource OpenCL_C 12
      OpMemoryModel Physical64 OpenCL
 Google
 )");
@@ -359,7 +359,7 @@ Google
 
 TEST_F(TextToBinaryTest, NoEqualSign) {
   SetText(R"(
-     OpSource OpenCL 12
+     OpSource OpenCL_C 12
      OpMemoryModel Physical64 OpenCL
 %2
 )");
@@ -373,7 +373,7 @@ TEST_F(TextToBinaryTest, NoEqualSign) {
 
 TEST_F(TextToBinaryTest, NoOpCode) {
   SetText(R"(
-     OpSource OpenCL 12
+     OpSource OpenCL_C 12
      OpMemoryModel Physical64 OpenCL
 %2 =
 )");
@@ -387,7 +387,7 @@ TEST_F(TextToBinaryTest, NoOpCode) {
 
 TEST_F(TextToBinaryTest, WrongOpCode) {
   SetText(R"(
-     OpSource OpenCL 12
+     OpSource OpenCL_C 12
      OpMemoryModel Physical64 OpenCL
 %2 = Wahahaha
 )");

@@ -75,7 +75,7 @@ INSTANTIATE_TEST_CASE_P(
         {CASE(GLSLShared), {}},
         {CASE(GLSLPacked), {}},
         {CASE(CPacked), {}},
-        {CASE(Smooth), {}},
+        // Placeholder line for enum value 12
         {CASE(NoPerspective), {}},
         {CASE(Flat), {}},
         {CASE(Patch), {}},
@@ -101,7 +101,7 @@ INSTANTIATE_TEST_CASE_P(
         {CASE(XfbBuffer), {1}},
         {CASE(XfbStride), {8}},
         {CASE(NoContraction), {}},
-        {CASE(InputTargetIndex), {}},
+        {CASE(InputAttachmentIndex), {102}},
         {CASE(Alignment), {16}},
     }));
 #undef CASE
@@ -159,7 +159,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
                             CASE(SampleId),
                             CASE(SamplePosition),
                             CASE(SampleMask),
-                            CASE(FragColor),
+                            // Value 21 intentionally missing.
                             CASE(FragDepth),
                             CASE(HelperInvocation),
                             CASE(NumWorkgroups),
@@ -173,7 +173,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
                             CASE(EnqueuedWorkgroupSize),
                             CASE(GlobalOffset),
                             CASE(GlobalLinearId),
-                            CASE(WorkgroupLinearId),
+                            // Value 35 intentionally missing.
                             CASE(SubgroupSize),
                             CASE(SubgroupMaxSize),
                             CASE(NumSubgroups),

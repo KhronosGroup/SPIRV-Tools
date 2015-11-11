@@ -62,7 +62,7 @@ TEST_F(BinaryHeaderGet, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvBinaryHeaderGet(&const_bin, endian, &header));
 
   ASSERT_EQ(static_cast<uint32_t>(SpvMagicNumber), header.magic);
-  ASSERT_EQ(99u, header.version);
+  ASSERT_EQ(100u, header.version);
   ASSERT_EQ(static_cast<uint32_t>(SPV_GENERATOR_CODEPLAY), header.generator);
   ASSERT_EQ(1u, header.bound);
   ASSERT_EQ(0u, header.schema);

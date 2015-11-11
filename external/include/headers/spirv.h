@@ -30,7 +30,6 @@
 */
 
 /*
-** Specification revision 32.
 ** Enumeration tokens for SPIR-V, in various styles:
 **   C, C++, C++11, JSON, Lua, Python
 ** 
@@ -51,9 +50,12 @@
 
 typedef unsigned int SpvId;
 
+#define SPV_VERSION 100
+#define SPV_REVISION 1
+
 static const unsigned int SpvMagicNumber = 0x07230203;
-static const unsigned int SpvVersion = 99;
-static const unsigned int SpvRevision = 32;
+static const unsigned int SpvVersion = 100;
+static const unsigned int SpvRevision = 1;
 static const unsigned int SpvOpCodeMask = 0xffff;
 static const unsigned int SpvWordCountShift = 16;
 
@@ -61,7 +63,8 @@ typedef enum SpvSourceLanguage_ {
     SpvSourceLanguageUnknown = 0,
     SpvSourceLanguageESSL = 1,
     SpvSourceLanguageGLSL = 2,
-    SpvSourceLanguageOpenCL = 3,
+    SpvSourceLanguageOpenCL_C = 3,
+    SpvSourceLanguageOpenCL_CPP = 4,
 } SpvSourceLanguage;
 
 typedef enum SpvExecutionModel_ {
@@ -100,7 +103,6 @@ typedef enum SpvExecutionMode_ {
     SpvExecutionModePointMode = 10,
     SpvExecutionModeXfb = 11,
     SpvExecutionModeDepthReplacing = 12,
-    SpvExecutionModeDepthAny = 13,
     SpvExecutionModeDepthGreater = 14,
     SpvExecutionModeDepthLess = 15,
     SpvExecutionModeDepthUnchanged = 16,
@@ -109,17 +111,16 @@ typedef enum SpvExecutionMode_ {
     SpvExecutionModeInputPoints = 19,
     SpvExecutionModeInputLines = 20,
     SpvExecutionModeInputLinesAdjacency = 21,
-    SpvExecutionModeInputTriangles = 22,
+    SpvExecutionModeTriangles = 22,
     SpvExecutionModeInputTrianglesAdjacency = 23,
-    SpvExecutionModeInputQuads = 24,
-    SpvExecutionModeInputIsolines = 25,
+    SpvExecutionModeQuads = 24,
+    SpvExecutionModeIsolines = 25,
     SpvExecutionModeOutputVertices = 26,
     SpvExecutionModeOutputPoints = 27,
     SpvExecutionModeOutputLineStrip = 28,
     SpvExecutionModeOutputTriangleStrip = 29,
     SpvExecutionModeVecTypeHint = 30,
     SpvExecutionModeContractionOff = 31,
-    SpvExecutionModeIndependentForwardProgress = 32,
 } SpvExecutionMode;
 
 typedef enum SpvStorageClass_ {
@@ -127,9 +128,9 @@ typedef enum SpvStorageClass_ {
     SpvStorageClassInput = 1,
     SpvStorageClassUniform = 2,
     SpvStorageClassOutput = 3,
-    SpvStorageClassWorkgroupLocal = 4,
-    SpvStorageClassWorkgroupGlobal = 5,
-    SpvStorageClassPrivateGlobal = 6,
+    SpvStorageClassWorkgroup = 4,
+    SpvStorageClassCrossWorkgroup = 5,
+    SpvStorageClassPrivate = 6,
     SpvStorageClassFunction = 7,
     SpvStorageClassGeneric = 8,
     SpvStorageClassPushConstant = 9,
@@ -144,7 +145,7 @@ typedef enum SpvDim_ {
     SpvDimCube = 3,
     SpvDimRect = 4,
     SpvDimBuffer = 5,
-    SpvDimInputTarget = 6,
+    SpvDimSubpassData = 6,
 } SpvDim;
 
 typedef enum SpvSamplerAddressingMode_ {
@@ -242,6 +243,7 @@ typedef enum SpvImageChannelDataType_ {
     SpvImageChannelDataTypeHalfFloat = 13,
     SpvImageChannelDataTypeFloat = 14,
     SpvImageChannelDataTypeUnormInt24 = 15,
+    SpvImageChannelDataTypeUnormInt101010_2 = 16,
 } SpvImageChannelDataType;
 
 typedef enum SpvImageOperandsShift_ {
@@ -326,7 +328,6 @@ typedef enum SpvDecoration_ {
     SpvDecorationGLSLPacked = 9,
     SpvDecorationCPacked = 10,
     SpvDecorationBuiltIn = 11,
-    SpvDecorationSmooth = 12,
     SpvDecorationNoPerspective = 13,
     SpvDecorationFlat = 14,
     SpvDecorationPatch = 15,
@@ -356,7 +357,7 @@ typedef enum SpvDecoration_ {
     SpvDecorationFPFastMathMode = 40,
     SpvDecorationLinkageAttributes = 41,
     SpvDecorationNoContraction = 42,
-    SpvDecorationInputTargetIndex = 43,
+    SpvDecorationInputAttachmentIndex = 43,
     SpvDecorationAlignment = 44,
 } SpvDecoration;
 
@@ -381,7 +382,6 @@ typedef enum SpvBuiltIn_ {
     SpvBuiltInSampleId = 18,
     SpvBuiltInSamplePosition = 19,
     SpvBuiltInSampleMask = 20,
-    SpvBuiltInFragColor = 21,
     SpvBuiltInFragDepth = 22,
     SpvBuiltInHelperInvocation = 23,
     SpvBuiltInNumWorkgroups = 24,
@@ -395,7 +395,6 @@ typedef enum SpvBuiltIn_ {
     SpvBuiltInEnqueuedWorkgroupSize = 32,
     SpvBuiltInGlobalOffset = 33,
     SpvBuiltInGlobalLinearId = 34,
-    SpvBuiltInWorkgroupLinearId = 35,
     SpvBuiltInSubgroupSize = 36,
     SpvBuiltInSubgroupMaxSize = 37,
     SpvBuiltInNumSubgroups = 38,
@@ -444,28 +443,30 @@ typedef enum SpvFunctionControlMask_ {
 } SpvFunctionControlMask;
 
 typedef enum SpvMemorySemanticsShift_ {
-    SpvMemorySemanticsAcquireShift = 0,
-    SpvMemorySemanticsReleaseShift = 1,
-    SpvMemorySemanticsSequentiallyConsistentShift = 2,
-    SpvMemorySemanticsUniformMemoryShift = 3,
-    SpvMemorySemanticsSubgroupMemoryShift = 4,
-    SpvMemorySemanticsWorkgroupLocalMemoryShift = 5,
-    SpvMemorySemanticsWorkgroupGlobalMemoryShift = 6,
-    SpvMemorySemanticsAtomicCounterMemoryShift = 7,
-    SpvMemorySemanticsImageMemoryShift = 8,
+    SpvMemorySemanticsAcquireShift = 1,
+    SpvMemorySemanticsReleaseShift = 2,
+    SpvMemorySemanticsAcquireReleaseShift = 3,
+    SpvMemorySemanticsSequentiallyConsistentShift = 4,
+    SpvMemorySemanticsUniformMemoryShift = 6,
+    SpvMemorySemanticsSubgroupMemoryShift = 7,
+    SpvMemorySemanticsWorkgroupMemoryShift = 8,
+    SpvMemorySemanticsCrossWorkgroupMemoryShift = 9,
+    SpvMemorySemanticsAtomicCounterMemoryShift = 10,
+    SpvMemorySemanticsImageMemoryShift = 11,
 } SpvMemorySemanticsShift;
 
 typedef enum SpvMemorySemanticsMask_ {
     SpvMemorySemanticsMaskNone = 0,
-    SpvMemorySemanticsAcquireMask = 0x00000001,
-    SpvMemorySemanticsReleaseMask = 0x00000002,
-    SpvMemorySemanticsSequentiallyConsistentMask = 0x00000004,
-    SpvMemorySemanticsUniformMemoryMask = 0x00000008,
-    SpvMemorySemanticsSubgroupMemoryMask = 0x00000010,
-    SpvMemorySemanticsWorkgroupLocalMemoryMask = 0x00000020,
-    SpvMemorySemanticsWorkgroupGlobalMemoryMask = 0x00000040,
-    SpvMemorySemanticsAtomicCounterMemoryMask = 0x00000080,
-    SpvMemorySemanticsImageMemoryMask = 0x00000100,
+    SpvMemorySemanticsAcquireMask = 0x00000002,
+    SpvMemorySemanticsReleaseMask = 0x00000004,
+    SpvMemorySemanticsAcquireReleaseMask = 0x00000008,
+    SpvMemorySemanticsSequentiallyConsistentMask = 0x00000010,
+    SpvMemorySemanticsUniformMemoryMask = 0x00000040,
+    SpvMemorySemanticsSubgroupMemoryMask = 0x00000080,
+    SpvMemorySemanticsWorkgroupMemoryMask = 0x00000100,
+    SpvMemorySemanticsCrossWorkgroupMemoryMask = 0x00000200,
+    SpvMemorySemanticsAtomicCounterMemoryMask = 0x00000400,
+    SpvMemorySemanticsImageMemoryMask = 0x00000800,
 } SpvMemorySemanticsMask;
 
 typedef enum SpvMemoryAccessShift_ {
@@ -527,7 +528,6 @@ typedef enum SpvCapability_ {
     SpvCapabilityImageBasic = 13,
     SpvCapabilityImageReadWrite = 14,
     SpvCapabilityImageMipmap = 15,
-    SpvCapabilityImageSRGBWrite = 16,
     SpvCapabilityPipes = 17,
     SpvCapabilityGroups = 18,
     SpvCapabilityDeviceEnqueue = 19,
@@ -537,7 +537,6 @@ typedef enum SpvCapability_ {
     SpvCapabilityTessellationPointSize = 23,
     SpvCapabilityGeometryPointSize = 24,
     SpvCapabilityImageGatherExtended = 25,
-    SpvCapabilityStorageImageExtendedFormats = 26,
     SpvCapabilityStorageImageMultisample = 27,
     SpvCapabilityUniformBufferArrayDynamicIndexing = 28,
     SpvCapabilitySampledImageArrayDynamicIndexing = 29,
@@ -551,7 +550,7 @@ typedef enum SpvCapability_ {
     SpvCapabilitySampledRect = 37,
     SpvCapabilityGenericPointer = 38,
     SpvCapabilityInt8 = 39,
-    SpvCapabilityInputTarget = 40,
+    SpvCapabilityInputAttachment = 40,
     SpvCapabilitySparseResidency = 41,
     SpvCapabilityMinLod = 42,
     SpvCapabilitySampled1D = 43,
@@ -560,11 +559,14 @@ typedef enum SpvCapability_ {
     SpvCapabilitySampledBuffer = 46,
     SpvCapabilityImageBuffer = 47,
     SpvCapabilityImageMSArray = 48,
-    SpvCapabilityAdvancedFormats = 49,
+    SpvCapabilityStorageImageExtendedFormats = 49,
     SpvCapabilityImageQuery = 50,
     SpvCapabilityDerivativeControl = 51,
     SpvCapabilityInterpolationFunction = 52,
     SpvCapabilityTransformFeedback = 53,
+    SpvCapabilityGeometryStreams = 54,
+    SpvCapabilityStorageImageReadWithoutFormat = 55,
+    SpvCapabilityStorageImageWriteWithoutFormat = 56,
 } SpvCapability;
 
 typedef enum SpvOp_ {
@@ -659,6 +661,7 @@ typedef enum SpvOp_ {
     SpvOpImageDrefGather = 97,
     SpvOpImageRead = 98,
     SpvOpImageWrite = 99,
+    SpvOpImage = 100,
     SpvOpImageQueryFormat = 101,
     SpvOpImageQueryOrder = 102,
     SpvOpImageQuerySizeLod = 103,
@@ -803,8 +806,8 @@ typedef enum SpvOp_ {
     SpvOpUnreachable = 255,
     SpvOpLifetimeStart = 256,
     SpvOpLifetimeStop = 257,
-    SpvOpAsyncGroupCopy = 259,
-    SpvOpWaitGroupEvents = 260,
+    SpvOpGroupAsyncCopy = 259,
+    SpvOpGroupWaitEvents = 260,
     SpvOpGroupAll = 261,
     SpvOpGroupAny = 262,
     SpvOpGroupBroadcast = 263,

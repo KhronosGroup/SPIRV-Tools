@@ -2112,13 +2112,13 @@ bool idUsage::isValid<OpEndStreamPrimitive>(
 
 #if 0
 template <>
-bool idUsage::isValid<OpAsyncGroupCopy>(
+bool idUsage::isValid<OpGroupAsyncCopy>(
     const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
 #endif
 
 #if 0
 template <>
-bool idUsage::isValid<OpWaitGroupEvents>(
+bool idUsage::isValid<OpGroupWaitEvents>(
     const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
 #endif
 
@@ -2543,8 +2543,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     FAIL(OpAtomicSMax)
     FAIL(OpEmitStreamVertex)
     FAIL(OpEndStreamPrimitive)
-    FAIL(OpAsyncGroupCopy)
-    FAIL(OpWaitGroupEvents)
+    FAIL(OpGroupAsyncCopy)
+    FAIL(OpGroupWaitEvents)
     FAIL(OpGroupAll)
     FAIL(OpGroupAny)
     FAIL(OpGroupBroadcast)

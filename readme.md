@@ -11,20 +11,23 @@ into other code bases directly.
 
 ### Assembler and disassembler
 
-* Based on SPIR-V 0.99 Revision 32
-  * Supports core instructions and enumerants from Rev 32.
-* All GLSL std450 extended instructions are supported.
+* Based on SPIR-V 1.0 Revision 2.
+  * Supports GLSL std450 extended instructions.
+  * Supports OpenCL extended instructions.
+  * See [Future Work](#future) for incomplete support.
 * Assembler only does basic syntax checking.  No cross validation of
   IDs or types is performed, except to check literal arguments to
   `OpConstant`, `OpSpecConstant`, and `OpSwitch`.
-* OpenCL extended instructions are supported, from version 1.0 Revision 1.
 
 ### Validator
 
-The validator is incomplete.  See the Future Work section for more information.
+The validator is incomplete.  See the [Future Work](#future) section for more
+information.
 
 ## CHANGES (for tools hackers)
 
+* Update to 1.0 Rev2 headers, syntax tables.
+* Update some capabilities to 1.0 Rev2 rules.
 * Support `OpSpecConstantOp`.
   The opcode operand uses the opcode name, but without the `Op` prefix.
 
@@ -305,6 +308,16 @@ done so previously, CMake will detect the existence of
 `<spirv-dir>/external/googletest` then build as normal.
 
 ## Future Work
+<a name="future"></a>
+
+Required to complete 1.0 support:
+* Add `OpImage` instruction
+* Changes related to capabilities:
+  * Check changes in dependencies on capabilities since 0.99 Rev32.
+  * `GeometryStream`.
+  * `StorageImageReadWithoutFormat`, `StorageImageWriteWithoutFormat`.
+* Update values related to the Generator Magic Number. Its meaning has
+  changed.
 
 ### Assembler and disassembler
 

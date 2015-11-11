@@ -42,7 +42,7 @@ class BinaryToText : public ::testing::Test {
  public:
   virtual void SetUp() {
     const char* textStr = R"(
-      OpSource OpenCL 12
+      OpSource OpenCL_C 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
       OpEntryPoint Kernel %1 "foo"
@@ -218,7 +218,7 @@ TEST(BinaryToTextSmall, OneInstruction) {
   // TODO(dneto): This test could/should be refactored.
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  const char* input = "OpSource OpenCL 12";
+  const char* input = "OpSource OpenCL_C 12";
   spv_result_t error =
       spvTextToBinary(input, strlen(input), &binary, &diagnostic);
   ASSERT_EQ(SPV_SUCCESS, error);
@@ -277,7 +277,7 @@ TEST(BinaryToTextSmall, LiteralInt64) {
   }
   ASSERT_EQ(SPV_SUCCESS, error);
   const std::string header =
-      "; SPIR-V\n; Version: 99\n; Generator: Khronos\n; "
+      "; SPIR-V\n; Version: 100\n; Generator: Khronos\n; "
       "Bound: 3\n; Schema: 0\n";
   EXPECT_EQ(header + input.str, text->str);
   spvTextDestroy(text);
@@ -302,7 +302,7 @@ TEST(BinaryToTextSmall, LiteralDouble) {
   ASSERT_EQ(SPV_SUCCESS, error);
   const std::string output =
       R"(; SPIR-V
-; Version: 99
+; Version: 100
 ; Generator: Khronos
 ; Bound: 3
 ; Schema: 0

@@ -76,8 +76,8 @@ TEST(OpcodeRequiresCapability, None) {
 
 TEST(CapabilityAsMaskMacro, Sample) {
   EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(SpvCapabilityMatrix));
-  EXPECT_EQ(uint64_t(0x10000),
-            SPV_CAPABILITY_AS_MASK(SpvCapabilityImageSRGBWrite));
+  EXPECT_EQ(uint64_t(0x8000),
+            SPV_CAPABILITY_AS_MASK(SpvCapabilityImageMipmap));
   EXPECT_EQ(uint64_t(0x100000000ULL),
             SPV_CAPABILITY_AS_MASK(SpvCapabilityClipDistance));
   EXPECT_EQ(uint64_t(1) << 53,

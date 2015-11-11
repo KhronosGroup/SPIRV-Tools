@@ -41,7 +41,7 @@ using BinaryDestroySomething = spvtest::TextToBinaryTest;
 // Checks safety of destroying a validly constructed binary.
 TEST_F(BinaryDestroySomething, Default) {
   // Use a binary object constructed by the API instead of rolling our own.
-  SetText("OpSource OpenCL 120");
+  SetText("OpSource OpenCL_C 120");
   spv_binary my_binary = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
             spvTextToBinary(text.str, text.length, &my_binary, &diagnostic));

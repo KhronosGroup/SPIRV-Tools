@@ -366,13 +366,7 @@ INSTANTIATE_TEST_CASE_P(
 // Use core instruction OpImageSampleExplicitLod instead.
 
 // OpenCL.std: 2.9.4 Image write
-INSTANTIATE_TEST_CASE_P(
-    OpenCLImageWrite, ExtInstOpenCLStdRoundTripTest,
-    ::testing::ValuesIn(std::vector<InstructionCase>({
-        CASE4(Write_imagef_mipmap_lod, write_imagef_mipmap_lod),
-        CASE4(Write_imagei_mipmap_lod, write_imagei_mipmap_lod),
-        CASE4(Write_imageui_mipmap_lod, write_imageui_mipmap_lod),
-    })));
+// No new instructions defined in this section.
 
 // clang-format on
 

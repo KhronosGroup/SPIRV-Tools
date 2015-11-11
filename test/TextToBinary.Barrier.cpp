@@ -72,8 +72,8 @@ TEST_F(OpMemoryBarrier, BadInvalidMemorySemanticsId) {
 }
 
 // TODO(dneto): OpControlBarrier
-// TODO(dneto): OpAsyncGroupCopy
-// TODO(dneto): OpWaitGroupEvents
+// TODO(dneto): OpGroupAsyncCopy
+// TODO(dneto): OpGroupWaitEvents
 // TODO(dneto): OpGroupAll
 // TODO(dneto): OpGroupAny
 // TODO(dneto): OpGroupBroadcast

@@ -32,7 +32,7 @@ TEST(TextDestroy, DestroyNull) { spvBinaryDestroy(nullptr); }
 
 TEST(TextDestroy, Default) {
   char textStr[] = R"(
-      OpSource OpenCL 12
+      OpSource OpenCL_C 12
       OpMemoryModel Physical64 OpenCL
       OpSourceExtension "PlaceholderExtensionName"
       OpEntryPoint Kernel %0 ""

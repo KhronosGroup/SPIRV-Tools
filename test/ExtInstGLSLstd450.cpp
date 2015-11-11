@@ -65,7 +65,7 @@ OpFunctionEnd
 )";
   const std::string spirv_header =
       R"(; SPIR-V
-; Version: 99
+; Version: 100
 ; Generator: Khronos
 ; Bound: 9
 ; Schema: 0)";
