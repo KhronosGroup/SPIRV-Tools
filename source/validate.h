@@ -29,6 +29,7 @@
 
 #include "instruction.h"
 #include <libspirv/libspirv.h>
+#include "table.h"
 
 // Structures
 

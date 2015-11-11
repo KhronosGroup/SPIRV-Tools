@@ -33,6 +33,7 @@
 #include "ext_inst.h"
 #include "opcode.h"
 #include "operand.h"
+#include "table.h"
 
 namespace {
 

@@ -422,104 +422,43 @@ typedef spv_diagnostic_t* spv_diagnostic;
 
 // Platform API
 
-// Opcode API
-
-/// @brief Populate the Opcode table
-///
-/// @param[out] pOpcodeTable table to be populated
-///
-/// @return result code
-spv_result_t spvOpcodeTableGet(spv_opcode_table* pOpcodeTable);
-
-/// @brief Populate the operand table
-///
-/// @param[in] pOperandTable table to be populated
-///
-/// @return result code
-spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable);
-
-/// @brief Populate the extended instruction table
-///
-/// @param pTable table to be populated
-///
-/// @return result code
-spv_result_t spvExtInstTableGet(spv_ext_inst_table* pTable);
-
-// Text API
-
-/// @brief Entry point to covert text form to binary form
-///
-/// @param[in] text input text
-/// @param[in] length of the input text
-/// @param[out] pBinary the binary module
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
+// Encodes the given SPIR-V assembly text to its binary representation. The
+// length parameter specifies the number of bytes for text. Encoded binary will
+// be stored into *binary. Any error will be written into *diagnostic.
 spv_result_t spvTextToBinary(const char* text, const size_t length,
-                             spv_binary* pBinary, spv_diagnostic* pDiagnostic);
+                             spv_binary* binary, spv_diagnostic* diagnostic);
 
-/// @brief Free an allocated text stream
-///
-/// This is a no-op if the text parameter is a null pointer.
-///
-/// @param text the text object to be destored
+// @brief Frees an allocated text stream. This is a no-op if the text parameter
+// is a null pointer.
 void spvTextDestroy(spv_text text);
 
-// Binary API
+// Decodes the given SPIR-V binary representation to its assembly text. The
+// word_count parameter specifies the number of words for binary. The options
+// parameter is a bit field of spv_binary_to_text_options_t. Decoded text will
+// be stored into *text. Any error will be written into *diagnostic.
+spv_result_t spvBinaryToText(const uint32_t* binary, const size_t word_count,
+                             const uint32_t options, spv_text* text,
+                             spv_diagnostic* diagnostic);
 
-/// @brief Entry point to convert binary to text form
-///
-/// @param[in] binary the input binary
-/// @param[in] wordCount the number of input words
-/// @param[in] options bitfield of spv_binary_to_text_options_t values
-/// @param[out] pText the textual form
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
-spv_result_t spvBinaryToText(const uint32_t* binary, const size_t wordCount,
-                             const uint32_t options, spv_text* pText,
-                             spv_diagnostic* pDiagnostic);
-
-/// @brief Free a binary stream from memory.
-///
-/// This is a no-op if binary is a null pointer.
-///
-/// @param binary stream to destroy
+// Frees a binary stream from memory. This is a no-op if binary is a null
+// pointer.
 void spvBinaryDestroy(spv_binary binary);
 
-// Validation API
-
-/// @brief Validate a SPIR-V binary for correctness
-///
-/// @param[in] binary the input binary stream
-/// @param[in] options bitfield of spv_validation_options_t
-/// @param[out] pDiagnostic contains diagnostic on failure
-///
-/// @return result code
+// Validates a SPIR-V binary for correctness. The options parameter is a bit
+// field of spv_validation_options_t.
 spv_result_t spvValidate(const spv_const_binary binary, const uint32_t options,
                          spv_diagnostic* pDiagnostic);
 
-// Diagnostic API
-
-/// @brief Create a diagnostic object
-///
-/// @param position position in the text or binary stream
-/// @param message error message to display, is copied
-///
-/// @return the diagnostic object
+// Creates a diagnostic object. The position parameter specifies the location in
+// the text/binary stream. The message parameter, copied into the diagnostic
+// object, contains the error message to display.
 spv_diagnostic spvDiagnosticCreate(const spv_position position,
                                    const char* message);
 
-/// @brief Destroy a diagnostic object
-///
-/// @param diagnostic object to destory
+/// Destroys a diagnostic object.
 void spvDiagnosticDestroy(spv_diagnostic diagnostic);
 
-/// @brief Print the diagnostic to stderr
-///
-/// @param[in] diagnostic to print
-///
-/// @return result code
+// Prints the diagnostic to stderr.
 spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic);
 
 #ifdef __cplusplus
