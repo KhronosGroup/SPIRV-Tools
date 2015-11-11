@@ -662,8 +662,8 @@ namespace {
 spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
   if (!words) return SPV_ERROR_INVALID_BINARY;
 
-  words[SPV_INDEX_MAGIC_NUMBER] = SPV_MAGIC_NUMBER;
-  words[SPV_INDEX_VERSION_NUMBER] = SPV_VERSION_NUMBER;
+  words[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;
+  words[SPV_INDEX_VERSION_NUMBER] = SpvVersion;
   words[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
   words[SPV_INDEX_BOUND] = bound;
   words[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved

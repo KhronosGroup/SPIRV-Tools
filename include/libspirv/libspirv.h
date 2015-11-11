@@ -40,11 +40,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-// Magic numbers
-
-#define SPV_MAGIC_NUMBER 0x07230203
-#define SPV_VERSION_NUMBER 99u
-
 // Header indices
 
 #define SPV_INDEX_MAGIC_NUMBER 0u

@@ -33,8 +33,8 @@ class BinaryHeaderGet : public ::testing::Test {
   BinaryHeaderGet() { memset(code, 0, sizeof(code)); }
 
   virtual void SetUp() {
-    code[0] = SPV_MAGIC_NUMBER;
-    code[1] = SPV_VERSION_NUMBER;
+    code[0] = SpvMagicNumber;
+    code[1] = SpvVersion;
     code[2] = SPV_GENERATOR_CODEPLAY;
     code[3] = 1;  // NOTE: Bound
     code[4] = 0;  // NOTE: Schema; reserved
@@ -57,9 +57,9 @@ TEST_F(BinaryHeaderGet, Default) {
   spv_header_t header;
   ASSERT_EQ(SPV_SUCCESS, spvBinaryHeaderGet(&binary, endian, &header));
 
-  ASSERT_EQ((uint32_t)SPV_MAGIC_NUMBER, header.magic);
+  ASSERT_EQ(static_cast<uint32_t>(SpvMagicNumber), header.magic);
   ASSERT_EQ(99u, header.version);
-  ASSERT_EQ((uint32_t)SPV_GENERATOR_CODEPLAY, header.generator);
+  ASSERT_EQ(static_cast<uint32_t>(SPV_GENERATOR_CODEPLAY), header.generator);
   ASSERT_EQ(1u, header.bound);
   ASSERT_EQ(0u, header.schema);
   ASSERT_EQ(&code[5], header.instructions);

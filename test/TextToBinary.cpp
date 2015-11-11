@@ -189,8 +189,8 @@ TEST(TextToBinary, Default) {
   EXPECT_NE(0, binary->wordCount);
 
   // TODO: Verify binary
-  ASSERT_EQ(SPV_MAGIC_NUMBER, binary->code[SPV_INDEX_MAGIC_NUMBER]);
-  ASSERT_EQ(SPV_VERSION_NUMBER, binary->code[SPV_INDEX_VERSION_NUMBER]);
+  ASSERT_EQ(SpvMagicNumber, binary->code[SPV_INDEX_MAGIC_NUMBER]);
+  ASSERT_EQ(SpvVersion, binary->code[SPV_INDEX_VERSION_NUMBER]);
   ASSERT_EQ(SPV_GENERATOR_KHRONOS, binary->code[SPV_INDEX_GENERATOR_NUMBER]);
   ASSERT_EQ(16, binary->code[SPV_INDEX_BOUND]);  // TODO: Bound?
   ASSERT_EQ(0, binary->code[SPV_INDEX_SCHEMA]);  // Reserved: schema
