@@ -419,17 +419,17 @@ std::string EncodeViaFloatProxy(const T& value) {
 std::string NormalizeExponentInFloatString(std::string in) {
   std::string result;
   // Reserve one spot for the terminating null, even when the sscanf fails.
-  char prefix[in.size() + 1];
+  std::vector<char> prefix(in.size()+1);
   char e;
   char plus_or_minus;
   int exponent;  // in base 10
-  if ((4 == std::sscanf(in.c_str(), "%[-+.0123456789]%c%c%d", prefix, &e,
+  if ((4 == std::sscanf(in.c_str(), "%[-+.0123456789]%c%c%d", prefix.data(), &e,
                         &plus_or_minus, &exponent)) &&
       (e == 'e' || e == 'E') &&
       (plus_or_minus == '-' || plus_or_minus == '+')) {
     // It looks like a floating point value with exponent.
     std::stringstream out;
-    out << prefix << 'e' << plus_or_minus << exponent;
+    out << prefix.data() << 'e' << plus_or_minus << exponent;
     result = out.str();
   } else {
     result = in;

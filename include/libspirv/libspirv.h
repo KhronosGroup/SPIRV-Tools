@@ -480,7 +480,7 @@ void spvTextDestroy(spv_text text);
 /// @param[out] pDiagnostic contains diagnostic on failure
 ///
 /// @return result code
-spv_result_t spvBinaryToText(const uint32_t* binary, const uint64_t wordCount,
+spv_result_t spvBinaryToText(const uint32_t* binary, const size_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcodeTable,
                              const spv_operand_table operandTable,

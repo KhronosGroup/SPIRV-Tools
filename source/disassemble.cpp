@@ -338,7 +338,7 @@ spv_result_t DisassembleInstruction(
 
 }  // anonymous namespace
 
-spv_result_t spvBinaryToText(const uint32_t* code, const uint64_t wordCount,
+spv_result_t spvBinaryToText(const uint32_t* code, const size_t wordCount,
                              const uint32_t options,
                              const spv_opcode_table opcode_table,
                              const spv_operand_table operand_table,
