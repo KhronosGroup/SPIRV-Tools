@@ -229,6 +229,18 @@ typedef enum spv_ext_inst_type_t {
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
 
+// This determines at a high level the kind of a binary-encoded literal
+// number, but not the bit width.
+// In principle, these could probably be folded into new entries in
+// spv_operand_type_t.  But then we'd have some special case differences
+// between the assembler and disassembler.
+typedef enum spv_number_kind_t {
+  SPV_NUMBER_NONE = 0,  // The default for value initialization.
+  SPV_NUMBER_UNSIGNED_INT,
+  SPV_NUMBER_SIGNED_INT,
+  SPV_NUMBER_FLOATING,
+} spv_number_kind_t;
+
 typedef enum spv_binary_to_text_options_t {
   SPV_BINARY_TO_TEXT_OPTION_NONE = SPV_BIT(0),
   SPV_BINARY_TO_TEXT_OPTION_PRINT = SPV_BIT(1),
@@ -247,6 +259,41 @@ typedef enum spv_validate_options_t {
 } spv_validate_options_t;
 
 // Structures
+
+// Information about an operand parsed from a binary SPIR-V module.
+// Note that the values are not included.  You still need access to the binary
+// to extract the values.
+typedef struct spv_parsed_operand_t {
+  // Location of the operand, in words from the start of the instruction.
+  uint16_t offset;
+  // Number of words occupied by this operand.
+  uint16_t num_words;
+  // The "concrete" operand type.  See the definition of spv_operand_type_t
+  // for details.
+  spv_operand_type_t type;
+  // If type is a literal number type, then number_kind says whether it's
+  // a signed integer, an unsigned integer, or a floating point number.
+  spv_number_kind_t number_kind;
+  // The number of bits for a literal number type.
+  uint32_t number_bit_width;
+} spv_parsed_operand_t;
+
+// An instruction parsed from a binary SPIR-V module.
+typedef struct spv_parsed_instruction_t {
+  // Location of the instruction, in words from the start of the SPIR-V binary.
+  size_t offset;
+  SpvOp opcode;
+  // The extended instruction type, if opcode is OpExtInst.  Otherwise
+  // this is the "none" value.
+  spv_ext_inst_type_t ext_inst_type;
+  // The type id, or 0 if this instruction doesn't have one.
+  uint32_t type_id;
+  // The result id, or 0 if this instruction doesn't have one.
+  uint32_t result_id;
+  // The array of parsed operands.
+  const spv_parsed_operand_t* operands;
+  uint16_t num_operands;
+} spv_parsed_instruction_t;
 
 typedef struct spv_const_binary_t {
   const uint32_t* code;
@@ -323,6 +370,38 @@ void spvDiagnosticDestroy(spv_diagnostic diagnostic);
 
 // Prints the diagnostic to stderr.
 spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic);
+
+// The binary parser interface.
+
+// A pointer to a function that accepts a parsed SPIR-V header.
+// The integer arguments are the 32-bit words from the header, as specified
+// in SPIR-V 1.0 Section 2.3 Table 1.
+// The function should return SPV_SUCCESS if parsing should continue.
+typedef spv_result_t (*spv_parsed_header_fn_t)(
+    void* user_data, spv_endianness_t endian, uint32_t magic, uint32_t version,
+    uint32_t generator, uint32_t id_bound, uint32_t reserved);
+
+// A pointer to a function that accepts a parsed SPIR-V instruction.
+// The parsed_instruction value is transient: it may be overwritten
+// or released immediately after the function has returned.  The function
+// should return SPV_SUCCESS if and only if parsing should continue.
+typedef spv_result_t (*spv_parsed_instruction_fn_t)(
+    void* user_data, const spv_parsed_instruction_t* parsed_instruction);
+
+// Parses a SPIR-V binary, specified as counted sequence of 32-bit words.
+// Parsing feedback is provided via two callbacks.  In a valid parse, the
+// parsed-header callback is called once, and then the parsed-instruction
+// callback once for each instruction in the stream.  The user_data parameter
+// is supplied as context to the callbacks.  Returns SPV_SUCCESS on successful
+// parse where the callbacks always return SPV_SUCCESS.  For an invalid parse,
+// returns SPV_ERROR_INVALID_BINARY and emits a diagnostic.  If a callback
+// returns anything other than SPV_SUCCESS, then that error code is returned
+// and parsing terminates early.
+spv_result_t spvBinaryParse(void* user_data, const uint32_t* words,
+                            const size_t num_words,
+                            spv_parsed_header_fn_t parse_header,
+                            spv_parsed_instruction_fn_t parse_instruction,
+                            spv_diagnostic* diagnostic);
 
 #ifdef __cplusplus
 }
