@@ -71,14 +71,15 @@ struct MaskCase {
 using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
 
 TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
-  spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  spv_context context = spvContextCreate();
 
   uint32_t value;
-  EXPECT_EQ(SPV_SUCCESS, AssemblyGrammar(operandTable, nullptr, nullptr)
-                             .parseMaskOperand(GetParam().which_enum,
-                                               GetParam().expression, &value));
+  EXPECT_EQ(SPV_SUCCESS,
+            AssemblyGrammar(context).parseMaskOperand(
+                GetParam().which_enum, GetParam().expression, &value));
   EXPECT_EQ(GetParam().expected_value, value);
+
+  spvContextDestroy(context);
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -115,14 +116,14 @@ INSTANTIATE_TEST_CASE_P(
 using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
 
 TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
-  spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  spv_context context = spvContextCreate();
 
   uint32_t value;
   EXPECT_NE(SPV_SUCCESS,
-            AssemblyGrammar(operandTable, nullptr, nullptr)
-                .parseMaskOperand(SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,
-                                  GetParam(), &value));
+            AssemblyGrammar(context).parseMaskOperand(
+                SPV_OPERAND_TYPE_FP_FAST_MATH_MODE, GetParam(), &value));
+
+  spvContextDestroy(context);
 }
 
 INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
@@ -141,7 +142,7 @@ union char_word_t {
 TEST_F(TextToBinaryTest, InvalidText) {
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(nullptr, 0, &binary, &diagnostic));
+            spvTextToBinary(context, nullptr, 0, &binary, &diagnostic));
   EXPECT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(std::string("Missing assembly text.")));
 }
@@ -149,8 +150,9 @@ TEST_F(TextToBinaryTest, InvalidText) {
 TEST_F(TextToBinaryTest, InvalidPointer) {
   SetText(
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
-  ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
-            spvTextToBinary(text.str, text.length, nullptr, &diagnostic));
+  ASSERT_EQ(
+      SPV_ERROR_INVALID_POINTER,
+      spvTextToBinary(context, text.str, text.length, nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
@@ -158,7 +160,7 @@ TEST_F(TextToBinaryTest, InvalidDiagnostic) {
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvTextToBinary(text.str, text.length, &binary, nullptr));
+            spvTextToBinary(context, text.str, text.length, &binary, nullptr));
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {

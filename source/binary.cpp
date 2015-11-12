@@ -108,9 +108,11 @@ namespace {
 class Parser {
  public:
   // The user_data value is provided to the callbacks as context.
-  Parser(void* user_data, spv_parsed_header_fn_t parsed_header_fn,
+  Parser(const spv_const_context context, void* user_data,
+         spv_parsed_header_fn_t parsed_header_fn,
          spv_parsed_instruction_fn_t parsed_instruction_fn)
-      : user_data_(user_data),
+      : grammar_(context),
+        user_data_(user_data),
         parsed_header_fn_(parsed_header_fn),
         parsed_instruction_fn_(parsed_instruction_fn) {}
 
@@ -672,12 +674,12 @@ void Parser::recordNumberType(const spv_parsed_instruction_t* inst) {
 
 }  // anonymous namespace
 
-spv_result_t spvBinaryParse(void* user_data, const uint32_t* code,
-                            const size_t num_words,
+spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
+                            const uint32_t* code, const size_t num_words,
                             spv_parsed_header_fn_t parsed_header,
                             spv_parsed_instruction_fn_t parsed_instruction,
                             spv_diagnostic* diagnostic) {
-  Parser parser(user_data, parsed_header, parsed_instruction);
+  Parser parser(context, user_data, parsed_header, parsed_instruction);
   return parser.parse(code, num_words, diagnostic);
 }
 

@@ -86,30 +86,6 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_table operandTable,
   return SPV_SUCCESS;
 }
 
-// Returns the operand table.
-spv_operand_table GetDefaultOperandTable() {
-  spv_operand_table result = nullptr;
-  spvOperandTableGet(&result);
-  assert(result);
-  return result;
-}
-
-// Returns the opcode table.
-spv_opcode_table GetDefaultOpcodeTable() {
-  spv_opcode_table result = nullptr;
-  spvOpcodeTableGet(&result);
-  assert(result);
-  return result;
-}
-
-// Returns the extended instruction table.
-spv_ext_inst_table GetDefaultExtInstTable() {
-  spv_ext_inst_table result = nullptr;
-  spvExtInstTableGet(&result);
-  assert(result);
-  return result;
-}
-
 // Associates an opcode with its name.
 struct SpecConstantOpcodeEntry {
   SpvOp opcode;
@@ -196,12 +172,6 @@ const size_t kNumOpSpecConstantOpcodes =
 }  // anonymous namespace
 
 namespace libspirv {
-
-AssemblyGrammar::AssemblyGrammar()
-    : AssemblyGrammar(GetDefaultOperandTable(), GetDefaultOpcodeTable(),
-                      GetDefaultExtInstTable()) {
-  assert(isValid());
-}
 
 bool AssemblyGrammar::isValid() const {
   return operandTable_ && opcodeTable_ && extInstTable_;

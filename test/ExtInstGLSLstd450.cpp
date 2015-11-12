@@ -49,6 +49,7 @@ struct ExtInstContext {
 using ExtInstGLSLstd450RoundTripTest = ::testing::TestWithParam<ExtInstContext>;
 
 TEST_P(ExtInstGLSLstd450RoundTripTest, ParameterizedExtInst) {
+  spv_context context = spvContextCreate();
   const std::string spirv = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -71,8 +72,8 @@ OpFunctionEnd
 ; Schema: 0)";
   spv_binary binary;
   spv_diagnostic diagnostic;
-  spv_result_t error =
-      spvTextToBinary(spirv.c_str(), spirv.size(), &binary, &diagnostic);
+  spv_result_t error = spvTextToBinary(context, spirv.c_str(), spirv.size(),
+                                       &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -98,7 +99,7 @@ OpFunctionEnd
 
   // Check round trip gives the same text.
   spv_text output_text = nullptr;
-  error = spvBinaryToText(binary->code, binary->wordCount,
+  error = spvBinaryToText(context, binary->code, binary->wordCount,
                           SPV_BINARY_TO_TEXT_OPTION_NONE, &output_text,
                           &diagnostic);
 
@@ -109,6 +110,7 @@ OpFunctionEnd
   }
   EXPECT_EQ(spirv_header + spirv, output_text->str);
   spvTextDestroy(output_text);
+  spvContextDestroy(context);
 }
 
 static const char* kF32Type = R"(%4 = OpTypeFloat 32)";

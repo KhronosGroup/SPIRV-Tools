@@ -32,8 +32,9 @@ using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, NotPlacingResultIDAtTheBeginning) {
   SetText("OpTypeMatrix %1 %2 1000");
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_TEXT,
+      spvTextToBinary(context, text.str, text.length, &binary, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_STREQ(
       "Expected <result-id> at the beginning of an instruction, found "

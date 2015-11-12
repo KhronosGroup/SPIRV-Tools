@@ -30,11 +30,13 @@ namespace {
 
 class Validate : public ::testing::Test {
  public:
-  Validate() : binary() {}
+  Validate() : context(spvContextCreate()), binary() {}
+  ~Validate() { spvContextDestroy(context); }
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
   spv_const_binary get_const_binary() { return spv_const_binary(binary); }
 
+  spv_context context;
   spv_binary binary;
 };
 
@@ -52,9 +54,9 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
-  ASSERT_EQ(SPV_SUCCESS,
-            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS, spvValidate(context, get_const_binary(),
+                                     SPV_VALIDATE_ALL, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -75,9 +77,9 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, spvValidate(context, get_const_binary(),
+                                              SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);
@@ -97,10 +99,10 @@ OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(str, strlen(str), &binary, &diagnostic));
+            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
   // TODO: Fix setting of bound in spvTextTo, then remove this!
-  ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            spvValidate(get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, spvValidate(context, get_const_binary(),
+                                              SPV_VALIDATE_ALL, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   spvDiagnosticPrint(diagnostic);
   spvDiagnosticDestroy(diagnostic);

@@ -321,6 +321,10 @@ typedef struct spv_diagnostic_t {
   bool isTextSource;
 } spv_diagnostic_t;
 
+// Opaque struct containing the context used to operate on a SPIR-V module.
+// Its object is used by various tranformation API functions.
+struct spv_context_t;
+
 // Type Definitions
 
 typedef spv_const_binary_t* spv_const_binary;
@@ -328,14 +332,23 @@ typedef spv_binary_t* spv_binary;
 typedef spv_text_t* spv_text;
 typedef spv_position_t* spv_position;
 typedef spv_diagnostic_t* spv_diagnostic;
+typedef const spv_context_t* spv_const_context;
+typedef spv_context_t* spv_context;
 
 // Platform API
+
+// Creates a context object.
+spv_context spvContextCreate();
+
+// Destroys the given context object.
+void spvContextDestroy(spv_context context);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic.
-spv_result_t spvTextToBinary(const char* text, const size_t length,
-                             spv_binary* binary, spv_diagnostic* diagnostic);
+spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
+                             const size_t length, spv_binary* binary,
+                             spv_diagnostic* diagnostic);
 
 // @brief Frees an allocated text stream. This is a no-op if the text parameter
 // is a null pointer.
@@ -345,7 +358,8 @@ void spvTextDestroy(spv_text text);
 // word_count parameter specifies the number of words for binary. The options
 // parameter is a bit field of spv_binary_to_text_options_t. Decoded text will
 // be stored into *text. Any error will be written into *diagnostic.
-spv_result_t spvBinaryToText(const uint32_t* binary, const size_t word_count,
+spv_result_t spvBinaryToText(const spv_const_context context,
+                             const uint32_t* binary, const size_t word_count,
                              const uint32_t options, spv_text* text,
                              spv_diagnostic* diagnostic);
 
@@ -355,7 +369,8 @@ void spvBinaryDestroy(spv_binary binary);
 
 // Validates a SPIR-V binary for correctness. The options parameter is a bit
 // field of spv_validation_options_t.
-spv_result_t spvValidate(const spv_const_binary binary, const uint32_t options,
+spv_result_t spvValidate(const spv_const_context context,
+                         const spv_const_binary binary, const uint32_t options,
                          spv_diagnostic* pDiagnostic);
 
 // Creates a diagnostic object. The position parameter specifies the location in
@@ -396,8 +411,8 @@ typedef spv_result_t (*spv_parsed_instruction_fn_t)(
 // returns SPV_ERROR_INVALID_BINARY and emits a diagnostic.  If a callback
 // returns anything other than SPV_SUCCESS, then that error code is returned
 // and parsing terminates early.
-spv_result_t spvBinaryParse(void* user_data, const uint32_t* words,
-                            const size_t num_words,
+spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
+                            const uint32_t* words, const size_t num_words,
                             spv_parsed_header_fn_t parse_header,
                             spv_parsed_instruction_fn_t parse_instruction,
                             spv_diagnostic* diagnostic);

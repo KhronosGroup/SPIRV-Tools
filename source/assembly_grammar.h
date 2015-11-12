@@ -37,15 +37,10 @@ namespace libspirv {
 // Contains methods to query for valid instructions and operands.
 class AssemblyGrammar {
  public:
-  AssemblyGrammar(const spv_operand_table operand_table,
-                  const spv_opcode_table opcode_table,
-                  const spv_ext_inst_table ext_inst_table)
-      : operandTable_(operand_table),
-        opcodeTable_(opcode_table),
-        extInstTable_(ext_inst_table) {}
-
-  // Constructor that gets the required data itself.
-  AssemblyGrammar();
+  AssemblyGrammar(const spv_const_context context)
+      : operandTable_(context->operand_table),
+        opcodeTable_(context->opcode_table),
+        extInstTable_(context->ext_inst_table) {}
 
   // Returns true if the internal tables have been initialized with valid data.
   bool isValid() const;

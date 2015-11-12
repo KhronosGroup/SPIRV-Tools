@@ -41,22 +41,24 @@ class ValidateID : public ::testing::Test {
   spv_binary binary;
 };
 
-#define CHECK(str, expected)                                             \
-  spv_diagnostic diagnostic;                                             \
-  spv_result_t error =                                                   \
-      spvTextToBinary(str, strlen(str), &binary, &diagnostic);           \
-  if (error) {                                                           \
-    spvDiagnosticPrint(diagnostic);                                      \
-    spvDiagnosticDestroy(diagnostic);                                    \
-    ASSERT_EQ(SPV_SUCCESS, error);                                       \
-  }                                                                      \
-  spv_result_t result =                                                  \
-      spvValidate(get_const_binary(), SPV_VALIDATE_ID_BIT, &diagnostic); \
-  if (SPV_SUCCESS != result) {                                           \
-    spvDiagnosticPrint(diagnostic);                                      \
-    spvDiagnosticDestroy(diagnostic);                                    \
-  }                                                                      \
-  ASSERT_EQ(expected, result);
+#define CHECK(str, expected)                                            \
+  spv_diagnostic diagnostic;                                            \
+  spv_context context = spvContextCreate();                             \
+  spv_result_t error =                                                  \
+      spvTextToBinary(context, str, strlen(str), &binary, &diagnostic); \
+  if (error) {                                                          \
+    spvDiagnosticPrint(diagnostic);                                     \
+    spvDiagnosticDestroy(diagnostic);                                   \
+    ASSERT_EQ(SPV_SUCCESS, error);                                      \
+  }                                                                     \
+  spv_result_t result = spvValidate(context, get_const_binary(),        \
+                                    SPV_VALIDATE_ID_BIT, &diagnostic);  \
+  if (SPV_SUCCESS != result) {                                          \
+    spvDiagnosticPrint(diagnostic);                                     \
+    spvDiagnosticDestroy(diagnostic);                                   \
+  }                                                                     \
+  ASSERT_EQ(expected, result);                                          \
+  spvContextDestroy(context);
 
 // TODO: OpUndef
 

@@ -40,6 +40,9 @@ using spvtest::TextToBinaryTest;
 namespace {
 class BinaryToText : public ::testing::Test {
  public:
+  BinaryToText() : context(spvContextCreate()) {}
+  ~BinaryToText() { spvContextDestroy(context); }
+
   virtual void SetUp() {
     const char* textStr = R"(
       OpSource OpenCL_C 12
@@ -65,7 +68,7 @@ class BinaryToText : public ::testing::Test {
     spv_text_t text = {textStr, strlen(textStr)};
     spv_diagnostic diagnostic = nullptr;
     spv_result_t error =
-        spvTextToBinary(text.str, text.length, &binary, &diagnostic);
+        spvTextToBinary(context, text.str, text.length, &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -78,19 +81,21 @@ class BinaryToText : public ::testing::Test {
   // Compiles the given assembly text, and saves it into 'binary'.
   void CompileSuccessfully(std::string text) {
     spv_diagnostic diagnostic = nullptr;
-    EXPECT_EQ(SPV_SUCCESS,
-              spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic));
+    EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.c_str(), text.size(),
+                                           &binary, &diagnostic));
   }
 
+  spv_context context;
   spv_binary binary;
 };
 
 TEST_F(BinaryToText, Default) {
   spv_text text = nullptr;
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvBinaryToText(binary->code, binary->wordCount,
-                                         SPV_BINARY_TO_TEXT_OPTION_NONE, &text,
-                                         &diagnostic));
+  ASSERT_EQ(
+      SPV_SUCCESS,
+      spvBinaryToText(context, binary->code, binary->wordCount,
+                      SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic));
   printf("%s", text->str);
   spvTextDestroy(text);
 }
@@ -98,9 +103,10 @@ TEST_F(BinaryToText, Default) {
 TEST_F(BinaryToText, MissingModule) {
   spv_text text;
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryToText(nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE, &text,
-                            &diagnostic));
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_BINARY,
+      spvBinaryToText(context, nullptr, 42, SPV_BINARY_TO_TEXT_OPTION_NONE,
+                      &text, &diagnostic));
   EXPECT_THAT(diagnostic->error, Eq(std::string("Missing module.")));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
@@ -118,8 +124,8 @@ TEST_F(BinaryToText, TruncatedModule) {
     spv_diagnostic diagnostic = nullptr;
     EXPECT_EQ(
         SPV_ERROR_INVALID_BINARY,
-        spvBinaryToText(binary->code, length, SPV_BINARY_TO_TEXT_OPTION_NONE,
-                        &text, &diagnostic));
+        spvBinaryToText(context, binary->code, length,
+                        SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic));
     ASSERT_NE(nullptr, diagnostic);
     std::stringstream expected;
     expected << "Module has incomplete header: only " << length
@@ -139,7 +145,7 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
   spv_text text;
   EXPECT_EQ(
       SPV_ERROR_INVALID_BINARY,
-      spvBinaryToText(damaged_binary.data(), damaged_binary.size(),
+      spvBinaryToText(context, damaged_binary.data(), damaged_binary.size(),
                       SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   std::stringstream expected;
@@ -152,7 +158,7 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
 TEST_F(BinaryToText, InvalidDiagnostic) {
   spv_text text;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvBinaryToText(binary->code, binary->wordCount,
+            spvBinaryToText(context, binary->code, binary->wordCount,
                             SPV_BINARY_TO_TEXT_OPTION_NONE, &text, nullptr));
 }
 

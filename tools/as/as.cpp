@@ -94,8 +94,10 @@ int main(int argc, char** argv) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spv_result_t error =
-      spvTextToBinary(contents.data(), contents.size(), &binary, &diagnostic);
+  spv_context context = spvContextCreate();
+  spv_result_t error = spvTextToBinary(context, contents.data(),
+                                       contents.size(), &binary, &diagnostic);
+  spvContextDestroy(context);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

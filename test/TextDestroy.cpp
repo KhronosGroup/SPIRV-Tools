@@ -31,6 +31,7 @@ namespace {
 TEST(TextDestroy, DestroyNull) { spvBinaryDestroy(nullptr); }
 
 TEST(TextDestroy, Default) {
+  spv_context context = spvContextCreate();
   char textStr[] = R"(
       OpSource OpenCL_C 12
       OpMemoryModel Physical64 OpenCL
@@ -55,8 +56,8 @@ TEST(TextDestroy, Default) {
 
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(textStr, strlen(textStr), &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, textStr, strlen(textStr),
+                                         &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
   EXPECT_NE(0, binary->wordCount);
@@ -66,8 +67,9 @@ TEST(TextDestroy, Default) {
   }
 
   spv_text resultText = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvBinaryToText(binary->code, binary->wordCount, 0,
-                                         &resultText, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryToText(context, binary->code, binary->wordCount, 0,
+                            &resultText, &diagnostic));
   spvBinaryDestroy(binary);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
@@ -77,6 +79,7 @@ TEST(TextDestroy, Default) {
   EXPECT_NE(nullptr, resultText->str);
   EXPECT_NE(0, resultText->length);
   spvTextDestroy(resultText);
+  spvContextDestroy(context);
 }
 
 }  // anonymous namespace

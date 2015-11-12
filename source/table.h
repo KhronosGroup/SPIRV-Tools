@@ -76,7 +76,7 @@ typedef struct spv_ext_inst_group_t {
 
 typedef struct spv_opcode_table_t {
   const uint32_t count;
-  const spv_opcode_desc_t* entries;
+  spv_opcode_desc_t* entries;
 } spv_opcode_table_t;
 
 typedef struct spv_operand_table_t {
@@ -96,6 +96,12 @@ typedef const spv_ext_inst_desc_t* spv_ext_inst_desc;
 typedef const spv_opcode_table_t* spv_opcode_table;
 typedef const spv_operand_table_t* spv_operand_table;
 typedef const spv_ext_inst_table_t* spv_ext_inst_table;
+
+struct spv_context_t {
+  const spv_opcode_table opcode_table;
+  const spv_operand_table operand_table;
+  const spv_ext_inst_table ext_inst_table;
+};
 
 /// @brief Populate the Opcode table
 ///

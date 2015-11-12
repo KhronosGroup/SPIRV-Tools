@@ -32,6 +32,7 @@
 namespace {
 
 TEST(NamedId, Default) {
+  spv_context context = spvContextCreate();
   const char* spirv = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
@@ -48,7 +49,7 @@ TEST(NamedId, Default) {
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic;
   spv_result_t error =
-      spvTextToBinary(text.str, text.length, &binary, &diagnostic);
+      spvTextToBinary(context, text.str, text.length, &binary, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -56,7 +57,7 @@ TEST(NamedId, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
   error = spvBinaryToText(
-      binary->code, binary->wordCount,
+      context, binary->code, binary->wordCount,
       SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
       nullptr, &diagnostic);
   if (error) {
@@ -66,6 +67,7 @@ TEST(NamedId, Default) {
     ASSERT_EQ(SPV_SUCCESS, error);
   }
   spvBinaryDestroy(binary);
+  spvContextDestroy(context);
 }
 
 struct IdCheckCase {

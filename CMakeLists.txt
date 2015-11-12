@@ -126,6 +126,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp

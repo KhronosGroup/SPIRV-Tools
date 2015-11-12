@@ -24,31 +24,24 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "UnitSPIRV.h"
+#include "table.h"
 
-#include "TestFixture.h"
+#include <cstdlib>
 
-namespace {
+spv_context spvContextCreate() {
+  spv_opcode_table opcode_table;
+  spv_operand_table operand_table;
+  spv_ext_inst_table ext_inst_table;
 
-TEST(BinaryDestroy, Null) {
-  // There is no state or return value to check. Just check
-  // for the ability to call the API without abnormal termination.
-  spvBinaryDestroy(nullptr);
+  spvOpcodeTableGet(&opcode_table);
+  spvOperandTableGet(&operand_table);
+  spvExtInstTableGet(&ext_inst_table);
+
+  return new spv_context_t{opcode_table, operand_table, ext_inst_table};
 }
 
-using BinaryDestroySomething = spvtest::TextToBinaryTest;
-
-// Checks safety of destroying a validly constructed binary.
-TEST_F(BinaryDestroySomething, Default) {
-  spv_context context = spvContextCreate();
-  // Use a binary object constructed by the API instead of rolling our own.
-  SetText("OpSource OpenCL_C 120");
-  spv_binary my_binary = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
-                                         &my_binary, &diagnostic));
-  ASSERT_NE(nullptr, my_binary);
-  spvBinaryDestroy(my_binary);
-  spvContextDestroy(context);
+void spvContextDestroy(spv_context context) {
+  ::free(context->opcode_table->entries);
+  delete context->opcode_table;
+  delete context;
 }
-
-}  // anonymous namespace

@@ -29,6 +29,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include <cstdlib>
+
 #include "endian.h"
 #include "instruction.h"
 #include "libspirv/libspirv.h"
@@ -46,7 +48,7 @@ namespace {
 //
 // TODO(dneto): Some of the macros are quite unreadable.  We could make
 // good use of constexpr functions, but some compilers don't support that yet.
-spv_opcode_desc_t opcodeTableEntries[] = {
+const spv_opcode_desc_t opcodeTableEntries[] = {
 #define EmptyList \
   {}
 #define List(...) \
@@ -70,10 +72,6 @@ spv_opcode_desc_t opcodeTableEntries[] = {
 #undef CapabilityNone
 #undef Instruction
 };
-
-// Has the opcodeTableEntries table been fully elaborated?
-// That is, are the operandTypes fields initialized?
-bool opcodeTableInitialized = false;
 
 // Opcode API
 
@@ -244,9 +242,11 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
 }  // anonymous namespace
 
 // Finish populating the opcodeTableEntries array.
-void spvOpcodeTableInitialize() {
+void spvOpcodeTableInitialize(spv_opcode_desc_t* entries,
+                              uint32_t num_entries) {
   // Compute the operandTypes field for each entry.
-  for (auto& opcode : opcodeTableEntries) {
+  for (uint32_t i = 0; i < num_entries; ++i) {
+    spv_opcode_desc_t& opcode = entries[i];
     opcode.numTypes = 0;
     // Type ID always comes first, if present.
     if (opcode.hasType)
@@ -282,7 +282,6 @@ void spvOpcodeTableInitialize() {
            "Operand class list is too long.  Expand "
            "spv_opcode_desc_t.operandClass");
   }
-  opcodeTableInitialized = true;
 }
 
 const char* spvGeneratorStr(uint32_t generator) {
@@ -320,15 +319,18 @@ void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount, SpvOp* pOpcode) {
 spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable) {
   if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
 
-  static spv_opcode_table_t table = {
-      sizeof(opcodeTableEntries) / sizeof(spv_opcode_desc_t),
-      opcodeTableEntries};
+  const uint32_t size = sizeof(opcodeTableEntries);
+  spv_opcode_desc_t* copied_entries =
+      static_cast<spv_opcode_desc_t*>(::malloc(size));
+  if (!copied_entries) return SPV_ERROR_OUT_OF_MEMORY;
+  ::memcpy(copied_entries, opcodeTableEntries, size);
 
-  // TODO(dneto): Consider thread safety of initialization.
-  // That is, ordering effects of the flag vs. the table updates.
-  if (!opcodeTableInitialized) spvOpcodeTableInitialize();
+  const uint32_t count = sizeof(opcodeTableEntries) / sizeof(spv_opcode_desc_t);
+  spv_opcode_table_t* table = new spv_opcode_table_t{count, copied_entries};
 
-  *pInstTable = &table;
+  spvOpcodeTableInitialize(copied_entries, count);
+
+  *pInstTable = table;
 
   return SPV_SUCCESS;
 }

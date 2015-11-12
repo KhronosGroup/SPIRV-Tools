@@ -735,11 +735,12 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
 
 }  // anonymous namespace
 
-spv_result_t spvTextToBinary(const char* input_text,
+spv_result_t spvTextToBinary(const spv_const_context context,
+                             const char* input_text,
                              const size_t input_text_size, spv_binary* pBinary,
                              spv_diagnostic* pDiagnostic) {
   spv_text_t text = {input_text, input_text_size};
-  libspirv::AssemblyGrammar grammar;
+  libspirv::AssemblyGrammar grammar(context);
 
   spv_result_t result =
       spvTextToBinaryInternal(grammar, &text, pBinary, pDiagnostic);

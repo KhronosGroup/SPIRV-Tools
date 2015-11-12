@@ -146,8 +146,11 @@ int main(int argc, char** argv) {
   spv_text text;
   spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  spv_result_t error = spvBinaryToText(contents.data(), contents.size(),
-                                       options, textOrNull, &diagnostic);
+  spv_context context = spvContextCreate();
+  spv_result_t error =
+      spvBinaryToText(context, contents.data(), contents.size(), options,
+                      textOrNull, &diagnostic);
+  spvContextDestroy(context);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

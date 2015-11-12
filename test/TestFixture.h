@@ -42,7 +42,11 @@ class TextToBinaryTestBase : public T {
   // Offset into a SpirvVector at which the first instruction starts.
   const SpirvVector::size_type kFirstInstruction = 5;
 
-  TextToBinaryTestBase() : diagnostic(nullptr), text(), binary(nullptr) {
+  TextToBinaryTestBase()
+      : context(spvContextCreate()),
+        diagnostic(nullptr),
+        text(),
+        binary(nullptr) {
     char textStr[] = "substitute the text member variable with your test";
     text = {textStr, strlen(textStr)};
   }
@@ -50,6 +54,7 @@ class TextToBinaryTestBase : public T {
   virtual ~TextToBinaryTestBase() {
     DestroyBinary();
     if (diagnostic) spvDiagnosticDestroy(diagnostic);
+    spvContextDestroy(context);
   }
 
   // Returns subvector v[from:end).
@@ -61,8 +66,8 @@ class TextToBinaryTestBase : public T {
   // Compiles SPIR-V text in the given assembly syntax format, asserting
   // compilation success. Returns the compiled code.
   SpirvVector CompileSuccessfully(const std::string& text) {
-    spv_result_t status =
-        spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic);
+    spv_result_t status = spvTextToBinary(context, text.c_str(), text.size(),
+                                          &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << text;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -77,8 +82,8 @@ class TextToBinaryTestBase : public T {
   // Compiles SPIR-V text with the given format, asserting compilation failure.
   // Returns the error message(s).
   std::string CompileFailure(const std::string& text) {
-    EXPECT_NE(SPV_SUCCESS,
-              spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic))
+    EXPECT_NE(SPV_SUCCESS, spvTextToBinary(context, text.c_str(), text.size(),
+                                           &binary, &diagnostic))
         << text;
     DestroyBinary();
     return diagnostic->error;
@@ -95,8 +100,8 @@ class TextToBinaryTestBase : public T {
   std::string EncodeAndDecodeSuccessfully(const std::string& text,
                                           uint32_t disassemble_options) {
     DestroyBinary();
-    spv_result_t error =
-        spvTextToBinary(text.c_str(), text.size(), &binary, &diagnostic);
+    spv_result_t error = spvTextToBinary(context, text.c_str(), text.size(),
+                                         &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -105,7 +110,7 @@ class TextToBinaryTestBase : public T {
     if (!binary) return "";
 
     spv_text decoded_text;
-    error = spvBinaryToText(binary->code, binary->wordCount,
+    error = spvBinaryToText(context, binary->code, binary->wordCount,
                             disassemble_options, &decoded_text, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
@@ -132,7 +137,7 @@ class TextToBinaryTestBase : public T {
         spvtest::Concatenate({CompileSuccessfully(text), words_to_append});
 
     spv_text decoded_text;
-    EXPECT_NE(SPV_SUCCESS, spvBinaryToText(code.data(), code.size(),
+    EXPECT_NE(SPV_SUCCESS, spvBinaryToText(context, code.data(), code.size(),
                                            SPV_BINARY_TO_TEXT_OPTION_NONE,
                                            &decoded_text, &diagnostic));
     if (diagnostic) {
@@ -169,6 +174,7 @@ class TextToBinaryTestBase : public T {
     binary = nullptr;
   }
 
+  spv_context context;
   spv_diagnostic diagnostic;
 
   std::string textString;

@@ -370,19 +370,20 @@ spv_result_t DisassembleInstruction(
 
 }  // anonymous namespace
 
-spv_result_t spvBinaryToText(const uint32_t* code, const size_t wordCount,
+spv_result_t spvBinaryToText(const spv_const_context context,
+                             const uint32_t* code, const size_t wordCount,
                              const uint32_t options, spv_text* pText,
                              spv_diagnostic* pDiagnostic) {
   // Invalid arguments return error codes, but don't necessarily generate
   // diagnostics.  These are programmer errors, not user errors.
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-  const libspirv::AssemblyGrammar grammar;
+  const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
   Disassembler disassembler(grammar, code, wordCount, options);
-  if (auto error =
-          spvBinaryParse(&disassembler, code, wordCount, DisassembleHeader,
-                         DisassembleInstruction, pDiagnostic)) {
+  if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
+                                  DisassembleHeader, DisassembleInstruction,
+                                  pDiagnostic)) {
     return error;
   }
 
