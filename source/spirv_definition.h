@@ -28,7 +28,7 @@
 #define LIBSPIRV_SPIRV_DEFINITION_H_
 
 // A bit mask representing a set of capabilities.
-// Currently there are 54 distinct capabilities, so 64 bits
+// Currently there are 57 distinct capabilities, so 64 bits
 // should be enough.
 typedef uint64_t spv_capability_mask_t;
 

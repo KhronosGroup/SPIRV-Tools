@@ -1002,6 +1002,8 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE_CAP(InterpolationFunction, Shader),
     CASE_CAP(TransformFeedback, Shader),
     CASE_CAP(GeometryStreams, Geometry),
+    CASE_CAP(StorageImageReadWithoutFormat, Shader),
+    CASE_CAP(StorageImageWriteWithoutFormat, Shader),
 };
 #undef CASE
 #undef CASE_CAP

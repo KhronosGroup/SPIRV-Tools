@@ -27,6 +27,8 @@ information.
 ## CHANGES (for tools hackers)
 
 * Update to 1.0 Rev2 headers, syntax tables.
+  * Support new capabilities `GeometryStream`, `StorageImageReadWithoutFormat`,
+    and `StorageImageWriteWithoutFormat`.
 * Update some capabilities to 1.0 Rev2 rules.
 * Support `OpSpecConstantOp`.
   The opcode operand uses the opcode name, but without the `Op` prefix.
@@ -313,8 +315,6 @@ done so previously, CMake will detect the existence of
 Required to complete 1.0 support:
 * Changes related to capabilities:
   * Check changes in dependencies on capabilities since 0.99 Rev32.
-  * `GeometryStream`.
-  * `StorageImageReadWithoutFormat`, `StorageImageWriteWithoutFormat`.
 * Update values related to the Generator Magic Number. Its meaning has
   changed.
 
