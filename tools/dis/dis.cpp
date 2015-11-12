@@ -26,18 +26,28 @@
 
 #include <stdio.h>
 
+#include <cstring>
 #include <vector>
 
 #include "libspirv/libspirv.h"
 
-void print_usage(char* argv0) {
+static void print_usage(char* argv0) {
   printf(
-      "Dissassemble a *.sv file into a *.svasm text file.\n\n"
-      "USAGE: %s [options] <filename>\n\n"
-      "  -o <filename>   set the output filename\n"
-      "  -p              print dissassembly to stdout, this\n"
-      "                  overrides file output\n",
-      argv0);
+      R"(%s - Disassemble a binary SPIR-V module
+
+Usage: %s [options] [<filename>]
+
+Options:
+
+  -h, --help      Print this help.
+
+  -o <filename>   Set the output filename.
+                  Otherwise output goes to standard output.
+
+  --no-color      Don't print in color.
+                  The default when output goes to a file.
+)",
+      argv0, argv0);
 }
 
 int main(int argc, char** argv) {
@@ -46,13 +56,20 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
   const char* inFile = nullptr;
   const char* outFile = nullptr;
+
+  bool allow_color = false;
+#ifdef SPIRV_COLOR_TERMINAL
+  allow_color = true;
+#endif
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       switch (argv[argi][1]) {
+        case 'h':
+          print_usage(argv[0]);
+          return 0;
         case 'o': {
           if (!outFile && argi + 1 < argc) {
             outFile = argv[++argi];
@@ -61,11 +78,13 @@ int main(int argc, char** argv) {
             return 1;
           }
         } break;
-        case 'p': {
-          options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
-#ifdef SPV_COLOR_TERMINAL
-          options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
-#endif
+        case '-': {
+          // Long options
+          if (0 == strcmp(argv[argi], "--no-color")) allow_color = false;
+          if (0 == strcmp(argv[argi], "--help")) {
+            print_usage(argv[0]);
+            return 0;
+          }
         } break;
         default:
           print_usage(argv[0]);
@@ -81,8 +100,14 @@ int main(int argc, char** argv) {
     }
   }
 
+  uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
+
   if (!outFile) {
-    outFile = "out.spvasm";
+    // Print to standard output.
+    options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
+    if (allow_color) {
+      options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
+    }
   }
 
   if (!inFile) {
@@ -102,17 +127,17 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  // If the printing option is turned on, then spvBinaryToText should
+  // If printing to standard output, then spvBinaryToText should
   // do the printing.  In particular, colour printing on Windows is
   // controlled by modifying console objects synchronously while
   // outputting to the stream rather than by injecting escape codes
   // into the output stream.
   // If the printing option is off, then save the text in memory, so
   // it can be emitted later in this function.
-  const bool printOptionOn =
+  const bool print_to_stdout =
       spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
   spv_text text;
-  spv_text* textOrNull = printOptionOn ? nullptr : &text;
+  spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
   spv_result_t error = spvBinaryToText(contents.data(), contents.size(),
                                        options, textOrNull, &diagnostic);
@@ -123,7 +148,7 @@ int main(int argc, char** argv) {
   }
 
   // Output the result.
-  if (!printOptionOn) {
+  if (!print_to_stdout) {
     if (FILE* fp = fopen(outFile, "w")) {
       size_t written =
           fwrite(text->str, sizeof(char), (size_t)text->length, fp);
