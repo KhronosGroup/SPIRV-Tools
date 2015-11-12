@@ -24,25 +24,29 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <stdio.h>
-
+#include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "libspirv/libspirv.h"
 
 static void print_usage(char* argv0) {
   printf(
-      R"(%s - Disassemble a binary SPIR-V module
+      R"(%s - Disassemble a SPIR-V binary module
 
 Usage: %s [options] [<filename>]
+
+The SPIR-V binary is read from <filename>. If no file is specified,
+or if the filename is "-", then the binary is read from standard input.
 
 Options:
 
   -h, --help      Print this help.
 
   -o <filename>   Set the output filename.
-                  Otherwise output goes to standard output.
+                  Output goes to standard output if this option is
+                  not specified, or if the filename is "-".
 
   --no-color      Don't print in color.
                   The default when output goes to a file.
@@ -53,11 +57,6 @@ Options:
 }
 
 int main(int argc, char** argv) {
-  if (2 > argc) {
-    print_usage(argv[0]);
-    return 1;
-  }
-
   const char* inFile = nullptr;
   const char* outFile = nullptr;
 
@@ -90,6 +89,15 @@ int main(int argc, char** argv) {
             return 0;
           }
         } break;
+        case 0:
+          // Setting a filename of "-" to indicate stdin.
+          if (!inFile) {
+            inFile = argv[argi];
+          } else {
+            fprintf(stderr, "error: More than one input file specified\n");
+            return 1;
+          }
+          break;
         default:
           print_usage(argv[0]);
           return 1;
@@ -98,7 +106,7 @@ int main(int argc, char** argv) {
       if (!inFile) {
         inFile = argv[argi];
       } else {
-        print_usage(argv[0]);
+        fprintf(stderr, "error: More than one input file specified\n");
         return 1;
       }
     }
@@ -109,7 +117,7 @@ int main(int argc, char** argv) {
   if (allow_indent)
     options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
-  if (!outFile) {
+  if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.
     options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
     if (allow_color) {
@@ -117,21 +125,25 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (!inFile) {
-    fprintf(stderr, "error: input file is empty.\n");
-    return 1;
-  }
-
+  // Read the input binary.
   std::vector<uint32_t> contents;
-  if (FILE* fp = fopen(inFile, "rb")) {
+  {
+    FILE* input = stdin;
+    const bool use_file = inFile && strcmp("-", inFile);
+    if (use_file) {
+      input = fopen(inFile, "rb");
+      if (!input) {
+        auto msg =
+            std::string("error: Can't open file ") + inFile + " for reading";
+        perror(msg.c_str());
+        return 1;
+      }
+    }
     uint32_t buf[1024];
-    while (size_t len = fread(buf, sizeof(uint32_t), 1024, fp)) {
+    while (size_t len = fread(buf, sizeof(uint32_t), 1024, input)) {
       contents.insert(contents.end(), buf, buf + len);
     }
-    fclose(fp);
-  } else {
-    fprintf(stderr, "error: file does not exist '%s'\n", inFile);
-    return 1;
+    if (use_file) fclose(input);
   }
 
   // If printing to standard output, then spvBinaryToText should
@@ -164,12 +176,12 @@ int main(int argc, char** argv) {
           fwrite(text->str, sizeof(char), (size_t)text->length, fp);
       if (text->length != written) {
         spvTextDestroy(text);
-        fprintf(stderr, "error: could not write to file '%s'\n", outFile);
+        fprintf(stderr, "error: Could not write to file '%s'\n", outFile);
         return 1;
       }
     } else {
       spvTextDestroy(text);
-      fprintf(stderr, "error: could not open file '%s'\n", outFile);
+      fprintf(stderr, "error: Could not open file '%s'\n", outFile);
       return 1;
     }
   }
