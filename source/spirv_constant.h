@@ -69,16 +69,31 @@
 
 // Enumerations
 
-// Values mapping to registered vendors.  See the registry at
+// Values mapping to registered tools.  See the registry at
 // https://www.khronos.org/registry/spir-v/api/spir-v.xml
+// These values occupy the higher order 16 bits of the generator magic word.
 typedef enum spv_generator_t {
+  // TODO(dneto) Values 0 through 5 were registered only as vendor.
   SPV_GENERATOR_KHRONOS = 0,
   SPV_GENERATOR_LUNARG = 1,
   SPV_GENERATOR_VALVE = 2,
   SPV_GENERATOR_CODEPLAY = 3,
   SPV_GENERATOR_NVIDIA = 4,
   SPV_GENERATOR_ARM = 5,
-  SPV_FORCE_32_BIT_ENUM(spv_generator_t)
+  // These are vendor and tool.
+  SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR = 6,
+  SPV_GENERATOR_KHRONOS_ASSEMBLER = 7,
+  SPV_GENERATOR_NUM_ENTRIES,
+  SPV_FORCE_16_BIT_ENUM(spv_generator_t)
 } spv_generator_t;
+
+// Evaluates to a well-formed generator magic word from a tool value and
+// miscellaneous 16-bit value.
+#define SPV_GENERATOR_WORD(TOOL, MISC) \
+  ((uint32_t(uint16_t(TOOL)) << 16) | uint16_t(MISC))
+// Returns the tool component of the generator word.
+#define SPV_GENERATOR_TOOL_PART(WORD) (uint32_t(WORD) >> 16)
+// Returns the misc part of the generator word.
+#define SPV_GENERATOR_MISC_PART(WORD) (uint32_t(WORD) & 0xFFFF)
 
 #endif  // LIBSPIRV_SPIRV_CONSTANT_H_

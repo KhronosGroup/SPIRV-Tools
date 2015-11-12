@@ -30,10 +30,11 @@
 
 #include "gmock/gmock.h"
 
-#include "TestFixture.h"
 #include "../source/spirv_constant.h"
+#include "TestFixture.h"
 
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using spvtest::AutoText;
 using spvtest::TextToBinaryTest;
 
@@ -393,5 +394,52 @@ OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
       EncodeAndDecodeSuccessfully(input, SPV_BINARY_TO_TEXT_OPTION_INDENT),
       expected);
 }
+
+// Test generator string.
+
+// A test case for the generator string.  This allows us to
+// test both of the 16-bit components of the generator word.
+struct GeneratorStringCase {
+  uint16_t generator;
+  uint16_t misc;
+  std::string expected;
+};
+
+using GeneratorStringTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<GeneratorStringCase>>;
+
+TEST_P(GeneratorStringTest, Sample) {
+  auto words = CompileSuccessfully("");
+  EXPECT_EQ(SPV_INDEX_GENERATOR_NUMBER, 2);
+  words[SPV_INDEX_GENERATOR_NUMBER] =
+      SPV_GENERATOR_WORD(GetParam().generator, GetParam().misc);
+
+  spv_text decoded_text = nullptr;
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
+                              SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
+                              &diagnostic),
+              Eq(SPV_SUCCESS));
+  EXPECT_THAT(diagnostic, Eq(nullptr));
+  EXPECT_THAT(std::string(decoded_text->str), HasSubstr(GetParam().expected));
+  spvTextDestroy(decoded_text);
+}
+
+INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
+                        ::testing::ValuesIn(std::vector<GeneratorStringCase>{
+                            {SPV_GENERATOR_KHRONOS, 12, "Khronos; 12"},
+                            {SPV_GENERATOR_LUNARG, 99, "LunarG; 99"},
+                            {SPV_GENERATOR_VALVE, 1, "Valve; 1"},
+                            {SPV_GENERATOR_CODEPLAY, 65535,
+                             "Codeplay Software Ltd.; 65535"},
+                            {SPV_GENERATOR_NVIDIA, 19, "NVIDIA; 19"},
+                            {SPV_GENERATOR_ARM, 1000, "ARM; 1000"},
+                            {SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR, 38,
+                             "Khronos LLVM/SPIR-V Translator; 38"},
+                            {SPV_GENERATOR_KHRONOS_ASSEMBLER, 2,
+                             "Khronos SPIR-V Tools Assembler; 2"},
+                            {9, 18, "Unknown(9); 18"},
+                            {65535, 32767, "Unknown(65535); 32767"},
+                        }));
 
 }  // anonymous namespace

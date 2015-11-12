@@ -39,6 +39,7 @@
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "print.h"
+#include "spirv_constant.h"
 #include "util/hex_float.h"
 
 namespace {
@@ -131,9 +132,18 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
   endian_ = endian;
 
   SetGrey();
+  const char* generator_tool =
+      spvGeneratorStr(SPV_GENERATOR_TOOL_PART(generator));
   stream_ << "; SPIR-V\n"
           << "; Version: " << version << "\n"
-          << "; Generator: " << spvGeneratorStr(generator) << "\n"
+          << "; Generator: " << generator_tool;
+  // For unknown tools, print the numeric tool value.
+  if (0 == strcmp("Unknown", generator_tool)) {
+    stream_ << "(" << SPV_GENERATOR_TOOL_PART(generator) << ")";
+  }
+  // Print the miscellaneous part of the generator word on the same
+  // line as the tool name.
+  stream_ << "; " << SPV_GENERATOR_MISC_PART(generator) << "\n"
           << "; Bound: " << id_bound << "\n"
           << "; Schema: " << schema << "\n";
   ResetColor();

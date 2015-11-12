@@ -298,6 +298,10 @@ const char* spvGeneratorStr(uint32_t generator) {
       return "NVIDIA";
     case SPV_GENERATOR_ARM:
       return "ARM";
+    case SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR:
+      return "Khronos LLVM/SPIR-V Translator";
+    case SPV_GENERATOR_KHRONOS_ASSEMBLER:
+      return "Khronos SPIR-V Tools Assembler";
     default:
       return "Unknown";
   }

@@ -652,18 +652,24 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
 namespace {
 
+enum {
+  kAssemblerVersion = 0
+};
+
 /// @brief Populate a binary stream's words with this generator's header.
 ///
 /// @param[in,out] words the array of words
 /// @param[in] bound the upper ID bound
 ///
 /// @return result code
-spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
+spv_result_t
+SetHeader(uint32_t* words, const uint32_t bound) {
   if (!words) return SPV_ERROR_INVALID_BINARY;
 
   words[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;
   words[SPV_INDEX_VERSION_NUMBER] = SpvVersion;
-  words[SPV_INDEX_GENERATOR_NUMBER] = SPV_GENERATOR_KHRONOS;
+  words[SPV_INDEX_GENERATOR_NUMBER] =
+      SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, kAssemblerVersion);
   words[SPV_INDEX_BOUND] = bound;
   words[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
 
