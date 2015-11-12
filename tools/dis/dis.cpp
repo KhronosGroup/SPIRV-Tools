@@ -46,6 +46,8 @@ Options:
 
   --no-color      Don't print in color.
                   The default when output goes to a file.
+
+  --no-indent     Don't indent instructions.
 )",
       argv0, argv0);
 }
@@ -63,6 +65,7 @@ int main(int argc, char** argv) {
 #ifdef SPIRV_COLOR_TERMINAL
   allow_color = true;
 #endif
+  bool allow_indent = true;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -81,6 +84,7 @@ int main(int argc, char** argv) {
         case '-': {
           // Long options
           if (0 == strcmp(argv[argi], "--no-color")) allow_color = false;
+          if (0 == strcmp(argv[argi], "--no-indent")) allow_indent = false;
           if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
@@ -101,6 +105,9 @@ int main(int argc, char** argv) {
   }
 
   uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
+
+  if (allow_indent)
+    options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
   if (!outFile) {
     // Print to standard output.

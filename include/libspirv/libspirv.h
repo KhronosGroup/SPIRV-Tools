@@ -243,6 +243,7 @@ typedef enum spv_binary_to_text_options_t {
   SPV_BINARY_TO_TEXT_OPTION_NONE = SPV_BIT(0),
   SPV_BINARY_TO_TEXT_OPTION_PRINT = SPV_BIT(1),
   SPV_BINARY_TO_TEXT_OPTION_COLOR = SPV_BIT(2),
+  SPV_BINARY_TO_TEXT_OPTION_INDENT = SPV_BIT(3),
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
 

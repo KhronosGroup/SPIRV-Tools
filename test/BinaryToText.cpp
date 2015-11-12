@@ -364,4 +364,28 @@ TEST_F(OperandTypeTest, OptionalTypedLiteralNumber) {
   EXPECT_EQ(input, EncodeAndDecodeSuccessfully(input));
 }
 
+using IndentTest = spvtest::TextToBinaryTest;
+
+TEST_F(IndentTest, Sample) {
+  const std::string input = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1 %3 %4 %5 %6 %7 %8 %9 %10 ; force IDs into double digits
+%11 = OpConstant %1 42
+OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
+)";
+  const std::string expected =
+      R"(               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+          %1 = OpTypeInt 32 0
+          %2 = OpTypeStruct %1 %3 %4 %5 %6 %7 %8 %9 %10
+         %11 = OpConstant %1 42
+               OpStore %2 %3 Volatile|Aligned 4
+)";
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(input, SPV_BINARY_TO_TEXT_OPTION_INDENT),
+      expected);
+}
+
 }  // anonymous namespace

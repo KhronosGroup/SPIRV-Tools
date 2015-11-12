@@ -46,6 +46,8 @@ namespace {
 // A Disassembler instance converts a SPIR-V binary to its assembly
 // representation.
 class Disassembler {
+  enum { kStandardIndent = 15 };
+
  public:
   Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t const* words,
                size_t num_words, uint32_t options)
@@ -55,6 +57,9 @@ class Disassembler {
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
                spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
+        indent_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_INDENT, options)
+                    ? kStandardIndent
+                    : 0),
         text_(),
         out_(print_ ? out_stream() : out_stream(text_)),
         stream_(out_.get()) {}
@@ -113,6 +118,7 @@ class Disassembler {
   const libspirv::AssemblyGrammar& grammar_;
   const bool print_;  // Should we also print to the standard output stream?
   const bool color_;  // Should we print in colour?
+  const int indent_;  // How much to indent. 0 means don't indent
   spv_endianness_t endian_;  // The detected endianness of the binary.
   std::stringstream text_;   // Captures the text, if not printing.
   out_stream out_;  // The Output stream.  Either to text_ or standard output.
@@ -135,12 +141,31 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
   return SPV_SUCCESS;
 }
 
+// Returns the number of digits in n.
+int NumDigits(uint32_t n) {
+  if (n < 10) return 0;
+  if (n < 100) return 1;
+  if (n < 1000) return 2;
+  if (n < 10000) return 3;
+  if (n < 100000) return 4;
+  if (n < 1000000) return 5;
+  if (n < 10000000) return 6;
+  if (n < 100000000) return 7;
+  if (n < 1000000000) return 8;
+  return 9;
+}
+
 spv_result_t Disassembler::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
     SetBlue();
-    stream_ << "%" << inst.result_id << " = ";
+    // Indent if needed, but account for the 4 characters in "%" and " = "
+    if (indent_) stream_ << std::setw(indent_ - 4 - NumDigits(inst.result_id));
+    stream_ << "%" << inst.result_id;
     ResetColor();
+    stream_ << " = ";
+  } else {
+    stream_ << std::string(indent_, ' ');
   }
 
   stream_ << "Op" << spvOpcodeString(inst.opcode);
