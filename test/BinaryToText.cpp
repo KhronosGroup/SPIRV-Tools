@@ -35,9 +35,9 @@
 
 using ::testing::Eq;
 using spvtest::AutoText;
+using spvtest::TextToBinaryTest;
 
 namespace {
-
 class BinaryToText : public ::testing::Test {
  public:
   virtual void SetUp() {
@@ -214,103 +214,25 @@ INSTANTIATE_TEST_CASE_P(
          "Invalid OpSwitch: selector id 2 is not a scalar integer"},
     }));
 
-TEST(BinaryToTextSmall, OneInstruction) {
-  // TODO(dneto): This test could/should be refactored.
-  spv_binary binary;
-  spv_diagnostic diagnostic = nullptr;
-  const char* input = "OpSource OpenCL_C 12";
-  spv_result_t error =
-      spvTextToBinary(input, strlen(input), &binary, &diagnostic);
-  ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text = nullptr;
-  error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, error);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  spvTextDestroy(text);
+TEST_F(TextToBinaryTest, OneInstruction) {
+  const std::string input = "OpSource OpenCL_C 12\n";
+  EXPECT_EQ(input, EncodeAndDecodeSuccessfully(input));
 }
 
 // Exercise the case where an operand itself has operands.
 // This could detect problems in updating the expected-set-of-operands
 // list.
-TEST(BinaryToTextSmall, OperandWithOperands) {
+TEST_F(TextToBinaryTest, OperandWithOperands) {
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
 
-  AutoText input(R"(OpEntryPoint Kernel %fn "foo"
-                 OpExecutionMode %fn LocalSizeHint 100 200 300
-                 %void = OpTypeVoid
-                 %fnType = OpTypeFunction %void
-                 %fn = OpFunction %void None %fnType
-                 )");
-  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
-                                       &binary, &diagnostic);
-  ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text = nullptr;
-  error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, error);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  spvTextDestroy(text);
-}
-
-TEST(BinaryToTextSmall, LiteralInt64) {
-  spv_binary binary;
-  spv_diagnostic diagnostic = nullptr;
-
-  AutoText input("%1 = OpTypeInt 64 0\n%2 = OpConstant %1 123456789021\n");
-  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
-                                       &binary, &diagnostic);
-  ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text = nullptr;
-  error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  ASSERT_EQ(SPV_SUCCESS, error);
-  const std::string header =
-      "; SPIR-V\n; Version: 100\n; Generator: Khronos\n; "
-      "Bound: 3\n; Schema: 0\n";
-  EXPECT_EQ(header + input.str, text->str);
-  spvTextDestroy(text);
-}
-
-TEST(BinaryToTextSmall, LiteralDouble) {
-  spv_binary binary;
-  spv_diagnostic diagnostic = nullptr;
-
-  AutoText input(
-      "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 3.1415926535897930");
-  spv_result_t error = spvTextToBinary(input.str.c_str(), input.str.length(),
-                                       &binary, &diagnostic);
-  ASSERT_EQ(SPV_SUCCESS, error);
-  spv_text text = nullptr;
-  error = spvBinaryToText(binary->code, binary->wordCount,
-                          SPV_BINARY_TO_TEXT_OPTION_NONE, &text, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  ASSERT_EQ(SPV_SUCCESS, error);
-  const std::string output =
-      R"(; SPIR-V
-; Version: 100
-; Generator: Khronos
-; Bound: 3
-; Schema: 0
-%1 = OpTypeFloat 64
-%2 = OpSpecConstant %1 3.14159265358979
+  const std::string input = R"(OpEntryPoint Kernel %1 "foo"
+OpExecutionMode %1 LocalSizeHint 100 200 300
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %1 None %3
 )";
-  EXPECT_EQ(output, text->str) << text->str;
-  spvTextDestroy(text);
+  EXPECT_EQ(input, EncodeAndDecodeSuccessfully(input));
 }
 
 using RoundTripInstructionsTest =
@@ -404,7 +326,7 @@ INSTANTIATE_TEST_CASE_P(
               " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"}));
 // clang-format on
 
-using MaskSorting = spvtest::TextToBinaryTest;
+using MaskSorting = TextToBinaryTest;
 
 TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
   EXPECT_THAT(EncodeAndDecodeSuccessfully(
@@ -432,7 +354,7 @@ TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
                  " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"));
 }
 
-using OperandTypeTest = spvtest::TextToBinaryTest;
+using OperandTypeTest = TextToBinaryTest;
 
 TEST_F(OperandTypeTest, OptionalTypedLiteralNumber) {
   const std::string input =

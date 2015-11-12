@@ -317,12 +317,10 @@ TEST_F(TextToBinaryTest, InvalidDiagnostic) {
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {
-  SetText("Invalid");
-  ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
+  EXPECT_EQ(
+      "Expected <opcode> or <result-id> at the beginning of an instruction, "
+      "found 'Invalid'.",
+      CompileFailure("Invalid"));
 }
 
 TEST_F(TextToBinaryTest, EmptyAssemblyString) {
@@ -332,71 +330,42 @@ TEST_F(TextToBinaryTest, EmptyAssemblyString) {
 }
 
 TEST_F(TextToBinaryTest, StringSpace) {
-  SetText("OpSourceExtension \"string with spaces\"");
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-  }
+  const std::string code = ("OpSourceExtension \"string with spaces\"\n");
+  EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
 }
 
 TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
-  SetText(R"(
-     OpSource OpenCL_C 12
-     OpMemoryModel Physical64 OpenCL
-Google
-)");
-
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
-  EXPECT_EQ(4, diagnostic->position.line + 1);
-  EXPECT_EQ(1, diagnostic->position.column + 1);
-  EXPECT_STREQ(
+  EXPECT_EQ(
       "Expected <opcode> or <result-id> at the beginning of an instruction, "
       "found 'Google'.",
-      diagnostic->error);
+      CompileFailure(
+          "\nOpSource OpenCL_C 12\nOpMemoryModel Physical64 OpenCL\nGoogle\n"));
+  EXPECT_EQ(4, diagnostic->position.line + 1);
+  EXPECT_EQ(1, diagnostic->position.column + 1);
 }
 
 TEST_F(TextToBinaryTest, NoEqualSign) {
-  SetText(R"(
-     OpSource OpenCL_C 12
-     OpMemoryModel Physical64 OpenCL
-%2
-)");
-
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
+  EXPECT_EQ("Expected '=', found end of stream.",
+            CompileFailure("\nOpSource OpenCL_C 12\n"
+                           "OpMemoryModel Physical64 OpenCL\n%2\n"));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
-  EXPECT_STREQ("Expected '=', found end of stream.", diagnostic->error);
 }
 
 TEST_F(TextToBinaryTest, NoOpCode) {
-  SetText(R"(
-     OpSource OpenCL_C 12
-     OpMemoryModel Physical64 OpenCL
-%2 =
-)");
-
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
+  EXPECT_EQ("Expected opcode, found end of stream.",
+            CompileFailure("\nOpSource OpenCL_C 12\n"
+                           "OpMemoryModel Physical64 OpenCL\n%2 =\n"));
   EXPECT_EQ(5, diagnostic->position.line + 1);
   EXPECT_EQ(1, diagnostic->position.column + 1);
-  EXPECT_STREQ("Expected opcode, found end of stream.", diagnostic->error);
 }
 
 TEST_F(TextToBinaryTest, WrongOpCode) {
-  SetText(R"(
-     OpSource OpenCL_C 12
-     OpMemoryModel Physical64 OpenCL
-%2 = Wahahaha
-)");
-
-  EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(text.str, text.length, &binary, &diagnostic));
+  EXPECT_EQ("Invalid Opcode prefix 'Wahahaha'.",
+            CompileFailure("\nOpSource OpenCL_C 12\n"
+                           "OpMemoryModel Physical64 OpenCL\n%2 = Wahahaha\n"));
   EXPECT_EQ(4, diagnostic->position.line + 1);
   EXPECT_EQ(6, diagnostic->position.column + 1);
-  EXPECT_STREQ("Invalid Opcode prefix 'Wahahaha'.", diagnostic->error);
 }
 
 using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<

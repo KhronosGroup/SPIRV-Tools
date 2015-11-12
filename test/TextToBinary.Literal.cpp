@@ -69,6 +69,18 @@ TEST_F(TextToBinaryTest, LiteralFloatInPlaceOfLiteralInteger) {
                            "%c = OpConstant %i32 0.123"));
 }
 
+TEST_F(TextToBinaryTest, LiteralInt64) {
+  const std::string code =
+      "%1 = OpTypeInt 64 0\n%2 = OpConstant %1 123456789021\n";
+  EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
+}
+
+TEST_F(TextToBinaryTest, LiteralDouble) {
+  const std::string code =
+      "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 3.14159265358979\n";
+  EXPECT_EQ(code, EncodeAndDecodeSuccessfully(code));
+}
+
 TEST_F(TextToBinaryTest, LiteralStringASCIILong) {
   // SPIR-V allows strings up to 65535 characters.
   // Test the simple case of UTF-8 code points corresponding
