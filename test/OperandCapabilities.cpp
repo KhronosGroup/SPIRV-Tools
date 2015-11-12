@@ -389,7 +389,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationUniform, Shader),
         // Value 27 is an intentional gap in the spec numbering.
         CASE1(DECORATION, DecorationSaturatedConversion, Kernel),
-        CASE1(DECORATION, DecorationStream, Geometry),
+        CASE1(DECORATION, DecorationStream, GeometryStreams),
         CASE1(DECORATION, DecorationLocation, Shader),
         CASE1(DECORATION, DecorationComponent, Shader),
         CASE1(DECORATION, DecorationIndex, Shader),
@@ -607,6 +607,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(CAPABILITY, CapabilityDerivativeControl, Shader),
         CASE1(CAPABILITY, CapabilityInterpolationFunction, Shader),
         CASE1(CAPABILITY, CapabilityTransformFeedback, Shader),
+        CASE1(CAPABILITY, CapabilityGeometryStreams, Geometry),
     }));
 
 #undef CASE0

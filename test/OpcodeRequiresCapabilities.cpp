@@ -76,8 +76,7 @@ TEST(OpcodeRequiresCapability, None) {
 
 TEST(CapabilityAsMaskMacro, Sample) {
   EXPECT_EQ(uint64_t(1), SPV_CAPABILITY_AS_MASK(SpvCapabilityMatrix));
-  EXPECT_EQ(uint64_t(0x8000),
-            SPV_CAPABILITY_AS_MASK(SpvCapabilityImageMipmap));
+  EXPECT_EQ(uint64_t(0x8000), SPV_CAPABILITY_AS_MASK(SpvCapabilityImageMipmap));
   EXPECT_EQ(uint64_t(0x100000000ULL),
             SPV_CAPABILITY_AS_MASK(SpvCapabilityClipDistance));
   EXPECT_EQ(uint64_t(1) << 53,
@@ -132,6 +131,8 @@ INSTANTIATE_TEST_CASE_P(
                                    mask(SpvCapabilityAddresses)},
         ExpectedOpCodeCapabilities{SpvOpArrayLength, mask(SpvCapabilityShader)},
         ExpectedOpCodeCapabilities{SpvOpFunction, 0},
-        ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0}));
+        ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0},
+        ExpectedOpCodeCapabilities{SpvOpEmitStreamVertex,
+                                   mask(SpvCapabilityGeometryStreams)}));
 
 }  // anonymous namespace

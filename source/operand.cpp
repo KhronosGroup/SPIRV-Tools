@@ -577,7 +577,7 @@ static const spv_operand_desc_t decorationEntries[] = {
      {SPV_OPERAND_TYPE_NONE}},
     {"Stream",
      SpvDecorationStream,
-     SPV_CAPABILITY_AS_MASK(SpvCapabilityGeometry),
+     SPV_CAPABILITY_AS_MASK(SpvCapabilityGeometryStreams),
      {SPV_OPERAND_TYPE_LITERAL_INTEGER, SPV_OPERAND_TYPE_NONE}},
     {"Location",
      SpvDecorationLocation,
@@ -1001,6 +1001,7 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE_CAP(DerivativeControl, Shader),
     CASE_CAP(InterpolationFunction, Shader),
     CASE_CAP(TransformFeedback, Shader),
+    CASE_CAP(GeometryStreams, Geometry),
 };
 #undef CASE
 #undef CASE_CAP
