@@ -395,6 +395,25 @@ OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
       expected);
 }
 
+// Test version string.
+TEST_F(TextToBinaryTest, VersionString) {
+  auto words = CompileSuccessfully("");
+  spv_text decoded_text = nullptr;
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
+                              SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
+                              &diagnostic),
+              Eq(SPV_SUCCESS));
+  EXPECT_EQ(nullptr, diagnostic);
+
+  EXPECT_EQ(1, SPV_SPIRV_VERSION_MAJOR);
+  EXPECT_EQ(0, SPV_SPIRV_VERSION_MINOR);
+  EXPECT_EQ(2, SPV_SPIRV_VERSION_REVISION);
+  EXPECT_THAT(decoded_text->str, HasSubstr("Version: 1.0.2\n"))
+      << EncodeAndDecodeSuccessfully("");
+  spvTextDestroy(decoded_text);
+}
+
 // Test generator string.
 
 // A test case for the generator string.  This allows us to

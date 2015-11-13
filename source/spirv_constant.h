@@ -29,6 +29,20 @@
 
 #include "libspirv/libspirv.h"
 
+// Version number macros.
+
+// Evaluates to a well-formed version header word, given valid
+// SPIR-V version major, minor, and revision numbers.
+#define SPV_SPIRV_VERSION_WORD(MAJOR, MINOR, REVISION)                  \
+  ((uint32_t(uint8_t(MAJOR)) << 16) | (uint32_t(uint8_t(MINOR)) << 8) | \
+   uint8_t(REVISION))
+// Returns the major version extracted from a version header word.
+#define SPV_SPIRV_VERSION_MAJOR_PART(WORD) ((uint32_t(WORD) >> 16) & 0xff)
+// Returns the minor version extracted from a version header word.
+#define SPV_SPIRV_VERSION_MINOR_PART(WORD) ((uint32_t(WORD) >> 8) & 0xff)
+// Returns the revision number extracted from a version header word.
+#define SPV_SPIRV_VERSION_REVISION_PART(WORD) (uint32_t(WORD) & 0xff)
+
 // Header indices
 
 #define SPV_INDEX_MAGIC_NUMBER 0u

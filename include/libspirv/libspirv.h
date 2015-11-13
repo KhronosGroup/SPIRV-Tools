@@ -38,6 +38,14 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+// Versions
+// This library is based on SPIR-V 1.0 Rev2
+// TODO(dneto): Use the values from the SPIR-V header, when it's updated for
+// SPIR-V 1.0 public release.
+#define SPV_SPIRV_VERSION_MAJOR 1
+#define SPV_SPIRV_VERSION_MINOR 0
+#define SPV_SPIRV_VERSION_REVISION 2
+
 // Helpers
 
 #define spvIsInBitfield(value, bitfield) (value == (value & bitfield))

@@ -135,7 +135,9 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
   const char* generator_tool =
       spvGeneratorStr(SPV_GENERATOR_TOOL_PART(generator));
   stream_ << "; SPIR-V\n"
-          << "; Version: " << version << "\n"
+          << "; Version: " << SPV_SPIRV_VERSION_MAJOR_PART(version) << "."
+          << SPV_SPIRV_VERSION_MINOR_PART(version) << "."
+          << SPV_SPIRV_VERSION_REVISION_PART(version) << "\n"
           << "; Generator: " << generator_tool;
   // For unknown tools, print the numeric tool value.
   if (0 == strcmp("Unknown", generator_tool)) {

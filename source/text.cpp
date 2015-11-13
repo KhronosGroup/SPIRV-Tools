@@ -667,7 +667,9 @@ SetHeader(uint32_t* words, const uint32_t bound) {
   if (!words) return SPV_ERROR_INVALID_BINARY;
 
   words[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;
-  words[SPV_INDEX_VERSION_NUMBER] = SpvVersion;
+  words[SPV_INDEX_VERSION_NUMBER] =
+      SPV_SPIRV_VERSION_WORD(SPV_SPIRV_VERSION_MAJOR, SPV_SPIRV_VERSION_MINOR,
+                             SPV_SPIRV_VERSION_REVISION);
   words[SPV_INDEX_GENERATOR_NUMBER] =
       SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, kAssemblerVersion);
   words[SPV_INDEX_BOUND] = bound;
