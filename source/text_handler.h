@@ -151,7 +151,7 @@ class AssemblyContext {
 
   // Returns the next word in the input stream. It is invalid to call this
   // method if position has been set to a location in the stream that does not
-  // exist. If there are no subsequent words, the empty string will be returend.
+  // exist. If there are no subsequent words, the empty string will be returned.
   std::string getWord() const;
 
   // Returns true if the next word in the input is the start of a new Opcode.
@@ -174,7 +174,7 @@ class AssemblyContext {
     return diagnostic(SPV_ERROR_INVALID_TEXT);
   }
 
-  // Returns then next characted in the input stream.
+  // Returns then next character in the input stream.
   char peek() const;
 
   // Returns true if there is more text in the input stream.
@@ -207,7 +207,7 @@ class AssemblyContext {
   // 32-bit integer.
   // Returns SPV_SUCCESS if the value could be correctly added to the
   // instruction.  Returns the given error code on failure, and emits
-  // a diagnotic if that error code is not SPV_FAILED_MATCH.
+  // a diagnostic if that error code is not SPV_FAILED_MATCH.
   spv_result_t binaryEncodeNumericLiteral(const char* numeric_literal,
                                           spv_result_t error_code,
                                           const IdType& type,

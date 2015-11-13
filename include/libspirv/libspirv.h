@@ -90,7 +90,7 @@ typedef enum spv_endianness_t {
 // The assembler uses all operand types.  In addition to determining what
 // kind of value an operand may be, non-concrete operand types capture the
 // fact that an operand might be optional (may be absent, or present exactly
-// once), or might occure zero or more times.
+// once), or might occur zero or more times.
 //
 // Sometimes we also need to be able to express the fact that an operand
 // is a member of an optional tuple of values.  In that case the first member
@@ -330,7 +330,7 @@ typedef struct spv_diagnostic_t {
 } spv_diagnostic_t;
 
 // Opaque struct containing the context used to operate on a SPIR-V module.
-// Its object is used by various tranformation API functions.
+// Its object is used by various translation API functions.
 struct spv_context_t;
 
 // Type Definitions
@@ -358,7 +358,7 @@ spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
                              const size_t length, spv_binary* binary,
                              spv_diagnostic* diagnostic);
 
-// @brief Frees an allocated text stream. This is a no-op if the text parameter
+// Frees an allocated text stream. This is a no-op if the text parameter
 // is a null pointer.
 void spvTextDestroy(spv_text text);
 

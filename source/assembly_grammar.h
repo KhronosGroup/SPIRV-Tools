@@ -84,7 +84,7 @@ class AssemblyGrammar {
   // where each term is a named enum value for a given type. No whitespace
   // is permitted.
   //
-  // On success, the value is written to pValue, and SPV_SUCCESS is returend.
+  // On success, the value is written to pValue, and SPV_SUCCESS is returned.
   // The operand type is defined by the type parameter, and the text to be
   // parsed is defined by the textValue parameter.
   spv_result_t parseMaskOperand(const spv_operand_type_t type,
@@ -106,8 +106,8 @@ class AssemblyGrammar {
   // of the given pattern.
   //
   // Each set bit in the mask represents zero or more operand types that should
-  // be prepended onto the pattern. Opearnds for a less significant bit always
-  // appear before operands for a more significatn bit.
+  // be prepended onto the pattern. Operands for a less significant bit always
+  // appear before operands for a more significant bit.
   //
   // If a set bit is unknown, then we assume it has no operands.
   void prependOperandTypesForMask(const spv_operand_type_t type,
