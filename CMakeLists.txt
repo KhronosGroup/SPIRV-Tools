@@ -132,32 +132,33 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
 
-add_library(SPIRV-TOOLS ${SPIRV_SOURCES})
-target_link_libraries(SPIRV-TOOLS ${SPIRV_LIBS})
-set_target_properties(SPIRV-TOOLS PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+set(SPIRV_TOOLS "SPIRV-Tools")
+add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
+target_link_libraries(${SPIRV_TOOLS} ${SPIRV_LIBS})
+set_target_properties(${SPIRV_TOOLS} PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
 
 option(SPIRV_SKIP_EXECUTABLES "Skip building the executables and tests along with the library" ${SPIRV_SKIP_EXECUTABLES})
 
-set(SPIRV_BUILT_TARGETS SPIRV-TOOLS)
+set(SPIRV_BUILT_TARGETS ${SPIRV_TOOLS})
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
   list(APPEND SPIRV_BUILT_TARGETS spirv-as spirv-dis spirv-val)
   add_executable(spirv-as
     ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
   set_target_properties(spirv-as PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-as SPIRV-TOOLS)
+  target_link_libraries(spirv-as ${SPIRV_TOOLS})
 
   add_executable(spirv-dis
     ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
   set_target_properties(spirv-dis PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-dis SPIRV-TOOLS)
+  target_link_libraries(spirv-dis ${SPIRV_TOOLS})
 
   add_executable(spirv-val
     ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
   set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-val SPIRV-TOOLS)
+  target_link_libraries(spirv-val ${SPIRV_TOOLS})
 
   set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest/googlemock)
   if(EXISTS ${GMOCK_DIR})
@@ -232,7 +233,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
 
-    target_link_libraries(UnitSPIRV SPIRV-TOOLS gmock)
+    target_link_libraries(UnitSPIRV ${SPIRV_TOOLS} gmock)
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")

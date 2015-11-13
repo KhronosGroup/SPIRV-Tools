@@ -32,10 +32,20 @@
 
 void print_usage(char* argv0) {
   printf(
-      "Assemble a *.svasm file into a *.sv binary.\n\n"
-      "USAGE: %s [options] <filename>\n\n"
-      "  -o    set the output filename\n",
-      argv0);
+      R"(%s - Create a SPIR-V binary module from SPIR-V assembly text
+
+Usage: %s [options] <filename>
+
+The SPIR-V assembly text is read from <filename>.  The SPIR-V binary
+module is written to file "out.spv", unless the -o option is used.
+
+Options:
+
+  -h              Print this help.
+
+  -o <filename>   Set the output filename.
+)",
+      argv0, argv0);
 }
 
 int main(int argc, char** argv) {
@@ -50,6 +60,10 @@ int main(int argc, char** argv) {
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       switch (argv[argi][1]) {
+        case 'h': {
+          print_usage(argv[0]);
+          return 0;
+        }
         case 'o': {
           if (!outFile && argi + 1 < argc) {
             outFile = argv[++argi];
