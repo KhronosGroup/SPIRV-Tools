@@ -457,6 +457,8 @@ INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
                              "Khronos LLVM/SPIR-V Translator; 38"},
                             {SPV_GENERATOR_KHRONOS_ASSEMBLER, 2,
                              "Khronos SPIR-V Tools Assembler; 2"},
+                            {SPV_GENERATOR_KHRONOS_GLSLANG, 1,
+                             "Khronos Glslang Reference Front End; 1"},
                             {9, 18, "Unknown(9); 18"},
                             {65535, 32767, "Unknown(65535); 32767"},
                         }));

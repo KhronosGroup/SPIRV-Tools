@@ -302,6 +302,8 @@ const char* spvGeneratorStr(uint32_t generator) {
       return "Khronos LLVM/SPIR-V Translator";
     case SPV_GENERATOR_KHRONOS_ASSEMBLER:
       return "Khronos SPIR-V Tools Assembler";
+    case SPV_GENERATOR_KHRONOS_GLSLANG:
+      return "Khronos Glslang Reference Front End";
     default:
       return "Unknown";
   }

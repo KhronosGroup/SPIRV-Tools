@@ -55,13 +55,14 @@ INSTANTIATE_TEST_CASE_P(
         {SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR,
          "Khronos LLVM/SPIR-V Translator"},
         {SPV_GENERATOR_KHRONOS_ASSEMBLER, "Khronos SPIR-V Tools Assembler"},
+        {SPV_GENERATOR_KHRONOS_GLSLANG, "Khronos Glslang Reference Front End"},
     }));
 
 INSTANTIATE_TEST_CASE_P(
     Unregistered, GeneratorMagicNumberTest,
     ::testing::ValuesIn(std::vector<EnumCase<spv_generator_t>>{
         // Currently value 6 and beyond are unregiestered.
-        {spv_generator_t(8), "Unknown"},
+        {spv_generator_t(9), "Unknown"},
         {spv_generator_t(9999), "Unknown"},
     }));
 }  // anonymous namespace
