@@ -2,7 +2,8 @@
 
 ## Overview
 
-The SPIR-V Tools provides an API and commands for processing SPIR-V modules.
+The SPIR-V Tools project provides an API and commands for processing SPIR-V
+modules.
 
 The project includes an assembler, binary module parser, disassembler, and
 validator for SPIR-V, all based on a common static library. The library contains
