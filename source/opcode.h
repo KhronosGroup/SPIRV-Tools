@@ -31,166 +31,87 @@
 #include "libspirv/libspirv.h"
 #include "table.h"
 
-// Functions
-
-/// @brief Get the name of the SPIR-V generator.
-///
-/// See the registry at
-/// https://www.khronos.org/registry/spir-v/api/spir-v.xml
-///
-/// @param[in] generator Khronos SPIR-V generator ID
-///
-/// @return string name
+// Returns the name of a registered SPIR-V generator as a null-terminated
+// string. If the generator is not known, then returns the string "Unknown".
+// The generator parameter should be most significant 16-bits of the generator
+// word in the SPIR-V module header.
+//
+// See the registry at https://www.khronos.org/registry/spir-v/api/spir-v.xml.
 const char* spvGeneratorStr(uint32_t generator);
 
-/// @brief Combine word count and Opcode enumerant in single word
-///
-/// @param[in] wordCount Opcode consumes
-/// @param[in] opcode enumerant value
-///
-/// @return Opcode word
-uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode);
+// Combines word_count and opcode enumerant in single word.
+uint32_t spvOpcodeMake(uint16_t word_count, SpvOp opcode);
 
-/// @brief Split the binary opcode into its constituent parts
-///
-/// @param[in] word binary opcode to split
-/// @param[out] wordCount the returned number of words (optional)
-/// @param[out] opcode the returned opcode enumerant (optional)
-void spvOpcodeSplit(const uint32_t word, uint16_t* wordCount, SpvOp* opcode);
+// Splits word into into two constituent parts: word_count and opcode.
+void spvOpcodeSplit(const uint32_t word, uint16_t* word_count, SpvOp* opcode);
 
-/// @brief Find the named Opcode in the table
-///
-/// @param[in] table to lookup
-/// @param[in] name name of Opcode to find
-/// @param[out] pEntry returned Opcode table entry
-///
-/// @return result code
+// Finds the named opcode in the given opcode table. On success, returns
+// SPV_SUCCESS and writes a handle of the table entry into *entry.
 spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
-                                      const char* name,
-                                      spv_opcode_desc* pEntry);
+                                      const char* name, spv_opcode_desc* entry);
 
-/// @brief Find the opcode ID in the table
-///
-/// @param[out] table to lookup
-/// @param[in] opcode value of Opcode to fine
-/// @param[out] pEntry return Opcode table entry
-///
-/// @return result code
+// Finds the opcode by enumerant in the given opcode table. On success, returns
+// SPV_SUCCESS and writes a handle of the table entry into *entry.
 spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                        const SpvOp opcode,
-                                       spv_opcode_desc* pEntry);
+                                       spv_opcode_desc* entry);
 
-/// @brief Get the argument index for the <result-id> operand, if any.
-///
-/// @param[in] entry the Opcode entry
-///
-/// @return index for the <result-id> operand, or
-///         SPV_OPERAND_INVALID_RESULT_ID_INDEX if the given opcode
-///         doesn't have a <result-id> operand.
-//
-/// For example, 0 means <result-id> is the first argument, i.e. right after
-/// the wordcount/opcode word.
-int16_t spvOpcodeResultIdIndex(spv_opcode_desc entry);
+// Determines if the opcode has capability requirements. Returns zero if false,
+// non-zero otherwise. This function does not check if the given entry is valid.
+int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc opcode);
 
-/// @brief Determine if the Opcode has capability requirements.
-///
-/// This function does not check if @a entry is valid.
-///
-/// @param[in] entry the Opcode entry
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc entry);
-
-/// @brief Copy an instructions word and fix the endianness
-///
-/// @param[in] words the input instruction stream
-/// @param[in] opcode the instructions Opcode
-/// @param[in] wordCount the number of words to copy
-/// @param[in] endian the endianness of the stream
-/// @param[out] pInst the returned instruction
+// Copies an instruction's word and fixes the endianness to host native. The
+// source instruction's stream/opcode/endianness is in the words/opcode/endian
+// parameter. The word_count parameter specifies the number of words to copy.
+// Writes copied instruction into *inst.
 void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
-                        const uint16_t wordCount, const spv_endianness_t endian,
-                        spv_instruction_t* pInst);
+                        const uint16_t word_count,
+                        const spv_endianness_t endian, spv_instruction_t* inst);
 
-/// @brief Get the name of an instruction, without the "Op" prefix.
-///
-/// @param[in] opcode the opcode
-///
-/// @return the opcode string
+// Gets the name of an instruction, without the "Op" prefix.
 const char* spvOpcodeString(const SpvOp opcode);
 
-/// @brief Determine if the OpCode is a scalar type
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determine if the given opcode is a scalar type. Returns zero if false,
+// non-zero otherwise.
 int32_t spvOpcodeIsScalarType(const SpvOp opcode);
 
-/// @brief Determine if the Opcode is a constant
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the given opcode is a constant. Returns zero if false, non-zero
+// otherwise.
 int32_t spvOpcodeIsConstant(const SpvOp opcode);
 
-/// @brief Determine if the Opcode is a composite type
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the given opcode is a composite type. Returns zero if false,
+// non-zero otherwise.
 int32_t spvOpcodeIsComposite(const SpvOp opcode);
 
-/// @brief Deep comparison of type declaration instructions
-///
-/// @param[in] pTypeInst0 type definition zero
-/// @param[in] pTypeInst1 type definition one
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* pTypeInst0,
-                               const spv_instruction_t* pTypeInst1);
+// Deep equal comparison of type declaration instructions. Returns zero if
+// false, non-zero otherwise.
+int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* type_inst0,
+                               const spv_instruction_t* type_inst1);
 
-/// @brief Determine if the Opcode results in a pointer
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the given opcode results in a pointer. Returns zero if false,
+// non-zero otherwise.
 int32_t spvOpcodeIsPointer(const SpvOp opcode);
 
-/// @brief Determine if the Opcode results in a instantation of a non-void type
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the given opcode results in an instantation of a non-void type.
+// Returns zero if false, non-zero otherwise.
 int32_t spvOpcodeIsObject(const SpvOp opcode);
 
-/// @brief Determine if the scalar type Opcode is nullable
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the scalar type opcode is nullable. Returns zero if false,
+// non-zero otherwise.
 int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
 
-/// @brief Determine if instruction is in a basic block
-///
-/// @param[in] pFirstInst first instruction in the stream
-/// @param[in] pInst current instruction
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* pFirstInst,
-                                     const spv_instruction_t* pInst);
+// Determines if an instruction is in a basic block. The first_inst parameter
+// specifies the first instruction in the stream, while the inst parameter
+// specifies the current instruction. Returns zero if false, non-zero otherwise.
+int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* first_inst,
+                                     const spv_instruction_t* inst);
 
-/// @brief Determine if the Opcode contains a value
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
+// Determines if the given opcode contains a value. Returns zero if false,
+// non-zero otherwise.
 int32_t spvOpcodeIsValue(SpvOp opcode);
 
-/// @brief Determine if the Opcode generates a type
-///
-/// @param[in] opcode the opcode
-///
-/// @return zero if false, non-zero otherwise
-int32_t spvOpcodeGeneratesType(SpvOp op);
+// Determines if the given opcode generates a type. Returns zero if false,
+// non-zero otherwise.
+int32_t spvOpcodeGeneratesType(SpvOp opcode);
 
 #endif  // LIBSPIRV_OPCODE_H_

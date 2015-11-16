@@ -30,7 +30,7 @@
 #include <iostream>
 #include <sstream>
 
-/// @brief Wrapper for out stream selection
+// Wrapper for out stream selection.
 class out_stream {
  public:
   out_stream() : pStream(nullptr) {}
@@ -48,27 +48,27 @@ class out_stream {
 };
 
 namespace clr {
-/// @brief Reset console color
+// Resets console color.
 struct reset {
   operator const char*();
 };
-/// @brief Set console color to grey
+// Sets console color to grey.
 struct grey {
   operator const char*();
 };
-/// @brief Set console color to red
+// Sets console color to red.
 struct red {
   operator const char*();
 };
-/// @brief Set console color to green
+// Sets console color to green.
 struct green {
   operator const char*();
 };
-/// @brief Set console color to yellow
+// Sets console color to yellow.
 struct yellow {
   operator const char*();
 };
-/// @brief Set console color to blue
+// Sets console color to blue.
 struct blue {
   operator const char*();
 };

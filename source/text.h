@@ -33,8 +33,6 @@
 #include "operand.h"
 #include "spirv_constant.h"
 
-// Structures
-
 typedef enum spv_literal_type_t {
   SPV_LITERAL_TYPE_INT_32,
   SPV_LITERAL_TYPE_INT_64,
@@ -59,18 +57,9 @@ typedef struct spv_literal_t {
   std::string str;  // Special field for literal string.
 } spv_literal_t;
 
-// Functions
-
-/// @brief Convert the input text to one of the number types, or to
-/// a string.
-///
-/// String literals must be surrounded by double-quotes ("), which are
-/// then stripped.
-///
-/// @param[in] textValue input text to parse
-/// @param[out] pLiteral the returned literal
-///
-/// @return result code
-spv_result_t spvTextToLiteral(const char* textValue, spv_literal_t* pLiteral);
+// Converts the given text string to a number/string literal and writes the
+// result to *literal. String literals must be surrounded by double-quotes ("),
+// which are then stripped.
+spv_result_t spvTextToLiteral(const char* text, spv_literal_t* literal);
 
 #endif  // LIBSPIRV_TEXT_H_

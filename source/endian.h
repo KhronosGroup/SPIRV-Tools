@@ -29,35 +29,18 @@
 
 #include "libspirv/libspirv.h"
 
-/// @brief Fix the endianness of a word
-///
-/// @param[in] word whos endianness should be fixed
-/// @param[in] endian the desired endianness
-///
-/// @return word with host endianness correction
-uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endian);
+// Converts a word in the specified endianness to the host native endianness.
+uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endianness);
 
-/// @brief Fix the endianness of a double word
-///
-/// @param[in] low the lower 32-bit of the double word
-/// @param[in] high the higher 32-bit of the double word
-/// @param[in] endian the desired endianness
-///
-/// @return word with host endianness correction
+// Converts a pair of words in the specified endianness to the host native
+// endianness.
 uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
-                          const spv_endianness_t endian);
+                          const spv_endianness_t endianness);
 
-/// @brief Determine the endianness of the SPV binary
-///
-/// Gets the endianness of the SPV source. Returns SPV_ENDIANNESS_UNKNOWN if
-/// the
-/// SPV magic number is invalid, otherwise the determined endianness.
-///
-/// @param[in] binary the binary module
-/// @param[out] pEndian return the endianness of the SPV module
-///
-/// @return result code
+// Gets the endianness of the SPIR-V module given in the binary parameter.
+// Returns SPV_ENDIANNESS_UNKNOWN if the SPIR-V magic number is invalid,
+// otherwise writes the determined endianness into *endian.
 spv_result_t spvBinaryEndianness(const spv_const_binary binary,
-                                 spv_endianness_t* pEndian);
+                                 spv_endianness_t* endian);
 
 #endif  // LIBSPIRV_ENDIAN_H_

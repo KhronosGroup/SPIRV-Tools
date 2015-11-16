@@ -320,7 +320,7 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
 // This would normally overflow a float and round to
 // infinity but this special pattern is the exact representation for a NaN,
 // and therefore is actually encoded as the correct NaN. To encode inf,
-// either 0x0p+exponent_bias can be spcified or any exponent greater than
+// either 0x0p+exponent_bias can be specified or any exponent greater than
 // exponent_bias.
 // Examples using IEEE 32-bit float encoding.
 //    0x1.0p+128 (+inf)

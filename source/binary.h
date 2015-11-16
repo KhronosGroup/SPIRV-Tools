@@ -32,30 +32,21 @@
 
 // Functions
 
-/// @brief Grab the header from the SPV module
-///
-/// @param[in] binary the binary module
-/// @param[in] endian the endianness of the module
-/// @param[out] pHeader the returned header
-///
-/// @return result code
+// Grabs the header from the SPIR-V module given in the binary parameter. The
+// endian parameter specifies the endianness of the binary module. On success,
+// returns SPV_SUCCESS and writes the parsed header into *header.
 spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
-                                spv_header_t* pHeader);
+                                spv_header_t* header);
 
-/// @brief Determine the type of the desired operand
-///
-/// @param[in] word the operand value
-/// @param[in] index the word index in the instruction
-/// @param[in] opcodeEntry table of specified Opcodes
-/// @param[in] operandTable table of specified operands
-/// @param[in,out] pOperandEntry the entry in the operand table
-///
-/// @return type returned
+// Determines the desired type of an operand. The operand's value is word, and
+// is the index-th word in the instruction described by the opcode_entry opcode
+// table entry. On success, returns SPV_SUCCESS and writes a handle of the
+// operand table entry for this operand into *operand_entry.
 spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
                                         const uint16_t index,
-                                        const spv_opcode_desc opcodeEntry,
-                                        const spv_operand_table operandTable,
-                                        spv_operand_desc* pOperandEntry);
+                                        const spv_opcode_desc opcode_entry,
+                                        const spv_operand_table operand_table,
+                                        spv_operand_desc* operand_entry);
 
 #endif  // LIBSPIRV_BINARY_H_

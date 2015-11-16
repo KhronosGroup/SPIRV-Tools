@@ -104,12 +104,12 @@ struct spv_context_t {
 };
 
 // Populates the given opcode table.
-spv_result_t spvOpcodeTableGet(spv_opcode_table* pOpcodeTable);
+spv_result_t spvOpcodeTableGet(spv_opcode_table* table);
 
 // Populates the given operand table.
-spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable);
+spv_result_t spvOperandTableGet(spv_operand_table* table);
 
 // Populates the given extended instruction table.
-spv_result_t spvExtInstTableGet(spv_ext_inst_table* pTable);
+spv_result_t spvExtInstTableGet(spv_ext_inst_table* table);
 
 #endif  // LIBSPIRV_TABLE_H_

@@ -30,34 +30,20 @@
 #include "libspirv/libspirv.h"
 #include "table.h"
 
-/// @brief Get the type from the extended instruction library string
-///
-/// @param name of the library
-///
-/// @return type of the extended instruction library
+// Gets the type of the extended instruction set with the specified name.
 spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name);
 
-/// @brief Find the extented instruction with value in the table
-///
-/// @param table to lookup
-/// @param type of the extended instruction import
-/// @param name of the extended instruction to find
-/// @param pEntry return the extended instruction entry
-///
-/// @return result code
+// Finds the named extented instruction of the given type in the given extended
+// instruction table. On success, returns SPV_SUCCESS and writes a handle of
+// the instruction entry into *entry.
 spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
                                        const char* name,
-                                       spv_ext_inst_desc* pEntry);
+                                       spv_ext_inst_desc* entry);
 
-/// @brief Find the extented instruction with value in the table
-///
-/// @param table to lookup
-/// @param type of the extended instruction import
-/// @param value of the extended instruction to find
-/// @param pEntry return the extended instruction entry
-///
-/// @return result code
+// Finds the extented instruction of the given type in the given extended
+// instruction table by value. On success, returns SPV_SUCCESS and writes a
+// handle of the instruction entry into *entry.
 spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const spv_ext_inst_type_t type,
                                         const uint32_t value,
