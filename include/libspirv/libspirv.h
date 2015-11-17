@@ -27,9 +27,9 @@
 #ifndef LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
 #define LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
 
-#include <headers/GLSL.std.450.h>
-#include <headers/OpenCL.std.h>
-#include <headers/spirv.h>
+#include "headers/GLSL.std.450.h"
+#include "headers/OpenCL.std.h"
+#include "headers/spirv.h"
 
 #ifdef __cplusplus
 extern "C" {

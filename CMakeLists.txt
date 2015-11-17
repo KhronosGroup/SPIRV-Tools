@@ -92,8 +92,7 @@ if(UNIX)
   endif()
 endif()
 
-include_directories(SYSTEM
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/include)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
