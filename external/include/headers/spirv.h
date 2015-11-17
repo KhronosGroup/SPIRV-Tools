@@ -50,12 +50,12 @@
 
 typedef unsigned int SpvId;
 
-#define SPV_VERSION 100
-#define SPV_REVISION 1
+#define SPV_VERSION 10000
+#define SPV_REVISION 2
 
 static const unsigned int SpvMagicNumber = 0x07230203;
-static const unsigned int SpvVersion = 100;
-static const unsigned int SpvRevision = 1;
+static const unsigned int SpvVersion = 0x00010000;
+static const unsigned int SpvRevision = 2;
 static const unsigned int SpvOpCodeMask = 0xffff;
 static const unsigned int SpvWordCountShift = 16;
 
