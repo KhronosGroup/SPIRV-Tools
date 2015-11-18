@@ -501,8 +501,9 @@ spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
       // should be zero.
       failed = (value & overflow_mask);
     } else {
+      const uint64_t value_as_u64 = static_cast<uint64_t>(value);
       // Check overflow in the ordinary case.
-      failed = (value & magnitude_mask) != value;
+      failed = (value_as_u64 & magnitude_mask) != value_as_u64;
     }
   }
 

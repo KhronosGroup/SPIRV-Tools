@@ -488,7 +488,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
 
   fraction = (fraction >> HF::fraction_right_shift) & HF::fraction_encode_mask;
 
-  const uint_type max_exponent =
+  const int_type max_exponent =
       SetBits<uint_type, 0, HF::num_exponent_bits>::get;
 
   // Handle actual denorm numbers

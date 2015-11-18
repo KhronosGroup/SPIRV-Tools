@@ -139,7 +139,7 @@ TEST_P(MatchableOperandExpansionTest, MatchableOperandsDontExpand) {
   if (!spvOperandIsVariable(type)) {
     spv_operand_pattern_t pattern;
     const bool did_expand = spvExpandOperandSequenceOnce(type, &pattern);
-    EXPECT_EQ(false, did_expand);
+    EXPECT_FALSE(did_expand);
     EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{}));
   }
 }
@@ -156,7 +156,7 @@ TEST_P(VariableOperandExpansionTest, NonMatchableOperandsExpand) {
   if (spvOperandIsVariable(type)) {
     spv_operand_pattern_t pattern;
     const bool did_expand = spvExpandOperandSequenceOnce(type, &pattern);
-    EXPECT_EQ(true, did_expand);
+    EXPECT_TRUE(did_expand);
     EXPECT_FALSE(pattern.empty());
     // For the existing rules, the first expansion of a zero-or-more operand
     // type yields a matchable operand type.  This isn't strictly necessary.

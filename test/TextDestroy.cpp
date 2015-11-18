@@ -60,7 +60,7 @@ TEST(TextDestroy, Default) {
                                          &binary, &diagnostic));
   EXPECT_NE(nullptr, binary);
   EXPECT_NE(nullptr, binary->code);
-  EXPECT_NE(0, binary->wordCount);
+  EXPECT_NE(0u, binary->wordCount);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     ASSERT_TRUE(false);
@@ -77,7 +77,7 @@ TEST(TextDestroy, Default) {
     ASSERT_TRUE(false);
   }
   EXPECT_NE(nullptr, resultText->str);
-  EXPECT_NE(0, resultText->length);
+  EXPECT_NE(0u, resultText->length);
   spvTextDestroy(resultText);
   spvContextDestroy(context);
 }

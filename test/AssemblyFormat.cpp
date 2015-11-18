@@ -40,7 +40,7 @@ TEST_F(TextToBinaryTest, NotPlacingResultIDAtTheBeginning) {
       "Expected <result-id> at the beginning of an instruction, found "
       "'OpTypeMatrix'.",
       diagnostic->error);
-  EXPECT_EQ(0, diagnostic->position.line);
+  EXPECT_EQ(0u, diagnostic->position.line);
 }
 
 }  // anonymous namespace

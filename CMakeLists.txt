@@ -26,6 +26,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 project(spirv-tools)
+set(SPIRV_TOOLS "SPIRV-Tools")
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   add_definitions(-DSPIRV_LINUX)
@@ -37,36 +38,26 @@ else()
   message(FATAL_ERROR "Your platform '${CMAKE_SYSTEM_NAME}' is not supported!")
 endif()
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-if (UNIX)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-elseif(WIN32)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-endif()
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "No build type selected, default to Debug")
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
 if(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
+  set(SPIRV_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 
-  # For good call stacks in profiles, keep the frame pointers.
-  if(NOT SPIRV_PERF STREQUAL "")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+  option(SPIRV_WARN_EVERYTHING "Enable -Weverything" OFF)
+  if(${SPIRV_WARN_EVERYTHING})
+    set(SPIRV_WARNINGS ${SPIRV_WARNINGS}
+      -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
   endif()
 
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
-    set(SPIRV_USE_SANITIZER "" CACHE STRING
-      "Use the clang sanitizer [address|memory|thread|...]")
-    if(NOT "${SPIRV_USE_SANITIZER}" STREQUAL "")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=${SPIRV_USE_SANITIZER}")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=${SPIRV_USE_SANITIZER}")
-    endif()
+  option(SPIRV_WERROR "Enable error on warning" OFF)
+  if(${SPIRV_WERROR})
+    set(SPIRV_WARNINGS ${SPIRV_WARNINGS} -Werror)
   endif()
+elseif(WIN32)
+  set(SPIRV_WARNINGS -D_CRT_SECURE_NO_WARNINGS /wd4800)
 endif()
 
 option(SPIRV_COLOR_TERMINAL "Enable color terminal output" ON)
@@ -74,34 +65,32 @@ if(${SPIRV_COLOR_TERMINAL})
   add_definitions(-DSPIRV_COLOR_TERMINAL)
 endif()
 
-if(UNIX)
-  set(SPIRV_WARNINGS "-Wall -Wextra -Wno-missing-field-initializers")
-  option(SPIRV_WARN_EVERYTHING "Enable -Weverything for SPIRV library" OFF)
-  if(${SPIRV_WARN_EVERYTHING})
-    set(SPIRV_WARNINGS
-      "${SPIRV_WARNINGS} -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded")
+function(default_compile_options TARGET)
+  target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
+  if (UNIX)
+    target_compile_options(${TARGET} PRIVATE
+      -std=c++11 -fno-exceptions -fno-rtti)
+    # For good call stacks in profiles, keep the frame pointers.
+    if(NOT "${SPIRV_PERF}" STREQUAL "")
+      target_compile_options(${TARGET} PRIVATE -fno-omit-frame-pointer)
+    endif()
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      target_compile_options(${TARGET} PRIVATE -fcolor-diagnostics)
+      set(SPIRV_USE_SANITIZER "" CACHE STRING
+        "Use the clang sanitizer [address|memory|thread|...]")
+      if(NOT "${SPIRV_USE_SANITIZER}" STREQUAL "")
+        target_compile_options(${TARGET} PRIVATE
+          -fsanitize=${SPIRV_USE_SANITIZER})
+      endif()
+    endif()
   endif()
-elseif(WIN32)
-  set(SPIRV_WARNINGS "-D_CRT_SECURE_NO_WARNINGS /wd4800")
-endif()
-
-if(UNIX)
-  option(SPIRV_WERROR "Enable error on warning" OFF)
-  if(${SPIRV_WERROR})
-    set(SPIRV_WARNINGS "${SPIRV_WARNINGS} -Werror")
-  endif()
-endif()
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/include)
-
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include)
+endfunction()
 
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/bitutils.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/hex_float.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.h
@@ -131,33 +120,29 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
 
-set(SPIRV_TOOLS "SPIRV-Tools")
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
-target_link_libraries(${SPIRV_TOOLS} ${SPIRV_LIBS})
-set_target_properties(${SPIRV_TOOLS} PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
+default_compile_options(${SPIRV_TOOLS})
+target_include_directories(${SPIRV_TOOLS} PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
 
-option(SPIRV_SKIP_EXECUTABLES "Skip building the executables and tests along with the library" ${SPIRV_SKIP_EXECUTABLES})
-
-set(SPIRV_BUILT_TARGETS ${SPIRV_TOOLS})
+option(SPIRV_SKIP_EXECUTABLES
+  "Skip building the executables and tests along with the library" OFF)
+set(SPIRV_INSTALL_TARGETS ${SPIRV_TOOLS})
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
-  list(APPEND SPIRV_BUILT_TARGETS spirv-as spirv-dis spirv-val)
-  add_executable(spirv-as
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
-  set_target_properties(spirv-as PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-as ${SPIRV_TOOLS})
+  list(APPEND SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val)
 
-  add_executable(spirv-dis
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
-  set_target_properties(spirv-dis PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-dis ${SPIRV_TOOLS})
+  add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
+  default_compile_options(spirv-as)
+  target_link_libraries(spirv-as PRIVATE ${SPIRV_TOOLS})
 
-  add_executable(spirv-val
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
-  set_target_properties(spirv-val PROPERTIES COMPILE_FLAGS ${SPIRV_WARNINGS})
-  target_link_libraries(spirv-val ${SPIRV_TOOLS})
+  add_executable(spirv-dis ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
+  default_compile_options(spirv-dis)
+  target_link_libraries(spirv-dis PRIVATE ${SPIRV_TOOLS})
+
+  add_executable(spirv-val ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
+  default_compile_options(spirv-val)
+  target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
 
   set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest/googlemock)
   if(EXISTS ${GMOCK_DIR})
@@ -172,11 +157,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   if (TARGET gmock)
     message(STATUS "Found Google Mock, building tests.")
 
-    include_directories(SYSTEM
-      ${gmock_SOURCE_DIR}/include
-      ${gtest_SOURCE_DIR}/include)
-
-    add_executable(UnitSPIRV
+    set(TEST_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TestFixture.h
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.h
 
@@ -232,14 +213,18 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
 
-    target_link_libraries(UnitSPIRV ${SPIRV_TOOLS} gmock)
+    add_executable(UnitSPIRV ${TEST_SOURCES})
+    default_compile_options(UnitSPIRV)
+    target_include_directories(UnitSPIRV PRIVATE
+      ${gmock_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include)
+    target_link_libraries(UnitSPIRV PRIVATE ${SPIRV_TOOLS} gmock)
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
   endif()
 endif()
 
-install(TARGETS ${SPIRV_BUILT_TARGETS}
+install(TARGETS ${SPIRV_INSTALL_TARGETS}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)

@@ -202,7 +202,7 @@ inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
   // characters.  Ideally, we would just use a C++11 UTF-8 string literal,
   // but we want to support older Microsoft compilers.
   const std::basic_string<char> earth_africa("\xF0\x9F\x8C\x8D");
-  EXPECT_EQ(4, earth_africa.size());
+  EXPECT_EQ(4u, earth_africa.size());
 
   std::string result;
   result.reserve(num_4_byte_chars * 4);

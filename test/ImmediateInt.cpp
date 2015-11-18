@@ -48,7 +48,7 @@ TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
   SetText("!0x00FF00FF");
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
                                          &binary, &diagnostic));
-  EXPECT_EQ(0x00FF00FF, binary->code[5]);
+  EXPECT_EQ(0x00FF00FFu, binary->code[5]);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -58,7 +58,7 @@ TEST_F(TextToBinaryTest, ImmediateIntOperand) {
   SetText("OpCapability !0x00FF00FF");
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
                                          &binary, &diagnostic));
-  EXPECT_EQ(0x00FF00FF, binary->code[6]);
+  EXPECT_EQ(0x00FF00FFu, binary->code[6]);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
   }
@@ -241,7 +241,7 @@ OpCopyMemorySized %3 %4 %1
 !0x0002003D %10 %1 %2 !1
 OpCopyMemorySized %3 %4 %1
 )");
-  EXPECT_EQ(0x0002003D, alternate[kFirstInstruction]);
+  EXPECT_EQ(0x0002003Du, alternate[kFirstInstruction]);
   EXPECT_EQ(Subvector(original, kFirstInstruction + 1),
             Subvector(alternate, kFirstInstruction + 1));
 }

@@ -187,32 +187,32 @@ TEST_F(TextToBinaryTest, UnknownBeginningOfInstruction) {
       "found 'Google'.",
       CompileFailure(
           "\nOpSource OpenCL_C 12\nOpMemoryModel Physical64 OpenCL\nGoogle\n"));
-  EXPECT_EQ(4, diagnostic->position.line + 1);
-  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_EQ(4u, diagnostic->position.line + 1);
+  EXPECT_EQ(1u, diagnostic->position.column + 1);
 }
 
 TEST_F(TextToBinaryTest, NoEqualSign) {
   EXPECT_EQ("Expected '=', found end of stream.",
             CompileFailure("\nOpSource OpenCL_C 12\n"
                            "OpMemoryModel Physical64 OpenCL\n%2\n"));
-  EXPECT_EQ(5, diagnostic->position.line + 1);
-  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_EQ(5u, diagnostic->position.line + 1);
+  EXPECT_EQ(1u, diagnostic->position.column + 1);
 }
 
 TEST_F(TextToBinaryTest, NoOpCode) {
   EXPECT_EQ("Expected opcode, found end of stream.",
             CompileFailure("\nOpSource OpenCL_C 12\n"
                            "OpMemoryModel Physical64 OpenCL\n%2 =\n"));
-  EXPECT_EQ(5, diagnostic->position.line + 1);
-  EXPECT_EQ(1, diagnostic->position.column + 1);
+  EXPECT_EQ(5u, diagnostic->position.line + 1);
+  EXPECT_EQ(1u, diagnostic->position.column + 1);
 }
 
 TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_EQ("Invalid Opcode prefix 'Wahahaha'.",
             CompileFailure("\nOpSource OpenCL_C 12\n"
                            "OpMemoryModel Physical64 OpenCL\n%2 = Wahahaha\n"));
-  EXPECT_EQ(4, diagnostic->position.line + 1);
-  EXPECT_EQ(6, diagnostic->position.column + 1);
+  EXPECT_EQ(4u, diagnostic->position.line + 1);
+  EXPECT_EQ(6u, diagnostic->position.column + 1);
 }
 
 using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
@@ -322,12 +322,12 @@ TEST(AssemblyContextParseWideUnsignedIntegers, Sample) {
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &u64, ""));
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &u64, ""));
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &u64, ""));
-  EXPECT_EQ(0, u64);
+  EXPECT_EQ(0u, u64);
   EXPECT_EQ(SPV_SUCCESS,
             context.parseNumber("0xffffffffffffffff", ec, &u64, ""));
   EXPECT_EQ(0xffffffffffffffffULL, u64);
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u64, ""));
-  EXPECT_EQ(0, u64);
+  EXPECT_EQ(0u, u64);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u64, ""));
 }
 

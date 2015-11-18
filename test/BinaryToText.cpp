@@ -120,7 +120,7 @@ TEST_F(BinaryToText, TruncatedModule) {
   CompileSuccessfully("");
   EXPECT_EQ(SPV_INDEX_INSTRUCTION, binary->wordCount);
 
-  for (int length = 0; length < SPV_INDEX_INSTRUCTION; length++) {
+  for (size_t length = 0; length < SPV_INDEX_INSTRUCTION; length++) {
     spv_text text = nullptr;
     spv_diagnostic diagnostic = nullptr;
     EXPECT_EQ(
@@ -230,9 +230,6 @@ TEST_F(TextToBinaryTest, OneInstruction) {
 // This could detect problems in updating the expected-set-of-operands
 // list.
 TEST_F(TextToBinaryTest, OperandWithOperands) {
-  spv_binary binary;
-  spv_diagnostic diagnostic = nullptr;
-
   const std::string input = R"(OpEntryPoint Kernel %1 "foo"
 OpExecutionMode %1 LocalSizeHint 100 200 300
 %2 = OpTypeVoid
@@ -428,7 +425,7 @@ using GeneratorStringTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(GeneratorStringTest, Sample) {
   auto words = CompileSuccessfully("");
-  EXPECT_EQ(SPV_INDEX_GENERATOR_NUMBER, 2);
+  EXPECT_EQ(2u, SPV_INDEX_GENERATOR_NUMBER);
   words[SPV_INDEX_GENERATOR_NUMBER] =
       SPV_GENERATOR_WORD(GetParam().generator, GetParam().misc);
 

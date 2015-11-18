@@ -62,7 +62,7 @@ TEST_F(BinaryHeaderGet, Default) {
   ASSERT_EQ(SPV_SUCCESS, spvBinaryHeaderGet(&const_bin, endian, &header));
 
   ASSERT_EQ(static_cast<uint32_t>(SpvMagicNumber), header.magic);
-  ASSERT_EQ(0x10000, header.version);
+  ASSERT_EQ(0x10000u, header.version);
   ASSERT_EQ(static_cast<uint32_t>(SPV_GENERATOR_CODEPLAY), header.generator);
   ASSERT_EQ(1u, header.bound);
   ASSERT_EQ(0u, header.schema);
@@ -83,7 +83,7 @@ TEST_F(BinaryHeaderGet, InvalidPointerHeader) {
 }
 
 TEST_F(BinaryHeaderGet, TruncatedHeader) {
-  for (int i = 1; i < SPV_INDEX_INSTRUCTION; i++) {
+  for (uint8_t i = 1; i < SPV_INDEX_INSTRUCTION; i++) {
     binary.wordCount = i;
     spv_const_binary_t const_bin = get_const_binary();
     ASSERT_EQ(SPV_ERROR_INVALID_BINARY,

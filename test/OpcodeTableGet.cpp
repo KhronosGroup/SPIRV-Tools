@@ -31,7 +31,7 @@ namespace {
 TEST(OpcodeTableGet, Default) {
   spv_opcode_table table;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&table));
-  ASSERT_NE(0, table->count);
+  ASSERT_NE(0u, table->count);
   ASSERT_NE(nullptr, table->entries);
 }
 

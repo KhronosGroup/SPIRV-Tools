@@ -68,7 +68,7 @@ TEST_F(TextToBinaryTest, CombinedMemoryAccessMask) {
   const std::string input = "OpStore %ptr %value Volatile|Aligned 16";
   const uint32_t expected_mask =
       SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask;
-  EXPECT_THAT(expected_mask, Eq(3));
+  EXPECT_THAT(expected_mask, Eq(3u));
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(SpvOpStore, {1, 2, expected_mask, 16})));
 }

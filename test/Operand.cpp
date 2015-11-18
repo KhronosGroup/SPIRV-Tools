@@ -31,7 +31,7 @@ namespace {
 TEST(OperandTableGet, Default) {
   spv_operand_table table;
   ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&table));
-  ASSERT_NE(0, table->count);
+  ASSERT_NE(0u, table->count);
   ASSERT_NE(nullptr, table->types);
 }
 
@@ -40,7 +40,8 @@ TEST(OperandTableGet, InvalidPointerTable) {
 }
 
 TEST(OperandString, AllAreDefinedExceptVariable) {
-  EXPECT_EQ(0, SPV_OPERAND_TYPE_NONE);  // None has no string, so don't test it.
+  // None has no string, so don't test it.
+  EXPECT_EQ(0u, SPV_OPERAND_TYPE_NONE);
   // Start testing at enum with value 1, skipping None.
   for (int i = 1; i < int(SPV_OPERAND_TYPE_FIRST_VARIABLE_TYPE); i++) {
     EXPECT_NE(nullptr, spvOperandTypeStr(static_cast<spv_operand_type_t>(i)))

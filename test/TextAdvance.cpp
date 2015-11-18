@@ -35,45 +35,45 @@ TEST(TextAdvance, LeadingNewLines) {
   AutoText input("\n\nWord");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(0, data.position().column);
-  ASSERT_EQ(2, data.position().line);
-  ASSERT_EQ(2, data.position().index);
+  ASSERT_EQ(0u, data.position().column);
+  ASSERT_EQ(2u, data.position().line);
+  ASSERT_EQ(2u, data.position().index);
 }
 
 TEST(TextAdvance, LeadingSpaces) {
   AutoText input("    Word");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(4, data.position().column);
-  ASSERT_EQ(0, data.position().line);
-  ASSERT_EQ(4, data.position().index);
+  ASSERT_EQ(4u, data.position().column);
+  ASSERT_EQ(0u, data.position().line);
+  ASSERT_EQ(4u, data.position().index);
 }
 
 TEST(TextAdvance, LeadingTabs) {
   AutoText input("\t\t\tWord");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(3, data.position().column);
-  ASSERT_EQ(0, data.position().line);
-  ASSERT_EQ(3, data.position().index);
+  ASSERT_EQ(3u, data.position().column);
+  ASSERT_EQ(0u, data.position().line);
+  ASSERT_EQ(3u, data.position().index);
 }
 
 TEST(TextAdvance, LeadingNewLinesSpacesAndTabs) {
   AutoText input("\n\n\t  Word");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(3, data.position().column);
-  ASSERT_EQ(2, data.position().line);
-  ASSERT_EQ(5, data.position().index);
+  ASSERT_EQ(3u, data.position().column);
+  ASSERT_EQ(2u, data.position().line);
+  ASSERT_EQ(5u, data.position().index);
 }
 
 TEST(TextAdvance, LeadingWhitespaceAfterCommentLine) {
   AutoText input("; comment\n \t \tWord");
   AssemblyContext data(input, nullptr);
   ASSERT_EQ(SPV_SUCCESS, data.advance());
-  ASSERT_EQ(4, data.position().column);
-  ASSERT_EQ(1, data.position().line);
-  ASSERT_EQ(14, data.position().index);
+  ASSERT_EQ(4u, data.position().column);
+  ASSERT_EQ(1u, data.position().line);
+  ASSERT_EQ(14u, data.position().index);
 }
 
 TEST(TextAdvance, EOFAfterCommentLine) {
@@ -91,7 +91,7 @@ TEST(TextAdvance, NullTerminator) {
 TEST(TextAdvance, NoNullTerminator) {
   spv_text_t text = {"OpNop\nSomething else in memory", 6};
   AssemblyContext data(&text, nullptr);
-  const spv_position_t line_break = {1, 5, 5};
+  const spv_position_t line_break = {1u, 5u, 5u};
   data.setPosition(line_break);
   ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }

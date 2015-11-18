@@ -71,7 +71,7 @@ TEST(TextLiteral, GoodU64) {
 
   ASSERT_EQ(SPV_SUCCESS, spvTextToLiteral("4294967296", &l));
   EXPECT_EQ(SPV_LITERAL_TYPE_UINT_64, l.type);
-  EXPECT_EQ(4294967296, l.value.u64);
+  EXPECT_EQ(4294967296u, l.value.u64);
 }
 
 TEST(TextLiteral, GoodFloat) {

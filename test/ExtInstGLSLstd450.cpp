@@ -113,12 +113,6 @@ OpFunctionEnd
   spvContextDestroy(context);
 }
 
-static const char* kF32Type = R"(%4 = OpTypeFloat 32)";
-static const char* kF32Const = R"(%5 = OpConstant %4 1)";
-static const char* kU32Type = R"(%4 = OpTypeInt 32 0)";
-static const char* kS32Type = R"(%4 = OpTypeInt 32 1)";
-static const char* kI32Const = R"(%5 = OpConstant %4 1)";
-
 INSTANTIATE_TEST_CASE_P(
     ExtInstParameters, ExtInstGLSLstd450RoundTripTest,
     ::testing::ValuesIn(std::vector<ExtInstContext>({

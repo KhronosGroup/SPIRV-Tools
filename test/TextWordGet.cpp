@@ -41,9 +41,9 @@ TEST(TextWordGet, NullTerminator) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word"), nullptr)
                              .getWord(word, &endPosition));
-  ASSERT_EQ(4, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(4, endPosition.index);
+  ASSERT_EQ(4u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(4u, endPosition.index);
   ASSERT_STREQ("Word", word.c_str());
 }
 
@@ -52,9 +52,9 @@ TEST(TextWordGet, TabTerminator) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word\t"), nullptr)
                              .getWord(word, &endPosition));
-  ASSERT_EQ(4, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(4, endPosition.index);
+  ASSERT_EQ(4u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(4u, endPosition.index);
   ASSERT_STREQ("Word", word.c_str());
 }
 
@@ -63,9 +63,9 @@ TEST(TextWordGet, SpaceTerminator) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Word "), nullptr)
                              .getWord(word, &endPosition));
-  ASSERT_EQ(4, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(4, endPosition.index);
+  ASSERT_EQ(4u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(4u, endPosition.index);
   ASSERT_STREQ("Word", word.c_str());
 }
 
@@ -74,9 +74,9 @@ TEST(TextWordGet, SemicolonTerminator) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, AssemblyContext(AutoText("Wo;rd"), nullptr)
                              .getWord(word, &endPosition));
-  ASSERT_EQ(2, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(2, endPosition.index);
+  ASSERT_EQ(2u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(2u, endPosition.index);
   ASSERT_STREQ("Wo", word.c_str());
 }
 
@@ -92,7 +92,7 @@ TEST(TextWordGet, MultipleWords) {
     ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
     ASSERT_EQ(strlen(words[wordIndex]),
               endPosition.column - data.position().column);
-    ASSERT_EQ(0, endPosition.line);
+    ASSERT_EQ(0u, endPosition.line);
     ASSERT_EQ(strlen(words[wordIndex]),
               endPosition.index - data.position().index);
     ASSERT_STREQ(words[wordIndex], word.c_str());
@@ -114,9 +114,9 @@ TEST(TextWordGet, QuotesAreKept) {
   std::string word;
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
-  EXPECT_EQ(8, endPosition.column);
-  EXPECT_EQ(0, endPosition.line);
-  EXPECT_EQ(8, endPosition.index);
+  EXPECT_EQ(8u, endPosition.column);
+  EXPECT_EQ(0u, endPosition.line);
+  EXPECT_EQ(8u, endPosition.index);
   EXPECT_STREQ(expected[0], word.c_str());
 
   // Move to the next word.
@@ -124,9 +124,9 @@ TEST(TextWordGet, QuotesAreKept) {
   data.seekForward(1);
 
   ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
-  EXPECT_EQ(23, endPosition.column);
-  EXPECT_EQ(0, endPosition.line);
-  EXPECT_EQ(23, endPosition.index);
+  EXPECT_EQ(23u, endPosition.column);
+  EXPECT_EQ(0u, endPosition.line);
+  EXPECT_EQ(23u, endPosition.index);
   EXPECT_STREQ(expected[1], word.c_str());
 }
 
@@ -138,9 +138,9 @@ TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
   std::string word;
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
-  EXPECT_EQ(16, endPosition.column);
-  EXPECT_EQ(0, endPosition.line);
-  EXPECT_EQ(16, endPosition.index);
+  EXPECT_EQ(16u, endPosition.column);
+  EXPECT_EQ(0u, endPosition.line);
+  EXPECT_EQ(16u, endPosition.index);
   EXPECT_STREQ(expected[0], word.c_str());
 
   // Move to the next word.
@@ -148,9 +148,9 @@ TEST(TextWordGet, QuotesBetweenWordsActLikeGlue) {
   data.seekForward(1);
 
   ASSERT_EQ(SPV_SUCCESS, data.getWord(word, &endPosition));
-  EXPECT_EQ(22, endPosition.column);
-  EXPECT_EQ(0, endPosition.line);
-  EXPECT_EQ(22, endPosition.index);
+  EXPECT_EQ(22u, endPosition.column);
+  EXPECT_EQ(0u, endPosition.line);
+  EXPECT_EQ(22u, endPosition.index);
   EXPECT_STREQ(expected[1], word.c_str());
 }
 
@@ -158,12 +158,11 @@ TEST(TextWordGet, QuotingWhitespace) {
   AutoText input(QUOTE "white " NEWLINE TAB " space" QUOTE);
   // Whitespace surrounded by quotes acts like glue.
   std::string word;
-  spv_position_t startPosition = {};
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
   EXPECT_EQ(input.str.length(), endPosition.column);
-  EXPECT_EQ(0, endPosition.line);
+  EXPECT_EQ(0u, endPosition.line);
   EXPECT_EQ(input.str.length(), endPosition.index);
   EXPECT_EQ(input.str, word);
 }
@@ -174,9 +173,9 @@ TEST(TextWordGet, QuoteAlone) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
-  ASSERT_EQ(1, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(1, endPosition.index);
+  ASSERT_EQ(1u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(1u, endPosition.index);
   ASSERT_STREQ(QUOTE, word.c_str());
 }
 
@@ -186,9 +185,9 @@ TEST(TextWordGet, EscapeAlone) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
-  ASSERT_EQ(1, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(1, endPosition.index);
+  ASSERT_EQ(1u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(1u, endPosition.index);
   ASSERT_STREQ(BACKSLASH, word.c_str());
 }
 
@@ -198,9 +197,9 @@ TEST(TextWordGet, EscapeAtEndOfInput) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
-  ASSERT_EQ(5, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(5, endPosition.index);
+  ASSERT_EQ(5u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(5u, endPosition.index);
   ASSERT_STREQ("word" BACKSLASH, word.c_str());
 }
 
@@ -210,9 +209,9 @@ TEST(TextWordGet, Escaping) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
-  ASSERT_EQ(10, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(10, endPosition.index);
+  ASSERT_EQ(10u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(10u, endPosition.index);
   ASSERT_EQ(input.str, word);
 }
 
@@ -222,9 +221,9 @@ TEST(TextWordGet, EscapingEscape) {
   spv_position_t endPosition = {};
   ASSERT_EQ(SPV_SUCCESS,
             AssemblyContext(input, nullptr).getWord(word, &endPosition));
-  ASSERT_EQ(6, endPosition.column);
-  ASSERT_EQ(0, endPosition.line);
-  ASSERT_EQ(6, endPosition.index);
+  ASSERT_EQ(6u, endPosition.column);
+  ASSERT_EQ(0u, endPosition.line);
+  ASSERT_EQ(6u, endPosition.index);
   ASSERT_STREQ("word" BACKSLASH BACKSLASH, word.c_str());
 }
 
