@@ -27,8 +27,8 @@
 #include "validate.h"
 
 #include <assert.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <vector>
 
@@ -106,9 +106,9 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {

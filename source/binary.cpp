@@ -428,8 +428,8 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
       }
       break;
 
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       if (!word) return diagnostic() << spvOperandTypeStr(type) << " Id is 0";
       break;
 

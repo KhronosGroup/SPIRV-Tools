@@ -204,7 +204,7 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
     case OperandFunction:
       return SPV_OPERAND_TYPE_FUNCTION_CONTROL;
     case OperandMemorySemantics:
-      return SPV_OPERAND_TYPE_MEMORY_SEMANTICS;
+      return SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID;
     case OperandMemoryAccess:
       // This case does not occur in the table for SPIR-V 0.99 Rev 32.
       // We expect that it will become SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
@@ -212,7 +212,7 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
       // instructions.
       break;
     case OperandScope:
-      return SPV_OPERAND_TYPE_EXECUTION_SCOPE;
+      return SPV_OPERAND_TYPE_SCOPE_ID;
     case OperandGroupOperation:
       return SPV_OPERAND_TYPE_GROUP_OPERATION;
     case OperandKernelEnqueueFlags:

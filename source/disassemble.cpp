@@ -207,8 +207,8 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       break;
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_TYPE_ID:
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       SetYellow();
       stream_ << "%" << word;
       break;

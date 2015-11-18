@@ -182,6 +182,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(SAMPLER_FILTER_MODE, SamplerFilterModeLinear, Kernel),
     }));
 
+// clang-format off
 // See SPIR-V Section 3.11 Image Format
 INSTANTIATE_TEST_CASE_P(
     ImageFormat, EnumCapabilityTest,
@@ -227,6 +228,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(SAMPLER_IMAGE_FORMAT, ImageFormatR16ui, StorageImageExtendedFormats),
         CASE1(SAMPLER_IMAGE_FORMAT, ImageFormatR8ui, StorageImageExtendedFormats),
     }));
+// clang-format on
 
 // See SPIR-V Section 3.12 Image Channel Order
 INSTANTIATE_TEST_CASE_P(
@@ -279,7 +281,8 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeHalfFloat, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeFloat, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt24, Kernel),
-        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt101010_2, Kernel),
+        CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt101010_2,
+              Kernel),
     }));
 
 // See SPIR-V Section 3.14 Image Operands
@@ -489,17 +492,18 @@ INSTANTIATE_TEST_CASE_P(FunctionControl, EnumCapabilityTest,
 INSTANTIATE_TEST_CASE_P(
     MemorySemantics, EnumCapabilityTest,
     ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsMaskNone),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsAcquireMask),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsReleaseMask),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsAcquireReleaseMask),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsSequentiallyConsistentMask),
-        CASE1(MEMORY_SEMANTICS, MemorySemanticsUniformMemoryMask, Shader),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsSubgroupMemoryMask),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsWorkgroupMemoryMask),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsCrossWorkgroupMemoryMask),
-        CASE1(MEMORY_SEMANTICS, MemorySemanticsAtomicCounterMemoryMask, Shader),
-        CASE0(MEMORY_SEMANTICS, MemorySemanticsImageMemoryMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsMaskNone),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsAcquireMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsReleaseMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsAcquireReleaseMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsSequentiallyConsistentMask),
+        CASE1(MEMORY_SEMANTICS_ID, MemorySemanticsUniformMemoryMask, Shader),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsSubgroupMemoryMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsWorkgroupMemoryMask),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsCrossWorkgroupMemoryMask),
+        CASE1(MEMORY_SEMANTICS_ID, MemorySemanticsAtomicCounterMemoryMask,
+              Shader),
+        CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsImageMemoryMask),
     }));
 
 // See SPIR-V Section 3.26 Memory Access
@@ -513,14 +517,13 @@ INSTANTIATE_TEST_CASE_P(
     }));
 
 // See SPIR-V Section 3.27 Scope <id>
-INSTANTIATE_TEST_CASE_P(Scope, EnumCapabilityTest,
-                        ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
-                            CASE0(EXECUTION_SCOPE, ScopeCrossDevice),
-                            CASE0(EXECUTION_SCOPE, ScopeDevice),
-                            CASE0(EXECUTION_SCOPE, ScopeWorkgroup),
-                            CASE0(EXECUTION_SCOPE, ScopeSubgroup),
-                            CASE0(EXECUTION_SCOPE, ScopeInvocation),
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    Scope, EnumCapabilityTest,
+    ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
+        CASE0(SCOPE_ID, ScopeCrossDevice), CASE0(SCOPE_ID, ScopeDevice),
+        CASE0(SCOPE_ID, ScopeWorkgroup), CASE0(SCOPE_ID, ScopeSubgroup),
+        CASE0(SCOPE_ID, ScopeInvocation),
+    }));
 
 // See SPIR-V Section 3.28 Group Operation
 INSTANTIATE_TEST_CASE_P(

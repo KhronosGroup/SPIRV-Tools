@@ -109,10 +109,6 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,  // SPIR-V Sec 3.25
   SPV_OPERAND_TYPE_SCOPE_ID,             // SPIR-V Sec 3.27
 
-  // TODO(dneto): Remove these old names.
-  SPV_OPERAND_TYPE_MEMORY_SEMANTICS = SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,
-  SPV_OPERAND_TYPE_EXECUTION_SCOPE = SPV_OPERAND_TYPE_SCOPE_ID,
-
   // Set 2:  Operands that are literal numbers.
   SPV_OPERAND_TYPE_LITERAL_INTEGER,  // Always unsigned 32-bits.
   // The Instruction argument to OpExtInst. It's an unsigned 32-bit literal

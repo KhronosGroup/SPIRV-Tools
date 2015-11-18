@@ -946,6 +946,7 @@ static const spv_operand_desc_t kernelProfilingInfoEntries[] = {
     }                                                                         \
   }
 
+// clang-format off
 static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE(Matrix),
     CASE_CAP(Shader, Matrix),
@@ -1005,6 +1006,7 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE_CAP(StorageImageReadWithoutFormat, Shader),
     CASE_CAP(StorageImageWriteWithoutFormat, Shader),
 };
+// clang-format on
 #undef CASE
 #undef CASE_CAP
 
@@ -1079,7 +1081,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_FUNCTION_CONTROL,
      sizeof(functionControlEntries) / sizeof(spv_operand_desc_t),
      functionControlEntries},
-    {SPV_OPERAND_TYPE_MEMORY_SEMANTICS,
+    {SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,
      sizeof(memorySemanticsEntries) / sizeof(spv_operand_desc_t),
      memorySemanticsEntries},
     {SPV_OPERAND_TYPE_MEMORY_ACCESS,
@@ -1088,7 +1090,7 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
     {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,  // Same as *_MEMORY_ACCESS
      sizeof(memoryAccessEntries) / sizeof(spv_operand_desc_t),
      memoryAccessEntries},
-    {SPV_OPERAND_TYPE_EXECUTION_SCOPE,
+    {SPV_OPERAND_TYPE_SCOPE_ID,
      sizeof(scopeEntries) / sizeof(spv_operand_desc_t), scopeEntries},
     {SPV_OPERAND_TYPE_GROUP_OPERATION,
      sizeof(groupOperationEntries) / sizeof(spv_operand_desc_t),
@@ -1229,12 +1231,12 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "loop control";
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
       return "function control";
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       return "memory semantics";
     case SPV_OPERAND_TYPE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
       return "memory access";
-    case SPV_OPERAND_TYPE_EXECUTION_SCOPE:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
       return "execution scope ID";
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
       return "group operation";
