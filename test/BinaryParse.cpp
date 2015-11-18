@@ -447,9 +447,9 @@ using BinaryParseWordVectorDiagnosticTest = spvtest::TextToBinaryTestBase<
 TEST_P(BinaryParseWordVectorDiagnosticTest, WordVectorCases) {
   spv_diagnostic diagnostic = nullptr;
   const auto& words = GetParam().words;
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, nullptr, words.data(), words.size(),
-                           nullptr, nullptr, &diagnostic));
+  EXPECT_THAT(spvBinaryParse(context, nullptr, words.data(), words.size(),
+                             nullptr, nullptr, &diagnostic),
+              AnyOf(SPV_ERROR_INVALID_BINARY, SPV_ERROR_INVALID_ID));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }
@@ -669,9 +669,9 @@ using BinaryParseAssemblyDiagnosticTest = spvtest::TextToBinaryTestBase<
 TEST_P(BinaryParseAssemblyDiagnosticTest, AssemblyCases) {
   spv_diagnostic diagnostic = nullptr;
   auto words = CompileSuccessfully(GetParam().assembly);
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, nullptr, words.data(), words.size(),
-                           nullptr, nullptr, &diagnostic));
+  EXPECT_THAT(spvBinaryParse(context, nullptr, words.data(), words.size(),
+                             nullptr, nullptr, &diagnostic),
+              AnyOf(SPV_ERROR_INVALID_BINARY, SPV_ERROR_INVALID_ID));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }

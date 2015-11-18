@@ -407,7 +407,7 @@ TEST_F(ValidateID, OpConstantGood) {
 %2 = OpConstant %1 1)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpConstantBad) {
+TEST_F(ValidateID, DISABLED_OpConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstant !1 !0)";
@@ -629,7 +629,7 @@ TEST_F(ValidateID, OpSpecConstantGood) {
 %2 = OpSpecConstant %1 42)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpSpecConstantBad) {
+TEST_F(ValidateID, DISABLED_OpSpecConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstant !1 !4)";
@@ -944,6 +944,19 @@ TEST_F(ValidateID, OpFunctionParameterGood) {
 %4 = OpFunction %1 None %3
 %5 = OpFunctionParameter %2
 %6 = OpLabel
+     OpReturn
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+TEST_F(ValidateID, OpFunctionParameterMultipleGood) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %1 %2 %2
+%4 = OpFunction %1 None %3
+%5 = OpFunctionParameter %2
+%6 = OpFunctionParameter %2
+%7 = OpLabel
      OpReturn
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);

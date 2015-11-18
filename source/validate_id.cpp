@@ -1216,22 +1216,21 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
                                    << inst->words[resultTypeIndex]
                                    << "' is not defined.";
            return false);
-  auto function = inst - 1;
   // NOTE: Find OpFunction & ensure OpFunctionParameter is not out of place.
   size_t paramIndex = 0;
-  while (firstInst != function) {
-    spvCheck(SpvOpFunction != function->opcode &&
-                 SpvOpFunctionParameter != function->opcode,
+  assert(firstInst < inst && "Invalid instruction pointer");
+  while (firstInst != --inst) {
+    spvCheck(SpvOpFunction != inst->opcode && SpvOpFunctionParameter != inst->opcode,
              DIAG(0) << "OpFunctionParameter is not preceded by OpFunction or "
                         "OpFunctionParameter sequence.";
              return false);
-    if (SpvOpFunction == function->opcode) {
+    if (SpvOpFunction == inst->opcode) {
       break;
     } else {
       paramIndex++;
     }
   }
-  auto functionType = find(function->words[4]);
+  auto functionType = find(inst->words[4]);
   spvCheck(!found(functionType), assert(0 && "Unreachable!"));
   auto paramType = find(functionType->second.inst->words[paramIndex + 3]);
   spvCheck(!found(paramType), assert(0 && "Unreachable!"));
