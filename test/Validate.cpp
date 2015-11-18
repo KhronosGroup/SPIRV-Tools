@@ -40,17 +40,17 @@ class Validate : public ::testing::Test {
   spv_binary binary;
 };
 
-TEST_F(Validate, DISABLED_Default) {
+TEST_F(Validate, Default) {
   char str[] = R"(
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1 ""
-OpExecutionMode 1 LocalSize 1 1 1
-OpTypeVoid 2
-OpTypeFunction 3 2
-OpFunction 2 1 NoControl 3
-OpLabel 4
-OpReturn
-OpFunctionEnd
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
@@ -63,18 +63,18 @@ OpFunctionEnd
   }
 }
 
-TEST_F(Validate, DISABLED_InvalidIdUndefined) {
+TEST_F(Validate, InvalidIdUndefined) {
   char str[] = R"(
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1 ""
-OpExecutionMode 5 LocalSize 1 1 1
-OpTypeVoid 2
-OpTypeFunction 3 2
-OpFunction 2 1 NoControl 3
-OpLabel 4
-OpReturn
-OpFunctionEnd
-)";
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %4 ""
+     OpExecutionMode %4 LocalSize 1 1 1
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%4 = OpFunction %2 None %6
+%5 = OpLabel
+     OpReturn
+     OpFunctionEnd
+    )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
             spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
@@ -85,17 +85,17 @@ OpFunctionEnd
   spvDiagnosticDestroy(diagnostic);
 }
 
-TEST_F(Validate, DISABLED_InvalidIdRedefined) {
+TEST_F(Validate, InvalidIdRedefined) {
   char str[] = R"(
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute 1 ""
-OpExecutionMode 1 LocalSize 1 1 1
-OpTypeVoid 2
-OpTypeFunction 2 2
-OpFunction 2 1 NoControl 3
-OpLabel 4
-OpReturn
-OpFunctionEnd
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%2 = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
 )";
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS,
