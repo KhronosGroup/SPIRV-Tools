@@ -50,7 +50,7 @@
 
 typedef unsigned int SpvId;
 
-#define SPV_VERSION 10000
+#define SPV_VERSION 0x10000
 #define SPV_REVISION 2
 
 static const unsigned int SpvMagicNumber = 0x07230203;
