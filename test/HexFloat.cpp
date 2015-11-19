@@ -24,12 +24,6 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifdef _MSC_VER
-// We define this so that we can use sscanf in the tests without
-// MSVC warning us all the time.
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include <cmath>
 #include <cstdio>
 #include <sstream>

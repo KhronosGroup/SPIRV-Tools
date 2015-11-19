@@ -318,7 +318,7 @@ spv_result_t Parser::parseInstruction() {
       opcode_desc->operandTypes + opcode_desc->numTypes);
 
   while (_.word_index < inst.offset + inst_word_count) {
-    const uint16_t inst_word_index = _.word_index - inst.offset;
+    const uint16_t inst_word_index = uint16_t(_.word_index - inst.offset);
     if (expected_operands.empty()) {
       return diagnostic() << "Invalid instruction Op" << opcode_desc->name
                           << " starting at word " << inst.offset
@@ -354,7 +354,7 @@ spv_result_t Parser::parseInstruction() {
   // Must wait until here to set the inst.operands pointer because the vector
   // might be resized while we accumulate itse elements.
   inst.operands = operands.data();
-  inst.num_operands = operands.size();
+  inst.num_operands = uint16_t(operands.size());
 
   // Issue the callback.  The callee should know that all the storage in inst
   // is transient, and will disappear immediately afterward.
@@ -371,7 +371,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
                                   spv_operand_pattern_t* expected_operands) {
   // We'll fill in this result as we go along.
   spv_parsed_operand_t parsed_operand;
-  parsed_operand.offset = _.word_index - inst->offset;
+  parsed_operand.offset = uint16_t(_.word_index - inst->offset);
   // Most operands occupy one word.  This might be be adjusted later.
   parsed_operand.num_words = 1;
   // The type argument is the one used by the grammar to parse the instruction.
@@ -526,7 +526,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
                             << std::numeric_limits<uint16_t>::max()
                             << " words: " << string_num_words << " words long";
       }
-      parsed_operand.num_words = string_num_words;
+      parsed_operand.num_words = uint16_t(string_num_words);
       parsed_operand.type = SPV_OPERAND_TYPE_LITERAL_STRING;
 
       if (SpvOpExtInstImport == inst->opcode) {
