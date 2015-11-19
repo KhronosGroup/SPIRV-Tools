@@ -43,6 +43,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+option(SPIRV_WERROR "Enable error on warning" ON)
 if(UNIX)
   set(SPIRV_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 
@@ -52,12 +53,15 @@ if(UNIX)
       -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
   endif()
 
-  option(SPIRV_WERROR "Enable error on warning" OFF)
   if(${SPIRV_WERROR})
     set(SPIRV_WARNINGS ${SPIRV_WARNINGS} -Werror)
   endif()
 elseif(WIN32)
   set(SPIRV_WARNINGS -D_CRT_SECURE_NO_WARNINGS /wd4800)
+
+  if(${SPIRV_WERROR})
+    set(SPIRV_WARNINGS ${SPIRV_WARNINGS} /WX)
+  endif()
 endif()
 
 option(SPIRV_COLOR_TERMINAL "Enable color terminal output" ON)

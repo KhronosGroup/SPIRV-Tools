@@ -645,7 +645,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
            << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX;
   }
 
-  pInst->words[0] = spvOpcodeMake(pInst->words.size(), opcodeEntry->opcode);
+  pInst->words[0] = spvOpcodeMake(uint16_t(pInst->words.size()), opcodeEntry->opcode);
 
   return SPV_SUCCESS;
 }

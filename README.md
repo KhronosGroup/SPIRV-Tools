@@ -96,8 +96,8 @@ The following CMake options are supported:
   This should only be used with a debug build. Disabled by default.
 * `SPIRV_WARN_EVERYTHING=OFF` - On UNIX platforms enable the `-Weverything`
   compiler front end option, disabled by default.
-* `SPIRV_WERROR=OFF` - On UNIX platforms enable the `-Werror` compiler front end
-  option, disabled by default.
+* `SPIRV_WERROR=ON` - Forces a compilation error on any warnings encountered by
+  enabling the compiler-specific compiler front-end option, enabled by default.
 
 ## Library
 
