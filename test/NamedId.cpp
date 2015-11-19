@@ -24,16 +24,17 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "UnitSPIRV.h"
-#include "TestFixture.h"
-
 #include <vector>
+
+#include "TestFixture.h"
+#include "UnitSPIRV.h"
 
 namespace {
 
-TEST(NamedId, Default) {
-  spv_context context = spvContextCreate();
-  const char* spirv = R"(
+using NamedIdTest = spvtest::TextToBinaryTest;
+
+TEST_F(NamedIdTest, Default) {
+  const std::string input = R"(
           OpCapability Shader
           OpMemoryModel Logical Simple
           OpEntryPoint Vertex %main "foo"
@@ -43,31 +44,17 @@ TEST(NamedId, Default) {
 %lbMain = OpLabel
           OpReturn
           OpFunctionEnd)";
-  spv_text_t text;
-  text.str = spirv;
-  text.length = strlen(spirv);
-  spv_binary binary = nullptr;
-  spv_diagnostic diagnostic;
-  spv_result_t error =
-      spvTextToBinary(context, text.str, text.length, &binary, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
-  }
-  error = spvBinaryToText(
-      context, binary->code, binary->wordCount,
-      SPV_BINARY_TO_TEXT_OPTION_PRINT | SPV_BINARY_TO_TEXT_OPTION_COLOR,
-      nullptr, &diagnostic);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    spvBinaryDestroy(binary);
-    ASSERT_EQ(SPV_SUCCESS, error);
-  }
-  spvBinaryDestroy(binary);
-  spvContextDestroy(context);
+  const std::string output =
+      "OpCapability Shader\n"
+      "OpMemoryModel Logical Simple\n"
+      "OpEntryPoint Vertex %1 \"foo\"\n"
+      "%2 = OpTypeVoid\n"
+      "%3 = OpTypeFunction %2\n"
+      "%1 = OpFunction %2 None %3\n"
+      "%4 = OpLabel\n"
+      "OpReturn\n"
+      "OpFunctionEnd\n";
+  EXPECT_EQ(output, EncodeAndDecodeSuccessfully(input));
 }
 
 struct IdCheckCase {
