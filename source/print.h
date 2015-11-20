@@ -30,6 +30,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace libspirv {
+
 // Wrapper for out stream selection.
 class out_stream {
  public:
@@ -72,6 +74,8 @@ struct yellow {
 struct blue {
   operator const char*();
 };
-}
+}  // namespace clr
+
+}  // namespace libspirv
 
 #endif  // LIBSPIRV_PRINT_H_

@@ -33,6 +33,8 @@
 
 #include "libspirv/libspirv.h"
 
+namespace libspirv {
+
 class diagnostic_helper {
  public:
   diagnostic_helper(spv_position_t& position, spv_diagnostic* pDiagnostic)
@@ -95,8 +97,10 @@ class DiagnosticStream {
   spv_result_t error_;
 };
 
-#define DIAGNOSTIC                                 \
-  diagnostic_helper helper(position, pDiagnostic); \
+#define DIAGNOSTIC                                           \
+  libspirv::diagnostic_helper helper(position, pDiagnostic); \
   helper.stream
+
+}  // namespace libspirv
 
 #endif  // LIBSPIRV_DIAGNOSTIC_H_

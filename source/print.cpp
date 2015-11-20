@@ -27,6 +27,8 @@
 #include "print.h"
 
 #if defined(SPIRV_LINUX) || defined(SPIRV_MAC)
+namespace libspirv {
+
 clr::reset::operator const char*() { return "\e[0m"; }
 
 clr::grey::operator const char*() { return "\e[1;30m"; }
@@ -38,8 +40,12 @@ clr::green::operator const char*() { return "\e[32m"; }
 clr::yellow::operator const char*() { return "\e[33m"; }
 
 clr::blue::operator const char*() { return "\e[34m"; }
+
+}  // namespace libspirv
 #elif defined(SPIRV_WINDOWS)
 #include <Windows.h>
+
+namespace libspirv {
 
 clr::reset::operator const char*() {
   const DWORD color = 0Xf;
@@ -100,4 +106,6 @@ clr::blue::operator const char*() {
   SetConsoleTextAttribute(hConsole, color);
   return "";
 }
+
+}  // namespace libspirv
 #endif

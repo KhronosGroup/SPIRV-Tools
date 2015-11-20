@@ -28,6 +28,8 @@
 
 namespace {
 
+using libspirv::DiagnosticStream;
+
 TEST(DiagnosticStream, ConversionToResultType) {
   // Check after the DiagnosticStream object is destroyed.
   spv_result_t value;

@@ -49,6 +49,8 @@ namespace {
 class Disassembler {
   enum { kStandardIndent = 15 };
 
+  using out_stream = libspirv::out_stream;
+
  public:
   Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t const* words,
                uint32_t options)
@@ -88,27 +90,27 @@ class Disassembler {
 
   // Resets the output color, if color is turned on.
   void ResetColor() {
-    if (color_) out_.get() << clr::reset();
+    if (color_) out_.get() << libspirv::clr::reset();
   }
   // Sets the output to grey, if color is turned on.
   void SetGrey() {
-    if (color_) out_.get() << clr::grey();
+    if (color_) out_.get() << libspirv::clr::grey();
   }
   // Sets the output to blue, if color is turned on.
   void SetBlue() {
-    if (color_) out_.get() << clr::blue();
+    if (color_) out_.get() << libspirv::clr::blue();
   }
   // Sets the output to yellow, if color is turned on.
   void SetYellow() {
-    if (color_) out_.get() << clr::yellow();
+    if (color_) out_.get() << libspirv::clr::yellow();
   }
   // Sets the output to red, if color is turned on.
   void SetRed() {
-    if (color_) out_.get() << clr::red();
+    if (color_) out_.get() << libspirv::clr::red();
   }
   // Sets the output to green, if color is turned on.
   void SetGreen() {
-    if (color_) out_.get() << clr::green();
+    if (color_) out_.get() << libspirv::clr::green();
   }
 
   // The SPIR-V binary. The endianness is not necessarily converted

@@ -163,12 +163,12 @@ class Parser {
   // the input stream, and for the given error code. Any data written to the
   // returned object will be propagated to the current parse's diagnostic
   // object.
-  DiagnosticStream diagnostic(spv_result_t error) {
-    return DiagnosticStream({0, 0, _.word_index}, _.diagnostic, error);
+  libspirv::DiagnosticStream diagnostic(spv_result_t error) {
+    return libspirv::DiagnosticStream({0, 0, _.word_index}, _.diagnostic, error);
   }
 
   // Returns a diagnostic stream object with the default parse error code.
-  DiagnosticStream diagnostic() {
+  libspirv::DiagnosticStream diagnostic() {
     // The default failure for parsing is invalid binary.
     return diagnostic(SPV_ERROR_INVALID_BINARY);
   }
