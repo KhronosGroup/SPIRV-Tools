@@ -283,8 +283,10 @@ typedef struct spv_parsed_operand_t {
 
 // An instruction parsed from a binary SPIR-V module.
 typedef struct spv_parsed_instruction_t {
-  // Location of the instruction, in words from the start of the SPIR-V binary.
-  size_t offset;
+  // An array of words for this instruction, in native endianness.
+  const uint32_t* words;
+  // The number of words in this instruction.
+  uint16_t num_words;
   SpvOp opcode;
   // The extended instruction type, if opcode is OpExtInst.  Otherwise
   // this is the "none" value.
@@ -401,8 +403,10 @@ typedef spv_result_t (*spv_parsed_header_fn_t)(
 
 // A pointer to a function that accepts a parsed SPIR-V instruction.
 // The parsed_instruction value is transient: it may be overwritten
-// or released immediately after the function has returned.  The function
-// should return SPV_SUCCESS if and only if parsing should continue.
+// or released immediately after the function has returned.  That also
+// applies to the words array member of the parsed instruction.  The
+// function should return SPV_SUCCESS if and only if parsing should
+// continue.
 typedef spv_result_t (*spv_parsed_instruction_fn_t)(
     void* user_data, const spv_parsed_instruction_t* parsed_instruction);
 

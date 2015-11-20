@@ -78,3 +78,10 @@ spv_result_t spvBinaryEndianness(spv_const_binary binary,
 
   return SPV_ERROR_INVALID_BINARY;
 }
+
+bool spvIsHostEndian(spv_endianness_t endian) {
+  return ((SPV_ENDIANNESS_LITTLE == endian) &&
+          (I32_ENDIAN_LITTLE == I32_ENDIAN_HOST)) ||
+         ((SPV_ENDIANNESS_BIG == endian) &&
+          (I32_ENDIAN_BIG == I32_ENDIAN_HOST));
+}

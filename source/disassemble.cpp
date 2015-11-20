@@ -47,10 +47,6 @@ namespace {
 // A Disassembler instance converts a SPIR-V binary to its assembly
 // representation.
 class Disassembler {
-  enum { kStandardIndent = 15 };
-
-  using out_stream = libspirv::out_stream;
-
  public:
   Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t const* words,
                uint32_t options)
@@ -80,6 +76,10 @@ class Disassembler {
   spv_result_t SaveTextResult(spv_text* text_result) const;
 
  private:
+  enum { kStandardIndent = 15 };
+
+  using out_stream = libspirv::out_stream;
+
   // Emits an operand for the given instruction, where the instruction
   // is at offset words from the start of the binary.
   void EmitOperand(const spv_parsed_instruction_t& inst,
@@ -197,8 +197,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
                                const uint16_t operand_index) {
   assert(operand_index < inst.num_operands);
   const spv_parsed_operand_t& operand = inst.operands[operand_index];
-  const size_t index = inst.offset + operand.offset;
-  const uint32_t word = spvFixWord(words_[index], endian_);
+  const uint32_t word = inst.words[operand.offset];
   switch (operand.type) {
     case SPV_OPERAND_TYPE_RESULT_ID:
       assert(false && "<result-id> is not supposed to be handled here");
@@ -235,7 +234,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
             stream_ << int32_t(word);
             break;
           case SPV_NUMBER_UNSIGNED_INT:
-            stream_ << uint32_t(word);
+            stream_ << word;
             break;
           case SPV_NUMBER_FLOATING:
             // Assume only 32-bit floats.
@@ -246,14 +245,15 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
             assert(false && "Unreachable");
         }
       } else if (operand.num_words == 2) {
+        // Multi-word numbers are presented with lower order words first.
         uint64_t bits =
-            spvFixDoubleWord(words_[index], words_[index + 1], endian_);
+            uint64_t(word) | (uint64_t(inst.words[operand.offset + 1]) << 32);
         switch (operand.number_kind) {
           case SPV_NUMBER_SIGNED_INT:
             stream_ << int64_t(bits);
             break;
           case SPV_NUMBER_UNSIGNED_INT:
-            stream_ << uint64_t(bits);
+            stream_ << bits;
             break;
           case SPV_NUMBER_FLOATING:
             // Assume only 64-bit floats.
@@ -268,13 +268,15 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
-      // Strings are always little-endian.
-      const std::string string(reinterpret_cast<const char*>(&words_[index]));
       stream_ << "\"";
       SetGreen();
-      for (auto ch : string) {
-        if (ch == '"' || ch == '\\') stream_ << '\\';
-        stream_ << ch;
+      // Strings are always little-endian, and null-terminated.
+      // Write out the characters, escaping as needed, and without copying
+      // the entire string.
+      auto c_str = reinterpret_cast<const char*>(inst.words + operand.offset);
+      for (auto p = c_str; *p; ++p) {
+        if (*p == '"' || *p == '\\') stream_ << '\\';
+        stream_ << *p;
       }
       ResetColor();
       stream_ << '"';

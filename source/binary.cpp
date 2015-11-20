@@ -26,6 +26,7 @@
 
 #include "binary.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <limits>
@@ -136,13 +137,19 @@ class Parser {
   // On failure, returns an error code and issues a diagnostic.
   spv_result_t parseInstruction();
 
-  // Parses an instruction operand with the given type.
-  // May update the expected_operands parameter, and the scalar members of the
-  // inst parameter. On success, returns SPV_SUCCESS, advances past the
-  // operand, and pushes a new entry on to the operands vector.  Otherwise
-  // returns an error code and issues a diagnostic.
-  spv_result_t parseOperand(spv_parsed_instruction_t* inst,
+  // Parses an instruction operand with the given type, for an instruction
+  // starting at inst_offset words into the SPIR-V binary.
+  // If the SPIR-V binary is the same endianness as the host, then the
+  // endian_converted_inst_words parameter is ignored.  Otherwise, this method
+  // appends the words for this operand, converted to host native endianness,
+  // to the end of endian_converted_inst_words.  This method also updates the
+  // expected_operands parameter, and the scalar members of the inst parameter.
+  // On success, returns SPV_SUCCESS, advances past the operand, and pushes a
+  // new entry on to the operands vector.  Otherwise returns an error code and
+  // issues a diagnostic.
+  spv_result_t parseOperand(size_t inst_offset, spv_parsed_instruction_t* inst,
                             const spv_operand_type_t type,
+                            std::vector<uint32_t>* endian_converted_inst_words,
                             std::vector<spv_parsed_operand_t>* operands,
                             spv_operand_pattern_t* expected_operands);
 
@@ -154,17 +161,19 @@ class Parser {
   spv_result_t setNumericTypeInfoForType(spv_parsed_operand_t* parsed_operand,
                                          uint32_t type_id);
 
-  // Records the number type for an instruction if that instruction generates
-  // a type.  For types that aren't scalar numbers, record something with
-  // number kind SPV_NUMBER_NONE.
-  void recordNumberType(const spv_parsed_instruction_t* inst);
+  // Records the number type for an instruction at the given offset, if that
+  // instruction generates a type.  For types that aren't scalar numbers,
+  // record something with number kind SPV_NUMBER_NONE.
+  void recordNumberType(size_t inst_offset,
+                        const spv_parsed_instruction_t* inst);
 
   // Returns a diagnostic stream object initialized with current position in
   // the input stream, and for the given error code. Any data written to the
   // returned object will be propagated to the current parse's diagnostic
   // object.
   libspirv::DiagnosticStream diagnostic(spv_result_t error) {
-    return libspirv::DiagnosticStream({0, 0, _.word_index}, _.diagnostic, error);
+    return libspirv::DiagnosticStream({0, 0, _.word_index}, _.diagnostic,
+                                      error);
   }
 
   // Returns a diagnostic stream object with the default parse error code.
@@ -211,6 +220,9 @@ class Parser {
     spv_diagnostic* diagnostic;  // Where diagnostics go.
     size_t word_index;           // The current position in words.
     spv_endianness_t endian;     // The endianness of the binary.
+    // Is the SPIR-V binary in a different endiannes from the host native
+    // endianness?
+    bool requires_endian_conversion;
 
     // Maps a result ID to its type ID.  By convention:
     //  - a result ID that is a type definition maps to itself.
@@ -249,6 +261,7 @@ spv_result_t Parser::parseModule() {
     return diagnostic() << "Invalid SPIR-V magic number '" << std::hex
                         << _.words[0] << "'.";
   }
+  _.requires_endian_conversion = !spvIsHostEndian(_.endian);
 
   // Process the header.
   spv_header_t header;
@@ -281,13 +294,24 @@ spv_result_t Parser::parseInstruction() {
   // The zero values for all members except for opcode are the
   // correct initial values.
   spv_parsed_instruction_t inst = {};
-  inst.offset = _.word_index;
+
+  const uint32_t first_word = peek();
+
+  // TODO(dneto): If it's too expensive to construct the following "words"
+  // and "operands" vectors for each instruction, each instruction, then make
+  // them class data members instead, and clear them here.
+
+  // If the module's endianness is different from the host native endianness,
+  // then converted_words contains the the endian-translated words in the
+  // instruction.
+  std::vector<uint32_t> endian_converted_words = {first_word};
+  if (_.requires_endian_conversion) {
+    // Most instructions have fewer than 25 words.
+    endian_converted_words.reserve(25);
+  }
 
   // After a successful parse of the instruction, the inst.operands member
   // will point to this vector's storage.
-  // TODO(dneto): If it's too expensive to construct the operands vector for
-  // each instruction, then make this a class data member instead, and clear it
-  // here.
   std::vector<spv_parsed_operand_t> operands;
   // Most instructions have fewer than 25 logical operands.
   operands.reserve(25);
@@ -295,7 +319,7 @@ spv_result_t Parser::parseInstruction() {
   assert(_.word_index < _.num_words);
   // Decompose and check the first word.
   uint16_t inst_word_count = 0;
-  spvOpcodeSplit(peek(), &inst_word_count, &inst.opcode);
+  spvOpcodeSplit(first_word, &inst_word_count, &inst.opcode);
   if (inst_word_count < 1) {
     return diagnostic() << "Invalid instruction word count: "
                         << inst_word_count;
@@ -304,6 +328,9 @@ spv_result_t Parser::parseInstruction() {
   if (grammar_.lookupOpcode(inst.opcode, &opcode_desc))
     return diagnostic() << "Invalid opcode: " << int(inst.opcode);
 
+  // Advance past the opcode word.  But remember the of the start
+  // of the instruction.
+  const size_t inst_offset = _.word_index;
   _.word_index++;
 
   // Maintains the ordered list of expected operand types.
@@ -317,11 +344,11 @@ spv_result_t Parser::parseInstruction() {
       opcode_desc->operandTypes,
       opcode_desc->operandTypes + opcode_desc->numTypes);
 
-  while (_.word_index < inst.offset + inst_word_count) {
-    const uint16_t inst_word_index = uint16_t(_.word_index - inst.offset);
+  while (_.word_index < inst_offset + inst_word_count) {
+    const uint16_t inst_word_index = uint16_t(_.word_index - inst_offset);
     if (expected_operands.empty()) {
       return diagnostic() << "Invalid instruction Op" << opcode_desc->name
-                          << " starting at word " << inst.offset
+                          << " starting at word " << inst_offset
                           << ": expected no more operands after "
                           << inst_word_index
                           << " words, but stated word count is "
@@ -330,7 +357,9 @@ spv_result_t Parser::parseInstruction() {
 
     spv_operand_type_t type = spvTakeFirstMatchableOperand(&expected_operands);
 
-    if (auto error = parseOperand(&inst, type, &operands, &expected_operands))
+    if (auto error =
+            parseOperand(inst_offset, &inst, type, &endian_converted_words,
+                         &operands, &expected_operands))
       return error;
   }
 
@@ -338,21 +367,33 @@ spv_result_t Parser::parseInstruction() {
       !spvOperandIsOptional(expected_operands.front())) {
     return diagnostic() << "End of input reached while decoding Op"
                         << opcode_desc->name << " starting at word "
-                        << inst.offset << ": expected more operands after "
+                        << inst_offset << ": expected more operands after "
                         << inst_word_count << " words.";
   }
 
-  if ((inst.offset + inst_word_count) != _.word_index) {
+  if ((inst_offset + inst_word_count) != _.word_index) {
     return diagnostic() << "Invalid word count: Instruction starting at word "
-                        << inst.offset << " says it has " << inst_word_count
-                        << " words, but found " << _.word_index - inst.offset
+                        << inst_offset << " says it has " << inst_word_count
+                        << " words, but found " << _.word_index - inst_offset
                         << " words instead.";
   }
+  assert(inst_word_count == words.size());
 
-  recordNumberType(&inst);
+  recordNumberType(inst_offset, &inst);
 
-  // Must wait until here to set the inst.operands pointer because the vector
-  // might be resized while we accumulate itse elements.
+  if (_.requires_endian_conversion) {
+    // We must wait until here to set this pointer, because the vector might
+    // have been be resized while we accumulated its elements.
+    inst.words = endian_converted_words.data();
+  } else {
+    // If no conversion is required, then just point to the underlying binary.
+    // This saves time and space.
+    inst.words = _.words + inst_offset;
+  }
+  inst.num_words = inst_word_count;
+
+  // We must wait until here to set this pointer, because the vector might
+  // have been be resized while we accumulated its elements.
   inst.operands = operands.data();
   inst.num_operands = uint16_t(operands.size());
 
@@ -365,13 +406,15 @@ spv_result_t Parser::parseInstruction() {
   return SPV_SUCCESS;
 }
 
-spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
+spv_result_t Parser::parseOperand(size_t inst_offset,
+                                  spv_parsed_instruction_t* inst,
                                   const spv_operand_type_t type,
+                                  std::vector<uint32_t>* words,
                                   std::vector<spv_parsed_operand_t>* operands,
                                   spv_operand_pattern_t* expected_operands) {
   // We'll fill in this result as we go along.
   spv_parsed_operand_t parsed_operand;
-  parsed_operand.offset = uint16_t(_.word_index - inst->offset);
+  parsed_operand.offset = uint16_t(_.word_index - inst_offset);
   // Most operands occupy one word.  This might be be adjusted later.
   parsed_operand.num_words = 1;
   // The type argument is the one used by the grammar to parse the instruction.
@@ -386,6 +429,10 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
   parsed_operand.number_bit_width = 0;
 
   const uint32_t word = peek();
+
+  // Do the words in this operand have to be converted to native endianness?
+  // True for all but literal strings.
+  bool convert_operand_endianness = true;
 
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID:
@@ -478,7 +525,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
       if (inst->opcode == SpvOpSwitch) {
         // The literal operands have the same type as the value
         // referenced by the selector Id.
-        const uint32_t selector_id = peekAt(inst->offset + 1);
+        const uint32_t selector_id = peekAt(inst_offset + 1);
         auto type_id_iter = _.id_to_type_id.find(selector_id);
         if (type_id_iter == _.id_to_type_id.end()) {
           return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
@@ -513,7 +560,7 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
 
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
-      // TODO(dneto): Make and use spvFixupString();
+      convert_operand_endianness = false;
       const char* string =
           reinterpret_cast<const char*>(_.words + _.word_index);
       size_t string_num_words = (strlen(string) / 4) + 1;  // Account for null.
@@ -631,7 +678,23 @@ spv_result_t Parser::parseOperand(spv_parsed_instruction_t* inst,
 
   operands->push_back(parsed_operand);
 
-  _.word_index += parsed_operand.num_words;
+  const size_t index_after_operand = _.word_index + parsed_operand.num_words;
+  if (_.requires_endian_conversion) {
+    // Copy instruction words.  Translate to native endianness as needed.
+    if (convert_operand_endianness) {
+      const spv_endianness_t endianness = _.endian;
+      std::transform(_.words + _.word_index, _.words + index_after_operand,
+                     words->end(), [endianness](const uint32_t word) {
+                       return spvFixWord(word, endianness);
+                     });
+    } else {
+      words->insert(words->end(), _.words + _.word_index,
+                    _.words + index_after_operand);
+    }
+  }
+
+  // Advance past the operand.
+  _.word_index = index_after_operand;
 
   return SPV_SUCCESS;
 }
@@ -656,16 +719,17 @@ spv_result_t Parser::setNumericTypeInfoForType(
   return SPV_SUCCESS;
 }
 
-void Parser::recordNumberType(const spv_parsed_instruction_t* inst) {
+void Parser::recordNumberType(size_t inst_offset,
+                              const spv_parsed_instruction_t* inst) {
   if (spvOpcodeGeneratesType(inst->opcode)) {
     NumberType info = {SPV_NUMBER_NONE, 0};
     if (SpvOpTypeInt == inst->opcode) {
-      const bool is_signed = peekAt(inst->offset + 3) != 0;
+      const bool is_signed = peekAt(inst_offset + 3) != 0;
       info.type = is_signed ? SPV_NUMBER_SIGNED_INT : SPV_NUMBER_UNSIGNED_INT;
-      info.bit_width = peekAt(inst->offset + 2);
+      info.bit_width = peekAt(inst_offset + 2);
     } else if (SpvOpTypeFloat == inst->opcode) {
       info.type = SPV_NUMBER_FLOATING;
-      info.bit_width = peekAt(inst->offset + 2);
+      info.bit_width = peekAt(inst_offset + 2);
     }
     // The *result* Id of a type generating instruction is the type Id.
     _.type_id_to_number_type_info[inst->result_id] = info;
