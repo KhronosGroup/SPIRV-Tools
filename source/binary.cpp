@@ -138,9 +138,11 @@ class Parser {
   spv_result_t parseInstruction();
 
   // Parses an instruction operand with the given type, for an instruction
-  // starting at inst_offset words into the SPIR-V binary.  Appends, to the
-  // words parameter, the endian-translated words for the operand, but only if
-  // the underlying binary has different endianness from host.  Updates the
+  // starting at inst_offset words into the SPIR-V binary.
+  // If the SPIR-V binary is the same endianness as the host, then the
+  // endian_converted_inst_words parameter is ignored.  Otherwise, this method
+  // appends the words for this operand, converted to host native endianness,
+  // to the end of endian_converted_inst_words.  This method also updates the
   // expected_operands parameter, and the scalar members of the inst parameter.
   // On success, returns SPV_SUCCESS, advances past the operand, and pushes a
   // new entry on to the operands vector.  Otherwise returns an error code and
@@ -292,7 +294,6 @@ spv_result_t Parser::parseInstruction() {
   // The zero values for all members except for opcode are the
   // correct initial values.
   spv_parsed_instruction_t inst = {};
-  const size_t inst_offset = _.word_index;
 
   const uint32_t first_word = peek();
 
@@ -327,6 +328,9 @@ spv_result_t Parser::parseInstruction() {
   if (grammar_.lookupOpcode(inst.opcode, &opcode_desc))
     return diagnostic() << "Invalid opcode: " << int(inst.opcode);
 
+  // Advance past the opcode word.  But remember the of the start
+  // of the instruction.
+  const size_t inst_offset = _.word_index;
   _.word_index++;
 
   // Maintains the ordered list of expected operand types.
