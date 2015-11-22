@@ -499,7 +499,7 @@ spv_result_t AssemblyContext::checkRangeAndIfHexThenSignExtend(
       // Hex values are a bit special. They decode as unsigned values, but
       // may represent a negative number.  In this case, the overflow bits
       // should be zero.
-      failed = (value & overflow_mask);
+      failed = (value & overflow_mask) != 0;
     } else {
       const uint64_t value_as_u64 = static_cast<uint64_t>(value);
       // Check overflow in the ordinary case.

@@ -417,7 +417,7 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
   } else if (5 == constInst->words.size()) {
     uint64_t value =
         constInst->words[3] | ((uint64_t)constInst->words[4]) << 32;
-    bool signedness = constResultType->second.inst->words[3];
+    bool signedness = constResultType->second.inst->words[3] != 0;
     if (signedness) {
       spvCheck(1 > (int64_t)value, DIAG(lengthIndex)
                                        << "OpTypeArray Length <id> '"
@@ -598,7 +598,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                  << "' is not a composite type.";
            return false);
 
-  uint32_t constituentCount = inst->words.size() - 3;
+  auto constituentCount = inst->words.size() - 3;
   switch (resultType->second.opcode) {
     case SpvOpTypeVector: {
       auto componentCount = resultType->second.inst->words[3];
@@ -731,7 +731,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
       }
     } break;
     case SpvOpTypeStruct: {
-      uint32_t memberCount = resultType->second.inst->words.size() - 2;
+      auto memberCount = resultType->second.inst->words.size() - 2;
       spvCheck(memberCount != constituentCount,
                DIAG(resultTypeIndex)
                    << "OpConstantComposite Constituent <id> '"

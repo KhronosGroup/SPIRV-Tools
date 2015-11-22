@@ -176,7 +176,7 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
                                "Invalid immediate integer: !"))
     return error;
   context->binaryEncodeU32(parse_result, pInst);
-  context->seekForward(strlen(text));
+  context->seekForward(static_cast<uint32_t>(strlen(text)));
   return SPV_SUCCESS;
 }
 

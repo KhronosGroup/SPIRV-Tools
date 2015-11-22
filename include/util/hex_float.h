@@ -226,9 +226,13 @@ inline uint8_t get_nibble_from_character(char character) {
   const char* dec = "0123456789";
   const char* lower = "abcdef";
   const char* upper = "ABCDEF";
-  if (auto p = strchr(dec, character)) return p - dec;
-  if (auto p = strchr(lower, character)) return p - lower + 0xa;
-  if (auto p = strchr(upper, character)) return p - upper + 0xa;
+  if (auto p = strchr(dec, character)) {
+    return static_cast<uint8_t>(p - dec);
+  } else if (auto p = strchr(lower, character)) {
+    return static_cast<uint8_t>(p - lower + 0xa);
+  } else if (auto p = strchr(upper, character)) {
+    return static_cast<uint8_t>(p - upper + 0xa);
+  }
 
   assert(false && "This was called with a non-hex character");
   return 0;
