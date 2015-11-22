@@ -1216,12 +1216,11 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
                                    << inst->words[resultTypeIndex]
                                    << "' is not defined.";
            return false);
-  auto function = inst - 1;
+  auto function = inst;
   // NOTE: Find OpFunction & ensure OpFunctionParameter is not out of place.
   size_t paramIndex = 0;
-  while (firstInst != function) {
-    spvCheck(SpvOpFunction != function->opcode &&
-                 SpvOpFunctionParameter != function->opcode,
+  while (firstInst != --function) {
+    spvCheck(SpvOpFunction != function->opcode && SpvOpFunctionParameter != function->opcode,
              DIAG(0) << "OpFunctionParameter is not preceded by OpFunction or "
                         "OpFunctionParameter sequence.";
              return false);

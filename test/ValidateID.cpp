@@ -948,6 +948,19 @@ TEST_F(ValidateID, OpFunctionParameterGood) {
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
+TEST_F(ValidateID, OpFunctionParameterMultipleGood) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %1 %2 %2
+%4 = OpFunction %1 None %3
+%5 = OpFunctionParameter %2
+%6 = OpFunctionParameter %2
+%7 = OpLabel
+     OpReturn
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_SUCCESS);
+}
 TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
