@@ -108,4 +108,20 @@ clr::blue::operator const char*() {
 }
 
 }  // namespace libspirv
+#else
+namespace libspirv {
+
+clr::reset::operator const char*() { return ""; }
+
+clr::grey::operator const char*() { return ""; }
+
+clr::red::operator const char*() { return ""; }
+
+clr::green::operator const char*() { return ""; }
+
+clr::yellow::operator const char*() { return ""; }
+
+clr::blue::operator const char*() { return ""; }
+
+}  // namespace libspirv
 #endif
