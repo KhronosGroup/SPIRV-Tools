@@ -33,7 +33,9 @@ enum {
   I32_ENDIAN_BIG = 0x00010203ul,
 };
 
-// TODO(dneto): This relies on undefined behaviour. Fix that.
+// This constant value allows the detection of the host machine's endianness.
+// Accessing it through the "value" member is valid due to C++11 section 3.10
+// paragraph 10.
 static const union {
   unsigned char bytes[4];
   uint32_t value;
