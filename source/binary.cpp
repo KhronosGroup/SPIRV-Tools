@@ -377,7 +377,15 @@ spv_result_t Parser::parseInstruction() {
                         << " words, but found " << _.word_index - inst_offset
                         << " words instead.";
   }
-  assert(inst_word_count == words.size());
+
+  // Check the computed length of the endian-converted words vector against
+  // the declared number of words in the instruction.  If endian conversion
+  // is required, then they should match.  If no endian conversion was
+  // performed, then the vector only contains the initial opcode/word-count
+  // word.
+  assert(!_.requires_endian_conversion ||
+         (inst_word_count == endian_converted_words.size()));
+  assert(_.requires_endian_conversion || (endian_converted_words.size() == 1));
 
   recordNumberType(inst_offset, &inst);
 
