@@ -35,10 +35,29 @@ class Validate : public ::testing::Test {
 
   virtual void TearDown() { spvBinaryDestroy(binary); }
   spv_const_binary get_const_binary() { return spv_const_binary(binary); }
+  void validate_instructions(std::string code, spv_result_t result);
 
-  spv_context context;
+spv_context context;
   spv_binary binary;
 };
+
+void Validate::validate_instructions(std::string code, spv_result_t result) {
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvTextToBinary(context, code.c_str(), code.size(), &binary, &diagnostic));
+  if (result == SPV_SUCCESS) {
+    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+    if (diagnostic) {
+      spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+    }
+  } else {
+    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+    ASSERT_NE(nullptr, diagnostic);
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
+}
 
 TEST_F(Validate, Default) {
   char str[] = R"(
@@ -52,15 +71,7 @@ TEST_F(Validate, Default) {
      OpReturn
      OpFunctionEnd
 )";
-  spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
-  ASSERT_EQ(SPV_SUCCESS, spvValidate(context, get_const_binary(),
-                                     SPV_VALIDATE_ALL, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
+  validate_instructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, InvalidIdUndefined) {
@@ -75,14 +86,7 @@ TEST_F(Validate, InvalidIdUndefined) {
      OpReturn
      OpFunctionEnd
     )";
-  spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, spvValidate(context, get_const_binary(),
-                                              SPV_VALIDATE_ALL, &diagnostic));
-  ASSERT_NE(nullptr, diagnostic);
-  spvDiagnosticPrint(diagnostic);
-  spvDiagnosticDestroy(diagnostic);
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, InvalidIdRedefined) {
@@ -97,15 +101,63 @@ TEST_F(Validate, InvalidIdRedefined) {
      OpReturn
      OpFunctionEnd
 )";
-  spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS,
-            spvTextToBinary(context, str, strlen(str), &binary, &diagnostic));
-  // TODO: Fix setting of bound in spvTextTo, then remove this!
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, spvValidate(context, get_const_binary(),
-                                              SPV_VALIDATE_ALL, &diagnostic));
-  ASSERT_NE(nullptr, diagnostic);
-  spvDiagnosticPrint(diagnostic);
-  spvDiagnosticDestroy(diagnostic);
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, InvalidDominateUsage) {
+  char str[] = R"(
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%1 = OpTypeVoid
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, InvalidDominateUsageLoop) {
+  char str[] = R"(
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%1 = OpTypeVoid
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardFunctionCall) {
+  char str[] = R"(
+        OpMemoryModel Logical GLSL450
+        OpEntryPoint GLCompute %5 ""
+        OpExecutionMode %5 LocalSize 1 1 1
+%1    = OpTypeVoid
+%2    = OpTypeInt 32 1
+%3    = OpTypeInt 32 0
+%4    = OpTypeFunction %1
+%5    = OpFunction %1 None %4
+%6    = OpLabel
+%four = OpConstant %2 4
+%five = OpConstant %3 5
+%7    = OpFunctionCall %1 %9 %four %five
+        OpFunctionEnd
+%8    = OpTypeFunction %1 %2 %3
+%9    = OpFunction %1 None %8
+%10   = OpFunctionParameter %2
+%11   = OpFunctionParameter %3
+%12   = OpLabel
+        OpReturn
+        OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
 }
 
 }  // anonymous namespace
