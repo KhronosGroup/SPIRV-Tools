@@ -418,8 +418,8 @@ typedef spv_result_t (*spv_parsed_instruction_fn_t)(
 // is supplied as context to the callbacks.  Returns SPV_SUCCESS on successful
 // parse where the callbacks always return SPV_SUCCESS.  For an invalid parse,
 // returns SPV_ERROR_INVALID_BINARY and emits a diagnostic.  If a callback
-// returns anything other than SPV_SUCCESS, then that error code is returned
-// and parsing terminates early.
+// returns anything other than SPV_SUCCESS, then that status code is returned,
+// no further callbacks are issued, and no additional diagnostics are emitted.
 spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
                             const uint32_t* words, const size_t num_words,
                             spv_parsed_header_fn_t parse_header,
