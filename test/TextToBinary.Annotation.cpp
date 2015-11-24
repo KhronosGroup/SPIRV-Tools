@@ -268,7 +268,7 @@ TEST_F(OpDecorateEnumTest, CombinedFPFastMathMask) {
 
 TEST_F(OpDecorateEnumTest, WrongFPFastMathMode) {
   EXPECT_THAT(CompileFailure("OpDecorate %1 FPFastMathMode NotNaN|xxyyzz"),
-              Eq("Invalid floating-point fast math mode 'NotNaN|xxyyzz'."));
+              Eq("Invalid floating-point fast math mode operand 'NotNaN|xxyyzz'."));
 }
 
 // Test OpDecorate Linkage

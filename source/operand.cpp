@@ -176,10 +176,7 @@ static const spv_operand_desc_t storageClassEntries[] = {
      SpvStorageClassOutput,
      SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
      {SPV_OPERAND_TYPE_NONE}},
-    {"Workgroup",
-     SpvStorageClassWorkgroup,
-     0,
-     {SPV_OPERAND_TYPE_NONE}},
+    {"Workgroup", SpvStorageClassWorkgroup, 0, {SPV_OPERAND_TYPE_NONE}},
     {"CrossWorkgroup",
      SpvStorageClassCrossWorkgroup,
      0,
@@ -1206,7 +1203,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
       return "dimensionality";
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
-      return "addressing mode";
+      return "sampler addressing mode";
     case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
       return "sampler filter mode";
     case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
@@ -1232,12 +1229,12 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
       return "function control";
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      return "memory semantics";
+      return "memory semantics ID";
     case SPV_OPERAND_TYPE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
       return "memory access";
     case SPV_OPERAND_TYPE_SCOPE_ID:
-      return "execution scope ID";
+      return "scope ID";
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
       return "group operation";
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
@@ -1248,7 +1245,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "capability";
     case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
-      return "image operand";
+      return "image";
     case SPV_OPERAND_TYPE_OPTIONAL_CIV:
       return "context-insensitive value";
 

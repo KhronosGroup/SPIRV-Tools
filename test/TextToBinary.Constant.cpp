@@ -71,7 +71,7 @@ INSTANTIATE_TEST_CASE_P(
 
 TEST_F(SamplerAddressingModeTest, WrongMode) {
   EXPECT_THAT(CompileFailure("%r = OpConstantSampler %t xxyyzz 0 Nearest"),
-              Eq("Invalid addressing mode 'xxyyzz'."));
+              Eq("Invalid sampler addressing mode 'xxyyzz'."));
 }
 
 // Test Sampler Filter Mode enum values

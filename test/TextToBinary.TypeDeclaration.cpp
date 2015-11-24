@@ -29,8 +29,8 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
@@ -44,12 +44,15 @@ using DimTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<SpvDim>>>;
 
 TEST_P(DimTest, AnyDim) {
-  const std::string input = "%imageType = OpTypeImage %sampledType " +
-                            GetParam().name() + " 2 3 0 4 Rgba8";
+  const std::string input =
+      "%1 = OpTypeImage %2 " + GetParam().name() + " 2 3 0 4 Rgba8\n";
   EXPECT_THAT(
       CompiledInstructions(input),
       Eq(MakeInstruction(SpvOpTypeImage, {1, 2, GetParam().value(), 2, 3, 0, 4,
                                           SpvImageFormatRgba8})));
+
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
 
 // clang-format off
@@ -80,10 +83,12 @@ using ImageFormatTest = spvtest::TextToBinaryTestBase<
 
 TEST_P(ImageFormatTest, AnyImageFormat) {
   const std::string input =
-      "%imageType = OpTypeImage %sampledType 1D  2 3 0 4 " + GetParam().name();
+      "%1 = OpTypeImage %2 1D 2 3 0 4 " + GetParam().name() + "\n";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(SpvOpTypeImage, {1, 2, SpvDim1D, 2, 3, 0, 4,
                                                   GetParam().value()})));
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
 
 // clang-format off

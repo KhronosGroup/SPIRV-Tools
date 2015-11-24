@@ -182,6 +182,20 @@ class Parser {
     return diagnostic(SPV_ERROR_INVALID_BINARY);
   }
 
+  // Issues a diagnostic describing an exhaustion of input condition when
+  // trying to decode an instruction operand, and returns
+  // SPV_ERROR_INVALID_BINARY.
+  spv_result_t exhaustedInputDiagnostic(size_t inst_offset, SpvOp opcode,
+                                        spv_operand_type_t type) {
+    return diagnostic() << "End of input reached while decoding Op"
+                        << spvOpcodeString(opcode) << " starting at word "
+                        << inst_offset
+                        << ((_.word_index < _.num_words) ? ": truncated "
+                                                         : ": missing ")
+                        << spvOperandTypeStr(type) << " operand at word offset "
+                        << _.word_index - inst_offset << ".";
+  }
+
   // Returns the endian-corrected word at the current position.
   uint32_t peek() const { return peekAt(_.word_index); }
 
@@ -359,8 +373,9 @@ spv_result_t Parser::parseInstruction() {
 
     if (auto error =
             parseOperand(inst_offset, &inst, type, &endian_converted_words,
-                         &operands, &expected_operands))
+                         &operands, &expected_operands)) {
       return error;
+    }
   }
 
   if (!expected_operands.empty() &&
@@ -372,8 +387,9 @@ spv_result_t Parser::parseInstruction() {
   }
 
   if ((inst_offset + inst_word_count) != _.word_index) {
-    return diagnostic() << "Invalid word count: Instruction starting at word "
-                        << inst_offset << " says it has " << inst_word_count
+    return diagnostic() << "Invalid word count: Op" << opcode_desc->name
+                        << " starting at word " << inst_offset
+                        << " says it has " << inst_word_count
                         << " words, but found " << _.word_index - inst_offset
                         << " words instead.";
   }
@@ -436,6 +452,9 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
   parsed_operand.number_kind = SPV_NUMBER_NONE;
   parsed_operand.number_bit_width = 0;
 
+  if (_.word_index >= _.num_words)
+    return exhaustedInputDiagnostic(inst_offset, inst->opcode, type);
+
   const uint32_t word = peek();
 
   // Do the words in this operand have to be converted to native endianness?
@@ -485,7 +504,9 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
     case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      if (!word) return diagnostic() << spvOperandTypeStr(type) << " Id is 0";
+      // Check for trivially invalid values.  The operand descriptions already
+      // have the word "ID" in them.
+      if (!word) return diagnostic() << spvOperandTypeStr(type) << " is 0";
       break;
 
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
@@ -571,11 +592,24 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       convert_operand_endianness = false;
       const char* string =
           reinterpret_cast<const char*>(_.words + _.word_index);
-      size_t string_num_words = (strlen(string) / 4) + 1;  // Account for null.
+      // Compute the length of the string, but make sure we don't run off the
+      // end of the input.
+      const size_t remaining_input_bytes =
+          sizeof(uint32_t) * (_.num_words - _.word_index);
+      const size_t string_num_content_bytes =
+          strnlen(string, remaining_input_bytes);
+      // If there was no terminating null byte, then that's an end-of-input
+      // error.
+      if (string_num_content_bytes == remaining_input_bytes)
+        return exhaustedInputDiagnostic(inst_offset, inst->opcode, type);
+      // Account for null in the word length, so add 1 for null, then add 3 to
+      // make sure we round up.  The following is equivalent to:
+      //    (string_num_content_bytes + 1 + 3) / 4
+      const size_t string_num_words = string_num_content_bytes / 4 + 1;
       // Make sure we can record the word count without overflow.
-      // We still might have a string that's 64K words, but would still
-      // make the instruction too long because of earlier operands.
-      // That will be caught later at the end of the instruciton.
+      //
+      // This error can't currently be triggered because of validity
+      // checks elsewhere.
       if (string_num_words > std::numeric_limits<uint16_t>::max()) {
         return diagnostic() << "Literal string is longer than "
                             << std::numeric_limits<uint16_t>::max()
@@ -614,6 +648,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_DIMENSIONALITY:
     case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
     case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
+    case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
@@ -687,6 +722,14 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
   operands->push_back(parsed_operand);
 
   const size_t index_after_operand = _.word_index + parsed_operand.num_words;
+
+  // Avoid buffer overrun for the cases where the operand has more than one
+  // word, and where it isn't a string.  (Those other cases have already been
+  // handled earlier.)  For example, this error can occur for a multi-word
+  // argument to OpConstant, or a multi-word case literal operand for OpSwitch.
+  if (_.num_words < index_after_operand)
+    return exhaustedInputDiagnostic(inst_offset, inst->opcode, type);
+
   if (_.requires_endian_conversion) {
     // Copy instruction words.  Translate to native endianness as needed.
     if (convert_operand_endianness) {

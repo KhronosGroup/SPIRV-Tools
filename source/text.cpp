@@ -385,7 +385,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       uint32_t value;
       if (grammar.parseMaskOperand(type, textValue, &value)) {
         return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
-                                     << " '" << textValue << "'.";
+                                     << " operand '" << textValue << "'.";
       }
       if (auto error = context->binaryEncodeU32(value, pInst)) return error;
       // Prepare to parse the operands for this logical operand.
@@ -645,16 +645,15 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
            << SPV_LIMIT_INSTRUCTION_WORD_COUNT_MAX;
   }
 
-  pInst->words[0] = spvOpcodeMake(uint16_t(pInst->words.size()), opcodeEntry->opcode);
+  pInst->words[0] =
+      spvOpcodeMake(uint16_t(pInst->words.size()), opcodeEntry->opcode);
 
   return SPV_SUCCESS;
 }
 
 namespace {
 
-enum {
-  kAssemblerVersion = 0
-};
+enum { kAssemblerVersion = 0 };
 
 /// @brief Populate a binary stream's words with this generator's header.
 ///
@@ -662,8 +661,7 @@ enum {
 /// @param[in] bound the upper ID bound
 ///
 /// @return result code
-spv_result_t
-SetHeader(uint32_t* words, const uint32_t bound) {
+spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
   if (!words) return SPV_ERROR_INVALID_BINARY;
 
   words[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;

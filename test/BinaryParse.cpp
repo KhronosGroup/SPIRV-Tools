@@ -185,11 +185,19 @@ class CaptureParseResults
   Instructions instructions_;
 };
 
+// The SPIR-V module header words for the Khronos Assembler generator,
+// for a module with an ID bound of 1.
+const uint32_t kHeaderForBound1[] = {
+    SpvMagicNumber, SpvVersion,
+    SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), 1 /*bound*/,
+    0 /*schema*/};
+
 // Returns the expected SPIR-V module header words for the Khronos
 // Assembler generator, and with a given Id bound.
 Words ExpectedHeaderForBound(uint32_t bound) {
-  return {SpvMagicNumber, SpvVersion,
-          SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), bound, 0};
+  Words result{std::begin(kHeaderForBound1), std::end(kHeaderForBound1)};
+  result[SPV_INDEX_BOUND] = bound;
+  return result;
 }
 
 // Returns a parsed operand for a non-number value at the given word offset
@@ -263,6 +271,42 @@ TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
                                Eq(Endians{SPV_ENDIANNESS_BIG})));
   EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(1)}));
   EXPECT_THAT(instructions(), Eq(Instructions{}));
+}
+
+TEST_F(BinaryParseTest,
+       ModuleWithSingleInstructionHasValidHeaderAndInstructionCallback) {
+  const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
+                           Instruction, &diagnostic));
+  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
+  EXPECT_THAT(instructions(),
+              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+}
+
+TEST_F(BinaryParseTest, NullHeaderCallbackIsIgnored) {
+  const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryParse(context, this, binary.data(), binary.size(), nullptr,
+                           Instruction, &diagnostic));
+  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_THAT(headers(), Eq(Sentences{}));  // No header callback.
+  EXPECT_THAT(instructions(),
+              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+}
+
+TEST_F(BinaryParseTest, NullInstructionCallbackIsIgnored) {
+  const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
+                           nullptr, &diagnostic));
+  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
+  EXPECT_THAT(instructions(), Eq(Instructions{}));  // No instruction callback.
 }
 
 // Check the result of multiple instruction callbacks.
@@ -446,7 +490,269 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   EXPECT_THAT(instructions(), ElementsAre(_, ParsedInstruction(parsed_inst)));
 }
 
-// TODO(dneto): Add tests for spvBinaryParse:
-//  - test each diagnostic in binary.cpp
+// A binary parser diagnostic test case where we provide the words array
+// pointer and word count explicitly.
+struct WordsAndCountDiagnosticCase {
+  const uint32_t* words;
+  size_t num_words;
+  std::string expected_diagnostic;
+};
+
+using BinaryParseWordsAndCountDiagnosticTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<WordsAndCountDiagnosticCase>>;
+
+TEST_P(BinaryParseWordsAndCountDiagnosticTest, WordAndCountCases) {
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_BINARY,
+      spvBinaryParse(context, this, GetParam().words, GetParam().num_words,
+                     nullptr, nullptr, &diagnostic));
+  ASSERT_NE(nullptr, diagnostic);
+  EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    BinaryParseDiagnostic, BinaryParseWordsAndCountDiagnosticTest,
+    ::testing::ValuesIn(std::vector<WordsAndCountDiagnosticCase>{
+        {nullptr, 0, "Missing module."},
+        {kHeaderForBound1, 0,
+         "Module has incomplete header: only 0 words instead of 5"},
+        {kHeaderForBound1, 1,
+         "Module has incomplete header: only 1 words instead of 5"},
+        {kHeaderForBound1, 2,
+         "Module has incomplete header: only 2 words instead of 5"},
+        {kHeaderForBound1, 3,
+         "Module has incomplete header: only 3 words instead of 5"},
+        {kHeaderForBound1, 4,
+         "Module has incomplete header: only 4 words instead of 5"},
+    }));
+
+// A binary parser diagnostic test case where a vector of words is
+// provided.  We'll use this to express cases that can't be created
+// via the assembler.  Either we want to make a malformed instruction,
+// or an invalid case the assembler would reject.
+struct WordVectorDiagnosticCase {
+  Words words;
+  std::string expected_diagnostic;
+};
+
+using BinaryParseWordVectorDiagnosticTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<WordVectorDiagnosticCase>>;
+
+TEST_P(BinaryParseWordVectorDiagnosticTest, WordVectorCases) {
+  spv_diagnostic diagnostic = nullptr;
+  const auto& words = GetParam().words;
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
+                           nullptr, &diagnostic));
+  ASSERT_NE(nullptr, diagnostic);
+  EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    BinaryParseDiagnostic, BinaryParseWordVectorDiagnosticTest,
+    ::testing::ValuesIn(std::vector<WordVectorDiagnosticCase>{
+        {Concatenate({ExpectedHeaderForBound(1), {spvOpcodeMake(0, SpvOpNop)}}),
+         "Invalid instruction word count: 0"},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      {spvOpcodeMake(1, static_cast<SpvOp>(0xffff))}}),
+         "Invalid opcode: 65535"},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpNop, {42})}),
+         "Invalid instruction OpNop starting at word 5: expected "
+         "no more operands after 1 words, but stated word count is 2."},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpTypeVoid, {1, 2})}),
+         "Invalid instruction OpTypeVoid starting at word 5: expected "
+         "no more operands after 2 words, but stated word count is 3."},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpTypeVoid, {1, 2, 5, 9, 10})}),
+         "Invalid instruction OpTypeVoid starting at word 5: expected "
+         "no more operands after 2 words, but stated word count is 6."},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpTypeInt, {1, 32, 1, 9})}),
+         "Invalid instruction OpTypeInt starting at word 5: expected "
+         "no more operands after 4 words, but stated word count is 5."},
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpTypeInt, {1})}),
+         "End of input reached while decoding OpTypeInt starting at word 5:"
+         " expected more operands after 2 words."},
+
+        // Check several cases for running off the end of input.
+
+        // Detect a missing single word operand.
+        {Concatenate({ExpectedHeaderForBound(1),
+                      {spvOpcodeMake(2, SpvOpTypeStruct)}}),
+         "End of input reached while decoding OpTypeStruct starting at word"
+         " 5: missing result ID operand at word offset 1."},
+        // Detect this a missing a multi-word operand to OpConstant.
+        // We also lie and say the OpConstant instruction has 5 words when
+        // it only has 3.  Corresponds to something like this:
+        //    %1 = OpTypeInt 64 0
+        //    %2 = OpConstant %1 <missing>
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {MakeInstruction(SpvOpTypeInt, {1, 64, 0})},
+                      {spvOpcodeMake(5, SpvOpConstant), 1, 2}}),
+         "End of input reached while decoding OpConstant starting at word"
+         " 9: missing possibly multi-word literal number operand at word "
+         "offset 3."},
+        // Detect when we provide only one word from the 64-bit literal,
+        // and again lie about the number of words in the instruction.
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {MakeInstruction(SpvOpTypeInt, {1, 64, 0})},
+                      {spvOpcodeMake(5, SpvOpConstant), 1, 2, 42}}),
+         "End of input reached while decoding OpConstant starting at word"
+         " 9: truncated possibly multi-word literal number operand at word "
+         "offset 3."},
+        // Detect when a required string operand is missing.
+        // Also, lie about the length of the instruction.
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {spvOpcodeMake(3, SpvOpString), 1}}),
+         "End of input reached while decoding OpString starting at word"
+         " 5: missing literal string operand at word offset 2."},
+        // Detect when a required string operand is truncated: it's missing
+        // a null terminator.  Catching the error avoids a buffer overrun.
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {spvOpcodeMake(4, SpvOpString), 1, 0x41414141,
+                       0x41414141}}),
+         "End of input reached while decoding OpString starting at word"
+         " 5: truncated literal string operand at word offset 2."},
+        // Detect when an optional string operand is truncated: it's missing
+        // a null terminator.  Catching the error avoids a buffer overrun.
+        // (It is valid for an optional string operand to be absent.)
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {spvOpcodeMake(6, SpvOpSource),
+                       uint32_t(SpvSourceLanguageOpenCL_C), 210,
+                       1 /* file id */,
+                       /*start of string*/ 0x41414141, 0x41414141}}),
+         "End of input reached while decoding OpSource starting at word"
+         " 5: truncated literal string operand at word offset 4."},
+
+        // (End of input exhaustion test cases.)
+
+        // In this case the instruction word count is too small, where
+        // it would truncate a multi-word operand to OpConstant.
+        {Concatenate({ExpectedHeaderForBound(3),
+                      {MakeInstruction(SpvOpTypeInt, {1, 64, 0})},
+                      {spvOpcodeMake(4, SpvOpConstant), 1, 2, 44, 44}}),
+         "Invalid word count: OpConstant starting at word 9 says it has 4"
+         " words, but found 5 words instead."},
+        // Word count is to small, where it would truncate a literal string.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(3, SpvOpString), 1, 0x41414141, 0}}),
+         "Invalid word count: OpString starting at word 5 says it has 3"
+         " words, but found 4 words instead."},
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(2, SpvOpTypeVoid), 0}}),
+         "Error: Result Id is 0"},
+        {Concatenate({
+             ExpectedHeaderForBound(2),
+             {spvOpcodeMake(2, SpvOpTypeVoid), 1},
+             {spvOpcodeMake(2, SpvOpTypeBool), 1},
+         }),
+         "Id 1 is defined more than once"},
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpExtInst, {2, 3, 100, 4, 5})}),
+         "OpExtInst set Id 100 does not reference an OpExtInstImport result "
+         "Id"},
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpSwitch, {1, 2, 42, 3})}),
+         "Invalid OpSwitch: selector id 1 has no type"},
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpTypeInt, {1, 32, 0}),
+                      MakeInstruction(SpvOpSwitch, {1, 3, 42, 3})}),
+         "Invalid OpSwitch: selector id 1 is a type, not a value"},
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpTypeFloat, {1, 32}),
+                      MakeInstruction(SpvOpConstant, {1, 2, 0x78f00000}),
+                      MakeInstruction(SpvOpSwitch, {2, 3, 42, 3})}),
+         "Invalid OpSwitch: selector id 2 is not a scalar integer"},
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpExtInstImport, {1},
+                                      MakeVector("invalid-import"))}),
+         "Invalid extended instruction import 'invalid-import'"},
+        {Concatenate({
+             ExpectedHeaderForBound(3),
+             MakeInstruction(SpvOpTypeInt, {1, 32, 0}),
+             MakeInstruction(SpvOpConstant, {2, 2, 42}),
+         }),
+         "Type Id 2 is not a type"},
+        {Concatenate({
+             ExpectedHeaderForBound(3), MakeInstruction(SpvOpTypeBool, {1}),
+             MakeInstruction(SpvOpConstant, {1, 2, 42}),
+         }),
+         "Type Id 1 is not a scalar numeric type"},
+    }));
+
+// A binary parser diagnostic case generated from an assembly text input.
+struct AssemblyDiagnosticCase {
+  std::string assembly;
+  std::string expected_diagnostic;
+};
+
+using BinaryParseAssemblyDiagnosticTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<AssemblyDiagnosticCase>>;
+
+TEST_P(BinaryParseAssemblyDiagnosticTest, AssemblyCases) {
+  spv_diagnostic diagnostic = nullptr;
+  auto words = CompileSuccessfully(GetParam().assembly);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
+                           nullptr, &diagnostic));
+  ASSERT_NE(nullptr, diagnostic);
+  EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    BinaryParseDiagnostic, BinaryParseAssemblyDiagnosticTest,
+    ::testing::ValuesIn(std::vector<AssemblyDiagnosticCase>{
+        {"%1 = OpConstant !0 42", "Error: Type Id is 0"},
+        // A required id is 0.
+        {"OpName !0 \"foo\"", "Id is 0"},
+        // An optional id is 0, in this case the optional
+        // initializer.
+        {"%2 = OpVariable %1 CrossWorkgroup !0", "Id is 0"},
+        {"OpControlBarrier !0 %1 %2", "scope ID is 0"},
+        {"OpControlBarrier %1 !0 %2", "scope ID is 0"},
+        {"OpControlBarrier %1 %2 !0", "memory semantics ID is 0"},
+        {"%import = OpExtInstImport \"GLSL.std.450\" "
+         "%result = OpExtInst %type %import !999999 %x",
+         "Invalid extended instruction number: 999999"},
+        {"%2 = OpSpecConstantOp %1 !1000 %2",
+         "Invalid OpSpecConstantOp opcode: 1000"},
+        {"OpCapability !9999", "Invalid capability operand: 9999"},
+        {"OpSource !9999 100", "Invalid source language operand: 9999"},
+        {"OpEntryPoint !9999", "Invalid execution model operand: 9999"},
+        {"OpMemoryModel !9999", "Invalid addressing model operand: 9999"},
+        {"OpMemoryModel Logical !9999", "Invalid memory model operand: 9999"},
+        {"OpExecutionMode %1 !9999", "Invalid execution mode operand: 9999"},
+        {"OpTypeForwardPointer %1 !9999",
+         "Invalid storage class operand: 9999"},
+        {"%2 = OpTypeImage %1 !9999", "Invalid dimensionality operand: 9999"},
+        {"%2 = OpTypeImage %1 1D 0 0 0 0 !9999",
+         "Invalid image format operand: 9999"},
+        {"OpDecorate %1 FPRoundingMode !9999",
+         "Invalid floating-point rounding mode operand: 9999"},
+        {"OpDecorate %1 LinkageAttributes \"C\" !9999",
+         "Invalid linkage type operand: 9999"},
+        {"%1 = OpTypePipe !9999", "Invalid access qualifier operand: 9999"},
+        {"OpDecorate %1 FuncParamAttr !9999",
+         "Invalid function parameter attribute operand: 9999"},
+        {"OpDecorate %1 !9999", "Invalid decoration operand: 9999"},
+        {"OpDecorate %1 BuiltIn !9999", "Invalid built-in operand: 9999"},
+        {"%2 = OpGroupIAdd %1 %3 !9999",
+         "Invalid group operation operand: 9999"},
+        {"OpDecorate %1 FPFastMathMode !63",
+         "Invalid floating-point fast math mode operand: 63 has invalid mask "
+         "component 32"},
+        {"%2 = OpFunction %2 !31",
+         "Invalid function control operand: 31 has invalid mask component 16"},
+        {"OpLoopMerge %1 %2 !7",
+         "Invalid loop control operand: 7 has invalid mask component 4"},
+        {"%2 = OpImageFetch %1 %image %coord !511",
+         "Invalid image operand: 511 has invalid mask component 256"},
+        {"OpSelectionMerge %1 !7",
+         "Invalid selection control operand: 7 has invalid mask component 4"},
+    }));
 
 }  // anonymous namespace

@@ -79,7 +79,7 @@ TEST_F(OpFunctionControlTest, CombinedFunctionControlMask) {
 
 TEST_F(OpFunctionControlTest, WrongFunctionControl) {
   EXPECT_THAT(CompileFailure("%r = OpFunction %t Inline|Unroll %ft"),
-              Eq("Invalid function control 'Inline|Unroll'."));
+              Eq("Invalid function control operand 'Inline|Unroll'."));
 }
 
 // TODO(dneto): OpFunctionParameter

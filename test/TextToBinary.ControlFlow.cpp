@@ -74,7 +74,7 @@ TEST_F(OpSelectionMergeTest, CombinedSelectionControlMask) {
 TEST_F(OpSelectionMergeTest, WrongSelectionControl) {
   // Case sensitive: "flatten" != "Flatten" and thus wrong.
   EXPECT_THAT(CompileFailure("OpSelectionMerge %1 flatten|DontFlatten"),
-              Eq("Invalid selection control 'flatten|DontFlatten'."));
+              Eq("Invalid selection control operand 'flatten|DontFlatten'."));
 }
 
 // Test OpLoopMerge
@@ -109,7 +109,7 @@ TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
 
 TEST_F(OpLoopMergeTest, WrongLoopControl) {
   EXPECT_THAT(CompileFailure("OpLoopMerge %m %c none"),
-              Eq("Invalid loop control 'none'."));
+              Eq("Invalid loop control operand 'none'."));
 }
 
 // Test OpSwitch

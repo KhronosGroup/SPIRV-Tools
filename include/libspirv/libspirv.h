@@ -412,7 +412,9 @@ typedef spv_result_t (*spv_parsed_instruction_fn_t)(
     void* user_data, const spv_parsed_instruction_t* parsed_instruction);
 
 // Parses a SPIR-V binary, specified as counted sequence of 32-bit words.
-// Parsing feedback is provided via two callbacks.  In a valid parse, the
+// Parsing feedback is provided via two callbacks provided as function
+// pointers.  Each callback function pointer can be a null pointer, in
+// which case it is never called.  Otherwise, in a valid parse the
 // parsed-header callback is called once, and then the parsed-instruction
 // callback once for each instruction in the stream.  The user_data parameter
 // is supplied as context to the callbacks.  Returns SPV_SUCCESS on successful
