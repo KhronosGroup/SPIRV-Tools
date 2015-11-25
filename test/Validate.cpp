@@ -37,22 +37,28 @@ class Validate : public ::testing::Test {
   spv_const_binary get_const_binary() { return spv_const_binary(binary); }
   void validate_instructions(std::string code, spv_result_t result);
 
-spv_context context;
+  spv_context context;
   spv_binary binary;
 };
 
 void Validate::validate_instructions(std::string code, spv_result_t result) {
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvTextToBinary(context, code.c_str(), code.size(), &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, code.c_str(), code.size(),
+                                         &binary, &diagnostic));
+  if (diagnostic) {
+    spvDiagnosticPrint(diagnostic);
+    spvDiagnosticDestroy(diagnostic);
+  }
   if (result == SPV_SUCCESS) {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
+                                  &diagnostic));
     if (diagnostic) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
     }
   } else {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL, &diagnostic));
+    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
+                                  &diagnostic));
     ASSERT_NE(nullptr, diagnostic);
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -109,6 +115,7 @@ TEST_F(Validate, InvalidDominateUsage) {
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
+%1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
 %1 = OpTypeVoid
@@ -124,12 +131,127 @@ TEST_F(Validate, InvalidDominateUsageLoop) {
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
+%1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
 %1 = OpTypeVoid
 %4 = OpLabel
      OpReturn
      OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardNameGood) {
+  char str[] = R"(
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+     OpName %3 "main"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardNameMissingLabelBad) {
+  char str[] = R"(
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %3 ""
+     OpExecutionMode %3 LocalSize 1 1 1
+     OpName %5 "main"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardMemberNameGood) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %3 ""
+          OpExecutionMode %3 LocalSize 1 1 1
+          OpMemberName %struct 0 "value"
+          OpMemberName %struct 1 "size"
+%voidt  = OpTypeVoid
+%intt   = OpTypeInt 32 1
+%uintt  = OpTypeInt 32 0
+%struct = OpTypeStruct %intt %uintt
+%2      = OpTypeFunction %voidt
+%3      = OpFunction %voidt None %2
+%4      = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardMemberNameMissingLabelBad) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %3 ""
+          OpExecutionMode %3 LocalSize 1 1 1
+          OpMemberName %struct 0 "value"
+          OpMemberName %bad 1 "size"
+%voidt  = OpTypeVoid
+%intt   = OpTypeInt 32 1
+%uintt  = OpTypeInt 32 0
+%struct = OpTypeStruct %intt %uintt
+%2      = OpTypeFunction %voidt
+%3      = OpFunction %voidt None %2
+%4      = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardDecorateGood) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %3 ""
+          OpExecutionMode %3 LocalSize 1 1 1
+          OpDecorate %var Restrict
+%voidt  = OpTypeVoid
+%intt   = OpTypeInt 32 1
+%ptrt   = OpTypePointer UniformConstant %intt
+%var    = OpVariable %ptrt UniformConstant
+%2      = OpTypeFunction %voidt
+%3      = OpFunction %voidt None %2
+%4      = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+// TODO(umar): OpMemberDecorate
+// TODO(umar): OpGroupDecorate
+// TODO(umar): OpGroupMemberDecorate
+
+TEST_F(Validate, ForwardDecorateInvalidIdBad) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint GLCompute %3 ""
+          OpExecutionMode %3 LocalSize 1 1 1
+          OpDecorate %missing Restrict
+%voidt  = OpTypeVoid
+%intt   = OpTypeInt 32 1
+%ptrt   = OpTypePointer UniformConstant %intt
+%var    = OpVariable %ptrt UniformConstant
+%2      = OpTypeFunction %voidt
+%3      = OpFunction %voidt None %2
+%4      = OpLabel
+          OpReturn
+          OpFunctionEnd
 )";
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
@@ -159,5 +281,91 @@ TEST_F(Validate, ForwardFunctionCall) {
 )";
   validate_instructions(str, SPV_SUCCESS);
 }
+
+TEST_F(Validate, ForwardBranchConditionalGood) {
+  char str[] = R"(
+%voidt  = OpTypeVoid
+%boolt  = OpTypeBool
+%vfunct = OpTypeFunction %voidt
+%main   = OpFunction %voidt None %vfunct
+%true   = OpConstantTrue %boolt
+          OpSelectionMerge %endl None
+          OpBranchConditional %true %truel %falsel
+%truel  = OpLabel
+          OpNop
+          OpBranch %endl
+%falsel = OpLabel
+          OpNop
+%endl    = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
+  char str[] = R"(
+%voidt  = OpTypeVoid
+%boolt  = OpTypeBool
+%vfunct = OpTypeFunction %voidt
+%main   = OpFunction %voidt None %vfunct
+%true   = OpConstantTrue %boolt
+          OpSelectionMerge %endl None
+          OpBranchConditional %true %truel %falsel !1 !9
+%truel  = OpLabel
+          OpNop
+          OpBranch %endl
+%falsel = OpLabel
+          OpNop
+%endl   = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
+  char str[] = R"(
+%voidt  = OpTypeVoid
+%boolt  = OpTypeBool
+%vfunct = OpTypeFunction %voidt
+%main   = OpFunction %voidt None %vfunct
+          OpSelectionMerge %endl None
+          OpBranchConditional %true %missing %falsel
+%truel  = OpLabel
+          OpNop
+          OpBranch %endl
+%falsel = OpLabel
+          OpNop
+%endl   = OpLabel
+%true   = OpConstantTrue %boolt
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
+  char str[] = R"(
+%voidt  = OpTypeVoid
+%boolt  = OpTypeBool
+%vfunct = OpTypeFunction %voidt
+%main   = OpFunction %voidt None %vfunct
+%true   = OpConstantTrue %boolt
+          OpSelectionMerge %endl None
+          OpBranchConditional %true %missing %falsel
+%truel  = OpLabel
+          OpNop
+          OpBranch %endl
+%falsel = OpLabel
+          OpNop
+%endl   = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+// TODO(umar): OpPhi
 
 }  // anonymous namespace

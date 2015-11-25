@@ -37,13 +37,15 @@
 
 #include <cassert>
 #include <cstdio>
+#include <functional>
 #include <iterator>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
-using std::vector;
+using std::function;
 using std::unordered_set;
+using std::vector;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -344,7 +346,8 @@ class ValidationState_t {
   unordered_set<uint32_t> unresolved_forward_ids_;
 };
 
-spv_result_t SSAPass(ValidationState_t& _, bool can_have_forward_declared_ids,
+spv_result_t SSAPass(ValidationState_t& _,
+                     function<bool(int)> can_have_forward_declared_ids,
                      const spv_parsed_instruction_t* inst) {
   for (int i = 0; i < inst->num_operands; i++) {
     const spv_parsed_operand_t& operand = inst->operands[i];
@@ -362,7 +365,7 @@ spv_result_t SSAPass(ValidationState_t& _, bool can_have_forward_declared_ids,
       case SPV_OPERAND_TYPE_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID: {
-        if (can_have_forward_declared_ids) {
+        if (can_have_forward_declared_ids(i)) {
           if (_.isDefinedId(*operand_ptr)) {
             ret = SPV_SUCCESS;
           } else {
@@ -373,7 +376,7 @@ spv_result_t SSAPass(ValidationState_t& _, bool can_have_forward_declared_ids,
             ret = SPV_SUCCESS;
           } else {
             ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
-                                               << " has not been declared";
+                                               << " has not been defined";
           }
         }
         break;
@@ -389,23 +392,68 @@ spv_result_t SSAPass(ValidationState_t& _, bool can_have_forward_declared_ids,
   return SPV_SUCCESS;
 }
 
+template <SpvOp OP>
+bool can_forward_declare(int index) {
+  (void)index;
+  return true;
+}
+
+template <>
+bool can_forward_declare<SpvOpPhi>(int index) {
+  return (1 + index % 2);
+}
+
+template <>
+bool can_forward_declare<SpvOpBranchConditional>(int index) {
+  return index != 0;
+}
+
+function<bool(int index)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
+  function<bool(int index)> out;
+  switch (opcode) {
+    case SpvOpExecutionMode:   // done
+    case SpvOpEntryPoint:      // done
+    case SpvOpFunctionCall:    // done
+    case SpvOpName:            // done
+    case SpvOpMemberName:      // done
+    case SpvOpSelectionMerge:  // done
+
+    // Annotation Instructions
+    case SpvOpDecorate:  // done
+    case SpvOpMemberDecorate:
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+    case SpvOpBranch:
+      out = can_forward_declare<SpvOpNop>;
+      break;
+
+    case SpvOpBranchConditional:  // done
+      out = can_forward_declare<SpvOpBranchConditional>;
+      break;
+
+    case SpvOpPhi:
+      out = can_forward_declare<SpvOpPhi>;
+      break;
+
+    default:
+      out = [](int index) {
+        (void)index;
+        return false;
+      };
+      break;
+  }
+  return out;
+}
+
 spv_result_t pushInstructions(void* user_data,
                               const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.incrementInstructionCount();
 
-  vector<SpvOp> instructions_with_forward_ids = {
-      SpvOpExecutionMode, SpvOpEntryPoint, SpvOpPhi, SpvOpFunctionCall,
-      SpvOpName, SpvOpMemberName, SpvOpDecorate, SpvOpMemberDecorate,
-      SpvOpGroupDecorate};
-
-  bool can_have_forward_declared_ids = false;
-  for (auto& instruction : instructions_with_forward_ids) {
-    can_have_forward_declared_ids |= inst->opcode == instruction;
-  }
+  auto can_have_forward_declared_ids =
+      getCanBeForwardDeclaredFunction(inst->opcode);
 
   return SSAPass(_, can_have_forward_declared_ids, inst);
-
 }
 
 spv_result_t spvValidate(const spv_const_context context,
@@ -430,13 +478,13 @@ spv_result_t spvValidate(const spv_const_context context,
   auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
                             setHeader, pushInstructions, pDiagnostic);
 
+  if (err) {
+    return err;
+  }
   if (vstate.unresolvedForwardIdCount() > 0) {
     // TODO(umar): print undefined IDs
     return vstate.diag(SPV_ERROR_INVALID_ID)
            << "Some forward referenced IDs have not be defined. \n";
-  }
-  if (err) {
-    return err;
   }
 
   // NOTE: Copy each instruction for easier processing
