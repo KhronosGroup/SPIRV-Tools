@@ -79,7 +79,6 @@ function(default_compile_options TARGET)
       target_compile_options(${TARGET} PRIVATE -fno-omit-frame-pointer)
     endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      target_compile_options(${TARGET} PRIVATE -fcolor-diagnostics)
       set(SPIRV_USE_SANITIZER "" CACHE STRING
         "Use the clang sanitizer [address|memory|thread|...]")
       if(NOT "${SPIRV_USE_SANITIZER}" STREQUAL "")
