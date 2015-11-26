@@ -444,17 +444,17 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID:
-      if (!word) return diagnostic() << "Error: Type Id is 0";
+      if (!word) return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Type Id is 0";
       inst->type_id = word;
       break;
 
     case SPV_OPERAND_TYPE_RESULT_ID:
-      if (!word) return diagnostic() << "Error: Result Id is 0";
+      if (!word) return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Result Id is 0";
       inst->result_id = word;
       // Save the result ID to type ID mapping.
       // In the grammar, type ID always appears before result ID.
       if (_.id_to_type_id.find(inst->result_id) != _.id_to_type_id.end())
-        return diagnostic() << "Id " << inst->result_id
+        return diagnostic(SPV_ERROR_INVALID_ID) << "Id " << inst->result_id
                             << " is defined more than once";
       // Record it.
       // A regular value maps to its type.  Some instructions (e.g. OpLabel)
@@ -467,7 +467,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
-      if (!word) return diagnostic() << "Id is 0";
+      if (!word) return diagnostic(SPV_ERROR_INVALID_ID) << "Id is 0";
       parsed_operand.type = SPV_OPERAND_TYPE_ID;
 
       if (inst->opcode == SpvOpExtInst && parsed_operand.offset == 3) {
@@ -475,7 +475,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         // Set the extended instruction set type for the current instruction.
         auto ext_inst_type_iter = _.import_id_to_ext_inst_type.find(word);
         if (ext_inst_type_iter == _.import_id_to_ext_inst_type.end()) {
-          return diagnostic()
+          return diagnostic(SPV_ERROR_INVALID_ID)
                  << "OpExtInst set Id " << word
                  << " does not reference an OpExtInstImport result Id";
         }
