@@ -365,19 +365,13 @@ spv_result_t SSAPass(ValidationState_t& _,
       case SPV_OPERAND_TYPE_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID: {
-        if (can_have_forward_declared_ids(i)) {
-          if (_.isDefinedId(*operand_ptr)) {
-            ret = SPV_SUCCESS;
-          } else {
-            ret = _.forwardDeclareId(*operand_ptr);
-          }
+        if (_.isDefinedId(*operand_ptr)) {
+          ret = SPV_SUCCESS;
+        } else if (can_have_forward_declared_ids(i)) {
+          ret = _.forwardDeclareId(*operand_ptr);
         } else {
-          if (_.isDefinedId(*operand_ptr)) {
-            ret = SPV_SUCCESS;
-          } else {
-            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
-                                               << " has not been defined";
-          }
+          ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
+                                             << " has not been defined";
         }
         break;
       }
