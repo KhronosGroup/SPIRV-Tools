@@ -115,23 +115,6 @@ TEST_F(Validate, InvalidDominateUsage) {
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
-%1 = OpTypeVoid
-%2 = OpTypeFunction %1
-%3 = OpFunction %1 None %2
-%1 = OpTypeVoid
-%4 = OpLabel
-     OpReturn
-     OpFunctionEnd
-)";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(Validate, InvalidDominateUsageLoop) {
-  char str[] = R"(
-     OpMemoryModel Logical GLSL450
-     OpEntryPoint GLCompute %3 ""
-     OpExecutionMode %3 LocalSize 1 1 1
-%1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
 %1 = OpTypeVoid
@@ -176,50 +159,42 @@ TEST_F(Validate, ForwardNameMissingLabelBad) {
 
 TEST_F(Validate, ForwardMemberNameGood) {
   char str[] = R"(
-          OpMemoryModel Logical GLSL450
-          OpEntryPoint GLCompute %3 ""
-          OpExecutionMode %3 LocalSize 1 1 1
           OpMemberName %struct 0 "value"
           OpMemberName %struct 1 "size"
-%voidt  = OpTypeVoid
 %intt   = OpTypeInt 32 1
 %uintt  = OpTypeInt 32 0
 %struct = OpTypeStruct %intt %uintt
-%2      = OpTypeFunction %voidt
-%3      = OpFunction %voidt None %2
-%4      = OpLabel
-          OpReturn
-          OpFunctionEnd
 )";
   validate_instructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardMemberNameMissingLabelBad) {
   char str[] = R"(
-          OpMemoryModel Logical GLSL450
-          OpEntryPoint GLCompute %3 ""
-          OpExecutionMode %3 LocalSize 1 1 1
           OpMemberName %struct 0 "value"
           OpMemberName %bad 1 "size"
-%voidt  = OpTypeVoid
 %intt   = OpTypeInt 32 1
 %uintt  = OpTypeInt 32 0
 %struct = OpTypeStruct %intt %uintt
-%2      = OpTypeFunction %voidt
-%3      = OpFunction %voidt None %2
-%4      = OpLabel
-          OpReturn
-          OpFunctionEnd
 )";
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardDecorateGood) {
   char str[] = R"(
+          OpDecorate %var Restrict
+%intt   = OpTypeInt 32 1
+%ptrt   = OpTypePointer UniformConstant %intt
+%var    = OpVariable %ptrt UniformConstant
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardDecorateInvalidIDBad) {
+  char str[] = R"(
           OpMemoryModel Logical GLSL450
           OpEntryPoint GLCompute %3 ""
           OpExecutionMode %3 LocalSize 1 1 1
-          OpDecorate %var Restrict
+          OpDecorate %missing Restrict
 %voidt  = OpTypeVoid
 %intt   = OpTypeInt 32 1
 %ptrt   = OpTypePointer UniformConstant %intt
@@ -230,10 +205,35 @@ TEST_F(Validate, ForwardDecorateGood) {
           OpReturn
           OpFunctionEnd
 )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardMemberDecorateGood) {
+  char str[] = R"(
+          OpCapability Matrix
+          OpMemberDecorate %struct 1 RowMajor
+%intt   = OpTypeInt 32 1
+%vec3   = OpTypeVector %intt 3
+%mat33  = OpTypeMatrix %vec3 3
+%struct = OpTypeStruct %intt %mat33
+)";
   validate_instructions(str, SPV_SUCCESS);
 }
 
-// TODO(umar): OpMemberDecorate
+TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
+  char str[] = R"(
+          OpCapability Matrix
+          OpMemberDecorate %missing 1 RowMajor
+%intt   = OpTypeInt 32 1
+%vec3   = OpTypeVector %intt 3
+%mat33  = OpTypeMatrix %vec3 3
+%struct = OpTypeStruct %intt %mat33
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+
+
 // TODO(umar): OpGroupDecorate
 // TODO(umar): OpGroupMemberDecorate
 

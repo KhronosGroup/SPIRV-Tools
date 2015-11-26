@@ -419,8 +419,8 @@ function<bool(int index)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpSelectionMerge:  // done
 
     // Annotation Instructions
-    case SpvOpDecorate:  // done
-    case SpvOpMemberDecorate:
+    case SpvOpDecorate:        // done
+    case SpvOpMemberDecorate:  // done
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
     case SpvOpBranch:
