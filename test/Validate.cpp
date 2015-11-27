@@ -232,10 +232,50 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
+TEST_F(Validate, ForwardGroupDecorateGood) {
+  char str[] = R"(
+          OpCapability Matrix
+          OpDecorate %dgrp RowMajor
+%dgrp   = OpDecorationGroup
+          OpGroupDecorate %dgrp %mat33 %mat44
+%intt   = OpTypeInt 32 1
+%vec3   = OpTypeVector %intt 3
+%vec4   = OpTypeVector %intt 4
+%mat33  = OpTypeMatrix %vec3 3
+%mat44  = OpTypeMatrix %vec4 4
+)";
+  validate_instructions(str, SPV_SUCCESS);
+}
 
+TEST_F(Validate, ForwardGroupDecorateMissingIdBad) {
+  char str[] = R"(
+          OpCapability Matrix
+          OpDecorate %dgrp RowMajor
+%dgrp   = OpDecorationGroup
+          OpGroupDecorate %dgrp %missing %mat44
+%intt   = OpTypeInt 32 1
+%vec3   = OpTypeVector %intt 3
+%vec4   = OpTypeVector %intt 4
+%mat33  = OpTypeMatrix %vec3 3
+%mat44  = OpTypeMatrix %vec4 4
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
 
-// TODO(umar): OpGroupDecorate
-// TODO(umar): OpGroupMemberDecorate
+TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
+  char str[] = R"(
+          OpCapability Matrix
+          OpDecorate %dgrp RowMajor
+          OpGroupDecorate %dgrp %mat33 %mat44
+%dgrp   = OpDecorationGroup
+%intt   = OpTypeInt 32 1
+%vec3   = OpTypeVector %intt 3
+%vec4   = OpTypeVector %intt 4
+%mat33  = OpTypeMatrix %vec3 3
+%mat44  = OpTypeMatrix %vec4 4
+)";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
 
 TEST_F(Validate, ForwardDecorateInvalidIdBad) {
   char str[] = R"(
@@ -367,5 +407,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
 }
 
 // TODO(umar): OpPhi
+// TODO(umar): OpGroupMemberDecorate
+// TODO(umar): OpBranch
 
 }  // anonymous namespace

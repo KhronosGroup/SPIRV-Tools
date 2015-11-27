@@ -402,26 +402,33 @@ bool can_forward_declare<SpvOpBranchConditional>(int index) {
   return index != 0;
 }
 
-function<bool(int index)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
+template <>
+bool can_forward_declare<SpvOpGroupDecorate>(int index) {
+  return index != 0;
+}
+
+function<bool(int)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   function<bool(int index)> out;
   switch (opcode) {
-    case SpvOpExecutionMode:   // done
-    case SpvOpEntryPoint:      // done
-    case SpvOpFunctionCall:    // done
-    case SpvOpName:            // done
-    case SpvOpMemberName:      // done
-    case SpvOpSelectionMerge:  // done
+    case SpvOpExecutionMode:
+    case SpvOpEntryPoint:
+    case SpvOpFunctionCall:
+    case SpvOpName:
+    case SpvOpMemberName:
+    case SpvOpSelectionMerge:
 
     // Annotation Instructions
-    case SpvOpDecorate:        // done
-    case SpvOpMemberDecorate:  // done
-    case SpvOpGroupDecorate:
-    case SpvOpGroupMemberDecorate:
+    case SpvOpDecorate:
+    case SpvOpMemberDecorate:
     case SpvOpBranch:
       out = can_forward_declare<SpvOpNop>;
       break;
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+      out = can_forward_declare<SpvOpGroupDecorate>;
+      break;
 
-    case SpvOpBranchConditional:  // done
+    case SpvOpBranchConditional:
       out = can_forward_declare<SpvOpBranchConditional>;
       break;
 
