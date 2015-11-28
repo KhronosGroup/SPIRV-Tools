@@ -99,6 +99,7 @@ class WordVector {
 
 inline void PrintTo(const WordVector& words, ::std::ostream* os) {
   size_t count = 0;
+  const auto saved_flags = os->flags();
   for (uint32_t value : words.value()) {
     *os << "0x" << std::setw(8) << std::setfill('0') << std::hex << value
         << " ";
@@ -106,6 +107,7 @@ inline void PrintTo(const WordVector& words, ::std::ostream* os) {
       *os << std::endl;
     }
   }
+  os->flags(saved_flags);
 }
 
 // Returns a vector of words representing a single instruction with the
