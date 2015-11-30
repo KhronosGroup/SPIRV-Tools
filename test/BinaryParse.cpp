@@ -50,7 +50,8 @@ using ::testing::ElementsAre;
 using ::testing::Eq;
 
 // An easily-constructible and comparable object for the contents of an
-// spv_parsed_instruction_t.
+// spv_parsed_instruction_t.  Unlike spv_parsed_instruction_t, owns the memory
+// of its components.
 struct ParsedInstruction {
   ParsedInstruction(const spv_parsed_instruction_t& inst)
       : words(inst.words, inst.words + inst.num_words),
@@ -88,6 +89,7 @@ std::ostream& operator<<(std::ostream& os, const ParsedInstruction& inst) {
        << " number_kind: " << int(operand.number_kind)
        << " number_bit_width: " << int(operand.number_bit_width) << "}";
   }
+  os << ")";
   return os;
 }
 
