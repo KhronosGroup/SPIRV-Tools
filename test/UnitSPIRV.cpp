@@ -43,4 +43,17 @@ TEST(MakeVector, Samples) {
   EXPECT_THAT(MakeVector("abcde"), Eq(Words{0x64636261, 0x0065}));
 }
 
+TEST(WordVectorPrintTo, PreservesFlagsAndFill) {
+  std::stringstream s;
+  s << std::setw(4) << std::oct << std::setfill('x') << 8 << " ";
+  PrintTo(spvtest::WordVector({10, 16}), &s);
+  // The octal setting and fill character should be preserved
+  // from before the PrintTo.
+  // Width is reset after each emission of a regular scalar type.
+  // So set it explicitly again.
+  s << std::setw(4) << 9;
+
+  EXPECT_THAT(s.str(), Eq("xx10 0x0000000a 0x00000010 xx11"));
+}
+
 }  // anonymous namespace
