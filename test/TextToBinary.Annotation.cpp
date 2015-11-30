@@ -52,10 +52,13 @@ TEST_P(OpDecorateSimpleTest, AnySimpleDecoration) {
   std::stringstream input;
   input << "OpDecorate %1 " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
+  input << std::endl;
   EXPECT_THAT(
       CompiledInstructions(input.str()),
       Eq(MakeInstruction(SpvOpDecorate, {1, uint32_t(GetParam().value())},
                          GetParam().operands())));
+  // Also check disassembly.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), Eq(input.str()));
 }
 
 #define CASE(NAME) SpvDecoration##NAME, #NAME
@@ -109,6 +112,25 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(OpDecorateSimpleTest, WrongDecoration) {
   EXPECT_THAT(CompileFailure("OpDecorate %1 xxyyzz"),
               Eq("Invalid decoration 'xxyyzz'."));
+}
+
+TEST_F(OpDecorateSimpleTest, ExtraOperandsOnDecorationExpectingNone) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 RelaxedPrecision 99"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '99'."));
+}
+
+TEST_F(OpDecorateSimpleTest, ExtraOperandsOnDecorationExpectingOne) {
+  EXPECT_THAT(CompileFailure("OpDecorate %1 SpecId 99 100"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '100'."));
+}
+
+TEST_F(OpDecorateSimpleTest, ExtraOperandsOnDecorationExpectingTwo) {
+  EXPECT_THAT(
+      CompileFailure("OpDecorate %1 LinkageAttributes \"abc\" Import 42"),
+      Eq("Expected <opcode> or <result-id> at the beginning of an "
+         "instruction, found '42'."));
 }
 
 // A single test case for an enum decoration.
@@ -369,7 +391,100 @@ TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetMemberNumber) {
               Eq("Invalid unsigned integer literal: %id2"));
 }
 
-// TODO(dneto): OpMemberDecorate
+// Test OpMemberDecorate
+
+using OpMemberDecorateSimpleTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<SpvDecoration>>>;
+
+TEST_P(OpMemberDecorateSimpleTest, AnySimpleDecoration) {
+  // This string should assemble, but should not validate.
+  std::stringstream input;
+  input << "OpMemberDecorate %1 42 " << GetParam().name();
+  for (auto operand : GetParam().operands()) input << " " << operand;
+  input << std::endl;
+  EXPECT_THAT(CompiledInstructions(input.str()),
+              Eq(MakeInstruction(SpvOpMemberDecorate,
+                                 {1, 42, uint32_t(GetParam().value())},
+                                 GetParam().operands())));
+  // Also check disassembly.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), Eq(input.str()));
+}
+
+#define CASE(NAME) SpvDecoration##NAME, #NAME
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryDecorateSimple, OpMemberDecorateSimpleTest,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvDecoration>>{
+        // The operand literal values are arbitrarily chosen,
+        // but there are the right number of them.
+        {CASE(RelaxedPrecision), {}},
+        {CASE(SpecId), {100}},
+        {CASE(Block), {}},
+        {CASE(BufferBlock), {}},
+        {CASE(RowMajor), {}},
+        {CASE(ColMajor), {}},
+        {CASE(ArrayStride), {4}},
+        {CASE(MatrixStride), {16}},
+        {CASE(GLSLShared), {}},
+        {CASE(GLSLPacked), {}},
+        {CASE(CPacked), {}},
+        // Placeholder line for enum value 12
+        {CASE(NoPerspective), {}},
+        {CASE(Flat), {}},
+        {CASE(Patch), {}},
+        {CASE(Centroid), {}},
+        {CASE(Sample), {}},
+        {CASE(Invariant), {}},
+        {CASE(Restrict), {}},
+        {CASE(Aliased), {}},
+        {CASE(Volatile), {}},
+        {CASE(Constant), {}},
+        {CASE(Coherent), {}},
+        {CASE(NonWritable), {}},
+        {CASE(NonReadable), {}},
+        {CASE(Uniform), {}},
+        {CASE(SaturatedConversion), {}},
+        {CASE(Stream), {2}},
+        {CASE(Location), {6}},
+        {CASE(Component), {3}},
+        {CASE(Index), {14}},
+        {CASE(Binding), {19}},
+        {CASE(DescriptorSet), {7}},
+        {CASE(Offset), {12}},
+        {CASE(XfbBuffer), {1}},
+        {CASE(XfbStride), {8}},
+        {CASE(NoContraction), {}},
+        {CASE(InputAttachmentIndex), {102}},
+        {CASE(Alignment), {16}},
+    }));
+#undef CASE
+
+TEST_F(OpMemberDecorateSimpleTest, WrongDecoration) {
+  EXPECT_THAT(CompileFailure("OpMemberDecorate %1 9 xxyyzz"),
+              Eq("Invalid decoration 'xxyyzz'."));
+}
+
+TEST_F(OpMemberDecorateSimpleTest, ExtraOperandsOnDecorationExpectingNone) {
+  EXPECT_THAT(CompileFailure("OpMemberDecorate %1 12 RelaxedPrecision 99"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '99'."));
+}
+
+TEST_F(OpMemberDecorateSimpleTest, ExtraOperandsOnDecorationExpectingOne) {
+  EXPECT_THAT(CompileFailure("OpMemberDecorate %1 0 SpecId 99 100"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '100'."));
+}
+
+TEST_F(OpMemberDecorateSimpleTest, ExtraOperandsOnDecorationExpectingTwo) {
+  EXPECT_THAT(CompileFailure(
+                  "OpMemberDecorate %1 1 LinkageAttributes \"abc\" Import 42"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found '42'."));
+}
+
+// TODO(dneto): OpMemberDecorate cases for decorations with parameters which
+// are: not just lists of literal numbers.
+
 // TODO(dneto): OpDecorationGroup
 // TODO(dneto): OpGroupDecorate
 

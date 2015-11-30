@@ -555,6 +555,42 @@ INSTANTIATE_TEST_CASE_P(
                       {0 /* this word does not belong*/}}),
          "Invalid instruction OpString starting at word 5: expected no more"
          " operands after 3 words, but stated word count is 4."},
+        // Word count is too large.  There are too many words after the string
+        // literal.  A linkage attribute decoration is the only case in SPIR-V
+        // where a string operand is followed by another operand.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(6, SpvOpDecorate), 1 /* target id */,
+                       uint32_t(SpvDecorationLinkageAttributes)},
+                      MakeVector("abc"),
+                      {uint32_t(SpvLinkageTypeImport),
+                       0 /* does not belong */}}),
+         "Invalid instruction OpDecorate starting at word 5: expected no more"
+         " operands after 5 words, but stated word count is 6."},
+        // Same as the previous case, but with OpMemberDecorate.
+        {Concatenate(
+             {ExpectedHeaderForBound(2),
+              {spvOpcodeMake(7, SpvOpMemberDecorate), 1 /* target id */,
+               42 /* member index */, uint32_t(SpvDecorationLinkageAttributes)},
+              MakeVector("abc"),
+              {uint32_t(SpvLinkageTypeImport), 0 /* does not belong */}}),
+         "Invalid instruction OpMemberDecorate starting at word 5: expected no"
+         " more operands after 6 words, but stated word count is 7."},
+        // Word count is too large.  There should be no more words
+        // after the RelaxedPrecision decoration.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(4, SpvOpDecorate), 1 /* target id */,
+                       uint32_t(SpvDecorationRelaxedPrecision),
+                       0 /* does not belong */}}),
+         "Invalid instruction OpDecorate starting at word 5: expected no"
+         " more operands after 3 words, but stated word count is 4."},
+        // Word count is too large.  There should be only one word after
+        // the SpecId decoration enum word.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(5, SpvOpDecorate), 1 /* target id */,
+                       uint32_t(SpvDecorationSpecId), 42 /* the spec id */,
+                       0 /* does not belong */}}),
+         "Invalid instruction OpDecorate starting at word 5: expected no"
+         " more operands after 4 words, but stated word count is 5."},
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(2, SpvOpTypeVoid), 0}}),
          "Error: Result Id is 0"},

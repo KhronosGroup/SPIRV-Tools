@@ -99,9 +99,18 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
         break;
     }
   } else if (operandClass == OperandVariableLiterals) {
-    if (opcode == SpvOpConstant || opcode == SpvOpSpecConstant) {
-      // The number type is determined by the type Id operand.
-      return SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
+    switch (opcode) {
+      case SpvOpConstant:
+      case SpvOpSpecConstant:
+        // The number type is determined by the type Id operand.
+        return SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
+      case SpvOpDecorate:
+      case SpvOpMemberDecorate:
+        // The operand types at the end of the instruction are
+        // determined instead by the decoration kind.
+        return SPV_OPERAND_TYPE_NONE;
+      default:
+        break;
     }
   }
 
