@@ -106,10 +106,6 @@ TEST(ParsedInstruction, ZeroInitializedAreEqual) {
   EXPECT_THAT(a, ::testing::TypedEq<ParsedInstruction>(b));
 }
 
-// A binary parse client that captures the results of parsing a binary,
-// and whose callbacks can be made to succeed for a specified number of
-// times, and then always fail with a given failure code.
-
 // Googlemock class receiving Header/Instruction calls from spvBinaryParse().
 class MockParseClient {
  public:
@@ -177,13 +173,13 @@ ParsedInstruction MakeParsedVoidTypeInstruction(uint32_t result_id) {
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_RESULT_ID)};
   const spv_parsed_instruction_t parsed_void_inst = {
       void_inst.data(),
-      uint16_t(void_inst.size()),
+      static_cast<uint16_t>(void_inst.size()),
       SpvOpTypeVoid,
       SPV_EXT_INST_TYPE_NONE,
       0,  // type id
       result_id,
       void_operands.data(),
-      uint16_t(void_operands.size())};
+      static_cast<uint16_t>(void_operands.size())};
   return ParsedInstruction(parsed_void_inst);
 }
 
@@ -194,14 +190,15 @@ ParsedInstruction MakeParsedInt32TypeInstruction(uint32_t result_id) {
   const auto i32_operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_RESULT_ID),
       MakeLiteralNumberOperand(2), MakeLiteralNumberOperand(3)};
-  spv_parsed_instruction_t parsed_i32_inst = {i32_inst.data(),
-                                              uint16_t(i32_inst.size()),
-                                              SpvOpTypeInt,
-                                              SPV_EXT_INST_TYPE_NONE,
-                                              0,  // type id
-                                              result_id,
-                                              i32_operands.data(),
-                                              uint16_t(i32_operands.size())};
+  spv_parsed_instruction_t parsed_i32_inst = {
+      i32_inst.data(),
+      static_cast<uint16_t>(i32_inst.size()),
+      SpvOpTypeInt,
+      SPV_EXT_INST_TYPE_NONE,
+      0,  // type id
+      result_id,
+      i32_operands.data(),
+      static_cast<uint16_t>(i32_operands.size())};
   return ParsedInstruction(parsed_i32_inst);
 }
 
@@ -229,6 +226,7 @@ class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
 TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
   const auto binary = CompileSuccessfully("");
   EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
   Parse(binary, SPV_SUCCESS);
   EXPECT_EQ(nullptr, diagnostic_);
 }
@@ -355,12 +353,13 @@ TEST_F(BinaryParseTest, InstructionWithStringOperand) {
   EXPECT_HEADER(100).WillOnce(Return(SPV_SUCCESS));
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
-      MakeLiteralStringOperand(2, uint16_t(str_words.size()))};
-  EXPECT_CALL(client_, Instruction(ParsedInstruction(spv_parsed_instruction_t{
-                           instruction.data(), uint16_t(instruction.size()),
-                           SpvOpName, SPV_EXT_INST_TYPE_NONE, 0 /*type id*/,
-                           0 /* No result id for OpName*/, operands.data(),
-                           uint16_t(operands.size())})))
+      MakeLiteralStringOperand(2, static_cast<uint16_t>(str_words.size()))};
+  EXPECT_CALL(client_,
+              Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                  instruction.data(), static_cast<uint16_t>(instruction.size()),
+                  SpvOpName, SPV_EXT_INST_TYPE_NONE, 0 /*type id*/,
+                  0 /* No result id for OpName*/, operands.data(),
+                  static_cast<uint16_t>(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
   Parse(binary, SPV_SUCCESS);
   EXPECT_EQ(nullptr, diagnostic_);
@@ -383,12 +382,14 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
       MakeSimpleOperand(5, SPV_OPERAND_TYPE_ID),  // Id of the argument
   };
   const auto instruction = MakeInstruction(
-      SpvOpExtInst, {2, 3, 1, uint32_t(OpenCLLIB::Entrypoints::Sqrt), 4});
-  EXPECT_CALL(client_, Instruction(ParsedInstruction(spv_parsed_instruction_t{
-                           instruction.data(), uint16_t(instruction.size()),
-                           SpvOpExtInst, SPV_EXT_INST_TYPE_OPENCL_STD,
-                           2 /*type id*/, 3 /*result id*/, operands.data(),
-                           uint16_t(operands.size())})))
+      SpvOpExtInst,
+      {2, 3, 1, static_cast<uint32_t>(OpenCLLIB::Entrypoints::Sqrt), 4});
+  EXPECT_CALL(client_,
+              Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                  instruction.data(), static_cast<uint16_t>(instruction.size()),
+                  SpvOpExtInst, SPV_EXT_INST_TYPE_OPENCL_STD, 2 /*type id*/,
+                  3 /*result id*/, operands.data(),
+                  static_cast<uint16_t>(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
   Parse(binary, SPV_SUCCESS);
   EXPECT_EQ(nullptr, diagnostic_);
@@ -526,7 +527,7 @@ INSTANTIATE_TEST_CASE_P(
         // (It is valid for an optional string operand to be absent.)
         {Concatenate({ExpectedHeaderForBound(3),
                       {spvOpcodeMake(6, SpvOpSource),
-                       uint32_t(SpvSourceLanguageOpenCL_C), 210,
+                       static_cast<uint32_t>(SpvSourceLanguageOpenCL_C), 210,
                        1 /* file id */,
                        /*start of string*/ 0x41414141, 0x41414141}}),
          "End of input reached while decoding OpSource starting at word"
