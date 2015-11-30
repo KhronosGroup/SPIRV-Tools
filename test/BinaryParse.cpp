@@ -547,6 +547,14 @@ INSTANTIATE_TEST_CASE_P(
                       {spvOpcodeMake(3, SpvOpString), 1, 0x41414141, 0}}),
          "Invalid word count: OpString starting at word 5 says it has 3"
          " words, but found 4 words instead."},
+        // Word count is too large.  The string terminates before the last
+        // word.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(4, SpvOpString), 1 /* result id */},
+                      MakeVector("abc"),
+                      {0 /* this word does not belong*/}}),
+         "Invalid instruction OpString starting at word 5: expected no more"
+         " operands after 3 words, but stated word count is 4."},
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(2, SpvOpTypeVoid), 0}}),
          "Error: Result Id is 0"},
