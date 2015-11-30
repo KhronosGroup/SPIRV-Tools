@@ -386,27 +386,6 @@ spv_result_t SSAPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-template <SpvOp OP>
-bool can_forward_declare(int index) {
-  (void)index;
-  return true;
-}
-
-template <>
-bool can_forward_declare<SpvOpPhi>(int index) {
-  return (1 + index % 2);
-}
-
-template <>
-bool can_forward_declare<SpvOpBranchConditional>(int index) {
-  return index != 0;
-}
-
-template <>
-bool can_forward_declare<SpvOpGroupDecorate>(int index) {
-  return index != 0;
-}
-
 function<bool(int)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   function<bool(int index)> out;
   switch (opcode) {
@@ -421,26 +400,20 @@ function<bool(int)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
     case SpvOpBranch:
-      out = can_forward_declare<SpvOpNop>;
+      out = [](int) { return true; };
       break;
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
-      out = can_forward_declare<SpvOpGroupDecorate>;
-      break;
-
     case SpvOpBranchConditional:
-      out = can_forward_declare<SpvOpBranchConditional>;
+      out = [](int index) { return index != 0; };
       break;
 
     case SpvOpPhi:
-      out = can_forward_declare<SpvOpPhi>;
+      out = [] (int index) { return index > 1; };
       break;
 
     default:
-      out = [](int index) {
-        (void)index;
-        return false;
-      };
+      out = [](int) {return false;};
       break;
   }
   return out;
@@ -485,7 +458,7 @@ spv_result_t spvValidate(const spv_const_context context,
   if (vstate.unresolvedForwardIdCount() > 0) {
     // TODO(umar): print undefined IDs
     return vstate.diag(SPV_ERROR_INVALID_ID)
-           << "Some forward referenced IDs have not be defined. \n";
+           << "Some forward referenced IDs have not be defined";
   }
 
   // NOTE: Copy each instruction for easier processing
