@@ -346,25 +346,27 @@ class ValidationState_t {
   unordered_set<uint32_t> unresolved_forward_ids_;
 };
 
-spv_result_t SSAPass(ValidationState_t& _,
-                     function<bool(int)> can_have_forward_declared_ids,
+// Performs SSA validation on the IDs of an instruction. The
+// can_have_forward_declared_ids  functor should return true if the
+// instruction operand's ID can be forward referenced.
+spv_result_t SsaPass(ValidationState_t& _,
+                     function<bool(unsigned)> can_have_forward_declared_ids,
                      const spv_parsed_instruction_t* inst) {
-  for (int i = 0; i < inst->num_operands; i++) {
+  for (unsigned i = 0; i < inst->num_operands; i++) {
     const spv_parsed_operand_t& operand = inst->operands[i];
     const spv_operand_type_t& type = operand.type;
     const uint32_t* operand_ptr = inst->words + operand.offset;
 
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
-      case SPV_OPERAND_TYPE_RESULT_ID: {
+      case SPV_OPERAND_TYPE_RESULT_ID:
         _.removeIfForwardDeclared(*operand_ptr);
         ret = _.definedIds(*operand_ptr);
         break;
-      }
       case SPV_OPERAND_TYPE_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      case SPV_OPERAND_TYPE_SCOPE_ID: {
+      case SPV_OPERAND_TYPE_SCOPE_ID:
         if (_.isDefinedId(*operand_ptr)) {
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
@@ -374,7 +376,6 @@ spv_result_t SSAPass(ValidationState_t& _,
                                              << " has not been defined";
         }
         break;
-      }
       default:
         ret = SPV_SUCCESS;
         break;
@@ -386,48 +387,57 @@ spv_result_t SSAPass(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-function<bool(int)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
-  function<bool(int index)> out;
+// This funciton takes the opcode of an instruction and returns
+// a function object that will return true if the index
+// of the operand can be forwarad declared. This function will
+// used in the SSA validation stage of the pipeline
+function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
+  function<bool(unsigned index)> out;
   switch (opcode) {
     case SpvOpExecutionMode:
     case SpvOpEntryPoint:
-    case SpvOpFunctionCall:
     case SpvOpName:
     case SpvOpMemberName:
     case SpvOpSelectionMerge:
-
-    // Annotation Instructions
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
     case SpvOpBranch:
-      out = [](int) { return true; };
+      out = [](unsigned) { return true; };
       break;
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
     case SpvOpBranchConditional:
-      out = [](int index) { return index != 0; };
+    case SpvOpSwitch:
+      out = [](unsigned index) { return index != 0; };
       break;
+    case SpvOpFunctionCall:
+      out = [] (unsigned index) { return index == 1; };
 
     case SpvOpPhi:
-      out = [] (int index) { return index > 1; };
+      out = [](unsigned index) { return index > 1; };
       break;
 
     default:
-      out = [](int) {return false;};
+      out = [](unsigned) { return false; };
       break;
   }
   return out;
 }
 
-spv_result_t pushInstructions(void* user_data,
-                              const spv_parsed_instruction_t* inst) {
+spv_result_t ProcessInstructions(void* user_data,
+                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.incrementInstructionCount();
 
   auto can_have_forward_declared_ids =
       getCanBeForwardDeclaredFunction(inst->opcode);
 
-  return SSAPass(_, can_have_forward_declared_ids, inst);
+  // TODO(umar): Perform CFG pass
+  // TODO(umar): Perform logical layout validation pass
+  // TODO(umar): Perform data rules pass
+  // TODO(umar): Perform instruction validation pass
+
+  return SsaPass(_, can_have_forward_declared_ids, inst);
 }
 
 spv_result_t spvValidate(const spv_const_context context,
@@ -448,13 +458,20 @@ spv_result_t spvValidate(const spv_const_context context,
     return SPV_ERROR_INVALID_BINARY;
   }
 
+  // NOTE: Parse the module and perform inline validation checks. These
+  // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(pDiagnostic);
   auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
-                            setHeader, pushInstructions, pDiagnostic);
+                            setHeader, ProcessInstructions, pDiagnostic);
 
   if (err) {
     return err;
   }
+
+  // TODO(umar): Add validation checks which require the parsing of the entire
+  // module. Use the information from the processInstructions pass to make
+  // the checks.
+
   if (vstate.unresolvedForwardIdCount() > 0) {
     // TODO(umar): print undefined IDs
     return vstate.diag(SPV_ERROR_INVALID_ID)
