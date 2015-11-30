@@ -24,46 +24,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+// Validation tests for SSA
+
 #include "UnitSPIRV.h"
+#include "ValidateFixtures.h"
 
 namespace {
 
-class Validate : public ::testing::Test {
- public:
-  Validate() : context(spvContextCreate()), binary() {}
-  ~Validate() { spvContextDestroy(context); }
-
-  virtual void TearDown() { spvBinaryDestroy(binary); }
-  spv_const_binary get_const_binary() { return spv_const_binary(binary); }
-  void validate_instructions(std::string code, spv_result_t result);
-
-  spv_context context;
-  spv_binary binary;
-};
-
-void Validate::validate_instructions(std::string code, spv_result_t result) {
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, code.c_str(), code.size(),
-                                         &binary, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  if (result == SPV_SUCCESS) {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
-                                  &diagnostic));
-    if (diagnostic) {
-      spvDiagnosticPrint(diagnostic);
-      spvDiagnosticDestroy(diagnostic);
-    }
-  } else {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
-                                  &diagnostic));
-    ASSERT_NE(nullptr, diagnostic);
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-}
+using Validate = spvtest::ValidateBase;
 
 TEST_F(Validate, Default) {
   char str[] = R"(
@@ -80,7 +48,7 @@ TEST_F(Validate, Default) {
   validate_instructions(str, SPV_SUCCESS);
 }
 
-TEST_F(Validate, InvalidIdUndefined) {
+TEST_F(Validate, IdUndefinedBad) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %4 ""
@@ -95,7 +63,7 @@ TEST_F(Validate, InvalidIdUndefined) {
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(Validate, InvalidIdRedefined) {
+TEST_F(Validate, IdRedefinedBad) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
@@ -110,7 +78,7 @@ TEST_F(Validate, InvalidIdRedefined) {
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(Validate, InvalidDominateUsage) {
+TEST_F(Validate, DominateUsageBad) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
@@ -296,7 +264,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(Validate, ForwardFunctionCall) {
+TEST_F(Validate, ForwardFunctionCallGood) {
   char str[] = R"(
         OpMemoryModel Logical GLSL450
         OpEntryPoint GLCompute %5 ""
@@ -409,5 +377,4 @@ TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
 // TODO(umar): OpPhi
 // TODO(umar): OpGroupMemberDecorate
 // TODO(umar): OpBranch
-
-}  // anonymous namespace
+}
