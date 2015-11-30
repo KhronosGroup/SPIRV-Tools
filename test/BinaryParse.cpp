@@ -317,9 +317,9 @@ TEST_F(BinaryParseTest, EarlyReturnWithOnePassingCallback) {
       "%2 = OpTypeInt 32 1 "
       "%3 = OpTypeFloat 32");
   InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(4).WillOnce(Return(SPV_REQUESTED_TERMINATION));
-  // Early exit means no calls to Instruction().
-  EXPECT_CALL(client_, Instruction(_)).Times(0);
+  EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_REQUESTED_TERMINATION));
   Parse(binary, SPV_REQUESTED_TERMINATION);
   // On early termination, the binary parser doesn't generate its own
   // diagnostics.
