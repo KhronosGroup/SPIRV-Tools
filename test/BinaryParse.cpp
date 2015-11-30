@@ -24,10 +24,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "UnitSPIRV.h"
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "gmock/gmock.h"
 
 #include "TestFixture.h"
-#include "gmock/gmock.h"
+#include "UnitSPIRV.h"
 
 // Returns true if two spv_parsed_operand_t values are equal.
 // To use this operator, this definition must appear in the same namespace
@@ -44,16 +48,17 @@ namespace {
 using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;
-using ::testing::_;
 using ::testing::AnyOf;
-using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::InSequence;
+using ::testing::Return;
+using ::testing::_;
 
 // An easily-constructible and comparable object for the contents of an
 // spv_parsed_instruction_t.  Unlike spv_parsed_instruction_t, owns the memory
 // of its components.
 struct ParsedInstruction {
-  ParsedInstruction(const spv_parsed_instruction_t& inst)
+  explicit ParsedInstruction(const spv_parsed_instruction_t& inst)
       : words(inst.words, inst.words + inst.num_words),
         opcode(inst.opcode),
         ext_inst_type(inst.ext_inst_type),
@@ -101,91 +106,29 @@ TEST(ParsedInstruction, ZeroInitializedAreEqual) {
   EXPECT_THAT(a, ::testing::TypedEq<ParsedInstruction>(b));
 }
 
-// A template class with static member functions that forward to non-static
-// member functions corresponding to the header and instruction callbacks
-// for spvBinaryParse.
-template <typename Client, typename T>
-class BinaryParseClient : public T {
+// Googlemock class receiving Header/Instruction calls from spvBinaryParse().
+class MockParseClient {
  public:
-  static spv_result_t Header(void* user_data, spv_endianness_t endian,
-                             uint32_t magic, uint32_t version,
-                             uint32_t generator, uint32_t id_bound,
-                             uint32_t reserved) {
-    return static_cast<Client*>(user_data)
-        ->HandleHeader(endian, magic, version, generator, id_bound, reserved);
-  }
-
-  static spv_result_t Instruction(
-      void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
-    return static_cast<Client*>(user_data)
-        ->HandleInstruction(parsed_instruction);
-  }
-};
-
-using Words = std::vector<uint32_t>;
-using Endians = std::vector<spv_endianness_t>;
-using Sentences = std::vector<Words>;  // Maybe this is too cute?
-using Instructions = std::vector<ParsedInstruction>;
-
-// A binary parse client that captures the results of parsing a binary,
-// and whose callbacks can be made to succeed for a specified number of
-// times, and then always fail with a given failure code.
-template <typename T>
-class CaptureParseResults
-    : public BinaryParseClient<CaptureParseResults<T>, T> {
- public:
-  // Capture the header from the parser callback.
-  // If the number of callback successes has not yet been exhausted, then
-  // returns SPV_SUCCESS, which itself counts as a callback success.
-  // Otherwise returns the stored failure code.
-  virtual spv_result_t HandleHeader(spv_endianness_t endian, uint32_t magic,
+  MOCK_METHOD6(Header, spv_result_t(spv_endianness_t endian, uint32_t magic,
                                     uint32_t version, uint32_t generator,
-                                    uint32_t id_bound, uint32_t reserved) {
-    endians_.push_back(endian);
-    headers_.push_back({magic, version, generator, id_bound, reserved});
-    return ComputeResultCode();
-  }
-
-  // Capture the parsed instruction data from the parser callback.
-  // If the number of callback successes has not yet been exhausted, then
-  // returns SPV_SUCCESS, which itself counts as a callback success.
-  // Otherwise returns the stored failure code.
-  virtual spv_result_t HandleInstruction(
-      const spv_parsed_instruction_t* parsed_instruction) {
-    EXPECT_NE(nullptr, parsed_instruction);
-    instructions_.emplace_back(*parsed_instruction);
-    return ComputeResultCode();
-  }
-
-  // Getters
-  const Endians& endians() const { return endians_; }
-  const Sentences& headers() const { return headers_; }
-  const Instructions& instructions() const { return instructions_; }
-
- protected:
-  // Returns the appropriate result code based on whether we still have more
-  // successes to return.  Decrements the number of successes still remaining,
-  // if needed.
-  spv_result_t ComputeResultCode() {
-    if (num_passing_callbacks_ < 0) return SPV_SUCCESS;
-    if (num_passing_callbacks_ == 0) return fail_code_;
-    num_passing_callbacks_--;
-    return SPV_SUCCESS;
-  }
-
-  // How many callbacks should succeed before they start failing?
-  // If this is negative, then all callbacks should pass.
-  int num_passing_callbacks_ = -1;  // By default, never fail.
-  // The result code to use on callback failure.
-  spv_result_t fail_code_ = SPV_ERROR_INVALID_BINARY;
-
-  // Accumulated results for calls to HandleHeader.
-  Endians endians_;
-  Sentences headers_;
-
-  // Accumulated results for calls to HandleHeader.
-  Instructions instructions_;
+                                    uint32_t id_bound, uint32_t reserved));
+  MOCK_METHOD1(Instruction, spv_result_t(const ParsedInstruction&));
 };
+
+// Casts user_data as MockParseClient and invokes its Header().
+spv_result_t invoke_header(void* user_data, spv_endianness_t endian,
+                           uint32_t magic, uint32_t version, uint32_t generator,
+                           uint32_t id_bound, uint32_t reserved) {
+  return static_cast<MockParseClient*>(user_data)
+      ->Header(endian, magic, version, generator, id_bound, reserved);
+}
+
+// Casts user_data as MockParseClient and invokes its Instruction().
+spv_result_t invoke_instruction(
+    void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
+  return static_cast<MockParseClient*>(user_data)
+      ->Instruction(ParsedInstruction(*parsed_instruction));
+}
 
 // The SPIR-V module header words for the Khronos Assembler generator,
 // for a module with an ID bound of 1.
@@ -196,10 +139,9 @@ const uint32_t kHeaderForBound1[] = {
 
 // Returns the expected SPIR-V module header words for the Khronos
 // Assembler generator, and with a given Id bound.
-Words ExpectedHeaderForBound(uint32_t bound) {
-  Words result{std::begin(kHeaderForBound1), std::end(kHeaderForBound1)};
-  result[SPV_INDEX_BOUND] = bound;
-  return result;
+std::vector<uint32_t> ExpectedHeaderForBound(uint32_t bound) {
+  return {SpvMagicNumber, SpvVersion,
+          SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), bound, 0};
 }
 
 // Returns a parsed operand for a non-number value at the given word offset
@@ -231,13 +173,13 @@ ParsedInstruction MakeParsedVoidTypeInstruction(uint32_t result_id) {
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_RESULT_ID)};
   const spv_parsed_instruction_t parsed_void_inst = {
       void_inst.data(),
-      uint16_t(void_inst.size()),
+      static_cast<uint16_t>(void_inst.size()),
       SpvOpTypeVoid,
       SPV_EXT_INST_TYPE_NONE,
       0,  // type id
       result_id,
       void_operands.data(),
-      uint16_t(void_operands.size())};
+      static_cast<uint16_t>(void_operands.size())};
   return ParsedInstruction(parsed_void_inst);
 }
 
@@ -248,67 +190,78 @@ ParsedInstruction MakeParsedInt32TypeInstruction(uint32_t result_id) {
   const auto i32_operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_RESULT_ID),
       MakeLiteralNumberOperand(2), MakeLiteralNumberOperand(3)};
-  spv_parsed_instruction_t parsed_i32_inst = {i32_inst.data(),
-                                              uint16_t(i32_inst.size()),
-                                              SpvOpTypeInt,
-                                              SPV_EXT_INST_TYPE_NONE,
-                                              0,  // type id
-                                              result_id,
-                                              i32_operands.data(),
-                                              uint16_t(i32_operands.size())};
+  spv_parsed_instruction_t parsed_i32_inst = {
+      i32_inst.data(),
+      static_cast<uint16_t>(i32_inst.size()),
+      SpvOpTypeInt,
+      SPV_EXT_INST_TYPE_NONE,
+      0,  // type id
+      result_id,
+      i32_operands.data(),
+      static_cast<uint16_t>(i32_operands.size())};
   return ParsedInstruction(parsed_i32_inst);
 }
 
-using BinaryParseTest =
-    spvtest::TextToBinaryTestBase<CaptureParseResults<::testing::Test>>;
+class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
+ protected:
+  void Parse(const SpirvVector& binary, spv_result_t expected_result) {
+    EXPECT_EQ(expected_result,
+              spvBinaryParse(context, &client_, binary.data(), binary.size(),
+                             invoke_header, invoke_instruction, &diagnostic_));
+  }
+
+  spv_diagnostic diagnostic_ = nullptr;
+  MockParseClient client_;
+};
+
+// Adds an EXPECT_CALL to client_->Header() with appropriate parameters,
+// including bound.  Returns the EXPECT_CALL result.
+#define EXPECT_HEADER(bound)                                                 \
+  EXPECT_CALL(client_,                                                       \
+              Header(AnyOf(SPV_ENDIANNESS_LITTLE, SPV_ENDIANNESS_BIG),       \
+                     SpvMagicNumber, SpvVersion,                             \
+                     SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), \
+                     bound, 0 /*reserved*/))
 
 TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
   const auto binary = CompileSuccessfully("");
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(endians(), AnyOf(Eq(Endians{SPV_ENDIANNESS_LITTLE}),
-                               Eq(Endians{SPV_ENDIANNESS_BIG})));
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(1)}));
-  EXPECT_THAT(instructions(), Eq(Instructions{}));
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest,
        ModuleWithSingleInstructionHasValidHeaderAndInstructionCallback) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
-  EXPECT_THAT(instructions(),
-              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, NullHeaderCallbackIsIgnored) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
+  EXPECT_CALL(client_, Header(_, _, _, _, _, _))
+      .Times(0);  // No header callback.
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
   EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), nullptr,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{}));  // No header callback.
-  EXPECT_THAT(instructions(),
-              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+            spvBinaryParse(context, &client_, binary.data(), binary.size(),
+                           nullptr, invoke_instruction, &diagnostic_));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, NullInstructionCallbackIsIgnored) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
+  EXPECT_HEADER((2)).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
   EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           nullptr, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
-  EXPECT_THAT(instructions(), Eq(Instructions{}));  // No instruction callback.
+            spvBinaryParse(context, &client_, binary.data(), binary.size(),
+                           invoke_header, nullptr, &diagnostic_));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // Check the result of multiple instruction callbacks.
@@ -320,41 +273,27 @@ TEST_F(BinaryParseTest, TwoScalarTypesGenerateTwoInstructionCallbacks) {
   const auto binary = CompileSuccessfully(
       "%1 = OpTypeVoid "
       "%2 = OpTypeInt 32 1");
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-
-  // The Id bound must be computed correctly.  The module has two generated Ids,
-  // so the bound is 3.
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(3)}));
-
-  // The instructions callbacks must have the correct data.
-  EXPECT_THAT(instructions(), Eq(Instructions{
-                                  MakeParsedVoidTypeInstruction(1),
-                                  MakeParsedInt32TypeInstruction(2),
-                              }));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(3).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
+      .WillOnce(Return(SPV_SUCCESS));
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithZeroPassingCallbacks) {
   const auto binary = CompileSuccessfully(
       "%1 = OpTypeVoid "
       "%2 = OpTypeInt 32 1");
-
-  num_passing_callbacks_ = 0;
-
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(3).WillOnce(Return(SPV_ERROR_INVALID_BINARY));
+  // Early exit means no calls to Instruction().
+  EXPECT_CALL(client_, Instruction(_)).Times(0);
+  Parse(binary, SPV_ERROR_INVALID_BINARY);
   // On error, the binary parser doesn't generate its own diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
-
-  // Early termination is registered after we have saved the header result.
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(3)}));
-  // The instruction callbacks are never called.
-  EXPECT_THAT(instructions(), Eq(Instructions{}));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest,
@@ -362,21 +301,14 @@ TEST_F(BinaryParseTest,
   const auto binary = CompileSuccessfully(
       "%1 = OpTypeVoid "
       "%2 = OpTypeInt 32 1");
-
-  num_passing_callbacks_ = 0;
-  fail_code_ = SPV_REQUESTED_TERMINATION;
-
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_REQUESTED_TERMINATION,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(3).WillOnce(Return(SPV_REQUESTED_TERMINATION));
+  // Early exit means no calls to Instruction().
+  EXPECT_CALL(client_, Instruction(_)).Times(0);
+  Parse(binary, SPV_REQUESTED_TERMINATION);
   // On early termination, the binary parser doesn't generate its own
   // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
-  // Early exit is registered after we have saved the header result.
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(3)}));
-  // The instruction callbacks are never called.
-  EXPECT_THAT(instructions(), Eq(Instructions{}));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithOnePassingCallback) {
@@ -384,25 +316,14 @@ TEST_F(BinaryParseTest, EarlyReturnWithOnePassingCallback) {
       "%1 = OpTypeVoid "
       "%2 = OpTypeInt 32 1 "
       "%3 = OpTypeFloat 32");
-
-  num_passing_callbacks_ = 1;
-  fail_code_ = SPV_REQUESTED_TERMINATION;
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_REQUESTED_TERMINATION,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_REQUESTED_TERMINATION));
+  Parse(binary, SPV_REQUESTED_TERMINATION);
   // On early termination, the binary parser doesn't generate its own
   // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
-
-  // Early termination is registered after we have saved the header result.
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(4)}));
-  // The header callback succeeded.  Then the instruction callback was called
-  // once (on the first instruction), and then it requested termination,
-  // preventing further instruction callbacks.
-  EXPECT_THAT(instructions(), Eq(Instructions{
-                                  MakeParsedVoidTypeInstruction(1),
-                              }));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithTwoPassingCallbacks) {
@@ -410,26 +331,16 @@ TEST_F(BinaryParseTest, EarlyReturnWithTwoPassingCallbacks) {
       "%1 = OpTypeVoid "
       "%2 = OpTypeInt 32 1 "
       "%3 = OpTypeFloat 32");
-
-  num_passing_callbacks_ = 2;
-  fail_code_ = SPV_REQUESTED_TERMINATION;
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_REQUESTED_TERMINATION,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
+      .WillOnce(Return(SPV_REQUESTED_TERMINATION));
+  Parse(binary, SPV_REQUESTED_TERMINATION);
   // On early termination, the binary parser doesn't generate its own
   // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
-
-  // Early termination is registered after we have saved the header result.
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(4)}));
-  // The header callback succeeded.  Then the instruction callback was
-  // called twice and then it requested termination, preventing further
-  // instruction callbacks.
-  EXPECT_THAT(instructions(), Eq(Instructions{
-                                  MakeParsedVoidTypeInstruction(1),
-                                  MakeParsedInt32TypeInstruction(2),
-                              }));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, InstructionWithStringOperand) {
@@ -438,25 +349,20 @@ TEST_F(BinaryParseTest, InstructionWithStringOperand) {
   const auto str_words = MakeVector(str);
   const auto instruction = MakeInstruction(SpvOpName, {99}, str_words);
   const auto binary = Concatenate({ExpectedHeaderForBound(100), instruction});
-
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, nullptr));
-
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(100)}));
-
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(100).WillOnce(Return(SPV_SUCCESS));
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
-      MakeLiteralStringOperand(2, uint16_t(str_words.size()))};
-  const spv_parsed_instruction_t parsed_inst = {instruction.data(),
-                                                uint16_t(instruction.size()),
-                                                SpvOpName,
-                                                SPV_EXT_INST_TYPE_NONE,
-                                                0,  // type id
-                                                0,  // No result id for OpName
-                                                operands.data(),
-                                                uint16_t(operands.size())};
-  EXPECT_THAT(instructions(), Eq(Instructions{ParsedInstruction(parsed_inst)}));
+      MakeLiteralStringOperand(2, static_cast<uint16_t>(str_words.size()))};
+  EXPECT_CALL(client_,
+              Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                  instruction.data(), static_cast<uint16_t>(instruction.size()),
+                  SpvOpName, SPV_EXT_INST_TYPE_NONE, 0 /*type id*/,
+                  0 /* No result id for OpName*/, operands.data(),
+                  static_cast<uint16_t>(operands.size())})))
+      .WillOnce(Return(SPV_SUCCESS));
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // Checks for non-zero values for the result_id and ext_inst_type members
@@ -465,13 +371,9 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   const auto binary = CompileSuccessfully(
       "%extcl = OpExtInstImport \"OpenCL.std\" "
       "%result = OpExtInst %float %extcl sqrt %x");
-
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, nullptr));
-
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(5)}));
-
+  EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).WillOnce(Return(SPV_SUCCESS));
+  // We're only interested in the second call to Instruction():
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_TYPE_ID),
       MakeSimpleOperand(2, SPV_OPERAND_TYPE_RESULT_ID),
@@ -480,16 +382,17 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
       MakeSimpleOperand(5, SPV_OPERAND_TYPE_ID),  // Id of the argument
   };
   const auto instruction = MakeInstruction(
-      SpvOpExtInst, {2, 3, 1, uint32_t(OpenCLLIB::Entrypoints::Sqrt), 4});
-  const spv_parsed_instruction_t parsed_inst = {instruction.data(),
-                                                uint16_t(instruction.size()),
-                                                SpvOpExtInst,
-                                                SPV_EXT_INST_TYPE_OPENCL_STD,
-                                                2,  // type id
-                                                3,  // result id
-                                                operands.data(),
-                                                uint16_t(operands.size())};
-  EXPECT_THAT(instructions(), ElementsAre(_, ParsedInstruction(parsed_inst)));
+      SpvOpExtInst,
+      {2, 3, 1, static_cast<uint32_t>(OpenCLLIB::Entrypoints::Sqrt), 4});
+  EXPECT_CALL(client_,
+              Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                  instruction.data(), static_cast<uint16_t>(instruction.size()),
+                  SpvOpExtInst, SPV_EXT_INST_TYPE_OPENCL_STD, 2 /*type id*/,
+                  3 /*result id*/, operands.data(),
+                  static_cast<uint16_t>(operands.size())})))
+      .WillOnce(Return(SPV_SUCCESS));
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // A binary parser diagnostic test case where we provide the words array
@@ -507,7 +410,7 @@ TEST_P(BinaryParseWordsAndCountDiagnosticTest, WordAndCountCases) {
   spv_diagnostic diagnostic = nullptr;
   EXPECT_EQ(
       SPV_ERROR_INVALID_BINARY,
-      spvBinaryParse(context, this, GetParam().words, GetParam().num_words,
+      spvBinaryParse(context, nullptr, GetParam().words, GetParam().num_words,
                      nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
@@ -534,7 +437,7 @@ INSTANTIATE_TEST_CASE_P(
 // via the assembler.  Either we want to make a malformed instruction,
 // or an invalid case the assembler would reject.
 struct WordVectorDiagnosticCase {
-  Words words;
+  std::vector<uint32_t> words;
   std::string expected_diagnostic;
 };
 
@@ -545,8 +448,8 @@ TEST_P(BinaryParseWordVectorDiagnosticTest, WordVectorCases) {
   spv_diagnostic diagnostic = nullptr;
   const auto& words = GetParam().words;
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
-                           nullptr, &diagnostic));
+            spvBinaryParse(context, nullptr, words.data(), words.size(),
+                           nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }
@@ -624,7 +527,7 @@ INSTANTIATE_TEST_CASE_P(
         // (It is valid for an optional string operand to be absent.)
         {Concatenate({ExpectedHeaderForBound(3),
                       {spvOpcodeMake(6, SpvOpSource),
-                       uint32_t(SpvSourceLanguageOpenCL_C), 210,
+                       static_cast<uint32_t>(SpvSourceLanguageOpenCL_C), 210,
                        1 /* file id */,
                        /*start of string*/ 0x41414141, 0x41414141}}),
          "End of input reached while decoding OpSource starting at word"
@@ -699,8 +602,8 @@ TEST_P(BinaryParseAssemblyDiagnosticTest, AssemblyCases) {
   spv_diagnostic diagnostic = nullptr;
   auto words = CompileSuccessfully(GetParam().assembly);
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
-                           nullptr, &diagnostic));
+            spvBinaryParse(context, nullptr, words.data(), words.size(),
+                           nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }
