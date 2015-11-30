@@ -49,6 +49,7 @@ using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;
 using ::testing::AnyOf;
+using ::testing::Eq;
 using ::testing::InSequence;
 using ::testing::Return;
 using ::testing::_;
@@ -235,37 +236,34 @@ TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
 TEST_F(BinaryParseTest,
        ModuleWithSingleInstructionHasValidHeaderAndInstructionCallback) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
-  EXPECT_THAT(instructions(),
-              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+  InSequence calls_expected_in_specific_order;
+  EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
+  Parse(binary, SPV_SUCCESS);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, NullHeaderCallbackIsIgnored) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
+  EXPECT_CALL(client_, Header(_, _, _, _, _, _))
+      .Times(0);  // No header callback.
+  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+      .WillOnce(Return(SPV_SUCCESS));
   EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), nullptr,
-                           Instruction, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{}));  // No header callback.
-  EXPECT_THAT(instructions(),
-              Eq(Instructions{MakeParsedVoidTypeInstruction(1)}));
+            spvBinaryParse(context, &client_, binary.data(), binary.size(),
+                           nullptr, invoke_instruction, &diagnostic_));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, NullInstructionCallbackIsIgnored) {
   const auto binary = CompileSuccessfully("%1 = OpTypeVoid");
-  spv_diagnostic diagnostic = nullptr;
+  EXPECT_HEADER((2)).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
   EXPECT_EQ(SPV_SUCCESS,
-            spvBinaryParse(context, this, binary.data(), binary.size(), Header,
-                           nullptr, &diagnostic));
-  EXPECT_EQ(nullptr, diagnostic);
-  EXPECT_THAT(headers(), Eq(Sentences{ExpectedHeaderForBound(2)}));
-  EXPECT_THAT(instructions(), Eq(Instructions{}));  // No instruction callback.
+            spvBinaryParse(context, &client_, binary.data(), binary.size(),
+                           invoke_header, nullptr, &diagnostic_));
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // Check the result of multiple instruction callbacks.
@@ -297,7 +295,7 @@ TEST_F(BinaryParseTest, EarlyReturnWithZeroPassingCallbacks) {
   EXPECT_CALL(client_, Instruction(_)).Times(0);
   Parse(binary, SPV_ERROR_INVALID_BINARY);
   // On error, the binary parser doesn't generate its own diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest,
@@ -344,7 +342,7 @@ TEST_F(BinaryParseTest, EarlyReturnWithTwoPassingCallbacks) {
   Parse(binary, SPV_REQUESTED_TERMINATION);
   // On early termination, the binary parser doesn't generate its own
   // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 TEST_F(BinaryParseTest, InstructionWithStringOperand) {
@@ -365,7 +363,7 @@ TEST_F(BinaryParseTest, InstructionWithStringOperand) {
                            uint16_t(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
   Parse(binary, SPV_SUCCESS);
-  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // Checks for non-zero values for the result_id and ext_inst_type members
@@ -393,7 +391,7 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
                            uint16_t(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
   Parse(binary, SPV_SUCCESS);
-  EXPECT_EQ(nullptr, diagnostic);
+  EXPECT_EQ(nullptr, diagnostic_);
 }
 
 // A binary parser diagnostic test case where we provide the words array
@@ -411,7 +409,7 @@ TEST_P(BinaryParseWordsAndCountDiagnosticTest, WordAndCountCases) {
   spv_diagnostic diagnostic = nullptr;
   EXPECT_EQ(
       SPV_ERROR_INVALID_BINARY,
-      spvBinaryParse(context, this, GetParam().words, GetParam().num_words,
+      spvBinaryParse(context, nullptr, GetParam().words, GetParam().num_words,
                      nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
@@ -438,7 +436,7 @@ INSTANTIATE_TEST_CASE_P(
 // via the assembler.  Either we want to make a malformed instruction,
 // or an invalid case the assembler would reject.
 struct WordVectorDiagnosticCase {
-  Words words;
+  std::vector<uint32_t> words;
   std::string expected_diagnostic;
 };
 
@@ -449,8 +447,8 @@ TEST_P(BinaryParseWordVectorDiagnosticTest, WordVectorCases) {
   spv_diagnostic diagnostic = nullptr;
   const auto& words = GetParam().words;
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
-                           nullptr, &diagnostic));
+            spvBinaryParse(context, nullptr, words.data(), words.size(),
+                           nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }
@@ -603,8 +601,8 @@ TEST_P(BinaryParseAssemblyDiagnosticTest, AssemblyCases) {
   spv_diagnostic diagnostic = nullptr;
   auto words = CompileSuccessfully(GetParam().assembly);
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryParse(context, this, words.data(), words.size(), nullptr,
-                           nullptr, &diagnostic));
+            spvBinaryParse(context, nullptr, words.data(), words.size(),
+                           nullptr, nullptr, &diagnostic));
   ASSERT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(GetParam().expected_diagnostic));
 }
