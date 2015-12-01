@@ -219,6 +219,13 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
 
     add_executable(UnitSPIRV ${TEST_SOURCES})
     default_compile_options(UnitSPIRV)
+    if (UNIX)
+      # The tests use mocking, and mocking requires runtime type information
+      # for the test classes.  Until we adopt a version of gmock that avoids
+      # this problem (see https://github.com/google/googletest/issues/610),
+      # add RTTI.
+      target_compile_options(UnitSPIRV PRIVATE -frtti)
+    endif()
     target_include_directories(UnitSPIRV PRIVATE
       ${gmock_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include)
     target_link_libraries(UnitSPIRV PRIVATE ${SPIRV_TOOLS} gmock)
