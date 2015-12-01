@@ -560,26 +560,27 @@ INSTANTIATE_TEST_CASE_P(
         // where a string operand is followed by another operand.
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(6, SpvOpDecorate), 1 /* target id */,
-                       uint32_t(SpvDecorationLinkageAttributes)},
+                       static_cast<uint32_t>(SpvDecorationLinkageAttributes)},
                       MakeVector("abc"),
-                      {uint32_t(SpvLinkageTypeImport),
+                      {static_cast<uint32_t>(SpvLinkageTypeImport),
                        0 /* does not belong */}}),
          "Invalid instruction OpDecorate starting at word 5: expected no more"
          " operands after 5 words, but stated word count is 6."},
         // Same as the previous case, but with OpMemberDecorate.
-        {Concatenate(
-             {ExpectedHeaderForBound(2),
-              {spvOpcodeMake(7, SpvOpMemberDecorate), 1 /* target id */,
-               42 /* member index */, uint32_t(SpvDecorationLinkageAttributes)},
-              MakeVector("abc"),
-              {uint32_t(SpvLinkageTypeImport), 0 /* does not belong */}}),
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(7, SpvOpMemberDecorate), 1 /* target id */,
+                       42 /* member index */,
+                       static_cast<uint32_t>(SpvDecorationLinkageAttributes)},
+                      MakeVector("abc"),
+                      {static_cast<uint32_t>(SpvLinkageTypeImport),
+                       0 /* does not belong */}}),
          "Invalid instruction OpMemberDecorate starting at word 5: expected no"
          " more operands after 6 words, but stated word count is 7."},
         // Word count is too large.  There should be no more words
         // after the RelaxedPrecision decoration.
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(4, SpvOpDecorate), 1 /* target id */,
-                       uint32_t(SpvDecorationRelaxedPrecision),
+                       static_cast<uint32_t>(SpvDecorationRelaxedPrecision),
                        0 /* does not belong */}}),
          "Invalid instruction OpDecorate starting at word 5: expected no"
          " more operands after 3 words, but stated word count is 4."},
@@ -587,8 +588,8 @@ INSTANTIATE_TEST_CASE_P(
         // the SpecId decoration enum word.
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(5, SpvOpDecorate), 1 /* target id */,
-                       uint32_t(SpvDecorationSpecId), 42 /* the spec id */,
-                       0 /* does not belong */}}),
+                       static_cast<uint32_t>(SpvDecorationSpecId),
+                       42 /* the spec id */, 0 /* does not belong */}}),
          "Invalid instruction OpDecorate starting at word 5: expected no"
          " more operands after 4 words, but stated word count is 5."},
         {Concatenate({ExpectedHeaderForBound(2),
