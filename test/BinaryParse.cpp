@@ -466,6 +466,11 @@ INSTANTIATE_TEST_CASE_P(
                       MakeInstruction(SpvOpNop, {42})}),
          "Invalid instruction OpNop starting at word 5: expected "
          "no more operands after 1 words, but stated word count is 2."},
+        // Supply several more unexpectd words.
+        {Concatenate({ExpectedHeaderForBound(1),
+                      MakeInstruction(SpvOpNop, {42, 43, 44, 45, 46, 47})}),
+         "Invalid instruction OpNop starting at word 5: expected "
+         "no more operands after 1 words, but stated word count is 7."},
         {Concatenate({ExpectedHeaderForBound(1),
                       MakeInstruction(SpvOpTypeVoid, {1, 2})}),
          "Invalid instruction OpTypeVoid starting at word 5: expected "
@@ -566,7 +571,16 @@ INSTANTIATE_TEST_CASE_P(
                        0 /* does not belong */}}),
          "Invalid instruction OpDecorate starting at word 5: expected no more"
          " operands after 5 words, but stated word count is 6."},
-        // Same as the previous case, but with OpMemberDecorate.
+        // Like the previous case, but with 5 extra words.
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(10, SpvOpDecorate), 1 /* target id */,
+                       static_cast<uint32_t>(SpvDecorationLinkageAttributes)},
+                      MakeVector("abc"),
+                      {static_cast<uint32_t>(SpvLinkageTypeImport),
+                       /* don't belong */ 0, 1, 2, 3, 4}}),
+         "Invalid instruction OpDecorate starting at word 5: expected no more"
+         " operands after 5 words, but stated word count is 10."},
+        // Like the previous two cases, but with OpMemberDecorate.
         {Concatenate({ExpectedHeaderForBound(2),
                       {spvOpcodeMake(7, SpvOpMemberDecorate), 1 /* target id */,
                        42 /* member index */,
@@ -576,6 +590,15 @@ INSTANTIATE_TEST_CASE_P(
                        0 /* does not belong */}}),
          "Invalid instruction OpMemberDecorate starting at word 5: expected no"
          " more operands after 6 words, but stated word count is 7."},
+        {Concatenate({ExpectedHeaderForBound(2),
+                      {spvOpcodeMake(11, SpvOpMemberDecorate),
+                       1 /* target id */, 42 /* member index */,
+                       static_cast<uint32_t>(SpvDecorationLinkageAttributes)},
+                      MakeVector("abc"),
+                      {static_cast<uint32_t>(SpvLinkageTypeImport),
+                       /* don't belong */ 0, 1, 2, 3, 4}}),
+         "Invalid instruction OpMemberDecorate starting at word 5: expected no"
+         " more operands after 6 words, but stated word count is 11."},
         // Word count is too large.  There should be no more words
         // after the RelaxedPrecision decoration.
         {Concatenate({ExpectedHeaderForBound(2),
