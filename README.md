@@ -68,6 +68,12 @@ source is not provided with this project.  Download the `googletest` source
 into the `<spirv-dir>/external/googletest` directory before configuring
 and building the project.
 
+*Note*: You must use a version of googletest that includes
+[a fix](https://github.com/google/googletest/pull/612) for
+[googletest issue 610](https://github.com/google/googletest/issues/610).
+The fix is included on the googletest master branch any time after 2015-11-10.
+In particular, googletest must be newer than version 1.7.0.
+
 ## Build
 
 The project uses [CMake](https://cmake.org/) to generate platform-specific
