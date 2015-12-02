@@ -410,11 +410,24 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpSwitch:
       out = [](unsigned index) { return index != 0; };
       break;
+
     case SpvOpFunctionCall:
-      out = [] (unsigned index) { return index == 1; };
+      out = [] (unsigned index) { return index == 2; };
+      break;
 
     case SpvOpPhi:
       out = [](unsigned index) { return index > 1; };
+      break;
+
+    case SpvOpEnqueueKernel:
+      out = [](unsigned index) { return index == 7; };
+      break;
+
+    case SpvOpGetKernelNDrangeSubGroupCount:
+    case SpvOpGetKernelNDrangeMaxSubGroupSize:
+    case SpvOpGetKernelWorkGroupSize:
+    case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
+      out = [](unsigned index) { return index == 3; };
       break;
 
     default:

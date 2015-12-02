@@ -29,6 +29,11 @@
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
+#include <regex>
+
+using std::string;
+using std::regex;
+using std::regex_replace;
 namespace {
 
 using Validate = spvtest::ValidateBase;
@@ -374,7 +379,311 @@ TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
   validate_instructions(str, SPV_ERROR_INVALID_ID);
 }
 
+string basic_types = R"(
+%voidt  = OpTypeVoid
+%boolt  = OpTypeBool
+%int8t  = OpTypeInt 8 0
+%intt   = OpTypeInt 32 1
+%uintt  = OpTypeInt 32 0
+%vfunct = OpTypeFunction %voidt
+)";
+
+string kernel_types = R"(
+          OpCapability DeviceEnqueue
+%queuet = OpTypeQueue
+
+%three  = OpConstant %uintt 3
+%arr3t  = OpTypeArray %intt %three
+%ndt    = OpTypeStruct %intt %arr3t %arr3t %arr3t
+
+%eventt = OpTypeEvent
+%intptrt = OpTypePointer UniformConstant %int8t
+
+)";
+
+string kernel_setup = R"(
+%dqueue = OpGetDefaultQueue %queuet
+
+%offset = OpConstant %intt 0
+%local  = OpConstant %intt 1
+%gl     = OpConstant %intt 1
+%ndval  = OpBuildNDRange %ndt %gl %local %offset
+
+%nevent = OpConstant %intt 0
+%event  = OpConstantNull %eventt
+%revent = OpUndef %eventt
+
+%firstp = OpConstant %int8t 0
+%psize  = OpConstant %intt 0
+%palign = OpConstant %intt 32
+%lsize  = OpConstant %intt 1
+)";
+
+string kernel_definition = R"(
+%kfunct = OpTypeFunction %voidt %intptrt
+%kfunc  = OpFunction %voidt None %kfunct
+%iparam = OpFunctionParameter %intptrt
+        OpNop
+        OpReturn
+        OpFunctionEnd
+)";
+
+TEST_F(Validate, EnqueueKernelGood) {
+  string str = basic_types + kernel_types + kernel_definition + R"(
+                    %main   = OpFunction %voidt None %vfunct
+                    )" +
+               kernel_setup + R"(
+                    %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                             OpReturn
+                             OpFunctionEnd
+                     )";
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelGood) {
+  string str = basic_types + kernel_types + R"(
+                    %main   = OpFunction %voidt None %vfunct
+                    )" +
+               kernel_setup + R"(
+                    %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                             OpReturn
+                             OpFunctionEnd
+                     )" +
+               kernel_definition;
+  validate_instructions(str, SPV_SUCCESS);
+}
+
+TEST_F(Validate, EnqueueMissingFunctionBad) {
+  string str = basic_types + kernel_types + R"(
+                    %main   = OpFunction %voidt None %vfunct
+                    )" +
+               kernel_setup + R"(
+                    %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                             OpReturn
+                             OpFunctionEnd
+                     )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+string forwardKernelNonDominantParameterBaseCode = basic_types + kernel_types +
+                                                   kernel_definition +
+                                                   R"(
+                    %main   = OpFunction %voidt None %vfunct
+                    )" + kernel_setup;
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter1Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                    %err    = OpEnqueueKernel %uintt2 %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                              OpReturn
+                              OpFunctionEnd
+                    %uintt2 = OpTypeInt 32 0
+                    )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                    %err     = OpEnqueueKernel %uintt %dqueue2 %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                    %dqueue2 = OpGetDefaultQueue %queuet
+                               OpReturn
+                               OpFunctionEnd
+                    )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                    %err    = OpEnqueueKernel %uintt %dqueue %ndval2 %nevent %event %revent %kfunc %firstp %psize %palign %lsize
+                    %ndval2  = OpBuildNDRange %ndt %gl %local %offset
+                              OpReturn
+                              OpFunctionEnd
+                    )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent2 %event %revent %kfunc %firstp %psize %palign %lsize
+                  %nevent2 = OpConstant %intt 0
+                            OpReturn
+                            OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err     = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event2 %revent %kfunc %firstp %psize %palign %lsize
+                  %event2  = OpConstantNull %eventt
+                             OpReturn
+                             OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err     = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent2 %kfunc %firstp %psize %palign %lsize
+                  %revent2 = OpUndef %eventt
+                             OpReturn
+                             OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err     = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp2 %psize %palign %lsize
+                  %firstp2 = OpConstant %int8t 0
+                             OpReturn
+                             OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize2 %palign %lsize
+                  %psize2 = OpConstant %intt 0
+                            OpReturn
+                            OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err     = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign2 %lsize
+                  %palign2 = OpConstant %intt 32
+                            OpReturn
+                            OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %err     = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize2
+                  %lsize2  = OpConstant %intt 1
+                             OpReturn
+                             OpFunctionEnd
+                  )";
+  validate_instructions(str, SPV_ERROR_INVALID_ID);
+}
+
+const char *cases[] = {
+    "OpGetKernelNDrangeSubGroupCount", "OpGetKernelNDrangeMaxSubGroupSize",
+    //"OpGetKernelWorkGroupSize",
+    //"OpGetKernelPreferredWorkGroupSizeMultiple"
+};
+
+INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases));
+
+TEST_P(Validate, GetKernelGood) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
+                             OpReturn
+                             OpFunctionEnd
+                  )";
+
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+
+  validate_instructions(out, SPV_SUCCESS);
+}
+
+TEST_P(Validate, ForwardGetKernelGood) {
+  string str = basic_types + kernel_types +
+               R"(
+                %main    = OpFunction %voidt None %vfunct
+                    )" +
+               kernel_setup + R"(
+                %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
+                           OpReturn
+                           OpFunctionEnd
+                )" +
+               kernel_definition;
+
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_SUCCESS);
+}
+
+TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+              %numsg   = GET_KERNEL_OP %uintt %ndval %missing %firstp %psize %palign
+                         OpReturn
+                         OpFunctionEnd
+              )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter1Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                  %numsg   = GET_KERNEL_OP %uintt2 %ndval %kfunc %firstp %psize %palign
+                             OpReturn
+                             OpFunctionEnd
+                  %uintt2  = OpTypeInt 32 0
+                  )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                %numsg   = GET_KERNEL_OP %uintt %ndval2 %kfunc %firstp %psize %palign
+                %ndval2  = OpBuildNDRange %ndt %gl %local %offset
+                            OpReturn
+                            OpFunctionEnd
+                )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp2 %psize %palign
+                %firstp2 = OpConstant %int8t 0
+                            OpReturn
+                            OpFunctionEnd
+                )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize2 %palign
+                %psize2  = OpConstant %intt 0
+                            OpReturn
+                            OpFunctionEnd
+                )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
+  string str = forwardKernelNonDominantParameterBaseCode + R"(
+                %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign2
+                %palign2 = OpConstant %intt 32
+                            OpReturn
+                            OpFunctionEnd
+                )";
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, GetParam());
+  validate_instructions(out, SPV_ERROR_INVALID_ID);
+}
+
 // TODO(umar): OpPhi
 // TODO(umar): OpGroupMemberDecorate
 // TODO(umar): OpBranch
+
+// TODO(umar): OpGetKernelWorkGroupSize
+// TODO(umar): OpGetKernelPreferredWorkGroupSizeMultiple
 }

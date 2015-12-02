@@ -30,7 +30,8 @@
 
 namespace spvtest {
 
-class ValidateBase : public ::testing::Test {
+class ValidateBase : public ::testing::Test,
+                     public ::testing::WithParamInterface<const char*> {
  public:
   ValidateBase();
   ~ValidateBase();
