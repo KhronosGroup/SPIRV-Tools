@@ -46,7 +46,7 @@ TEST(MakeVector, Samples) {
 TEST(WordVectorPrintTo, PreservesFlagsAndFill) {
   std::stringstream s;
   s << std::setw(4) << std::oct << std::setfill('x') << 8 << " ";
-  PrintTo(spvtest::WordVector({10, 16}), &s);
+  spvtest::PrintTo(spvtest::WordVector({10, 16}), &s);
   // The octal setting and fill character should be preserved
   // from before the PrintTo.
   // Width is reset after each emission of a regular scalar type.
