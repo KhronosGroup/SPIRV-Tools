@@ -33,10 +33,11 @@
 
 using std::string;
 using std::regex;
+using std::pair;
 using std::regex_replace;
 namespace {
 
-using Validate = spvtest::ValidateBase;
+using Validate = spvtest::ValidateBase<pair<string, bool>>;
 
 TEST_F(Validate, Default) {
   char str[] = R"(
@@ -50,7 +51,7 @@ TEST_F(Validate, Default) {
      OpReturn
      OpFunctionEnd
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, IdUndefinedBad) {
@@ -65,7 +66,7 @@ TEST_F(Validate, IdUndefinedBad) {
      OpReturn
      OpFunctionEnd
     )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, IdRedefinedBad) {
@@ -80,7 +81,7 @@ TEST_F(Validate, IdRedefinedBad) {
      OpReturn
      OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, DominateUsageBad) {
@@ -95,7 +96,7 @@ TEST_F(Validate, DominateUsageBad) {
      OpReturn
      OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardNameGood) {
@@ -111,7 +112,7 @@ TEST_F(Validate, ForwardNameGood) {
      OpReturn
      OpFunctionEnd
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardNameMissingLabelBad) {
@@ -127,7 +128,7 @@ TEST_F(Validate, ForwardNameMissingLabelBad) {
      OpReturn
      OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardMemberNameGood) {
@@ -138,7 +139,7 @@ TEST_F(Validate, ForwardMemberNameGood) {
 %uintt  = OpTypeInt 32 0
 %struct = OpTypeStruct %intt %uintt
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardMemberNameMissingLabelBad) {
@@ -149,7 +150,7 @@ TEST_F(Validate, ForwardMemberNameMissingLabelBad) {
 %uintt  = OpTypeInt 32 0
 %struct = OpTypeStruct %intt %uintt
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardDecorateGood) {
@@ -159,7 +160,7 @@ TEST_F(Validate, ForwardDecorateGood) {
 %ptrt   = OpTypePointer UniformConstant %intt
 %var    = OpVariable %ptrt UniformConstant
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardDecorateInvalidIDBad) {
@@ -178,7 +179,7 @@ TEST_F(Validate, ForwardDecorateInvalidIDBad) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardMemberDecorateGood) {
@@ -190,7 +191,7 @@ TEST_F(Validate, ForwardMemberDecorateGood) {
 %mat33  = OpTypeMatrix %vec3 3
 %struct = OpTypeStruct %intt %mat33
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
@@ -202,7 +203,7 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
 %mat33  = OpTypeMatrix %vec3 3
 %struct = OpTypeStruct %intt %mat33
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardGroupDecorateGood) {
@@ -217,7 +218,7 @@ TEST_F(Validate, ForwardGroupDecorateGood) {
 %mat33  = OpTypeMatrix %vec3 3
 %mat44  = OpTypeMatrix %vec4 4
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardGroupDecorateMissingIdBad) {
@@ -232,7 +233,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingIdBad) {
 %mat33  = OpTypeMatrix %vec3 3
 %mat44  = OpTypeMatrix %vec4 4
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
@@ -247,7 +248,7 @@ TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
 %mat33  = OpTypeMatrix %vec3 3
 %mat44  = OpTypeMatrix %vec4 4
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardDecorateInvalidIdBad) {
@@ -266,7 +267,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardFunctionCallGood) {
@@ -292,10 +293,10 @@ TEST_F(Validate, ForwardFunctionCallGood) {
         OpReturn
         OpFunctionEnd
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
-TEST_F(Validate, ForwardBranchConditionalGood) {
+TEST_F(Validate, DISABLED_ForwardBranchConditionalGood) {
   char str[] = R"(
 %voidt  = OpTypeVoid
 %boolt  = OpTypeBool
@@ -313,10 +314,10 @@ TEST_F(Validate, ForwardBranchConditionalGood) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
-TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
+TEST_F(Validate, DISABLED_ForwardBranchConditionalWithWeightsGood) {
   char str[] = R"(
 %voidt  = OpTypeVoid
 %boolt  = OpTypeBool
@@ -334,7 +335,7 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
@@ -355,7 +356,7 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
@@ -376,10 +377,10 @@ TEST_F(Validate, ForwardBranchConditionalMissingLabelBad) {
           OpReturn
           OpFunctionEnd
 )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
-string basic_types = R"(
+const string kBasicTypes = R"(
 %voidt  = OpTypeVoid
 %boolt  = OpTypeBool
 %int8t  = OpTypeInt 8 0
@@ -388,7 +389,7 @@ string basic_types = R"(
 %vfunct = OpTypeFunction %voidt
 )";
 
-string kernel_types = R"(
+const string kKernelTypes = R"(
           OpCapability DeviceEnqueue
 %queuet = OpTypeQueue
 
@@ -401,7 +402,7 @@ string kernel_types = R"(
 
 )";
 
-string kernel_setup = R"(
+const string kKernelSetup = R"(
 %dqueue = OpGetDefaultQueue %queuet
 
 %offset = OpConstant %intt 0
@@ -419,7 +420,7 @@ string kernel_setup = R"(
 %lsize  = OpConstant %intt 1
 )";
 
-string kernel_definition = R"(
+const string kKernelDefinition = R"(
 %kfunct = OpTypeFunction %voidt %intptrt
 %kfunc  = OpFunction %voidt None %kfunct
 %iparam = OpFunctionParameter %intptrt
@@ -428,48 +429,48 @@ string kernel_definition = R"(
         OpFunctionEnd
 )";
 
-TEST_F(Validate, EnqueueKernelGood) {
-  string str = basic_types + kernel_types + kernel_definition + R"(
+TEST_F(Validate, DISABLED_EnqueueKernelGood) {
+  string str = kBasicTypes + kKernelTypes + kKernelDefinition + R"(
                     %main   = OpFunction %voidt None %vfunct
                     )" +
-               kernel_setup + R"(
+               kKernelSetup + R"(
                     %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
                              OpReturn
                              OpFunctionEnd
                      )";
-  validate_instructions(str, SPV_SUCCESS);
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
-TEST_F(Validate, ForwardEnqueueKernelGood) {
-  string str = basic_types + kernel_types + R"(
+TEST_F(Validate, DISABLED_ForwardEnqueueKernelGood) {
+  string str = kBasicTypes + kKernelTypes + R"(
                     %main   = OpFunction %voidt None %vfunct
                     )" +
-               kernel_setup + R"(
+               kKernelSetup + R"(
                     %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
                              OpReturn
                              OpFunctionEnd
                      )" +
-               kernel_definition;
-  validate_instructions(str, SPV_SUCCESS);
+               kKernelDefinition;
+  ValidateInstructions(str, SPV_SUCCESS);
 }
 
 TEST_F(Validate, EnqueueMissingFunctionBad) {
-  string str = basic_types + kernel_types + R"(
+  string str = kBasicTypes + kKernelTypes + R"(
                     %main   = OpFunction %voidt None %vfunct
                     )" +
-               kernel_setup + R"(
+               kKernelSetup + R"(
                     %err    = OpEnqueueKernel %uintt %dqueue %ndval %nevent %event %revent %kfunc %firstp %psize %palign %lsize
                              OpReturn
                              OpFunctionEnd
                      )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
-string forwardKernelNonDominantParameterBaseCode = basic_types + kernel_types +
-                                                   kernel_definition +
+string forwardKernelNonDominantParameterBaseCode = kBasicTypes + kKernelTypes +
+                                                   kKernelDefinition +
                                                    R"(
                     %main   = OpFunction %voidt None %vfunct
-                    )" + kernel_setup;
+                    )" + kKernelSetup;
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter1Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
@@ -478,7 +479,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter1Bad) {
                               OpFunctionEnd
                     %uintt2 = OpTypeInt 32 0
                     )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
@@ -488,7 +489,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
                                OpReturn
                                OpFunctionEnd
                     )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
@@ -498,7 +499,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
                               OpReturn
                               OpFunctionEnd
                     )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
@@ -508,7 +509,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
                             OpReturn
                             OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
@@ -518,7 +519,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
                              OpReturn
                              OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
@@ -528,7 +529,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
                              OpReturn
                              OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
@@ -538,7 +539,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
                              OpReturn
                              OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
@@ -548,7 +549,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
                             OpReturn
                             OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
@@ -558,7 +559,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
                             OpReturn
                             OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
@@ -568,45 +569,58 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
                              OpReturn
                              OpFunctionEnd
                   )";
-  validate_instructions(str, SPV_ERROR_INVALID_ID);
+  ValidateInstructions(str, SPV_ERROR_INVALID_ID);
 }
 
-const char *cases[] = {
-    "OpGetKernelNDrangeSubGroupCount", "OpGetKernelNDrangeMaxSubGroupSize",
-    //"OpGetKernelWorkGroupSize",
-    //"OpGetKernelPreferredWorkGroupSizeMultiple"
-};
+static const bool kWithNDrange = true;
+static const bool kNoNDrange = false;
+pair<string, bool> cases[] = {
+    {"OpGetKernelNDrangeSubGroupCount", kWithNDrange},
+    {"OpGetKernelNDrangeMaxSubGroupSize", kWithNDrange},
+    {"OpGetKernelWorkGroupSize", kNoNDrange},
+    {"OpGetKernelPreferredWorkGroupSizeMultiple", kNoNDrange}};
 
 INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases));
 
-TEST_P(Validate, GetKernelGood) {
+string SetOps(string &str, pair<string, bool> param) {
+  regex placeholder("GET_KERNEL_OP");
+  string out = regex_replace(str, placeholder, param.first);
+  string out2;
+
+  if (!param.second) {
+    regex ndrange_regex("[^\n]%ndval");
+    out2 = regex_replace(out, ndrange_regex, "");
+  } else {
+    out2 = out;
+  }
+  return out2;
+}
+
+TEST_P(Validate, DISABLED_GetKernelGood) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
                   %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
                              OpReturn
                              OpFunctionEnd
                   )";
 
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-
-  validate_instructions(out, SPV_SUCCESS);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_SUCCESS);
 }
 
-TEST_P(Validate, ForwardGetKernelGood) {
-  string str = basic_types + kernel_types +
+TEST_P(Validate, DISABLED_ForwardGetKernelGood) {
+  string str = kBasicTypes + kKernelTypes +
                R"(
                 %main    = OpFunction %voidt None %vfunct
                     )" +
-               kernel_setup + R"(
+               kKernelSetup + R"(
                 %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
                            OpReturn
                            OpFunctionEnd
                 )" +
-               kernel_definition;
+               kKernelDefinition;
 
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_SUCCESS);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_SUCCESS);
 }
 
 TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
@@ -615,9 +629,8 @@ TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
                          OpReturn
                          OpFunctionEnd
               )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_ERROR_INVALID_ID);
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter1Bad) {
@@ -627,9 +640,8 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter1Bad) {
                              OpFunctionEnd
                   %uintt2  = OpTypeInt 32 0
                   )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_ERROR_INVALID_ID);
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
@@ -639,9 +651,11 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
                             OpReturn
                             OpFunctionEnd
                 )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  if (GetParam().second) {
+    regex placeholder("GET_KERNEL_OP");
+    string out = regex_replace(str, placeholder, GetParam().first);
+    ValidateInstructions(out, SPV_ERROR_INVALID_ID);
+  }
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
@@ -651,9 +665,8 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
                             OpReturn
                             OpFunctionEnd
                 )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_ERROR_INVALID_ID);
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
@@ -663,27 +676,24 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
                             OpReturn
                             OpFunctionEnd
                 )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  string out = SetOps(str, GetParam());
+  ValidateInstructions(out, SPV_ERROR_INVALID_ID);
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
                 %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign2
                 %palign2 = OpConstant %intt 32
-                            OpReturn
-                            OpFunctionEnd
+                           OpReturn
+                           OpFunctionEnd
                 )";
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, GetParam());
-  validate_instructions(out, SPV_ERROR_INVALID_ID);
+  if (GetParam().second) {
+    string out = SetOps(str, GetParam());
+    ValidateInstructions(out, SPV_ERROR_INVALID_ID);
+  }
 }
 
 // TODO(umar): OpPhi
 // TODO(umar): OpGroupMemberDecorate
 // TODO(umar): OpBranch
-
-// TODO(umar): OpGetKernelWorkGroupSize
-// TODO(umar): OpGetKernelPreferredWorkGroupSizeMultiple
 }

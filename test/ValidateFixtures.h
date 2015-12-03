@@ -24,23 +24,29 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-// Common validation test case fixture
+// Common validation fixtures for unit tests
 
 #include "UnitSPIRV.h"
 
 namespace spvtest {
 
+template <typename T>
 class ValidateBase : public ::testing::Test,
-                     public ::testing::WithParamInterface<const char*> {
+                     public ::testing::WithParamInterface<T> {
  public:
   ValidateBase();
   ~ValidateBase();
 
   virtual void TearDown();
-  spv_const_binary get_const_binary();
-  void validate_instructions(std::string code, spv_result_t result);
 
-  spv_context context;
-  spv_binary binary;
+  // Returns the a spv_const_binary struct
+  spv_const_binary get_const_binary();
+
+  // Performs validation on the SPIR-V code and compares the result of the
+  // spvValidate function
+  void ValidateInstructions(std::string code, spv_result_t result);
+
+  spv_context context_;
+  spv_binary binary_;
 };
 }

@@ -349,6 +349,10 @@ class ValidationState_t {
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
 // instruction operand's ID can be forward referenced.
+//
+// TODO(umar): Use dominators to correctly validate SSA. For example, the result
+// id from a 'then' block cannot dominate its usage in the 'else' block. This
+// is not yet performed by this funciton.
 spv_result_t SsaPass(ValidationState_t& _,
                      function<bool(unsigned)> can_have_forward_declared_ids,
                      const spv_parsed_instruction_t* inst) {
@@ -412,7 +416,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       break;
 
     case SpvOpFunctionCall:
-      out = [] (unsigned index) { return index == 2; };
+      out = [](unsigned index) { return index == 2; };
       break;
 
     case SpvOpPhi:
@@ -425,9 +429,12 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
 
     case SpvOpGetKernelNDrangeSubGroupCount:
     case SpvOpGetKernelNDrangeMaxSubGroupSize:
+      out = [](unsigned index) { return index == 3; };
+      break;
+
     case SpvOpGetKernelWorkGroupSize:
     case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
-      out = [](unsigned index) { return index == 3; };
+      out = [](unsigned index) { return index == 2; };
       break;
 
     default:
@@ -449,7 +456,6 @@ spv_result_t ProcessInstructions(void* user_data,
   // TODO(umar): Perform logical layout validation pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-
   return SsaPass(_, can_have_forward_declared_ids, inst);
 }
 

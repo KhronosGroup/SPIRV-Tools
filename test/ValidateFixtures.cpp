@@ -24,43 +24,57 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+// Common validation fixtures for unit tests
+
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
 namespace spvtest {
 
-ValidateBase::ValidateBase() : context(spvContextCreate()), binary() {}
+template <typename T>
+ValidateBase<T>::ValidateBase()
+    : context_(spvContextCreate()), binary_() {}
 
-ValidateBase::~ValidateBase() { spvContextDestroy(context); }
-
-spv_const_binary ValidateBase::get_const_binary() {
-  return spv_const_binary(binary);
+template <typename T>
+ValidateBase<T>::~ValidateBase() {
+  spvContextDestroy(context_);
 }
 
-void ValidateBase::TearDown() { spvBinaryDestroy(binary); }
+template <typename T>
+spv_const_binary ValidateBase<T>::get_const_binary() {
+  return spv_const_binary(binary_);
+}
 
-void ValidateBase::validate_instructions(std::string code,
-                                         spv_result_t result) {
+template <typename T>
+void ValidateBase<T>::TearDown() {
+  spvBinaryDestroy(binary_);
+}
+
+template <typename T>
+void ValidateBase<T>::ValidateInstructions(std::string code,
+                                           spv_result_t result) {
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, code.c_str(), code.size(),
-                                         &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
+                                         &binary_, &diagnostic));
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
   }
   if (result == SPV_SUCCESS) {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
-                                  &diagnostic));
+    EXPECT_EQ(result, spvValidate(context_, get_const_binary(),
+                                  SPV_VALIDATE_ALL, &diagnostic));
     if (diagnostic) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
     }
   } else {
-    EXPECT_EQ(result, spvValidate(context, get_const_binary(), SPV_VALIDATE_ALL,
-                                  &diagnostic));
+    EXPECT_EQ(result, spvValidate(context_, get_const_binary(),
+                                  SPV_VALIDATE_ALL, &diagnostic));
     ASSERT_NE(nullptr, diagnostic);
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
   }
 }
+
+template class spvtest::ValidateBase<std::pair<std::string, bool>>;
 }
