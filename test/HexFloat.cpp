@@ -528,5 +528,470 @@ INSTANTIATE_TEST_CASE_P(
 
         })));
 
+// double is used so that unbiased_exponent can be used with the output
+// of ldexp directly.
+int32_t unbiased_exponent(double f) {
+  return spvutils::HexFloat<spvutils::FloatProxy<float>>(
+      static_cast<float>(f)).getUnbiasedNormalizedExponent();
+}
+
+int16_t unbiased_half_exponent(uint16_t f) {
+  return spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>(f)
+      .getUnbiasedNormalizedExponent();
+}
+
+TEST(HexFloatOperationTest, UnbiasedExponent) {
+  // Float cases
+  EXPECT_EQ(0, unbiased_exponent(ldexp(1.0f, 0)));
+  EXPECT_EQ(-32, unbiased_exponent(ldexp(1.0f, -32)));
+  EXPECT_EQ(42, unbiased_exponent(ldexp(1.0f, 42)));
+  EXPECT_EQ(125, unbiased_exponent(ldexp(1.0f, 125)));
+  // Saturates to 128
+  EXPECT_EQ(128, unbiased_exponent(ldexp(1.0f, 256)));
+
+  EXPECT_EQ(-100, unbiased_exponent(ldexp(1.0f, -100)));
+  EXPECT_EQ(-127, unbiased_exponent(ldexp(1.0f, -127))); // First denorm
+  EXPECT_EQ(-128, unbiased_exponent(ldexp(1.0f, -128)));
+  EXPECT_EQ(-129, unbiased_exponent(ldexp(1.0f, -129)));
+  EXPECT_EQ(-140, unbiased_exponent(ldexp(1.0f, -140)));
+  // Smallest representable number
+  EXPECT_EQ(-126 - 23, unbiased_exponent(ldexp(1.0f, -126 - 23)));
+  // Should get rounded to 0 first.
+  EXPECT_EQ(0, unbiased_exponent(ldexp(1.0f, -127 - 23)));
+
+  // Float16 cases
+  // The exponent is represented in the bits 0x7C00
+  // The offset is -15
+  EXPECT_EQ(0, unbiased_half_exponent(0x3C00));
+  EXPECT_EQ(3, unbiased_half_exponent(0x4800));
+  EXPECT_EQ(-1, unbiased_half_exponent(0x3800));
+  EXPECT_EQ(-14, unbiased_half_exponent(0x0400));
+  EXPECT_EQ(16, unbiased_half_exponent(0x7C00));
+  EXPECT_EQ(10, unbiased_half_exponent(0x6400));
+
+  // Smallest representable number
+  EXPECT_EQ(-24, unbiased_half_exponent(0x0001));
+}
+
+// Creates a float that is the sum of 1/(2 ^ fractions[i]) for i in factions
+float float_fractions(const std::vector<uint32_t>& fractions) {
+  float f = 0;
+  for(int32_t i: fractions) {
+    f += ldexp(1.0f, -i);
+  }
+  return f;
+}
+
+// Returns the normalized significand of a HexFloat<FloatProxy<float>>
+// that was created by calling float_fractions with the input fractions,
+// raised to the power of exp.
+uint32_t normalized_significand(const std::vector<uint32_t>& fractions, uint32_t exp) {
+  return spvutils::HexFloat<spvutils::FloatProxy<float>>(
+             static_cast<float>(ldexp(float_fractions(fractions), exp)))
+      .getNormalizedSignificand();
+}
+
+// Sets the bits from MSB to LSB of the significand part of a float.
+// For example 0 would set the bit 23 (counting from LSB to MSB),
+// and 1 would set the 22nd bit.
+uint32_t bits_set(const std::vector<uint32_t>& bits) {
+  const uint32_t top_bit = 1u << 22u;
+  uint32_t val= 0;
+  for(uint32_t i: bits) {
+    val |= top_bit >> i;
+  }
+  return val;
+}
+
+// The same as bits_set but for a Float16 value instead of 32-bit floating
+// point.
+uint16_t half_bits_set(const std::vector<uint32_t>& bits) {
+  const uint32_t top_bit = 1u << 9u;
+  uint32_t val= 0;
+  for(uint32_t i: bits) {
+    val |= top_bit >> i;
+  }
+  return val;
+}
+
+TEST(HexFloatOperationTest, NormalizedSignificand) {
+  // For normalized numbers (the following) it should be a simple matter
+  // of getting rid of the top implicit bit
+  EXPECT_EQ(bits_set({}), normalized_significand({0}, 0));
+  EXPECT_EQ(bits_set({0}), normalized_significand({0, 1}, 0));
+  EXPECT_EQ(bits_set({0, 1}), normalized_significand({0, 1, 2}, 0));
+  EXPECT_EQ(bits_set({1}), normalized_significand({0, 2}, 0));
+  EXPECT_EQ(bits_set({1}), normalized_significand({0, 2}, 32));
+  EXPECT_EQ(bits_set({1}), normalized_significand({0, 2}, 126));
+
+  // For denormalized numbers we expect the normalized significand to
+  // shift as if it were normalized. This means, in practice that the
+  // top_most set bit will be cut off. Looks very similar to above (on purpose)
+  EXPECT_EQ(bits_set({}), normalized_significand({0}, -127));
+  EXPECT_EQ(bits_set({3}), normalized_significand({0, 4}, -128));
+  EXPECT_EQ(bits_set({3}), normalized_significand({0, 4}, -127));
+  EXPECT_EQ(bits_set({}), normalized_significand({22}, -127));
+  EXPECT_EQ(bits_set({0}), normalized_significand({21, 22}, -127));
+}
+
+// Returns the 32-bit floating point value created by
+// calling setFromSignUnbiasedExponentAndNormalizedSignificand
+// on a HexFloat<FloatProxy<float>>
+float set_from_sign(bool negative, int32_t unbiased_exponent,
+                   uint32_t significand, bool round_denorm_up) {
+  spvutils::HexFloat<spvutils::FloatProxy<float>>  f(0.f);
+  f.setFromSignUnbiasedExponentAndNormalizedSignificand(
+      negative, unbiased_exponent, significand, round_denorm_up);
+  return f.value().getAsFloat();
+}
+
+TEST(HexFloatOperationTests,
+     SetFromSignUnbiasedExponentAndNormalizedSignificand) {
+
+  EXPECT_EQ(1.f, set_from_sign(false, 0, 0, false));
+
+  // Tests insertion of various denormalized numbers with and without round up.
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -149, 0, false));
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -149, 0, true));
+  EXPECT_EQ(0.f, set_from_sign(false, -150, 1, false));
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -150, 1, true));
+
+  EXPECT_EQ(ldexp(1.0f, -127), set_from_sign(false, -127, 0, false));
+  EXPECT_EQ(ldexp(1.0f, -128), set_from_sign(false, -128, 0, false));
+  EXPECT_EQ(float_fractions({0, 1, 2, 5}),
+            set_from_sign(false, 0, bits_set({0, 1, 4}), false));
+  EXPECT_EQ(ldexp(float_fractions({0, 1, 2, 5}), -32),
+            set_from_sign(false, -32, bits_set({0, 1, 4}), false));
+  EXPECT_EQ(ldexp(float_fractions({0, 1, 2, 5}), -128),
+            set_from_sign(false, -128, bits_set({0, 1, 4}), false));
+
+  // The negative cases from above.
+  EXPECT_EQ(-1.f, set_from_sign(true, 0, 0, false));
+  EXPECT_EQ(-ldexp(1.0, -127), set_from_sign(true, -127, 0, false));
+  EXPECT_EQ(-ldexp(1.0, -128), set_from_sign(true, -128, 0, false));
+  EXPECT_EQ(-float_fractions({0, 1, 2, 5}),
+            set_from_sign(true, 0, bits_set({0, 1, 4}), false));
+  EXPECT_EQ(-ldexp(float_fractions({0, 1, 2, 5}), -32),
+            set_from_sign(true, -32, bits_set({0, 1, 4}), false));
+  EXPECT_EQ(-ldexp(float_fractions({0, 1, 2, 5}), -128),
+            set_from_sign(true, -128, bits_set({0, 1, 4}), false));
+}
+
+TEST(HexFloatOperationTests, NonRounding) {
+  // Rounding from 32-bit hex-float to 32-bit hex-float should be trivial,
+  // except in the denorm case which is a bit more complex.
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  bool carry_bit = false;
+
+  spvutils::round_direction rounding[] = {
+      spvutils::round_direction::kToZero,
+      spvutils::round_direction::kToNearestEven,
+      spvutils::round_direction::kToPositiveInfinity,
+      spvutils::round_direction::kToNegativeInfinity};
+
+  // Everything fits, so this should be straight-forward
+  for (spvutils::round_direction round : rounding) {
+    EXPECT_EQ(bits_set({}), HF(0.f).getRoundedNormalizedSignificand<HF>(
+                                round, &carry_bit));
+    EXPECT_FALSE(carry_bit);
+
+    EXPECT_EQ(bits_set({0}),
+              HF(float_fractions({0, 1}))
+                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_FALSE(carry_bit);
+
+    EXPECT_EQ(bits_set({1, 3}),
+              HF(float_fractions({0, 2, 4}))
+                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_FALSE(carry_bit);
+
+    EXPECT_EQ(
+        bits_set({0, 1, 4}),
+        HF(static_cast<float>(-ldexp(float_fractions({0, 1, 2, 5}), -128)))
+            .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_FALSE(carry_bit);
+
+    EXPECT_EQ(
+        bits_set({0, 1, 4, 22}),
+        HF(static_cast<float>(float_fractions({0, 1, 2, 5, 23})))
+            .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_FALSE(carry_bit);
+  }
+}
+
+using RD = spvutils::round_direction;
+struct RoundSignificandCase {
+  float source_float;
+  std::pair<int16_t, bool> expected_results;
+  spvutils::round_direction round;
+};
+
+using HexFloatRoundTest =
+    ::testing::TestWithParam<RoundSignificandCase>;
+
+TEST_P(HexFloatRoundTest, RoundDownToFP16) {
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  using HF16 = spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>;
+
+  HF input_value(GetParam().source_float);
+  bool carry_bit = false;
+  EXPECT_EQ(GetParam().expected_results.first,
+            input_value.getRoundedNormalizedSignificand<HF16>(
+                GetParam().round, &carry_bit));
+  EXPECT_EQ(carry_bit, GetParam().expected_results.second);
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatRoundTest,
+  ::testing::ValuesIn(std::vector<RoundSignificandCase>(
+  {
+    {float_fractions({0}), std::make_pair(half_bits_set({}), false), RD::kToZero},
+    {float_fractions({0}), std::make_pair(half_bits_set({}), false), RD::kToNearestEven},
+    {float_fractions({0}), std::make_pair(half_bits_set({}), false), RD::kToPositiveInfinity},
+    {float_fractions({0}), std::make_pair(half_bits_set({}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1}), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+
+    {float_fractions({0, 1, 11}), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+    {float_fractions({0, 1, 11}), std::make_pair(half_bits_set({0, 9}), false), RD::kToPositiveInfinity},
+    {float_fractions({0, 1, 11}), std::make_pair(half_bits_set({0}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1, 11}), std::make_pair(half_bits_set({0}), false), RD::kToNearestEven},
+
+    {float_fractions({0, 1, 10, 11}), std::make_pair(half_bits_set({0, 9}), false), RD::kToZero},
+    {float_fractions({0, 1, 10, 11}), std::make_pair(half_bits_set({0, 8}), false), RD::kToPositiveInfinity},
+    {float_fractions({0, 1, 10, 11}), std::make_pair(half_bits_set({0, 9}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1, 10, 11}), std::make_pair(half_bits_set({0, 8}), false), RD::kToNearestEven},
+
+    {float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+    {float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0, 9}), false), RD::kToPositiveInfinity},
+    {float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0, 9}), false), RD::kToNearestEven},
+
+    {-float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+    {-float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0}), false), RD::kToPositiveInfinity},
+    {-float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0, 9}), false), RD::kToNegativeInfinity},
+    {-float_fractions({0, 1, 11, 12}), std::make_pair(half_bits_set({0, 9}), false), RD::kToNearestEven},
+
+    {float_fractions({0, 1, 11, 22}), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+    {float_fractions({0, 1, 11, 22}), std::make_pair(half_bits_set({0, 9}), false), RD::kToPositiveInfinity},
+    {float_fractions({0, 1, 11, 22}), std::make_pair(half_bits_set({0}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1, 11, 22}), std::make_pair(half_bits_set({0, 9}), false), RD::kToNearestEven},
+
+    // Carries
+    {float_fractions({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}), std::make_pair(half_bits_set({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), false), RD::kToZero},
+    {float_fractions({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}), std::make_pair(half_bits_set({}), true), RD::kToPositiveInfinity},
+    {float_fractions({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}), std::make_pair(half_bits_set({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}), false), RD::kToNegativeInfinity},
+    {float_fractions({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}), std::make_pair(half_bits_set({}), true), RD::kToNearestEven},
+
+    // Cases where original number was denorm. Note: this should have no effect
+    // the number is pre-normalized.
+    {static_cast<float>(ldexp(float_fractions({0, 1, 11, 13}), -128)), std::make_pair(half_bits_set({0}), false), RD::kToZero},
+    {static_cast<float>(ldexp(float_fractions({0, 1, 11, 13}), -129)), std::make_pair(half_bits_set({0, 9}), false), RD::kToPositiveInfinity},
+    {static_cast<float>(ldexp(float_fractions({0, 1, 11, 13}), -131)), std::make_pair(half_bits_set({0}), false), RD::kToNegativeInfinity},
+    {static_cast<float>(ldexp(float_fractions({0, 1, 11, 13}), -130)), std::make_pair(half_bits_set({0, 9}), false), RD::kToNearestEven},
+   })));
+// clang-format on
+
+struct UpCastSignificandCase {
+  uint16_t source_half;
+  uint32_t expected_result;
+};
+
+using HexFloatRoundUpSignificandTest =
+    ::testing::TestWithParam<UpCastSignificandCase>;
+TEST_P(HexFloatRoundUpSignificandTest, Widening) {
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  using HF16 = spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>;
+  bool carry_bit = false;
+
+  spvutils::round_direction rounding[] = {
+      spvutils::round_direction::kToZero,
+      spvutils::round_direction::kToNearestEven,
+      spvutils::round_direction::kToPositiveInfinity,
+      spvutils::round_direction::kToNegativeInfinity};
+
+  // Everything fits, so everything should just be bit-shifts.
+  for (spvutils::round_direction round : rounding) {
+    carry_bit = false;
+    HF16 input_value(GetParam().source_half);
+    EXPECT_EQ(
+        GetParam().expected_result,
+        input_value.getRoundedNormalizedSignificand<HF>(round, &carry_bit))
+        << std::hex << "0x"
+        << input_value.getRoundedNormalizedSignificand<HF>(round, &carry_bit)
+        << "  0x" << GetParam().expected_result;
+    EXPECT_FALSE(carry_bit);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(F16toF32, HexFloatRoundUpSignificandTest,
+  // 0xFC00 of the source 16-bit hex value cover the sign and the exponent.
+  // They are ignored for this test.
+  ::testing::ValuesIn(std::vector<UpCastSignificandCase>(
+  {
+    {0x3F00, 0x600000},
+    {0x0F00, 0x600000},
+    {0x0F01, 0x602000},
+    {0x0FFF, 0x7FE000},
+  })));
+
+struct DownCastTest {
+  float source_float;
+  uint16_t expected_half;
+  std::vector<spvutils::round_direction> directions;
+};
+
+std::string get_round_text(spvutils::round_direction direction) {
+#define CASE(round_direction) \
+  case round_direction:      \
+    return #round_direction
+
+  switch (direction) {
+    CASE(spvutils::round_direction::kToZero);
+    CASE(spvutils::round_direction::kToPositiveInfinity);
+    CASE(spvutils::round_direction::kToNegativeInfinity);
+    CASE(spvutils::round_direction::kToNearestEven);
+  }
+#undef CASE
+  return "";
+}
+
+using HexFloatFP32To16Tests = ::testing::TestWithParam<DownCastTest>;
+
+TEST_P(HexFloatFP32To16Tests, NarrowingCasts) {
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  using HF16 = spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>;
+  HF f(GetParam().source_float);
+  for (auto round : GetParam().directions) {
+    HF16 half(0);
+    f.castTo(half, round);
+    EXPECT_EQ(GetParam().expected_half, half.value().getAsFloat().get_value())
+        << get_round_text(round) << "  " << std::hex
+        << spvutils::BitwiseCast<uint32_t>(GetParam().source_float)
+        << " cast to: " << half.value().getAsFloat().get_value();
+  }
+}
+
+const uint16_t positive_infinity = 0x7C00;
+const uint16_t negative_infinity = 0xFC00;
+
+INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatFP32To16Tests,
+  ::testing::ValuesIn(std::vector<DownCastTest>(
+  {
+    // Exactly representable as half.
+    {0.f, 0x0, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {-0.f, 0x8000, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {1.0f, 0x3C00, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {-1.0f, 0xBC00, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+
+    {float_fractions({0, 1, 10}) , 0x3E01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {-float_fractions({0, 1, 10}) , 0xBE01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(ldexp(float_fractions({0, 1, 10}), 3)), 0x4A01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(-ldexp(float_fractions({0, 1, 10}), 3)), 0xCA01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+
+
+    // Underflow
+    {static_cast<float>(ldexp(1.0f, -25)), 0x0, {RD::kToZero, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(ldexp(1.0f, -25)), 0x1, {RD::kToPositiveInfinity}},
+    {static_cast<float>(-ldexp(1.0f, -25)), 0x8000, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNearestEven}},
+    {static_cast<float>(-ldexp(1.0f, -25)), 0x8001, {RD::kToNegativeInfinity}},
+    {static_cast<float>(ldexp(1.0f, -24)), 0x1, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+
+    // Overflow
+    {static_cast<float>(ldexp(1.0f, 16)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(ldexp(1.0f, 18)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(ldexp(1.3f, 16)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(-ldexp(1.0f, 16)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(-ldexp(1.0f, 18)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {static_cast<float>(-ldexp(1.3f, 16)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+
+    // Transfer of Infinities
+    {std::numeric_limits<float>::infinity(), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+    {-std::numeric_limits<float>::infinity(), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+
+    // Nans are below because we cannot test for equality.
+  })));
+
+struct UpCastCase{
+  uint16_t source_half;
+  float expected_float;
+};
+
+using HexFloatFP16To32Tests = ::testing::TestWithParam<UpCastCase>;
+TEST_P(HexFloatFP16To32Tests, WideningCasts) {
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  using HF16 = spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>;
+  HF16 f(GetParam().source_half);
+
+  spvutils::round_direction rounding[] = {
+      spvutils::round_direction::kToZero,
+      spvutils::round_direction::kToNearestEven,
+      spvutils::round_direction::kToPositiveInfinity,
+      spvutils::round_direction::kToNegativeInfinity};
+
+  // Everything fits, so everything should just be bit-shifts.
+  for (spvutils::round_direction round : rounding) {
+    HF flt(0.f);
+    f.castTo(flt, round);
+    EXPECT_EQ(GetParam().expected_float, flt.value().getAsFloat())
+        << get_round_text(round) << "  " << std::hex
+        << spvutils::BitwiseCast<uint16_t>(GetParam().source_half)
+        << " cast to: " << flt.value().getAsFloat();
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(F16ToF32, HexFloatFP16To32Tests,
+  ::testing::ValuesIn(std::vector<UpCastCase>(
+  {
+    {0x0000, 0.f},
+    {0x8000, -0.f},
+    {0x3C00, 1.0f},
+    {0xBC00, -1.0f},
+    {0x3F00, float_fractions({0, 1, 2})},
+    {0xBF00, -float_fractions({0, 1, 2})},
+    {0x3F01, float_fractions({0, 1, 2, 10})},
+    {0xBF01, -float_fractions({0, 1, 2, 10})},
+
+    // denorm
+    {0x0001, static_cast<float>(ldexp(1.0, -24))},
+    {0x0002, static_cast<float>(ldexp(1.0, -23))},
+    {0x8001, static_cast<float>(-ldexp(1.0, -24))},
+    {0x8011, static_cast<float>(-ldexp(1.0, -20) + -ldexp(1.0, -24))},
+
+    // inf
+    {0x7C00, std::numeric_limits<float>::infinity()},
+    {0xFC00, -std::numeric_limits<float>::infinity()},
+  })));
+
+TEST(HexFloatOperationTests, NanTests) {
+  using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
+  using HF16 = spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>>;
+  spvutils::round_direction rounding[] = {
+      spvutils::round_direction::kToZero,
+      spvutils::round_direction::kToNearestEven,
+      spvutils::round_direction::kToPositiveInfinity,
+      spvutils::round_direction::kToNegativeInfinity};
+
+  // Everything fits, so everything should just be bit-shifts.
+  for (spvutils::round_direction round : rounding) {
+    HF16 f16(0);
+    HF f(0.f);
+    HF(std::numeric_limits<float>::quiet_NaN()).castTo(f16, round);
+    EXPECT_TRUE(f16.value().isNan());
+    HF(std::numeric_limits<float>::signaling_NaN()).castTo(f16, round);
+    EXPECT_TRUE(f16.value().isNan());
+
+    HF16(0x7C01).castTo(f, round);
+    EXPECT_TRUE(f.value().isNan());
+    HF16(0x7C11).castTo(f, round);
+    EXPECT_TRUE(f.value().isNan());
+    HF16(0xFC01).castTo(f, round);
+    EXPECT_TRUE(f.value().isNan());
+    HF16(0x7C10).castTo(f, round);
+    EXPECT_TRUE(f.value().isNan());
+    HF16(0xFF00).castTo(f, round);
+    EXPECT_TRUE(f.value().isNan());
+  }
+}
+
 // TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
 }
