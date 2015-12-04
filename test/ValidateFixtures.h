@@ -30,7 +30,7 @@
 
 namespace spvtest {
 
-template <typename T>
+template <typename T, uint32_t OPTIONS = SPV_VALIDATE_ALL>
 class ValidateBase : public ::testing::Test,
                      public ::testing::WithParamInterface<T> {
  public:
@@ -42,11 +42,15 @@ class ValidateBase : public ::testing::Test,
   // Returns the a spv_const_binary struct
   spv_const_binary get_const_binary();
 
+  void CompileSuccessfully(std::string code);
+
   // Performs validation on the SPIR-V code and compares the result of the
   // spvValidate function
-  void ValidateInstructions(std::string code, spv_result_t result);
+  spv_result_t ValidateInstructions();
 
   spv_context context_;
   spv_binary binary_;
+  spv_diagnostic diagnostic_;
+  static const uint32_t validation_options_ = OPTIONS;
 };
 }

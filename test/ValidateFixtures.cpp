@@ -31,50 +31,43 @@
 
 namespace spvtest {
 
-template <typename T>
-ValidateBase<T>::ValidateBase()
-    : context_(spvContextCreate()), binary_() {}
+template <typename T, uint32_t OPTIONS>
+ValidateBase<T, OPTIONS>::ValidateBase()
+    : context_(spvContextCreate()), binary_(), diagnostic_() {}
 
-template <typename T>
-ValidateBase<T>::~ValidateBase() {
+template <typename T, uint32_t OPTIONS>
+ValidateBase<T, OPTIONS>::~ValidateBase() {
   spvContextDestroy(context_);
 }
 
-template <typename T>
-spv_const_binary ValidateBase<T>::get_const_binary() {
+template <typename T, uint32_t OPTIONS>
+spv_const_binary ValidateBase<T, OPTIONS>::get_const_binary() {
   return spv_const_binary(binary_);
 }
 
-template <typename T>
-void ValidateBase<T>::TearDown() {
+template <typename T, uint32_t OPTIONS>
+void ValidateBase<T, OPTIONS>::TearDown() {
+  if (diagnostic_) {
+    spvDiagnosticPrint(diagnostic_);
+  }
+  spvDiagnosticDestroy(diagnostic_);
   spvBinaryDestroy(binary_);
 }
 
-template <typename T>
-void ValidateBase<T>::ValidateInstructions(std::string code,
-                                           spv_result_t result) {
+template <typename T, uint32_t OPTIONS>
+void ValidateBase<T, OPTIONS>::CompileSuccessfully(std::string code) {
   spv_diagnostic diagnostic = nullptr;
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
-                                         &binary_, &diagnostic));
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
-  if (result == SPV_SUCCESS) {
-    EXPECT_EQ(result, spvValidate(context_, get_const_binary(),
-                                  SPV_VALIDATE_ALL, &diagnostic));
-    if (diagnostic) {
-      spvDiagnosticPrint(diagnostic);
-      spvDiagnosticDestroy(diagnostic);
-    }
-  } else {
-    EXPECT_EQ(result, spvValidate(context_, get_const_binary(),
-                                  SPV_VALIDATE_ALL, &diagnostic));
-    ASSERT_NE(nullptr, diagnostic);
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-  }
+                                         &binary_, &diagnostic))
+      << "SPIR-V could not be compiled into binary:" << code;
 }
 
-template class spvtest::ValidateBase<std::pair<std::string, bool>>;
+template <typename T, uint32_t OPTIONS>
+spv_result_t ValidateBase<T, OPTIONS>::ValidateInstructions() {
+  return spvValidate(context_, get_const_binary(), validation_options_,
+                     &diagnostic_);
+}
+
+template class spvtest::ValidateBase<std::pair<std::string, bool>,
+                                     SPV_VALIDATE_SSA_BIT>;
 }

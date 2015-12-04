@@ -294,8 +294,10 @@ spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
 // TODO(umar): Move this class to another file
 class ValidationState_t {
  public:
-  ValidationState_t(spv_diagnostic* diag)
-      : diagnostic_(diag), instruction_counter_(0) {}
+  ValidationState_t(spv_diagnostic* diag, uint32_t options)
+      : diagnostic_(diag),
+        instruction_counter_(0),
+        validation_flags_(options) {}
 
   spv_result_t definedIds(uint32_t id) {
     if (defined_ids_.find(id) == std::end(defined_ids_)) {
@@ -326,6 +328,10 @@ class ValidationState_t {
     return defined_ids_.find(id) != std::end(defined_ids_);
   }
 
+  bool is_enabled(uint32_t flag) const {
+    return (flag & validation_flags_) == flag;
+  }
+
   // Increments the instruction count. Used for diagnostic
   int incrementInstructionCount() { return instruction_counter_++; }
 
@@ -344,6 +350,10 @@ class ValidationState_t {
 
   // IDs which have been forward declared but have not been defined
   unordered_set<uint32_t> unresolved_forward_ids_;
+
+  // Validation options to determine the passes to execute
+  uint32_t validation_flags_;
+
 };
 
 // Performs SSA validation on the IDs of an instruction. The
@@ -356,36 +366,38 @@ class ValidationState_t {
 spv_result_t SsaPass(ValidationState_t& _,
                      function<bool(unsigned)> can_have_forward_declared_ids,
                      const spv_parsed_instruction_t* inst) {
-  for (unsigned i = 0; i < inst->num_operands; i++) {
-    const spv_parsed_operand_t& operand = inst->operands[i];
-    const spv_operand_type_t& type = operand.type;
-    const uint32_t* operand_ptr = inst->words + operand.offset;
+  if (_.is_enabled(SPV_VALIDATE_SSA_BIT)) {
+    for (unsigned i = 0; i < inst->num_operands; i++) {
+      const spv_parsed_operand_t& operand = inst->operands[i];
+      const spv_operand_type_t& type = operand.type;
+      const uint32_t* operand_ptr = inst->words + operand.offset;
 
-    auto ret = SPV_ERROR_INTERNAL;
-    switch (type) {
-      case SPV_OPERAND_TYPE_RESULT_ID:
-        _.removeIfForwardDeclared(*operand_ptr);
-        ret = _.definedIds(*operand_ptr);
-        break;
-      case SPV_OPERAND_TYPE_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      case SPV_OPERAND_TYPE_SCOPE_ID:
-        if (_.isDefinedId(*operand_ptr)) {
+      auto ret = SPV_ERROR_INTERNAL;
+      switch (type) {
+        case SPV_OPERAND_TYPE_RESULT_ID:
+          _.removeIfForwardDeclared(*operand_ptr);
+          ret = _.definedIds(*operand_ptr);
+          break;
+        case SPV_OPERAND_TYPE_ID:
+        case SPV_OPERAND_TYPE_TYPE_ID:
+        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+        case SPV_OPERAND_TYPE_SCOPE_ID:
+          if (_.isDefinedId(*operand_ptr)) {
+            ret = SPV_SUCCESS;
+          } else if (can_have_forward_declared_ids(i)) {
+            ret = _.forwardDeclareId(*operand_ptr);
+          } else {
+            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
+                                               << " has not been defined";
+          }
+          break;
+        default:
           ret = SPV_SUCCESS;
-        } else if (can_have_forward_declared_ids(i)) {
-          ret = _.forwardDeclareId(*operand_ptr);
-        } else {
-          ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
-                                             << " has not been defined";
-        }
-        break;
-      default:
-        ret = SPV_SUCCESS;
-        break;
-    }
-    if (SPV_SUCCESS != ret) {
-      return ret;
+          break;
+      }
+      if (SPV_SUCCESS != ret) {
+        return ret;
+      }
     }
   }
   return SPV_SUCCESS;
@@ -424,7 +436,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       break;
 
     case SpvOpEnqueueKernel:
-      out = [](unsigned index) { return index == 7; };
+      out = [](unsigned index) { return index == 8; };
       break;
 
     case SpvOpGetKernelNDrangeSubGroupCount:
@@ -479,7 +491,7 @@ spv_result_t spvValidate(const spv_const_context context,
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
-  ValidationState_t vstate(pDiagnostic);
+  ValidationState_t vstate(pDiagnostic, options);
   auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
                             setHeader, ProcessInstructions, pDiagnostic);
 
