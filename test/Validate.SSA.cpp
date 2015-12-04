@@ -296,6 +296,8 @@ TEST_F(Validate, FunctionCallGood) {
 %3    =  OpTypeInt 32 0
 %4    =  OpTypeFunction %1
 %8    =  OpTypeFunction %1 %2 %3
+%four =  OpConstant %2 4
+%five =  OpConstant %3 5
 %9    =  OpFunction %1 None %8
 %10   =  OpFunctionParameter %2
 %11   =  OpFunctionParameter %3
@@ -304,8 +306,6 @@ TEST_F(Validate, FunctionCallGood) {
          OpFunctionEnd
 %5    =  OpFunction %1 None %4
 %6    =  OpLabel
-%four =  OpConstant %2 4
-%five =  OpConstant %3 5
 %7    =  OpFunctionCall %1 %9 %four %five
          OpFunctionEnd
 )";
@@ -319,11 +319,11 @@ TEST_F(Validate, ForwardFunctionCallGood) {
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
 %3    =  OpTypeInt 32 0
+%four =  OpConstant %2 4
+%five =  OpConstant %3 5
 %4    =  OpTypeFunction %1
 %5    =  OpFunction %1 None %4
 %6    =  OpLabel
-%four =  OpConstant %2 4
-%five =  OpConstant %3 5
 %7    =  OpFunctionCall %1 %9 %four %five
          OpFunctionEnd
 %8    =  OpTypeFunction %1 %2 %3
@@ -344,8 +344,8 @@ TEST_F(Validate, ForwardBranchConditionalGood) {
 %voidt  =   OpTypeVoid
 %boolt  =   OpTypeBool
 %vfunct =   OpTypeFunction %voidt
-%main   =   OpFunction %voidt None %vfunct
 %true   =   OpConstantTrue %boolt
+%main   =   OpFunction %voidt None %vfunct
             OpSelectionMerge %endl None
             OpBranchConditional %true %truel %falsel
 %truel  =   OpLabel
@@ -367,8 +367,8 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %vfunct =  OpTypeFunction %voidt
-%main   =  OpFunction %voidt None %vfunct
 %true   =  OpConstantTrue %boolt
+%main   =  OpFunction %voidt None %vfunct
            OpSelectionMerge %endl None
            OpBranchConditional %true %truel %falsel 1 9
 %truel  =  OpLabel
@@ -390,16 +390,17 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %vfunct =  OpTypeFunction %voidt
+%true   =  OpConstantTrue %boolt
 %main   =  OpFunction %voidt None %vfunct
            OpSelectionMerge %endl None
-           OpBranchConditional %true %truel %falsel ;
+           OpBranchConditional %tcpy %truel %falsel ;
 %truel  =  OpLabel
            OpNop
            OpBranch %endl
 %falsel =  OpLabel
            OpNop
 %endl   =  OpLabel
-%true   =  OpConstantTrue %boolt
+%tcpy   =  OpCopyObject %boolt %true
            OpReturn
            OpFunctionEnd
 )";
@@ -413,8 +414,8 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %vfunct =  OpTypeFunction %voidt
-%main   =  OpFunction %voidt None %vfunct
 %true   =  OpConstantTrue %boolt
+%main   =  OpFunction %voidt None %vfunct
            OpSelectionMerge %endl None
            OpBranchConditional %true %missing %falsel
 %truel  =  OpLabel
@@ -432,6 +433,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 
 const string kBasicTypes = R"(
            OpMemoryModel Logical GLSL450
+           OpCapability Int8
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %int8t  =  OpTypeInt 8 0
@@ -440,7 +442,7 @@ const string kBasicTypes = R"(
 %vfunct =  OpTypeFunction %voidt
 )";
 
-const string kKernelTypes = R"(
+const string kKernelTypesAndConstants = R"(
            OpCapability DeviceEnqueue
 %queuet  = OpTypeQueue
 
@@ -451,29 +453,30 @@ const string kKernelTypes = R"(
 %eventt  = OpTypeEvent
 %intptrt = OpTypePointer UniformConstant %int8t
 
-)";
-
-const string kKernelSetup = R"(
-%dqueue = OpGetDefaultQueue %queuet
-
 %offset = OpConstant %intt 0
 %local  = OpConstant %intt 1
 %gl     = OpConstant %intt 1
-%ndval  = OpBuildNDRange %ndt %gl %local %offset
 
 %nevent = OpConstant %intt 0
 %event  = OpConstantNull %eventt
-%revent = OpUndef %eventt
 
 %firstp = OpConstant %int8t 0
 %psize  = OpConstant %intt 0
 %palign = OpConstant %intt 32
 %lsize  = OpConstant %intt 1
-%flags  = OpConstant %intt 0 ;NoWait
+%flags  = OpConstant %intt 0 ; NoWait
+
+%kfunct = OpTypeFunction %voidt %intptrt
+)";
+
+const string kKernelSetup = R"(
+%dqueue = OpGetDefaultQueue %queuet
+%ndval  = OpBuildNDRange %ndt %gl %local %offset
+%revent = OpUndef %eventt
+
 )";
 
 const string kKernelDefinition = R"(
-%kfunct = OpTypeFunction %voidt %intptrt
 %kfunc  = OpFunction %voidt None %kfunct
 %iparam = OpFunctionParameter %intptrt
           OpNop
@@ -482,7 +485,7 @@ const string kKernelDefinition = R"(
 )";
 
 TEST_F(Validate, EnqueueKernelGood) {
-  string str = kBasicTypes + kKernelTypes + kKernelDefinition + R"(
+  string str = kBasicTypes + kKernelTypesAndConstants + kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 )" +
                kKernelSetup + R"(
@@ -497,7 +500,7 @@ TEST_F(Validate, EnqueueKernelGood) {
 }
 
 TEST_F(Validate, ForwardEnqueueKernelGood) {
-  string str = kBasicTypes + kKernelTypes + R"(
+  string str = kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 )" +
                kKernelSetup + R"(
@@ -513,7 +516,7 @@ TEST_F(Validate, ForwardEnqueueKernelGood) {
 }
 
 TEST_F(Validate, EnqueueMissingFunctionBad) {
-  string str = kBasicTypes + kKernelTypes + R"(
+  string str = kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 )" +
                kKernelSetup + R"(
@@ -527,20 +530,19 @@ TEST_F(Validate, EnqueueMissingFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-string forwardKernelNonDominantParameterBaseCode = kBasicTypes + kKernelTypes +
+string forwardKernelNonDominantParameterBaseCode = kBasicTypes + kKernelTypesAndConstants +
                                                    kKernelDefinition +
                                                    R"(
                 %main   = OpFunction %voidt None %vfunct
                 )" + kKernelSetup;
 
-TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter1Bad) {
+TEST_F(Validate, ForwardEnqueueKernelMissingParameter1Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
-                %err    = OpEnqueueKernel %uintt2 %dqueue %flags %ndval
+                %err    = OpEnqueueKernel %missing %dqueue %flags %ndval
                                         %nevent %event %revent %kfunc %firstp
                                         %psize %palign %lsize
                           OpReturn
                           OpFunctionEnd
-                %uintt2 = OpTypeInt 32 0
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -577,7 +579,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent2
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
-              %nevent2 = OpConstant %intt 0
+              %nevent2 = OpCopyObject %intt %nevent
                         OpReturn
                         OpFunctionEnd
               )";
@@ -590,7 +592,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event2 %revent %kfunc %firstp %psize
                                         %palign %lsize
-              %event2  = OpConstantNull %eventt
+              %event2  = OpCopyObject %eventt %event
                          OpReturn
                          OpFunctionEnd
               )";
@@ -603,7 +605,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent2 %kfunc %firstp %psize
                                         %palign %lsize
-              %revent2 = OpUndef %eventt
+              %revent2 = OpCopyObject %eventt %revent
                          OpReturn
                          OpFunctionEnd
               )";
@@ -616,7 +618,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp2 %psize
                                         %palign %lsize
-              %firstp2 = OpConstant %int8t 0
+              %firstp2 = OpCopyObject %int8t %firstp
                          OpReturn
                          OpFunctionEnd
               )";
@@ -629,7 +631,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize2
                                         %palign %lsize
-              %psize2 = OpConstant %intt 0
+              %psize2 = OpCopyObject %intt %psize
                         OpReturn
                         OpFunctionEnd
               )";
@@ -642,7 +644,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign2 %lsize
-              %palign2 = OpConstant %intt 32
+              %palign2 = OpCopyObject %intt %palign
                         OpReturn
                         OpFunctionEnd
               )";
@@ -655,7 +657,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize2
-              %lsize2  = OpConstant %intt 1
+              %lsize2  = OpCopyObject %intt %lsize
                          OpReturn
                          OpFunctionEnd
               )";
@@ -674,7 +676,7 @@ pair<string, bool> cases[] = {
 
 INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases));
 
-string SetOps(string &str, pair<string, bool> param) {
+string SetOps(const string &str, pair<string, bool> param) {
   regex placeholder("GET_KERNEL_OP");
   string out = regex_replace(str, placeholder, param.first);
   string out2;
@@ -701,7 +703,7 @@ TEST_P(Validate, GetKernelGood) {
 }
 
 TEST_P(Validate, ForwardGetKernelGood) {
-  string str = kBasicTypes + kKernelTypes +
+  string str = kBasicTypes + kKernelTypesAndConstants +
                R"(
             %main    = OpFunction %voidt None %vfunct
                 )" +
@@ -728,12 +730,11 @@ TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter1Bad) {
+TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
-              %numsg   = GET_KERNEL_OP %uintt2 %ndval %kfunc %firstp %psize %palign
+              %numsg   = GET_KERNEL_OP %missing %ndval %kfunc %firstp %psize %palign
                          OpReturn
                          OpFunctionEnd
-              %uintt2  = OpTypeInt 32 0
               )";
   string out = SetOps(str, GetParam());
   CompileSuccessfully(out);
@@ -758,7 +759,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
             %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp2 %psize %palign
-            %firstp2 = OpConstant %int8t 0
+            %firstp2 = OpCopyObject %int8t %firstp
                         OpReturn
                         OpFunctionEnd
             )";
@@ -770,7 +771,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
             %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize2 %palign
-            %psize2  = OpConstant %intt 0
+            %psize2  = OpCopyObject %intt %psize
                         OpReturn
                         OpFunctionEnd
             )";
@@ -782,7 +783,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
   string str = forwardKernelNonDominantParameterBaseCode + R"(
             %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign2
-            %palign2 = OpConstant %intt 32
+            %palign2 = OpCopyObject %intt %palign
                        OpReturn
                        OpFunctionEnd
             )";
