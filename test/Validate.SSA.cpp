@@ -29,12 +29,13 @@
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
-#include <regex>
+#include <sstream>
+#include <string>
+#include <utility>
 
 using std::string;
-using std::regex;
 using std::pair;
-using std::regex_replace;
+using std::stringstream;
 namespace {
 
 using Validate =
@@ -219,8 +220,8 @@ TEST_F(Validate, ForwardGroupDecorateGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-  TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
-    char str[] = R"(
+TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
+  char str[] = R"(
            OpMemoryModel Logical GLSL450
            OpCapability Matrix
            OpDecorate %dgrp RowMajor
@@ -232,8 +233,8 @@ TEST_F(Validate, ForwardGroupDecorateGood) {
 %mat33  =  OpTypeMatrix %vec3 3
 %mat44  =  OpTypeMatrix %vec4 4
 )";
-    CompileSuccessfully(str);
-    ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
@@ -289,7 +290,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
 }
 
 TEST_F(Validate, FunctionCallGood) {
-    char str[] = R"(
+  char str[] = R"(
          OpMemoryModel Logical GLSL450
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
@@ -309,9 +310,9 @@ TEST_F(Validate, FunctionCallGood) {
 %7    =  OpFunctionCall %1 %9 %four %five
          OpFunctionEnd
 )";
-    CompileSuccessfully(str);
-    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-  }
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 
 TEST_F(Validate, ForwardFunctionCallGood) {
   char str[] = R"(
@@ -530,7 +531,8 @@ TEST_F(Validate, EnqueueMissingFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-string forwardKernelNonDominantParameterBaseCode = kBasicTypes + kKernelTypesAndConstants +
+string forwardKernelNonDominantParameterBaseCode = kBasicTypes +
+                                                   kKernelTypesAndConstants +
                                                    kKernelDefinition +
                                                    R"(
                 %main   = OpFunction %voidt None %vfunct
@@ -676,120 +678,146 @@ pair<string, bool> cases[] = {
 
 INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases));
 
-string SetOps(const string &str, pair<string, bool> param) {
-  regex placeholder("GET_KERNEL_OP");
-  string out = regex_replace(str, placeholder, param.first);
-  string out2;
-
-  if (!param.second) {
-    regex ndrange_regex("[^\n]%ndval");
-    out2 = regex_replace(out, ndrange_regex, "");
-  } else {
-    out2 = out;
-  }
-  return out2;
-}
+static const string return_instructions = R"(
+  OpReturn
+  OpFunctionEnd
+)";
 
 TEST_P(Validate, GetKernelGood) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-              %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
-                         OpReturn
-                         OpFunctionEnd
-              )";
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
 
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
+     << return_instructions;
+  // clang-format on
+
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelGood) {
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  // clang-format off
   string str = kBasicTypes + kKernelTypesAndConstants +
                R"(
             %main    = OpFunction %voidt None %vfunct
-                )" +
-               kKernelSetup + R"(
-            %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign
-                       OpReturn
-                       OpFunctionEnd
-            )" +
-               kKernelDefinition;
+                )"
+            + kKernelSetup + " %numsg = "
+            + instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
+            + return_instructions + kKernelDefinition;
+  // clang-format on
 
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-          %numsg   = GET_KERNEL_OP %uintt %ndval %missing %firstp %psize %palign
-                     OpReturn
-                     OpFunctionEnd
-          )";
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%missing %firstp %psize %palign"
+     << return_instructions;
+  // clang-format on
+
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-              %numsg   = GET_KERNEL_OP %missing %ndval %kfunc %firstp %psize %palign
-                         OpReturn
-                         OpFunctionEnd
-              )";
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %missing" + ndrange_param + "%kfunc %firstp %psize %palign"
+     << return_instructions;
+  // clang-format on
+
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-            %numsg   = GET_KERNEL_OP %uintt %ndval2 %kfunc %firstp %psize %palign
-            %ndval2  = OpBuildNDRange %ndt %gl %local %offset
-                        OpReturn
-                        OpFunctionEnd
-            )";
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval2 " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
+     << "\n %ndval2  = OpBuildNDRange %ndt %gl %local %offset"
+     << return_instructions;
+  // clang-format on
+
   if (GetParam().second) {
-    regex placeholder("GET_KERNEL_OP");
-    string out = regex_replace(str, placeholder, GetParam().first);
-    CompileSuccessfully(out);
+    CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   }
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-            %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp2 %psize %palign
-            %firstp2 = OpCopyObject %int8t %firstp
-                        OpReturn
-                        OpFunctionEnd
-            )";
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%kfunc %firstp2 %psize %palign"
+     << "\n %firstp2 = OpCopyObject %int8t %firstp"
+     << return_instructions;
+  // clang-format on
+
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-            %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize2 %palign
-            %psize2  = OpCopyObject %intt %psize
-                        OpReturn
-                        OpFunctionEnd
-            )";
-  string out = SetOps(str, GetParam());
-  CompileSuccessfully(out);
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize2 %palign"
+     << "\n %psize2  = OpCopyObject %intt %psize"
+     << return_instructions;
+  // clang-format on
+
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
-            %numsg   = GET_KERNEL_OP %uintt %ndval %kfunc %firstp %psize %palign2
-            %palign2 = OpCopyObject %intt %palign
-                       OpReturn
-                       OpFunctionEnd
-            )";
+  string instruction = GetParam().first;
+  bool with_ndrange = GetParam().second;
+  string ndrange_param = with_ndrange ? " %ndval " : " ";
+
+  stringstream ss;
+  // clang-format off
+  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+     << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign2"
+     << "\n %palign2 = OpCopyObject %intt %palign"
+     << return_instructions;
+  // clang-format on
+
   if (GetParam().second) {
-    string out = SetOps(str, GetParam());
-    CompileSuccessfully(out);
+    CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   }
 }
