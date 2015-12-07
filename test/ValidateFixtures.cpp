@@ -68,6 +68,11 @@ spv_result_t ValidateBase<T, OPTIONS>::ValidateInstructions() {
                      &diagnostic_);
 }
 
+template <typename T, uint32_t OPTIONS>
+std::string ValidateBase<T, OPTIONS>::getDiagnosticString() {
+  return std::string(diagnostic_->error);
+}
+
 template class spvtest::ValidateBase<std::pair<std::string, bool>,
                                      SPV_VALIDATE_SSA_BIT>;
 }

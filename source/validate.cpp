@@ -39,13 +39,22 @@
 #include <cstdio>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <string>
+#include <sstream>
 #include <unordered_set>
 #include <vector>
 
 using std::function;
+using std::map;
+using std::ostream_iterator;
+using std::string;
+using std::stringstream;
+using std::to_string;
 using std::unordered_set;
 using std::vector;
+
+using namespace std::placeholders;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -319,8 +328,24 @@ class ValidationState_t {
     return SPV_SUCCESS;
   }
 
+  void assignNameToId(uint32_t id, string name) { operand_names[id] = name; }
+
+  string getIdName(uint32_t id) {
+    string out = to_string(id);
+    if (operand_names.find(id) != end(operand_names)) {
+      out += "[" + operand_names[id] + "]";
+    }
+    return out;
+  }
+
   size_t unresolvedForwardIdCount() const {
     return unresolved_forward_ids_.size();
+  }
+
+  vector<uint32_t>
+  unresolvedForwardIds() const {
+    vector<uint32_t> out(begin(unresolved_forward_ids_), end(unresolved_forward_ids_));
+    return out;
   }
 
   //
@@ -354,6 +379,7 @@ class ValidationState_t {
   // Validation options to determine the passes to execute
   uint32_t validation_flags_;
 
+  map<uint32_t, string> operand_names;
 };
 
 // Performs SSA validation on the IDs of an instruction. The
@@ -387,7 +413,8 @@ spv_result_t SsaPass(ValidationState_t& _,
           } else if (can_have_forward_declared_ids(i)) {
             ret = _.forwardDeclareId(*operand_ptr);
           } else {
-            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID " << *operand_ptr
+            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
+                                               << _.getIdName(*operand_ptr)
                                                << " has not been defined";
           }
           break;
@@ -456,6 +483,33 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   return out;
 }
 
+void DebugInstructionPass(ValidationState_t& _,
+                          const spv_parsed_instruction_t* inst) {
+  switch (inst->opcode) {
+    case SpvOpName: {
+        const uint32_t target = *(inst->words + inst->operands[0].offset);
+        const char* str = (const char*)(inst->words + inst->operands[1].offset);
+        _.assignNameToId(target, str);
+      }
+      break;
+    case SpvOpMemberName: {
+        const uint32_t target = *(inst->words + inst->operands[0].offset);
+        const char* str = (const char*)(inst->words + inst->operands[2].offset);
+        _.assignNameToId(target, str);
+      }
+      break;
+    case SpvOpSourceContinued:
+    case SpvOpSource:
+    case SpvOpSourceExtension:
+    case SpvOpString:
+    case SpvOpLine:
+    case SpvOpNoLine:
+
+    default:
+      break;
+  }
+}
+
 spv_result_t ProcessInstructions(void* user_data,
                                  const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
@@ -463,6 +517,8 @@ spv_result_t ProcessInstructions(void* user_data,
 
   auto can_have_forward_declared_ids =
       getCanBeForwardDeclaredFunction(inst->opcode);
+
+  DebugInstructionPass(_, inst);
 
   // TODO(umar): Perform CFG pass
   // TODO(umar): Perform logical layout validation pass
@@ -504,9 +560,17 @@ spv_result_t spvValidate(const spv_const_context context,
   // the checks.
 
   if (vstate.unresolvedForwardIdCount() > 0) {
-    // TODO(umar): print undefined IDs
+    stringstream ss;
+    vector<uint32_t> ids = vstate.unresolvedForwardIds();
+
+    transform(begin(ids), end(ids),
+              ostream_iterator<string>(ss, " "),
+              bind(&ValidationState_t::getIdName, vstate, _1));
+
+    auto id_str = ss.str();
     return vstate.diag(SPV_ERROR_INVALID_ID)
-           << "Some forward referenced IDs have not be defined";
+      << "The following forward referenced IDs have not be defined:\n" <<
+      id_str.substr(0, id_str.size()-1);
   }
 
   // NOTE: Copy each instruction for easier processing

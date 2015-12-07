@@ -41,6 +41,10 @@ namespace {
 using Validate =
     spvtest::ValidateBase<pair<string, bool>, SPV_VALIDATE_SSA_BIT>;
 
+bool ContainsString(const string &message, const string &substr) {
+  return std::string::npos != message.find(substr);
+}
+
 TEST_F(Validate, Default) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
@@ -60,20 +64,23 @@ TEST_F(Validate, Default) {
 TEST_F(Validate, IdUndefinedBad) {
   char str[] = R"(
           OpMemoryModel Logical GLSL450
+          OpName %missing "missing"
 %voidt  = OpTypeVoid
 %vfunct = OpTypeFunction %voidt
-%func   = OpFunction %2 None %missing
+%func   = OpFunction %vfunct None %missing
 %flabel = OpLabel
           OpReturn
           OpFunctionEnd
     )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, IdRedefinedBad) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
+     OpName %2 "redefined"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %2 = OpFunction %1 None %2
@@ -88,11 +95,13 @@ TEST_F(Validate, IdRedefinedBad) {
 TEST_F(Validate, DominateUsageBad) {
   char str[] = R"(
      OpMemoryModel Logical GLSL450
+     OpName %1 "not_dominant"
 %2 = OpTypeFunction %1              ; uses %1 before it's definition
 %1 = OpTypeVoid
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "not_dominant"));
 }
 
 TEST_F(Validate, ForwardNameGood) {
@@ -117,6 +126,7 @@ TEST_F(Validate, ForwardNameMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "main"));
 }
 
 TEST_F(Validate, ForwardMemberNameGood) {
@@ -143,6 +153,7 @@ TEST_F(Validate, ForwardMemberNameMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "size"));
 }
 
 TEST_F(Validate, ForwardDecorateGood) {
@@ -160,6 +171,7 @@ TEST_F(Validate, ForwardDecorateGood) {
 TEST_F(Validate, ForwardDecorateInvalidIDBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
+           OpName %missing "missing"
            OpDecorate %missing Restrict        ;Missing ID
 %voidt  =  OpTypeVoid
 %intt   =  OpTypeInt 32 1
@@ -173,6 +185,7 @@ TEST_F(Validate, ForwardDecorateInvalidIDBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, ForwardMemberDecorateGood) {
@@ -193,6 +206,7 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpName %missing "missing"
            OpMemberDecorate %missing 1 RowMajor ; Target not defined
 %intt   =  OpTypeInt 32 1
 %vec3   =  OpTypeVector %intt 3
@@ -201,6 +215,7 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateGood) {
@@ -224,6 +239,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpName %missing "missing"
            OpDecorate %dgrp RowMajor
 %dgrp   =  OpDecorationGroup
            OpGroupDecorate %missing %mat33 %mat44 ; Target not defined
@@ -235,11 +251,13 @@ TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
+           OpName %missing "missing"
            OpCapability Matrix
            OpDecorate %dgrp RowMajor
 %dgrp   =  OpDecorationGroup
@@ -252,12 +270,14 @@ TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpName %dgrp "group"
            OpDecorate %dgrp RowMajor
            OpGroupDecorate %dgrp %mat33 %mat44 ; Decoration group does not dominate usage
 %dgrp   =  OpDecorationGroup
@@ -269,11 +289,13 @@ TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "group"));
 }
 
 TEST_F(Validate, ForwardDecorateInvalidIdBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
+           OpName %missing "missing"
            OpDecorate %missing Restrict        ; Missing target
 %voidt  =  OpTypeVoid
 %intt   =  OpTypeInt 32 1
@@ -287,6 +309,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, FunctionCallGood) {
@@ -388,6 +411,7 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
 TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
+           OpName %tcpy "conditional"
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %vfunct =  OpTypeFunction %voidt
@@ -407,11 +431,13 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "conditional"));
 }
 
 TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450
+           OpName %missing "missing"
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %vfunct =  OpTypeFunction %voidt
@@ -430,6 +456,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 const string kBasicTypes = R"(
@@ -517,7 +544,8 @@ TEST_F(Validate, ForwardEnqueueKernelGood) {
 }
 
 TEST_F(Validate, EnqueueMissingFunctionBad) {
-  string str = kBasicTypes + kKernelTypesAndConstants + R"(
+  string str = kBasicTypes + "OpName %kfunc \"kfunc\"" +
+               kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 )" +
                kKernelSetup + R"(
@@ -529,17 +557,27 @@ TEST_F(Validate, EnqueueMissingFunctionBad) {
                  )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "kfunc"));
 }
 
-string forwardKernelNonDominantParameterBaseCode = kBasicTypes +
-                                                   kKernelTypesAndConstants +
-                                                   kKernelDefinition +
-                                                   R"(
+string forwardKernelNonDominantParameterBaseCode(string name = string()) {
+  string op_name;
+  if (name.empty()) {
+    op_name = "";
+  } else {
+    op_name = "\nOpName %" + name + " \"" + name + "\"\n";
+  }
+  string out = kBasicTypes + op_name + kKernelTypesAndConstants +
+               kKernelDefinition +
+               R"(
                 %main   = OpFunction %voidt None %vfunct
-                )" + kKernelSetup;
+                )" +
+               kKernelSetup;
+  return out;
+}
 
 TEST_F(Validate, ForwardEnqueueKernelMissingParameter1Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("missing") + R"(
                 %err    = OpEnqueueKernel %missing %dqueue %flags %ndval
                                         %nevent %event %revent %kfunc %firstp
                                         %psize %palign %lsize
@@ -548,10 +586,11 @@ TEST_F(Validate, ForwardEnqueueKernelMissingParameter1Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("dqueue2") + R"(
                 %err     = OpEnqueueKernel %uintt %dqueue2 %flags %ndval
                                             %nevent %event %revent %kfunc
                                             %firstp %psize %palign %lsize
@@ -561,10 +600,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "dqueue2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("ndval2") + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval2
                                         %nevent %event %revent %kfunc %firstp
                                         %psize %palign %lsize
@@ -574,10 +614,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "ndval2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("nevent2") + R"(
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent2
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -587,10 +628,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "nevent2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("event2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event2 %revent %kfunc %firstp %psize
                                         %palign %lsize
@@ -600,10 +642,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "event2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("revent2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent2 %kfunc %firstp %psize
                                         %palign %lsize
@@ -613,10 +656,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "revent2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("firstp2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp2 %psize
                                         %palign %lsize
@@ -626,10 +670,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "firstp2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("psize2") + R"(
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize2
                                         %palign %lsize
@@ -639,10 +684,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "psize2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("palign2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign2 %lsize
@@ -652,10 +698,11 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "palign2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
-  string str = forwardKernelNonDominantParameterBaseCode + R"(
+  string str = forwardKernelNonDominantParameterBaseCode("lsize2") + R"(
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize2
@@ -666,6 +713,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "lsize2"));
 }
 
 static const bool kWithNDrange = true;
@@ -690,7 +738,7 @@ TEST_P(Validate, GetKernelGood) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode() + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
      << return_instructions;
   // clang-format on
@@ -725,13 +773,14 @@ TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("missing") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%missing %firstp %psize %palign"
      << return_instructions;
   // clang-format on
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
@@ -741,13 +790,14 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("missing") + " %numsg = "
      << instruction + " %missing" + ndrange_param + "%kfunc %firstp %psize %palign"
      << return_instructions;
   // clang-format on
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
@@ -757,7 +807,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("ndval2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
      << "\n %ndval2  = OpBuildNDRange %ndt %gl %local %offset"
      << return_instructions;
@@ -766,6 +816,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
   if (GetParam().second) {
     CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+    ASSERT_TRUE(ContainsString(getDiagnosticString(), "ndval2"));
   }
 }
 
@@ -776,7 +827,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("firstp2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp2 %psize %palign"
      << "\n %firstp2 = OpCopyObject %int8t %firstp"
      << return_instructions;
@@ -784,6 +835,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "firstp2"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
@@ -793,7 +845,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("psize2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize2 %palign"
      << "\n %psize2  = OpCopyObject %intt %psize"
      << return_instructions;
@@ -801,6 +853,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "psize2"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
@@ -810,7 +863,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
 
   stringstream ss;
   // clang-format off
-  ss << forwardKernelNonDominantParameterBaseCode + " %numsg = "
+  ss << forwardKernelNonDominantParameterBaseCode("palign2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign2"
      << "\n %palign2 = OpCopyObject %intt %palign"
      << return_instructions;
@@ -819,6 +872,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
   if (GetParam().second) {
     CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+    ASSERT_TRUE(ContainsString(getDiagnosticString(), "palign2"));
   }
 }
 
