@@ -370,6 +370,7 @@ TEST_F(Validate, ForwardBranchConditionalGood) {
 %vfunct =   OpTypeFunction %voidt
 %true   =   OpConstantTrue %boolt
 %main   =   OpFunction %voidt None %vfunct
+%mainl  =   OpLabel
             OpSelectionMerge %endl None
             OpBranchConditional %true %truel %falsel
 %truel  =   OpLabel
@@ -393,6 +394,7 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
 %vfunct =  OpTypeFunction %voidt
 %true   =  OpConstantTrue %boolt
 %main   =  OpFunction %voidt None %vfunct
+%mainl  =  OpLabel
            OpSelectionMerge %endl None
            OpBranchConditional %true %truel %falsel 1 9
 %truel  =  OpLabel
@@ -417,6 +419,7 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
 %vfunct =  OpTypeFunction %voidt
 %true   =  OpConstantTrue %boolt
 %main   =  OpFunction %voidt None %vfunct
+%mainl  =  OpLabel
            OpSelectionMerge %endl None
            OpBranchConditional %tcpy %truel %falsel ;
 %truel  =  OpLabel
@@ -443,6 +446,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 %vfunct =  OpTypeFunction %voidt
 %true   =  OpConstantTrue %boolt
 %main   =  OpFunction %voidt None %vfunct
+%mainl  =  OpLabel
            OpSelectionMerge %endl None
            OpBranchConditional %true %missing %falsel
 %truel  =  OpLabel
@@ -507,6 +511,7 @@ const string kKernelSetup = R"(
 const string kKernelDefinition = R"(
 %kfunc  = OpFunction %voidt None %kfunct
 %iparam = OpFunctionParameter %intptrt
+%kfuncl = OpLabel
           OpNop
           OpReturn
           OpFunctionEnd
@@ -515,6 +520,7 @@ const string kKernelDefinition = R"(
 TEST_F(Validate, EnqueueKernelGood) {
   string str = kBasicTypes + kKernelTypesAndConstants + kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
+                %mainl  = OpLabel
                 )" +
                kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
@@ -530,6 +536,7 @@ TEST_F(Validate, EnqueueKernelGood) {
 TEST_F(Validate, ForwardEnqueueKernelGood) {
   string str = kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
+                %mainl  = OpLabel
                 )" +
                kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
@@ -547,6 +554,7 @@ TEST_F(Validate, EnqueueMissingFunctionBad) {
   string str = kBasicTypes + "OpName %kfunc \"kfunc\"" +
                kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
+                %mainl  = OpLabel
                 )" +
                kKernelSetup + R"(
                 %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
@@ -571,6 +579,7 @@ string forwardKernelNonDominantParameterBaseCode(string name = string()) {
                kKernelDefinition +
                R"(
                 %main   = OpFunction %voidt None %vfunct
+                %mainl  = OpLabel
                 )" +
                kKernelSetup;
   return out;
@@ -876,7 +885,115 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
   }
 }
 
-// TODO(umar): OpPhi
+TEST_F(Validate, PhiGood) {
+  string str = kBasicTypes +
+               R"(
+%zero      = OpConstant %intt 0
+%one       = OpConstant %intt 1
+%ten       = OpConstant %intt 10
+%func      = OpFunction %voidt None %vfunct
+%funcl     = OpLabel
+%preheader = OpLabel
+%init      = OpCopyObject %intt %zero
+%loop      = OpLabel
+%i         = OpPhi %intt %init %preheader %loopi %loop
+%loopi     = OpIAdd %intt %i %one
+             OpNop
+%cond      = OpSLessThan %boolt %i %ten
+             OpLoopMerge %endl %loop None
+             OpBranchConditional %cond %loop %endl
+%endl      = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(Validate, PhiMissingTypeBad) {
+  string str = kBasicTypes +
+               R"(
+             OpName %missing "missing"
+%zero      = OpConstant %intt 0
+%one       = OpConstant %intt 1
+%ten       = OpConstant %intt 10
+%func      = OpFunction %voidt None %vfunct
+%funcl     = OpLabel
+%preheader = OpLabel
+%init      = OpCopyObject %intt %zero
+%loop      = OpLabel
+%i         = OpPhi %missing %init %preheader %loopi %loop
+%loopi     = OpIAdd %intt %i %one
+             OpNop
+%cond      = OpSLessThan %boolt %i %ten
+             OpLoopMerge %endl %loop None
+             OpBranchConditional %cond %loop %endl
+%endl      = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+}
+
+TEST_F(Validate, PhiMissingIdBad) {
+  string str = kBasicTypes +
+               R"(
+             OpName %missing "missing"
+%zero      = OpConstant %intt 0
+%one       = OpConstant %intt 1
+%ten       = OpConstant %intt 10
+%func      = OpFunction %voidt None %vfunct
+%funcl     = OpLabel
+%preheader = OpLabel
+%init      = OpCopyObject %intt %zero
+%loop      = OpLabel
+%i         = OpPhi %intt %missing %preheader %loopi %loop
+%loopi     = OpIAdd %intt %i %one
+             OpNop
+%cond      = OpSLessThan %boolt %i %ten
+             OpLoopMerge %endl %loop None
+             OpBranchConditional %cond %loop %endl
+%endl      = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+}
+
+TEST_F(Validate, PhiMissingLabelBad) {
+  string str = kBasicTypes +
+               R"(
+             OpName %missing "missing"
+%zero      = OpConstant %intt 0
+%one       = OpConstant %intt 1
+%ten       = OpConstant %intt 10
+%func      = OpFunction %voidt None %vfunct
+%funcl     = OpLabel
+%preheader = OpLabel
+%init      = OpCopyObject %intt %zero
+%loop      = OpLabel
+%i         = OpPhi %intt %init %missing %loopi %loop
+%loopi     = OpIAdd %intt %i %one
+             OpNop
+%cond      = OpSLessThan %boolt %i %ten
+             OpLoopMerge %endl %loop None
+             OpBranchConditional %cond %loop %endl
+%endl      = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+}
+
 // TODO(umar): OpGroupMemberDecorate
-// TODO(umar): OpBranch
 }

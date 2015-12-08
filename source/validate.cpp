@@ -462,6 +462,10 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       out = [](unsigned index) { return index > 1; };
       break;
 
+    case SpvOpLoopMerge:
+      out = [](unsigned index) { return index == 0; };
+      break;
+
     case SpvOpEnqueueKernel:
       out = [](unsigned index) { return index == 8; };
       break;
