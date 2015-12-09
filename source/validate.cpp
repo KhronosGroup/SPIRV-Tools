@@ -26,12 +26,6 @@
 
 #include "validate.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <vector>
-
 #include "binary.h"
 #include "diagnostic.h"
 #include "endian.h"
@@ -41,9 +35,33 @@
 #include "operand.h"
 #include "spirv_constant.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <string>
+#include <sstream>
+#include <unordered_set>
+#include <vector>
+
+using std::function;
+using std::map;
+using std::ostream_iterator;
+using std::string;
+using std::stringstream;
+using std::to_string;
+using std::transform;
+using std::unordered_set;
+using std::vector;
+
+using namespace std::placeholders;
+
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
 
+#if 0
 spv_result_t spvValidateOperandsString(const uint32_t* words,
                                        const uint16_t wordCount,
                                        spv_position position,
@@ -80,7 +98,10 @@ spv_result_t spvValidateOperandValue(const spv_operand_type_t type,
                                      spv_diagnostic* pDiagnostic) {
   switch (type) {
     case SPV_OPERAND_TYPE_ID:
-    case SPV_OPERAND_TYPE_RESULT_ID: {
+    case SPV_OPERAND_TYPE_TYPE_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+    case SPV_OPERAND_TYPE_SCOPE_ID: {
       // NOTE: ID's are validated in SPV_VALIDATION_LEVEL_1, this is
       // SPV_VALIDATION_LEVEL_0
     } break;
@@ -166,14 +187,15 @@ spv_result_t spvValidateBasic(const spv_instruction_t* pInsts,
       // of the parse.
       spv_operand_type_t type = spvBinaryOperandInfo(
           word, index, opcodeEntry, operandTable, &operandEntry);
+
       if (SPV_OPERAND_TYPE_LITERAL_STRING == type) {
         spvCheckReturn(spvValidateOperandsString(
             words + index, wordCount - index, position, pDiagnostic));
         // NOTE: String literals are always at the end of Opcodes
         break;
       } else if (SPV_OPERAND_TYPE_LITERAL_INTEGER == type) {
-        spvCheckReturn(spvValidateOperandsLiteral(
-            words + index, wordCount - index, 2, position, pDiagnostic));
+        // spvCheckReturn(spvValidateOperandsNumber(
+        //    words + index, wordCount - index, 2, position, pDiagnostic));
       } else {
         spvCheckReturn(spvValidateOperandValue(type, word, operandTable,
                                                position, pDiagnostic));
@@ -183,6 +205,7 @@ spv_result_t spvValidateBasic(const spv_instruction_t* pInsts,
 
   return SPV_SUCCESS;
 }
+#endif
 
 spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
                             const uint64_t count, const uint32_t bound,
@@ -261,6 +284,252 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
   return SPV_SUCCESS;
 }
 
+// TODO(umar): Validate header
+// TODO(umar): The Id bound should be validated also. But you can only do that
+// after you've seen all the instructions in the module.
+// TODO(umar): The binary parser validates the magic word, and the length of the
+// header, but nothing else.
+spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
+                       uint32_t version, uint32_t generator, uint32_t id_bound,
+                       uint32_t reserved) {
+  (void)user_data;
+  (void)endian;
+  (void)magic;
+  (void)version;
+  (void)generator;
+  (void)id_bound;
+  (void)reserved;
+  return SPV_SUCCESS;
+}
+
+// TODO(umar): Move this class to another file
+class ValidationState_t {
+ public:
+  ValidationState_t(spv_diagnostic* diag, uint32_t options)
+      : diagnostic_(diag),
+        instruction_counter_(0),
+        validation_flags_(options) {}
+
+  spv_result_t definedIds(uint32_t id) {
+    if (defined_ids_.find(id) == std::end(defined_ids_)) {
+      defined_ids_.insert(id);
+    } else {
+      return diag(SPV_ERROR_INVALID_ID)
+             << "ID cannot be assigned multiple times";
+    }
+    return SPV_SUCCESS;
+  }
+
+  spv_result_t forwardDeclareId(uint32_t id) {
+    unresolved_forward_ids_.insert(id);
+    return SPV_SUCCESS;
+  }
+
+  spv_result_t removeIfForwardDeclared(uint32_t id) {
+    unresolved_forward_ids_.erase(id);
+    return SPV_SUCCESS;
+  }
+
+  void assignNameToId(uint32_t id, string name) { operand_names[id] = name; }
+
+  string getIdName(uint32_t id) {
+    string out = to_string(id);
+    if (operand_names.find(id) != end(operand_names)) {
+      out += "[" + operand_names[id] + "]";
+    }
+    return out;
+  }
+
+  size_t unresolvedForwardIdCount() const {
+    return unresolved_forward_ids_.size();
+  }
+
+  vector<uint32_t> unresolvedForwardIds() const {
+    vector<uint32_t> out(begin(unresolved_forward_ids_),
+                         end(unresolved_forward_ids_));
+    return out;
+  }
+
+  //
+  bool isDefinedId(uint32_t id) const {
+    return defined_ids_.find(id) != std::end(defined_ids_);
+  }
+
+  bool is_enabled(uint32_t flag) const {
+    return (flag & validation_flags_) == flag;
+  }
+
+  // Increments the instruction count. Used for diagnostic
+  int incrementInstructionCount() { return instruction_counter_++; }
+
+  libspirv::DiagnosticStream diag(spv_result_t error_code) const {
+    return libspirv::DiagnosticStream({0, 0, (uint64_t)(instruction_counter_)},
+                                      diagnostic_, error_code);
+  }
+
+ private:
+  spv_diagnostic* diagnostic_;
+  // Tracks the number of instructions evaluated by the validator
+  int instruction_counter_;
+
+  // All IDs which have been defined
+  unordered_set<uint32_t> defined_ids_;
+
+  // IDs which have been forward declared but have not been defined
+  unordered_set<uint32_t> unresolved_forward_ids_;
+
+  // Validation options to determine the passes to execute
+  uint32_t validation_flags_;
+
+  map<uint32_t, string> operand_names;
+};
+
+// Performs SSA validation on the IDs of an instruction. The
+// can_have_forward_declared_ids  functor should return true if the
+// instruction operand's ID can be forward referenced.
+//
+// TODO(umar): Use dominators to correctly validate SSA. For example, the result
+// id from a 'then' block cannot dominate its usage in the 'else' block. This
+// is not yet performed by this funciton.
+spv_result_t SsaPass(ValidationState_t& _,
+                     function<bool(unsigned)> can_have_forward_declared_ids,
+                     const spv_parsed_instruction_t* inst) {
+  if (_.is_enabled(SPV_VALIDATE_SSA_BIT)) {
+    for (unsigned i = 0; i < inst->num_operands; i++) {
+      const spv_parsed_operand_t& operand = inst->operands[i];
+      const spv_operand_type_t& type = operand.type;
+      const uint32_t* operand_ptr = inst->words + operand.offset;
+
+      auto ret = SPV_ERROR_INTERNAL;
+      switch (type) {
+        case SPV_OPERAND_TYPE_RESULT_ID:
+          _.removeIfForwardDeclared(*operand_ptr);
+          ret = _.definedIds(*operand_ptr);
+          break;
+        case SPV_OPERAND_TYPE_ID:
+        case SPV_OPERAND_TYPE_TYPE_ID:
+        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+        case SPV_OPERAND_TYPE_SCOPE_ID:
+          if (_.isDefinedId(*operand_ptr)) {
+            ret = SPV_SUCCESS;
+          } else if (can_have_forward_declared_ids(i)) {
+            ret = _.forwardDeclareId(*operand_ptr);
+          } else {
+            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
+                                               << _.getIdName(*operand_ptr)
+                                               << " has not been defined";
+          }
+          break;
+        default:
+          ret = SPV_SUCCESS;
+          break;
+      }
+      if (SPV_SUCCESS != ret) {
+        return ret;
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+// This funciton takes the opcode of an instruction and returns
+// a function object that will return true if the index
+// of the operand can be forwarad declared. This function will
+// used in the SSA validation stage of the pipeline
+function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
+  function<bool(unsigned index)> out;
+  switch (opcode) {
+    case SpvOpExecutionMode:
+    case SpvOpEntryPoint:
+    case SpvOpName:
+    case SpvOpMemberName:
+    case SpvOpSelectionMerge:
+    case SpvOpDecorate:
+    case SpvOpMemberDecorate:
+    case SpvOpBranch:
+    case SpvOpLoopMerge:
+      out = [](unsigned) { return true; };
+      break;
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+    case SpvOpBranchConditional:
+    case SpvOpSwitch:
+      out = [](unsigned index) { return index != 0; };
+      break;
+
+    case SpvOpFunctionCall:
+      out = [](unsigned index) { return index == 2; };
+      break;
+
+    case SpvOpPhi:
+      out = [](unsigned index) { return index > 1; };
+      break;
+
+    case SpvOpEnqueueKernel:
+      out = [](unsigned index) { return index == 8; };
+      break;
+
+    case SpvOpGetKernelNDrangeSubGroupCount:
+    case SpvOpGetKernelNDrangeMaxSubGroupSize:
+      out = [](unsigned index) { return index == 3; };
+      break;
+
+    case SpvOpGetKernelWorkGroupSize:
+    case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
+      out = [](unsigned index) { return index == 2; };
+      break;
+
+    default:
+      out = [](unsigned) { return false; };
+      break;
+  }
+  return out;
+}
+
+// Improves diagnostic messages by collecting names of IDs
+// NOTE: This function returns void and is not involved in validation
+void DebugInstructionPass(ValidationState_t& _,
+                          const spv_parsed_instruction_t* inst) {
+  switch (inst->opcode) {
+    case SpvOpName: {
+      const uint32_t target = *(inst->words + inst->operands[0].offset);
+      const char* str = reinterpret_cast<const char*>(inst->words + inst->operands[1].offset);
+      _.assignNameToId(target, str);
+    } break;
+    case SpvOpMemberName: {
+      const uint32_t target = *(inst->words + inst->operands[0].offset);
+      const char* str = reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
+      _.assignNameToId(target, str);
+    } break;
+    case SpvOpSourceContinued:
+    case SpvOpSource:
+    case SpvOpSourceExtension:
+    case SpvOpString:
+    case SpvOpLine:
+    case SpvOpNoLine:
+
+    default:
+      break;
+  }
+}
+
+spv_result_t ProcessInstructions(void* user_data,
+                                 const spv_parsed_instruction_t* inst) {
+  ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+  _.incrementInstructionCount();
+
+  auto can_have_forward_declared_ids =
+      getCanBeForwardDeclaredFunction(inst->opcode);
+
+  DebugInstructionPass(_, inst);
+
+  // TODO(umar): Perform CFG pass
+  // TODO(umar): Perform logical layout validation pass
+  // TODO(umar): Perform data rules pass
+  // TODO(umar): Perform instruction validation pass
+  return SsaPass(_, can_have_forward_declared_ids, inst);
+}
+
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary, const uint32_t options,
                          spv_diagnostic* pDiagnostic) {
@@ -279,6 +548,33 @@ spv_result_t spvValidate(const spv_const_context context,
     return SPV_ERROR_INVALID_BINARY;
   }
 
+  // NOTE: Parse the module and perform inline validation checks. These
+  // checks do not require the the knowledge of the whole module.
+  ValidationState_t vstate(pDiagnostic, options);
+  auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
+                            setHeader, ProcessInstructions, pDiagnostic);
+
+  if (err) {
+    return err;
+  }
+
+  // TODO(umar): Add validation checks which require the parsing of the entire
+  // module. Use the information from the processInstructions pass to make
+  // the checks.
+
+  if (vstate.unresolvedForwardIdCount() > 0) {
+    stringstream ss;
+    vector<uint32_t> ids = vstate.unresolvedForwardIds();
+
+    transform(begin(ids), end(ids), ostream_iterator<string>(ss, " "),
+              bind(&ValidationState_t::getIdName, vstate, _1));
+
+    auto id_str = ss.str();
+    return vstate.diag(SPV_ERROR_INVALID_ID)
+           << "The following forward referenced IDs have not be defined:\n"
+           << id_str.substr(0, id_str.size() - 1);
+  }
+
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
   uint64_t index = SPV_INDEX_INSTRUCTION;
@@ -293,30 +589,12 @@ spv_result_t spvValidate(const spv_const_context context,
     index += wordCount;
   }
 
-  if (spvIsInBitfield(SPV_VALIDATE_BASIC_BIT, options)) {
-    position.index = SPV_INDEX_INSTRUCTION;
-    // TODO: Imcomplete implementation
-    spvCheckReturn(spvValidateBasic(
-        instructions.data(), instructions.size(), context->opcode_table,
-        context->operand_table, &position, pDiagnostic));
-  }
-
-  if (spvIsInBitfield(SPV_VALIDATE_LAYOUT_BIT, options)) {
-    position.index = SPV_INDEX_INSTRUCTION;
-    // TODO: spvBinaryValidateLayout
-  }
-
   if (spvIsInBitfield(SPV_VALIDATE_ID_BIT, options)) {
     position.index = SPV_INDEX_INSTRUCTION;
     spvCheckReturn(
         spvValidateIDs(instructions.data(), instructions.size(), header.bound,
                        context->opcode_table, context->operand_table,
                        context->ext_inst_table, &position, pDiagnostic));
-  }
-
-  if (spvIsInBitfield(SPV_VALIDATE_RULES_BIT, options)) {
-    position.index = SPV_INDEX_INSTRUCTION;
-    // TODO: Specified validation rules...
   }
 
   return SPV_SUCCESS;

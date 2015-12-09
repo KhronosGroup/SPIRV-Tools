@@ -79,7 +79,6 @@ function(default_compile_options TARGET)
       target_compile_options(${TARGET} PRIVATE -fno-omit-frame-pointer)
     endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-      target_compile_options(${TARGET} PRIVATE -fcolor-diagnostics)
       set(SPIRV_USE_SANITIZER "" CACHE STRING
         "Use the clang sanitizer [address|memory|thread|...]")
       if(NOT "${SPIRV_USE_SANITIZER}" STREQUAL "")
@@ -213,7 +212,8 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextToBinary.TypeDeclaration.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateFixtures.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.SSA.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
 
