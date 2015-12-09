@@ -47,10 +47,17 @@ option(SPIRV_WERROR "Enable error on warning" ON)
 if(UNIX)
   set(SPIRV_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 
-  option(SPIRV_WARN_EVERYTHING "Enable -Weverything" OFF)
+  option(SPIRV_WARN_EVERYTHING "Enable -Weverything" ${SPIRV_WARN_EVERYTHING})
   if(${SPIRV_WARN_EVERYTHING})
-    set(SPIRV_WARNINGS ${SPIRV_WARNINGS}
-      -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      set(SPIRV_WARNINGS ${SPIRV_WARNINGS}
+        -Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded)
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+      set(SPIRV_WARNINGS ${SPIRV_WARNINGS} -Wpedantic -pedantic-errors)
+    else()
+      message(STATUS "Unknown compiler ${CMAKE_CXX_COMPILER_ID}, "
+                     "so SPIRV_WARN_EVERYTHING has no effect")
+    endif()
   endif()
 
   if(${SPIRV_WERROR})
@@ -129,8 +136,10 @@ target_include_directories(${SPIRV_TOOLS} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
 
+# Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
-  "Skip building the executables and tests along with the library" OFF)
+       "Skip building the executable and tests along with the library"
+       ${SPIRV_SKIP_EXECUTABLES})
 set(SPIRV_INSTALL_TARGETS ${SPIRV_TOOLS})
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
   list(APPEND SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val)

@@ -93,17 +93,21 @@ development environment.
 
 The following CMake options are supported:
 
-* `SPIRV_COLOR_TERMINAL=ON` - Enables color console output, enabled by default.
-* `SPIRV_SKIP_EXECUTABLES=ON` - Build only the library, not the command line
-  tools.  This will also prevent the tests from being built.
-* `SPIRV_USE_SANITIZER=<sanitizer>` - On UNIX platforms with an appropriate
-  version of `clang` this option enables the use of the sanitizers documented
+* `SPIRV_COLOR_TERMINAL={ON|OFF}`, default `ON` - Enables color console output.
+* `SPIRV_SKIP_EXECUTABLES={ON|OFF}`, default `OFF`- Build only the library, not
+  the command line tools.  This will also prevent the tests from being built.
+* `SPIRV_USE_SANITIZER=<sanitizer>`, default is no sanitizing - On UNIX platforms
+  with an appropriate version of `clang` this option enables the use of the
+  sanitizers documented
   [here](http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation).
-  This should only be used with a debug build. Disabled by default.
-* `SPIRV_WARN_EVERYTHING=OFF` - On UNIX platforms enable the `-Weverything`
-  compiler front end option, disabled by default.
-* `SPIRV_WERROR=ON` - Forces a compilation error on any warnings encountered by
-  enabling the compiler-specific compiler front-end option, enabled by default.
+  This should only be used with a debug build.
+* `SPIRV_WARN_EVERYTHING={ON|OFF}`, default `OFF` - On UNIX platforms enable
+  more strict warnings.  The code might not compile with this option enabled.
+  For Clang, enables `-Weverything`.  For GCC, enables `-Wpedantic`.
+  See [`CMakeLists.txt`](CMakeLists.txt) for details.
+* `SPIRV_WERROR={ON|OFF}`, default `ON` - Forces a compilation error on any
+  warnings encountered by enabling the compiler-specific compiler front-end
+  option.
 
 ## Library
 
