@@ -41,6 +41,7 @@ namespace {
 using Validate =
     spvtest::ValidateBase<pair<string, bool>, SPV_VALIDATE_SSA_BIT>;
 
+// Returns true if the substr is a substring of message
 bool ContainsString(const string &message, const string &substr) {
   return std::string::npos != message.find(substr);
 }
@@ -190,8 +191,8 @@ TEST_F(Validate, ForwardDecorateInvalidIDBad) {
 
 TEST_F(Validate, ForwardMemberDecorateGood) {
   char str[] = R"(
-           OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpMemoryModel Logical GLSL450
            OpMemberDecorate %struct 1 RowMajor
 %intt   =  OpTypeInt 32 1
 %vec3   =  OpTypeVector %intt 3
@@ -204,8 +205,8 @@ TEST_F(Validate, ForwardMemberDecorateGood) {
 
 TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
   char str[] = R"(
-           OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpMemberDecorate %missing 1 RowMajor ; Target not defined
 %intt   =  OpTypeInt 32 1
@@ -220,8 +221,8 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
 
 TEST_F(Validate, ForwardGroupDecorateGood) {
   char str[] = R"(
-          OpMemoryModel Logical GLSL450
           OpCapability Matrix
+          OpMemoryModel Logical GLSL450
           OpDecorate %dgrp RowMajor
 %dgrp   = OpDecorationGroup
           OpGroupDecorate %dgrp %mat33 %mat44
@@ -237,8 +238,8 @@ TEST_F(Validate, ForwardGroupDecorateGood) {
 
 TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
   char str[] = R"(
-           OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %dgrp RowMajor
 %dgrp   =  OpDecorationGroup
@@ -256,9 +257,9 @@ TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
 
 TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
   char str[] = R"(
+           OpCapability Matrix
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
-           OpCapability Matrix
            OpDecorate %dgrp RowMajor
 %dgrp   =  OpDecorationGroup
            OpGroupDecorate %dgrp %missing %mat44 ; Target not defined
@@ -275,8 +276,8 @@ TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
 
 TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
   char str[] = R"(
-           OpMemoryModel Logical GLSL450
            OpCapability Matrix
+           OpMemoryModel Logical GLSL450
            OpName %dgrp "group"
            OpDecorate %dgrp RowMajor
            OpGroupDecorate %dgrp %mat33 %mat44 ; Decoration group does not dominate usage
@@ -464,8 +465,9 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 }
 
 const string kBasicTypes = R"(
-           OpMemoryModel Logical GLSL450
            OpCapability Int8
+           OpCapability DeviceEnqueue
+           OpMemoryModel Logical GLSL450
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %int8t  =  OpTypeInt 8 0
@@ -475,7 +477,6 @@ const string kBasicTypes = R"(
 )";
 
 const string kKernelTypesAndConstants = R"(
-           OpCapability DeviceEnqueue
 %queuet  = OpTypeQueue
 
 %three   = OpConstant %uintt 3
@@ -892,9 +893,9 @@ TEST_F(Validate, PhiGood) {
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
 %func      = OpFunction %voidt None %vfunct
-%funcl     = OpLabel
 %preheader = OpLabel
 %init      = OpCopyObject %intt %zero
+             OpBranch %loop
 %loop      = OpLabel
 %i         = OpPhi %intt %init %preheader %loopi %loop
 %loopi     = OpIAdd %intt %i %one
@@ -919,9 +920,9 @@ TEST_F(Validate, PhiMissingTypeBad) {
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
 %func      = OpFunction %voidt None %vfunct
-%funcl     = OpLabel
 %preheader = OpLabel
 %init      = OpCopyObject %intt %zero
+             OpBranch %loop
 %loop      = OpLabel
 %i         = OpPhi %missing %init %preheader %loopi %loop
 %loopi     = OpIAdd %intt %i %one
@@ -947,9 +948,9 @@ TEST_F(Validate, PhiMissingIdBad) {
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
 %func      = OpFunction %voidt None %vfunct
-%funcl     = OpLabel
 %preheader = OpLabel
 %init      = OpCopyObject %intt %zero
+             OpBranch %loop
 %loop      = OpLabel
 %i         = OpPhi %intt %missing %preheader %loopi %loop
 %loopi     = OpIAdd %intt %i %one
@@ -975,9 +976,9 @@ TEST_F(Validate, PhiMissingLabelBad) {
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
 %func      = OpFunction %voidt None %vfunct
-%funcl     = OpLabel
 %preheader = OpLabel
 %init      = OpCopyObject %intt %zero
+             OpBranch %loop
 %loop      = OpLabel
 %i         = OpPhi %intt %init %missing %loopi %loop
 %loopi     = OpIAdd %intt %i %one

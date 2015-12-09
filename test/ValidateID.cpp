@@ -407,7 +407,7 @@ TEST_F(ValidateID, OpConstantGood) {
 %2 = OpConstant %1 1)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpConstantBad) {
+TEST_F(ValidateID, DISABLED_OpConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstant !1 !0)";
@@ -629,7 +629,7 @@ TEST_F(ValidateID, OpSpecConstantGood) {
 %2 = OpSpecConstant %1 42)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpSpecConstantBad) {
+TEST_F(ValidateID, DISABLED_OpSpecConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstant !1 !4)";

@@ -35,6 +35,7 @@
 #include "operand.h"
 #include "spirv_constant.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <functional>
@@ -51,6 +52,7 @@ using std::ostream_iterator;
 using std::string;
 using std::stringstream;
 using std::to_string;
+using std::transform;
 using std::unordered_set;
 using std::vector;
 
@@ -342,9 +344,9 @@ class ValidationState_t {
     return unresolved_forward_ids_.size();
   }
 
-  vector<uint32_t>
-  unresolvedForwardIds() const {
-    vector<uint32_t> out(begin(unresolved_forward_ids_), end(unresolved_forward_ids_));
+  vector<uint32_t> unresolvedForwardIds() const {
+    vector<uint32_t> out(begin(unresolved_forward_ids_),
+                         end(unresolved_forward_ids_));
     return out;
   }
 
@@ -445,6 +447,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
     case SpvOpBranch:
+    case SpvOpLoopMerge:
       out = [](unsigned) { return true; };
       break;
     case SpvOpGroupDecorate:
@@ -460,10 +463,6 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
 
     case SpvOpPhi:
       out = [](unsigned index) { return index > 1; };
-      break;
-
-    case SpvOpLoopMerge:
-      out = [](unsigned index) { return index == 0; };
       break;
 
     case SpvOpEnqueueKernel:
@@ -487,21 +486,21 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   return out;
 }
 
+// Improves diagnostic messages by collecting names of IDs
+// NOTE: This function returns void and is not involved in validation
 void DebugInstructionPass(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst) {
   switch (inst->opcode) {
     case SpvOpName: {
-        const uint32_t target = *(inst->words + inst->operands[0].offset);
-        const char* str = (const char*)(inst->words + inst->operands[1].offset);
-        _.assignNameToId(target, str);
-      }
-      break;
+      const uint32_t target = *(inst->words + inst->operands[0].offset);
+      const char* str = reinterpret_cast<const char*>(inst->words + inst->operands[1].offset);
+      _.assignNameToId(target, str);
+    } break;
     case SpvOpMemberName: {
-        const uint32_t target = *(inst->words + inst->operands[0].offset);
-        const char* str = (const char*)(inst->words + inst->operands[2].offset);
-        _.assignNameToId(target, str);
-      }
-      break;
+      const uint32_t target = *(inst->words + inst->operands[0].offset);
+      const char* str = reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
+      _.assignNameToId(target, str);
+    } break;
     case SpvOpSourceContinued:
     case SpvOpSource:
     case SpvOpSourceExtension:
@@ -567,14 +566,13 @@ spv_result_t spvValidate(const spv_const_context context,
     stringstream ss;
     vector<uint32_t> ids = vstate.unresolvedForwardIds();
 
-    transform(begin(ids), end(ids),
-              ostream_iterator<string>(ss, " "),
+    transform(begin(ids), end(ids), ostream_iterator<string>(ss, " "),
               bind(&ValidationState_t::getIdName, vstate, _1));
 
     auto id_str = ss.str();
     return vstate.diag(SPV_ERROR_INVALID_ID)
-      << "The following forward referenced IDs have not be defined:\n" <<
-      id_str.substr(0, id_str.size()-1);
+           << "The following forward referenced IDs have not be defined:\n"
+           << id_str.substr(0, id_str.size() - 1);
   }
 
   // NOTE: Copy each instruction for easier processing
