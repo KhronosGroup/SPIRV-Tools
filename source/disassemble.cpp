@@ -48,10 +48,9 @@ namespace {
 // representation.
 class Disassembler {
  public:
-  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t const* words,
+  Disassembler(const libspirv::AssemblyGrammar& grammar,
                uint32_t options)
-      : words_(words),
-        grammar_(grammar),
+      : grammar_(grammar),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
                spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
@@ -113,9 +112,6 @@ class Disassembler {
     if (color_) out_.get() << libspirv::clr::green();
   }
 
-  // The SPIR-V binary. The endianness is not necessarily converted
-  // to native endianness.
-  const uint32_t* const words_;
   const libspirv::AssemblyGrammar& grammar_;
   const bool print_;  // Should we also print to the standard output stream?
   const bool color_;  // Should we print in colour?
@@ -394,7 +390,7 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  Disassembler disassembler(grammar, code, options);
+  Disassembler disassembler(grammar, options);
   if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
                                   DisassembleHeader, DisassembleInstruction,
                                   pDiagnostic)) {

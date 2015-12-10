@@ -483,7 +483,7 @@ class HexFloat {
     // rounding rules.
     switch (dir) {
       case round_direction::kToZero:
-          break;
+        break;
       case round_direction::kToPositiveInfinity:
         round_away_from_zero = !isNegative();
         break;
@@ -493,7 +493,7 @@ class HexFloat {
       case round_direction::kToNearestEven:
         // Have to round down, round bit is 0
         if ((first_rounded_bit & significand) == 0) {
-            break;
+          break;
         }
         if (((significand & throwaway_mask) & ~first_rounded_bit) != 0) {
           // If any subsequent bit of the rounded portion is non-0 then we round
@@ -573,8 +573,9 @@ class HexFloat {
     if (is_nan) {
       typename other_T::uint_type shifted_significand;
       shifted_significand = static_cast<typename other_T::uint_type>(
-          negatable_left_shift<other_T::num_fraction_bits -
-                               num_fraction_bits>::val(significand));
+          negatable_left_shift<static_cast<int_type>(other_T::num_fraction_bits) -
+                               static_cast<int_type>(
+                                   num_fraction_bits)>::val(significand));
 
       // We are some sort of Nan. We try to keep the bit-pattern of the Nan
       // as close as possible. If we had to shift off bits so we are 0, then we
