@@ -75,4 +75,6 @@ std::string ValidateBase<T, OPTIONS>::getDiagnosticString() {
 
 template class spvtest::ValidateBase<std::pair<std::string, bool>,
                                      SPV_VALIDATE_SSA_BIT>;
+template class spvtest::ValidateBase<bool,
+                                    SPV_VALIDATE_SSA_BIT>;
 }
