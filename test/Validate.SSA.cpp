@@ -28,23 +28,22 @@
 
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
+#include "gmock/gmock.h"
 
 #include <sstream>
 #include <string>
 #include <utility>
 
+using ::testing::HasSubstr;
+
 using std::string;
 using std::pair;
 using std::stringstream;
+
 namespace {
 
 using Validate =
     spvtest::ValidateBase<pair<string, bool>, SPV_VALIDATE_SSA_BIT>;
-
-// Returns true if the substr is a substring of message
-bool ContainsString(const string &message, const string &substr) {
-  return std::string::npos != message.find(substr);
-}
 
 TEST_F(Validate, Default) {
   char str[] = R"(
@@ -75,7 +74,7 @@ TEST_F(Validate, IdUndefinedBad) {
     )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, IdRedefinedBad) {
@@ -102,7 +101,7 @@ TEST_F(Validate, DominateUsageBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "not_dominant"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("not_dominant"));
 }
 
 TEST_F(Validate, ForwardNameGood) {
@@ -127,7 +126,7 @@ TEST_F(Validate, ForwardNameMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "main"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("main"));
 }
 
 TEST_F(Validate, ForwardMemberNameGood) {
@@ -154,7 +153,7 @@ TEST_F(Validate, ForwardMemberNameMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "size"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("size"));
 }
 
 TEST_F(Validate, ForwardDecorateGood) {
@@ -186,7 +185,7 @@ TEST_F(Validate, ForwardDecorateInvalidIDBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, ForwardMemberDecorateGood) {
@@ -216,7 +215,7 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateGood) {
@@ -252,7 +251,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
@@ -271,7 +270,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
@@ -290,7 +289,7 @@ TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "group"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("group"));
 }
 
 TEST_F(Validate, ForwardDecorateInvalidIdBad) {
@@ -310,7 +309,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, FunctionCallGood) {
@@ -346,12 +345,12 @@ TEST_F(Validate, ForwardFunctionCallGood) {
 %3    =  OpTypeInt 32 0
 %four =  OpConstant %2 4
 %five =  OpConstant %3 5
+%8    =  OpTypeFunction %1 %2 %3
 %4    =  OpTypeFunction %1
 %5    =  OpFunction %1 None %4
 %6    =  OpLabel
 %7    =  OpFunctionCall %1 %9 %four %five
          OpFunctionEnd
-%8    =  OpTypeFunction %1 %2 %3
 %9    =  OpFunction %1 None %8
 %10   =  OpFunctionParameter %2
 %11   =  OpFunctionParameter %3
@@ -435,7 +434,7 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "conditional"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("conditional"));
 }
 
 TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
@@ -461,13 +460,16 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
+const string kHeader = R"(
+OpCapability Int8
+OpCapability DeviceEnqueue
+OpMemoryModel Logical GLSL450
+)";
+
 const string kBasicTypes = R"(
-           OpCapability Int8
-           OpCapability DeviceEnqueue
-           OpMemoryModel Logical GLSL450
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %int8t  =  OpTypeInt 8 0
@@ -519,7 +521,8 @@ const string kKernelDefinition = R"(
 )";
 
 TEST_F(Validate, EnqueueKernelGood) {
-  string str = kBasicTypes + kKernelTypesAndConstants + kKernelDefinition + R"(
+  string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
+               kKernelDefinition + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
                 )" +
@@ -535,7 +538,7 @@ TEST_F(Validate, EnqueueKernelGood) {
 }
 
 TEST_F(Validate, ForwardEnqueueKernelGood) {
-  string str = kBasicTypes + kKernelTypesAndConstants + R"(
+  string str = kHeader + kBasicTypes + kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
                 )" +
@@ -552,7 +555,7 @@ TEST_F(Validate, ForwardEnqueueKernelGood) {
 }
 
 TEST_F(Validate, EnqueueMissingFunctionBad) {
-  string str = kBasicTypes + "OpName %kfunc \"kfunc\"" +
+  string str = kHeader + "OpName %kfunc \"kfunc\"" + kBasicTypes +
                kKernelTypesAndConstants + R"(
                 %main   = OpFunction %voidt None %vfunct
                 %mainl  = OpLabel
@@ -566,7 +569,7 @@ TEST_F(Validate, EnqueueMissingFunctionBad) {
                  )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "kfunc"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("kfunc"));
 }
 
 string forwardKernelNonDominantParameterBaseCode(string name = string()) {
@@ -576,7 +579,7 @@ string forwardKernelNonDominantParameterBaseCode(string name = string()) {
   } else {
     op_name = "\nOpName %" + name + " \"" + name + "\"\n";
   }
-  string out = kBasicTypes + op_name + kKernelTypesAndConstants +
+  string out = kHeader + op_name + kBasicTypes + kKernelTypesAndConstants +
                kKernelDefinition +
                R"(
                 %main   = OpFunction %voidt None %vfunct
@@ -596,7 +599,7 @@ TEST_F(Validate, ForwardEnqueueKernelMissingParameter1Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
@@ -610,7 +613,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter2Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "dqueue2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("dqueue2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
@@ -624,7 +627,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter3Bad) {
                 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "ndval2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("ndval2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
@@ -638,7 +641,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter4Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "nevent2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("nevent2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
@@ -652,7 +655,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter5Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "event2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("event2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
@@ -666,7 +669,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter6Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "revent2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("revent2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
@@ -680,7 +683,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter8Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "firstp2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("firstp2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
@@ -694,7 +697,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter9Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "psize2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("psize2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
@@ -708,7 +711,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter10Bad) {
               )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "palign2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("palign2"));
 }
 
 TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
@@ -723,7 +726,7 @@ TEST_F(Validate, ForwardEnqueueKernelNonDominantParameter11Bad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "lsize2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("lsize2"));
 }
 
 static const bool kWithNDrange = true;
@@ -763,7 +766,7 @@ TEST_P(Validate, ForwardGetKernelGood) {
   string ndrange_param = with_ndrange ? " %ndval " : " ";
 
   // clang-format off
-  string str = kBasicTypes + kKernelTypesAndConstants +
+  string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
                R"(
             %main    = OpFunction %voidt None %vfunct
                 )"
@@ -790,7 +793,7 @@ TEST_P(Validate, ForwardGetKernelMissingDefinitionBad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
@@ -807,7 +810,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountMissingParameter1Bad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
@@ -826,7 +829,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter2Bad) {
   if (GetParam().second) {
     CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-    ASSERT_TRUE(ContainsString(getDiagnosticString(), "ndval2"));
+    ASSERT_THAT(getDiagnosticString(), HasSubstr("ndval2"));
   }
 }
 
@@ -845,7 +848,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter4Bad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "firstp2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("firstp2"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
@@ -863,7 +866,7 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter5Bad) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "psize2"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("psize2"));
 }
 
 TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
@@ -882,12 +885,12 @@ TEST_P(Validate, ForwardGetKernelNDrangeSubGroupCountNonDominantParameter6Bad) {
   if (GetParam().second) {
     CompileSuccessfully(ss.str());
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-    ASSERT_TRUE(ContainsString(getDiagnosticString(), "palign2"));
+    ASSERT_THAT(getDiagnosticString(), HasSubstr("palign2"));
   }
 }
 
 TEST_F(Validate, PhiGood) {
-  string str = kBasicTypes +
+  string str = kHeader + kBasicTypes +
                R"(
 %zero      = OpConstant %intt 0
 %one       = OpConstant %intt 1
@@ -913,9 +916,8 @@ TEST_F(Validate, PhiGood) {
 }
 
 TEST_F(Validate, PhiMissingTypeBad) {
-  string str = kBasicTypes +
+  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
                R"(
-             OpName %missing "missing"
 %zero      = OpConstant %intt 0
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
@@ -937,13 +939,12 @@ TEST_F(Validate, PhiMissingTypeBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, PhiMissingIdBad) {
-  string str = kBasicTypes +
+  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
                R"(
-             OpName %missing "missing"
 %zero      = OpConstant %intt 0
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
@@ -965,13 +966,12 @@ TEST_F(Validate, PhiMissingIdBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 TEST_F(Validate, PhiMissingLabelBad) {
-  string str = kBasicTypes +
+  string str = kHeader + "OpName %missing \"missing\"" + kBasicTypes +
                R"(
-             OpName %missing "missing"
 %zero      = OpConstant %intt 0
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
@@ -993,7 +993,7 @@ TEST_F(Validate, PhiMissingLabelBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  ASSERT_TRUE(ContainsString(getDiagnosticString(), "missing"));
+  ASSERT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
 // TODO(umar): OpGroupMemberDecorate
