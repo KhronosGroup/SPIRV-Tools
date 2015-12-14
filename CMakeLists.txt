@@ -115,6 +115,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_types.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/disassemble.cpp
@@ -128,6 +129,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_types.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
