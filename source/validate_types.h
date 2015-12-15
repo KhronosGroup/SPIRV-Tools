@@ -38,6 +38,14 @@
 
 namespace libspirv {
 
+// This enum represents the sections of a SPIRV module. The MODULE section
+// contains instructions who's scope spans the entire module. The FUNCTION
+// section includes SPIRV function and function definitions
+enum class ModuleLayoutSection {
+  kModule,    // < Module scope instructions are executed
+  kFunction,  // < Function scope instructions are executed
+};
+
 class ValidationState_t {
  public:
   ValidationState_t(spv_diagnostic* diag, uint32_t options);
@@ -75,6 +83,15 @@ class ValidationState_t {
   // Increments the instruction count. Used for diagnostic
   int incrementInstructionCount();
 
+  // Returns the current layout section which is being processed
+  ModuleLayoutSection getLayoutStage() const;
+
+  // Increments the module_layout_order_stage_
+  void progressToNextLayoutStageOrder();
+
+  // Determines if the op instruction is part of the current stage
+  bool isOpcodeInCurrentLayoutStage(SpvOp op);
+
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
  private:
@@ -92,6 +109,13 @@ class ValidationState_t {
   uint32_t validation_flags_;
 
   std::map<uint32_t, std::string> operand_names_;
+
+  // The stage which is being processed by the validation. Partially based on
+  // Section 2.4. Logical Layout of a Module
+  uint8_t module_layout_order_stage_;
+
+  // The section of the code being processed
+  ModuleLayoutSection current_layout_stage_;
 };
 }
 

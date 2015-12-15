@@ -75,6 +75,7 @@ typedef enum spv_result_t {
   SPV_ERROR_INVALID_LOOKUP = -9,
   SPV_ERROR_INVALID_ID = -10,
   SPV_ERROR_INVALID_CFG = -11,
+  SPV_ERROR_INVALID_LAYOUT = -12,
   SPV_FORCE_32_BIT_ENUM(spv_result_t)
 } spv_result_t;
 

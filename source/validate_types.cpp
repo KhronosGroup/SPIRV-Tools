@@ -24,21 +24,106 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "headers/spirv.h"
 #include "validate_types.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
+using std::find;
 using std::string;
-using std::vector;
 using std::unordered_set;
+using std::vector;
+
+namespace {
+const vector<vector<SpvOp>>& GetModuleOrder() {
+  // See Section 2.4
+  // clang-format off
+  static const vector<vector<SpvOp>> moduleOrder = {
+    {SpvOpCapability},
+    {SpvOpExtension},
+    {SpvOpExtInstImport},
+    {SpvOpMemoryModel},
+    {SpvOpEntryPoint},
+    {SpvOpExecutionMode},
+    {
+      // first set of debug instructions
+      SpvOpSourceContinued,
+      SpvOpSource,
+      SpvOpSourceExtension,
+      SpvOpString,
+    },
+    {
+      // second set of debug instructions
+      SpvOpName,
+      SpvOpMemberName
+    },
+    {
+      // annotation instructions
+      SpvOpDecorate,
+      SpvOpMemberDecorate,
+      SpvOpGroupDecorate,
+      SpvOpGroupMemberDecorate,
+      SpvOpDecorationGroup
+    },
+    {
+      // All type and constant instructions
+      SpvOpTypeVoid,
+      SpvOpTypeBool,
+      SpvOpTypeInt,
+      SpvOpTypeFloat,
+      SpvOpTypeVector,
+      SpvOpTypeMatrix,
+      SpvOpTypeImage,
+      SpvOpTypeSampler,
+      SpvOpTypeSampledImage,
+      SpvOpTypeArray,
+      SpvOpTypeRuntimeArray,
+      SpvOpTypeStruct,
+      SpvOpTypeOpaque,
+      SpvOpTypePointer,
+      SpvOpTypeFunction,
+      SpvOpTypeEvent,
+      SpvOpTypeDeviceEvent,
+      SpvOpTypeReserveId,
+      SpvOpTypeQueue,
+      SpvOpTypePipe,
+      SpvOpTypeForwardPointer,
+      SpvOpConstantTrue,
+      SpvOpConstantFalse,
+      SpvOpConstant,
+      SpvOpConstantComposite,
+      SpvOpConstantSampler,
+      SpvOpConstantNull,
+      SpvOpSpecConstantTrue,
+      SpvOpSpecConstantFalse,
+      SpvOpSpecConstant,
+      SpvOpSpecConstantComposite,
+      SpvOpSpecConstantOp,
+      SpvOpVariable,
+      SpvOpLine
+    }
+  };
+  // clang-format on
+
+  return moduleOrder;
+}
+}
 
 namespace libspirv {
 
 ValidationState_t::ValidationState_t(spv_diagnostic* diag, uint32_t options)
-    : diagnostic_(diag), instruction_counter_(0), validation_flags_(options) {}
+    : diagnostic_(diag),
+      instruction_counter_(0),
+      defined_ids_{},
+      unresolved_forward_ids_{},
+      validation_flags_(options),
+      operand_names_{},
+      module_layout_order_stage_(0),
+      current_layout_stage_(ModuleLayoutSection::kModule) {}
 
 spv_result_t ValidationState_t::defineId(uint32_t id) {
   if (defined_ids_.find(id) == end(defined_ids_)) {
@@ -82,7 +167,6 @@ vector<uint32_t> ValidationState_t::unresolvedForwardIds() const {
   return out;
 }
 
-//
 bool ValidationState_t::isDefinedId(uint32_t id) const {
   return defined_ids_.find(id) != end(defined_ids_);
 }
@@ -94,6 +178,24 @@ bool ValidationState_t::is_enabled(spv_validate_options_t flag) const {
 // Increments the instruction count. Used for diagnostic
 int ValidationState_t::incrementInstructionCount() {
   return instruction_counter_++;
+}
+
+ModuleLayoutSection ValidationState_t::getLayoutStage() const {
+  return current_layout_stage_;
+}
+
+void ValidationState_t::progressToNextLayoutStageOrder() {
+  module_layout_order_stage_ +=
+      module_layout_order_stage_ < GetModuleOrder().size();
+  if (module_layout_order_stage_ >= GetModuleOrder().size()) {
+    current_layout_stage_ = libspirv::ModuleLayoutSection::kFunction;
+  }
+}
+
+bool ValidationState_t::isOpcodeInCurrentLayoutStage(SpvOp op) {
+  const vector<SpvOp>& currentStage =
+      GetModuleOrder()[module_layout_order_stage_];
+  return end(currentStage) != find(begin(currentStage), end(currentStage), op);
 }
 
 libspirv::DiagnosticStream ValidationState_t::diag(
