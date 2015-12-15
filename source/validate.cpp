@@ -436,6 +436,109 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
+// TODO(umar): Check MemoryModel is in module
+// TODO(umar): Check OpVariable storage class is not function in module section
+// TODO(umar): Make sure function declarations appear before function
+// definitions
+// TODO(umar): Better error messages
+// NOTE: This function does not handle CFG related validation
+// Performs logical layout validation. See Section 2.4
+spv_result_t ModuleLayoutPass(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  if (_.is_enabled(SPV_VALIDATE_LAYOUT_BIT)) {
+    SpvOp opcode = inst->opcode;
+
+    if (libspirv::ModuleLayoutSection::kModule == _.getLayoutStage()) {
+      // Module scoped instructions are processed by determining if the opcode
+      // is part of the current stage. If it is not then the next stage is
+      // checked.
+      while (_.isOpcodeInCurrentLayoutStage(opcode) == false) {
+        // TODO(umar): Check if the MemoryModel instruction has executed
+        _.progressToNextLayoutStageOrder();
+        if (_.getLayoutStage() == libspirv::ModuleLayoutSection::kFunction) {
+          // All module stages have been processed. Recursivly call
+          // ModuleLayoutPass
+          // to process the next section of the module
+          return ModuleLayoutPass(_, inst);
+        }
+      }
+    } else {
+      // Validate the function layout.
+      switch (opcode) {
+        case SpvOpCapability:
+        case SpvOpExtension:
+        case SpvOpExtInstImport:
+        case SpvOpMemoryModel:
+        case SpvOpEntryPoint:
+        case SpvOpExecutionMode:
+        case SpvOpSourceContinued:
+        case SpvOpSource:
+        case SpvOpSourceExtension:
+        case SpvOpString:
+        case SpvOpName:
+        case SpvOpMemberName:
+        case SpvOpDecorate:
+        case SpvOpMemberDecorate:
+        case SpvOpGroupDecorate:
+        case SpvOpGroupMemberDecorate:
+        case SpvOpDecorationGroup:
+        case SpvOpTypeVoid:
+        case SpvOpTypeBool:
+        case SpvOpTypeInt:
+        case SpvOpTypeFloat:
+        case SpvOpTypeVector:
+        case SpvOpTypeMatrix:
+        case SpvOpTypeImage:
+        case SpvOpTypeSampler:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeArray:
+        case SpvOpTypeRuntimeArray:
+        case SpvOpTypeStruct:
+        case SpvOpTypeOpaque:
+        case SpvOpTypePointer:
+        case SpvOpTypeFunction:
+        case SpvOpTypeEvent:
+        case SpvOpTypeDeviceEvent:
+        case SpvOpTypeReserveId:
+        case SpvOpTypeQueue:
+        case SpvOpTypePipe:
+        case SpvOpTypeForwardPointer:
+        case SpvOpConstantTrue:
+        case SpvOpConstantFalse:
+        case SpvOpConstant:
+        case SpvOpConstantComposite:
+        case SpvOpConstantSampler:
+        case SpvOpConstantNull:
+        case SpvOpSpecConstantTrue:
+        case SpvOpSpecConstantFalse:
+        case SpvOpSpecConstant:
+        case SpvOpSpecConstantComposite:
+        case SpvOpSpecConstantOp:
+          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Invalid Layout";
+        case SpvOpVariable: {
+          const uint32_t* storage_class =
+              inst->words + inst->operands[2].offset;
+          if (*storage_class != SpvStorageClassFunction)
+            return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                   << "All OpVariable instructions in a function must have a "
+                      "storage class of Function[7]";
+          break;
+        }
+        default:
+          return SPV_SUCCESS;
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+// Shame
+#define CHECK_RESULT(EXPRESSION)                \
+  do{                                           \
+    spv_result_t ret = EXPRESSION;              \
+    if(ret) return ret;                         \
+} while(false);
+
 spv_result_t ProcessInstructions(void* user_data,
                                  const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
@@ -447,10 +550,13 @@ spv_result_t ProcessInstructions(void* user_data,
   DebugInstructionPass(_, inst);
 
   // TODO(umar): Perform CFG pass
-  // TODO(umar): Perform logical layout validation pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-  return SsaPass(_, can_have_forward_declared_ids, inst);
+  spv_result_t ret = SPV_SUCCESS;
+  CHECK_RESULT(ModuleLayoutPass(_, inst))
+  CHECK_RESULT(SsaPass(_, can_have_forward_declared_ids, inst))
+
+  return ret;
 }
 
 } // anonymous namespace

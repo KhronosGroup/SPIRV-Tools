@@ -224,6 +224,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/TextWordGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/UnitSPIRV.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateFixtures.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.Layout.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/Validate.SSA.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)

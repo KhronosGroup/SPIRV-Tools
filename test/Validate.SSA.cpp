@@ -43,7 +43,8 @@ using std::stringstream;
 namespace {
 
 using Validate =
-    spvtest::ValidateBase<pair<string, bool>, SPV_VALIDATE_SSA_BIT>;
+    spvtest::ValidateBase<pair<string, bool>,
+                          SPV_VALIDATE_SSA_BIT | SPV_VALIDATE_LAYOUT_BIT>;
 
 TEST_F(Validate, Default) {
   char str[] = R"(
