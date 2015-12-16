@@ -38,12 +38,116 @@
 
 namespace libspirv {
 
-// This enum represents the sections of a SPIRV module. The MODULE section
-// contains instructions who's scope spans the entire module. The FUNCTION
-// section includes SPIRV function and function definitions
-enum class ModuleLayoutSection {
-  kModule,    // < Module scope instructions are executed
-  kFunction,  // < Function scope instructions are executed
+// This enum represents the sections of a SPIRV module. See section 2.4
+// of the SPIRV spec for additional details of the order. The enumerant values
+// are in the same order as the vector returned by GetModuleOrder
+enum ModuleLayoutSection {
+  kLayoutCapabilities,          // < Section 2.4 #1
+  kLayoutExtensions,            // < Section 2.4 #2
+  kLayoutExtInstImport,         // < Section 2.4 #3
+  kLayoutMemoryModel,           // < Section 2.4 #4
+  kLayoutEntryPoint,            // < Section 2.4 #5
+  kLayoutExecutionMode,         // < Section 2.4 #6
+  kLayoutDebug1,                // < Section 2.4 #7 > 1
+  kLayoutDebug2,                // < Section 2.4 #7 > 2
+  kLayoutAnnotations,           // < Section 2.4 #8
+  kLayoutTypes,                 // < Section 2.4 #9
+  kLayoutFunctionDeclarations,  // < Section 2.4 #10
+  kLayoutFunctionDefinitions    // < Section 2.4 #11
+};
+
+enum class FunctionDecl {
+  kFunctionDeclUnknown,      // < Unknown function declaration
+  kFunctionDeclDeclaration,  // < Function declaration
+  kFunctionDeclDefinition    // < Function definition
+};
+
+class ValidationState_t;
+
+// This class manages all function declaration and definitions in a module. It
+// handles the state and id information while parsing a function in the SPIR-V
+// binary.
+//
+// NOTE: This class is designed to be a Structure of Arrays. Therefore each
+// member variable is a vector whose elements represent the values for the
+// corresponding function in a SPIR-V module. Variables that are not vector
+// types are used to manage the state while parsing the function.
+class Functions {
+ public:
+  Functions(ValidationState_t& module);
+
+  // Registers the function in the module. Subsequent instructions will be
+  // called against this function
+  spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
+                                uint32_t function_control,
+                                uint32_t function_type_id);
+
+  // Registers a function parameter in the current function
+  spv_result_t RegisterFunctionParameter(uint32_t id, uint32_t type_id);
+
+  // Register a function end instruction
+  spv_result_t RegisterFunctionEnd();
+
+  // Sets the declaration type of the current function
+  spv_result_t RegisterSetFunctionDeclType(FunctionDecl type);
+
+  // Registers a block in the current function. Subsequent block instructions
+  // will target this block
+  // @param id The ID of the label of the block
+  spv_result_t RegisterBlock(uint32_t id);
+
+  // Registers a variable in the current block
+  spv_result_t RegisterBlockVariable(uint32_t type_id, uint32_t id,
+                                     SpvStorageClass storage, uint32_t init_id);
+
+  spv_result_t RegisterBlockLoopMerge(uint32_t merge_id, uint32_t continue_id,
+                                      SpvLoopControlMask control);
+
+  spv_result_t RegisterBlockSelectionMerge(uint32_t merge_id,
+                                           SpvSelectionControlMask control);
+
+  // Registers the end of the block
+  spv_result_t RegisterBlockEnd();
+
+  // Returns the number of blocks in the current function being parsed
+  size_t get_block_count();
+
+  // Retuns true if called after a function instruction but before the
+  // function end instruction
+  bool in_function_body() const;
+
+  // Returns true if called after a label instruction but before a branch
+  // instruction
+  bool in_block() const;
+
+  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+
+ private:
+  // Parent module
+  ValidationState_t& module_;
+
+  // Funciton IDs in a module
+  std::vector<uint32_t> id_;
+
+  // OpTypeFunction IDs of each of the id_ functions
+  std::vector<uint32_t> type_id_;
+
+  // The type of declaration of each function
+  std::vector<FunctionDecl> declaration_type_;
+
+  // TODO(umar): Probably needs better abstractions
+  // The beginning of the block of functions
+  std::vector<std::vector<uint32_t>> block_ids_;
+
+  // The variable IDs of the functions
+  std::vector<std::vector<uint32_t>> variable_ids_;
+
+  // The function parameter ids of the functions
+  std::vector<std::vector<uint32_t>> parameter_ids_;
+
+  // NOTE: See correspoding getter functions
+  bool in_function_;
+  bool in_block_;
 };
 
 class ValidationState_t {
@@ -94,6 +198,17 @@ class ValidationState_t {
 
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
+  // Returns the function states
+  Functions& get_functions();
+
+  // Retuns true if the called after a function instruction but before the
+  // function end instruction
+  bool in_function_body() const;
+
+  // Returns true if called after a label instruction but before a branch
+  // instruction
+  bool in_block() const;
+
  private:
   spv_diagnostic* diagnostic_;
   // Tracks the number of instructions evaluated by the validator
@@ -110,12 +225,12 @@ class ValidationState_t {
 
   std::map<uint32_t, std::string> operand_names_;
 
-  // The stage which is being processed by the validation. Partially based on
-  // Section 2.4. Logical Layout of a Module
-  uint32_t module_layout_order_stage_;
-
   // The section of the code being processed
   ModuleLayoutSection current_layout_stage_;
+
+  Functions module_functions_;
+
+  std::vector<SpvCapability> module_capabilities_;
 };
 }
 

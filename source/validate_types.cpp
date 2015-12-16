@@ -28,6 +28,7 @@
 #include "validate_types.h"
 
 #include <algorithm>
+#include <cassert>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -115,16 +116,15 @@ const vector<vector<SpvOp>>& GetModuleOrder() {
 
 namespace libspirv {
 
-ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
-                                     uint32_t options)
-    : diagnostic_(diagnostic),
+ValidationState_t::ValidationState_t(spv_diagnostic* diag, uint32_t options)
+    : diagnostic_(diag),
       instruction_counter_(0),
       defined_ids_{},
       unresolved_forward_ids_{},
       validation_flags_(options),
       operand_names_{},
-      module_layout_order_stage_(0),
-      current_layout_stage_(ModuleLayoutSection::kModule) {}
+      current_layout_stage_(kLayoutCapabilities),
+      module_functions_(*this) {}
 
 spv_result_t ValidationState_t::defineId(uint32_t id) {
   if (defined_ids_.find(id) == end(defined_ids_)) {
@@ -186,23 +186,134 @@ ModuleLayoutSection ValidationState_t::getLayoutStage() const {
 }
 
 void ValidationState_t::progressToNextLayoutStageOrder() {
-  module_layout_order_stage_ +=
-      module_layout_order_stage_ < GetModuleOrder().size();
-  if (module_layout_order_stage_ >= GetModuleOrder().size()) {
-    current_layout_stage_ = libspirv::ModuleLayoutSection::kFunction;
+  if (current_layout_stage_ <= GetModuleOrder().size()) {
+    current_layout_stage_ =
+        static_cast<ModuleLayoutSection>(current_layout_stage_ + 1);
   }
 }
 
 bool ValidationState_t::isOpcodeInCurrentLayoutStage(SpvOp op) {
-  const vector<SpvOp>& currentStage =
-      GetModuleOrder()[module_layout_order_stage_];
+  const vector<SpvOp>& currentStage = GetModuleOrder()[current_layout_stage_];
   return end(currentStage) != find(begin(currentStage), end(currentStage), op);
 }
 
-libspirv::DiagnosticStream ValidationState_t::diag(
-    spv_result_t error_code) const {
+DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
   return libspirv::DiagnosticStream(
       {0, 0, static_cast<size_t>(instruction_counter_)}, diagnostic_,
       error_code);
+}
+
+Functions& ValidationState_t::get_functions() { return module_functions_; }
+
+bool ValidationState_t::in_function_body() const {
+  return module_functions_.in_function_body();
+}
+
+bool ValidationState_t::in_block() const {
+  return module_functions_.in_block();
+}
+
+Functions::Functions(ValidationState_t& module)
+    : module_(module), in_function_(false), in_block_(false) {}
+
+bool Functions::in_function_body() const { return in_function_; }
+
+bool Functions::in_block() const { return in_block_; }
+
+spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
+                                         uint32_t function_control,
+                                         uint32_t function_type_id) {
+  assert(in_function_ == false &&
+         "Function instructions can not be declared in a function");
+  in_function_ = true;
+  id_.emplace_back(id);
+  type_id_.emplace_back(function_type_id);
+  declaration_type_.emplace_back(FunctionDecl::kFunctionDeclUnknown);
+  block_ids_.emplace_back();
+  variable_ids_.emplace_back();
+  parameter_ids_.emplace_back();
+
+  // TODO(umar): validate function type and type_id
+  (void)ret_type_id;
+  (void)function_control;
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
+                                                  uint32_t type_id) {
+  assert(in_function_ == true &&
+         "Function parameter instructions cannot be declared outside of a function");
+  if (in_block()) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function parameters cannot be called in blocks";
+  }
+  if (block_ids_.back().size() != 0) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function parameters must only appear immediatly after the "
+              "function definition";
+  }
+  // TODO(umar): Validate function parameter type order and count
+  // TODO(umar): Use these variables to validate parameter type
+  (void)id;
+  (void)type_id;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
+  assert(in_function_ == true && "Function can not be declared inside of another function");
+  if (declaration_type_.size() <= 1 || type == *(end(declaration_type_) - 2) ||
+      type == FunctionDecl::kFunctionDeclDeclaration) {
+    declaration_type_.back() = type;
+  } else if (type == FunctionDecl::kFunctionDeclDeclaration) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function declartions must appear before function definitions";
+  } else {
+    declaration_type_.back() = type;
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterBlock(uint32_t id) {
+  assert(in_function_ == true && "Labels can only exsist in functions");
+  if (module_.getLayoutStage() ==
+      ModuleLayoutSection::kLayoutFunctionDeclarations) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function declartions must appear before function definitions";
+  }
+  if (declaration_type_.back() != FunctionDecl::kFunctionDeclDefinition) {
+    // NOTE: This should not happen. We should know that this function is a
+    // definition at this point.
+    return module_.diag(SPV_ERROR_INTERNAL)
+           << "Function declaration type should have already been defined";
+  }
+
+  block_ids_.back().push_back(id);
+  in_block_ = true;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterFunctionEnd() {
+  assert(in_function_ == true &&
+         "Function end can only be called in functions");
+  if (in_block()) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function end cannot be called in blocks";
+  }
+  in_function_ = false;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterBlockEnd() {
+  assert(in_block_ == true &&
+         "Branch instruction can only be called in a block");
+  in_block_ = false;
+  return SPV_SUCCESS;
+}
+
+size_t Functions::get_block_count() {
+  assert(in_function_ == true &&
+         "Branch instruction can only be called in a block");
+  return block_ids_.back().size();
 }
 }

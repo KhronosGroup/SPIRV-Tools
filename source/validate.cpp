@@ -58,6 +58,10 @@ using std::unordered_set;
 using std::vector;
 
 using libspirv::ValidationState_t;
+using libspirv::kLayoutFunctionDeclarations;
+using libspirv::kLayoutFunctionDefinitions;
+using libspirv::kLayoutMemoryModel;
+using libspirv::FunctionDecl;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -436,10 +440,7 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
-// TODO(umar): Check MemoryModel is in module
-// TODO(umar): Check OpVariable storage class is not function in module section
-// TODO(umar): Make sure function declarations appear before function
-// definitions
+// TODO(umar): Check linkage capabilities for function declarations
 // TODO(umar): Better error messages
 // NOTE: This function does not handle CFG related validation
 // Performs logical layout validation. See Section 2.4
@@ -448,22 +449,38 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
   if (_.is_enabled(SPV_VALIDATE_LAYOUT_BIT)) {
     SpvOp opcode = inst->opcode;
 
-    if (libspirv::ModuleLayoutSection::kModule == _.getLayoutStage()) {
+    if (_.getLayoutStage() < kLayoutFunctionDeclarations) {
       // Module scoped instructions are processed by determining if the opcode
       // is part of the current stage. If it is not then the next stage is
       // checked.
       while (_.isOpcodeInCurrentLayoutStage(opcode) == false) {
-        // TODO(umar): Check if the MemoryModel instruction has executed
         _.progressToNextLayoutStageOrder();
-        if (_.getLayoutStage() == libspirv::ModuleLayoutSection::kFunction) {
+
+        if (_.getLayoutStage() == kLayoutMemoryModel &&
+            opcode != SpvOpMemoryModel) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                 << spvOpcodeString(opcode)
+                 << " cannot appear before the memory model instruction";
+        }
+
+        if (_.getLayoutStage() == kLayoutFunctionDeclarations) {
           // All module stages have been processed. Recursivly call
-          // ModuleLayoutPass
-          // to process the next section of the module
+          // ModuleLayoutPass to process the next section of the module
           return ModuleLayoutPass(_, inst);
         }
       }
+
+      if (opcode == SpvOpVariable) {
+        const uint32_t* storage_class = inst->words + inst->operands[2].offset;
+        if (*storage_class == SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                 << "Variables cannot have a function[7] storage class "
+                    "outside of a function";
+        }
+      }
     } else {
-      // Validate the function layout.
+      // This ensures no module instructions are called during function
+      // declarations
       switch (opcode) {
         case SpvOpCapability:
         case SpvOpExtension:
@@ -520,24 +537,117 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
               inst->words + inst->operands[2].offset;
           if (*storage_class != SpvStorageClassFunction)
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                   << "All OpVariable instructions in a function must have a "
-                      "storage class of Function[7]";
-          break;
-        }
+                   << "All Variable instructions in a function must have a "
+                      "storage class of function[7]";
+        } break;
         default:
-          return SPV_SUCCESS;
+          break;
       }
+      if (_.getLayoutStage() == kLayoutFunctionDeclarations) {
+        switch (opcode) {
+          case SpvOpFunction:
+            if (_.in_function_body()) {
+              return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                     << "Cannot declare a function in a function body";
+            }
+            spvCheckReturn(_.get_functions().RegisterFunction(
+                inst->result_id, inst->type_id,
+                inst->words[inst->operands[2].offset],
+                inst->words[inst->operands[3].offset]));
+            break;
+          case SpvOpFunctionParameter:
+            if (_.in_function_body() == false) {
+              return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function parameter "
+                                                         "instructions must be "
+                                                         "in a function body";
+            }
+            spvCheckReturn(_.get_functions().RegisterFunctionParameter(
+                inst->result_id, inst->type_id));
+            break;
+          case SpvOpLine:  // ??
+            break;
+          case SpvOpLabel:
+            if (_.in_function_body() == false) {
+              return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                     << "Label instructions must be in a function body";
+            }
+            _.progressToNextLayoutStageOrder();
+            spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
+                FunctionDecl::kFunctionDeclDefinition));
+            break;
+          case SpvOpFunctionEnd:
+            assert(_.get_functions().get_block_count() ==
+                       0  // NOTE: This should not happen
+                   &&
+                   "Function contains blocks in function declaration section.");
+            if (_.in_function_body() == false) {
+              return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                     << "Function end instructions must be in a function body";
+            }
+            spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
+                FunctionDecl::kFunctionDeclDeclaration));
+            spvCheckReturn(_.get_functions().RegisterFunctionEnd());
+            break;
+          default:
+            return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                   << "A function must begin with a label";
+            break;
+        }
+      }
+      // NOTE: Function definitions are handled by the CFGPass
     }
   }
   return SPV_SUCCESS;
 }
 
-// Shame
-#define CHECK_RESULT(EXPRESSION)                \
-  do{                                           \
-    spv_result_t ret = EXPRESSION;              \
-    if(ret) return ret;                         \
-} while(false);
+// TODO(umar): Support for merge instructions
+// TODO(umar): Structured control flow checks
+spv_result_t CfgPass(ValidationState_t& _,
+                     const spv_parsed_instruction_t* inst) {
+  if (_.getLayoutStage() == kLayoutFunctionDefinitions) {
+    SpvOp opcode = inst->opcode;
+    switch (opcode) {
+      case SpvOpFunction:
+        spvCheckReturn(_.get_functions().RegisterFunction(
+            inst->result_id, inst->type_id,
+            inst->words[inst->operands[2].offset],
+            inst->words[inst->operands[3].offset]));
+        spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
+            FunctionDecl::kFunctionDeclDefinition));
+        break;
+      case SpvOpFunctionParameter:
+        spvCheckReturn(_.get_functions().RegisterFunctionParameter(
+            inst->result_id, inst->type_id));
+        break;
+      case SpvOpFunctionEnd:
+        if (_.get_functions().get_block_count() == 0)
+          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function declarations "
+                                                     "must appear before "
+                                                     "function definitions.";
+        spvCheckReturn(_.get_functions().RegisterFunctionEnd());
+        break;
+      case SpvOpLabel:
+        spvCheckReturn(_.get_functions().RegisterBlock(inst->result_id));
+        break;
+      case SpvOpBranch:
+      case SpvOpBranchConditional:
+      case SpvOpSwitch:
+      case SpvOpKill:
+      case SpvOpReturn:
+      case SpvOpReturnValue:
+      case SpvOpUnreachable:
+        spvCheckReturn(_.get_functions().RegisterBlockEnd());
+        break;
+      default:
+        if (_.in_block() == false) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT) << spvOpcodeString(opcode)
+                                                  << " must appear in a block";
+        }
+        break;
+    }
+  }
+  return SPV_SUCCESS;
+}
 
 spv_result_t ProcessInstructions(void* user_data,
                                  const spv_parsed_instruction_t* inst) {
@@ -549,16 +659,16 @@ spv_result_t ProcessInstructions(void* user_data,
 
   DebugInstructionPass(_, inst);
 
-  // TODO(umar): Perform CFG pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-  CHECK_RESULT(ModuleLayoutPass(_, inst))
-  CHECK_RESULT(SsaPass(_, can_have_forward_declared_ids, inst))
+  spvCheckReturn(ModuleLayoutPass(_, inst));
+  spvCheckReturn(CfgPass(_, inst));
+  spvCheckReturn(SsaPass(_, can_have_forward_declared_ids, inst));
 
   return SPV_SUCCESS;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary, const uint32_t options,
@@ -581,12 +691,9 @@ spv_result_t spvValidate(const spv_const_context context,
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(pDiagnostic, options);
-  auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
-                            setHeader, ProcessInstructions, pDiagnostic);
-
-  if (err) {
-    return err;
-  }
+  spvCheckReturn(spvBinaryParse(context, &vstate, binary->code,
+                                binary->wordCount, setHeader,
+                                ProcessInstructions, pDiagnostic));
 
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the processInstructions pass to make
