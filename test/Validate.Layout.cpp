@@ -206,7 +206,7 @@ TEST_P(ValidateLayout, Layout) {
   }
 }
 
-TEST_F(ValidateLayout, DISABLED_MemoryModelMissing) {
+TEST_F(ValidateLayout, MemoryModelMissing) {
   string str = R"(
     OpCapability Matrix
     OpExtension "TestExtension"
@@ -214,6 +214,41 @@ TEST_F(ValidateLayout, DISABLED_MemoryModelMissing) {
     OpEntryPoint GLCompute %func ""
     OpExecutionMode %func LocalSize 1 1 1
     )";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+}
+
+TEST_F(ValidateLayout, VariableFunctionStorageGood) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpDecorate %var Restrict
+%intt   = OpTypeInt 32 1
+%voidt  = OpTypeVoid
+%vfunct = OpTypeFunction %voidt
+%ptrt   = OpTypePointer Function %intt
+%func   = OpFunction %voidt None %vfunct
+%var    = OpVariable %ptrt Function
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+TEST_F(ValidateLayout, VariableFunctionStorageBad) {
+  char str[] = R"(
+          OpMemoryModel Logical GLSL450
+          OpDecorate %var Restrict
+%intt   = OpTypeInt 32 1
+%voidt  = OpTypeVoid
+%vfunct = OpTypeFunction %voidt
+%ptrt   = OpTypePointer Function %intt
+%var    = OpVariable %ptrt Function     ; Invalid storage class for OpVariable
+%func   = OpFunction %voidt None %vfunct
+          OpReturn
+          OpFunctionEnd
+)";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());

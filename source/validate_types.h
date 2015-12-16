@@ -41,10 +41,22 @@ namespace libspirv {
 // This enum represents the sections of a SPIRV module. The MODULE section
 // contains instructions who's scope spans the entire module. The FUNCTION
 // section includes SPIRV function and function definitions
-enum class ModuleLayoutSection {
-  kModule,    // < Module scope instructions are executed
-  kFunction,  // < Function scope instructions are executed
+// clang-format off
+enum ModuleLayoutSection {
+  kLayoutCapabilities         = 0,  // < Section 2.4 #1
+  kLayoutExtensions           = 1,  // < Section 2.4 #2
+  kLayoutExtInstImport        = 2,  // < Section 2.4 #3
+  kLayoutMemoryModel          = 3,  // < Section 2.4 #4
+  kLayoutEntryPoint           = 4,  // < Section 2.4 #5
+  kLayoutExecutionMode        = 5,  // < Section 2.4 #6
+  kLayoutDebug1               = 6,  // < Section 2.4 #7 > 1
+  kLayoutDebug2               = 7,  // < Section 2.4 #7 > 2
+  kLayoutAnnotations          = 8,  // < Section 2.4 #8
+  kLayoutTypes                = 9,  // < Section 2.4 #9
+  kLayoutFunctionDeclarations = 10, // < Section 2.4 #10
+  kLayoutFunctionDefinitions  = 11  // < Section 2.4 #11
 };
+// clang-format on
 
 class ValidationState_t {
  public:
@@ -110,13 +122,11 @@ class ValidationState_t {
 
   std::map<uint32_t, std::string> operand_names_;
 
-  // The stage which is being processed by the validation. Partially based on
-  // Section 2.4. Logical Layout of a Module
-  uint32_t module_layout_order_stage_;
-
   // The section of the code being processed
   ModuleLayoutSection current_layout_stage_;
 };
+
+const std::vector<SpvOp>& getModuleOrderInstructions(uint8_t order);
 }
 
 #endif

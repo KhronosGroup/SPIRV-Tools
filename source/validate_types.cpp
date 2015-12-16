@@ -115,16 +115,19 @@ const vector<vector<SpvOp>>& GetModuleOrder() {
 
 namespace libspirv {
 
-ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
-                                     uint32_t options)
-    : diagnostic_(diagnostic),
+const vector<SpvOp>&
+getModuleOrderInstructions(uint8_t order) {
+  return GetModuleOrder()[order];
+}
+
+ValidationState_t::ValidationState_t(spv_diagnostic* diag, uint32_t options)
+    : diagnostic_(diag),
       instruction_counter_(0),
       defined_ids_{},
       unresolved_forward_ids_{},
       validation_flags_(options),
       operand_names_{},
-      module_layout_order_stage_(0),
-      current_layout_stage_(ModuleLayoutSection::kModule) {}
+      current_layout_stage_(kLayoutCapabilities) {}
 
 spv_result_t ValidationState_t::defineId(uint32_t id) {
   if (defined_ids_.find(id) == end(defined_ids_)) {
@@ -186,16 +189,14 @@ ModuleLayoutSection ValidationState_t::getLayoutStage() const {
 }
 
 void ValidationState_t::progressToNextLayoutStageOrder() {
-  module_layout_order_stage_ +=
-      module_layout_order_stage_ < GetModuleOrder().size();
-  if (module_layout_order_stage_ >= GetModuleOrder().size()) {
-    current_layout_stage_ = libspirv::ModuleLayoutSection::kFunction;
+  if (current_layout_stage_ <= GetModuleOrder().size()) {
+    current_layout_stage_ = (ModuleLayoutSection) (current_layout_stage_ + 1);
   }
 }
 
 bool ValidationState_t::isOpcodeInCurrentLayoutStage(SpvOp op) {
   const vector<SpvOp>& currentStage =
-      GetModuleOrder()[module_layout_order_stage_];
+    GetModuleOrder()[current_layout_stage_];
   return end(currentStage) != find(begin(currentStage), end(currentStage), op);
 }
 

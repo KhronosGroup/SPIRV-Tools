@@ -58,6 +58,8 @@ using std::unordered_set;
 using std::vector;
 
 using libspirv::ValidationState_t;
+using libspirv::kLayoutFunctionDeclarations;
+using libspirv::kLayoutMemoryModel;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -436,8 +438,6 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
-// TODO(umar): Check MemoryModel is in module
-// TODO(umar): Check OpVariable storage class is not function in module section
 // TODO(umar): Make sure function declarations appear before function
 // definitions
 // TODO(umar): Better error messages
@@ -448,18 +448,33 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
   if (_.is_enabled(SPV_VALIDATE_LAYOUT_BIT)) {
     SpvOp opcode = inst->opcode;
 
-    if (libspirv::ModuleLayoutSection::kModule == _.getLayoutStage()) {
+    if (_.getLayoutStage() < kLayoutFunctionDeclarations) {
       // Module scoped instructions are processed by determining if the opcode
       // is part of the current stage. If it is not then the next stage is
       // checked.
       while (_.isOpcodeInCurrentLayoutStage(opcode) == false) {
-        // TODO(umar): Check if the MemoryModel instruction has executed
         _.progressToNextLayoutStageOrder();
-        if (_.getLayoutStage() == libspirv::ModuleLayoutSection::kFunction) {
+
+        if (_.getLayoutStage() == kLayoutMemoryModel &&
+            opcode != SpvOpMemoryModel) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                 << spvOpcodeString(opcode)
+                 << " cannot appear before the memory model instruction";
+        }
+
+        if (_.getLayoutStage() == kLayoutFunctionDeclarations) {
           // All module stages have been processed. Recursivly call
-          // ModuleLayoutPass
-          // to process the next section of the module
+          // ModuleLayoutPass to process the next section of the module
           return ModuleLayoutPass(_, inst);
+        }
+      }
+
+      if (opcode == SpvOpVariable) {
+        const uint32_t* storage_class = inst->words + inst->operands[2].offset;
+        if (*storage_class == 7) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                 << "Variables can not have a function[7] storage class "
+                    "outside of a function";
         }
       }
     } else {
@@ -521,7 +536,8 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
           if (*storage_class != SpvStorageClassFunction)
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
                    << "All OpVariable instructions in a function must have a "
-                      "storage class of Function[7]";
+                      "storage class of function[7]";
+          }
           break;
         }
         default:
