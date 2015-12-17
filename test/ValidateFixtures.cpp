@@ -29,6 +29,10 @@
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
+#include <functional>
+#include <utility>
+#include <tuple>
+
 namespace spvtest {
 
 template <typename T, uint32_t OPTIONS>
@@ -74,5 +78,11 @@ std::string ValidateBase<T, OPTIONS>::getDiagnosticString() {
 }
 
 template class spvtest::ValidateBase<std::pair<std::string, bool>,
-                                     SPV_VALIDATE_SSA_BIT>;
+                                     SPV_VALIDATE_SSA_BIT |
+                                         SPV_VALIDATE_LAYOUT_BIT>;
+template class spvtest::ValidateBase<bool, SPV_VALIDATE_SSA_BIT>;
+template class spvtest::ValidateBase<
+    std::tuple<int, std::tuple<std::string, std::function<bool(int)>,
+                               std::function<bool(int)>>>,
+    SPV_VALIDATE_LAYOUT_BIT>;
 }

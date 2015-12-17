@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "validate.h"
+#include "validate_types.h"
 
 #include "binary.h"
 #include "diagnostic.h"
@@ -56,6 +57,7 @@ using std::transform;
 using std::unordered_set;
 using std::vector;
 
+using libspirv::ValidationState_t;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -303,90 +305,6 @@ spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
   return SPV_SUCCESS;
 }
 
-// TODO(umar): Move this class to another file
-class ValidationState_t {
- public:
-  ValidationState_t(spv_diagnostic* diag, uint32_t options)
-      : diagnostic_(diag),
-        instruction_counter_(0),
-        validation_flags_(options) {}
-
-  spv_result_t definedIds(uint32_t id) {
-    if (defined_ids_.find(id) == std::end(defined_ids_)) {
-      defined_ids_.insert(id);
-    } else {
-      return diag(SPV_ERROR_INVALID_ID)
-             << "ID cannot be assigned multiple times";
-    }
-    return SPV_SUCCESS;
-  }
-
-  spv_result_t forwardDeclareId(uint32_t id) {
-    unresolved_forward_ids_.insert(id);
-    return SPV_SUCCESS;
-  }
-
-  spv_result_t removeIfForwardDeclared(uint32_t id) {
-    unresolved_forward_ids_.erase(id);
-    return SPV_SUCCESS;
-  }
-
-  void assignNameToId(uint32_t id, string name) { operand_names[id] = name; }
-
-  string getIdName(uint32_t id) {
-    std::stringstream out;
-    out << id;
-    if (operand_names.find(id) != end(operand_names)) {
-      out << "[" << operand_names[id] << "]";
-    }
-    return out.str();
-  }
-
-  size_t unresolvedForwardIdCount() const {
-    return unresolved_forward_ids_.size();
-  }
-
-  vector<uint32_t> unresolvedForwardIds() const {
-    vector<uint32_t> out(begin(unresolved_forward_ids_),
-                         end(unresolved_forward_ids_));
-    return out;
-  }
-
-  //
-  bool isDefinedId(uint32_t id) const {
-    return defined_ids_.find(id) != std::end(defined_ids_);
-  }
-
-  bool is_enabled(uint32_t flag) const {
-    return (flag & validation_flags_) == flag;
-  }
-
-  // Increments the instruction count. Used for diagnostic
-  int incrementInstructionCount() { return instruction_counter_++; }
-
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const {
-    return libspirv::DiagnosticStream(
-        {0, 0, static_cast<size_t>(instruction_counter_)}, diagnostic_,
-        error_code);
-  }
-
- private:
-  spv_diagnostic* diagnostic_;
-  // Tracks the number of instructions evaluated by the validator
-  int instruction_counter_;
-
-  // All IDs which have been defined
-  unordered_set<uint32_t> defined_ids_;
-
-  // IDs which have been forward declared but have not been defined
-  unordered_set<uint32_t> unresolved_forward_ids_;
-
-  // Validation options to determine the passes to execute
-  uint32_t validation_flags_;
-
-  map<uint32_t, string> operand_names;
-};
-
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
 // instruction operand's ID can be forward referenced.
@@ -407,7 +325,7 @@ spv_result_t SsaPass(ValidationState_t& _,
       switch (type) {
         case SPV_OPERAND_TYPE_RESULT_ID:
           _.removeIfForwardDeclared(*operand_ptr);
-          ret = _.definedIds(*operand_ptr);
+          ret = _.defineId(*operand_ptr);
           break;
         case SPV_OPERAND_TYPE_ID:
         case SPV_OPERAND_TYPE_TYPE_ID:
@@ -518,6 +436,109 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
+// TODO(umar): Check MemoryModel is in module
+// TODO(umar): Check OpVariable storage class is not function in module section
+// TODO(umar): Make sure function declarations appear before function
+// definitions
+// TODO(umar): Better error messages
+// NOTE: This function does not handle CFG related validation
+// Performs logical layout validation. See Section 2.4
+spv_result_t ModuleLayoutPass(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  if (_.is_enabled(SPV_VALIDATE_LAYOUT_BIT)) {
+    SpvOp opcode = inst->opcode;
+
+    if (libspirv::ModuleLayoutSection::kModule == _.getLayoutStage()) {
+      // Module scoped instructions are processed by determining if the opcode
+      // is part of the current stage. If it is not then the next stage is
+      // checked.
+      while (_.isOpcodeInCurrentLayoutStage(opcode) == false) {
+        // TODO(umar): Check if the MemoryModel instruction has executed
+        _.progressToNextLayoutStageOrder();
+        if (_.getLayoutStage() == libspirv::ModuleLayoutSection::kFunction) {
+          // All module stages have been processed. Recursivly call
+          // ModuleLayoutPass
+          // to process the next section of the module
+          return ModuleLayoutPass(_, inst);
+        }
+      }
+    } else {
+      // Validate the function layout.
+      switch (opcode) {
+        case SpvOpCapability:
+        case SpvOpExtension:
+        case SpvOpExtInstImport:
+        case SpvOpMemoryModel:
+        case SpvOpEntryPoint:
+        case SpvOpExecutionMode:
+        case SpvOpSourceContinued:
+        case SpvOpSource:
+        case SpvOpSourceExtension:
+        case SpvOpString:
+        case SpvOpName:
+        case SpvOpMemberName:
+        case SpvOpDecorate:
+        case SpvOpMemberDecorate:
+        case SpvOpGroupDecorate:
+        case SpvOpGroupMemberDecorate:
+        case SpvOpDecorationGroup:
+        case SpvOpTypeVoid:
+        case SpvOpTypeBool:
+        case SpvOpTypeInt:
+        case SpvOpTypeFloat:
+        case SpvOpTypeVector:
+        case SpvOpTypeMatrix:
+        case SpvOpTypeImage:
+        case SpvOpTypeSampler:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeArray:
+        case SpvOpTypeRuntimeArray:
+        case SpvOpTypeStruct:
+        case SpvOpTypeOpaque:
+        case SpvOpTypePointer:
+        case SpvOpTypeFunction:
+        case SpvOpTypeEvent:
+        case SpvOpTypeDeviceEvent:
+        case SpvOpTypeReserveId:
+        case SpvOpTypeQueue:
+        case SpvOpTypePipe:
+        case SpvOpTypeForwardPointer:
+        case SpvOpConstantTrue:
+        case SpvOpConstantFalse:
+        case SpvOpConstant:
+        case SpvOpConstantComposite:
+        case SpvOpConstantSampler:
+        case SpvOpConstantNull:
+        case SpvOpSpecConstantTrue:
+        case SpvOpSpecConstantFalse:
+        case SpvOpSpecConstant:
+        case SpvOpSpecConstantComposite:
+        case SpvOpSpecConstantOp:
+          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Invalid Layout";
+        case SpvOpVariable: {
+          const uint32_t* storage_class =
+              inst->words + inst->operands[2].offset;
+          if (*storage_class != SpvStorageClassFunction)
+            return _.diag(SPV_ERROR_INVALID_LAYOUT)
+                   << "All OpVariable instructions in a function must have a "
+                      "storage class of Function[7]";
+          break;
+        }
+        default:
+          return SPV_SUCCESS;
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+// Shame
+#define CHECK_RESULT(EXPRESSION)                \
+  do{                                           \
+    spv_result_t ret = EXPRESSION;              \
+    if(ret) return ret;                         \
+} while(false);
+
 spv_result_t ProcessInstructions(void* user_data,
                                  const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
@@ -529,10 +550,13 @@ spv_result_t ProcessInstructions(void* user_data,
   DebugInstructionPass(_, inst);
 
   // TODO(umar): Perform CFG pass
-  // TODO(umar): Perform logical layout validation pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-  return SsaPass(_, can_have_forward_declared_ids, inst);
+  spv_result_t ret = SPV_SUCCESS;
+  CHECK_RESULT(ModuleLayoutPass(_, inst))
+  CHECK_RESULT(SsaPass(_, can_have_forward_declared_ids, inst))
+
+  return ret;
 }
 
 } // anonymous namespace

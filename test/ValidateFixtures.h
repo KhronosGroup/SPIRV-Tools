@@ -26,6 +26,9 @@
 
 // Common validation fixtures for unit tests
 
+#ifndef LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
+#define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
+
 #include "UnitSPIRV.h"
 
 namespace spvtest {
@@ -56,3 +59,4 @@ class ValidateBase : public ::testing::Test,
   static const uint32_t validation_options_ = OPTIONS;
 };
 }
+#endif
