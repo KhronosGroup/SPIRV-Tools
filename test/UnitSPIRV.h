@@ -32,14 +32,14 @@
 #include <iomanip>
 
 #include "libspirv/libspirv.h"
-#include "../source/assembly_grammar.h"
-#include "../source/binary.h"
-#include "../source/diagnostic.h"
-#include "../source/opcode.h"
-#include "../source/spirv_endian.h"
-#include "../source/text.h"
-#include "../source/text_handler.h"
-#include "../source/validate.h"
+#include "source/assembly_grammar.h"
+#include "source/binary.h"
+#include "source/diagnostic.h"
+#include "source/opcode.h"
+#include "source/spirv_endian.h"
+#include "source/text.h"
+#include "source/text_handler.h"
+#include "source/validate.h"
 
 #include <gtest/gtest.h>
 

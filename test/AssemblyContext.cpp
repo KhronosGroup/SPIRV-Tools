@@ -29,7 +29,7 @@
 #include <vector>
 #include <gmock/gmock.h>
 
-#include "../source/instruction.h"
+#include "source/instruction.h"
 
 using libspirv::AssemblyContext;
 using spvtest::AutoText;

@@ -27,7 +27,7 @@
 #include "UnitSPIRV.h"
 
 #include "gmock/gmock.h"
-#include "../source/operand.h"
+#include "source/operand.h"
 
 using ::testing::Eq;
 

@@ -232,6 +232,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
     add_executable(UnitSPIRV ${TEST_SOURCES})
     default_compile_options(UnitSPIRV)
     target_include_directories(UnitSPIRV PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
       ${gmock_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include)
     target_link_libraries(UnitSPIRV PRIVATE ${SPIRV_TOOLS} gmock)
   else()

@@ -28,7 +28,7 @@
 
 #include <gmock/gmock.h>
 
-#include "../source/opcode.h"
+#include "source/opcode.h"
 
 using ::spvtest::EnumCase;
 using ::testing::Eq;

@@ -30,7 +30,7 @@
 
 #include "gmock/gmock.h"
 
-#include "../source/spirv_constant.h"
+#include "source/spirv_constant.h"
 #include "TestFixture.h"
 
 using ::testing::Eq;

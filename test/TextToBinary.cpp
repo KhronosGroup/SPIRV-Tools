@@ -32,8 +32,8 @@
 
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
+#include "source/spirv_constant.h"
 #include "util/bitutils.h"
-#include "../source/spirv_constant.h"
 
 namespace {
 
