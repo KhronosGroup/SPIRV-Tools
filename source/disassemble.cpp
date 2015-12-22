@@ -34,12 +34,12 @@
 #include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
-#include "endian.h"
 #include "ext_inst.h"
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "print.h"
 #include "spirv_constant.h"
+#include "spirv_endian.h"
 #include "util/hex_float.h"
 
 namespace {

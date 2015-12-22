@@ -31,10 +31,10 @@
 
 #include <cstdlib>
 
-#include "endian.h"
 #include "instruction.h"
 #include "libspirv/libspirv.h"
 #include "spirv_constant.h"
+#include "spirv_endian.h"
 #include "spirv_operands.h"
 
 namespace {

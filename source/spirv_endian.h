@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_ENDIAN_H_
-#define LIBSPIRV_ENDIAN_H_
+#ifndef LIBSPIRV_SPIRV_ENDIAN_H_
+#define LIBSPIRV_SPIRV_ENDIAN_H_
 
 #include "libspirv/libspirv.h"
 
@@ -46,4 +46,4 @@ spv_result_t spvBinaryEndianness(const spv_const_binary binary,
 // Returns true if the given endianness matches the host's native endiannes.
 bool spvIsHostEndian(spv_endianness_t endian);
 
-#endif  // LIBSPIRV_ENDIAN_H_
+#endif  // LIBSPIRV_SPIRV_ENDIAN_H_

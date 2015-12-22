@@ -103,7 +103,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.h
@@ -111,6 +110,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/spirv_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/spirv_definition.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/spirv_endian.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.h
@@ -120,11 +120,11 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/spirv_endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.cpp

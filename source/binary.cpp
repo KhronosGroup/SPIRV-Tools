@@ -34,12 +34,12 @@
 
 #include "assembly_grammar.h"
 #include "diagnostic.h"
-#include "endian.h"
 #include "ext_inst.h"
 #include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_constant.h"
+#include "spirv_endian.h"
 
 spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
