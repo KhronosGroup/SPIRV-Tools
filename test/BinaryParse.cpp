@@ -628,7 +628,14 @@ INSTANTIATE_TEST_CASE_P(
                       MakeInstruction(SpvOpExtInst, {2, 3, 100, 4, 5})}),
          "OpExtInst set Id 100 does not reference an OpExtInstImport result "
          "Id"},
+        // In this case, the OpSwitch selector refers to an invalid ID.
         {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpSwitch, {1, 2, 42, 3})}),
+         "Invalid OpSwitch: selector id 1 has no type"},
+        // In this case, the OpSwitch selector refers to an ID that has
+        // no type.
+        {Concatenate({ExpectedHeaderForBound(3),
+                      MakeInstruction(SpvOpLabel, {1}),
                       MakeInstruction(SpvOpSwitch, {1, 2, 42, 3})}),
          "Invalid OpSwitch: selector id 1 has no type"},
         {Concatenate({ExpectedHeaderForBound(3),

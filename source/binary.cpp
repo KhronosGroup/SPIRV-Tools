@@ -555,8 +555,9 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         // The literal operands have the same type as the value
         // referenced by the selector Id.
         const uint32_t selector_id = peekAt(inst_offset + 1);
-        auto type_id_iter = _.id_to_type_id.find(selector_id);
-        if (type_id_iter == _.id_to_type_id.end()) {
+        const auto type_id_iter = _.id_to_type_id.find(selector_id);
+        if (type_id_iter == _.id_to_type_id.end() ||
+            type_id_iter->second == 0) {
           return diagnostic() << "Invalid OpSwitch: selector id " << selector_id
                               << " has no type";
         }
