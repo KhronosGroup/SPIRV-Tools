@@ -36,6 +36,7 @@
 #include <utility>
 
 using std::function;
+using std::ostream;
 using std::ostream_iterator;
 using std::pair;
 using std::stringstream;
@@ -46,30 +47,98 @@ using std::vector;
 
 using ::testing::HasSubstr;
 
-using pred_type = function<bool(int)>;
+using pred_type = function<spv_result_t(int)>;
 using ValidateLayout =
     spvtest::ValidateBase<tuple<int, tuple<string, pred_type, pred_type>>,
                           SPV_VALIDATE_LAYOUT_BIT>;
 
+// TODO(umar): probably should move this to a central location
+ostream& operator<<(ostream& os, const spv_result_t& err) {
+  switch (err) {
+    case SPV_SUCCESS:
+      os << "SPV_SUCCESS";
+      break;
+    case SPV_UNSUPPORTED:
+      os << "SPV_UNSUPPORTED";
+      break;
+    case SPV_END_OF_STREAM:
+      os << "SPV_END_OF_STREAM";
+      break;
+    case SPV_WARNING:
+      os << "SPV_WARNING";
+      break;
+    case SPV_FAILED_MATCH:
+      os << "SPV_FAILED_MATCH";
+      break;
+    case SPV_REQUESTED_TERMINATION:
+      os << "SPV_REQUESTED_TERMINATION";
+      break;
+    case SPV_ERROR_INTERNAL:
+      os << "SPV_ERROR_INTERNAL";
+      break;
+    case SPV_ERROR_OUT_OF_MEMORY:
+      os << "SPV_ERROR_OUT_OF_MEMORY";
+      break;
+    case SPV_ERROR_INVALID_POINTER:
+      os << "SPV_ERROR_INVALID_POINTER";
+      break;
+    case SPV_ERROR_INVALID_BINARY:
+      os << "SPV_ERROR_INVALID_BINARY";
+      break;
+    case SPV_ERROR_INVALID_TEXT:
+      os << "SPV_ERROR_INVALID_TEXT";
+      break;
+    case SPV_ERROR_INVALID_TABLE:
+      os << "SPV_ERROR_INVALID_TABLE";
+      break;
+    case SPV_ERROR_INVALID_VALUE:
+      os << "SPV_ERROR_INVALID_VALUE";
+      break;
+    case SPV_ERROR_INVALID_DIAGNOSTIC:
+      os << "SPV_ERROR_INVALID_DIAGNOSTIC";
+      break;
+    case SPV_ERROR_INVALID_LOOKUP:
+      os << "SPV_ERROR_INVALID_LOOKUP";
+      break;
+    case SPV_ERROR_INVALID_ID:
+      os << "SPV_ERROR_INVALID_ID";
+      break;
+    case SPV_ERROR_INVALID_CFG:
+      os << "SPV_ERROR_INVALID_CFG";
+      break;
+    case SPV_ERROR_INVALID_LAYOUT:
+      os << "SPV_ERROR_INVALID_LAYOUT";
+      break;
+    default:
+      os << "Unknown Error";
+  }
+  return os;
+}
 namespace {
 
 // returns true if order is equal to VAL
-template <int VAL>
-bool Equals(int order) {
-  return order == VAL;
+template <int VAL, spv_result_t RET = SPV_ERROR_INVALID_LAYOUT>
+spv_result_t Equals(int order) {
+  return order == VAL ? SPV_SUCCESS : RET;
 }
 
 // returns true if order is between MIN and MAX(inclusive)
-template <int MIN, int MAX>
+template <int MIN, int MAX, spv_result_t RET = SPV_ERROR_INVALID_LAYOUT>
 struct Range {
-  bool operator()(int order) { return order >= MIN && order <= MAX; }
+  Range(bool inverse = false) : inverse_(inverse) {}
+  spv_result_t operator()(int order) {
+    return (inverse_ ^ (order >= MIN && order <= MAX)) ? SPV_SUCCESS : RET;
+  }
+
+ private:
+  bool inverse_;
 };
 
 template <typename... T>
-bool RangeSet(int order) {
-  for (bool val : {T()(order)...})
-    if (!val) return val;
-  return false;
+spv_result_t InvalidSet(int order) {
+  for (spv_result_t val : {T(true)(order)...})
+    if (val != SPV_SUCCESS) return val;
+  return SPV_SUCCESS;
 }
 
 // SPIRV source used to test the logical layout
@@ -92,41 +161,42 @@ const vector<string>& getInstructions() {
     "OpMemberDecorate %struct 1 RowMajor",
     "%dgrp   = OpDecorationGroup",
     "OpGroupDecorate %dgrp %mat33 %mat44",
-    "%intt   =  OpTypeInt 32 1",
-    "%floatt =  OpTypeFloat 32",
-    "%voidt  =  OpTypeVoid",
-    "%boolt  =  OpTypeBool",
-    "%vec4   =  OpTypeVector %intt 4",
-    "%vec3   =  OpTypeVector %intt 3",
-    "%mat33  =  OpTypeMatrix %vec3 3",
-    "%mat44  =  OpTypeMatrix %vec4 4",
-    "%struct =  OpTypeStruct %intt %mat33",
-    "%vfunct = OpTypeFunction %voidt",
-    "%viifunct =  OpTypeFunction %voidt %intt %intt",
-    "%one      =  OpConstant %intt 1",
+    "%intt     = OpTypeInt 32 1",
+    "%floatt   = OpTypeFloat 32",
+    "%voidt    = OpTypeVoid",
+    "%boolt    = OpTypeBool",
+    "%vec4     = OpTypeVector %intt 4",
+    "%vec3     = OpTypeVector %intt 3",
+    "%mat33    = OpTypeMatrix %vec3 3",
+    "%mat44    = OpTypeMatrix %vec4 4",
+    "%struct   = OpTypeStruct %intt %mat33",
+    "%vfunct   = OpTypeFunction %voidt",
+    "%viifunct = OpTypeFunction %voidt %intt %intt",
+    "%one      = OpConstant %intt 1",
     // TODO(umar): OpConstant fails because the type is not defined
     // TODO(umar): OpGroupMemberDecorate
     "OpLine %str 3 4",
-    "%func   = OpFunction %voidt None %vfunct",
+    "%func     = OpFunction %voidt None %vfunct",
     "OpFunctionEnd",
-    "%func2   = OpFunction %voidt None %viifunct",
-    "%funcp1 = OpFunctionParameter %intt",
-    "%funcp2 = OpFunctionParameter %intt",
-    "%fLabel = OpLabel",
-    "          OpNop",
-    "OpReturn",
+    "%func2    = OpFunction %voidt None %viifunct",
+    "%funcp1   = OpFunctionParameter %intt",
+    "%funcp2   = OpFunctionParameter %intt",
+    "%fLabel   = OpLabel",
+    "            OpNop",
+    "            OpReturn",
     "OpFunctionEnd"
   };
   return instructions;
 }
 
-pred_type All = Range<0, 1000>();
+static const int kRangeEnd = 1000;
+pred_type All = Range<0, kRangeEnd>();
 
 INSTANTIATE_TEST_CASE_P(InstructionsOrder,
     ValidateLayout,
     ::testing::Combine(::testing::Range((int)0, (int)getInstructions().size()),
     //                                   | Instruction              | Line(s) valid     | Lines to compile
-    ::testing::Values( make_tuple( string("OpCapability")           , Equals<0>         , All)
+    ::testing::Values( make_tuple(string("OpCapability")            , Equals<0>         , All)
                      , make_tuple(string("OpExtension")             , Equals<1>         , All)
                      , make_tuple(string("OpExtInstImport")         , Equals<2>         , All)
                      , make_tuple(string("OpMemoryModel")           , Equals<3>         , All)
@@ -149,9 +219,11 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
                      , make_tuple(string("OpTypeVector %intt 4")    , Range<16, 28>()   , All)
                      , make_tuple(string("OpTypeMatrix %vec4 4")    , Range<16, 28>()   , All)
                      , make_tuple(string("OpTypeStruct")            , Range<16, 28>()   , All)
-                     , make_tuple(string("%vfunct = OpTypeFunction"), Range<16, 28>()   , All)
-                     , make_tuple(string("OpConstant")              , Range<19, 28>()   , static_cast<pred_type>(Range<19, 100>()))
-                   //, make_tuple(string("OpLabel")                 , RangeSet<Range<29,31>, Range<35, 36>, >   , All)
+                     , make_tuple(string("%vfunct   = OpTypeFunction"), Range<16, 28>()   , All)
+                     , make_tuple(string("OpConstant")              , Range<19, 28>()   , static_cast<pred_type>(Range<19, kRangeEnd>()))
+                     , make_tuple(string("OpLabel")                 , Equals<34>        , All)
+                     , make_tuple(string("OpNop")                   , Equals<35>        , All)
+                     , make_tuple(string("OpReturn")                , Equals<36>        , All)
     )));
 // clang-format on
 
@@ -188,7 +260,7 @@ TEST_P(ValidateLayout, Layout) {
   tie(instruction, pred, test_pred) = testCase;
 
   // Skip test which break the code generation
-  if (!test_pred(order)) return;
+  if (test_pred(order)) return;
 
   vector<string> code = GenerateCode(instruction, order);
 
@@ -197,13 +269,14 @@ TEST_P(ValidateLayout, Layout) {
 
   // printf("code: \n%s\n", ss.str().c_str());
   CompileSuccessfully(ss.str());
-  if (pred(order)) {
-    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions())
-        << "Order: " << order << "\nInstruction: " << instruction;
-  } else {
-    ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions())
-        << "Order: " << order << "\nInstruction: " << instruction;
-  }
+  // clang-format off
+  ASSERT_EQ(pred(order), ValidateInstructions())
+    << "Actual: "        << ValidateInstructions()
+    << "\nExpected: "    << pred(order)
+    << "\nOrder: "       << order
+    << "\nInstruction: " << instruction
+    << "\nCode: \n"      << ss.str();
+  // clang-format on
 }
 
 TEST_F(ValidateLayout, MemoryModelMissing) {
@@ -228,6 +301,7 @@ TEST_F(ValidateLayout, VariableFunctionStorageGood) {
 %vfunct = OpTypeFunction %voidt
 %ptrt   = OpTypePointer Function %intt
 %func   = OpFunction %voidt None %vfunct
+%funcl  = OpLabel
 %var    = OpVariable %ptrt Function
           OpReturn
           OpFunctionEnd
@@ -236,6 +310,7 @@ TEST_F(ValidateLayout, VariableFunctionStorageGood) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
 TEST_F(ValidateLayout, VariableFunctionStorageBad) {
   char str[] = R"(
           OpMemoryModel Logical GLSL450
@@ -246,6 +321,8 @@ TEST_F(ValidateLayout, VariableFunctionStorageBad) {
 %ptrt   = OpTypePointer Function %intt
 %var    = OpVariable %ptrt Function     ; Invalid storage class for OpVariable
 %func   = OpFunction %voidt None %vfunct
+%funcl  = OpLabel
+          OpNop
           OpReturn
           OpFunctionEnd
 )";
@@ -254,6 +331,50 @@ TEST_F(ValidateLayout, VariableFunctionStorageBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
 
+TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
+  char str[] = R"(
+           OpMemoryModel Logical GLSL450
+           OpDecorate %var Restrict
+%intt    = OpTypeInt 32 1
+%voidt   = OpTypeVoid
+%vfunct  = OpTypeFunction %voidt
+%vifunct = OpTypeFunction %voidt %intt
+%ptrt    = OpTypePointer Function %intt
+%func    = OpFunction %voidt None %vfunct
+%funcl   = OpLabel
+           OpNop
+           OpReturn
+           OpFunctionEnd
+%func2   = OpFunction %voidt None %vifunct ; must appear before definition
+%func2p  = OpFunctionParameter %intt
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+}
+
+// TODO(umar): Passes but gives incorrect error message. Should be fixed after
+// type checking
+TEST_F(ValidateLayout, LabelBeforeFunctionParameterBad) {
+  char str[] = R"(
+           OpMemoryModel Logical GLSL450
+           OpDecorate %var Restrict
+%intt    = OpTypeInt 32 1
+%voidt   = OpTypeVoid
+%vfunct  = OpTypeFunction %voidt
+%vifunct = OpTypeFunction %voidt %intt
+%ptrt    = OpTypePointer Function %intt
+%func    = OpFunction %voidt None %vifunct
+%funcl   = OpLabel                    ; Label appears before function parameter
+%func2p  = OpFunctionParameter %intt
+           OpNop
+           OpReturn
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+}
 // TODO(umar): Test optional instructions
-// TODO(umar): Test logical layout of functions
 }

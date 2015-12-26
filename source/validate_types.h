@@ -56,7 +56,93 @@ enum ModuleLayoutSection {
   kLayoutFunctionDeclarations = 10, // < Section 2.4 #10
   kLayoutFunctionDefinitions  = 11  // < Section 2.4 #11
 };
+
+enum class FunctionDecl {
+  kFunctionDeclUnknown     = 0, // < Unknown function declaration
+  kFunctionDeclDeclaration = 1, // < Function declaration
+  kFunctionDeclDefinition  = 2, // < Function definition
+};
 // clang-format on
+
+class ValidationState_t;
+
+class Functions {
+ public:
+  Functions(ValidationState_t& module);
+
+  // Registers the function in the module. Subsequent instructions will be
+  // called against this function
+  spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
+                                uint32_t function_control,
+                                uint32_t function_type_id);
+
+  // Registers a function parameter in the current function
+  spv_result_t RegisterFunctionParameter(uint32_t id, uint32_t type_id);
+
+  // Register a function end instruction
+  spv_result_t RegisterFunctionEnd();
+
+  // Sets the declaration type of the current function
+  spv_result_t RegisterSetFunctionDeclType(FunctionDecl type);
+
+  // Registers a block in the current function. Subsequent block instructions
+  // will target this block
+  // @param id The ID of the label of the block
+  spv_result_t RegisterBlock(uint32_t id);
+
+  // Registers a variable in the current block
+  spv_result_t RegisterBlockVariable(uint32_t type_id, uint32_t id,
+                                     SpvStorageClass storage, uint32_t init_id);
+
+  spv_result_t RegisterBlockLoopMerge(uint32_t merge_id, uint32_t continue_id,
+                                      SpvLoopControlMask control);
+
+  spv_result_t RegisterBlockSelectionMerge(uint32_t merge_id,
+                                           SpvSelectionControlMask control);
+
+  // Registers the end of the block
+  spv_result_t RegisterBlockEnd();
+
+  // Returns the number of blocks in the current function being parsed
+  size_t get_block_count();
+
+  // Retuns true if the called after a function instruction but before the
+  // function end instruction
+  bool in_function_body() const;
+
+  // Returns true if called after a label instruction but before a branch
+  // instruction
+  bool in_block() const;
+
+  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+
+ private:
+  // Parent module
+  ValidationState_t& module_;
+
+  // Funciton IDs in a module
+  std::vector<uint32_t> id_;
+
+  // OpTypeFunction IDs of each of the id_ functions
+  std::vector<uint32_t> type_id_;
+
+  // The type of declaration of each function
+  std::vector<FunctionDecl> declaration_type_;
+
+  // TODO(umar): Probably needs better abstractions
+  // The beginning of the block of functions
+  std::vector<std::vector<uint32_t>> block_ids_;
+
+  // The variable IDs of the functions
+  std::vector<std::vector<uint32_t>> variable_ids_;
+
+  // The function parameter ids of the functions
+  std::vector<std::vector<uint32_t>> parameter_ids_;
+
+  bool in_function_;
+  bool in_block_;
+  FunctionDecl function_stage;
+};
 
 class ValidationState_t {
  public:
@@ -106,6 +192,17 @@ class ValidationState_t {
 
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
+  // Returns the function states
+  Functions& get_functions();
+
+  // Retuns true if the called after a function instruction but before the
+  // function end instruction
+  bool in_function_body() const;
+
+  // Returns true if called after a label instruction but before a branch
+  // instruction
+  bool in_block() const;
+
  private:
   spv_diagnostic* diagnostic_;
   // Tracks the number of instructions evaluated by the validator
@@ -124,6 +221,10 @@ class ValidationState_t {
 
   // The section of the code being processed
   ModuleLayoutSection current_layout_stage_;
+
+  Functions module_functions_;
+
+  std::vector<SpvCapability> module_capabilities_;
 };
 
 const std::vector<SpvOp>& getModuleOrderInstructions(uint8_t order);

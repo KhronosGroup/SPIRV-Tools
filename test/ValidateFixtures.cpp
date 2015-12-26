@@ -61,9 +61,10 @@ void ValidateBase<T, OPTIONS>::TearDown() {
 template <typename T, uint32_t OPTIONS>
 void ValidateBase<T, OPTIONS>::CompileSuccessfully(std::string code) {
   spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
+  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
                                          &binary_, &diagnostic))
-      << "SPIR-V could not be compiled into binary:" << code;
+      << "ERROR: " << diagnostic->error
+      << "\nSPIR-V could not be compiled into binary:\n" << code;
 }
 
 template <typename T, uint32_t OPTIONS>
@@ -77,12 +78,17 @@ std::string ValidateBase<T, OPTIONS>::getDiagnosticString() {
   return std::string(diagnostic_->error);
 }
 
+template <typename T, uint32_t OPTIONS>
+spv_position_t ValidateBase<T, OPTIONS>::getErrorPosition() {
+  return diagnostic_->position;
+}
+
 template class spvtest::ValidateBase<std::pair<std::string, bool>,
                                      SPV_VALIDATE_SSA_BIT |
                                          SPV_VALIDATE_LAYOUT_BIT>;
 template class spvtest::ValidateBase<bool, SPV_VALIDATE_SSA_BIT>;
 template class spvtest::ValidateBase<
-    std::tuple<int, std::tuple<std::string, std::function<bool(int)>,
-                               std::function<bool(int)>>>,
+    std::tuple<int, std::tuple<std::string, std::function<spv_result_t(int)>,
+                               std::function<spv_result_t(int)>>>,
     SPV_VALIDATE_LAYOUT_BIT>;
 }
