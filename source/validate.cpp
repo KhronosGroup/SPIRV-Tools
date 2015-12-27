@@ -291,12 +291,6 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
 }
 
 namespace {
-// Shame
-#define CHECK_RESULT(EXPRESSION)   \
-  do {                             \
-    spv_result_t ret = EXPRESSION; \
-    if (ret) return ret;           \
-  } while (false);
 
 // TODO(umar): Validate header
 // TODO(umar): The Id bound should be validated also. But you can only do that
@@ -557,7 +551,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
               return _.diag(SPV_ERROR_INVALID_LAYOUT)
                      << "Cannot declare a function in a function body";
             }
-            CHECK_RESULT(_.get_functions().RegisterFunction(
+            spvCheckReturn(_.get_functions().RegisterFunction(
                 inst->result_id, inst->type_id,
                 inst->words[inst->operands[2].offset],
                 inst->words[inst->operands[3].offset]));
@@ -568,7 +562,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                                                          "instructions must be "
                                                          "in a function body";
             }
-            CHECK_RESULT(_.get_functions().RegisterFunctionParameter(
+            spvCheckReturn(_.get_functions().RegisterFunctionParameter(
                 inst->result_id, inst->type_id));
             break;
           case SpvOpLine:  // ??
@@ -579,7 +573,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                      << "Label instructions must be in a function body";
             }
             _.progressToNextLayoutStageOrder();
-            CHECK_RESULT(_.get_functions().RegisterSetFunctionDeclType(
+            spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
                 kFunctionDeclDefinition));
             break;
           case SpvOpFunctionEnd:
@@ -591,9 +585,9 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
               return _.diag(SPV_ERROR_INVALID_LAYOUT)
                      << "Function end instructions must be in a function body";
             }
-            CHECK_RESULT(_.get_functions().RegisterSetFunctionDeclType(
+            spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
                 kFunctionDeclDeclaration));
-            CHECK_RESULT(_.get_functions().RegisterFunctionEnd());
+            spvCheckReturn(_.get_functions().RegisterFunctionEnd());
             break;
           default:
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
@@ -615,15 +609,15 @@ spv_result_t CfgPass(ValidationState_t& _,
     SpvOp opcode = inst->opcode;
     switch (opcode) {
       case SpvOpFunction:
-        CHECK_RESULT(_.get_functions().RegisterFunction(
+        spvCheckReturn(_.get_functions().RegisterFunction(
             inst->result_id, inst->type_id,
             inst->words[inst->operands[2].offset],
             inst->words[inst->operands[3].offset]));
-        CHECK_RESULT(_.get_functions().RegisterSetFunctionDeclType(
+        spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
             kFunctionDeclDefinition));
         break;
       case SpvOpFunctionParameter:
-        CHECK_RESULT(_.get_functions().RegisterFunctionParameter(
+        spvCheckReturn(_.get_functions().RegisterFunctionParameter(
             inst->result_id, inst->type_id));
         break;
       case SpvOpFunctionEnd:
@@ -631,10 +625,10 @@ spv_result_t CfgPass(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function declarations "
                                                      "must appear before "
                                                      "function definitions.";
-        CHECK_RESULT(_.get_functions().RegisterFunctionEnd());
+        spvCheckReturn(_.get_functions().RegisterFunctionEnd());
         break;
       case SpvOpLabel:
-        CHECK_RESULT(_.get_functions().RegisterBlock(inst->result_id));
+        spvCheckReturn(_.get_functions().RegisterBlock(inst->result_id));
         break;
       case SpvOpBranch:
       case SpvOpBranchConditional:
@@ -643,7 +637,7 @@ spv_result_t CfgPass(ValidationState_t& _,
       case SpvOpReturn:
       case SpvOpReturnValue:
       case SpvOpUnreachable:
-        CHECK_RESULT(_.get_functions().RegisterBlockEnd());
+        spvCheckReturn(_.get_functions().RegisterBlockEnd());
         break;
       default:
         if (_.in_block() == false) {
@@ -666,12 +660,11 @@ spv_result_t ProcessInstructions(void* user_data,
 
   DebugInstructionPass(_, inst);
 
-  // TODO(umar): Perform CFG pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-  CHECK_RESULT(ModuleLayoutPass(_, inst));
-  CHECK_RESULT(CfgPass(_, inst));
-  CHECK_RESULT(SsaPass(_, can_have_forward_declared_ids, inst));
+  spvCheckReturn(ModuleLayoutPass(_, inst));
+  spvCheckReturn(CfgPass(_, inst));
+  spvCheckReturn(SsaPass(_, can_have_forward_declared_ids, inst));
 
   return SPV_SUCCESS;
 }
@@ -699,12 +692,8 @@ spv_result_t spvValidate(const spv_const_context context,
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(pDiagnostic, options);
-  auto err = spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
-                            setHeader, ProcessInstructions, pDiagnostic);
-
-  if (err) {
-    return err;
-  }
+  spvCheckReturn(spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
+                                setHeader, ProcessInstructions, pDiagnostic));
 
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the processInstructions pass to make
