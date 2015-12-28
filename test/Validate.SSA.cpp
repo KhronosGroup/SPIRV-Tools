@@ -332,6 +332,7 @@ TEST_F(Validate, FunctionCallGood) {
 %5    =  OpFunction %1 None %4
 %6    =  OpLabel
 %7    =  OpFunctionCall %1 %9 %four %five
+         OpReturn
          OpFunctionEnd
 )";
   CompileSuccessfully(str);
@@ -351,6 +352,7 @@ TEST_F(Validate, ForwardFunctionCallGood) {
 %5    =  OpFunction %1 None %4
 %6    =  OpLabel
 %7    =  OpFunctionCall %1 %9 %four %five
+         OpReturn
          OpFunctionEnd
 %9    =  OpFunction %1 None %8
 %10   =  OpFunctionParameter %2
@@ -770,6 +772,7 @@ TEST_P(Validate, ForwardGetKernelGood) {
   string str = kHeader + kBasicTypes + kKernelTypesAndConstants +
                R"(
             %main    = OpFunction %voidt None %vfunct
+            %mainl   = OpLabel
                 )"
             + kKernelSetup + " %numsg = "
             + instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign"
