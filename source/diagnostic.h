@@ -37,21 +37,22 @@ namespace libspirv {
 
 class diagnostic_helper {
  public:
-  diagnostic_helper(spv_position_t& position, spv_diagnostic* pDiagnostic)
-      : position(&position), pDiagnostic(pDiagnostic) {}
+  diagnostic_helper(spv_position_t& position, spv_diagnostic* diagnostic)
+      : position_(&position), diagnostic_(diagnostic) {}
 
-  diagnostic_helper(spv_position position, spv_diagnostic* pDiagnostic)
-      : position(position), pDiagnostic(pDiagnostic) {}
+  diagnostic_helper(spv_position position, spv_diagnostic* diagnostic)
+      : position_(position), diagnostic_(diagnostic) {}
 
   ~diagnostic_helper() {
-    *pDiagnostic = spvDiagnosticCreate(position, stream.str().c_str());
+    *diagnostic_ = spvDiagnosticCreate(position_, stream().str().c_str());
   }
 
-  std::stringstream stream;
+  std::stringstream& stream() { return stream_; }
 
  private:
-  spv_position position;
-  spv_diagnostic* pDiagnostic;
+  std::stringstream stream_;
+  spv_position position_;
+  spv_diagnostic* diagnostic_;
 };
 
 // A DiagnosticStream remembers the current position of the input and an error
@@ -99,7 +100,7 @@ class DiagnosticStream {
 
 #define DIAGNOSTIC                                           \
   libspirv::diagnostic_helper helper(position, pDiagnostic); \
-  helper.stream
+  helper.stream()
 
 }  // namespace libspirv
 
