@@ -248,6 +248,21 @@ INSTANTIATE_TEST_CASE_P(
         {uint64_t(0x7FFFFFFFFFFFFFFFLL), "0x1.fffffffffffffp+1024"},   // -nan
     })));
 
+TEST(HexFloatStreamTest, OperatorLeftShiftPreservesFloatAndFill) {
+  std::stringstream s;
+  s << std::setw(4) << std::oct << std::setfill('x') << 8 << " "
+    << FloatProxy<float>(uint32_t(0xFF800100)) << " " << std::setw(4) << 9;
+  EXPECT_THAT(s.str(), Eq(std::string("xx10 -0x1.0002p+128 xx11")));
+}
+
+TEST(HexDoubleStreamTest, OperatorLeftShiftPreservesFloatAndFill) {
+  std::stringstream s;
+  s << std::setw(4) << std::oct << std::setfill('x') << 8 << " "
+    << FloatProxy<double>(uint64_t(0x7FF0F00000000000LL)) << " " << std::setw(4)
+    << 9;
+  EXPECT_THAT(s.str(), Eq(std::string("xx10 0x1.0fp+1024 xx11")));
+}
+
 TEST_P(DecodeHexFloatTest, DecodeCorrectly) {
   EXPECT_THAT(Decode<float>(GetParam().first), Eq(GetParam().second));
 }

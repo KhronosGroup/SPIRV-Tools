@@ -679,6 +679,9 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
     --fraction_nibbles;
   }
 
+  const auto saved_flags = os.flags();
+  const auto saved_fill = os.fill();
+
   os << sign << "0x" << (is_zero ? '0' : '1');
   if (fraction_nibbles) {
     // Make sure to keep the leading 0s in place, since this is the fractional
@@ -687,6 +690,10 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
        << fraction;
   }
   os << "p" << std::dec << (int_exponent >= 0 ? "+" : "") << int_exponent;
+
+  os.flags(saved_flags);
+  os.fill(saved_fill);
+
   return os;
 }
 
