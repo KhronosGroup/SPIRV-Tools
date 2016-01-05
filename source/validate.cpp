@@ -552,11 +552,10 @@ spv_result_t ProcessInstructions(void* user_data,
   // TODO(umar): Perform CFG pass
   // TODO(umar): Perform data rules pass
   // TODO(umar): Perform instruction validation pass
-  spv_result_t ret = SPV_SUCCESS;
   CHECK_RESULT(ModuleLayoutPass(_, inst))
   CHECK_RESULT(SsaPass(_, can_have_forward_declared_ids, inst))
 
-  return ret;
+  return SPV_SUCCESS;
 }
 
 } // anonymous namespace

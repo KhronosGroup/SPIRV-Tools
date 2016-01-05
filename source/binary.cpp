@@ -463,18 +463,20 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID:
-      if (!word) return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Type Id is 0";
+      if (!word)
+        return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Type Id is 0";
       inst->type_id = word;
       break;
 
     case SPV_OPERAND_TYPE_RESULT_ID:
-      if (!word) return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Result Id is 0";
+      if (!word)
+        return diagnostic(SPV_ERROR_INVALID_ID) << "Error: Result Id is 0";
       inst->result_id = word;
       // Save the result ID to type ID mapping.
       // In the grammar, type ID always appears before result ID.
       if (_.id_to_type_id.find(inst->result_id) != _.id_to_type_id.end())
         return diagnostic(SPV_ERROR_INVALID_ID) << "Id " << inst->result_id
-                            << " is defined more than once";
+                                                << " is defined more than once";
       // Record it.
       // A regular value maps to its type.  Some instructions (e.g. OpLabel)
       // have no type Id, and will map to 0.  The result Id for a
@@ -736,8 +738,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     if (convert_operand_endianness) {
       const spv_endianness_t endianness = _.endian;
       std::transform(_.words + _.word_index, _.words + index_after_operand,
-                     words->end(), [endianness](const uint32_t word) {
-                       return spvFixWord(word, endianness);
+                     words->end(), [endianness](const uint32_t raw_word) {
+                       return spvFixWord(raw_word, endianness);
                      });
     } else {
       words->insert(words->end(), _.words + _.word_index,

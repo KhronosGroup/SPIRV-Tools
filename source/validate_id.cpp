@@ -44,20 +44,20 @@
 namespace {
 class idUsage {
  public:
-  idUsage(const spv_opcode_table opcodeTable,
-          const spv_operand_table operandTable,
-          const spv_ext_inst_table extInstTable, const spv_id_info_t* pIdUses,
+  idUsage(const spv_opcode_table opcodeTableArg,
+          const spv_operand_table operandTableArg,
+          const spv_ext_inst_table extInstTableArg, const spv_id_info_t* pIdUses,
           const uint64_t idUsesCount, const spv_id_info_t* pIdDefs,
           const uint64_t idDefsCount, const spv_instruction_t* pInsts,
-          const uint64_t instCount, spv_position position,
-          spv_diagnostic* pDiagnostic)
-      : opcodeTable(opcodeTable),
-        operandTable(operandTable),
-        extInstTable(extInstTable),
+          const uint64_t instCountArg, spv_position positionArg,
+          spv_diagnostic* pDiagnosticArg)
+      : opcodeTable(opcodeTableArg),
+        operandTable(operandTableArg),
+        extInstTable(extInstTableArg),
         firstInst(pInsts),
-        instCount(instCount),
-        position(position),
-        pDiagnostic(pDiagnostic) {
+        instCount(instCountArg),
+        position(positionArg),
+        pDiagnostic(pDiagnosticArg) {
     for (uint64_t idUsesIndex = 0; idUsesIndex < idUsesCount; ++idUsesIndex) {
       idUses[pIdUses[idUsesIndex].id].push_back(pIdUses[idUsesIndex]);
     }

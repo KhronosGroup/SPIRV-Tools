@@ -368,8 +368,8 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
                  << "Invalid extended instruction import '" << literal.str
                  << "'";
         }
-        if (auto error = context->recordIdAsExtInstImport(pInst->words[1],
-                                                          ext_inst_type))
+        if ((error = context->recordIdAsExtInstImport(pInst->words[1],
+                                                      ext_inst_type)))
           return error;
       }
 
