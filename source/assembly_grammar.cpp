@@ -109,6 +109,7 @@ const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
     CASE(UConvert),
     CASE(ConvertPtrToU),
     CASE(ConvertUToPtr),
+    CASE(GenericCastToPtr),
     CASE(PtrCastToGeneric),
     CASE(Bitcast),
     CASE(QuantizeToF16),
@@ -128,6 +129,7 @@ const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
     CASE(ShiftLeftLogical),
     CASE(BitwiseOr),
     CASE(BitwiseAnd),
+    CASE(BitwiseXor),
     CASE(FNegate),
     CASE(FAdd),
     CASE(FSub),
@@ -154,7 +156,6 @@ const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
     CASE(SGreaterThan),
     CASE(ULessThanEqual),
     CASE(SLessThanEqual),
-    CASE(SLessThanEqual),
     CASE(UGreaterThanEqual),
     CASE(SGreaterThanEqual),
     // Memory
@@ -163,6 +164,10 @@ const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
     CASE(PtrAccessChain),
     CASE(InBoundsPtrAccessChain),
 };
+
+// The 58 is determined by counting the opcodes listed in the spec.
+static_assert(58 == sizeof(kOpSpecConstantOpcodes)/sizeof(kOpSpecConstantOpcodes[0]),
+              "OpSpecConstantOp opcode table is incomplete");
 #undef CASE
 // clang-format on
 
