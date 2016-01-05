@@ -608,15 +608,16 @@ class HexFloat {
 };
 
 // Returns 4 bits represented by the hex character.
-inline uint8_t get_nibble_from_character(char character) {
+inline uint8_t get_nibble_from_character(int character) {
   const char* dec = "0123456789";
   const char* lower = "abcdef";
   const char* upper = "ABCDEF";
-  if (auto p = strchr(dec, character)) {
+  const char* p = nullptr;
+  if ((p = strchr(dec, character))) {
     return static_cast<uint8_t>(p - dec);
-  } else if (auto p = strchr(lower, character)) {
+  } else if ((p = strchr(lower, character))) {
     return static_cast<uint8_t>(p - lower + 0xa);
-  } else if (auto p = strchr(upper, character)) {
+  } else if ((p = strchr(upper, character))) {
     return static_cast<uint8_t>(p - upper + 0xa);
   }
 
@@ -686,8 +687,8 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   if (fraction_nibbles) {
     // Make sure to keep the leading 0s in place, since this is the fractional
     // part.
-    os << "." << std::setw(fraction_nibbles) << std::setfill('0') << std::hex
-       << fraction;
+    os << "." << std::setw(static_cast<int>(fraction_nibbles))
+       << std::setfill('0') << std::hex << fraction;
   }
   os << "p" << std::dec << (int_exponent >= 0 ? "+" : "") << int_exponent;
 
@@ -743,7 +744,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
     }
   }
 
-  char next_char = is.peek();
+  auto next_char = is.peek();
   bool negate_value = false;
 
   if (next_char != '-' && next_char != '0') {
@@ -758,7 +759,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
 
   if (next_char == '0') {
     is.get();  // We may have to unget this.
-    char maybe_hex_start = is.peek();
+    auto maybe_hex_start = is.peek();
     if (maybe_hex_start != 'x' && maybe_hex_start != 'X') {
       is.unget();
       return ParseNormalFloat(is, negate_value, value);
