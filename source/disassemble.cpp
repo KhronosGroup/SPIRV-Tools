@@ -260,7 +260,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
         }
       } else {
         // TODO(dneto): Support more than 64-bits at a time.
-        assert("Unhandled");
+        assert(false && "Unhandled");
       }
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
