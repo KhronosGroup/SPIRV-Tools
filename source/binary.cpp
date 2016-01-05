@@ -769,7 +769,8 @@ spv_result_t Parser::setNumericTypeInfoForType(
 
   parsed_operand->number_kind = info.type;
   parsed_operand->number_bit_width = info.bit_width;
-  parsed_operand->num_words = (info.bit_width + 31) / 32;  // Round up
+  // Round up the word count.
+  parsed_operand->num_words = static_cast<uint16_t>((info.bit_width + 31) / 32);
   return SPV_SUCCESS;
 }
 
