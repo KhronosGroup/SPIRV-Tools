@@ -128,9 +128,9 @@ class ClampToZeroIfUnsignedType<
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {
  public:
-  AssemblyContext(spv_text text, spv_diagnostic* diagnostic)
+  AssemblyContext(spv_text text, spv_diagnostic* diagnostic_arg)
       : current_position_({}),
-        pDiagnostic_(diagnostic),
+        pDiagnostic_(diagnostic_arg),
         text_(text),
         bound_(1) {}
 

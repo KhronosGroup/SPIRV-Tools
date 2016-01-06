@@ -375,9 +375,9 @@ class HexFloat {
       }
     }
 
-    uint_type value = 0;
+    uint_type new_value = 0;
     if (negative) {
-      value |= sign_mask;
+      new_value |= sign_mask;
     }
     exponent += exponent_bias;
     assert(exponent >= 0);
@@ -385,8 +385,8 @@ class HexFloat {
     // put it all together
     exponent = (exponent << exponent_left_shift) & exponent_mask;
     significand &= fraction_encode_mask;
-    value |= exponent | significand;
-    value_ = BitwiseCast<T>(value);
+    new_value |= exponent | significand;
+    value_ = BitwiseCast<T>(new_value);
   }
 
   // Increments the significand of this number by the given amount.
