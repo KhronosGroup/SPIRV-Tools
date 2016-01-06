@@ -274,7 +274,7 @@ class HexFloat {
 
   // How far from the right edge the fraction is shifted.
   static const uint32_t fraction_right_shift =
-      (sizeof(uint_type) * 8) - num_fraction_bits;
+      static_cast<uint32_t>(sizeof(uint_type) * 8) - num_fraction_bits;
 
   // The maximum representable unbiased exponent.
   static const int_type max_exponent =
@@ -798,7 +798,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
       // We know this is not denormalized since we have stripped all leading
       // zeroes and we are not a ".".
       is_denorm = false;
-      uint8_t number = get_nibble_from_character(next_char);
+      int number = get_nibble_from_character(next_char);
       for (int i = 0; i < 4; ++i, number <<= 1) {
         uint_type write_bit = (number & 0x8) ? 0x1 : 0x0;
         if (bits_written) {

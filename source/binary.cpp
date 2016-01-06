@@ -73,7 +73,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
   spv_operand_type_t type;
   if (operandIndex < opcodeEntry->numTypes) {
     // NOTE: Do operand table lookup to set operandEntry if successful
-    uint16_t index = operandIndex - 1;
+    const int index = operandIndex - 1;
     type = opcodeEntry->operandTypes[index];
     spv_operand_desc entry = nullptr;
     if (!spvOperandTableValueLookup(operandTable, type, word, &entry)) {
@@ -83,7 +83,7 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
     }
   } else if (*pOperandEntry) {
     // NOTE: Use specified operand entry operand type for this word
-    uint16_t index = operandIndex - opcodeEntry->numTypes;
+    const int index = operandIndex - opcodeEntry->numTypes;
     type = (*pOperandEntry)->operandTypes[index];
   } else if (SpvOpSwitch == opcodeEntry->opcode) {
     // NOTE: OpSwitch is a special case which expects a list of paired extra
@@ -91,12 +91,12 @@ spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
     assert(0 &&
            "This case is previously untested, remove this assert and ensure it "
            "is behaving correctly!");
-    uint16_t lastIndex = opcodeEntry->numTypes - 1;
-    uint16_t index = lastIndex + ((operandIndex - lastIndex) % 2);
+    const int lastIndex = opcodeEntry->numTypes - 1;
+    const int index = lastIndex + ((operandIndex - lastIndex) % 2);
     type = opcodeEntry->operandTypes[index];
   } else {
     // NOTE: Default to last operand type in opcode entry
-    uint16_t index = opcodeEntry->numTypes - 1;
+    const int index = opcodeEntry->numTypes - 1;
     type = opcodeEntry->operandTypes[index];
   }
   return type;

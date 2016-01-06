@@ -149,14 +149,18 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable) {
 
   static const spv_ext_inst_group_t groups[] = {
       {SPV_EXT_INST_TYPE_GLSL_STD_450,
-       sizeof(glslStd450Entries) / sizeof(spv_ext_inst_desc_t),
+       static_cast<uint32_t>(sizeof(glslStd450Entries) /
+                             sizeof(spv_ext_inst_desc_t)),
        glslStd450Entries},
       {SPV_EXT_INST_TYPE_OPENCL_STD,
-       sizeof(openclEntries) / sizeof(spv_ext_inst_desc_t), openclEntries},
+       static_cast<uint32_t>(sizeof(openclEntries) /
+                             sizeof(spv_ext_inst_desc_t)),
+       openclEntries},
   };
 
   static const spv_ext_inst_table_t table = {
-      sizeof(groups) / sizeof(spv_ext_inst_group_t), groups};
+      static_cast<uint32_t>(sizeof(groups) / sizeof(spv_ext_inst_group_t)),
+      groups};
 
   *pExtInstTable = &table;
 

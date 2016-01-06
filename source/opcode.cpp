@@ -263,10 +263,10 @@ void spvOpcodeTableInitialize(spv_opcode_desc_t* entries,
     // Result ID always comes next, if present
     if (opcode.hasResult)
       opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_RESULT_ID;
-    const uint16_t maxNumOperands =
-        sizeof(opcode.operandTypes) / sizeof(opcode.operandTypes[0]);
-    const uint16_t maxNumClasses =
-        sizeof(opcode.operandClass) / sizeof(opcode.operandClass[0]);
+    const uint16_t maxNumOperands = static_cast<uint16_t>(
+        sizeof(opcode.operandTypes) / sizeof(opcode.operandTypes[0]));
+    const uint16_t maxNumClasses = static_cast<uint16_t>(
+        sizeof(opcode.operandClass) / sizeof(opcode.operandClass[0]));
     for (uint16_t classIndex = 0;
          opcode.numTypes < maxNumOperands && classIndex < maxNumClasses;
          classIndex++) {
@@ -340,7 +340,8 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable) {
   if (!copied_entries) return SPV_ERROR_OUT_OF_MEMORY;
   ::memcpy(copied_entries, opcodeTableEntries, size);
 
-  const uint32_t count = sizeof(opcodeTableEntries) / sizeof(spv_opcode_desc_t);
+  const uint32_t count = static_cast<uint32_t>(sizeof(opcodeTableEntries) /
+                                               sizeof(spv_opcode_desc_t));
   spv_opcode_table_t* table = new spv_opcode_table_t{count, copied_entries};
 
   spvOpcodeTableInitialize(copied_entries, count);

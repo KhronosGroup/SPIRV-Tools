@@ -112,7 +112,7 @@ class ValidationState_t {
 
   // The stage which is being processed by the validation. Partially based on
   // Section 2.4. Logical Layout of a Module
-  uint8_t module_layout_order_stage_;
+  uint32_t module_layout_order_stage_;
 
   // The section of the code being processed
   ModuleLayoutSection current_layout_stage_;
