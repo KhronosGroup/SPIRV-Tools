@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014-2015 LunarG, Inc.
+// Copyright (C) 2014-2016 LunarG, Inc.
 //
 // All rights reserved.
 //
