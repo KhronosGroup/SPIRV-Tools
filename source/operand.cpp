@@ -1121,6 +1121,8 @@ spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable) {
   return SPV_SUCCESS;
 }
 
+#undef ARRAY_SIZE
+
 spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char* name,
