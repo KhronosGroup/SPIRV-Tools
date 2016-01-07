@@ -1,5 +1,7 @@
 # SPIR-V Tools
 
+[![Build Status](https://travis-ci.org/KhronosGroup/SPIRV-Tools.svg?branch=master)](https://travis-ci.org/KhronosGroup/SPIRV-Tools)
+
 ## Overview
 
 The SPIR-V Tools project provides an API and commands for processing SPIR-V

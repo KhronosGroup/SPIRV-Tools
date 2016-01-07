@@ -1,0 +1,68 @@
+# Linux Build Configuration for Travis
+
+sudo: false # Use Travis docker infrastructure
+
+language: cpp
+
+os:
+  - linux
+
+env:
+  matrix:
+    # Each line is a set of environment variables set before a build.
+    # Thus each line represents a different build configuration.
+    - BUILD_TYPE=Release
+    - BUILD_TYPE=Debug
+
+compiler:
+  - clang
+  - gcc
+
+cache:
+  apt: true
+
+branches:
+  only:
+    - master
+
+# Travis CI is powered with Ubuntu 12.04, whose toolchain is outdated.
+addons:
+  apt:
+    # Travis white list of ppa.
+    # https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
+    sources:
+      - ubuntu-toolchain-r-test     # For gcc 4.9
+      - kubuntu-backports           # For cmake 2.8.12
+      - llvm-toolchain-precise-3.7  # For clang 3.7
+    # Travis whitelist of packages.
+    # https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise
+    packages:
+      - cmake
+      - g++-4.9
+      - clang-3.7
+      - ninja-build
+
+install:
+  - if [ "$CC" = "gcc"   ]; then export CC=gcc-4.9 CXX=g++-4.9; fi       # Make sure that gcc-4.9 is selected.
+  - if [ "$CC" = "clang" ]; then export CC=clang-3.7 CXX=clang++-3.7; fi # Make sure that clang-3.7 is selected.
+
+before_script:
+  - git clone https://github.com/google/googletest.git external/googletest
+
+script:
+  - mkdir build && cd build
+  - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+  - ninja
+  - ./UnitSPIRV
+
+
+notifications:
+  email:
+    recipients:
+      - antiagainst@google.com
+      - awoloszyn@google.com
+      - deki@google.com
+      - dneto@google.com
+      - qining@google.com
+    on_success: change
+    on_failure: always
