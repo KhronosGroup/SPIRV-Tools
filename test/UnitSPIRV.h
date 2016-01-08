@@ -215,5 +215,4 @@ inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
 }
 
 }  // namespace spvtest
-
 #endif  // LIBSPIRV_TEST_UNITSPIRV_H_

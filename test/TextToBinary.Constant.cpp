@@ -341,17 +341,9 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
-using RoundTripTest =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
-
 const int64_t kMaxUnsigned48Bit = (int64_t(1) << 48) - 1;
 const int64_t kMaxSigned48Bit = (int64_t(1) << 47) - 1;
 const int64_t kMinSigned48Bit = -kMaxSigned48Bit - 1;
-
-TEST_P(RoundTripTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()))
-      << GetParam();
-}
 
 INSTANTIATE_TEST_CASE_P(
     OpConstantRoundTrip, RoundTripTest,
@@ -394,6 +386,41 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0\n",
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79769e+308\n",
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
+    }));
+
+INSTANTIATE_TEST_CASE_P(
+    OpConstantHalfRoundTrip, RoundTripTest,
+    ::testing::ValuesIn(std::vector<std::string>{
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x0p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x0p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.1p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.01p-1\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.8p+1\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffcp+1\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.1p+0\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p-1\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.8p+1\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffcp+1\n",
+
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p-16\n", // some denorms
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p-24\n",
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p-24\n",
+
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p+16\n", // +inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p+16\n", // -inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n", // -inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.01p+16\n", // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.11p+16\n", // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffp+16\n", // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffcp+16\n", // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.004p+16\n", // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n", // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.11p+16\n", // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffp+16\n", // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffcp+16\n", // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.004p+16\n", // -nan
     }));
 
 // clang-format off

@@ -697,6 +697,10 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   return os;
 }
 
+// Parses a floating point number from the given stream and stores it into the
+// value parameter.
+// If the negate_value parameter is true then the number is negated before
+// it is stored into the value parameter.
 template <typename T, typename Traits>
 inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
                                       HexFloat<T, Traits>& value) {
@@ -706,6 +710,26 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
     val = -val;
   }
   value.set_value(val);
+  return is;
+}
+
+// Specialization of ParseNormalFloat for FloatProxy<Float16> values.
+// This will parse the float as it were a 32-bit floating point number,
+// and then round it down to fit into a Float16 value. 
+// The number is rounded towards zero.
+// Any floating point number that is too large will be rounded to +- infinity.
+template <>
+inline std::istream&
+ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
+    std::istream& is, bool negate_value,
+    HexFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>& value) {
+  float f;
+  is >> f;
+  if (negate_value) {
+    f = -f;
+  }
+  HexFloat<FloatProxy<float>> float_val(f);
+  float_val.castTo(value, round_direction::kToZero);
   return is;
 }
 
@@ -937,6 +961,12 @@ std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value) {
       os << HexFloat<FloatProxy<T>>(value);
       break;
   }
+  return os;
+}
+
+template<>
+inline std::ostream& operator<< <Float16>(std::ostream& os, const FloatProxy<Float16>& value) {
+  os << HexFloat<FloatProxy<Float16>>(value);
   return os;
 }
 }

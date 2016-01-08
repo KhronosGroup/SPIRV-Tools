@@ -183,7 +183,9 @@ class TextToBinaryTestBase : public T {
 };
 
 using TextToBinaryTest = TextToBinaryTestBase<::testing::Test>;
-
 }  // namespace spvtest
+
+using RoundTripTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
 #endif  // LIBSPIRV_TEST_TEST_FIXTURE_H_

@@ -233,9 +233,12 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
             stream_ << word;
             break;
           case SPV_NUMBER_FLOATING:
-            // Assume only 32-bit floats.
-            // TODO(dneto): Handle 16-bit floats also.
-            stream_ << spvutils::FloatProxy<float>(word);
+            if (operand.number_bit_width == 16) {
+              stream_ << spvutils::FloatProxy<spvutils::Float16>(uint16_t(word & 0xFFFF));
+            } else {
+              // Assume 32-bit floats.
+              stream_ << spvutils::FloatProxy<float>(word);
+            }
             break;
           default:
             assert(false && "Unreachable");
