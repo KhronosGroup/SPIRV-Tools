@@ -473,9 +473,9 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
 
       if (opcode == SpvOpVariable) {
         const uint32_t* storage_class = inst->words + inst->operands[2].offset;
-        if (*storage_class == 7) {
+        if (*storage_class == SpvStorageClassFunction) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                 << "Variables can not have a function[7] storage class "
+                 << "Variables cannot have a function[7] storage class "
                     "outside of a function";
         }
       }

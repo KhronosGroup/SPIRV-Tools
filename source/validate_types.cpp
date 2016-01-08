@@ -28,6 +28,7 @@
 #include "validate_types.h"
 
 #include <algorithm>
+#include <cassert>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -115,10 +116,6 @@ const vector<vector<SpvOp>>& GetModuleOrder() {
 
 namespace libspirv {
 
-const vector<SpvOp>& getModuleOrderInstructions(uint8_t order) {
-  return GetModuleOrder()[order];
-}
-
 ValidationState_t::ValidationState_t(spv_diagnostic* diag, uint32_t options)
     : diagnostic_(diag),
       instruction_counter_(0),
@@ -190,7 +187,8 @@ ModuleLayoutSection ValidationState_t::getLayoutStage() const {
 
 void ValidationState_t::progressToNextLayoutStageOrder() {
   if (current_layout_stage_ <= GetModuleOrder().size()) {
-    current_layout_stage_ = (ModuleLayoutSection)(current_layout_stage_ + 1);
+    current_layout_stage_ =
+        static_cast<ModuleLayoutSection>(current_layout_stage_ + 1);
   }
 }
 
@@ -252,7 +250,12 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
     return module_.diag(SPV_ERROR_INVALID_LAYOUT)
            << "Function parameters cannot be called in blocks";
   }
-  // TODO(umar): Validate this function parameter
+  if (block_ids_.back().size() != 0) {
+    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Function parameters must only appear immediatly after the "
+              "function definition";
+  }
+  // TODO(umar): Validate function parameter type order and count
   return SPV_SUCCESS;
 }
 

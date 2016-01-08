@@ -376,5 +376,30 @@ TEST_F(ValidateLayout, LabelBeforeFunctionParameterBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
+
+TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
+  char str[] = R"(
+           OpMemoryModel Logical GLSL450
+           OpDecorate %var Restrict
+%intt    = OpTypeInt 32 1
+%voidt   = OpTypeVoid
+%vfunct  = OpTypeFunction %voidt
+%vifunct = OpTypeFunction %voidt %intt
+%ptrt    = OpTypePointer Function %intt
+%func    = OpFunction %voidt None %vifunct
+%funcl   = OpLabel
+           OpNop
+           OpBranch %next
+%func2p  = OpFunctionParameter %intt        ;FunctionParameter appears in a function but not immediatly afterwards
+%next    = OpLabel
+           OpNop
+           OpReturn
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+}
+
 // TODO(umar): Test optional instructions
 }

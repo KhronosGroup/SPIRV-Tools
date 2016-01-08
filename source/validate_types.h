@@ -38,31 +38,29 @@
 
 namespace libspirv {
 
-// This enum represents the sections of a SPIRV module. The MODULE section
-// contains instructions who's scope spans the entire module. The FUNCTION
-// section includes SPIRV function and function definitions
-// clang-format off
+// This enum represents the sections of a SPIRV module. See section 2.4
+// of the SPIRV spec for additional details of the order. The enumerant values
+// are in the same order as the vector returned by GetModuleOrder
 enum ModuleLayoutSection {
-  kLayoutCapabilities         = 0,  // < Section 2.4 #1
-  kLayoutExtensions           = 1,  // < Section 2.4 #2
-  kLayoutExtInstImport        = 2,  // < Section 2.4 #3
-  kLayoutMemoryModel          = 3,  // < Section 2.4 #4
-  kLayoutEntryPoint           = 4,  // < Section 2.4 #5
-  kLayoutExecutionMode        = 5,  // < Section 2.4 #6
-  kLayoutDebug1               = 6,  // < Section 2.4 #7 > 1
-  kLayoutDebug2               = 7,  // < Section 2.4 #7 > 2
-  kLayoutAnnotations          = 8,  // < Section 2.4 #8
-  kLayoutTypes                = 9,  // < Section 2.4 #9
-  kLayoutFunctionDeclarations = 10, // < Section 2.4 #10
-  kLayoutFunctionDefinitions  = 11  // < Section 2.4 #11
+  kLayoutCapabilities,          // < Section 2.4 #1
+  kLayoutExtensions,            // < Section 2.4 #2
+  kLayoutExtInstImport,         // < Section 2.4 #3
+  kLayoutMemoryModel,           // < Section 2.4 #4
+  kLayoutEntryPoint,            // < Section 2.4 #5
+  kLayoutExecutionMode,         // < Section 2.4 #6
+  kLayoutDebug1,                // < Section 2.4 #7 > 1
+  kLayoutDebug2,                // < Section 2.4 #7 > 2
+  kLayoutAnnotations,           // < Section 2.4 #8
+  kLayoutTypes,                 // < Section 2.4 #9
+  kLayoutFunctionDeclarations,  // < Section 2.4 #10
+  kLayoutFunctionDefinitions    // < Section 2.4 #11
 };
 
 enum class FunctionDecl {
-  kFunctionDeclUnknown     = 0, // < Unknown function declaration
-  kFunctionDeclDeclaration = 1, // < Function declaration
-  kFunctionDeclDefinition  = 2, // < Function definition
+  kFunctionDeclUnknown,      // < Unknown function declaration
+  kFunctionDeclDeclaration,  // < Function declaration
+  kFunctionDeclDefinition    // < Function definition
 };
-// clang-format on
 
 class ValidationState_t;
 
@@ -226,8 +224,6 @@ class ValidationState_t {
 
   std::vector<SpvCapability> module_capabilities_;
 };
-
-const std::vector<SpvOp>& getModuleOrderInstructions(uint8_t order);
 }
 
 #endif
