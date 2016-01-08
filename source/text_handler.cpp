@@ -387,9 +387,18 @@ spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
     spv_instruction_t* pInst) {
   const auto bit_width = assumedBitWidth(type);
   switch (bit_width) {
-    case 16:
-      return diagnostic(SPV_ERROR_INTERNAL)
-             << "Unsupported yet: 16-bit float constants.";
+    case 16: {
+      spvutils::HexFloat<FloatProxy<spvutils::Float16>> hVal(0);
+      if (auto error = parseNumber(val, error_code, &hVal,
+                                   "Invalid 16-bit float literal: "))
+        return error;
+      // getAsFloat will return the spvutils::Float16 value, and get_value
+      // will return a uint16_t representing the bits of the float.
+      // The encoding is therefore correct from the perspective of the SPIR-V
+      // spec since the top 16 bits will be 0.
+      return binaryEncodeU32(
+          static_cast<uint32_t>(hVal.value().getAsFloat().get_value()), pInst);
+    } break;
     case 32: {
       spvutils::HexFloat<FloatProxy<float>> fVal(0.0f);
       if (auto error = parseNumber(val, error_code, &fVal,

@@ -272,13 +272,6 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(64, 1, "0x700000123", {0x123, 7}, "12", {12, 0}),
     })));
 
-using RoundTripTest =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
-
-TEST_P(RoundTripTest, Sample) {
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
-}
-
 INSTANTIATE_TEST_CASE_P(
     OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
     ::testing::ValuesIn(std::vector<std::string>({

@@ -193,7 +193,6 @@ It supports the standard `googletest` command line options.
 
 ### Assembler and disassembler
 
-* Support 16-bit floating point literals.
 * The disassembler could emit helpful annotations in comments.  For example:
   * Use variable name information from debug instructions to annotate
     key operations on variables.

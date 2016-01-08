@@ -245,6 +245,38 @@ INSTANTIATE_TEST_CASE_P(
         {"!0xff800001", 0xff800001},  // NaN
     }));
 
+using TextToBinaryHalfValueTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
+
+TEST_P(TextToBinaryHalfValueTest, Samples) {
+  const std::string input =
+      "%1 = OpTypeFloat 16\n%2 = OpConstant %1 " + GetParam().first;
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 16}),
+                              MakeInstruction(SpvOpConstant,
+                                              {1, 2, GetParam().second})})));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    HalfValues, TextToBinaryHalfValueTest,
+    ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
+        {"0.0", 0x00000000},
+        {"1.0", 0x00003c00},
+        {"1.000844", 0x00003c00}, // Truncate to 1.0
+        {"1.000977", 0x00003c01}, // Don't have to truncate
+        {"1.001465", 0x00003c01}, // Truncate to 1.0000977
+        {"1.5", 0x00003e00},
+        {"-1.0", 0x0000bc00},
+        {"2.0", 0x00004000},
+        {"-2.0", 0x0000c000},
+        {"0x1p1", 0x00004000},
+        {"-0x1p1", 0x0000c000},
+        {"0x1.8p1", 0x00004200},
+        {"0x1.8p4", 0x00004e00},
+        {"0x1.801p4", 0x00004e00},
+        {"0x1.804p4", 0x00004e01},
+    }));
+
 TEST(AssemblyContextParseNarrowSignedIntegers, Sample) {
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
