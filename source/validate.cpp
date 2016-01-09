@@ -478,72 +478,17 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                     "outside of a function";
         }
       }
-    } else {
-      // This ensures no module instructions are called during function
-      // declarations
-      switch (opcode) {
-        case SpvOpCapability:
-        case SpvOpExtension:
-        case SpvOpExtInstImport:
-        case SpvOpMemoryModel:
-        case SpvOpEntryPoint:
-        case SpvOpExecutionMode:
-        case SpvOpSourceContinued:
-        case SpvOpSource:
-        case SpvOpSourceExtension:
-        case SpvOpString:
-        case SpvOpName:
-        case SpvOpMemberName:
-        case SpvOpDecorate:
-        case SpvOpMemberDecorate:
-        case SpvOpGroupDecorate:
-        case SpvOpGroupMemberDecorate:
-        case SpvOpDecorationGroup:
-        case SpvOpTypeVoid:
-        case SpvOpTypeBool:
-        case SpvOpTypeInt:
-        case SpvOpTypeFloat:
-        case SpvOpTypeVector:
-        case SpvOpTypeMatrix:
-        case SpvOpTypeImage:
-        case SpvOpTypeSampler:
-        case SpvOpTypeSampledImage:
-        case SpvOpTypeArray:
-        case SpvOpTypeRuntimeArray:
-        case SpvOpTypeStruct:
-        case SpvOpTypeOpaque:
-        case SpvOpTypePointer:
-        case SpvOpTypeFunction:
-        case SpvOpTypeEvent:
-        case SpvOpTypeDeviceEvent:
-        case SpvOpTypeReserveId:
-        case SpvOpTypeQueue:
-        case SpvOpTypePipe:
-        case SpvOpTypeForwardPointer:
-        case SpvOpConstantTrue:
-        case SpvOpConstantFalse:
-        case SpvOpConstant:
-        case SpvOpConstantComposite:
-        case SpvOpConstantSampler:
-        case SpvOpConstantNull:
-        case SpvOpSpecConstantTrue:
-        case SpvOpSpecConstantFalse:
-        case SpvOpSpecConstant:
-        case SpvOpSpecConstantComposite:
-        case SpvOpSpecConstantOp:
-          return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Invalid Layout";
-        case SpvOpVariable: {
+    } else if (_.getLayoutStage() == kLayoutFunctionDeclarations) {
+      if (_.isOpcodeInCurrentLayoutStage(opcode)) {
+        if (opcode == SpvOpVariable) {
           const uint32_t* storage_class =
               inst->words + inst->operands[2].offset;
           if (*storage_class != SpvStorageClassFunction)
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
                    << "All Variable instructions in a function must have a "
                       "storage class of function[7]";
-        } break;
-        default:
-          break;
-      }
-      if (_.getLayoutStage() == kLayoutFunctionDeclarations) {
+        }
+
         switch (opcode) {
           case SpvOpFunction:
             if (_.in_function_body()) {
@@ -576,10 +521,8 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                 FunctionDecl::kFunctionDeclDefinition));
             break;
           case SpvOpFunctionEnd:
-            assert(_.get_functions().get_block_count() ==
-                       0  // NOTE: This should not happen
-                   &&
-                   "Function contains blocks in function declaration section.");
+            assert(_.get_functions().get_block_count() == 0 &&
+                   "Function contains blocks in function declaration section");
             if (_.in_function_body() == false) {
               return _.diag(SPV_ERROR_INVALID_LAYOUT)
                      << "Function end instructions must be in a function body";
@@ -593,8 +536,17 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                    << "A function must begin with a label";
             break;
         }
+      } else {
+        return _.diag(SPV_ERROR_INVALID_LAYOUT)
+               << spvOpcodeString(opcode)
+               << " cannot appear in a function declaration";
       }
-      // NOTE: Function definitions are handled by the CFGPass
+    } else {
+      if (_.isOpcodeInCurrentLayoutStage(opcode) == false) {
+        return _.diag(SPV_ERROR_INVALID_LAYOUT)
+               << " cannot appear in a funciton definition";
+      }
+      // NOTE: Additional checks will be performed in the CfgPass function
     }
   }
   return SPV_SUCCESS;

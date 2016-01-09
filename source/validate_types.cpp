@@ -38,85 +38,162 @@ using std::find;
 using std::string;
 using std::unordered_set;
 using std::vector;
+using namespace libspirv;
 
 namespace {
-const vector<vector<SpvOp>>& GetModuleOrder() {
+bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   // See Section 2.4
+  bool out = false;
   // clang-format off
-  static const vector<vector<SpvOp>> moduleOrder = {
-    {SpvOpCapability},
-    {SpvOpExtension},
-    {SpvOpExtInstImport},
-    {SpvOpMemoryModel},
-    {SpvOpEntryPoint},
-    {SpvOpExecutionMode},
-    {
-      // first set of debug instructions
-      SpvOpSourceContinued,
-      SpvOpSource,
-      SpvOpSourceExtension,
-      SpvOpString,
-    },
-    {
-      // second set of debug instructions
-      SpvOpName,
-      SpvOpMemberName
-    },
-    {
-      // annotation instructions
-      SpvOpDecorate,
-      SpvOpMemberDecorate,
-      SpvOpGroupDecorate,
-      SpvOpGroupMemberDecorate,
-      SpvOpDecorationGroup
-    },
-    {
-      // All type and constant instructions
-      SpvOpTypeVoid,
-      SpvOpTypeBool,
-      SpvOpTypeInt,
-      SpvOpTypeFloat,
-      SpvOpTypeVector,
-      SpvOpTypeMatrix,
-      SpvOpTypeImage,
-      SpvOpTypeSampler,
-      SpvOpTypeSampledImage,
-      SpvOpTypeArray,
-      SpvOpTypeRuntimeArray,
-      SpvOpTypeStruct,
-      SpvOpTypeOpaque,
-      SpvOpTypePointer,
-      SpvOpTypeFunction,
-      SpvOpTypeEvent,
-      SpvOpTypeDeviceEvent,
-      SpvOpTypeReserveId,
-      SpvOpTypeQueue,
-      SpvOpTypePipe,
-      SpvOpTypeForwardPointer,
-      SpvOpConstantTrue,
-      SpvOpConstantFalse,
-      SpvOpConstant,
-      SpvOpConstantComposite,
-      SpvOpConstantSampler,
-      SpvOpConstantNull,
-      SpvOpSpecConstantTrue,
-      SpvOpSpecConstantFalse,
-      SpvOpSpecConstant,
-      SpvOpSpecConstantComposite,
-      SpvOpSpecConstantOp,
-      SpvOpVariable,
-      SpvOpLine
-    }
-  };
+  switch (layout) {
+    case kLayoutCapabilities:  out = op == SpvOpCapability;    break;
+    case kLayoutExtensions:    out = op == SpvOpExtension;     break;
+    case kLayoutExtInstImport: out = op == SpvOpExtInstImport; break;
+    case kLayoutMemoryModel:   out = op == SpvOpMemoryModel;   break;
+    case kLayoutEntryPoint:    out = op == SpvOpEntryPoint;    break;
+    case kLayoutExecutionMode: out = op == SpvOpExecutionMode; break;
+    case kLayoutDebug1:
+      switch (op) {
+        case SpvOpSourceContinued:
+        case SpvOpSource:
+        case SpvOpSourceExtension:
+        case SpvOpString:
+          out = true;
+          break;
+        default: break;
+      }
+      break;
+    case kLayoutDebug2:
+      switch (op) {
+        case SpvOpName:
+        case SpvOpMemberName:
+          out = true;
+          break;
+        default: break;
+      }
+      break;
+    case kLayoutAnnotations:
+      switch (op) {
+        case SpvOpDecorate:
+        case SpvOpMemberDecorate:
+        case SpvOpGroupDecorate:
+        case SpvOpGroupMemberDecorate:
+        case SpvOpDecorationGroup:
+          out = true;
+          break;
+        default: break;
+      }
+      break;
+    case kLayoutTypes:
+      switch (op) {
+        case SpvOpTypeVoid:
+        case SpvOpTypeBool:
+        case SpvOpTypeInt:
+        case SpvOpTypeFloat:
+        case SpvOpTypeVector:
+        case SpvOpTypeMatrix:
+        case SpvOpTypeImage:
+        case SpvOpTypeSampler:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeArray:
+        case SpvOpTypeRuntimeArray:
+        case SpvOpTypeStruct:
+        case SpvOpTypeOpaque:
+        case SpvOpTypePointer:
+        case SpvOpTypeFunction:
+        case SpvOpTypeEvent:
+        case SpvOpTypeDeviceEvent:
+        case SpvOpTypeReserveId:
+        case SpvOpTypeQueue:
+        case SpvOpTypePipe:
+        case SpvOpTypeForwardPointer:
+        case SpvOpConstantTrue:
+        case SpvOpConstantFalse:
+        case SpvOpConstant:
+        case SpvOpConstantComposite:
+        case SpvOpConstantSampler:
+        case SpvOpConstantNull:
+        case SpvOpSpecConstantTrue:
+        case SpvOpSpecConstantFalse:
+        case SpvOpSpecConstant:
+        case SpvOpSpecConstantComposite:
+        case SpvOpSpecConstantOp:
+        case SpvOpVariable:
+        case SpvOpLine:
+          out = true;
+          break;
+        default: break;
+      }
+      break;
+    case kLayoutFunctionDeclarations:
+    case kLayoutFunctionDefinitions:
+      // NOTE: These instructions should NOT be in these layout sections
+      switch (op) {
+        case SpvOpCapability:
+        case SpvOpExtension:
+        case SpvOpExtInstImport:
+        case SpvOpMemoryModel:
+        case SpvOpEntryPoint:
+        case SpvOpExecutionMode:
+        case SpvOpSourceContinued:
+        case SpvOpSource:
+        case SpvOpSourceExtension:
+        case SpvOpString:
+        case SpvOpName:
+        case SpvOpMemberName:
+        case SpvOpDecorate:
+        case SpvOpMemberDecorate:
+        case SpvOpGroupDecorate:
+        case SpvOpGroupMemberDecorate:
+        case SpvOpDecorationGroup:
+        case SpvOpTypeVoid:
+        case SpvOpTypeBool:
+        case SpvOpTypeInt:
+        case SpvOpTypeFloat:
+        case SpvOpTypeVector:
+        case SpvOpTypeMatrix:
+        case SpvOpTypeImage:
+        case SpvOpTypeSampler:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeArray:
+        case SpvOpTypeRuntimeArray:
+        case SpvOpTypeStruct:
+        case SpvOpTypeOpaque:
+        case SpvOpTypePointer:
+        case SpvOpTypeFunction:
+        case SpvOpTypeEvent:
+        case SpvOpTypeDeviceEvent:
+        case SpvOpTypeReserveId:
+        case SpvOpTypeQueue:
+        case SpvOpTypePipe:
+        case SpvOpTypeForwardPointer:
+        case SpvOpConstantTrue:
+        case SpvOpConstantFalse:
+        case SpvOpConstant:
+        case SpvOpConstantComposite:
+        case SpvOpConstantSampler:
+        case SpvOpConstantNull:
+        case SpvOpSpecConstantTrue:
+        case SpvOpSpecConstantFalse:
+        case SpvOpSpecConstant:
+        case SpvOpSpecConstantComposite:
+        case SpvOpSpecConstantOp:
+          out = false;
+          break;
+      default:
+        out = true;
+        break;
+      }
+  }
   // clang-format on
-
-  return moduleOrder;
+  return out;
 }
 }
 
 namespace libspirv {
 
-ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic, uint32_t options)
+ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
+                                     uint32_t options)
     : diagnostic_(diagnostic),
       instruction_counter_(0),
       defined_ids_{},
@@ -186,15 +263,15 @@ ModuleLayoutSection ValidationState_t::getLayoutStage() const {
 }
 
 void ValidationState_t::progressToNextLayoutStageOrder() {
-  if (static_cast<size_t>(current_layout_stage_) <= GetModuleOrder().size()) {
+  // Guard against going past the last element(kLayoutFunctionDefinitions)
+  if (current_layout_stage_ <= kLayoutFunctionDefinitions) {
     current_layout_stage_ =
         static_cast<ModuleLayoutSection>(current_layout_stage_ + 1);
   }
 }
 
 bool ValidationState_t::isOpcodeInCurrentLayoutStage(SpvOp op) {
-  const vector<SpvOp>& currentStage = GetModuleOrder()[current_layout_stage_];
-  return end(currentStage) != find(begin(currentStage), end(currentStage), op);
+  return IsInstructionInLayoutSection(current_layout_stage_, op);
 }
 
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
@@ -243,7 +320,8 @@ spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
 spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
                                                   uint32_t type_id) {
   assert(in_function_ == true &&
-         "Function parameter instructions cannot be declared outside of a function");
+         "Function parameter instructions cannot be declared outside of a "
+         "function");
   if (in_block()) {
     return module_.diag(SPV_ERROR_INVALID_LAYOUT)
            << "Function parameters cannot be called in blocks";
@@ -261,7 +339,8 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
 }
 
 spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
-  assert(in_function_ == true && "Function can not be declared inside of another function");
+  assert(in_function_ == true &&
+         "Function can not be declared inside of another function");
   if (declaration_type_.size() <= 1 || type == *(end(declaration_type_) - 2) ||
       type == FunctionDecl::kFunctionDeclDeclaration) {
     declaration_type_.back() = type;
