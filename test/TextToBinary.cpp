@@ -140,7 +140,6 @@ union char_word_t {
 };
 
 TEST_F(TextToBinaryTest, InvalidText) {
-  spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextToBinary(context, nullptr, 0, &binary, &diagnostic));
   EXPECT_NE(nullptr, diagnostic);
@@ -158,7 +157,6 @@ TEST_F(TextToBinaryTest, InvalidPointer) {
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
   SetText(
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
-  spv_binary binary;
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
             spvTextToBinary(context, text.str, text.length, &binary, nullptr));
 }

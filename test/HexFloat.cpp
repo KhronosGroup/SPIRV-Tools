@@ -592,7 +592,7 @@ TEST(HexFloatOperationTest, UnbiasedExponent) {
 float float_fractions(const std::vector<uint32_t>& fractions) {
   float f = 0;
   for(int32_t i: fractions) {
-    f += ldexp(1.0f, -i);
+    f += std::ldexp(1.0f, -i);
   }
   return f;
 }
@@ -626,7 +626,7 @@ uint16_t half_bits_set(const std::vector<uint32_t>& bits) {
   for(uint32_t i: bits) {
     val |= top_bit >> i;
   }
-  return val;
+  return static_cast<uint16_t>(val);
 }
 
 TEST(HexFloatOperationTest, NormalizedSignificand) {

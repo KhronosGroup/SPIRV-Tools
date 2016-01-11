@@ -70,10 +70,10 @@ TEST_F(BinaryHeaderGet, Default) {
 }
 
 TEST_F(BinaryHeaderGet, InvalidCode) {
-  spv_const_binary_t binary = {nullptr, 0};
+  spv_const_binary_t my_binary = {nullptr, 0};
   spv_header_t header;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
-            spvBinaryHeaderGet(&binary, SPV_ENDIANNESS_LITTLE, &header));
+            spvBinaryHeaderGet(&my_binary, SPV_ENDIANNESS_LITTLE, &header));
 }
 
 TEST_F(BinaryHeaderGet, InvalidPointerHeader) {

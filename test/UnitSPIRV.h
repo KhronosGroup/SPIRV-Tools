@@ -79,7 +79,7 @@ void PrintTo(const WordVector& words, ::std::ostream* os);
 // A proxy class to allow us to easily write out vectors of SPIR-V words.
 class WordVector {
  public:
-  explicit WordVector(const std::vector<uint32_t>& value) : value_(value) {}
+  explicit WordVector(const std::vector<uint32_t>& val) : value_(val) {}
   explicit WordVector(const spv_binary_t& binary)
       : value_(binary.code, binary.code + binary.wordCount) {}
 
@@ -179,8 +179,8 @@ struct AutoText {
 template <typename E>
 class EnumCase {
  public:
-  EnumCase(E value, std::string name, std::vector<uint32_t> operands = {})
-      : enum_value_(value), name_(name), operands_(operands) {}
+  EnumCase(E val, std::string enum_name, std::vector<uint32_t> ops = {})
+      : enum_value_(val), name_(enum_name), operands_(ops) {}
   // Returns the enum value as a uint32_t.
   uint32_t value() const { return static_cast<uint32_t>(enum_value_); }
   // Returns the name of the enumerant.

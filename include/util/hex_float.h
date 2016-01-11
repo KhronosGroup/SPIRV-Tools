@@ -102,7 +102,8 @@ class FloatProxy {
 
   // This is helpful to have and is guaranteed not to stomp bits.
   FloatProxy<T> operator-() const {
-    return data_ ^ (uint_type(0x1) << (sizeof(T) * 8 - 1));
+    return static_cast<uint_type>(data_ ^
+                                  (uint_type(0x1) << (sizeof(T) * 8 - 1)));
   }
 
   // Returns the data as a floating point value.
@@ -287,19 +288,21 @@ class HexFloat {
 
   // Returns the bits associated with the value, without the leading sign bit.
   uint_type getUnsignedBits() const {
-    return spvutils::BitwiseCast<uint_type>(value_) & ~sign_mask;
+    return static_cast<uint_type>(spvutils::BitwiseCast<uint_type>(value_) &
+                                  ~sign_mask);
   }
 
   // Returns the bits associated with the exponent, shifted to start at the
   // lsb of the type.
   const uint_type getExponentBits() const {
-    return (getBits() & exponent_mask) >> num_fraction_bits;
+    return static_cast<uint_type>((getBits() & exponent_mask) >>
+                                  num_fraction_bits);
   }
 
   // Returns the exponent in unbiased form. This is the exponent in the
   // human-friendly form.
   const int_type getUnbiasedExponent() const {
-    return (static_cast<int_type>(getExponentBits()) - exponent_bias);
+    return static_cast<int_type>(getExponentBits() - exponent_bias);
   }
 
   // Returns just the significand bits from the value.
@@ -317,8 +320,8 @@ class HexFloat {
     if (exp == min_exponent) {  // We are in denorm land.
       uint_type significand_bits = getSignificandBits();
       while ((significand_bits & (first_exponent_bit >> 1)) == 0) {
-        significand_bits <<= 1;
-        exp -= 1;
+        significand_bits = static_cast<uint_type>(significand_bits << 1);
+        exp = static_cast<int_type>(exp - 1);
       }
       significand_bits &= fraction_encode_mask;
     }
@@ -330,7 +333,7 @@ class HexFloat {
     int_type unbiased_exponent = getUnbiasedNormalizedExponent();
     uint_type significand = getSignificandBits();
     for (int_type i = unbiased_exponent; i <= min_exponent; ++i) {
-      significand <<= 1;
+      significand = static_cast<uint_type>(significand << 1);
     }
     significand &= fraction_encode_mask;
     return significand;
@@ -361,31 +364,32 @@ class HexFloat {
       // the significand is not zero.
       significand_is_zero = false;
       significand |= first_exponent_bit;
-      significand >>= 1;
+      significand  = static_cast<uint_type>(significand >> 1);
     }
 
     while (exponent < min_exponent) {
-      significand >>= 1;
+      significand  = static_cast<uint_type>(significand >> 1);
       ++exponent;
     }
 
     if (exponent == min_exponent) {
       if (significand == 0 && !significand_is_zero && round_denorm_up) {
-        significand = 0x1;
+        significand = static_cast<uint_type>(0x1);
       }
     }
 
     uint_type new_value = 0;
     if (negative) {
-      new_value |= sign_mask;
+      new_value = static_cast<uint_type>(new_value | sign_mask);
     }
-    exponent += exponent_bias;
+    exponent = static_cast<int_type>(exponent + exponent_bias);
     assert(exponent >= 0);
 
     // put it all together
-    exponent = (exponent << exponent_left_shift) & exponent_mask;
-    significand &= fraction_encode_mask;
-    new_value |= exponent | significand;
+    exponent = static_cast<uint_type>((exponent << exponent_left_shift) &
+                                      exponent_mask);
+    significand = static_cast<uint_type>(significand & fraction_encode_mask);
+    new_value = static_cast<uint_type>(new_value | (exponent | significand));
     value_ = BitwiseCast<T>(new_value);
   }
 
@@ -397,14 +401,14 @@ class HexFloat {
   // for a valid significand.
   static uint_type incrementSignificand(uint_type significand,
                                         uint_type to_increment, bool* carry) {
-    significand += to_increment;
+    significand = static_cast<uint_type>(significand + to_increment);
     *carry = false;
     if (significand & first_exponent_bit) {
       *carry = true;
       // The implicit 1-bit will have carried, so we should zero-out the
       // top bit and shift back.
-      significand &= ~first_exponent_bit;
-      significand >>= 1;
+      significand = static_cast<uint_type>(significand & ~first_exponent_bit);
+      significand = static_cast<uint_type>(significand >> 1);
     }
     return significand;
   }
@@ -416,22 +420,30 @@ class HexFloat {
 
   template <int_type N, typename enable = void>
   struct negatable_left_shift {
-    static uint_type val(uint_type val) { return val >> -N; }
+    static uint_type val(uint_type val) {
+      return static_cast<uint_type>(val >> -N);
+    }
   };
 
   template <int_type N>
   struct negatable_left_shift<N, typename std::enable_if<N >= 0>::type> {
-    static uint_type val(uint_type val) { return val << N; }
+    static uint_type val(uint_type val) {
+      return static_cast<uint_type>(val << N);
+    }
   };
 
   template <int_type N, typename enable = void>
   struct negatable_right_shift {
-    static uint_type val(uint_type val) { return val << -N; }
+    static uint_type val(uint_type val) {
+      return static_cast<uint_type>(val << -N);
+    }
   };
 
   template <int_type N>
   struct negatable_right_shift<N, typename std::enable_if<N >= 0>::type> {
-    static uint_type val(uint_type val) { return val >> N; }
+    static uint_type val(uint_type val) {
+      return static_cast<uint_type>(val >> N);
+    }
   };
 
   // Returns the significand, rounded to fit in a significand in
@@ -465,9 +477,9 @@ class HexFloat {
     uint_type significand = getNormalizedSignificand();
     // If we are up-casting, then we just have to shift to the right location.
     if (num_throwaway_bits <= 0) {
-      out_val = significand;
+      out_val = static_cast<other_uint_type>(significand);
       uint_type shift_amount = -num_throwaway_bits;
-      out_val <<= shift_amount;
+      out_val = static_cast<other_uint_type>(out_val << shift_amount);
       return out_val;
     }
 
@@ -548,10 +560,10 @@ class HexFloat {
     if (exponent == min_exponent) {
       // If we are denormal, normalize the exponent, so that we can encode
       // easily.
-      exponent += 1;
+      exponent = static_cast<int_type>(exponent + 1);
       for (uint_type check_bit = first_exponent_bit >> 1; check_bit != 0;
-           check_bit >>= 1) {
-        exponent -= 1;
+           check_bit = static_cast<uint_type>(check_bit >> 1)) {
+        exponent = static_cast<int_type>(exponent - 1);
         if (check_bit & significand) break;
       }
     }
@@ -590,11 +602,12 @@ class HexFloat {
     bool round_underflow_up =
         isNegative() ? round_dir == round_direction::kToNegativeInfinity
                      : round_dir == round_direction::kToPositiveInfinity;
-
+    using other_int_type = typename other_T::int_type;
     // setFromSignUnbiasedExponentAndNormalizedSignificand will
     // zero out any underflowing value (but retain the sign).
     other.setFromSignUnbiasedExponentAndNormalizedSignificand(
-        negate, exponent, rounded_significand, round_underflow_up);
+        negate, static_cast<other_int_type>(exponent), rounded_significand,
+        round_underflow_up);
     return;
   }
 
@@ -641,18 +654,18 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
 
   const uint_type bits = spvutils::BitwiseCast<uint_type>(value.value());
   const char* const sign = (bits & HF::sign_mask) ? "-" : "";
-  const uint_type exponent =
-      (bits & HF::exponent_mask) >> HF::num_fraction_bits;
+  const uint_type exponent = static_cast<uint_type>(
+      (bits & HF::exponent_mask) >> HF::num_fraction_bits);
 
-  uint_type fraction = (bits & HF::fraction_encode_mask)
-                       << HF::num_overflow_bits;
+  uint_type fraction = static_cast<uint_type>((bits & HF::fraction_encode_mask)
+                                              << HF::num_overflow_bits);
 
   const bool is_zero = exponent == 0 && fraction == 0;
   const bool is_denorm = exponent == 0 && !is_zero;
 
   // exponent contains the biased exponent we have to convert it back into
   // the normal range.
-  int_type int_exponent = static_cast<int_type>(exponent) - HF::exponent_bias;
+  int_type int_exponent = static_cast<int_type>(exponent - HF::exponent_bias);
   // If the number is all zeros, then we actually have to NOT shift the
   // exponent.
   int_exponent = is_zero ? 0 : int_exponent;
@@ -662,12 +675,12 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
 
   if (is_denorm) {
     while ((fraction & HF::fraction_top_bit) == 0) {
-      fraction <<= 1;
-      int_exponent -= 1;
+      fraction = static_cast<uint_type>(fraction << 1);
+      int_exponent = static_cast<int_type>(int_exponent - 1);
     }
     // Since this is denormalized, we have to consume the leading 1 since it
     // will end up being implicit.
-    fraction <<= 1;  // eat the leading 1
+    fraction  = static_cast<uint_type>(fraction << 1);  // eat the leading 1
     fraction &= HF::fraction_represent_mask;
   }
 
@@ -676,7 +689,7 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   // fractional part.
   while (fraction_nibbles > 0 && (fraction & 0xF) == 0) {
     // Shift off any trailing values;
-    fraction >>= 4;
+    fraction = static_cast<uint_type>(fraction >>  4);
     --fraction_nibbles;
   }
 
@@ -828,8 +841,11 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
         if (bits_written) {
           // If we are here the bits represented belong in the fractional
           // part of the float, and we have to adjust the exponent accordingly.
-          fraction |= write_bit << (HF::top_bit_left_shift - fraction_index++);
-          exponent += 1;
+          fraction =
+              fraction |
+              static_cast<uint_type>(
+                  write_bit << (HF::top_bit_left_shift - fraction_index++));
+          exponent = static_cast<int_type>(exponent + 1);
         }
         bits_written |= write_bit != 0;
       }
@@ -855,9 +871,12 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
           // Handle modifying the exponent here this way we can handle
           // an arbitrary number of hex values without overflowing our
           // integer.
-          exponent -= 1;
+          exponent = static_cast<int_type>(exponent - 1);
         } else {
-          fraction |= write_bit << (HF::top_bit_left_shift - fraction_index++);
+          fraction =
+              fraction |
+              static_cast<uint_type>(
+                  write_bit << (HF::top_bit_left_shift - fraction_index++));
         }
       }
     } else {
@@ -883,8 +902,9 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
       exponent_sign = (next_char == '-') ? -1 : 1;
     } else if (::isdigit(next_char)) {
       // Hex-floats express their exponent as decimal.
-      written_exponent *= 10;
-      written_exponent += next_char - '0';
+      written_exponent = static_cast<int_type>(written_exponent * 10);
+      written_exponent =
+          static_cast<int_type>(written_exponent + (next_char - '0'));
     } else {
       break;
     }
@@ -892,19 +912,19 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
     next_char = is.peek();
   }
 
-  written_exponent *= exponent_sign;
-  exponent += written_exponent;
+  written_exponent = static_cast<int_type>(written_exponent * exponent_sign);
+  exponent = static_cast<int_type>(exponent + written_exponent);
 
   bool is_zero = is_denorm && (fraction == 0);
   if (is_denorm && !is_zero) {
-    fraction <<= 1;
-    exponent -= 1;
+    fraction = static_cast<uint_type>(fraction << 1);
+    exponent = static_cast<int_type>(exponent - 1);
   } else if (is_zero) {
     exponent = 0;
   }
 
   if (exponent <= 0 && !is_zero) {
-    fraction >>= 1;
+    fraction = static_cast<uint_type>(fraction >> 1);
     fraction |= static_cast<uint_type>(1) << HF::top_bit_left_shift;
   }
 
@@ -915,8 +935,8 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
 
   // Handle actual denorm numbers
   while (exponent < 0 && !is_zero) {
-    fraction >>= 1;
-    exponent += 1;
+    fraction = static_cast<uint_type>(fraction >> 1);
+    exponent = static_cast<int_type>(exponent + 1);
 
     fraction &= HF::fraction_encode_mask;
     if (fraction == 0) {
@@ -932,10 +952,14 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
     fraction = 0;
   }
 
-  uint_type output_bits = static_cast<uint_type>(negate_value ? 1 : 0)
-                          << HF::top_bit_left_shift;
+  uint_type output_bits = static_cast<uint_type>(
+      static_cast<uint_type>(negate_value ? 1 : 0) << HF::top_bit_left_shift);
   output_bits |= fraction;
-  output_bits |= (exponent << HF::exponent_left_shift) & HF::exponent_mask;
+
+  uint_type shifted_exponent = static_cast<uint_type>(
+      static_cast<uint_type>(exponent << HF::exponent_left_shift) &
+      HF::exponent_mask);
+  output_bits |= shifted_exponent;
 
   T output_float = spvutils::BitwiseCast<T>(output_bits);
   value.set_value(output_float);

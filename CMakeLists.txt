@@ -81,6 +81,9 @@ function(default_compile_options TARGET)
   if (UNIX)
     target_compile_options(${TARGET} PRIVATE
       -std=c++11 -fno-exceptions -fno-rtti)
+    target_compile_options(${TARGET} PRIVATE
+      -Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion
+      -Wno-sign-conversion)
     # For good call stacks in profiles, keep the frame pointers.
     if(NOT "${SPIRV_PERF}" STREQUAL "")
       target_compile_options(${TARGET} PRIVATE -fno-omit-frame-pointer)
@@ -92,6 +95,9 @@ function(default_compile_options TARGET)
         target_compile_options(${TARGET} PRIVATE
           -fsanitize=${SPIRV_USE_SANITIZER})
       endif()
+    else()
+      target_compile_options(${TARGET} PRIVATE
+         -Wno-missing-field-initializers)
     endif()
   endif()
 endfunction()
@@ -231,6 +237,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
 
     add_executable(UnitSPIRV ${TEST_SOURCES})
     default_compile_options(UnitSPIRV)
+    if(UNIX)
+     target_compile_options(UnitSPIRV PRIVATE
+        -Wno-undef)
+    endif()
     target_include_directories(UnitSPIRV PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${gmock_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include)

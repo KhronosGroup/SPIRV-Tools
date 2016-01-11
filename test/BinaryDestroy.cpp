@@ -40,7 +40,6 @@ using BinaryDestroySomething = spvtest::TextToBinaryTest;
 
 // Checks safety of destroying a validly constructed binary.
 TEST_F(BinaryDestroySomething, Default) {
-  spv_context context = spvContextCreate();
   // Use a binary object constructed by the API instead of rolling our own.
   SetText("OpSource OpenCL_C 120");
   spv_binary my_binary = nullptr;
@@ -48,7 +47,6 @@ TEST_F(BinaryDestroySomething, Default) {
                                          &my_binary, &diagnostic));
   ASSERT_NE(nullptr, my_binary);
   spvBinaryDestroy(my_binary);
-  spvContextDestroy(context);
 }
 
 }  // anonymous namespace

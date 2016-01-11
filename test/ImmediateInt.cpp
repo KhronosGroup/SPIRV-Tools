@@ -184,7 +184,7 @@ TEST_F(ImmediateIntTest, StringFollowingImmediate) {
     EXPECT_EQ(original,
               CompiledInstructions("OpMemberName !1 !4 \"" + name + "\""))
         << name;
-    const uint32_t wordCount = 4 + name.size() / 4;
+    const uint16_t wordCount = static_cast<uint16_t>(4 + name.size() / 4);
     const uint32_t firstWord = spvOpcodeMake(wordCount, SpvOpMemberName);
     EXPECT_EQ(original, CompiledInstructions("!" + std::to_string(firstWord) +
                                              " %10 !4 \"" + name + "\""))

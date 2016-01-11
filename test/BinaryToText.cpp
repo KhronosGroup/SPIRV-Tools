@@ -396,7 +396,6 @@ OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
 TEST_F(TextToBinaryTest, VersionString) {
   auto words = CompileSuccessfully("");
   spv_text decoded_text = nullptr;
-  spv_diagnostic diagnostic = nullptr;
   EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
                               SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
                               &diagnostic),
@@ -430,7 +429,6 @@ TEST_P(GeneratorStringTest, Sample) {
       SPV_GENERATOR_WORD(GetParam().generator, GetParam().misc);
 
   spv_text decoded_text = nullptr;
-  spv_diagnostic diagnostic = nullptr;
   EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
                               SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
                               &diagnostic),
