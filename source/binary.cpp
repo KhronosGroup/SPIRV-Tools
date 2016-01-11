@@ -738,7 +738,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     if (convert_operand_endianness) {
       const spv_endianness_t endianness = _.endian;
       std::transform(_.words + _.word_index, _.words + index_after_operand,
-                     words->end(), [endianness](const uint32_t raw_word) {
+                     std::back_inserter(*words),
+                     [endianness](const uint32_t raw_word) {
                        return spvFixWord(raw_word, endianness);
                      });
     } else {

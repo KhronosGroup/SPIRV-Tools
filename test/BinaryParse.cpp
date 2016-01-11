@@ -119,15 +119,15 @@ class MockParseClient {
 spv_result_t invoke_header(void* user_data, spv_endianness_t endian,
                            uint32_t magic, uint32_t version, uint32_t generator,
                            uint32_t id_bound, uint32_t reserved) {
-  return static_cast<MockParseClient*>(user_data)
-      ->Header(endian, magic, version, generator, id_bound, reserved);
+  return static_cast<MockParseClient*>(user_data)->Header(
+      endian, magic, version, generator, id_bound, reserved);
 }
 
 // Casts user_data as MockParseClient and invokes its Instruction().
 spv_result_t invoke_instruction(
     void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
-  return static_cast<MockParseClient*>(user_data)
-      ->Instruction(ParsedInstruction(*parsed_instruction));
+  return static_cast<MockParseClient*>(user_data)->Instruction(
+      ParsedInstruction(*parsed_instruction));
 }
 
 // The SPIR-V module header words for the Khronos Assembler generator,
@@ -204,10 +204,23 @@ ParsedInstruction MakeParsedInt32TypeInstruction(uint32_t result_id) {
 
 class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
  protected:
-  void Parse(const SpirvVector& words, spv_result_t expected_result) {
+  void Parse(const SpirvVector& words, spv_result_t expected_result,
+             bool flip_words = false) {
+    SpirvVector flipped_words(words);
+    SCOPED_TRACE(flip_words ? "Flipped Endianness" : "Normal Endianness");
+    if (flip_words) {
+      std::transform(flipped_words.begin(), flipped_words.end(),
+                     flipped_words.begin(), [](const uint32_t raw_word) {
+                       return spvFixWord(raw_word,
+                                         I32_ENDIAN_HOST == I32_ENDIAN_BIG
+                                             ? SPV_ENDIANNESS_LITTLE
+                                             : SPV_ENDIANNESS_BIG);
+                     });
+    }
     EXPECT_EQ(expected_result,
-              spvBinaryParse(context, &client_, words.data(), words.size(),
-                             invoke_header, invoke_instruction, &diagnostic_));
+              spvBinaryParse(context, &client_, flipped_words.data(),
+                             flipped_words.size(), invoke_header,
+                             invoke_instruction, &diagnostic_));
   }
 
   spv_diagnostic diagnostic_ = nullptr;
@@ -223,23 +236,29 @@ class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
                      SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), \
                      bound, 0 /*reserved*/))
 
+static const bool kSwapEndians[] = {false, true};
+
 TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
-  const auto words= CompileSuccessfully("");
-  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
-  Parse(words, SPV_SUCCESS);
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully("");
+    EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest,
        ModuleWithSingleInstructionHasValidHeaderAndInstructionCallback) {
-  const auto words = CompileSuccessfully("%1 = OpTypeVoid");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
-      .WillOnce(Return(SPV_SUCCESS));
-  Parse(words, SPV_SUCCESS);
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully("%1 = OpTypeVoid");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(2).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest, NullHeaderCallbackIsIgnored) {
@@ -270,77 +289,87 @@ TEST_F(BinaryParseTest, NullInstructionCallbackIsIgnored) {
 // spv_parsed_instruction_t struct: words, num_words, opcode, result_id,
 // operands, num_operands.
 TEST_F(BinaryParseTest, TwoScalarTypesGenerateTwoInstructionCallbacks) {
-  const auto words = CompileSuccessfully(
-      "%1 = OpTypeVoid "
-      "%2 = OpTypeInt 32 1");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(3).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
-      .WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
-      .WillOnce(Return(SPV_SUCCESS));
-  Parse(words, SPV_SUCCESS);
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully(
+        "%1 = OpTypeVoid "
+        "%2 = OpTypeInt 32 1");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(3).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+        .WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithZeroPassingCallbacks) {
-  const auto words = CompileSuccessfully(
-      "%1 = OpTypeVoid "
-      "%2 = OpTypeInt 32 1");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(3).WillOnce(Return(SPV_ERROR_INVALID_BINARY));
-  // Early exit means no calls to Instruction().
-  EXPECT_CALL(client_, Instruction(_)).Times(0);
-  Parse(words, SPV_ERROR_INVALID_BINARY);
-  // On error, the binary parser doesn't generate its own diagnostics.
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully(
+        "%1 = OpTypeVoid "
+        "%2 = OpTypeInt 32 1");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(3).WillOnce(Return(SPV_ERROR_INVALID_BINARY));
+    // Early exit means no calls to Instruction().
+    EXPECT_CALL(client_, Instruction(_)).Times(0);
+    Parse(words, SPV_ERROR_INVALID_BINARY, endian_swap);
+    // On error, the binary parser doesn't generate its own diagnostics.
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest,
        EarlyReturnWithZeroPassingCallbacksAndSpecifiedResultCode) {
-  const auto words = CompileSuccessfully(
-      "%1 = OpTypeVoid "
-      "%2 = OpTypeInt 32 1");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(3).WillOnce(Return(SPV_REQUESTED_TERMINATION));
-  // Early exit means no calls to Instruction().
-  EXPECT_CALL(client_, Instruction(_)).Times(0);
-  Parse(words, SPV_REQUESTED_TERMINATION);
-  // On early termination, the binary parser doesn't generate its own
-  // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully(
+        "%1 = OpTypeVoid "
+        "%2 = OpTypeInt 32 1");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(3).WillOnce(Return(SPV_REQUESTED_TERMINATION));
+    // Early exit means no calls to Instruction().
+    EXPECT_CALL(client_, Instruction(_)).Times(0);
+    Parse(words, SPV_REQUESTED_TERMINATION, endian_swap);
+    // On early termination, the binary parser doesn't generate its own
+    // diagnostics.
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithOnePassingCallback) {
-  const auto words = CompileSuccessfully(
-      "%1 = OpTypeVoid "
-      "%2 = OpTypeInt 32 1 "
-      "%3 = OpTypeFloat 32");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
-      .WillOnce(Return(SPV_REQUESTED_TERMINATION));
-  Parse(words, SPV_REQUESTED_TERMINATION);
-  // On early termination, the binary parser doesn't generate its own
-  // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully(
+        "%1 = OpTypeVoid "
+        "%2 = OpTypeInt 32 1 "
+        "%3 = OpTypeFloat 32");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+        .WillOnce(Return(SPV_REQUESTED_TERMINATION));
+    Parse(words, SPV_REQUESTED_TERMINATION, endian_swap);
+    // On early termination, the binary parser doesn't generate its own
+    // diagnostics.
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest, EarlyReturnWithTwoPassingCallbacks) {
-  const auto words = CompileSuccessfully(
-      "%1 = OpTypeVoid "
-      "%2 = OpTypeInt 32 1 "
-      "%3 = OpTypeFloat 32");
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
-      .WillOnce(Return(SPV_SUCCESS));
-  EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
-      .WillOnce(Return(SPV_REQUESTED_TERMINATION));
-  Parse(words, SPV_REQUESTED_TERMINATION);
-  // On early termination, the binary parser doesn't generate its own
-  // diagnostics.
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const auto words = CompileSuccessfully(
+        "%1 = OpTypeVoid "
+        "%2 = OpTypeInt 32 1 "
+        "%3 = OpTypeFloat 32");
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(4).WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedVoidTypeInstruction(1)))
+        .WillOnce(Return(SPV_SUCCESS));
+    EXPECT_CALL(client_, Instruction(MakeParsedInt32TypeInstruction(2)))
+        .WillOnce(Return(SPV_REQUESTED_TERMINATION));
+    Parse(words, SPV_REQUESTED_TERMINATION, endian_swap);
+    // On early termination, the binary parser doesn't generate its own
+    // diagnostics.
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 TEST_F(BinaryParseTest, InstructionWithStringOperand) {
@@ -361,7 +390,9 @@ TEST_F(BinaryParseTest, InstructionWithStringOperand) {
                   0 /* No result id for OpName*/, operands.data(),
                   static_cast<uint16_t>(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
-  Parse(words, SPV_SUCCESS);
+  // Since we are actually checking the output, don't test the
+  // endian-swapped version.
+  Parse(words, SPV_SUCCESS, false);
   EXPECT_EQ(nullptr, diagnostic_);
 }
 
@@ -377,7 +408,8 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   const auto operands = std::vector<spv_parsed_operand_t>{
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_TYPE_ID),
       MakeSimpleOperand(2, SPV_OPERAND_TYPE_RESULT_ID),
-      MakeSimpleOperand(3, SPV_OPERAND_TYPE_ID),  // Extended instruction set Id
+      MakeSimpleOperand(3,
+                        SPV_OPERAND_TYPE_ID),  // Extended instruction set Id
       MakeSimpleOperand(4, SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER),
       MakeSimpleOperand(5, SPV_OPERAND_TYPE_ID),  // Id of the argument
   };
@@ -391,7 +423,9 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
                   3 /*result id*/, operands.data(),
                   static_cast<uint16_t>(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
-  Parse(words, SPV_SUCCESS);
+  // Since we are actually checking the output, don't test the
+  // endian-swapped version.
+  Parse(words, SPV_SUCCESS, false);
   EXPECT_EQ(nullptr, diagnostic_);
 }
 
