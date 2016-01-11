@@ -772,7 +772,7 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
   using uint_type = typename HF::uint_type;
   using int_type = typename HF::int_type;
 
-  value.set_value(T(0.f));
+  value.set_value(static_cast<typename HF::native_type>(0.f));
 
   if (is.flags() & std::ios::skipws) {
     // If the user wants to skip whitespace , then we should obey that.
