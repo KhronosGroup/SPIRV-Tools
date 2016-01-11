@@ -390,7 +390,8 @@ spv_result_t spvValidate(const spv_const_context context,
 spv_diagnostic spvDiagnosticCreate(const spv_position position,
                                    const char* message);
 
-/// Destroys a diagnostic object.
+// Destroys a diagnostic object.  This is a no-op if diagnostic is a null
+// pointer.
 void spvDiagnosticDestroy(spv_diagnostic diagnostic);
 
 // Prints the diagnostic to stderr.
