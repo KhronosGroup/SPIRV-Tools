@@ -41,19 +41,22 @@ TEST(TextStartsWithOp, YesAtStart) {
 
 TEST(TextStartsWithOp, YesAtMiddle) {
   {
-    AssemblyContext dat(AutoText("  OpFoo"), nullptr);
+    AutoText text("  OpFoo");
+    AssemblyContext dat(text, nullptr);
     dat.seekForward(2);
     EXPECT_TRUE(dat.isStartOfNewInst());
   }
   {
-    AssemblyContext dat(AutoText("xx OpFoo"), nullptr);
+    AutoText text("xx OpFoo");
+    AssemblyContext dat(text, nullptr);
     dat.seekForward(2);
     EXPECT_TRUE(dat.isStartOfNewInst());
   }
 }
 
 TEST(TextStartsWithOp, NoIfTooFar) {
-  AssemblyContext dat(AutoText("  OpFoo"), nullptr);
+  AutoText text("  OpFoo");
+  AssemblyContext dat(text, nullptr);
   dat.seekForward(3);
   EXPECT_FALSE(dat.isStartOfNewInst());
 }
