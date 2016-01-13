@@ -61,8 +61,7 @@ using libspirv::ValidationState_t;
 using libspirv::kLayoutFunctionDeclarations;
 using libspirv::kLayoutFunctionDefinitions;
 using libspirv::kLayoutMemoryModel;
-using libspirv::FunctionDecl::kFunctionDeclDeclaration;
-using libspirv::FunctionDecl::kFunctionDeclDefinition;
+using libspirv::FunctionDecl;
 
 #define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
@@ -574,7 +573,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
             }
             _.progressToNextLayoutStageOrder();
             spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
-                kFunctionDeclDefinition));
+                FunctionDecl::kFunctionDeclDefinition));
             break;
           case SpvOpFunctionEnd:
             assert(_.get_functions().get_block_count() ==
@@ -586,7 +585,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                      << "Function end instructions must be in a function body";
             }
             spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
-                kFunctionDeclDeclaration));
+                FunctionDecl::kFunctionDeclDeclaration));
             spvCheckReturn(_.get_functions().RegisterFunctionEnd());
             break;
           default:
@@ -614,7 +613,7 @@ spv_result_t CfgPass(ValidationState_t& _,
             inst->words[inst->operands[2].offset],
             inst->words[inst->operands[3].offset]));
         spvCheckReturn(_.get_functions().RegisterSetFunctionDeclType(
-            kFunctionDeclDefinition));
+            FunctionDecl::kFunctionDeclDefinition));
         break;
       case SpvOpFunctionParameter:
         spvCheckReturn(_.get_functions().RegisterFunctionParameter(
@@ -692,8 +691,9 @@ spv_result_t spvValidate(const spv_const_context context,
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(pDiagnostic, options);
-  spvCheckReturn(spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
-                                setHeader, ProcessInstructions, pDiagnostic));
+  spvCheckReturn(spvBinaryParse(context, &vstate, binary->code,
+                                binary->wordCount, setHeader,
+                                ProcessInstructions, pDiagnostic));
 
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the processInstructions pass to make
