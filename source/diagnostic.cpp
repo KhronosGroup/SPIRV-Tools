@@ -88,5 +88,68 @@ DiagnosticStream::~DiagnosticStream() {
     *pDiagnostic_ = spvDiagnosticCreate(&position_, stream_.str().c_str());
   }
 }
+std::string
+spvResultToString(spv_result_t res) {
+  std::string out;
+  switch (res) {
+    case SPV_SUCCESS:
+      out = "SPV_SUCCESS";
+      break;
+    case SPV_UNSUPPORTED:
+      out = "SPV_UNSUPPORTED";
+      break;
+    case SPV_END_OF_STREAM:
+      out = "SPV_END_OF_STREAM";
+      break;
+    case SPV_WARNING:
+      out = "SPV_WARNING";
+      break;
+    case SPV_FAILED_MATCH:
+      out = "SPV_FAILED_MATCH";
+      break;
+    case SPV_REQUESTED_TERMINATION:
+      out = "SPV_REQUESTED_TERMINATION";
+      break;
+    case SPV_ERROR_INTERNAL:
+      out = "SPV_ERROR_INTERNAL";
+      break;
+    case SPV_ERROR_OUT_OF_MEMORY:
+      out = "SPV_ERROR_OUT_OF_MEMORY";
+      break;
+    case SPV_ERROR_INVALID_POINTER:
+      out = "SPV_ERROR_INVALID_POINTER";
+      break;
+    case SPV_ERROR_INVALID_BINARY:
+      out = "SPV_ERROR_INVALID_BINARY";
+      break;
+    case SPV_ERROR_INVALID_TEXT:
+      out = "SPV_ERROR_INVALID_TEXT";
+      break;
+    case SPV_ERROR_INVALID_TABLE:
+      out = "SPV_ERROR_INVALID_TABLE";
+      break;
+    case SPV_ERROR_INVALID_VALUE:
+      out = "SPV_ERROR_INVALID_VALUE";
+      break;
+    case SPV_ERROR_INVALID_DIAGNOSTIC:
+      out = "SPV_ERROR_INVALID_DIAGNOSTIC";
+      break;
+    case SPV_ERROR_INVALID_LOOKUP:
+      out = "SPV_ERROR_INVALID_LOOKUP";
+      break;
+    case SPV_ERROR_INVALID_ID:
+      out = "SPV_ERROR_INVALID_ID";
+      break;
+    case SPV_ERROR_INVALID_CFG:
+      out = "SPV_ERROR_INVALID_CFG";
+      break;
+    case SPV_ERROR_INVALID_LAYOUT:
+      out = "SPV_ERROR_INVALID_LAYOUT";
+      break;
+    default:
+      out = "Unknown Error";
+  }
+  return out;
+}
 
 }  // namespace libspirv
