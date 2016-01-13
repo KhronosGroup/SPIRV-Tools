@@ -842,9 +842,9 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
           // If we are here the bits represented belong in the fractional
           // part of the float, and we have to adjust the exponent accordingly.
           fraction =
-              fraction |
+        	  static_cast<uint_type>(fraction |
               static_cast<uint_type>(
-                  write_bit << (HF::top_bit_left_shift - fraction_index++));
+                  write_bit << (HF::top_bit_left_shift - fraction_index++)));
           exponent = static_cast<int_type>(exponent + 1);
         }
         bits_written |= write_bit != 0;
@@ -874,9 +874,9 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
           exponent = static_cast<int_type>(exponent - 1);
         } else {
           fraction =
-              fraction |
+              static_cast<uint_type>(fraction |
               static_cast<uint_type>(
-                  write_bit << (HF::top_bit_left_shift - fraction_index++));
+                  write_bit << (HF::top_bit_left_shift - fraction_index++)));
         }
       }
     } else {
