@@ -152,7 +152,7 @@ class Functions {
 
 class ValidationState_t {
  public:
-  ValidationState_t(spv_diagnostic* diag, uint32_t options);
+  ValidationState_t(spv_diagnostic* diagnostic, uint32_t options);
 
   // Defines the \p id for the module
   spv_result_t defineId(uint32_t id);
