@@ -243,9 +243,7 @@ spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
 spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
                                                   uint32_t type_id) {
   assert(in_function_ == true &&
-         "Function parameter instructions can not be declared of a function");
-  (void)id;
-  (void)type_id;
+         "Function parameter instructions cannot be declared outside of a function");
   if (in_block()) {
     return module_.diag(SPV_ERROR_INVALID_LAYOUT)
            << "Function parameters cannot be called in blocks";
@@ -256,11 +254,14 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
               "function definition";
   }
   // TODO(umar): Validate function parameter type order and count
+  // TODO(umar): Use these variables to validate parameter type
+  (void)id;
+  (void)type_id;
   return SPV_SUCCESS;
 }
 
 spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
-  assert(in_function_ == true && "Function can not be declared of a function");
+  assert(in_function_ == true && "Function can not be declared inside of another function");
   if (declaration_type_.size() <= 1 || type == *(end(declaration_type_) - 2) ||
       type == FunctionDecl::kFunctionDeclDeclaration) {
     declaration_type_.back() = type;

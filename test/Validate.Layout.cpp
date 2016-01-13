@@ -27,6 +27,7 @@
 // Validation tests for Logical Layout
 
 #include "gmock/gmock.h"
+#include "source/diagnostic.h"
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
@@ -47,73 +48,12 @@ using std::vector;
 
 using ::testing::HasSubstr;
 
+using libspirv::spvResultToString;
+
 using pred_type = function<spv_result_t(int)>;
 using ValidateLayout =
     spvtest::ValidateBase<tuple<int, tuple<string, pred_type, pred_type>>,
                           SPV_VALIDATE_LAYOUT_BIT>;
-
-// TODO(umar): probably should move this to a central location
-ostream& operator<<(ostream& os, const spv_result_t& err) {
-  switch (err) {
-    case SPV_SUCCESS:
-      os << "SPV_SUCCESS";
-      break;
-    case SPV_UNSUPPORTED:
-      os << "SPV_UNSUPPORTED";
-      break;
-    case SPV_END_OF_STREAM:
-      os << "SPV_END_OF_STREAM";
-      break;
-    case SPV_WARNING:
-      os << "SPV_WARNING";
-      break;
-    case SPV_FAILED_MATCH:
-      os << "SPV_FAILED_MATCH";
-      break;
-    case SPV_REQUESTED_TERMINATION:
-      os << "SPV_REQUESTED_TERMINATION";
-      break;
-    case SPV_ERROR_INTERNAL:
-      os << "SPV_ERROR_INTERNAL";
-      break;
-    case SPV_ERROR_OUT_OF_MEMORY:
-      os << "SPV_ERROR_OUT_OF_MEMORY";
-      break;
-    case SPV_ERROR_INVALID_POINTER:
-      os << "SPV_ERROR_INVALID_POINTER";
-      break;
-    case SPV_ERROR_INVALID_BINARY:
-      os << "SPV_ERROR_INVALID_BINARY";
-      break;
-    case SPV_ERROR_INVALID_TEXT:
-      os << "SPV_ERROR_INVALID_TEXT";
-      break;
-    case SPV_ERROR_INVALID_TABLE:
-      os << "SPV_ERROR_INVALID_TABLE";
-      break;
-    case SPV_ERROR_INVALID_VALUE:
-      os << "SPV_ERROR_INVALID_VALUE";
-      break;
-    case SPV_ERROR_INVALID_DIAGNOSTIC:
-      os << "SPV_ERROR_INVALID_DIAGNOSTIC";
-      break;
-    case SPV_ERROR_INVALID_LOOKUP:
-      os << "SPV_ERROR_INVALID_LOOKUP";
-      break;
-    case SPV_ERROR_INVALID_ID:
-      os << "SPV_ERROR_INVALID_ID";
-      break;
-    case SPV_ERROR_INVALID_CFG:
-      os << "SPV_ERROR_INVALID_CFG";
-      break;
-    case SPV_ERROR_INVALID_LAYOUT:
-      os << "SPV_ERROR_INVALID_LAYOUT";
-      break;
-    default:
-      os << "Unknown Error";
-  }
-  return os;
-}
 namespace {
 
 // returns true if order is equal to VAL
@@ -269,10 +209,11 @@ TEST_P(ValidateLayout, Layout) {
 
   // printf("code: \n%s\n", ss.str().c_str());
   CompileSuccessfully(ss.str());
+  spv_result_t result;
   // clang-format off
-  ASSERT_EQ(pred(order), ValidateInstructions())
-    << "Actual: "        << ValidateInstructions()
-    << "\nExpected: "    << pred(order)
+  ASSERT_EQ(pred(order), result = ValidateInstructions())
+    << "Actual: "        << spvResultToString(result)
+    << "\nExpected: "    << spvResultToString(pred(order))
     << "\nOrder: "       << order
     << "\nInstruction: " << instruction
     << "\nCode: \n"      << ss.str();

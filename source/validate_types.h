@@ -64,6 +64,14 @@ enum class FunctionDecl {
 
 class ValidationState_t;
 
+// This class manages all function declaration and definitions in a module. It
+// handles the state and id information while parsing a function in the SPIR-V
+// binary.
+//
+// NOTE: This class is designed to be a Structure of Arrays. Therefore each
+// member variable is a vector whose elements represent the values for the
+// corresponding function in a SPIR-V module. Variables that are not vector
+// types are used to manage the state while parsing the function.
 class Functions {
  public:
   Functions(ValidationState_t& module);
@@ -104,7 +112,7 @@ class Functions {
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count();
 
-  // Retuns true if the called after a function instruction but before the
+  // Retuns true if called after a function instruction but before the
   // function end instruction
   bool in_function_body() const;
 
@@ -137,9 +145,9 @@ class Functions {
   // The function parameter ids of the functions
   std::vector<std::vector<uint32_t>> parameter_ids_;
 
+  // NOTE: See correspoding getter functions
   bool in_function_;
   bool in_block_;
-  FunctionDecl function_stage;
 };
 
 class ValidationState_t {

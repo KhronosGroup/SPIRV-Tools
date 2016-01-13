@@ -102,6 +102,8 @@ class DiagnosticStream {
   libspirv::diagnostic_helper helper(position, pDiagnostic); \
   helper.stream()
 
+std::string spvResultToString(spv_result_t res);
+
 }  // namespace libspirv
 
 #endif  // LIBSPIRV_DIAGNOSTIC_H_
