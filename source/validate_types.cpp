@@ -116,8 +116,8 @@ const vector<vector<SpvOp>>& GetModuleOrder() {
 
 namespace libspirv {
 
-ValidationState_t::ValidationState_t(spv_diagnostic* diag, uint32_t options)
-    : diagnostic_(diag),
+ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic, uint32_t options)
+    : diagnostic_(diagnostic),
       instruction_counter_(0),
       defined_ids_{},
       unresolved_forward_ids_{},
