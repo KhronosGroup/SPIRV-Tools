@@ -186,7 +186,7 @@ ModuleLayoutSection ValidationState_t::getLayoutStage() const {
 }
 
 void ValidationState_t::progressToNextLayoutStageOrder() {
-  if (current_layout_stage_ <= GetModuleOrder().size()) {
+  if (static_cast<size_t>(current_layout_stage_) <= GetModuleOrder().size()) {
     current_layout_stage_ =
         static_cast<ModuleLayoutSection>(current_layout_stage_ + 1);
   }
