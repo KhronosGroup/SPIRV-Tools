@@ -38,7 +38,20 @@ using std::find;
 using std::string;
 using std::unordered_set;
 using std::vector;
-using namespace libspirv;
+
+using libspirv::kLayoutCapabilities;
+using libspirv::kLayoutExtensions;
+using libspirv::kLayoutExtInstImport;
+using libspirv::kLayoutMemoryModel;
+using libspirv::kLayoutEntryPoint;
+using libspirv::kLayoutExecutionMode;
+using libspirv::kLayoutDebug1;
+using libspirv::kLayoutDebug2;
+using libspirv::kLayoutAnnotations;
+using libspirv::kLayoutTypes;
+using libspirv::kLayoutFunctionDeclarations;
+using libspirv::kLayoutFunctionDefinitions;
+using libspirv::ModuleLayoutSection;
 
 namespace {
 bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
@@ -258,11 +271,11 @@ int ValidationState_t::incrementInstructionCount() {
   return instruction_counter_++;
 }
 
-ModuleLayoutSection ValidationState_t::getLayoutStage() const {
+ModuleLayoutSection ValidationState_t::getLayoutSection() const {
   return current_layout_stage_;
 }
 
-void ValidationState_t::progressToNextLayoutStageOrder() {
+void ValidationState_t::progressToNextLayoutSectionOrder() {
   // Guard against going past the last element(kLayoutFunctionDefinitions)
   if (current_layout_stage_ <= kLayoutFunctionDefinitions) {
     current_layout_stage_ =
@@ -270,7 +283,7 @@ void ValidationState_t::progressToNextLayoutStageOrder() {
   }
 }
 
-bool ValidationState_t::isOpcodeInCurrentLayoutStage(SpvOp op) {
+bool ValidationState_t::isOpcodeInCurrentLayoutSection(SpvOp op) {
   return IsInstructionInLayoutSection(current_layout_stage_, op);
 }
 
@@ -322,15 +335,8 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
   assert(in_function_ == true &&
          "Function parameter instructions cannot be declared outside of a "
          "function");
-  if (in_block()) {
-    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
-           << "Function parameters cannot be called in blocks";
-  }
-  if (block_ids_.back().size() != 0) {
-    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
-           << "Function parameters must only appear immediatly after the "
-              "function definition";
-  }
+  assert(in_block() == false &&
+         "Function parameters cannot be called in blocks");
   // TODO(umar): Validate function parameter type order and count
   // TODO(umar): Use these variables to validate parameter type
   (void)id;
@@ -339,33 +345,19 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
 }
 
 spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
-  assert(in_function_ == true &&
-         "Function can not be declared inside of another function");
-  if (declaration_type_.size() <= 1 || type == *(end(declaration_type_) - 2) ||
-      type == FunctionDecl::kFunctionDeclDeclaration) {
-    declaration_type_.back() = type;
-  } else if (type == FunctionDecl::kFunctionDeclDeclaration) {
-    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
-           << "Function declartions must appear before function definitions";
-  } else {
-    declaration_type_.back() = type;
-  }
+  assert(declaration_type_.back() == FunctionDecl::kFunctionDeclUnknown);
+  declaration_type_.back() = type;
   return SPV_SUCCESS;
 }
 
 spv_result_t Functions::RegisterBlock(uint32_t id) {
-  assert(in_function_ == true && "Labels can only exsist in functions");
-  if (module_.getLayoutStage() ==
-      ModuleLayoutSection::kLayoutFunctionDeclarations) {
-    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
-           << "Function declartions must appear before function definitions";
-  }
-  if (declaration_type_.back() != FunctionDecl::kFunctionDeclDefinition) {
-    // NOTE: This should not happen. We should know that this function is a
-    // definition at this point.
-    return module_.diag(SPV_ERROR_INTERNAL)
-           << "Function declaration type should have already been defined";
-  }
+  assert(in_function_ == true && "Blocks can only exsist in functions");
+  assert(in_block_ == false && "Blocks cannot be nested");
+  assert(module_.getLayoutSection() !=
+             ModuleLayoutSection::kLayoutFunctionDeclarations &&
+         "Function declartions must appear before function definitions");
+  assert(declaration_type_.back() == FunctionDecl::kFunctionDeclDefinition &&
+         "Function declaration type should have already been defined");
 
   block_ids_.back().push_back(id);
   in_block_ = true;
@@ -375,24 +367,22 @@ spv_result_t Functions::RegisterBlock(uint32_t id) {
 spv_result_t Functions::RegisterFunctionEnd() {
   assert(in_function_ == true &&
          "Function end can only be called in functions");
-  if (in_block()) {
-    return module_.diag(SPV_ERROR_INVALID_LAYOUT)
-           << "Function end cannot be called in blocks";
-  }
+  assert(in_block_ == false &&
+         "Function end cannot be called inside a block");
   in_function_ = false;
   return SPV_SUCCESS;
 }
 
 spv_result_t Functions::RegisterBlockEnd() {
+  assert(in_function_ == true &&
+         "Branch instruction can only be called in a function");
   assert(in_block_ == true &&
          "Branch instruction can only be called in a block");
   in_block_ = false;
   return SPV_SUCCESS;
 }
 
-size_t Functions::get_block_count() {
-  assert(in_function_ == true &&
-         "Branch instruction can only be called in a block");
+size_t Functions::get_block_count() const {
   return block_ids_.back().size();
 }
 }

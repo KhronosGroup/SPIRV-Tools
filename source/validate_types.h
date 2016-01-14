@@ -110,7 +110,7 @@ class Functions {
   spv_result_t RegisterBlockEnd();
 
   // Returns the number of blocks in the current function being parsed
-  size_t get_block_count();
+  size_t get_block_count() const;
 
   // Retuns true if called after a function instruction but before the
   // function end instruction
@@ -188,13 +188,13 @@ class ValidationState_t {
   int incrementInstructionCount();
 
   // Returns the current layout section which is being processed
-  ModuleLayoutSection getLayoutStage() const;
+  ModuleLayoutSection getLayoutSection() const;
 
   // Increments the module_layout_order_stage_
-  void progressToNextLayoutStageOrder();
+  void progressToNextLayoutSectionOrder();
 
   // Determines if the op instruction is part of the current stage
-  bool isOpcodeInCurrentLayoutStage(SpvOp op);
+  bool isOpcodeInCurrentLayoutSection(SpvOp op);
 
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
@@ -233,5 +233,9 @@ class ValidationState_t {
   std::vector<SpvCapability> module_capabilities_;
 };
 }
+
+#define spvCheckReturn(expression)                      \
+  if (spv_result_t error = (expression)) return error;
+
 
 #endif

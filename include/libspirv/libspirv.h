@@ -260,9 +260,10 @@ typedef enum spv_validate_options_t {
   SPV_VALIDATE_ID_BIT = SPV_BIT(2),
   SPV_VALIDATE_RULES_BIT = SPV_BIT(3),
   SPV_VALIDATE_SSA_BIT = SPV_BIT(4),
+  SPV_VALIDATE_INSTRUCTION_BIT = SPV_BIT(5),
   SPV_VALIDATE_ALL = SPV_VALIDATE_BASIC_BIT | SPV_VALIDATE_LAYOUT_BIT |
                      SPV_VALIDATE_ID_BIT | SPV_VALIDATE_RULES_BIT |
-                     SPV_VALIDATE_SSA_BIT,
+                     SPV_VALIDATE_SSA_BIT | SPV_VALIDATE_INSTRUCTION_BIT ,
   SPV_FORCE_32_BIT_ENUM(spv_validation_options_t)
 } spv_validate_options_t;
 

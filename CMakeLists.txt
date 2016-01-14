@@ -135,8 +135,12 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_types.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_cfg.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_id.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_instruction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_ssa.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_types.cpp)
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 default_compile_options(${SPIRV_TOOLS})

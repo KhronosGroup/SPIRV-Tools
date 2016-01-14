@@ -252,7 +252,9 @@ TEST_F(ValidateLayout, VariableFunctionStorageGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateLayout, VariableFunctionStorageBad) {
+
+// TODO(umar): This function should be moved to another validation file
+TEST_F(ValidateLayout, DISABLED_VariableFunctionStorageBad) {
   char str[] = R"(
           OpMemoryModel Logical GLSL450
           OpDecorate %var Restrict
