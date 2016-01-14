@@ -381,6 +381,7 @@ TEST_F(Validate, ForwardBranchConditionalGood) {
             OpBranch %endl
 %falsel =   OpLabel
             OpNop
+            OpBranch %endl
 %endl    =  OpLabel
             OpReturn
             OpFunctionEnd
@@ -405,6 +406,7 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
            OpBranch %endl
 %falsel =  OpLabel
            OpNop
+           OpBranch %endl
 %endl   =  OpLabel
            OpReturn
            OpFunctionEnd
@@ -430,6 +432,7 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
            OpBranch %endl
 %falsel =  OpLabel
            OpNop
+           OpBranch %endl
 %endl   =  OpLabel
 %tcpy   =  OpCopyObject %boolt %true
            OpReturn
@@ -457,6 +460,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
            OpBranch %endl
 %falsel =  OpLabel
            OpNop
+           OpBranch %endl
 %endl   =  OpLabel
            OpReturn
            OpFunctionEnd
