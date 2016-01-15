@@ -243,8 +243,14 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
     add_executable(UnitSPIRV ${TEST_SOURCES})
     default_compile_options(UnitSPIRV)
     if(UNIX)
-     target_compile_options(UnitSPIRV PRIVATE
-        -Wno-undef)
+      target_compile_options(UnitSPIRV PRIVATE -Wno-undef)
+    endif()
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+      # Disable C4503 "decorated name length exceeded" warning, triggered
+      # by some heavily templated types.
+      # We don't care much about that in test code.
+      # Important to do since we have warnings-as-errors.
+      target_compile_options(UnitSPIRV PRIVATE /wd4503)
     endif()
     target_include_directories(UnitSPIRV PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
