@@ -24,15 +24,16 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "headers/spirv.h"
-#include "validate_types.h"
-
 #include <algorithm>
 #include <cassert>
 #include <map>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "headers/spirv.h"
+
+#include "validate.h"
 
 using std::find;
 using std::string;
@@ -210,21 +211,11 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
                                      uint32_t options)
     : diagnostic_(diagnostic),
       instruction_counter_(0),
-      defined_ids_{},
       unresolved_forward_ids_{},
       validation_flags_(options),
       operand_names_{},
-      current_layout_stage_(kLayoutCapabilities),
+      current_layout_section_(kLayoutCapabilities),
       module_functions_(*this) {}
-
-spv_result_t ValidationState_t::defineId(uint32_t id) {
-  if (defined_ids_.find(id) == end(defined_ids_)) {
-    defined_ids_.insert(id);
-  } else {
-    return diag(SPV_ERROR_INVALID_ID) << "ID cannot be assigned multiple times";
-  }
-  return SPV_SUCCESS;
-}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -260,7 +251,7 @@ vector<uint32_t> ValidationState_t::unresolvedForwardIds() const {
 }
 
 bool ValidationState_t::isDefinedId(uint32_t id) const {
-  return defined_ids_.find(id) != end(defined_ids_);
+  return usedefs_.FindDef(id).first;
 }
 
 bool ValidationState_t::is_enabled(spv_validate_options_t flag) const {
@@ -273,19 +264,19 @@ int ValidationState_t::incrementInstructionCount() {
 }
 
 ModuleLayoutSection ValidationState_t::getLayoutSection() const {
-  return current_layout_stage_;
+  return current_layout_section_;
 }
 
 void ValidationState_t::progressToNextLayoutSectionOrder() {
   // Guard against going past the last element(kLayoutFunctionDefinitions)
-  if (current_layout_stage_ <= kLayoutFunctionDefinitions) {
-    current_layout_stage_ =
-        static_cast<ModuleLayoutSection>(current_layout_stage_ + 1);
+  if (current_layout_section_ <= kLayoutFunctionDefinitions) {
+    current_layout_section_ =
+        static_cast<ModuleLayoutSection>(current_layout_section_ + 1);
   }
 }
 
 bool ValidationState_t::isOpcodeInCurrentLayoutSection(SpvOp op) {
-  return IsInstructionInLayoutSection(current_layout_stage_, op);
+  return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {

@@ -125,4 +125,7 @@ spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
 spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
     const spv_operand_pattern_t& pattern);
 
+// Is the operand an ID?
+bool spvIsIdType(spv_operand_type_t type);
+
 #endif  // LIBSPIRV_OPERAND_H_

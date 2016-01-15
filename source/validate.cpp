@@ -25,7 +25,6 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "validate.h"
-#include "validate_types.h"
 #include "validate_passes.h"
 
 #include "binary.h"
@@ -206,81 +205,20 @@ spv_result_t spvValidateBasic(const spv_instruction_t* pInsts,
 }
 #endif
 
-spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
-                            const uint64_t count, const uint32_t bound,
-                            const spv_opcode_table opcodeTable,
-                            const spv_operand_table operandTable,
-                            const spv_ext_inst_table extInstTable,
-                            spv_position position,
-                            spv_diagnostic* pDiagnostic) {
-  std::vector<spv_id_info_t> idUses;
-  std::vector<spv_id_info_t> idDefs;
-
-  for (uint64_t instIndex = 0; instIndex < count; ++instIndex) {
-    const uint32_t* words = pInsts[instIndex].words.data();
-    SpvOp opcode;
-    spvOpcodeSplit(words[0], nullptr, &opcode);
-
-    spv_opcode_desc opcodeEntry = nullptr;
-    if (spvOpcodeTableValueLookup(opcodeTable, opcode, &opcodeEntry)) {
-      DIAGNOSTIC << "Invalid Opcode '" << opcode << "'.";
-      return SPV_ERROR_INVALID_BINARY;
-    }
-
-    spv_operand_desc operandEntry = nullptr;
-    position->index++;  // NOTE: Account for Opcode word
-    for (uint16_t index = 1; index < pInsts[instIndex].words.size();
-         ++index, position->index++) {
-      const uint32_t word = words[index];
-
-      spv_operand_type_t type = spvBinaryOperandInfo(
-          word, index, opcodeEntry, operandTable, &operandEntry);
-
-      if (SPV_OPERAND_TYPE_RESULT_ID == type || SPV_OPERAND_TYPE_ID == type) {
-        if (0 == word) {
-          DIAGNOSTIC << "Invalid ID of '0' is not allowed.";
-          return SPV_ERROR_INVALID_ID;
-        }
-        if (bound < word) {
-          DIAGNOSTIC << "Invalid ID '" << word << "' exceeds the bound '"
-                     << bound << "'.";
-          return SPV_ERROR_INVALID_ID;
-        }
-      }
-
-      if (SPV_OPERAND_TYPE_RESULT_ID == type) {
-        idDefs.push_back(
-            {word, opcodeEntry->opcode, &pInsts[instIndex], *position});
-      }
-
-      if (SPV_OPERAND_TYPE_ID == type) {
-        idUses.push_back({word, opcodeEntry->opcode, nullptr, *position});
-      }
-    }
+spv_result_t spvValidateIDs(
+    const spv_instruction_t* pInsts, const uint64_t count,
+    const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
+    const spv_ext_inst_table extInstTable, const ValidationState_t& state,
+    spv_position position, spv_diagnostic* pDiagnostic) {
+  auto undefd = state.usedefs().FindUsesWithoutDefs();
+  for (auto id : undefd) {
+    DIAGNOSTIC << "Undefined ID: " << id;
   }
-
-  // NOTE: Error on redefined ID
-  for (size_t outerIndex = 0; outerIndex < idDefs.size(); ++outerIndex) {
-    for (size_t innerIndex = 0; innerIndex < idDefs.size(); ++innerIndex) {
-      if (outerIndex == innerIndex) {
-        continue;
-      }
-      if (idDefs[outerIndex].id == idDefs[innerIndex].id) {
-        DIAGNOSTIC << "Multiply defined ID '" << idDefs[outerIndex].id << "'.";
-        return SPV_ERROR_INVALID_ID;
-      }
-    }
-  }
-
-  // NOTE: Validate ID usage, including use of undefined ID's
   position->index = SPV_INDEX_INSTRUCTION;
-  if (spvValidateInstructionIDs(pInsts, count, idUses.data(), idUses.size(),
-                                idDefs.data(), idDefs.size(), opcodeTable,
-                                operandTable, extInstTable, position,
-                                pDiagnostic))
-    return SPV_ERROR_INVALID_ID;
-
-  return SPV_SUCCESS;
+  spvCheckReturn(spvValidateInstructionIDs(pInsts, count, opcodeTable,
+                                           operandTable, extInstTable, state,
+                                           position, pDiagnostic));
+  return undefd.empty() ? SPV_SUCCESS : SPV_ERROR_INVALID_ID;
 }
 
 namespace {
@@ -332,14 +270,28 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
+// Collects use-def info about an instruction's IDs.
+void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
+  if (inst.result_id) {
+    _.usedefs().AddDef(
+        {inst.result_id, inst.opcode,
+         std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
+  }
+  for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {
+    if (spvIsIdType(op->type))
+      _.usedefs().AddUse(inst.words[op->offset]);
+  }
+}
+
 spv_result_t ProcessInstruction(void* user_data,
-                                 const spv_parsed_instruction_t* inst) {
+                                const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.incrementInstructionCount();
+  if (inst->opcode == SpvOpEntryPoint) _.entry_points().push_back(inst->words[2]);
 
   DebugInstructionPass(_, inst);
-
   // TODO(umar): Perform data rules pass
+  ProcessIds(_, *inst);
   spvCheckReturn(ModuleLayoutPass(_, inst));
   spvCheckReturn(CfgPass(_, inst));
   spvCheckReturn(SsaPass(_, inst));
@@ -376,8 +328,8 @@ spv_result_t spvValidate(const spv_const_context context,
                                 ProcessInstruction, pDiagnostic));
 
   // TODO(umar): Add validation checks which require the parsing of the entire
-  // module. Use the information from the processInstructions pass to make
-  // the checks.
+  // module. Use the information from the ProcessInstruction pass to make the
+  // checks.
 
   if (vstate.unresolvedForwardIdCount() > 0) {
     stringstream ss;
@@ -408,10 +360,10 @@ spv_result_t spvValidate(const spv_const_context context,
 
   if (spvIsInBitfield(SPV_VALIDATE_ID_BIT, options)) {
     position.index = SPV_INDEX_INSTRUCTION;
-    spvCheckReturn(
-        spvValidateIDs(instructions.data(), instructions.size(), header.bound,
-                       context->opcode_table, context->operand_table,
-                       context->ext_inst_table, &position, pDiagnostic));
+    spvCheckReturn(spvValidateIDs(instructions.data(), instructions.size(),
+                                  context->opcode_table, context->operand_table,
+                                  context->ext_inst_table, vstate, &position,
+                                  pDiagnostic));
   }
 
   return SPV_SUCCESS;

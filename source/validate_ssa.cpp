@@ -112,7 +112,7 @@ spv_result_t SsaPass(ValidationState_t& _,
       switch (type) {
         case SPV_OPERAND_TYPE_RESULT_ID:
           _.removeIfForwardDeclared(*operand_ptr);
-          ret = _.defineId(*operand_ptr);
+          ret = SPV_SUCCESS;
           break;
         case SPV_OPERAND_TYPE_ID:
         case SPV_OPERAND_TYPE_TYPE_ID:

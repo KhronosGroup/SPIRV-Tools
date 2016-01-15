@@ -1367,3 +1367,17 @@ spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
   // No result-id found, so just expect CIVs.
   return {SPV_OPERAND_TYPE_OPTIONAL_CIV};
 }
+
+bool spvIsIdType(spv_operand_type_t type) {
+  switch (type) {
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_TYPE_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}

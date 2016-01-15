@@ -27,7 +27,6 @@
 // Performs validation on instructions that appear inside of a SPIR-V block.
 
 #include "validate_passes.h"
-#include "validate_types.h"
 
 namespace libspirv {
 

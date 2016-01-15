@@ -229,12 +229,28 @@ TEST_F(ValidateID, OpExecutionModeGood) {
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
+
+TEST_F(ValidateID, OpExecutionModeEntryPointMissing) {
   const char* spirv = R"(
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
+  const char* spirv = R"(
+     OpEntryPoint GLCompute %3 "" %a
+     OpExecutionMode %a LocalSize 1 1 1
+%void = OpTypeVoid
+%ptr = OpTypePointer Input %void
+%a = OpVariable %ptr Input
+%2 = OpTypeFunction %void
+%3 = OpFunction %void None %2
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
@@ -1264,6 +1280,37 @@ TEST_F(ValidateID, OpReturnValueBad) {
 %6 = OpLabel
      OpReturnValue %1
      OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, UndefinedTypeId) {
+  const char* spirv = R"(
+%f32 = OpTypeFloat 32
+%atype = OpTypeRuntimeArray %f32
+%stype = OpTypeStruct %atype
+%ptrtype = OpTypePointer Input %stype
+%svar = OpVariable %ptrtype Input
+%s = OpLoad %stype %svar
+%len = OpArrayLength %undef %s 0
+)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, UndefinedIdScope) {
+  const char* spirv = R"(
+%u32 = OpTypeInt 32 0
+%memsem = OpConstant %u32 0
+OpMemoryBarrier %undef %memsem
+)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, UndefinedIdMemSem) {
+  const char* spirv = R"(
+%u32 = OpTypeInt 32 0
+%scope = OpConstant %u32 0
+OpMemoryBarrier %scope %undef
+)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 

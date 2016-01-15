@@ -28,7 +28,7 @@
 #define LIBSPIRV_VALIDATE_PASSES_H_
 
 #include "binary.h"
-#include "validate_types.h"
+#include "validate.h"
 
 namespace libspirv
 {
