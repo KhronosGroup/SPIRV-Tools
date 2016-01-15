@@ -25,7 +25,6 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "validate_passes.h"
-#include "validate_types.h"
 
 namespace libspirv {
 

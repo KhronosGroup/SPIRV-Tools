@@ -26,7 +26,6 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include "validate_types.h"
 #include "validate_passes.h"
 #include "libspirv/libspirv.h"
 
