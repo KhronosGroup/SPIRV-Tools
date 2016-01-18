@@ -133,7 +133,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         break;
 
-      case SpvOpLine:  // ??
+      case SpvOpLine:
+      case SpvOpNoLine:
         break;
       case SpvOpLabel:
         // If the label is encountered then the current function is a

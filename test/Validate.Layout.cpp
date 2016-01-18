@@ -116,6 +116,7 @@ const vector<string>& getInstructions() {
     // TODO(umar): OpConstant fails because the type is not defined
     // TODO(umar): OpGroupMemberDecorate
     "OpLine %str 3 4",
+    "OpNoLine",
     "%func     = OpFunction %voidt None %vfunct",
     "OpFunctionEnd",
     "%func2    = OpFunction %voidt None %viifunct",
@@ -152,18 +153,20 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
                      , make_tuple(string("OpMemberDecorate ")       , Range<12, 15>()   , All)
                      , make_tuple(string("OpGroupDecorate ")        , Range<12, 15>()   , All)
                      , make_tuple(string("OpDecorationGroup")       , Range<12, 15>()   , All)
-                     , make_tuple(string("OpTypeBool")              , Range<16, 28>()   , All)
-                     , make_tuple(string("OpTypeVoid")              , Range<16, 28>()   , All)
-                     , make_tuple(string("OpTypeFloat")             , Range<16, 28>()   , All)
-                     , make_tuple(string("OpTypeInt")               , Range<16, 28>()   , static_cast<pred_type>(Range<0, 25>()))
-                     , make_tuple(string("OpTypeVector %intt 4")    , Range<16, 28>()   , All)
-                     , make_tuple(string("OpTypeMatrix %vec4 4")    , Range<16, 28>()   , All)
-                     , make_tuple(string("OpTypeStruct")            , Range<16, 28>()   , All)
-                     , make_tuple(string("%vfunct   = OpTypeFunction"), Range<16, 28>()   , All)
-                     , make_tuple(string("OpConstant")              , Range<19, 28>()   , static_cast<pred_type>(Range<19, kRangeEnd>()))
-                     , make_tuple(string("OpLabel")                 , Equals<34>        , All)
-                     , make_tuple(string("OpNop")                   , Equals<35>        , All)
-                     , make_tuple(string("OpReturn")                , Equals<36>        , All)
+                     , make_tuple(string("OpTypeBool")              , Range<16, 29>()   , All)
+                     , make_tuple(string("OpTypeVoid")              , Range<16, 29>()   , All)
+                     , make_tuple(string("OpTypeFloat")             , Range<16, 29>()   , All)
+                     , make_tuple(string("OpTypeInt")               , Range<16, 29>()   , static_cast<pred_type>(Range<0, 25>()))
+                     , make_tuple(string("OpTypeVector %intt 4")    , Range<16, 29>()   , All)
+                     , make_tuple(string("OpTypeMatrix %vec4 4")    , Range<16, 29>()   , All)
+                     , make_tuple(string("OpTypeStruct")            , Range<16, 29>()   , All)
+                     , make_tuple(string("%vfunct   = OpTypeFunction"), Range<16,29>()   , All)
+                     , make_tuple(string("OpConstant")              , Range<19, 29>()   , static_cast<pred_type>(Range<19, kRangeEnd>()))
+                     , make_tuple(string("OpLine ")                 , Range<16, kRangeEnd>()   , All)
+                     , make_tuple(string("OpNoLine")                , Range<16, kRangeEnd>()   , All)
+                     , make_tuple(string("OpLabel")                 , Equals<35>        , All)
+                     , make_tuple(string("OpNop")                   , Equals<36>        , All)
+                     , make_tuple(string("OpReturn")                , Equals<37>        , All)
     )));
 // clang-format on
 
