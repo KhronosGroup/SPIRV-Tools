@@ -29,6 +29,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <iomanip>
 #include <unordered_map>
 
 #include "assembly_grammar.h"
@@ -48,8 +49,7 @@ namespace {
 // representation.
 class Disassembler {
  public:
-  Disassembler(const libspirv::AssemblyGrammar& grammar,
-               uint32_t options)
+  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t options)
       : grammar_(grammar),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
@@ -59,7 +59,10 @@ class Disassembler {
                     : 0),
         text_(),
         out_(print_ ? out_stream() : out_stream(text_)),
-        stream_(out_.get()) {}
+        stream_(out_.get()),
+        show_byte_offset_(spvIsInBitfield(
+            SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET, options)),
+        byte_offset_(0) {}
 
   // Emits the assembly header for the module, and sets up internal state
   // so subsequent callbacks can handle the cases where the entire module
@@ -120,6 +123,8 @@ class Disassembler {
   std::stringstream text_;   // Captures the text, if not printing.
   out_stream out_;  // The Output stream.  Either to text_ or standard output.
   std::ostream& stream_;  // The output std::stream.
+  const bool show_byte_offset_;  // Should we print byte offset, in hex?
+  size_t byte_offset_; // The number of bytes processed so far.
 };
 
 spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
@@ -144,6 +149,8 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
           << "; Bound: " << id_bound << "\n"
           << "; Schema: " << schema << "\n";
   ResetColor();
+
+  byte_offset_ = SPV_INDEX_INSTRUCTION * sizeof(uint32_t);
 
   return SPV_SUCCESS;
 }
@@ -184,6 +191,19 @@ spv_result_t Disassembler::HandleInstruction(
     stream_ << " ";
     EmitOperand(inst, i);
   }
+
+  if (show_byte_offset_) {
+    SetGrey();
+    auto saved_flags = stream_.flags();
+    auto saved_fill = stream_.fill();
+    stream_ << " ; 0x" << std::setw(8) << std::hex << std::setfill('0')
+            << byte_offset_;
+    stream_.flags(saved_flags);
+    stream_.fill(saved_fill);
+    ResetColor();
+  }
+
+  byte_offset_ += inst.num_words * sizeof(uint32_t);
 
   stream_ << "\n";
   return SPV_SUCCESS;

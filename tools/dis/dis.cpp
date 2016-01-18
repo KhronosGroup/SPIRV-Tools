@@ -52,6 +52,8 @@ Options:
                   The default when output goes to a file.
 
   --no-indent     Don't indent instructions.
+
+  --offsets       Show byte offsets for each instruction.
 )",
       argv0, argv0);
 }
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
   allow_color = true;
 #endif
   bool allow_indent = true;
+  bool show_byte_offsets = false;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -84,6 +87,7 @@ int main(int argc, char** argv) {
           // Long options
           if (0 == strcmp(argv[argi], "--no-color")) allow_color = false;
           if (0 == strcmp(argv[argi], "--no-indent")) allow_indent = false;
+          if (0 == strcmp(argv[argi], "--offsets")) show_byte_offsets = true;
           if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
@@ -114,8 +118,9 @@ int main(int argc, char** argv) {
 
   uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
 
-  if (allow_indent)
-    options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
+  if (allow_indent) options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
+
+  if (show_byte_offsets) options |= SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
 
   if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.

@@ -392,6 +392,24 @@ OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
       expected);
 }
 
+TEST_F(TextToBinaryTest, ShowByteOffsetsWhenRequested) {
+  const std::string input = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeVoid
+)";
+  const std::string expected =
+      R"(OpCapability Shader ; 0x00000014
+OpMemoryModel Logical GLSL450 ; 0x0000001c
+%1 = OpTypeInt 32 0 ; 0x00000028
+%2 = OpTypeVoid ; 0x00000038
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input, SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET),
+              expected);
+}
+
 // Test version string.
 TEST_F(TextToBinaryTest, VersionString) {
   auto words = CompileSuccessfully("");
