@@ -52,7 +52,11 @@ before_script:
 script:
   - mkdir build && cd build
   - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-  - ninja
+    # Sometimes g++-4.9 flakes with an ICE. This may be an OOM thing when
+    # expanding many templates.
+    # If we fail the build the first time, then try to continue in
+    # single-process mode.
+  - ninja || ninja -j 1
   - ./UnitSPIRV --gtest_break_on_failure
 
 
