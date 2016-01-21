@@ -779,14 +779,21 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
                        << "' is not a pointer.";
     return false;
   }
-  auto type = usedefs_.FindDef(pointer.second.words[1]);
-  assert(type.first);
-  spvCheck(resultType.second.id != type.second.id,
-           DIAG(resultTypeIndex)
-               << "OpLoad Result Type <id> '" << inst->words[resultTypeIndex]
-               << " does not match Pointer <id> '" << pointer.second.id
-               << "'s type.";
-           return false);
+  auto pointerType = usedefs_.FindDef(pointer.second.words[1]);
+  if (!pointerType.first || pointerType.second.opcode != SpvOpTypePointer) {
+    DIAG(pointerIndex) << "OpLoad type for pointer <id> '"
+                       << inst->words[pointerIndex]
+                       << "' is not a pointer type.";
+    return false;
+  }
+  auto pointeeType = usedefs_.FindDef(pointerType.second.words[3]);
+  if (!pointeeType.first || resultType.second.id != pointeeType.second.id) {
+    DIAG(resultTypeIndex) << "OpLoad Result Type <id> '"
+                          << inst->words[resultTypeIndex]
+                          << "' does not match Pointer <id> '"
+                          << pointer.second.id << "'s type.";
+    return false;
+  }
   return true;
 }
 
