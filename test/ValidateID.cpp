@@ -694,7 +694,7 @@ TEST_F(ValidateID, OpLoadGood) {
  %5 = OpVariable %3 UniformConstant
  %6 = OpFunction %1 None %4
  %7 = OpLabel
- %8 = OpLoad %3 %5
+ %8 = OpLoad %2 %5
  %9 = OpReturn
 %10 = OpFunctionEnd
 )";
@@ -709,7 +709,7 @@ TEST_F(ValidateID, OpLoadResultTypeBad) {
 %5 = OpVariable %3 UniformConstant
 %6 = OpFunction %1 None %4
 %7 = OpLabel
-%8 = OpLoad %2 %5
+%8 = OpLoad %3 %5
      OpReturn
      OpFunctionEnd
 )";
@@ -1015,8 +1015,7 @@ TEST_F(ValidateID, OpFunctionCallGood) {
 %6 = OpFunction %2 None %3
 %7 = OpFunctionParameter %2
 %8 = OpLabel
-%9 = OpLoad %2 %7
-     OpReturnValue %9
+     OpReturnValue %7
      OpFunctionEnd
 
 %10 = OpFunction %1 None %4
