@@ -431,6 +431,7 @@ int32_t spvOpcodeIsScalarType(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
+    case SpvOpTypeBool:
       return true;
     default:
       return false;

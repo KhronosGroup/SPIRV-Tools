@@ -257,12 +257,34 @@ TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(ValidateID, OpTypeVectorGood) {
+TEST_F(ValidateID, OpTypeVectorFloat) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4)";
   CHECK(spirv, SPV_SUCCESS);
 }
+
+TEST_F(ValidateID, OpTypeVectorInt) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 1
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpTypeVectorUInt) {
+  const char* spirv = R"(
+%1 = OpTypeInt 64 0
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpTypeVectorBool) {
+  const char* spirv = R"(
+%1 = OpTypeBool
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
 TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
@@ -423,11 +445,14 @@ TEST_F(ValidateID, OpConstantGood) {
 %2 = OpConstant %1 1)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, DISABLED_OpConstantBad) {
+TEST_F(ValidateID, OpConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstant !1 !0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  // The expected failure code is implementation dependent (currently
+  // INVALID_BINARY because the binary parser catches these cases) and may
+  // change over time, but this must always fail.
+  CHECK(spirv, SPV_ERROR_INVALID_BINARY);
 }
 
 TEST_F(ValidateID, OpConstantCompositeVectorGood) {
@@ -645,11 +670,14 @@ TEST_F(ValidateID, OpSpecConstantGood) {
 %2 = OpSpecConstant %1 42)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, DISABLED_OpSpecConstantBad) {
+TEST_F(ValidateID, OpSpecConstantBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstant !1 !4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  // The expected failure code is implementation dependent (currently
+  // INVALID_BINARY because the binary parser catches these cases) and may
+  // change over time, but this must always fail.
+  CHECK(spirv, SPV_ERROR_INVALID_BINARY);
 }
 
 // TODO: OpSpecConstantComposite

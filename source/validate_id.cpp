@@ -418,20 +418,6 @@ bool idUsage::isValid<SpvOpConstantFalse>(const spv_instruction_t* inst,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstant>(const spv_instruction_t* inst,
-                                     const spv_opcode_desc) {
-  auto resultTypeIndex = 1;
-  auto resultType = usedefs_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType.first || !spvOpcodeIsScalarType(resultType.second.opcode)) {
-    DIAG(resultTypeIndex)
-        << "OpConstant Result Type <id> '" << inst->words[resultTypeIndex]
-        << "' is not a scalar integer or floating point type.";
-    return false;
-  }
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
   auto resultTypeIndex = 1;
@@ -708,20 +694,6 @@ bool idUsage::isValid<SpvOpSpecConstantFalse>(const spv_instruction_t* inst,
     DIAG(resultTypeIndex) << "OpSpecConstantFalse Result Type <id> '"
                           << inst->words[resultTypeIndex]
                           << "' is not a boolean type.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpSpecConstant>(const spv_instruction_t* inst,
-                                         const spv_opcode_desc) {
-  auto resultTypeIndex = 1;
-  auto resultType = usedefs_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType.first || !spvOpcodeIsScalarType(resultType.second.opcode)) {
-    DIAG(resultTypeIndex) << "OpSpecConstant Result Type <id> '"
-                          << inst->words[resultTypeIndex]
-                          << "' is not a scalar type.";
     return false;
   }
   return true;
@@ -2150,13 +2122,11 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpTypePipe)
     CASE(OpConstantTrue)
     CASE(OpConstantFalse)
-    CASE(OpConstant)
     CASE(OpConstantComposite)
     CASE(OpConstantSampler)
     CASE(OpConstantNull)
     CASE(OpSpecConstantTrue)
     CASE(OpSpecConstantFalse)
-    CASE(OpSpecConstant)
     TODO(OpSpecConstantComposite)
     TODO(OpSpecConstantOp)
     CASE(OpVariable)
