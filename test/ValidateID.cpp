@@ -257,12 +257,34 @@ TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(ValidateID, OpTypeVectorGood) {
+TEST_F(ValidateID, OpTypeVectorFloat) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4)";
   CHECK(spirv, SPV_SUCCESS);
 }
+
+TEST_F(ValidateID, OpTypeVectorInt) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 1
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpTypeVectorUInt) {
+  const char* spirv = R"(
+%1 = OpTypeInt 64 0
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpTypeVectorBool) {
+  const char* spirv = R"(
+%1 = OpTypeBool
+%2 = OpTypeVector %1 4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
 TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
