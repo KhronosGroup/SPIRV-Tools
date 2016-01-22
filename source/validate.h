@@ -47,6 +47,8 @@
 typedef struct spv_id_info_t {
   // Id value.
   uint32_t id;
+  // Type id, or 0 if no type.
+  uint32_t type_id;
   // Opcode of the instruction defining the id.
   SpvOp opcode;
   // Binary words of the instruction defining the id.

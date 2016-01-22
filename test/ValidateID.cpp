@@ -821,6 +821,53 @@ TEST_F(ValidateID, OpStoreTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
+TEST_F(ValidateID, OpStoreVoid) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 1
+%3 = OpTypePointer UniformConstant %2
+%4 = OpTypeFunction %1
+%6 = OpVariable %3 UniformConstant
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+%9 = OpFunctionCall %1 %7
+     OpStore %6 %9
+     OpReturn
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpStoreLabel) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 1
+%3 = OpTypePointer UniformConstant %2
+%4 = OpTypeFunction %1
+%6 = OpVariable %3 UniformConstant
+%7 = OpFunction %1 None %4
+%8 = OpLabel
+     OpStore %6 %8
+     OpReturn
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// TODO: enable when this bug is fixed: https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
+TEST_F(ValidateID, DISABLED_OpStoreFunction) {
+  const char* spirv = R"(
+%2 = OpTypeInt 32 1
+%3 = OpTypePointer UniformConstant %2
+%4 = OpTypeFunction %2
+%5 = OpConstant %2 123
+%6 = OpVariable %3 UniformConstant
+%7 = OpFunction %2 None %4
+%8 = OpLabel
+     OpStore %6 %7
+     OpReturnValue %5
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
 TEST_F(ValidateID, OpCopyMemoryGood) {
   const char* spirv = R"(
  %1 = OpTypeVoid

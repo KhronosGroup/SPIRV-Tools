@@ -197,7 +197,7 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
                           << "'s function parameter count is not zero.";
     return false;
   }
-  auto returnType = usedefs_.FindDef(entryPoint.second.words[1]);
+  auto returnType = usedefs_.FindDef(entryPoint.second.type_id);
   if (!returnType.first || SpvOpTypeVoid != returnType.second.opcode) {
     DIAG(entryPointIndex) << "OpEntryPoint Entry Point <id> '"
                           << inst->words[entryPointIndex]
@@ -454,7 +454,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
           return false;
         }
         auto constituentResultType =
-            usedefs_.FindDef(constituent.second.words[1]);
+            usedefs_.FindDef(constituent.second.type_id);
         if (!constituentResultType.first ||
             componentType.second.opcode !=
                 constituentResultType.second.opcode) {
@@ -494,7 +494,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                  << "' is not a constant composite.";
           return false;
         }
-        auto vector = usedefs_.FindDef(constituent.second.words[1]);
+        auto vector = usedefs_.FindDef(constituent.second.type_id);
         assert(vector.first);
         spvCheck(columnType.second.opcode != vector.second.opcode,
                  DIAG(constituentIndex)
@@ -544,7 +544,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                  << "' is not a constant.";
           return false;
         }
-        auto constituentType = usedefs_.FindDef(constituent.second.words[1]);
+        auto constituentType = usedefs_.FindDef(constituent.second.type_id);
         assert(constituentType.first);
         spvCheck(elementType.second.id != constituentType.second.id,
                  DIAG(constituentIndex)
@@ -575,7 +575,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                  << "' is not a constant.";
           return false;
         }
-        auto constituentType = usedefs_.FindDef(constituent.second.words[1]);
+        auto constituentType = usedefs_.FindDef(constituent.second.type_id);
         assert(constituentType.first);
 
         auto memberType =
@@ -751,7 +751,7 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
                        << "' is not a pointer.";
     return false;
   }
-  auto pointerType = usedefs_.FindDef(pointer.second.words[1]);
+  auto pointerType = usedefs_.FindDef(pointer.second.type_id);
   if (!pointerType.first || pointerType.second.opcode != SpvOpTypePointer) {
     DIAG(pointerIndex) << "OpLoad type for pointer <id> '"
                        << inst->words[pointerIndex]
@@ -779,7 +779,7 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
                        << "' is not a pointer.";
     return false;
   }
-  auto pointerType = usedefs_.FindDef(pointer.second.words[1]);
+  auto pointerType = usedefs_.FindDef(pointer.second.type_id);
   assert(pointerType.first);
   auto type = usedefs_.FindDef(pointerType.second.words[3]);
   assert(type.first);
@@ -791,12 +791,12 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
 
   auto objectIndex = 2;
   auto object = usedefs_.FindDef(inst->words[objectIndex]);
-  if (!object.first || !spvOpcodeIsObject(object.second.opcode)) {
+  if (!object.first || !object.second.type_id) {
     DIAG(objectIndex) << "OpStore Object <id> '" << inst->words[objectIndex]
-                      << "' in not an object.";
+                      << "' is not an object.";
     return false;
   }
-  auto objectType = usedefs_.FindDef(object.second.words[1]);
+  auto objectType = usedefs_.FindDef(object.second.type_id);
   assert(objectType.first);
   spvCheck(SpvOpTypeVoid == objectType.second.opcode,
            DIAG(objectIndex) << "OpStore Object <id> '"
@@ -821,11 +821,11 @@ bool idUsage::isValid<SpvOpCopyMemory>(const spv_instruction_t* inst,
   auto sourceIndex = 2;
   auto source = usedefs_.FindDef(inst->words[sourceIndex]);
   if (!source.first) return false;
-  auto targetPointerType = usedefs_.FindDef(target.second.words[1]);
+  auto targetPointerType = usedefs_.FindDef(target.second.type_id);
   assert(targetPointerType.first);
   auto targetType = usedefs_.FindDef(targetPointerType.second.words[3]);
   assert(targetType.first);
-  auto sourcePointerType = usedefs_.FindDef(source.second.words[1]);
+  auto sourcePointerType = usedefs_.FindDef(source.second.type_id);
   assert(sourcePointerType.first);
   auto sourceType = usedefs_.FindDef(sourcePointerType.second.words[3]);
   assert(sourceType.first);
@@ -850,16 +850,16 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
   auto sizeIndex = 3;
   auto size = usedefs_.FindDef(inst->words[sizeIndex]);
   if (!size.first) return false;
-  auto targetPointerType = usedefs_.FindDef(target.second.words[1]);
-  assert(targetPointerType.first);
-  spvCheck(SpvOpTypePointer != targetPointerType.second.opcode,
+  auto targetPointerType = usedefs_.FindDef(target.second.type_id);
+  spvCheck(!targetPointerType.first ||
+               SpvOpTypePointer != targetPointerType.second.opcode,
            DIAG(targetIndex) << "OpCopyMemorySized Target <id> '"
                              << inst->words[targetIndex]
                              << "' is not a pointer.";
            return false);
-  auto sourcePointerType = usedefs_.FindDef(source.second.words[1]);
-  assert(sourcePointerType.first);
-  spvCheck(SpvOpTypePointer != sourcePointerType.second.opcode,
+  auto sourcePointerType = usedefs_.FindDef(source.second.type_id);
+  spvCheck(!sourcePointerType.first ||
+               SpvOpTypePointer != sourcePointerType.second.opcode,
            DIAG(sourceIndex) << "OpCopyMemorySized Source <id> '"
                              << inst->words[sourceIndex]
                              << "' is not a pointer.";
@@ -870,7 +870,7 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
     // clarification
     case SpvOpConstant:
     case SpvOpSpecConstant: {
-      auto sizeType = usedefs_.FindDef(size.second.words[1]);
+      auto sizeType = usedefs_.FindDef(size.second.type_id);
       assert(sizeType.first);
       spvCheck(SpvOpTypeInt != sizeType.second.opcode,
                DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
@@ -879,11 +879,10 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
                return false);
     } break;
     case SpvOpVariable: {
-      auto pointerType = usedefs_.FindDef(size.second.words[1]);
+      auto pointerType = usedefs_.FindDef(size.second.type_id);
       assert(pointerType.first);
-      auto sizeType = usedefs_.FindDef(pointerType.second.words[1]);
-      assert(sizeType.first);
-      spvCheck(SpvOpTypeInt != sizeType.second.opcode,
+      auto sizeType = usedefs_.FindDef(pointerType.second.type_id);
+      spvCheck(!sizeType.first || SpvOpTypeInt != sizeType.second.opcode,
                DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
                                << inst->words[sizeIndex]
                                << "'s variable type is not an integer type.";
@@ -1003,7 +1002,7 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
                         << inst->words[functionIndex] << "' is not a function.";
     return false;
   }
-  auto returnType = usedefs_.FindDef(function.second.words[1]);
+  auto returnType = usedefs_.FindDef(function.second.type_id);
   assert(returnType.first);
   spvCheck(returnType.second.id != resultType.second.id,
            DIAG(resultTypeIndex) << "OpFunctionCall Result Type <id> '"
@@ -1025,7 +1024,7 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
        argumentIndex < inst->words.size(); argumentIndex++, paramIndex++) {
     auto argument = usedefs_.FindDef(inst->words[argumentIndex]);
     if (!argument.first) return false;
-    auto argumentType = usedefs_.FindDef(argument.second.words[1]);
+    auto argumentType = usedefs_.FindDef(argument.second.type_id);
     assert(argumentType.first);
     auto parameterType =
         usedefs_.FindDef(functionType.second.words[paramIndex]);
@@ -1677,7 +1676,7 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                      << "' does not represent a value.";
     return false;
   }
-  auto valueType = usedefs_.FindDef(value.second.words[1]);
+  auto valueType = usedefs_.FindDef(value.second.type_id);
   assert(valueType.first);
   // NOTE: Find OpFunction
   const spv_instruction_t* function = inst - 1;
@@ -2098,8 +2097,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 #define CASE(OpCode) \
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
-#define TODO(OpCode)                                     \
-  case Spv##OpCode:                                      \
+#define TODO(OpCode) \
+  case Spv##OpCode:  \
     return true;
   switch (inst->opcode) {
     TODO(OpUndef)

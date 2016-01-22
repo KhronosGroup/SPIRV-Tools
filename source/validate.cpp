@@ -274,7 +274,7 @@ void DebugInstructionPass(ValidationState_t& _,
 void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
     _.usedefs().AddDef(
-        {inst.result_id, inst.opcode,
+        {inst.result_id, inst.type_id, inst.opcode,
          std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
   }
   for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {

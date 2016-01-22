@@ -92,10 +92,6 @@ int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* type_inst0,
 // non-zero otherwise.
 int32_t spvOpcodeIsPointer(const SpvOp opcode);
 
-// Determines if the given opcode results in an instantation of a non-void type.
-// Returns zero if false, non-zero otherwise.
-int32_t spvOpcodeIsObject(const SpvOp opcode);
-
 // Determines if the scalar type opcode is nullable. Returns zero if false,
 // non-zero otherwise.
 int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
