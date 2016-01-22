@@ -791,9 +791,9 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
 
   auto objectIndex = 2;
   auto object = usedefs_.FindDef(inst->words[objectIndex]);
-  if (!object.first || !spvOpcodeIsObject(object.second.opcode)) {
+  if (!object.first /*|| !spvOpcodeIsObject(object.second.opcode)*/) {
     DIAG(objectIndex) << "OpStore Object <id> '" << inst->words[objectIndex]
-                      << "' in not an object.";
+                      << "' is not an object.";
     return false;
   }
   auto objectType = usedefs_.FindDef(object.second.words[1]);
