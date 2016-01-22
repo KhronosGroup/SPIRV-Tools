@@ -1322,7 +1322,7 @@ TEST_F(ValidateID, OpReturnValueConstantGood) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypeFunction %2 %2
+%3 = OpTypeFunction %2
 %4 = OpConstant %2 42
 %5 = OpFunction %2 None %3
 %6 = OpLabel
@@ -1330,29 +1330,97 @@ TEST_F(ValidateID, OpReturnValueConstantGood) {
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
+
 TEST_F(ValidateID, OpReturnValueVariableGood) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0 ;10
-%3 = OpTypeFunction %2 %2 ;14
+%3 = OpTypeFunction %2
 %8 = OpTypePointer Function %2 ;18
 %4 = OpConstant %2 42 ;22
 %5 = OpFunction %2 None %3 ;27
 %6 = OpLabel ;29
 %7 = OpVariable %8 Function %4 ;34
-     OpReturnValue %7 ;36
+%9 = OpLoad %2 %7
+     OpReturnValue %9 ;36
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpReturnValueBad) {
+
+TEST_F(ValidateID, OpReturnValueExpressionGood) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypeFunction %2 %2
+%3 = OpTypeFunction %2
 %4 = OpConstant %2 42
 %5 = OpFunction %2 None %3
 %6 = OpLabel
+%7 = OpIAdd %2 %4 %4
+     OpReturnValue %7
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpReturnValueIsType) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %2
+%5 = OpFunction %2 None %3
+%6 = OpLabel
      OpReturnValue %1
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpReturnValueIsLabel) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %2
+%5 = OpFunction %2 None %3
+%6 = OpLabel
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpReturnValueIsVoid) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %1
+%5 = OpFunction %1 None %3
+%6 = OpLabel
+%7 = OpFunctionCall %1 %5
+     OpReturnValue %7
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpReturnValueIsVariable) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Private %2
+%4 = OpTypeFunction %3
+%5 = OpFunction %3 None %4
+%6 = OpLabel
+%7 = OpVariable %3 Function
+     OpReturnValue %7
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// TODO: enable when this bug is fixed: https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
+TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %2
+%5 = OpFunction %2 None %3
+%6 = OpLabel
+     OpReturnValue %5
      OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
