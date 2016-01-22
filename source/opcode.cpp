@@ -515,18 +515,6 @@ int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* pFirstInst,
   return true;
 }
 
-int32_t spvOpcodeIsValue(SpvOp opcode) {
-  if (spvOpcodeIsPointer(opcode)) return true;
-  if (spvOpcodeIsConstant(opcode)) return true;
-  switch (opcode) {
-    case SpvOpLoad:
-      // TODO: Other Opcode's resulting in a value
-      return true;
-    default:
-      return false;
-  }
-}
-
 int32_t spvOpcodeGeneratesType(SpvOp op) {
   switch (op) {
     case SpvOpTypeVoid:

@@ -1671,13 +1671,17 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                                         const spv_opcode_desc) {
   auto valueIndex = 1;
   auto value = usedefs_.FindDef(inst->words[valueIndex]);
-  if (!value.first || !spvOpcodeIsValue(value.second.opcode)) {
+  if (!value.first || !value.second.type_id) {
     DIAG(valueIndex) << "OpReturnValue Value <id> '" << inst->words[valueIndex]
                      << "' does not represent a value.";
     return false;
   }
   auto valueType = usedefs_.FindDef(value.second.type_id);
-  assert(valueType.first);
+  if (!valueType.first || SpvOpTypeVoid == valueType.second.opcode) {
+    DIAG(valueIndex) << "OpReturnValue value's type <id> '"
+                     << value.second.type_id << "' is missing or void.";
+    return false;
+  }
   // NOTE: Find OpFunction
   const spv_instruction_t* function = inst - 1;
   while (firstInst != function) {

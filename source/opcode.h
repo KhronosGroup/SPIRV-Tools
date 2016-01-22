@@ -102,10 +102,6 @@ int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
 int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* first_inst,
                                      const spv_instruction_t* inst);
 
-// Determines if the given opcode contains a value. Returns zero if false,
-// non-zero otherwise.
-int32_t spvOpcodeIsValue(SpvOp opcode);
-
 // Determines if the given opcode generates a type. Returns zero if false,
 // non-zero otherwise.
 int32_t spvOpcodeGeneratesType(SpvOp opcode);
