@@ -91,4 +91,6 @@ template class spvtest::ValidateBase<
     std::tuple<int, std::tuple<std::string, std::function<spv_result_t(int)>,
                                std::function<spv_result_t(int)>>>,
     SPV_VALIDATE_LAYOUT_BIT>;
+
+  template class spvtest::ValidateBase<std::tuple<std::string, std::pair<std::string, std::vector<std::string> > >, SPV_VALIDATE_INSTRUCTION_BIT>;
 }

@@ -203,7 +203,15 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   // clang-format on
   return out;
 }
-}
+
+// NOTE: We are using vector to map the ID of the capability to its
+// availability. this variable needs to be the maximum id plus one to cover the
+// entire range of the capability. Currently capability 26 is missing so the
+// count is actually 54
+// The maximum ID of capabilities plus one
+static const size_t kCapabilitiesCount = 56;
+
+}  // anonymous namespace
 
 namespace libspirv {
 
@@ -215,7 +223,8 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       validation_flags_(options),
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
-      module_functions_(*this) {}
+      module_functions_(*this),
+      module_capabilities_(kCapabilitiesCount, false) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -295,6 +304,85 @@ bool ValidationState_t::in_block() const {
   return module_functions_.in_block();
 }
 
+// Returns the dependant capability of the input capibility. If the capability
+// does not have a capability then the same capability is returned.
+// clang-format off
+SpvCapability
+getDependantCapability(SpvCapability cap) {
+  SpvCapability out;
+  switch(cap) {
+    case SpvCapabilityShader:                            out = SpvCapabilityMatrix;           break;
+    case SpvCapabilityGeometry:                          out = SpvCapabilityShader;           break;
+    case SpvCapabilityTessellation:                      out = SpvCapabilityShader;           break;
+    case SpvCapabilityVector16:                          out = SpvCapabilityKernel;           break;
+    case SpvCapabilityFloat16Buffer:                     out = SpvCapabilityKernel;           break;
+    case SpvCapabilityFloat16:                           out = SpvCapabilityFloat16Buffer;    break;
+    case SpvCapabilityInt64Atomics:                      out = SpvCapabilityInt64;            break;
+    case SpvCapabilityImageBasic:                        out = SpvCapabilityKernel;           break;
+    case SpvCapabilityImageReadWrite:                    out = SpvCapabilityImageBasic;       break;
+    case SpvCapabilityImageMipmap:                       out = SpvCapabilityImageBasic;       break;
+    //case SpvCapabilityImageSRGBWrite:                                                       break;
+    case SpvCapabilityPipes:                             out = SpvCapabilityKernel;           break;
+    case SpvCapabilityDeviceEnqueue:                     out = SpvCapabilityKernel;           break;
+    case SpvCapabilityLiteralSampler:                    out = SpvCapabilityKernel;           break;
+    case SpvCapabilityAtomicStorage:                     out = SpvCapabilityShader;           break;
+    case SpvCapabilityTessellationPointSize:             out = SpvCapabilityTessellation;     break;
+    case SpvCapabilityGeometryPointSize:                 out = SpvCapabilityGeometry;         break;
+    case SpvCapabilityImageGatherExtended:               out = SpvCapabilityShader;           break;
+    case SpvCapabilityStorageImageMultisample:           out = SpvCapabilityShader;           break;
+    case SpvCapabilityUniformBufferArrayDynamicIndexing: out = SpvCapabilityShader;           break;
+    case SpvCapabilitySampledImageArrayDynamicIndexing:  out = SpvCapabilityShader;           break;
+    case SpvCapabilityStorageBufferArrayDynamicIndexing: out = SpvCapabilityShader;           break;
+    case SpvCapabilityStorageImageArrayDynamicIndexing:  out = SpvCapabilityShader;           break;
+    case SpvCapabilityClipDistance:                      out = SpvCapabilityShader;           break;
+    case SpvCapabilityCullDistance:                      out = SpvCapabilityShader;           break;
+    case SpvCapabilityImageCubeArray:                    out = SpvCapabilitySampledCubeArray; break;
+    case SpvCapabilitySampleRateShading:                 out = SpvCapabilityShader;           break;
+    case SpvCapabilityImageRect:                         out = SpvCapabilitySampledRect;      break;
+    case SpvCapabilitySampledRect:                       out = SpvCapabilityShader;           break;
+    case SpvCapabilityGenericPointer:                    out = SpvCapabilityAddresses;        break;
+    case SpvCapabilityInt8:                              out = SpvCapabilityKernel;           break;
+    case SpvCapabilityInputAttachment:                   out = SpvCapabilityShader;           break;
+    case SpvCapabilitySparseResidency:                   out = SpvCapabilityShader;           break;
+    case SpvCapabilityMinLod:                            out = SpvCapabilityShader;           break;
+    case SpvCapabilitySampled1D:                         out = SpvCapabilityShader;           break;
+    case SpvCapabilityImage1D:                           out = SpvCapabilitySampled1D;        break;
+    case SpvCapabilitySampledCubeArray:                  out = SpvCapabilityShader;           break;
+    case SpvCapabilitySampledBuffer:                     out = SpvCapabilityShader;           break;
+    case SpvCapabilityImageBuffer:                       out = SpvCapabilitySampledBuffer;    break;
+    case SpvCapabilityImageMSArray:                      out = SpvCapabilityShader;           break;
+    case SpvCapabilityStorageImageExtendedFormats:       out = SpvCapabilityShader;           break;
+    case SpvCapabilityImageQuery:                        out = SpvCapabilityShader;           break;
+    case SpvCapabilityDerivativeControl:                 out = SpvCapabilityShader;           break;
+    case SpvCapabilityInterpolationFunction:             out = SpvCapabilityShader;           break;
+    case SpvCapabilityTransformFeedback:                 out = SpvCapabilityShader;           break;
+    case SpvCapabilityGeometryStreams:                   out = SpvCapabilityGeometry;         break;
+    case SpvCapabilityStorageImageReadWithoutFormat:     out = SpvCapabilityShader;           break;
+    case SpvCapabilityStorageImageWriteWithoutFormat:    out = SpvCapabilityShader;           break;
+    default:
+      out = cap;
+      break;
+  }
+  return out;
+}
+// clang-format on
+
+void ValidationState_t::registerCapability(SpvCapability cap) {
+  SpvCapability capability = cap;
+  // Set dependant capabilities
+  do {
+    module_capabilities_[capability] = true;
+    capability = getDependantCapability(capability);
+  } while (getDependantCapability(capability) != capability);
+
+  // Set Base capability
+  module_capabilities_[capability] = true;
+}
+
+bool ValidationState_t::hasCapability(SpvCapability cap) {
+  return module_capabilities_[cap];
+}
+
 Functions::Functions(ValidationState_t& module)
     : module_(module), in_function_(false), in_block_(false) {}
 
@@ -359,8 +447,7 @@ spv_result_t Functions::RegisterBlock(uint32_t id) {
 spv_result_t Functions::RegisterFunctionEnd() {
   assert(in_function_ == true &&
          "Function end can only be called in functions");
-  assert(in_block_ == false &&
-         "Function end cannot be called inside a block");
+  assert(in_block_ == false && "Function end cannot be called inside a block");
   in_function_ = false;
   return SPV_SUCCESS;
 }
@@ -374,7 +461,5 @@ spv_result_t Functions::RegisterBlockEnd() {
   return SPV_SUCCESS;
 }
 
-size_t Functions::get_block_count() const {
-  return block_ids_.back().size();
-}
+size_t Functions::get_block_count() const { return block_ids_.back().size(); }
 }

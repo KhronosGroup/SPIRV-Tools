@@ -261,6 +261,12 @@ class ValidationState_t {
   std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
+  // Registers the capability and its dependent capabilities
+  void registerCapability(SpvCapability cap);
+
+  // Returns true if the capabillity is enabled in the module
+  bool hasCapability(SpvCapability cap);
+
  private:
   spv_diagnostic* diagnostic_;
   // Tracks the number of instructions evaluated by the validator
@@ -279,13 +285,14 @@ class ValidationState_t {
 
   Functions module_functions_;
 
-  std::vector<SpvCapability> module_capabilities_;
+  std::vector<bool> module_capabilities_;
 
   // Definitions and uses of all the IDs in the module.
   UseDefTracker usedefs_;
 
   // IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
+
 };
 
 }  // namespace libspirv
