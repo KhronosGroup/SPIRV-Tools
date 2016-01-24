@@ -494,7 +494,7 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                  << "' is not a constant composite.";
           return false;
         }
-        auto vector = usedefs_.FindDef(constituent.second.words[1]);
+        auto vector = usedefs_.FindDef(constituent.second.type_id);
         assert(vector.first);
         spvCheck(columnType.second.opcode != vector.second.opcode,
                  DIAG(constituentIndex)
