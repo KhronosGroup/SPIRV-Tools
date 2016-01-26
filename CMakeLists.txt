@@ -76,7 +76,7 @@ if(${SPIRV_COLOR_TERMINAL})
   add_definitions(-DSPIRV_COLOR_TERMINAL)
 endif()
 
-function(default_compile_options TARGET)
+function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
   if (UNIX)
     target_compile_options(${TARGET} PRIVATE
@@ -142,7 +142,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/validate_types.cpp)
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
-default_compile_options(${SPIRV_TOOLS})
+spvtools_default_compile_options(${SPIRV_TOOLS})
 target_include_directories(${SPIRV_TOOLS} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
@@ -156,15 +156,15 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   list(APPEND SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val)
 
   add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
-  default_compile_options(spirv-as)
+  spvtools_default_compile_options(spirv-as)
   target_link_libraries(spirv-as PRIVATE ${SPIRV_TOOLS})
 
   add_executable(spirv-dis ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
-  default_compile_options(spirv-dis)
+  spvtools_default_compile_options(spirv-dis)
   target_link_libraries(spirv-dis PRIVATE ${SPIRV_TOOLS})
 
   add_executable(spirv-val ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
-  default_compile_options(spirv-val)
+  spvtools_default_compile_options(spirv-val)
   target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
 
   set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/googletest/googlemock)
@@ -240,7 +240,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp)
 
     add_executable(UnitSPIRV ${TEST_SOURCES})
-    default_compile_options(UnitSPIRV)
+    spvtools_default_compile_options(UnitSPIRV)
     if(UNIX)
       target_compile_options(UnitSPIRV PRIVATE -Wno-undef)
     endif()
