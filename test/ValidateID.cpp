@@ -1341,7 +1341,8 @@ TEST_F(ValidateID, OpReturnValueVariableGood) {
 %5 = OpFunction %2 None %3 ;27
 %6 = OpLabel ;29
 %7 = OpVariable %8 Function %4 ;34
-     OpReturnValue %7 ;36
+%9 = OpLoad %2 %7
+     OpReturnValue %9 ;36
      OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
