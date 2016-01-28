@@ -1398,6 +1398,20 @@ TEST_F(ValidateID, OpReturnValueIsVoid) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
+TEST_F(ValidateID, OpReturnValueIsVariable) {
+  const char* spirv = R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Private %2
+%4 = OpTypeFunction %3
+%5 = OpFunction %3 None %4
+%6 = OpLabel
+%7 = OpVariable %3 Function
+     OpReturnValue %7
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
 // TODO: enable when this bug is fixed: https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
 TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
   const char* spirv = R"(

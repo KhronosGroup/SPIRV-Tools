@@ -1682,6 +1682,14 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                      << value.second.type_id << "' is missing or void.";
     return false;
   }
+  if (SpvOpTypePointer == valueType.second.opcode) {
+    DIAG(valueIndex) << "OpReturnValue value's type <id> '"
+                     << value.second.type_id
+                     << "' is a pointer, but a pointer can only be an operand "
+                        "to OpLoad, OpStore, OpAccessChain, or "
+                        "OpInBoundsAccessChain.";
+    return false;
+  }
   // NOTE: Find OpFunction
   const spv_instruction_t* function = inst - 1;
   while (firstInst != function) {
@@ -1692,22 +1700,11 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
            DIAG(valueIndex) << "OpReturnValue is not in a basic block.";
            return false);
   auto returnType = usedefs_.FindDef(function->words[1]);
-  assert(returnType.first);
-  if (SpvOpTypePointer == valueType.second.opcode) {
-    auto pointerValueType = usedefs_.FindDef(valueType.second.words[3]);
-    assert(pointerValueType.first);
-    spvCheck(returnType.second.id != pointerValueType.second.id,
-             DIAG(valueIndex)
-                 << "OpReturnValue Value <id> '" << inst->words[valueIndex]
-                 << "'s pointer type does not match OpFunction's return type.";
-             return false);
-  } else {
-    spvCheck(returnType.second.id != valueType.second.id,
-             DIAG(valueIndex)
-                 << "OpReturnValue Value <id> '" << inst->words[valueIndex]
-                 << "'s type does not match OpFunction's return type.";
-             return false);
-  }
+  spvCheck(!returnType.first || returnType.second.id != valueType.second.id,
+           DIAG(valueIndex)
+               << "OpReturnValue Value <id> '" << inst->words[valueIndex]
+               << "'s type does not match OpFunction's return type.";
+           return false);
   return true;
 }
 
