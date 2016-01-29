@@ -141,4 +141,34 @@ INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
                              "AtomicCounter",
                              "Image"));
 // clang-format on
+
+TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
+  const auto str = R"(
+          OpCapability Kernel
+          OpMemoryModel Logical OpenCL
+%intt   = OpTypeInt 32 1
+%ptrt   = OpTypePointer Function %intt
+%var    = OpVariable %ptrt Generic
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+}
+
+TEST_F(ValidateStorage, GenericVariableInsideFunction) {
+  const auto str = R"(
+          OpCapability Shader
+          OpMemoryModel Logical GLSL450
+%intt   = OpTypeInt 32 1
+%voidt  = OpTypeVoid
+%vfunct = OpTypeFunction %voidt
+%ptrt   = OpTypePointer Function %intt
+%func   = OpFunction %voidt None %vfunct
+%funcl  = OpLabel
+%var    = OpVariable %ptrt Generic
+          OpReturn
+          OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+}
 }

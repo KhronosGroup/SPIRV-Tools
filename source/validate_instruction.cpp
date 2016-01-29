@@ -490,6 +490,9 @@ spv_result_t InstructionPass(ValidationState_t& _,
       case SpvOpVariable: {
         const SpvStorageClass storage_class =
             static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
+        if (storage_class == SpvStorageClassGeneric)
+          return _.diag(SPV_ERROR_INVALID_BINARY)
+              << "OpVariable storage class cannot be Generic";
         spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
 
         if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
