@@ -236,47 +236,6 @@ TEST_F(ValidateLayout, MemoryModelMissing) {
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
 
-TEST_F(ValidateLayout, VariableFunctionStorageGood) {
-  char str[] = R"(
-          OpMemoryModel Logical GLSL450
-          OpDecorate %var Restrict
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Function
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
-
-// TODO(umar): This function should be moved to another validation file
-TEST_F(ValidateLayout, DISABLED_VariableFunctionStorageBad) {
-  char str[] = R"(
-          OpMemoryModel Logical GLSL450
-          OpDecorate %var Restrict
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%var    = OpVariable %ptrt Function     ; Invalid storage class for OpVariable
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-          OpNop
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
 TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
   char str[] = R"(
            OpMemoryModel Logical GLSL450

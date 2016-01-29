@@ -26,12 +26,12 @@
 
 // Common validation fixtures for unit tests
 
-#include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
+#include "UnitSPIRV.h"
 
 #include <functional>
-#include <utility>
 #include <tuple>
+#include <utility>
 
 namespace spvtest {
 
@@ -64,7 +64,8 @@ void ValidateBase<T, OPTIONS>::CompileSuccessfully(std::string code) {
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
                                          &binary_, &diagnostic))
       << "ERROR: " << diagnostic->error
-      << "\nSPIR-V could not be compiled into binary:\n" << code;
+      << "\nSPIR-V could not be compiled into binary:\n"
+      << code;
 }
 
 template <typename T, uint32_t OPTIONS>
@@ -92,5 +93,10 @@ template class spvtest::ValidateBase<
                                std::function<spv_result_t(int)>>>,
     SPV_VALIDATE_LAYOUT_BIT>;
 
-  template class spvtest::ValidateBase<std::tuple<std::string, std::pair<std::string, std::vector<std::string> > >, SPV_VALIDATE_INSTRUCTION_BIT>;
+template class spvtest::ValidateBase<
+    std::tuple<std::string, std::pair<std::string, std::vector<std::string>>>,
+    SPV_VALIDATE_INSTRUCTION_BIT>;
+
+template class spvtest::ValidateBase<int, SPV_VALIDATE_LAYOUT_BIT |
+                                              SPV_VALIDATE_INSTRUCTION_BIT>;
 }

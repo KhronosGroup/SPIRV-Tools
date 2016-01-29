@@ -492,7 +492,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
             static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
         spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
 
-        if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
+        if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
           if (storage_class != SpvStorageClassFunction) {
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
                    << "Variables must have a function[7] storage class inside"
