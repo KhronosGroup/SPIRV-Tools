@@ -93,7 +93,6 @@ TEST_F(ValidateStorage, OtherStorageOutsideFunction) {
 %wgroup = OpVariable %ptrt Workgroup
 %xwgrp  = OpVariable %ptrt CrossWorkgroup
 %priv   = OpVariable %ptrt Private
-%gener  = OpVariable %ptrt Generic
 %pushco = OpVariable %ptrt PushConstant
 %atomct = OpVariable %ptrt AtomicCounter
 %image  = OpVariable %ptrt Image
@@ -138,7 +137,6 @@ INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
                              "Workgroup",
                              "CrossWorkgroup",
                              "Private",
-                             "Generic",
                              "PushConstant",
                              "AtomicCounter",
                              "Image"));
