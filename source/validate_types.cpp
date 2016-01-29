@@ -204,8 +204,7 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   return out;
 }
 
-// NOTE: We are using vector to map the ID of the capability to its
-// availability. This variable is the maximum ID of capabilities.
+// This variable is the maximum ID of capabilities.
 static const size_t kCapabilitiesMaxValue =
     SpvCapabilityStorageImageWriteWithoutFormat;
 
@@ -222,8 +221,9 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
       module_functions_(*this),
-      // The size of the vector needs to be the maximum ID plus one to
-      // cover the entire range of the capability.
+      // NOTE: We are using vector to map the ID of the capability to its
+      // availability. The size of the vector needs to be the maximum ID plus
+      // one to cover the entire range of the capability.
       module_capabilities_(kCapabilitiesMaxValue + 1, false) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
