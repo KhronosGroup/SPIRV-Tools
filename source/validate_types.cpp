@@ -205,10 +205,9 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 }
 
 // NOTE: We are using vector to map the ID of the capability to its
-// availability. this variable needs to be the maximum id plus one to cover the
-// entire range of the capability. Currently capability 26 is missing so the
-// count is actually 54
-// The maximum ID of capabilities plus one
+// availability. This variable is the maximum ID of capabilities.
+// The size of the vector needs to be the maximum ID plus one to
+// cover the entire range of the capability.
 static const size_t kCapabilitiesMaxValue = 56;
 
 }  // anonymous namespace
