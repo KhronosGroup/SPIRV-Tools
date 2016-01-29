@@ -26,6 +26,7 @@
 
 // Validation tests for OpVariable storage class
 
+#include <sstream>
 #include <string>
 #include <tuple>
 
@@ -33,8 +34,8 @@
 #include "gmock/gmock.h"
 
 using ValidateStorage =
-    spvtest::ValidateBase<int, SPV_VALIDATE_LAYOUT_BIT |
-                                   SPV_VALIDATE_INSTRUCTION_BIT>;
+    spvtest::ValidateBase<std::string, SPV_VALIDATE_LAYOUT_BIT |
+                                           SPV_VALIDATE_INSTRUCTION_BIT>;
 namespace {
 
 TEST_F(ValidateStorage, FunctionStorageInsideFunction) {
@@ -106,162 +107,12 @@ TEST_F(ValidateStorage, OtherStorageOutsideFunction) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateStorage, InputStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Input
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, UniformStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Uniform
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, OutputStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Output
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, WorkgroupStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Workgroup
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, CrossWorkgroupStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt CrossWorkgroup
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, PrivateStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Private
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, GenericStorageInsideFunction) {
-  char str[] = R"(
+// clang-format off
+TEST_P(ValidateStorage, OtherStorageInsideFunction) {
+  std::stringstream ss;
+  ss << R"(
           OpCapability Shader
           OpCapability Kernel
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Generic
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, PushConstantStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt PushConstant
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
-
-TEST_F(ValidateStorage, AtomicCounterStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
           OpCapability AtomicStorage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
@@ -270,31 +121,26 @@ TEST_F(ValidateStorage, AtomicCounterStorageInsideFunction) {
 %ptrt   = OpTypePointer Function %intt
 %func   = OpFunction %voidt None %vfunct
 %funcl  = OpLabel
-%var    = OpVariable %ptrt AtomicCounter
+%var    = OpVariable %ptrt )" << GetParam() << R"(
           OpReturn
           OpFunctionEnd
 )";
 
-  CompileSuccessfully(str);
+  CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
 
-TEST_F(ValidateStorage, ImageStorageInsideFunction) {
-  char str[] = R"(
-          OpCapability Shader
-          OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
-%voidt  = OpTypeVoid
-%vfunct = OpTypeFunction %voidt
-%ptrt   = OpTypePointer Function %intt
-%func   = OpFunction %voidt None %vfunct
-%funcl  = OpLabel
-%var    = OpVariable %ptrt Image
-          OpReturn
-          OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-}
+INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
+                        ::testing::Values(
+                             "Input",
+                             "Uniform",
+                             "Output",
+                             "Workgroup",
+                             "CrossWorkgroup",
+                             "Private",
+                             "Generic",
+                             "PushConstant",
+                             "AtomicCounter",
+                             "Image"));
+// clang-format on
 }
