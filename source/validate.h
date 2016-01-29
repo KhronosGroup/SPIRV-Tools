@@ -287,6 +287,9 @@ class ValidationState_t {
 
   Functions module_functions_;
 
+  // We are using vector to map the ID of the capability to its availability.
+  // The size of the vector needs to be the maximum ID plus one to cover the
+  // entire range of the capability.
   std::vector<bool> module_capabilities_;
 
   // Definitions and uses of all the IDs in the module.
