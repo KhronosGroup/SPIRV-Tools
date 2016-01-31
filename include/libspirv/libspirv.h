@@ -48,7 +48,7 @@ extern "C" {
 
 // Helpers
 
-#define spvIsInBitfield(value, bitfield) (value == (value & bitfield))
+#define spvIsInBitfield(value, bitfield) ((value) == ((value) & bitfield))
 
 #define SPV_BIT(shift) (1 << (shift))
 
