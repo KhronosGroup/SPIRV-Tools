@@ -383,16 +383,14 @@ bool ValidationState_t::hasCapability(SpvCapability cap) const {
   return module_capabilities_[cap];
 }
 
-bool ValidationState_t::HasAnyOf(spv_capability_mask_t mask) const {
-  if (!mask)
-    return true;  // No capabilities requested: the mask is trivially satisfied.
-  for (int cap = SpvCapabilityMatrix;
-       cap <= SpvCapabilityStorageImageWriteWithoutFormat; ++cap) {
-    if (spvIsInBitfield(SPV_CAPABILITY_AS_MASK(cap), mask) &&
-        hasCapability(static_cast<SpvCapability>(cap)))
-      return true;
-  }
-  return false;
+bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
+  if (!capabilities)
+    return true;  // No capabilities requested: trivially satisfied.
+  bool found = false;
+  libspirv::ForEach(capabilities, [&found, this](SpvCapability c) {
+    found |= hasCapability(c);
+  });
+  return found;
 }
 
 Functions::Functions(ValidationState_t& module)

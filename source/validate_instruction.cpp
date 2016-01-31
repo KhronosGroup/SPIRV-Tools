@@ -41,17 +41,14 @@ namespace {
 std::string ToString(spv_capability_mask_t mask,
                      const libspirv::AssemblyGrammar& grammar) {
   std::stringstream ss;
-  for (int cap = SpvCapabilityMatrix;
-       cap <= SpvCapabilityStorageImageWriteWithoutFormat; ++cap) {
-    if (spvIsInBitfield(SPV_CAPABILITY_AS_MASK(cap), mask)) {
-      spv_operand_desc desc;
-      if (SPV_SUCCESS ==
-          grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
-        ss << desc->name << " ";
-      else
-        ss << cap << " ";
-    }
-  }
+  libspirv::ForEach(mask, [&grammar, &ss](SpvCapability cap) {
+    spv_operand_desc desc;
+    if (SPV_SUCCESS ==
+        grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
+      ss << desc->name << " ";
+    else
+      ss << cap << " ";
+  });
   return ss.str();
 }
 

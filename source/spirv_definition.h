@@ -29,6 +29,8 @@
 
 #include <cstdint>
 
+#include "libspirv/libspirv.h"
+
 // A bit mask representing a set of capabilities.
 // Currently there are 57 distinct capabilities, so 64 bits
 // should be enough.
@@ -40,6 +42,16 @@ typedef uint64_t spv_capability_mask_t;
 // values.
 #define SPV_CAPABILITY_AS_MASK(capability) \
   (spv_capability_mask_t(1) << (capability))
+
+namespace libspirv {
+template <typename Functor>
+inline void ForEach(spv_capability_mask_t capabilities, Functor f) {
+  for (int cap = SpvCapabilityMatrix;
+       cap <= SpvCapabilityStorageImageWriteWithoutFormat; ++cap)
+    if (spvIsInBitfield(SPV_CAPABILITY_AS_MASK(cap), capabilities))
+      f(static_cast<SpvCapability>(cap));
+}
+}  // end namespace libspirv
 
 typedef struct spv_header_t {
   uint32_t magic;
