@@ -27,6 +27,11 @@
 // Performs validation on instructions that appear inside of a SPIR-V block.
 
 #include <cassert>
+#include <sstream>
+#include <string>
+
+#include "opcode.h"
+#include "spirv_definition.h"
 #include "validate_passes.h"
 
 using libspirv::ValidationState_t;
@@ -349,152 +354,65 @@ spv_result_t SamplerAddressingModeCapabilityCheck(
   }
   return SPV_SUCCESS;
 }
+
+std::string ToString(spv_capability_mask_t mask,
+                     const libspirv::AssemblyGrammar& grammar) {
+  std::stringstream ss;
+  for (int cap = SpvCapabilityMatrix;
+       cap <= SpvCapabilityStorageImageWriteWithoutFormat; ++cap) {
+    if (spvIsInBitfield(SPV_CAPABILITY_AS_MASK(cap), mask)) {
+      spv_operand_desc desc;
+      if (SPV_SUCCESS ==
+          grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
+        ss << desc->name << " ";
+      else
+        ss << cap << " ";
+    }
+  }
+  return ss.str();
 }
 
+}  // namespace anonymous
+
 namespace libspirv {
+
+spv_result_t CapCheck(ValidationState_t& _,
+                      const spv_parsed_instruction_t* inst) {
+  spv_opcode_desc opcode_desc;
+  if (SPV_SUCCESS == _.grammar().lookupOpcode(inst->opcode, &opcode_desc) &&
+      !_.HasAnyOf(opcode_desc->capabilities))
+    return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+           << "Opcode " << spvOpcodeString(inst->opcode)
+           << " requires one of these capabilities: "
+           << ToString(opcode_desc->capabilities, _.grammar());
+  for (int i = 0; i < inst->num_operands; ++i) {
+    spv_operand_desc operand_desc;
+    if (SPV_SUCCESS ==
+            _.grammar().lookupOperand(inst->operands[i].type,
+                                      inst->words[inst->operands[i].offset],
+                                      &operand_desc) &&
+        !_.HasAnyOf(operand_desc->capabilities))
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+             << "Operand " << i + 1 << " of " << spvOpcodeString(inst->opcode)
+             << " requires one of these capabilities: "
+             << ToString(operand_desc->capabilities, _.grammar());
+  }
+  return SPV_SUCCESS;
+}
 
 // clang-format off
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   if (_.is_enabled(SPV_VALIDATE_INSTRUCTION_BIT)) {
-    SpvOp opcode = inst->opcode;
-    switch (opcode) {
-      case SpvOpNop: break;
-      case SpvOpSourceContinued: break;
-      case SpvOpSource: break;
-      case SpvOpSourceExtension: break;
-      case SpvOpName: break;
-      case SpvOpMemberName: break;
-      case SpvOpString: break;
-      case SpvOpLine: break;
-      case SpvOpNoLine: break;
-      case SpvOpDecorate: {
-        SpvDecoration decoration =
-          static_cast<SpvDecoration>(inst->words[inst->operands[1].offset]);
-        SpvBuiltIn builtin = static_cast<SpvBuiltIn>(0);
-        if(decoration == SpvDecorationBuiltIn) {
-          builtin = static_cast<SpvBuiltIn>(inst->words[inst->operands[2].offset]);
-        }
-        spvCheckReturn(DecorationCapabilityCheck(_, decoration, builtin));
-      } break;
-
-      case SpvOpMemberDecorate: {
-        SpvDecoration decoration =
-          static_cast<SpvDecoration>(inst->words[inst->operands[2].offset]);
-        SpvBuiltIn builtin = static_cast<SpvBuiltIn>(0);
-        if(decoration == SpvDecorationBuiltIn) {
-          builtin = static_cast<SpvBuiltIn>(inst->words[inst->operands[3].offset]);
-        }
-        spvCheckReturn(DecorationCapabilityCheck(_, decoration, builtin));
-      } break;
-
-      case SpvOpDecorationGroup: break;
-      case SpvOpGroupDecorate: break;
-      case SpvOpGroupMemberDecorate: break;
-      case SpvOpExtension: break;
-      case SpvOpExtInstImport: break;
-      case SpvOpExtInst: break;
-      case SpvOpMemoryModel: {
-        SpvAddressingModel addressing_model =
-          static_cast<SpvAddressingModel>(inst->words[inst->operands[0].offset]);
-        SpvMemoryModel memory_model =
-          static_cast<SpvMemoryModel>(inst->words[inst->operands[1].offset]);
-        spvCheckReturn(AddressingAndMemoryModelCapabilityCheck(_,
-                                               addressing_model, memory_model));
-      } break;
-
-      case SpvOpEntryPoint: {
-        SpvExecutionModel execution_model =
-          static_cast<SpvExecutionModel>(inst->words[inst->operands[0].offset]);
-        spvCheckReturn(ExecutionModelCapabilityCheck(_, execution_model));
-      } break;
-
-      case SpvOpExecutionMode: {
-        SpvExecutionMode execution_mode =
-          static_cast<SpvExecutionMode>(inst->words[inst->operands[1].offset]);
-        spvCheckReturn(ExecutionModeCapabilityCheck(_, execution_mode));
-      } break;
-
-      case SpvOpCapability:
+    if (inst->opcode == SpvOpCapability)
         _.registerCapability(
             static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
-        break;
-
-      case SpvOpTypeVoid: break;
-      case SpvOpTypeBool: break;
-      case SpvOpTypeInt: break;
-      case SpvOpTypeFloat: break;
-      case SpvOpTypeVector: break;
-      case SpvOpTypeMatrix:
-        if (_.hasCapability(SpvCapabilityMatrix) == false) {
-          return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-                 << "Matrix type requires Matrix capability";
-        }
-        break;
-      case SpvOpTypeImage: {
-        if (_.hasCapability(SpvCapabilityImageBasic) == false) {
-          return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-            << "TypeImage requires the ImageBasic capability";
-        }
-        SpvDim dim =
-          static_cast<SpvDim>(inst->words[inst->operands[2].offset]);
-        spvCheckReturn(DimCapabilityCheck(_, dim));
-
-      } break;
-
-      case SpvOpTypeSampler: break;
-      case SpvOpTypeSampledImage: break;
-      case SpvOpTypeArray: break;
-      case SpvOpTypeRuntimeArray: break;
-      case SpvOpTypeStruct: break;
-      case SpvOpTypeOpaque: break;
-      case SpvOpTypePointer: {
-        const SpvStorageClass storage_class =
-            static_cast<SpvStorageClass>(inst->words[inst->operands[1].offset]);
-        spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
-      } break;
-
-      case SpvOpTypeFunction: break;
-      case SpvOpTypeEvent: break;
-      case SpvOpTypeDeviceEvent: break;
-      case SpvOpTypeReserveId: break;
-      case SpvOpTypeQueue: break;
-      case SpvOpTypePipe: break;
-      case SpvOpTypeForwardPointer: {
-        const SpvStorageClass storage_class =
-            static_cast<SpvStorageClass>(inst->words[inst->operands[1].offset]);
-        spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
-      } break;
-
-      case SpvOpUndef: break;
-      case SpvOpConstantTrue: break;
-      case SpvOpConstantFalse: break;
-      case SpvOpConstant: break;
-      case SpvOpConstantComposite: break;
-      case SpvOpConstantSampler: {
-        if (_.hasCapability(SpvCapabilityLiteralSampler) == false) {
-        return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-          << "ConstantSampler requires the LiteralSampler capability";
-        }
-        const SpvSamplerAddressingMode sampler_addressing_mode =
-          static_cast<SpvSamplerAddressingMode>(inst->words[inst->operands[1].offset]);
-        spvCheckReturn(SamplerAddressingModeCapabilityCheck(_, sampler_addressing_mode));
-      } break;
-
-      case SpvOpConstantNull: break;
-      case SpvOpSpecConstantTrue: break;
-      case SpvOpSpecConstantFalse: break;
-      case SpvOpSpecConstant: break;
-      case SpvOpSpecConstantComposite: break;
-      case SpvOpSpecConstantOp: break;
-      case SpvOpVariable: {
-        const SpvStorageClass storage_class =
+    if (inst->opcode == SpvOpVariable) {
+        const auto storage_class =
             static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
         if (storage_class == SpvStorageClassGeneric)
           return _.diag(SPV_ERROR_INVALID_BINARY)
               << "OpVariable storage class cannot be Generic";
-        spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
-
         if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
           if (storage_class != SpvStorageClassFunction) {
             return _.diag(SPV_ERROR_INVALID_LAYOUT)
@@ -508,254 +426,10 @@ spv_result_t InstructionPass(ValidationState_t& _,
                       "outside of a function";
           }
         }
-      } break;
-
-      case SpvOpImageTexelPointer: break;
-      case SpvOpLoad: break;
-      case SpvOpStore: break;
-      case SpvOpCopyMemory: break;
-      case SpvOpCopyMemorySized: break;
-      case SpvOpAccessChain: break;
-      case SpvOpInBoundsAccessChain: break;
-      case SpvOpPtrAccessChain: break;
-      case SpvOpArrayLength: break;
-      case SpvOpGenericPtrMemSemantics: break;
-      case SpvOpInBoundsPtrAccessChain: break;
-      case SpvOpFunction: break;
-      case SpvOpFunctionParameter: break;
-      case SpvOpFunctionEnd: break;
-      case SpvOpFunctionCall: break;
-      case SpvOpSampledImage: break;
-      case SpvOpImageSampleImplicitLod: break;
-      case SpvOpImageSampleExplicitLod: break;
-      case SpvOpImageSampleDrefImplicitLod: break;
-      case SpvOpImageSampleDrefExplicitLod: break;
-      case SpvOpImageSampleProjImplicitLod: break;
-      case SpvOpImageSampleProjExplicitLod: break;
-      case SpvOpImageSampleProjDrefImplicitLod: break;
-      case SpvOpImageSampleProjDrefExplicitLod: break;
-      case SpvOpImageFetch: break;
-      case SpvOpImageGather: break;
-      case SpvOpImageDrefGather: break;
-      case SpvOpImageRead: break;
-      case SpvOpImageWrite: break;
-      case SpvOpImage: break;
-      case SpvOpImageQueryFormat: break;
-      case SpvOpImageQueryOrder: break;
-      case SpvOpImageQuerySizeLod: break;
-      case SpvOpImageQuerySize: break;
-      case SpvOpImageQueryLod: break;
-      case SpvOpImageQueryLevels: break;
-      case SpvOpImageQuerySamples: break;
-      case SpvOpImageSparseSampleImplicitLod: break;
-      case SpvOpImageSparseSampleExplicitLod: break;
-      case SpvOpImageSparseSampleDrefImplicitLod: break;
-      case SpvOpImageSparseSampleDrefExplicitLod: break;
-      case SpvOpImageSparseSampleProjImplicitLod: break;
-      case SpvOpImageSparseSampleProjExplicitLod: break;
-      case SpvOpImageSparseSampleProjDrefImplicitLod: break;
-      case SpvOpImageSparseSampleProjDrefExplicitLod: break;
-      case SpvOpImageSparseFetch: break;
-      case SpvOpImageSparseGather: break;
-      case SpvOpImageSparseDrefGather: break;
-      case SpvOpImageSparseTexelsResident: break;
-      case SpvOpConvertFToU: break;
-      case SpvOpConvertFToS: break;
-      case SpvOpConvertSToF: break;
-      case SpvOpConvertUToF: break;
-      case SpvOpUConvert: break;
-      case SpvOpSConvert: break;
-      case SpvOpFConvert: break;
-      case SpvOpQuantizeToF16: break;
-      case SpvOpConvertPtrToU: break;
-      case SpvOpSatConvertSToU: break;
-      case SpvOpSatConvertUToS: break;
-      case SpvOpConvertUToPtr: break;
-      case SpvOpPtrCastToGeneric: break;
-      case SpvOpGenericCastToPtr: break;
-      case SpvOpGenericCastToPtrExplicit: {
-        const SpvStorageClass storage_class =
-            static_cast<SpvStorageClass>(inst->words[inst->operands[3].offset]);
-        spvCheckReturn(StorageClassCapabilityCheck(_, storage_class));
-      } break;
-
-      case SpvOpBitcast: break;
-      case SpvOpVectorExtractDynamic: break;
-      case SpvOpVectorInsertDynamic: break;
-      case SpvOpVectorShuffle: break;
-      case SpvOpCompositeConstruct: break;
-      case SpvOpCompositeExtract: break;
-      case SpvOpCompositeInsert: break;
-      case SpvOpCopyObject: break;
-      case SpvOpTranspose: break;
-      case SpvOpSNegate: break;
-      case SpvOpFNegate: break;
-      case SpvOpIAdd: break;
-      case SpvOpFAdd: break;
-      case SpvOpISub: break;
-      case SpvOpFSub: break;
-      case SpvOpIMul: break;
-      case SpvOpFMul: break;
-      case SpvOpUDiv: break;
-      case SpvOpSDiv: break;
-      case SpvOpFDiv: break;
-      case SpvOpUMod: break;
-      case SpvOpSRem: break;
-      case SpvOpSMod: break;
-      case SpvOpFRem: break;
-      case SpvOpFMod: break;
-      case SpvOpVectorTimesScalar: break;
-      case SpvOpMatrixTimesScalar: break;
-      case SpvOpVectorTimesMatrix: break;
-      case SpvOpMatrixTimesVector: break;
-      case SpvOpMatrixTimesMatrix: break;
-      case SpvOpOuterProduct: break;
-      case SpvOpDot: break;
-      case SpvOpIAddCarry: break;
-      case SpvOpISubBorrow: break;
-      case SpvOpUMulExtended: break;
-      case SpvOpSMulExtended: break; break;
-      case SpvOpShiftRightLogical: break;
-      case SpvOpShiftRightArithmetic: break;
-      case SpvOpShiftLeftLogical: break;
-      case SpvOpBitwiseOr: break;
-      case SpvOpBitwiseXor: break;
-      case SpvOpBitwiseAnd: break;
-      case SpvOpNot: break;
-      case SpvOpBitFieldInsert: break;
-      case SpvOpBitFieldSExtract: break;
-      case SpvOpBitFieldUExtract: break;
-      case SpvOpBitReverse: break;
-      case SpvOpBitCount: break;
-      case SpvOpAny: break;
-      case SpvOpAll: break;
-      case SpvOpIsNan: break;
-      case SpvOpIsInf: break;
-      case SpvOpIsFinite: break;
-      case SpvOpIsNormal: break;
-      case SpvOpSignBitSet: break;
-      case SpvOpLessOrGreater: break;
-      case SpvOpOrdered: break;
-      case SpvOpUnordered: break;
-      case SpvOpLogicalEqual: break;
-      case SpvOpLogicalNotEqual: break;
-      case SpvOpLogicalOr: break;
-      case SpvOpLogicalAnd: break;
-      case SpvOpLogicalNot: break;
-      case SpvOpSelect: break;
-      case SpvOpIEqual: break;
-      case SpvOpINotEqual: break;
-      case SpvOpUGreaterThan: break;
-      case SpvOpSGreaterThan: break;
-      case SpvOpUGreaterThanEqual: break;
-      case SpvOpSGreaterThanEqual: break;
-      case SpvOpULessThan: break;
-      case SpvOpSLessThan: break;
-      case SpvOpULessThanEqual: break;
-      case SpvOpSLessThanEqual: break;
-      case SpvOpFOrdEqual: break;
-      case SpvOpFUnordEqual: break;
-      case SpvOpFOrdNotEqual: break;
-      case SpvOpFUnordNotEqual: break;
-      case SpvOpFOrdLessThan: break;
-      case SpvOpFUnordLessThan: break;
-      case SpvOpFOrdGreaterThan: break;
-      case SpvOpFUnordGreaterThan: break;
-      case SpvOpFOrdLessThanEqual: break;
-      case SpvOpFUnordLessThanEqual: break;
-      case SpvOpFOrdGreaterThanEqual: break;
-      case SpvOpFUnordGreaterThanEqual: break;
-      case SpvOpDPdx: break;
-      case SpvOpDPdy: break;
-      case SpvOpFwidth: break;
-      case SpvOpDPdxFine: break;
-      case SpvOpDPdyFine: break;
-      case SpvOpFwidthFine: break;
-      case SpvOpDPdxCoarse: break;
-      case SpvOpDPdyCoarse: break;
-      case SpvOpFwidthCoarse: break;
-      case SpvOpPhi: break;
-      case SpvOpLoopMerge: break;
-      case SpvOpSelectionMerge: break;
-      case SpvOpLabel: break;
-      case SpvOpBranch: break;
-      case SpvOpBranchConditional: break;
-      case SpvOpSwitch: break;
-      case SpvOpKill: break;
-      case SpvOpReturn: break;
-      case SpvOpReturnValue: break;
-      case SpvOpUnreachable: break;
-      case SpvOpLifetimeStart: break;
-      case SpvOpLifetimeStop: break;
-      case SpvOpAtomicLoad: break;
-      case SpvOpAtomicStore: break;
-      case SpvOpAtomicExchange: break;
-      case SpvOpAtomicCompareExchange: break;
-      case SpvOpAtomicCompareExchangeWeak: break;
-      case SpvOpAtomicIIncrement: break;
-      case SpvOpAtomicIDecrement: break;
-      case SpvOpAtomicIAdd: break;
-      case SpvOpAtomicISub: break;
-      case SpvOpAtomicSMin: break;
-      case SpvOpAtomicUMin: break;
-      case SpvOpAtomicSMax: break;
-      case SpvOpAtomicUMax: break;
-      case SpvOpAtomicAnd: break;
-      case SpvOpAtomicOr: break;
-      case SpvOpAtomicXor: break;
-      case SpvOpAtomicFlagTestAndSet: break;
-      case SpvOpAtomicFlagClear: break;
-      case SpvOpEmitVertex: break;
-      case SpvOpEndPrimitive: break;
-      case SpvOpEmitStreamVertex: break;
-      case SpvOpEndStreamPrimitive: break;
-      case SpvOpControlBarrier: break;
-      case SpvOpMemoryBarrier: break;
-      case SpvOpGroupAsyncCopy: break;
-      case SpvOpGroupWaitEvents: break;
-      case SpvOpGroupAll: break;
-      case SpvOpGroupAny: break;
-      case SpvOpGroupBroadcast: break;
-      case SpvOpGroupIAdd: break;
-      case SpvOpGroupFAdd: break;
-      case SpvOpGroupFMin: break;
-      case SpvOpGroupUMin: break;
-      case SpvOpGroupSMin: break;
-      case SpvOpGroupFMax: break;
-      case SpvOpGroupUMax: break;
-      case SpvOpGroupSMax: break;
-      case SpvOpEnqueueMarker: break;
-      case SpvOpEnqueueKernel: break;
-      case SpvOpGetKernelNDrangeSubGroupCount: break;
-      case SpvOpGetKernelNDrangeMaxSubGroupSize: break;
-      case SpvOpGetKernelWorkGroupSize: break;
-      case SpvOpGetKernelPreferredWorkGroupSizeMultiple: break;
-      case SpvOpRetainEvent: break;
-      case SpvOpReleaseEvent: break;
-      case SpvOpCreateUserEvent: break;
-      case SpvOpIsValidEvent: break;
-      case SpvOpSetUserEventStatus: break;
-      case SpvOpCaptureEventProfilingInfo: break;
-      case SpvOpGetDefaultQueue: break;
-      case SpvOpBuildNDRange: break;
-      case SpvOpReadPipe: break;
-      case SpvOpWritePipe: break;
-      case SpvOpReservedReadPipe: break;
-      case SpvOpReservedWritePipe: break;
-      case SpvOpReserveReadPipePackets: break;
-      case SpvOpReserveWritePipePackets: break;
-      case SpvOpCommitReadPipe: break;
-      case SpvOpCommitWritePipe: break;
-      case SpvOpIsValidReserveId: break;
-      case SpvOpGetNumPipePackets: break;
-      case SpvOpGetMaxPipePackets: break;
-      case SpvOpGroupReserveReadPipePackets: break;
-      case SpvOpGroupReserveWritePipePackets: break;
-      case SpvOpGroupCommitReadPipe: break;
-      case SpvOpGroupCommitWritePipe: break;
     }
+    return CapCheck(_, inst);
   }
   return SPV_SUCCESS;
 }
 // clang-format on
-}
+}  // namespace libspirv

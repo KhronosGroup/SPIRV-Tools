@@ -322,7 +322,7 @@ spv_result_t spvValidate(const spv_const_context context,
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
-  ValidationState_t vstate(pDiagnostic, options);
+  ValidationState_t vstate(pDiagnostic, options, context);
   spvCheckReturn(spvBinaryParse(context, &vstate, binary->code,
                                 binary->wordCount, setHeader,
                                 ProcessInstruction, pDiagnostic));

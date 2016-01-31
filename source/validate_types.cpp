@@ -33,6 +33,7 @@
 
 #include "headers/spirv.h"
 
+#include "spirv_definition.h"
 #include "validate.h"
 
 using std::find;
@@ -213,7 +214,8 @@ static const size_t kCapabilitiesMaxValue =
 namespace libspirv {
 
 ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
-                                     uint32_t options)
+                                     uint32_t options,
+                                     const spv_const_context context)
     : diagnostic_(diagnostic),
       instruction_counter_(0),
       unresolved_forward_ids_{},
@@ -221,7 +223,8 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
       module_functions_(*this),
-      module_capabilities_(kCapabilitiesMaxValue + 1, false) {}
+      module_capabilities_(kCapabilitiesMaxValue + 1, false),
+      grammar_(context) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -376,8 +379,20 @@ void ValidationState_t::registerCapability(SpvCapability cap) {
   module_capabilities_[capability] = true;
 }
 
-bool ValidationState_t::hasCapability(SpvCapability cap) {
+bool ValidationState_t::hasCapability(SpvCapability cap) const {
   return module_capabilities_[cap];
+}
+
+bool ValidationState_t::HasAnyOf(spv_capability_mask_t mask) const {
+  if (!mask)
+    return true;  // No capabilities requested: the mask is trivially satisfied.
+  for (int cap = SpvCapabilityMatrix;
+       cap <= SpvCapabilityStorageImageWriteWithoutFormat; ++cap) {
+    if (spvIsInBitfield(SPV_CAPABILITY_AS_MASK(cap), mask) &&
+        hasCapability(static_cast<SpvCapability>(cap)))
+      return true;
+  }
+  return false;
 }
 
 Functions::Functions(ValidationState_t& module)

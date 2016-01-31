@@ -36,9 +36,11 @@
 
 #include "libspirv/libspirv.h"
 
+#include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "instruction.h"
+#include "spirv_definition.h"
 #include "table.h"
 
 // Structures
@@ -171,7 +173,8 @@ class Functions {
 
 class ValidationState_t {
  public:
-  ValidationState_t(spv_diagnostic* diagnostic, uint32_t options);
+  ValidationState_t(spv_diagnostic* diagnostic, uint32_t options,
+                    const spv_const_context context);
 
   // Forward declares the id in the module
   spv_result_t forwardDeclareId(uint32_t id);
@@ -266,8 +269,14 @@ class ValidationState_t {
   // Registers the capability and its dependent capabilities
   void registerCapability(SpvCapability cap);
 
-  // Returns true if the capabillity is enabled in the module
-  bool hasCapability(SpvCapability cap);
+  // Returns true if the capability is enabled in the module.
+  bool hasCapability(SpvCapability cap) const;
+
+  // Returns true if any of the capabilities are enabled.  Always true for
+  // capabilities==0.
+  bool HasAnyOf(spv_capability_mask_t capabilities) const;
+
+  AssemblyGrammar& grammar() { return grammar_; }
 
  private:
   spv_diagnostic* diagnostic_;
@@ -298,6 +307,7 @@ class ValidationState_t {
   // IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
 
+  AssemblyGrammar grammar_;
 };
 
 }  // namespace libspirv
@@ -342,7 +352,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const spv_ext_inst_table extInstTable,
                             spv_position position, spv_diagnostic* pDiagnostic);
 
-#define spvCheckReturn(expression)                      \
+#define spvCheckReturn(expression) \
   if (spv_result_t error = (expression)) return error;
 
 #endif  // LIBSPIRV_VALIDATE_H_
