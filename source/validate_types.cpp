@@ -205,10 +205,6 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
   return out;
 }
 
-// This variable is the maximum ID of capabilities.
-static const size_t kCapabilitiesMaxValue =
-    SpvCapabilityStorageImageWriteWithoutFormat;
-
 }  // anonymous namespace
 
 namespace libspirv {
