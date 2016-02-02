@@ -26,6 +26,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 project(spirv-tools)
+enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -258,6 +259,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${gmock_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include)
     target_link_libraries(UnitSPIRV PRIVATE ${SPIRV_TOOLS} gmock)
+    add_test(NAME spirv-tools-testsuite COMMAND UnitSPIRV)
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")

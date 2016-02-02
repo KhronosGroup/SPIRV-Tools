@@ -185,10 +185,15 @@ The validator operates on the binary form.
 * `spirv-val` - the standalone validator
   * `<spirv-dir>/spirv-val`
 
-### UnitSPIRV tool
+### Tests
+
+Tests are only built when googletest is found.
 
 The `<spirv-build-dir>/UnitSPIRV` executable runs the project tests.
 It supports the standard `googletest` command line options.
+
+The project also adds a CMake test `spirv-tools-testsuite`, which executes
+`UnitSPIRV`.  That way it's possible to run the tests using `ctest`.
 
 ## Future Work
 <a name="future"></a>
