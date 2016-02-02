@@ -49,4 +49,27 @@ TEST(OperandString, AllAreDefinedExceptVariable) {
   }
 }
 
+TEST(OperandIsConcreteMask, Sample) {
+  // Check a few operand types preceding the concrete mask types.
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_NONE));
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_ID));
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_LITERAL_INTEGER));
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_CAPABILITY));
+
+  // Check all the concrete mask operand types.
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_IMAGE));
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_FP_FAST_MATH_MODE));
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_SELECTION_CONTROL));
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_LOOP_CONTROL));
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_FUNCTION_CONTROL));
+  EXPECT_TRUE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_MEMORY_ACCESS));
+
+  // Check a few operand types after the concrete mask types, including the
+  // optional forms for Image and MemoryAccess.
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_ID));
+  EXPECT_FALSE(spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_IMAGE));
+  EXPECT_FALSE(
+      spvOperandIsConcreteMask(SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS));
+}
+
 }  // anonymous namespace

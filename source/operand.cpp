@@ -1299,6 +1299,11 @@ void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
   }
 }
 
+bool spvOperandIsConcreteMask(spv_operand_type_t type) {
+  return SPV_OPERAND_TYPE_FIRST_CONCRETE_MASK_TYPE <= type &&
+         type <= SPV_OPERAND_TYPE_LAST_CONCRETE_MASK_TYPE;
+}
+
 bool spvOperandIsOptional(spv_operand_type_t type) {
   return SPV_OPERAND_TYPE_FIRST_OPTIONAL_TYPE <= type &&
          type <= SPV_OPERAND_TYPE_LAST_OPTIONAL_TYPE;
