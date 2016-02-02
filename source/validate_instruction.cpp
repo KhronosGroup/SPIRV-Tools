@@ -30,16 +30,19 @@
 #include <sstream>
 #include <string>
 
+#include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_definition.h"
 #include "validate_passes.h"
 
+using libspirv::AssemblyGrammar;
+using libspirv::DiagnosticStream;
 using libspirv::ValidationState_t;
 
 namespace {
 
 std::string ToString(spv_capability_mask_t mask,
-                     const libspirv::AssemblyGrammar& grammar) {
+                     const AssemblyGrammar& grammar) {
   std::stringstream ss;
   libspirv::ForEach(mask, [&grammar, &ss](SpvCapability cap) {
     spv_operand_desc desc;
@@ -50,6 +53,27 @@ std::string ToString(spv_capability_mask_t mask,
       ss << cap << " ";
   });
   return ss.str();
+}
+
+// Reports a missing-capability error to _'s diagnostic stream and returns
+// SPV_ERROR_INVALID_CAPABILITY.
+spv_result_t CapabilityError(ValidationState_t& _, int which_operand,
+                             SpvOp opcode,
+                             const std::string& required_capabilities) {
+  return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+         << "Operand " << which_operand << " of " << spvOpcodeString(opcode)
+         << " requires one of these capabilities: " << required_capabilities;
+}
+
+// Returns an operand's required capabilities.
+spv_capability_mask_t RequiredCapabilities(const AssemblyGrammar& grammar,
+                                           spv_operand_type_t type,
+                                           uint32_t operand) {
+  spv_operand_desc operand_desc;
+  if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc))
+    return operand_desc->capabilities;
+  else
+    return 0;
 }
 
 }  // namespace anonymous
@@ -66,16 +90,25 @@ spv_result_t CapCheck(ValidationState_t& _,
            << " requires one of these capabilities: "
            << ToString(opcode_desc->capabilities, _.grammar());
   for (int i = 0; i < inst->num_operands; ++i) {
-    spv_operand_desc operand_desc;
-    if (SPV_SUCCESS ==
-            _.grammar().lookupOperand(inst->operands[i].type,
-                                      inst->words[inst->operands[i].offset],
-                                      &operand_desc) &&
-        !_.HasAnyOf(operand_desc->capabilities))
-      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-             << "Operand " << i + 1 << " of " << spvOpcodeString(inst->opcode)
-             << " requires one of these capabilities: "
-             << ToString(operand_desc->capabilities, _.grammar());
+    const auto& operand = inst->operands[i];
+    const auto word = inst->words[operand.offset];
+    auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
+    if (!_.HasAnyOf(caps))
+      return CapabilityError(_, i + 1, inst->opcode,
+                             ToString(caps, _.grammar()));
+    if (operand.type == SPV_OPERAND_TYPE_IMAGE)
+      for (auto individual_operand :
+           {SpvImageOperandsBiasMask, SpvImageOperandsLodMask,
+            SpvImageOperandsGradMask, SpvImageOperandsConstOffsetMask,
+            SpvImageOperandsOffsetMask, SpvImageOperandsConstOffsetsMask,
+            SpvImageOperandsSampleMask, SpvImageOperandsMinLodMask})
+        if (word & individual_operand) {
+          caps = RequiredCapabilities(_.grammar(), SPV_OPERAND_TYPE_IMAGE,
+                                      individual_operand);
+          if (!_.HasAnyOf(caps))
+            return CapabilityError(_, i + 1, inst->opcode,
+                                   ToString(caps, _.grammar()));
+        }
   }
   return SPV_SUCCESS;
 }

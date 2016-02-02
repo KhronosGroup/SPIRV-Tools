@@ -30,23 +30,23 @@
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
 
-#include <functional>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 
-using std::function;
-using std::ostream;
-using std::ostream_iterator;
+namespace {
+
 using std::pair;
 using std::make_pair;
 using std::stringstream;
 using std::string;
-using std::tie;
 using std::tuple;
 using std::vector;
 
-using ::testing::HasSubstr;
+using testing::Combine;
+using testing::Values;
+using testing::ValuesIn;
 
 using ValidateCapability =
     spvtest::ValidateBase<tuple<string, pair<string, vector<string>>>,
@@ -269,20 +269,19 @@ const vector<string>& SampledRectDependencies() {
   "SampledRect",
   "ImageRect"};
   return *r;
-};
+}
 
 const vector<string>& SampledBufferDependencies() {
   static const auto r = new vector<string>{
   "SampledBuffer",
   "ImageBuffer"};
   return *r;
-};
+}
 
-INSTANTIATE_TEST_CASE_P(ExecutionModel,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(ExecutionModel, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair("OpEntryPoint Vertex %func \"shader\" %var1 %var2\n",                 ShaderDependencies()),
 make_pair("OpEntryPoint TessellationControl %func \"shader\" %var1 %var2\n",    TessellationDependencies()),
 make_pair("OpEntryPoint TessellationEvaluation %func \"shader\" %var1 %var2\n", TessellationDependencies()),
@@ -292,11 +291,10 @@ make_pair("OpEntryPoint GLCompute %func \"shader\" %var1 %var2\n",              
 make_pair("OpEntryPoint Kernel %func \"shader\" %var1 %var2\n",                 KernelDependencies())
                                                            )));
 
-INSTANTIATE_TEST_CASE_P(AddressingAndMemoryModel,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(AddressingAndMemoryModel, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair(" OpCapability Shader"
           " OpMemoryModel Logical Simple",     AllCapabilities()),
 make_pair(" OpCapability Shader"
@@ -317,11 +315,10 @@ make_pair(" OpCapability Kernel"
           " OpMemoryModel Physical64 OpenCL",  AddressesDependencies())
                                                            )));
 
-INSTANTIATE_TEST_CASE_P(ExecutionMode,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(ExecutionMode, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair("OpExecutionMode %func Invocations 42",          GeometryDependencies()),
 make_pair("OpExecutionMode %func SpacingEqual",            TessellationDependencies()),
 make_pair("OpExecutionMode %func SpacingFractionalEven",   TessellationDependencies()),
@@ -355,11 +352,10 @@ make_pair("OpExecutionMode %func VecTypeHint 2",           KernelDependencies())
 make_pair("OpExecutionMode %func ContractionOff",          KernelDependencies())
 )));
 
-INSTANTIATE_TEST_CASE_P(StorageClass,
-                        ValidateCapability,
-                        ::testing::Combine(
-testing::ValuesIn(AllCapabilities()),
-testing::Values(
+INSTANTIATE_TEST_CASE_P(StorageClass, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair(" %intt = OpTypeInt 32 0\n"
           " %ptrt = OpTypePointer UniformConstant %intt\n"
           " %var = OpVariable %ptrt UniformConstant\n",             AllCapabilities()),
@@ -392,11 +388,10 @@ make_pair(" %intt = OpTypeInt 32 0\n"
           " %var = OpVariable %ptrt Image\n",                       AllCapabilities())
   )));
 
-INSTANTIATE_TEST_CASE_P(Dim,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(Dim, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair(" OpCapability ImageBasic"
           " %voidt = OpTypeVoid"
           " %imgt = OpTypeImage %voidt 1D 0 0 0 0 Unknown",       Sampled1DDependencies()),
@@ -422,11 +417,10 @@ make_pair(" OpCapability ImageBasic"
 
 // NOTE: All Sampler Address Modes require kernel capabilities but the
 // OpConstantSampler requires LiteralSampler which depends on Kernel
-INSTANTIATE_TEST_CASE_P(SamplerAddressingMode,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(SamplerAddressingMode, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair(" %samplert = OpTypeSampler"
           " %sampler = OpConstantSampler %samplert None 1 Nearest",           vector<string>{"LiteralSampler"}),
 make_pair(" %samplert = OpTypeSampler"
@@ -450,11 +444,10 @@ make_pair(" %samplert = OpTypeSampler"
 //TODO(umar): Access Qualifier
 //TODO(umar): Function Parameter Attribute
 
-INSTANTIATE_TEST_CASE_P(Decoration,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(Decoration, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair("OpDecorate %intt RelaxedPrecision\n",                    ShaderDependencies()),
 make_pair("OpDecorate %intt SpecId 1\n",                            ShaderDependencies()),
 make_pair("OpDecorate %intt Block\n",                               ShaderDependencies()),
@@ -500,11 +493,10 @@ make_pair("OpDecorate %intt Alignment 4\n",                         KernelDepend
   )));
 
 
-INSTANTIATE_TEST_CASE_P(BuiltIn,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair("OpDecorate %intt BuiltIn Position\n",                  ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn PointSize\n",                 ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn ClipDistance\n",              ShaderDependencies()),
@@ -569,16 +561,61 @@ make_pair("OpDecorate %intt BuiltIn InstanceIndex\n",             ShaderDependen
 // TODO(umar): Kernel Enqueue Flags
 // TODO(umar): Kernel Profiling Flags
 
-INSTANTIATE_TEST_CASE_P(MatrixOp,
-                        ValidateCapability,
-                        ::testing::Combine(
-                        testing::ValuesIn(AllCapabilities()),
-                        testing::Values(
+INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateCapability,
+                        Combine(
+                            ValuesIn(AllCapabilities()),
+                            Values(
 make_pair(
           "%intt     = OpTypeInt 32 1\n"
           "%vec3     = OpTypeVector %intt 3\n"
           "%mat33    = OpTypeMatrix %vec3 3\n", MatrixDependencies()))));
 // clang-format on
+
+// Creates assembly containing an OpImageFetch instruction using operands for
+// the image-operands part.  The assembly defines constants %fzero and %izero
+// that can be used for operands where IDs are required.  The assembly is valid,
+// apart from not declaring any capabilities required by the operands.
+string ImageOperandsTemplate(const string& operands) {
+  stringstream ss;
+  // clang-format off
+  ss << R"(
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
+
+%i32 = OpTypeInt 32 1
+%f32 = OpTypeFloat 32
+%v4i32 = OpTypeVector %i32 4
+%timg = OpTypeImage %i32 2D 0 0 0 0 Unknown
+%pimg = OpTypePointer UniformConstant %timg
+%tfun = OpTypeFunction %i32
+
+%vimg = OpVariable %pimg UniformConstant
+%izero = OpConstant %i32 0
+%fzero = OpConstant %f32 0.
+
+%main = OpFunction %i32 None %tfun
+%lbl = OpLabel
+%img = OpLoad %timg %vimg
+%r1 = OpImageFetch %v4i32 %img %izero )" << operands << R"(
+OpReturnValue %izero
+OpFunctionEnd
+)";
+  // clang-format on
+  return ss.str();
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TwoImageOperandsMask, ValidateCapability,
+    Combine(
+        ValuesIn(AllCapabilities()),
+        Values(make_pair(ImageOperandsTemplate("Bias|Lod %fzero %fzero"),
+                         ShaderDependencies()),
+               make_pair(ImageOperandsTemplate("Lod|Offset %fzero %izero"),
+                         vector<string>{"ImageGatherExtended"}),
+               make_pair(ImageOperandsTemplate("Sample|MinLod %izero %fzero"),
+                         vector<string>{"MinLod"}),
+               make_pair(ImageOperandsTemplate("Lod|Sample %fzero %izero"),
+                         AllCapabilities()))));
 
 // TODO(umar): Instruction capability checks
 
@@ -607,3 +644,5 @@ TEST_P(ValidateCapability, Capability) {
   CompileSuccessfully(ss.str());
   ASSERT_EQ(res, ValidateInstructions());
 }
+
+}  // namespace anonymous
