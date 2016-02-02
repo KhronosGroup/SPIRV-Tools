@@ -519,6 +519,10 @@ make_pair("OpDecorate %intt BuiltIn SamplePosition\n",            ShaderDependen
 make_pair("OpDecorate %intt BuiltIn SampleMask\n",                ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn FragDepth\n",                 ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn HelperInvocation\n",          ShaderDependencies()),
+make_pair("OpDecorate %intt BuiltIn VertexIndex\n",               ShaderDependencies()),
+make_pair("OpDecorate %intt BuiltIn InstanceIndex\n",             ShaderDependencies()),
+// Though the remaining builtins don't require Shader, the BuiltIn keyword
+// itself currently does require it.
 make_pair("OpDecorate %intt BuiltIn NumWorkgroups\n",             ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn WorkgroupSize\n",             ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn WorkgroupId\n",               ShaderDependencies()),
@@ -546,9 +550,7 @@ make_pair("OpCapability Shader\n"
 make_pair("OpCapability Shader\n"
           "OpDecorate %intt BuiltIn SubgroupId\n",                KernelDependencies()),
 make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn SubgroupLocalInvocationId\n", KernelDependencies()),
-make_pair("OpDecorate %intt BuiltIn VertexIndex\n",               ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn InstanceIndex\n",             ShaderDependencies())
+          "OpDecorate %intt BuiltIn SubgroupLocalInvocationId\n", KernelDependencies())
                                                            )));
 
 // TODO(umar): Selection Control
