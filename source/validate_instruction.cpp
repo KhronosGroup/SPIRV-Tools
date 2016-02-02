@@ -92,23 +92,26 @@ spv_result_t CapCheck(ValidationState_t& _,
   for (int i = 0; i < inst->num_operands; ++i) {
     const auto& operand = inst->operands[i];
     const auto word = inst->words[operand.offset];
-    auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
-    if (!_.HasAnyOf(caps))
-      return CapabilityError(_, i + 1, inst->opcode,
-                             ToString(caps, _.grammar()));
-    if (operand.type == SPV_OPERAND_TYPE_IMAGE)
-      for (auto individual_operand :
-           {SpvImageOperandsBiasMask, SpvImageOperandsLodMask,
-            SpvImageOperandsGradMask, SpvImageOperandsConstOffsetMask,
-            SpvImageOperandsOffsetMask, SpvImageOperandsConstOffsetsMask,
-            SpvImageOperandsSampleMask, SpvImageOperandsMinLodMask})
-        if (word & individual_operand) {
-          caps = RequiredCapabilities(_.grammar(), SPV_OPERAND_TYPE_IMAGE,
-                                      individual_operand);
-          if (!_.HasAnyOf(caps))
+    if (spvOperandIsConcreteMask(operand.type)) {
+      // Check for required capabilities for each bit position of the mask.
+      for (uint32_t mask_bit = 0x80000000; mask_bit; mask_bit >>= 1) {
+        if (word & mask_bit) {
+          const auto caps =
+              RequiredCapabilities(_.grammar(), operand.type, mask_bit);
+          if (!_.HasAnyOf(caps)) {
             return CapabilityError(_, i + 1, inst->opcode,
                                    ToString(caps, _.grammar()));
+          }
         }
+      }
+    } else {
+      // Check the operand word as a whole.
+      const auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
+      if (!_.HasAnyOf(caps)) {
+        return CapabilityError(_, i + 1, inst->opcode,
+                               ToString(caps, _.grammar()));
+      }
+    }
   }
   return SPV_SUCCESS;
 }
