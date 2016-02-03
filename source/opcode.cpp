@@ -489,22 +489,6 @@ int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   }
 }
 
-int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode) {
-  switch (opcode) {
-    case SpvOpTypeBool:
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypePointer:
-    case SpvOpTypeEvent:
-    case SpvOpTypeDeviceEvent:
-    case SpvOpTypeReserveId:
-    case SpvOpTypeQueue:
-      return true;
-    default:
-      return false;
-  }
-}
-
 int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* pFirstInst,
                                      const spv_instruction_t* pInst) {
   while (pFirstInst != pInst) {

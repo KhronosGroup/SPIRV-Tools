@@ -609,64 +609,54 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
   return true;
 }
 
+// True if instruction defines a type that can have a null value, as defined by
+// the SPIR-V spec.  Tracks composite-type components through usedefs to check
+// nullability transitively.
+bool IsTypeNullable(const std::vector<uint32_t>& instruction,
+                    const UseDefTracker& usedefs) {
+  SpvOp opcode;
+  uint16_t word_count;
+  spvOpcodeSplit(instruction[0], &word_count, &opcode);
+  switch (opcode) {
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypePointer:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+      return true;
+    case SpvOpTypeArray:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector: {
+      auto base_type = usedefs.FindDef(instruction[2]);
+      return base_type.first && IsTypeNullable(base_type.second.words, usedefs);
+    }
+    case SpvOpTypeStruct: {
+      for (size_t elementIndex = 2; elementIndex < instruction.size();
+           ++elementIndex) {
+        auto element = usedefs.FindDef(instruction[elementIndex]);
+        if (!element.first || !IsTypeNullable(element.second.words, usedefs))
+          return false;
+      }
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
 template <>
 bool idUsage::isValid<SpvOpConstantNull>(const spv_instruction_t* inst,
                                          const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = usedefs_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType.first) return false;
-  switch (resultType.second.opcode) {
-    default: {
-      spvCheck(!spvOpcodeIsBasicTypeNullable(resultType.second.opcode),
-               DIAG(resultTypeIndex) << "OpConstantNull Result Type <id> '"
-                                     << inst->words[resultTypeIndex]
-                                     << "' cannot be null.";
-               return false);
-    } break;
-    case SpvOpTypeVector: {
-      auto type = usedefs_.FindDef(resultType.second.words[2]);
-      assert(type.first);
-      spvCheck(!spvOpcodeIsBasicTypeNullable(type.second.opcode),
-               DIAG(resultTypeIndex)
-                   << "OpConstantNull Result Type <id> '"
-                   << inst->words[resultTypeIndex]
-                   << "'s vector component type cannot be null.";
-               return false);
-    } break;
-    case SpvOpTypeArray: {
-      auto type = usedefs_.FindDef(resultType.second.words[2]);
-      assert(type.first);
-      spvCheck(!spvOpcodeIsBasicTypeNullable(type.second.opcode),
-               DIAG(resultTypeIndex) << "OpConstantNull Result Type <id> '"
-                                     << inst->words[resultTypeIndex]
-                                     << "'s array element type cannot be null.";
-               return false);
-    } break;
-    case SpvOpTypeMatrix: {
-      auto columnType = usedefs_.FindDef(resultType.second.words[2]);
-      assert(columnType.first);
-      auto type = usedefs_.FindDef(columnType.second.words[2]);
-      assert(type.first);
-      spvCheck(!spvOpcodeIsBasicTypeNullable(type.second.opcode),
-               DIAG(resultTypeIndex)
-                   << "OpConstantNull Result Type <id> '"
-                   << inst->words[resultTypeIndex]
-                   << "'s matrix component type cna not be null.";
-               return false);
-    } break;
-    case SpvOpTypeStruct: {
-      for (size_t elementIndex = 2;
-           elementIndex < resultType.second.words.size(); ++elementIndex) {
-        auto element = usedefs_.FindDef(resultType.second.words[elementIndex]);
-        assert(element.first);
-        spvCheck(!spvOpcodeIsBasicTypeNullable(element.second.opcode),
-                 DIAG(resultTypeIndex)
-                     << "OpConstantNull Result Type <id> '"
-                     << inst->words[resultTypeIndex]
-                     << "'s struct element type cannot be null.";
-                 return false);
-      }
-    } break;
+  if (!resultType.first || !IsTypeNullable(resultType.second.words, usedefs_)) {
+    DIAG(resultTypeIndex) << "OpConstantNull Result Type <id> '"
+                          << inst->words[resultTypeIndex]
+                          << "' cannot have a null value.";
+    return false;
   }
   return true;
 }

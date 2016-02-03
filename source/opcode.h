@@ -92,10 +92,6 @@ int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* type_inst0,
 // non-zero otherwise.
 int32_t spvOpcodeIsPointer(const SpvOp opcode);
 
-// Determines if the scalar type opcode is nullable. Returns zero if false,
-// non-zero otherwise.
-int32_t spvOpcodeIsBasicTypeNullable(SpvOp opcode);
-
 // Determines if an instruction is in a basic block. The first_inst parameter
 // specifies the first instruction in the stream, while the inst parameter
 // specifies the current instruction. Returns zero if false, non-zero otherwise.

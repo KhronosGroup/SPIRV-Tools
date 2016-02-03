@@ -612,15 +612,21 @@ TEST_F(ValidateID, OpConstantNullGood) {
 %22 = OpConstantNull %21
 %23 = OpTypeStruct %3 %5 %1
 %24 = OpConstantNull %23
+%26 = OpTypeArray %17 %25
+%27 = OpConstantNull %26
+%28 = OpTypeStruct %7 %26 %26 %1
+%29 = OpConstantNull %28
 )";
   CHECK(spirv, SPV_SUCCESS);
 }
+
 TEST_F(ValidateID, OpConstantNullBasicBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantNull %1)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
+
 TEST_F(ValidateID, OpConstantNullArrayBad) {
   const char* spirv = R"(
 %2 = OpTypeInt 32 0
@@ -630,11 +636,20 @@ TEST_F(ValidateID, OpConstantNullArrayBad) {
 %6 = OpConstantNull %5)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
+
 TEST_F(ValidateID, OpConstantNullStructBad) {
   const char* spirv = R"(
 %2 = OpTypeSampler
 %3 = OpTypeStruct %2 %2
 %4 = OpConstantNull %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpConstantNullRuntimeArrayBad) {
+  const char* spirv = R"(
+%bool = OpTypeBool
+%array = OpTypeRuntimeArray %bool
+%null = OpConstantNull %array)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
