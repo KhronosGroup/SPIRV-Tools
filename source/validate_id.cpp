@@ -964,19 +964,26 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
   size_t paramIndex = 0;
   assert(firstInst < inst && "Invalid instruction pointer");
   while (firstInst != --inst) {
-    spvCheck(
-        SpvOpFunction != inst->opcode && SpvOpFunctionParameter != inst->opcode,
-        DIAG(0) << "OpFunctionParameter is not preceded by OpFunction or "
-                   "OpFunctionParameter sequence.";
-        return false);
+    spvCheck(SpvOpFunction != inst->opcode &&
+                 SpvOpFunctionParameter != inst->opcode &&
+                 SpvOpLine != inst->opcode && SpvOpNoLine != inst->opcode,
+             DIAG(0) << "OpFunctionParameter is not preceded by OpFunction or "
+                        "OpFunctionParameter sequence.";
+             return false);
     if (SpvOpFunction == inst->opcode) {
       break;
-    } else {
+    } else if (SpvOpFunctionParameter == inst->opcode) {
       paramIndex++;
     }
   }
   auto functionType = usedefs_.FindDef(inst->words[4]);
   assert(functionType.first);
+  if (paramIndex >= functionType.second.words.size() - 3) {
+    DIAG(0) << "Too many OpFunctionParameters for " << inst->words[2]
+            << ": expected " << functionType.second.words.size() - 3
+            << " based on the function's type";
+    return false;
+  }
   auto paramType = usedefs_.FindDef(functionType.second.words[paramIndex + 3]);
   assert(paramType.first);
   spvCheck(resultType.second.id != paramType.second.id,

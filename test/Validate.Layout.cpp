@@ -26,15 +26,16 @@
 
 // Validation tests for Logical Layout
 
-#include "gmock/gmock.h"
-#include "source/diagnostic.h"
-#include "UnitSPIRV.h"
-#include "ValidateFixtures.h"
-
 #include <functional>
 #include <sstream>
 #include <string>
 #include <utility>
+
+#include "gmock/gmock.h"
+
+#include "UnitSPIRV.h"
+#include "ValidateFixtures.h"
+#include "source/diagnostic.h"
 
 using std::function;
 using std::ostream;
@@ -306,5 +307,51 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
 
+using ValidateOpFunctionParameter =
+    spvtest::ValidateBase<int, SPV_VALIDATE_LAYOUT_BIT | SPV_VALIDATE_ID_BIT>;
+
+TEST_F(ValidateOpFunctionParameter, OpLineBetweenParameters) {
+  const auto s = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%foo_frag = OpString "foo.frag"
+%i32 = OpTypeInt 32 1
+%tf = OpTypeFunction %i32 %i32 %i32
+%c = OpConstant %i32 123
+%f = OpFunction %i32 None %tf
+OpLine %foo_frag 1 1
+%p1 = OpFunctionParameter %i32
+OpNoLine
+%p2 = OpFunctionParameter %i32
+%l = OpLabel
+OpReturnValue %c
+OpFunctionEnd
+)";
+  CompileSuccessfully(s);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateOpFunctionParameter, TooManyParameters) {
+  const auto s = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%i32 = OpTypeInt 32 1
+%tf = OpTypeFunction %i32 %i32 %i32
+%c = OpConstant %i32 123
+%f = OpFunction %i32 None %tf
+%p1 = OpFunctionParameter %i32
+%p2 = OpFunctionParameter %i32
+%xp3 = OpFunctionParameter %i32
+%xp4 = OpFunctionParameter %i32
+%xp5 = OpFunctionParameter %i32
+%xp6 = OpFunctionParameter %i32
+%xp7 = OpFunctionParameter %i32
+%l = OpLabel
+OpReturnValue %c
+OpFunctionEnd
+)";
+  CompileSuccessfully(s);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+}
 // TODO(umar): Test optional instructions
 }
