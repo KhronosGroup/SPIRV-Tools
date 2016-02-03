@@ -1064,20 +1064,6 @@ TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
      OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
-TEST_F(ValidateID, OpFunctionParameterOrderBad) {
-  const char* spirv = R"(
-%1 = OpTypeVoid
-%2 = OpTypeInt 32 0
-%3 = OpTypeFunction %1 %2
-%7 = OpTypePointer Function %2
-%4 = OpFunction %1 None %3
-%8 = OpVariable %7 Function
-%5 = OpFunctionParameter %2
-%6 = OpLabel
-     OpReturn
-     OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
-}
 
 TEST_F(ValidateID, OpFunctionCallGood) {
   const char* spirv = R"(

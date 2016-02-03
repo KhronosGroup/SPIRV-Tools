@@ -964,12 +964,6 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
   size_t paramIndex = 0;
   assert(firstInst < inst && "Invalid instruction pointer");
   while (firstInst != --inst) {
-    spvCheck(SpvOpFunction != inst->opcode &&
-                 SpvOpFunctionParameter != inst->opcode &&
-                 SpvOpLine != inst->opcode && SpvOpNoLine != inst->opcode,
-             DIAG(0) << "OpFunctionParameter is not preceded by OpFunction or "
-                        "OpFunctionParameter sequence.";
-             return false);
     if (SpvOpFunction == inst->opcode) {
       break;
     } else if (SpvOpFunctionParameter == inst->opcode) {
