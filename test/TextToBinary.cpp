@@ -323,9 +323,21 @@ TEST(AssemblyContextParseNarrowUnsignedIntegers, Sample) {
   EXPECT_EQ(0, u16);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u16, ""));
   EXPECT_EQ(0, u16);
+}
+
+TEST(AssemblyContextParseNarrowUnsignedHexIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  uint16_t u16;
+
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0xffff", ec, &u16, ""));
-  EXPECT_EQ(0xffff, u16);
+  EXPECT_EQ(65535u, u16);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0x10000", ec, &u16, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x0", ec, &u16, ""));
+  EXPECT_EQ(0u, u16);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x000", ec, &u16, ""));
+  EXPECT_EQ(0u, u16);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-0x001", ec, &u16, ""));
 }
 
 TEST(AssemblyContextParseWideSignedIntegers, Sample) {
@@ -359,6 +371,11 @@ TEST(AssemblyContextParseWideUnsignedIntegers, Sample) {
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u64, ""));
   EXPECT_EQ(0u, u64);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u64, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x0", ec, &u64, ""));
+  EXPECT_EQ(0u, u64);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x000", ec, &u64, ""));
+  EXPECT_EQ(0u, u64);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-0x001", ec, &u64, ""));
 }
 
 TEST(AssemblyContextParseFloat, Sample) {

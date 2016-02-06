@@ -125,6 +125,62 @@ class ClampToZeroIfUnsignedType<
   }
 };
 
+// A template class for testing specific typed values.
+template <typename T, typename = void>
+class ValueTest {
+ public:
+  // Returns true if the value is zero in an unsigned integer type.
+  static bool IsUnsignedZero(T*) { return false; }
+};
+
+// The specialization of ValueTest for unsigned integer types.
+template <typename T>
+class ValueTest<T, typename std::enable_if<std::is_unsigned<T>::value>::type> {
+ public:
+  static bool IsUnsignedZero(T* value) { return *value == 0u; }
+};
+
+// Parses a numeric value of a given type from the given text.  The number
+// should take up the entire string, and should be within bounds for the
+// target type.  On success, returns true and populates the object
+// referenced by value_pointer.
+template <typename T>
+bool ParseNumber(const char* text, T* value_pointer) {
+  // C++11 doesn't define std::istringstream(int8_t&), so calling this method
+  // with a single-byte type leads to implementation-defined behaviour.
+  // Similarly for uint8_t.
+  static_assert(sizeof(T) > 1,
+                "Don't use a single-byte type this parse method");
+
+  // Xcode's istringstream rejects "-0" as an unsigned integer.  We want
+  // to accept that case, whether expressed as decimal or hexadecimal.
+  if (std::is_unsigned<T>::value && text[0] == '-' && text[1] == '0' &&
+      ParseNumber(text + 1, value_pointer) &&
+      ValueTest<T>::IsUnsignedZero(value_pointer))
+    return true;
+
+  std::istringstream text_stream(text);
+  // Allow both decimal and hex input for integers.
+  // It also allows octal input, but we don't care about that case.
+  text_stream >> std::setbase(0);
+  text_stream >> *value_pointer;
+  bool ok = true;
+
+  // We should have read something.
+  ok = (text[0] != 0) && !text_stream.bad();
+  // It should have been all the text.
+  ok = ok && text_stream.eof();
+  // It should have been in range.
+  ok = ok && !text_stream.fail();
+
+  // Work around a bug in the GNU C++11 library. It will happily parse
+  // "-1" for uint16_t as 65535.
+  if (ok && text[0] == '-')
+    ok = !ClampToZeroIfUnsignedType<T>::Clamp(value_pointer);
+
+  return ok;
+}
+
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {
  public:
@@ -252,32 +308,9 @@ class AssemblyContext {
   spv_result_t parseNumber(const char* text, spv_result_t error_code,
                            T* value_pointer,
                            const char* error_message_fragment) {
-    // C++11 doesn't define std::istringstream(int8_t&), so calling this method
-    // with a single-byte type leads to implementation-defined behaviour.
-    // Similarly for uint8_t.
-    static_assert(sizeof(T) > 1,
-                  "Don't use a single-byte type this parse method");
-
-    std::istringstream text_stream(text);
-    // Allow both decimal and hex input for integers.
-    // It also allows octal input, but we don't care about that case.
-    text_stream >> std::setbase(0);
-    text_stream >> *value_pointer;
-    bool ok = true;
-
-    // We should have read something.
-    ok = (text[0] != 0) && !text_stream.bad();
-    // It should have been all the text.
-    ok = ok && text_stream.eof();
-    // It should have been in range.
-    ok = ok && !text_stream.fail();
-
-    // Work around a bug in the GNU C++11 library. It will happily parse
-    // "-1" for uint16_t as 65535.
-    if (ok && text[0] == '-')
-      ok = !ClampToZeroIfUnsignedType<T>::Clamp(value_pointer);
-
-    if (ok) return SPV_SUCCESS;
+    if (ParseNumber(text, value_pointer)) {
+      return SPV_SUCCESS;
+    }
     return diagnostic(error_code) << error_message_fragment << text;
   }
 
