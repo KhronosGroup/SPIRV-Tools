@@ -807,10 +807,14 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
 // This will parse the float as it were a 32-bit floating point number,
 // and then round it down to fit into a Float16 value.
 // The number is rounded towards zero.
-// Any floating point number that is too large will be rounded to +- infinity.
 // If negate_value is true then the number may not have a leading minus or
 // plus, and if it successfully parses, then the number is negated before
 // being stored into the value parameter.
+// If the value cannot be correctly parsed, then set the fail bit on the
+// stream, and set the value to zero.
+// If the value overflows the target floating point type, then set the fail
+// bit on the stream and set the value to the nearest finite value for the
+// type, which can either be positive or negative.
 template <>
 inline std::istream&
 ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
