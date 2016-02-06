@@ -301,6 +301,7 @@ TEST_P(OpConstantInvalidFloatConstant, Samples) {
   }
 }
 
+// clang-format off
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryInvalidFloatConstant, OpConstantInvalidFloatConstant,
     ::testing::ValuesIn(std::vector<InvalidFloatConstantCase>{
@@ -309,17 +310,26 @@ INSTANTIATE_TEST_CASE_P(
         {16, "-+1"},
         {16, "+-1"},
         {16, "++1"},
+        // TODO(dneto): Overflow for 16-bit floats should be an error,
+        // just like for 32-bit and 64-bit.
         {32, "abc"},
         {32, "--1"},
         {32, "-+1"},
         {32, "+-1"},
         {32, "++1"},
+        {32, "1e40"}, // Overflow is an error for 32-bit floats.
+        {32, "-1e40"},
+        {32, "1e400"},
+        {32, "-1e400"},
         {64, "abc"},
         {64, "--1"},
         {64, "-+1"},
         {64, "+-1"},
         {64, "++1"},
+        {32, "1e400"}, // Overflow is an error for 64-bit floats.
+        {32, "-1e400"},
     }));
+// clang-format on
 
 using OpConstantInvalidTypeTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;

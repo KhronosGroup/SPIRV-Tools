@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <sstream>
@@ -1026,21 +1027,20 @@ TEST_P(ParseNormalFloatTest, Samples) {
   std::stringstream input(GetParam().literal);
   HexFloat<FloatProxy<float>> parsed_value(0.0f);
   ParseNormalFloat(input, GetParam().negate_value, parsed_value);
-  if (GetParam().expect_success) {
-    EXPECT_FALSE(input.fail()) << " literal: " << GetParam().literal
-                               << " negate: " << GetParam().negate_value;
-    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()));
-  } else {
-    EXPECT_TRUE(input.fail()) << " literal: " << GetParam().literal
-                              << " negate: " << GetParam().negate_value;
-  }
+  EXPECT_NE(GetParam().expect_success, input.fail())
+      << " literal: " << GetParam().literal
+      << " negate: " << GetParam().negate_value;
+  EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
+      << " literal: " << GetParam().literal
+      << " negate: " << GetParam().negate_value;
 }
 
 // Returns a FloatParseCase with expected failure.
 template <typename T>
-FloatParseCase<T> BadFloatParseCase(std::string literal, bool negate_value) {
-  HexFloat<FloatProxy<T>> dummy_value(0.0f);
-  return FloatParseCase<T>{literal, negate_value, false, dummy_value};
+FloatParseCase<T> BadFloatParseCase(std::string literal, bool negate_value,
+                                    T expected_value) {
+  HexFloat<FloatProxy<T>> proxy_expected_value(expected_value);
+  return FloatParseCase<T>{literal, negate_value, false, proxy_expected_value};
 }
 
 // Returns a FloatParseCase that should successfully parse to a given value.
@@ -1051,30 +1051,39 @@ FloatParseCase<T> GoodFloatParseCase(std::string literal, bool negate_value,
   return FloatParseCase<T>{literal, negate_value, true, proxy_expected_value};
 }
 
-INSTANTIATE_TEST_CASE_P(FloatParse, ParseNormalFloatTest,
-                        ::testing::ValuesIn(std::vector<FloatParseCase<float>>{
-                            // Failing cases due to trivially incorrect syntax.
-                            BadFloatParseCase<float>("abc", false),
-                            BadFloatParseCase<float>("abc", true),
+INSTANTIATE_TEST_CASE_P(
+    FloatParse, ParseNormalFloatTest,
+    ::testing::ValuesIn(std::vector<FloatParseCase<float>>{
+        // Failing cases due to trivially incorrect syntax.
+        BadFloatParseCase("abc", false, 0.0f),
+        BadFloatParseCase("abc", true, 0.0f),
 
-                            // Valid cases.
-                            GoodFloatParseCase<float>("0", false, 0.0f),
-                            GoodFloatParseCase<float>("0.0", false, 0.0f),
-                            GoodFloatParseCase<float>("-0.0", false, -0.0f),
-                            GoodFloatParseCase<float>("2.0", false, 2.0f),
-                            GoodFloatParseCase<float>("-2.0", false, -2.0f),
-                            GoodFloatParseCase<float>("+2.0", false, 2.0f),
-                            // Cases with negate_value being true.
-                            GoodFloatParseCase<float>("0.0", true, -0.0f),
-                            GoodFloatParseCase<float>("2.0", true, -2.0f),
+        // Valid cases.
+        GoodFloatParseCase("0", false, 0.0f),
+        GoodFloatParseCase("0.0", false, 0.0f),
+        GoodFloatParseCase("-0.0", false, -0.0f),
+        GoodFloatParseCase("2.0", false, 2.0f),
+        GoodFloatParseCase("-2.0", false, -2.0f),
+        GoodFloatParseCase("+2.0", false, 2.0f),
+        // Cases with negate_value being true.
+        GoodFloatParseCase("0.0", true, -0.0f),
+        GoodFloatParseCase("2.0", true, -2.0f),
 
-                            // When negate_value is true, we should not accept a
-                            // leading minus or plus.
-                            BadFloatParseCase<float>("-0.0", true),
-                            BadFloatParseCase<float>("-2.0", true),
-                            BadFloatParseCase<float>("+0.0", true),
-                            BadFloatParseCase<float>("+2.0", true),
-                        }));
+        // When negate_value is true, we should not accept a
+        // leading minus or plus.
+        BadFloatParseCase("-0.0", true, 0.0f),
+        BadFloatParseCase("-2.0", true, 0.0f),
+        BadFloatParseCase("+0.0", true, 0.0f),
+        BadFloatParseCase("+2.0", true, 0.0f),
+
+        // Overflow is an error for 32-bit float parsing.
+        BadFloatParseCase("1e40", false, FLT_MAX),
+        BadFloatParseCase("1e40", true, -FLT_MAX),
+        BadFloatParseCase("-1e40", false, -FLT_MAX),
+        // We can't have -1e40 and negate_value == true since
+        // that represents an original case of "--1e40" which
+        // is invalid.
+    }));
 
 using ParseNormalFloat16Test =
     ::testing::TestWithParam<FloatParseCase<Float16>>;
@@ -1083,22 +1092,20 @@ TEST_P(ParseNormalFloat16Test, Samples) {
   std::stringstream input(GetParam().literal);
   HexFloat<FloatProxy<Float16>> parsed_value(0.0f);
   ParseNormalFloat(input, GetParam().negate_value, parsed_value);
-  if (GetParam().expect_success) {
-    EXPECT_FALSE(input.fail()) << " literal: " << GetParam().literal
-                               << " negate: " << GetParam().negate_value;
-    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()));
-  } else {
-    EXPECT_TRUE(input.fail()) << " literal: " << GetParam().literal
-                              << " negate: " << GetParam().negate_value;
-  }
+  EXPECT_NE(GetParam().expect_success, input.fail())
+      << " literal: " << GetParam().literal
+      << " negate: " << GetParam().negate_value;
+  EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
+      << " literal: " << GetParam().literal
+      << " negate: " << GetParam().negate_value;
 }
 
 INSTANTIATE_TEST_CASE_P(
     Float16Parse, ParseNormalFloat16Test,
     ::testing::ValuesIn(std::vector<FloatParseCase<Float16>>{
         // Failing cases due to trivially incorrect syntax.
-        BadFloatParseCase<Float16>("abc", false),
-        BadFloatParseCase<Float16>("abc", true),
+        BadFloatParseCase<Float16>("abc", false, uint16_t{0}),
+        BadFloatParseCase<Float16>("abc", true, uint16_t{0}),
 
         // Valid cases.
         GoodFloatParseCase<Float16>("0", false, uint16_t{0}),
@@ -1113,11 +1120,118 @@ INSTANTIATE_TEST_CASE_P(
 
         // When negate_value is true, we should not accept a leading minus or
         // plus.
-        BadFloatParseCase<Float16>("-0.0", true),
-        BadFloatParseCase<Float16>("-2.0", true),
-        BadFloatParseCase<Float16>("+0.0", true),
-        BadFloatParseCase<Float16>("+2.0", true),
+        BadFloatParseCase<Float16>("-0.0", true, uint16_t{0}),
+        BadFloatParseCase<Float16>("-2.0", true, uint16_t{0}),
+        BadFloatParseCase<Float16>("+0.0", true, uint16_t{0}),
+        BadFloatParseCase<Float16>("+2.0", true, uint16_t{0}),
     }));
 
-// TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
+// A test case for detecting infinities.
+template <typename T>
+struct OverflowParseCase {
+  std::string input;
+  bool expect_success;
+  T expected_value;
+};
+
+using FloatProxyParseOverflowFloatTest =
+    ::testing::TestWithParam<OverflowParseCase<float>>;
+
+TEST_P(FloatProxyParseOverflowFloatTest, Sample) {
+  std::istringstream input(GetParam().input);
+  HexFloat<FloatProxy<float>> value(0.0f);
+  input >> value;
+  EXPECT_NE(GetParam().expect_success, input.fail());
+  EXPECT_THAT(value.value().getAsFloat(), GetParam().expected_value);
 }
+
+INSTANTIATE_TEST_CASE_P(
+    FloatOverflow, FloatProxyParseOverflowFloatTest,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<float>>({
+        {"0", true, 0.0f},
+        {"0.0", true, 0.0f},
+        {"1.0", true, 1.0f},
+        {"1e38", true, 1e38f},
+        {"-1e38", true, -1e38f},
+        {"1e40", false, FLT_MAX},
+        {"-1e40", false, -FLT_MAX},
+        {"1e400", false, FLT_MAX},
+        {"-1e400", false, -FLT_MAX},
+    })));
+
+using FloatProxyParseOverflowDoubleTest =
+    ::testing::TestWithParam<OverflowParseCase<double>>;
+
+TEST_P(FloatProxyParseOverflowDoubleTest, Sample) {
+  std::istringstream input(GetParam().input);
+  HexFloat<FloatProxy<double>> value(0.0);
+  input >> value;
+  EXPECT_NE(GetParam().expect_success, input.fail());
+  EXPECT_THAT(value.value().getAsFloat(), Eq(GetParam().expected_value));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    DoubleOverflow, FloatProxyParseOverflowDoubleTest,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<double>>({
+        {"0", true, 0.0},
+        {"0.0", true, 0.0},
+        {"1.0", true, 1.0},
+        {"1e38", true, 1e38},
+        {"-1e38", true, -1e38},
+        {"1e40", true, 1e40},
+        {"-1e40", true, -1e40},
+        {"1e400", false, DBL_MAX},
+        {"-1e400", false, -DBL_MAX},
+    })));
+
+using FloatProxyParseOverflowFloat16Test =
+    ::testing::TestWithParam<OverflowParseCase<uint16_t>>;
+
+TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
+  std::istringstream input(GetParam().input);
+  HexFloat<FloatProxy<Float16>> value(0);
+  input >> value;
+  EXPECT_NE(GetParam().expect_success, input.fail()) << " literal: "
+                                                     << GetParam().input;
+  EXPECT_THAT(value.value().data(), Eq(GetParam().expected_value))
+      << " literal: " << GetParam().input;
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Float16Overflow, FloatProxyParseOverflowFloat16Test,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<uint16_t>>({
+        // For Float16, too-large values are parsed as
+        // infinities, and also valid.
+        // TODO(dneto): Overflow for 16-bit float should be an error,
+        // just like for 32-bit and 64-bit.
+        {"0", true, uint16_t{0}},
+        {"0.0", true, uint16_t{0}},
+        {"1.0", true, uint16_t{0x3c00}},
+        {"1e38", true, uint16_t{0x7c00}},
+        {"-1e38", true, uint16_t{0xfc00}},
+        {"1e40", true, uint16_t{0x7c00}},
+        {"1e400", true, uint16_t{0x7c00}},
+        {"-1e40", true, uint16_t{0xfc00}},
+        {"-1e400", true, uint16_t{0xfc00}},
+    })));
+
+TEST(FloatProxy, Max) {
+  EXPECT_THAT(FloatProxy<Float16>::max().getAsFloat().get_value(),
+              Eq(uint16_t{0x7bff}));
+  EXPECT_THAT(FloatProxy<float>::max().getAsFloat(),
+              Eq(std::numeric_limits<float>::max()));
+  EXPECT_THAT(FloatProxy<double>::max().getAsFloat(),
+              Eq(std::numeric_limits<double>::max()));
+}
+
+TEST(FloatProxy, Lowest) {
+  EXPECT_THAT(FloatProxy<Float16>::lowest().getAsFloat().get_value(),
+              Eq(uint16_t{0xfbff}));
+  EXPECT_THAT(FloatProxy<float>::lowest().getAsFloat(),
+              Eq(std::numeric_limits<float>::lowest()));
+  EXPECT_THAT(FloatProxy<double>::lowest().getAsFloat(),
+              Eq(std::numeric_limits<double>::lowest()));
+}
+
+// TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
+}  // anonymous namespace

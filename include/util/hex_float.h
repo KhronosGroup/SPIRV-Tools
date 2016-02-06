@@ -32,7 +32,6 @@
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
-#include <iostream>
 #include <limits>
 
 #include "bitutils.h"
@@ -46,8 +45,17 @@ class Float16 {
   static bool isNan(const Float16 val) {
     return ((val.val & 0x7C00) == 0x7C00) && ((val.val & 0x3FF) != 0);
   }
+  // Returns true if the given value is any kind of infinity.
+  static bool isInfinity(const Float16 val) {
+    return ((val.val & 0x7C00) == 0x7C00) && ((val.val & 0x3FF) == 0);
+  }
   Float16(const Float16& other) { val = other.val; }
   uint16_t get_value() const { return val; }
+
+  // Returns the maximum normal value.
+  static Float16 max() { return Float16(0x7bff); }
+  // Returns the lowest normal value.
+  static Float16 lowest() { return Float16(0xfbff); }
 
  private:
   uint16_t val;
@@ -66,18 +74,36 @@ template <>
 struct FloatProxyTraits<float> {
   using uint_type = uint32_t;
   static bool isNan(float f) { return std::isnan(f); }
+  // Returns true if the given value is any kind of infinity.
+  static bool isInfinity(float f) { return std::isinf(f); }
+  // Returns the maximum normal value.
+  static float max() { return std::numeric_limits<float>::max(); }
+  // Returns the lowest normal value.
+  static float lowest() { return std::numeric_limits<float>::lowest(); }
 };
 
 template <>
 struct FloatProxyTraits<double> {
   using uint_type = uint64_t;
   static bool isNan(double f) { return std::isnan(f); }
+  // Returns true if the given value is any kind of infinity.
+  static bool isInfinity(double f) { return std::isinf(f); }
+  // Returns the maximum normal value.
+  static double max() { return std::numeric_limits<double>::max(); }
+  // Returns the lowest normal value.
+  static double lowest() { return std::numeric_limits<double>::lowest(); }
 };
 
 template <>
 struct FloatProxyTraits<Float16> {
   using uint_type = uint16_t;
   static bool isNan(Float16 f) { return Float16::isNan(f); }
+  // Returns true if the given value is any kind of infinity.
+  static bool isInfinity(Float16 f) { return Float16::isInfinity(f); }
+  // Returns the maximum normal value.
+  static Float16 max() { return Float16::max(); }
+  // Returns the lowest normal value.
+  static Float16 lowest() { return Float16::lowest(); }
 };
 
 // Since copying a floating point number (especially if it is NaN)
@@ -114,6 +140,17 @@ class FloatProxy {
 
   // Returns true if the value represents any type of NaN.
   bool isNan() { return FloatProxyTraits<T>::isNan(getAsFloat()); }
+  // Returns true if the value represents any type of infinity.
+  bool isInfinity() { return FloatProxyTraits<T>::isInfinity(getAsFloat()); }
+
+  // Returns the maximum normal value.
+  static FloatProxy<T> max() {
+    return FloatProxy<T>(FloatProxyTraits<T>::max());
+  }
+  // Returns the lowest normal value.
+  static FloatProxy<T> lowest() {
+    return FloatProxy<T>(FloatProxyTraits<T>::lowest());
+  }
 
  private:
   uint_type data_;
@@ -722,7 +759,7 @@ inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
     if (next_char == '-' || next_char == '+') {
       // Fail the parse.  Emulate standard behaviour by setting the value to
       // the zero value, and set the fail bit on the stream.
-      value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type(0));
+      value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type{0});
       is.setstate(std::ios_base::failbit);
       return true;
     }
@@ -735,6 +772,11 @@ inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
 // If negate_value is true then the number may not have a leading minus or
 // plus, and if it successfully parses, then the number is negated before
 // being stored into the value parameter.
+// If the value cannot be correctly parsed, then set the fail bit on the
+// stream, and set the value to zero.
+// If the value overflows the target floating point type, then set the fail
+// bit on the stream and set the value to the nearest finite value for the
+// type, which can either be positive or negative.
 template <typename T, typename Traits>
 inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
                                       HexFloat<T, Traits>& value) {
@@ -747,6 +789,17 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
     val = -val;
   }
   value.set_value(val);
+  // In the failure case, map -0.0 to 0.0.
+  if (is.fail() && value.getUnsignedBits() == 0u) {
+    value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type{0});
+  }
+  if (val.isInfinity()) {
+    // Fail the parse.  Emulate standard behaviour by setting the value to
+    // the closest normal value, and set the fail bit on the stream.
+    value.set_value((value.isNegative() | negate_value) ? T::lowest()
+                                                        : T::max());
+    is.setstate(std::ios_base::failbit);
+  }
   return is;
 }
 
@@ -763,16 +816,23 @@ inline std::istream&
 ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
     std::istream& is, bool negate_value,
     HexFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>& value) {
-  if (RejectParseDueToLeadingSign(is, negate_value, value)) {
-    return is;
-  }
-  float f;
-  is >> f;
-  if (negate_value) {
-    f = -f;
-  }
-  HexFloat<FloatProxy<float>> float_val(f);
+  // First parse as a 32-bit float.
+  HexFloat<FloatProxy<float>> float_val(0.0f);
+  ParseNormalFloat(is, negate_value, float_val);
+
+  // Then convert to 16-bit float, saturating at infinities, and
+  // rounding toward zero.
   float_val.castTo(value, round_direction::kToZero);
+
+  // Our (current) rule is to allow overflow in 16-bit floats
+  // to validly map to infinities.  But we might have overflowed the
+  // 32-bit float in the first place and set the fail bit on the stream.
+  // If we did, then reset the fail bit.
+  // TODO(dneto): Overflow on 16-bit should behave the same as for 32- and
+  // 64-bit.  It should set the fail bit and set the lowest or highest value.
+  if (Float16::isInfinity(value.value().getAsFloat())) {
+    is.clear(is.rdstate() & ~std::ios_base::failbit);
+  }
   return is;
 }
 
