@@ -34,6 +34,7 @@
 #include "UnitSPIRV.h"
 #include "source/spirv_constant.h"
 #include "util/bitutils.h"
+#include "util/hex_float.h"
 
 namespace {
 
@@ -260,9 +261,9 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::ValuesIn(std::vector<std::pair<std::string, uint32_t>>{
         {"0.0", 0x00000000},
         {"1.0", 0x00003c00},
-        {"1.000844", 0x00003c00}, // Truncate to 1.0
-        {"1.000977", 0x00003c01}, // Don't have to truncate
-        {"1.001465", 0x00003c01}, // Truncate to 1.0000977
+        {"1.000844", 0x00003c00},  // Truncate to 1.0
+        {"1.000977", 0x00003c01},  // Don't have to truncate
+        {"1.001465", 0x00003c01},  // Truncate to 1.0000977
         {"1.5", 0x00003e00},
         {"-1.0", 0x0000bc00},
         {"2.0", 0x00004000},
@@ -438,9 +439,24 @@ TEST(AssemblyContextParseFloat, Sample) {
   EXPECT_EQ(1e38f, f);
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
   EXPECT_EQ(-1e38f, f);
+}
 
-  // Out of range.
+TEST(AssemblyContextParseFloat, Infinities) {
+  // The assembler parses using HexFloat<FloatProxy<float>>.  Make
+  // sure that succeeds for in-range values, and fails for out of
+  // range values.
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  spvutils::HexFloat<spvutils::FloatProxy<float>> f(0.0f);
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_EQ(1e38f, f.value().getAsFloat());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_EQ(-1e38f, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", ec, &f, ""));
 }
 
 TEST(AssemblyContextParseDouble, Sample) {
@@ -469,10 +485,52 @@ TEST(AssemblyContextParseDouble, Sample) {
   EXPECT_EQ(1e40, f);
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
   EXPECT_EQ(-1e40, f);
+}
 
-  // Out of range.
+TEST(AssemblyContextParseDouble, Infinities) {
+  // The assembler parses using HexFloat<FloatProxy<double>>.  Make
+  // sure that succeeds for in-range values, and fails for out of
+  // range values.
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  spvutils::HexFloat<spvutils::FloatProxy<double>> f(0.0);
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_EQ(1e38, f.value().getAsFloat());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_EQ(-1e38, f.value().getAsFloat());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_EQ(1e40, f.value().getAsFloat());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_EQ(-1e40, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", ec, &f, ""));
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", ec, &f, ""));
+}
+
+TEST(AssemblyContextParseFloat16, Infinities) {
+  // The assembler parses using HexFloat<FloatProxy<Float16>>.  Make
+  // sure that succeeds for in-range values, and returns infinities
+  // for out of range values.
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0.0f);
+
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &f, ""));
+  EXPECT_TRUE(!f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1.5", ec, &f, ""));
+  EXPECT_TRUE(!f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e400", ec, &f, ""));
+  EXPECT_TRUE(f.value().isInfinity());
 }
 
 TEST(AssemblyContextParseMessages, Errors) {
