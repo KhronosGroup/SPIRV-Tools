@@ -1200,19 +1200,17 @@ TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
 INSTANTIATE_TEST_CASE_P(
     Float16Overflow, FloatProxyParseOverflowFloat16Test,
     ::testing::ValuesIn(std::vector<OverflowParseCase<uint16_t>>({
-        // For Float16, too-large values are parsed as
-        // infinities, and also valid.
-        // TODO(dneto): Overflow for 16-bit float should be an error,
-        // just like for 32-bit and 64-bit.
         {"0", true, uint16_t{0}},
         {"0.0", true, uint16_t{0}},
         {"1.0", true, uint16_t{0x3c00}},
-        {"1e38", true, uint16_t{0x7c00}},
-        {"-1e38", true, uint16_t{0xfc00}},
-        {"1e40", true, uint16_t{0x7c00}},
-        {"1e400", true, uint16_t{0x7c00}},
-        {"-1e40", true, uint16_t{0xfc00}},
-        {"-1e400", true, uint16_t{0xfc00}},
+        // Overflow for 16-bit float is an error, and returns max or
+        // lowest value.
+        {"1e38", false, uint16_t{0x7bff}},
+        {"1e40", false, uint16_t{0x7bff}},
+        {"1e400", false, uint16_t{0x7bff}},
+        {"-1e38", false, uint16_t{0xfbff}},
+        {"-1e40", false, uint16_t{0xfbff}},
+        {"-1e400", false, uint16_t{0xfbff}},
     })));
 
 TEST(FloatProxy, Max) {

@@ -514,23 +514,31 @@ TEST(AssemblyContextParseFloat16, Infinities) {
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
   spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0.0f);
+  const uint32_t f16_max = uint32_t{0x7bff};
+  const uint32_t f16_low = uint32_t{0xfbff};
 
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &f, ""));
-  EXPECT_TRUE(!f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1.5", ec, &f, ""));
-  EXPECT_TRUE(!f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e38", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e40", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1e400", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e400", ec, &f, ""));
-  EXPECT_TRUE(f.value().isInfinity());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0.0", ec, &f, ""));
+  EXPECT_EQ(uint16_t{0x8000}, f.value().getAsFloat().get_value());
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("1.0", ec, &f, ""));
+  EXPECT_EQ(uint16_t{0x3c00}, f.value().getAsFloat().get_value());
+
+  // Overflows 16-bit but not 32-bit
+  EXPECT_EQ(ec, context.parseNumber("1e38", ec, &f, ""));
+  EXPECT_EQ(f16_max, f.value().getAsFloat().get_value());
+  EXPECT_EQ(ec, context.parseNumber("-1e38", ec, &f, ""));
+  EXPECT_EQ(f16_low, f.value().getAsFloat().get_value());
+
+  // Overflows 32-bit but not 64-bit
+  EXPECT_EQ(ec, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_EQ(f16_max, f.value().getAsFloat().get_value());
+  EXPECT_EQ(ec, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_EQ(f16_low, f.value().getAsFloat().get_value());
+
+  // Overflows 64-bit
+  EXPECT_EQ(ec, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_EQ(f16_max, f.value().getAsFloat().get_value());
+  EXPECT_EQ(ec, context.parseNumber("-1e400", ec, &f, ""));
+  EXPECT_EQ(f16_low, f.value().getAsFloat().get_value());
 }
 
 TEST(AssemblyContextParseMessages, Errors) {
