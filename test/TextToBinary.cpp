@@ -371,7 +371,7 @@ TEST(AssemblyContextParseUnsignedIntegers, Sample) {
 
   // Valid values.
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &u32, ""));
-  EXPECT_EQ(0, u32);
+  EXPECT_EQ(0u, u32);
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("4294967295", ec, &u32, ""));
   EXPECT_EQ(std::numeric_limits<uint32_t>::max(), u32);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("4294967296", ec, &u32, ""));
