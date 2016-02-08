@@ -319,13 +319,69 @@ TEST(AssemblyContextParseNarrowUnsignedIntegers, Sample) {
   EXPECT_EQ(65535, u16);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("65536", ec, &u16, ""));
 
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u16, ""));
-  EXPECT_EQ(0, u16);
+  // We don't care about -0 since it's rejected at a higher level.
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u16, ""));
-  EXPECT_EQ(0, u16);
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0xffff", ec, &u16, ""));
   EXPECT_EQ(0xffff, u16);
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0x10000", ec, &u16, ""));
+}
+
+TEST(AssemblyContextParseSignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  int32_t i32;
+
+  // Invalid parse.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &i32, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &i32, ""));
+
+  // Decimal values.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &i32, ""));
+  EXPECT_EQ(0, i32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("2147483647", ec, &i32, ""));
+  EXPECT_EQ(std::numeric_limits<int32_t>::max(), i32);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("2147483648", ec, &i32, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &i32, ""));
+  EXPECT_EQ(0, i32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1", ec, &i32, ""));
+  EXPECT_EQ(-1, i32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-2147483648", ec, &i32, ""));
+  EXPECT_EQ(std::numeric_limits<int32_t>::min(), i32);
+
+  // Hex values.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0x7fffffff", ec, &i32, ""));
+  EXPECT_EQ(std::numeric_limits<int32_t>::max(), i32);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0x80000000", ec, &i32, ""));
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x000", ec, &i32, ""));
+  EXPECT_EQ(0, i32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x001", ec, &i32, ""));
+  EXPECT_EQ(-1, i32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0x80000000", ec, &i32, ""));
+  EXPECT_EQ(std::numeric_limits<int32_t>::min(), i32);
+}
+
+TEST(AssemblyContextParseUnsignedIntegers, Sample) {
+  AssemblyContext context(AutoText(""), nullptr);
+  const spv_result_t ec = SPV_FAILED_MATCH;
+  uint32_t u32;
+
+  // Invalid parse.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("", ec, &u32, ""));
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("0=", ec, &u32, ""));
+
+  // Valid values.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0", ec, &u32, ""));
+  EXPECT_EQ(0, u32);
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("4294967295", ec, &u32, ""));
+  EXPECT_EQ(std::numeric_limits<uint32_t>::max(), u32);
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("4294967296", ec, &u32, ""));
+
+  // Hex values.
+  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("0xffffffff", ec, &u32, ""));
+  EXPECT_EQ(std::numeric_limits<uint32_t>::max(), u32);
+
+  // We don't care about -0 since it's rejected at a higher level.
+  EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u32, ""));
 }
 
 TEST(AssemblyContextParseWideSignedIntegers, Sample) {
@@ -356,8 +412,8 @@ TEST(AssemblyContextParseWideUnsignedIntegers, Sample) {
   EXPECT_EQ(SPV_SUCCESS,
             context.parseNumber("0xffffffffffffffff", ec, &u64, ""));
   EXPECT_EQ(0xffffffffffffffffULL, u64);
-  EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0", ec, &u64, ""));
-  EXPECT_EQ(0u, u64);
+
+  // We don't care about -0 since it's rejected at a higher level.
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1", ec, &u64, ""));
 }
 

@@ -118,8 +118,9 @@ TEST_P(OpConstantValidTest, ValidTypes) {
                             "%2 = OpConstant %1 " +
                             GetParam().constant_value + "\n";
   std::vector<uint32_t> instructions;
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(GetParam().expected_instructions));
+  EXPECT_THAT(CompiledInstructions(input), Eq(GetParam().expected_instructions))
+      << " type: " << GetParam().constant_type
+      << " literal: " << GetParam().constant_value;
 }
 
 // clang-format off
@@ -133,12 +134,33 @@ INSTANTIATE_TEST_CASE_P(
       {"OpTypeInt 16 0", "0x8000",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 0}),
          MakeInstruction(SpvOpConstant, {1, 2, 0x8000})})},
+      {"OpTypeInt 16 0", "0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 0}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 16 0", "65535",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 0}),
+         MakeInstruction(SpvOpConstant, {1, 2, 65535})})},
+      {"OpTypeInt 16 0", "0xffff",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 0}),
+         MakeInstruction(SpvOpConstant, {1, 2, 65535})})},
       {"OpTypeInt 16 1", "0x8000", // Test sign extension.
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
          MakeInstruction(SpvOpConstant, {1, 2, 0xffff8000})})},
       {"OpTypeInt 16 1", "-32",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
          MakeInstruction(SpvOpConstant, {1, 2, uint32_t(-32)})})},
+      {"OpTypeInt 16 1", "0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 16 1", "-0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 16 1", "-0x0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 16 1", "-32768",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 16, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, uint32_t(-32768)})})},
       // Check 32 bits
       {"OpTypeInt 32 0", "42",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 0}),
@@ -146,6 +168,24 @@ INSTANTIATE_TEST_CASE_P(
       {"OpTypeInt 32 1", "-32",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
          MakeInstruction(SpvOpConstant, {1, 2, uint32_t(-32)})})},
+      {"OpTypeInt 32 1", "0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 32 1", "-0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 32 1", "-0x0",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0})})},
+      {"OpTypeInt 32 1", "-0x001",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, uint32_t(-1)})})},
+      {"OpTypeInt 32 1", "2147483647",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0x7fffffffu})})},
+      {"OpTypeInt 32 1", "-2147483648",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0x80000000u})})},
       {"OpTypeFloat 32", "1.0",
         Concatenate({MakeInstruction(SpvOpTypeFloat, {1, 32}),
          MakeInstruction(SpvOpConstant, {1, 2, 0x3f800000})})},
@@ -181,12 +221,61 @@ INSTANTIATE_TEST_CASE_P(
       {"OpTypeInt 64 0", "0x1234",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 0}),
          MakeInstruction(SpvOpConstant, {1, 2, 0x1234, 0})})},
+      {"OpTypeInt 64 0", "18446744073709551615",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 0}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xffffffffu, 0xffffffffu})})},
+      {"OpTypeInt 64 0", "0xffffffffffffffff",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 0}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xffffffffu, 0xffffffffu})})},
       {"OpTypeInt 64 1", "0x1234",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 1}),
          MakeInstruction(SpvOpConstant, {1, 2, 0x1234, 0})})},
       {"OpTypeInt 64 1", "-42",
         Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 1}),
          MakeInstruction(SpvOpConstant, {1, 2, uint32_t(-42), uint32_t(-1)})})},
+      {"OpTypeInt 64 1", "-0x01",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xffffffffu, 0xffffffffu})})},
+      {"OpTypeInt 64 1", "9223372036854775807",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0xffffffffu, 0x7fffffffu})})},
+      {"OpTypeInt 64 1", "0x7fffffff",
+        Concatenate({MakeInstruction(SpvOpTypeInt, {1, 64, 1}),
+         MakeInstruction(SpvOpConstant, {1, 2, 0x7fffffffu, 0})})},
+    }));
+// clang-format on
+
+// A test case for checking OpConstant with invalid literals with a leading minus.
+struct InvalidLeadingMinusCase {
+  std::string type;
+  std::string literal;
+};
+
+using OpConstantInvalidLeadingMinusTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<InvalidLeadingMinusCase>>;
+
+TEST_P(OpConstantInvalidLeadingMinusTest, InvalidCase) {
+  const std::string input = "%1 = " + GetParam().type +
+                            "\n"
+                            "%2 = OpConstant %1 " +
+                            GetParam().literal;
+  EXPECT_THAT(CompileFailure(input),
+              Eq("Cannot put a negative number in an unsigned literal"));
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryOpConstantInvalidLeadingMinus, OpConstantInvalidLeadingMinusTest,
+    ::testing::ValuesIn(std::vector<InvalidLeadingMinusCase>{
+      {"OpTypeInt 16 0", "-0"},
+      {"OpTypeInt 16 0", "-0x0"},
+      {"OpTypeInt 16 0", "-1"},
+      {"OpTypeInt 32 0", "-0"},
+      {"OpTypeInt 32 0", "-0x0"},
+      {"OpTypeInt 32 0", "-1"},
+      {"OpTypeInt 64 0", "-0"},
+      {"OpTypeInt 64 0", "-0x0"},
+      {"OpTypeInt 64 0", "-1"},
     }));
 // clang-format on
 
