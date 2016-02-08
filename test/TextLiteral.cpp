@@ -291,6 +291,32 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
+using IntegerLeadingMinusTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<TextLiteralCase>>;
+
+TEST_P(IntegerLeadingMinusTest, CantHaveLeadingMinusOnUnsigned) {
+  EXPECT_FALSE(GetParam().success);
+  EXPECT_THAT(
+      failedEncode(GetParam(), libspirv::IdTypeClass::kScalarIntegerType),
+      Eq("Cannot put a negative number in an unsigned literal"));
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    DecimalAndHexIntegers, IntegerLeadingMinusTest,
+    ::testing::ValuesIn(std::vector<TextLiteralCase>{
+        // Unsigned numbers never allow a leading minus sign.
+        Make_Bad_Unsigned(16, "-0"),
+        Make_Bad_Unsigned(16, "-0x0"),
+        Make_Bad_Unsigned(16, "-0x1"),
+        Make_Bad_Unsigned(32, "-0"),
+        Make_Bad_Unsigned(32, "-0x0"),
+        Make_Bad_Unsigned(32, "-0x1"),
+        Make_Bad_Unsigned(64, "-0"),
+        Make_Bad_Unsigned(64, "-0x0"),
+        Make_Bad_Unsigned(64, "-0x1"),
+    }));
+
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     HexIntegers, IntegerTest,
