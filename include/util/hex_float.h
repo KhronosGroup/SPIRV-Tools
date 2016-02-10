@@ -364,11 +364,11 @@ class HexFloat {
       // the significand is not zero.
       significand_is_zero = false;
       significand |= first_exponent_bit;
-      significand  = static_cast<uint_type>(significand >> 1);
+      significand = static_cast<uint_type>(significand >> 1);
     }
 
     while (exponent < min_exponent) {
-      significand  = static_cast<uint_type>(significand >> 1);
+      significand = static_cast<uint_type>(significand >> 1);
       ++exponent;
     }
 
@@ -585,9 +585,9 @@ class HexFloat {
     if (is_nan) {
       typename other_T::uint_type shifted_significand;
       shifted_significand = static_cast<typename other_T::uint_type>(
-          negatable_left_shift<static_cast<int_type>(other_T::num_fraction_bits) -
-                               static_cast<int_type>(
-                                   num_fraction_bits)>::val(significand));
+          negatable_left_shift<
+              static_cast<int_type>(other_T::num_fraction_bits) -
+              static_cast<int_type>(num_fraction_bits)>::val(significand));
 
       // We are some sort of Nan. We try to keep the bit-pattern of the Nan
       // as close as possible. If we had to shift off bits so we are 0, then we
@@ -680,7 +680,7 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
     }
     // Since this is denormalized, we have to consume the leading 1 since it
     // will end up being implicit.
-    fraction  = static_cast<uint_type>(fraction << 1);  // eat the leading 1
+    fraction = static_cast<uint_type>(fraction << 1);  // eat the leading 1
     fraction &= HF::fraction_represent_mask;
   }
 
@@ -689,7 +689,7 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   // fractional part.
   while (fraction_nibbles > 0 && (fraction & 0xF) == 0) {
     // Shift off any trailing values;
-    fraction = static_cast<uint_type>(fraction >>  4);
+    fraction = static_cast<uint_type>(fraction >> 4);
     --fraction_nibbles;
   }
 
@@ -711,13 +711,36 @@ std::ostream& operator<<(std::ostream& os, const HexFloat<T, Traits>& value) {
   return os;
 }
 
+// Returns true if negate_value is true and the next character on the
+// input stream is a plus or minus sign.  In that case we also set the fail bit
+// on the stream and set the value to the zero value for its type.
+template <typename T, typename Traits>
+inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
+                                        HexFloat<T, Traits>& value) {
+  if (negate_value) {
+    auto next_char = is.peek();
+    if (next_char == '-' || next_char == '+') {
+      // Fail the parse.  Emulate standard behaviour by setting the value to
+      // the zero value, and set the fail bit on the stream.
+      value = HexFloat<T, Traits>(typename HexFloat<T, Traits>::uint_type(0));
+      is.setstate(std::ios_base::failbit);
+      return true;
+    }
+  }
+  return false;
+}
+
 // Parses a floating point number from the given stream and stores it into the
 // value parameter.
-// If the negate_value parameter is true then the number is negated before
-// it is stored into the value parameter.
+// If negate_value is true then the number may not have a leading minus or
+// plus, and if it successfully parses, then the number is negated before
+// being stored into the value parameter.
 template <typename T, typename Traits>
 inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
                                       HexFloat<T, Traits>& value) {
+  if (RejectParseDueToLeadingSign(is, negate_value, value)) {
+    return is;
+  }
   T val;
   is >> val;
   if (negate_value) {
@@ -729,14 +752,20 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
 
 // Specialization of ParseNormalFloat for FloatProxy<Float16> values.
 // This will parse the float as it were a 32-bit floating point number,
-// and then round it down to fit into a Float16 value. 
+// and then round it down to fit into a Float16 value.
 // The number is rounded towards zero.
 // Any floating point number that is too large will be rounded to +- infinity.
+// If negate_value is true then the number may not have a leading minus or
+// plus, and if it successfully parses, then the number is negated before
+// being stored into the value parameter.
 template <>
 inline std::istream&
 ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
     std::istream& is, bool negate_value,
     HexFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>& value) {
+  if (RejectParseDueToLeadingSign(is, negate_value, value)) {
+    return is;
+  }
   float f;
   is >> f;
   if (negate_value) {
@@ -841,8 +870,8 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
         if (bits_written) {
           // If we are here the bits represented belong in the fractional
           // part of the float, and we have to adjust the exponent accordingly.
-          fraction =
-        	  static_cast<uint_type>(fraction |
+          fraction = static_cast<uint_type>(
+              fraction |
               static_cast<uint_type>(
                   write_bit << (HF::top_bit_left_shift - fraction_index++)));
           exponent = static_cast<int_type>(exponent + 1);
@@ -873,8 +902,8 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
           // integer.
           exponent = static_cast<int_type>(exponent - 1);
         } else {
-          fraction =
-              static_cast<uint_type>(fraction |
+          fraction = static_cast<uint_type>(
+              fraction |
               static_cast<uint_type>(
                   write_bit << (HF::top_bit_left_shift - fraction_index++)));
         }
@@ -989,8 +1018,9 @@ std::ostream& operator<<(std::ostream& os, const FloatProxy<T>& value) {
   return os;
 }
 
-template<>
-inline std::ostream& operator<< <Float16>(std::ostream& os, const FloatProxy<Float16>& value) {
+template <>
+inline std::ostream& operator<<<Float16>(std::ostream& os,
+                                         const FloatProxy<Float16>& value) {
   os << HexFloat<FloatProxy<Float16>>(value);
   return os;
 }

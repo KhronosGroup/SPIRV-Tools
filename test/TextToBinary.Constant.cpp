@@ -279,6 +279,48 @@ INSTANTIATE_TEST_CASE_P(
     }));
 // clang-format on
 
+// A test case for invalid floating point literals.
+struct InvalidFloatConstantCase {
+  uint32_t width;
+  std::string literal;
+};
+
+using OpConstantInvalidFloatConstant = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<InvalidFloatConstantCase>>;
+
+TEST_P(OpConstantInvalidFloatConstant, Samples) {
+  // Check both kinds of instructions that take literal floats.
+  for (const auto& instruction : {"OpConstant", "OpSpecConstant"}) {
+    std::stringstream input;
+    input << "%1 = OpTypeFloat " << GetParam().width << "\n"
+          << "%2 = " << instruction << " %1 " << GetParam().literal;
+    std::stringstream expected_error;
+    expected_error << "Invalid " << GetParam().width
+                   << "-bit float literal: " << GetParam().literal;
+    EXPECT_THAT(CompileFailure(input.str()), Eq(expected_error.str()));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryInvalidFloatConstant, OpConstantInvalidFloatConstant,
+    ::testing::ValuesIn(std::vector<InvalidFloatConstantCase>{
+        {16, "abc"},
+        {16, "--1"},
+        {16, "-+1"},
+        {16, "+-1"},
+        {16, "++1"},
+        {32, "abc"},
+        {32, "--1"},
+        {32, "-+1"},
+        {32, "+-1"},
+        {32, "++1"},
+        {64, "abc"},
+        {64, "--1"},
+        {64, "-+1"},
+        {64, "+-1"},
+        {64, "++1"},
+    }));
+
 using OpConstantInvalidTypeTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
 
