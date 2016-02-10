@@ -37,7 +37,10 @@
 namespace {
 using ::testing::Eq;
 using spvutils::BitwiseCast;
+using spvutils::Float16;
 using spvutils::FloatProxy;
+using spvutils::HexFloat;
+using spvutils::ParseNormalFloat;
 
 // In this file "encode" means converting a number into a string,
 // and "decode" means converting a string into a number.
@@ -1007,6 +1010,114 @@ TEST(HexFloatOperationTests, NanTests) {
     EXPECT_TRUE(f.value().isNan());
   }
 }
+
+// A test case for parsing good and bad HexFloat<FloatProxy<T>> literals.
+template <typename T>
+struct FloatParseCase {
+  std::string literal;
+  bool negate_value;
+  bool expect_success;
+  HexFloat<FloatProxy<T>> expected_value;
+};
+
+using ParseNormalFloatTest = ::testing::TestWithParam<FloatParseCase<float>>;
+
+TEST_P(ParseNormalFloatTest, Samples) {
+  std::stringstream input(GetParam().literal);
+  HexFloat<FloatProxy<float>> parsed_value(0.0f);
+  ParseNormalFloat(input, GetParam().negate_value, parsed_value);
+  if (GetParam().expect_success) {
+    EXPECT_FALSE(input.fail()) << " literal: " << GetParam().literal
+                               << " negate: " << GetParam().negate_value;
+    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()));
+  } else {
+    EXPECT_TRUE(input.fail()) << " literal: " << GetParam().literal
+                              << " negate: " << GetParam().negate_value;
+  }
+}
+
+// Returns a FloatParseCase with expected failure.
+template <typename T>
+FloatParseCase<T> BadFloatParseCase(std::string literal, bool negate_value) {
+  HexFloat<FloatProxy<T>> dummy_value(0.0f);
+  return FloatParseCase<T>{literal, negate_value, false, dummy_value};
+}
+
+// Returns a FloatParseCase that should successfully parse to a given value.
+template <typename T>
+FloatParseCase<T> GoodFloatParseCase(std::string literal, bool negate_value,
+                                     T expected_value) {
+  HexFloat<FloatProxy<T>> proxy_expected_value(expected_value);
+  return FloatParseCase<T>{literal, negate_value, true, proxy_expected_value};
+}
+
+INSTANTIATE_TEST_CASE_P(FloatParse, ParseNormalFloatTest,
+                        ::testing::ValuesIn(std::vector<FloatParseCase<float>>{
+                            // Failing cases due to trivially incorrect syntax.
+                            BadFloatParseCase<float>("abc", false),
+                            BadFloatParseCase<float>("abc", true),
+
+                            // Valid cases.
+                            GoodFloatParseCase<float>("0", false, 0.0f),
+                            GoodFloatParseCase<float>("0.0", false, 0.0f),
+                            GoodFloatParseCase<float>("-0.0", false, -0.0f),
+                            GoodFloatParseCase<float>("2.0", false, 2.0f),
+                            GoodFloatParseCase<float>("-2.0", false, -2.0f),
+                            GoodFloatParseCase<float>("+2.0", false, 2.0f),
+                            // Cases with negate_value being true.
+                            GoodFloatParseCase<float>("0.0", true, -0.0f),
+                            GoodFloatParseCase<float>("2.0", true, -2.0f),
+
+                            // When negate_value is true, we should not accept a
+                            // leading minus or plus.
+                            BadFloatParseCase<float>("-0.0", true),
+                            BadFloatParseCase<float>("-2.0", true),
+                            BadFloatParseCase<float>("+0.0", true),
+                            BadFloatParseCase<float>("+2.0", true),
+                        }));
+
+using ParseNormalFloat16Test =
+    ::testing::TestWithParam<FloatParseCase<Float16>>;
+
+TEST_P(ParseNormalFloat16Test, Samples) {
+  std::stringstream input(GetParam().literal);
+  HexFloat<FloatProxy<Float16>> parsed_value(0.0f);
+  ParseNormalFloat(input, GetParam().negate_value, parsed_value);
+  if (GetParam().expect_success) {
+    EXPECT_FALSE(input.fail()) << " literal: " << GetParam().literal
+                               << " negate: " << GetParam().negate_value;
+    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()));
+  } else {
+    EXPECT_TRUE(input.fail()) << " literal: " << GetParam().literal
+                              << " negate: " << GetParam().negate_value;
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Float16Parse, ParseNormalFloat16Test,
+    ::testing::ValuesIn(std::vector<FloatParseCase<Float16>>{
+        // Failing cases due to trivially incorrect syntax.
+        BadFloatParseCase<Float16>("abc", false),
+        BadFloatParseCase<Float16>("abc", true),
+
+        // Valid cases.
+        GoodFloatParseCase<Float16>("0", false, uint16_t{0}),
+        GoodFloatParseCase<Float16>("0.0", false, uint16_t{0}),
+        GoodFloatParseCase<Float16>("-0.0", false, uint16_t{0x8000}),
+        GoodFloatParseCase<Float16>("2.0", false, uint16_t{0x4000}),
+        GoodFloatParseCase<Float16>("-2.0", false, uint16_t{0xc000}),
+        GoodFloatParseCase<Float16>("+2.0", false, uint16_t{0x4000}),
+        // Cases with negate_value being true.
+        GoodFloatParseCase<Float16>("0.0", true, uint16_t{0x8000}),
+        GoodFloatParseCase<Float16>("2.0", true, uint16_t{0xc000}),
+
+        // When negate_value is true, we should not accept a leading minus or
+        // plus.
+        BadFloatParseCase<Float16>("-0.0", true),
+        BadFloatParseCase<Float16>("-2.0", true),
+        BadFloatParseCase<Float16>("+0.0", true),
+        BadFloatParseCase<Float16>("+2.0", true),
+    }));
 
 // TODO(awoloszyn): Add fp16 tests and HexFloatTraits.
 }
