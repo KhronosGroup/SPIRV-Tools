@@ -290,7 +290,7 @@ using OpConstantInvalidFloatConstant = spvtest::TextToBinaryTestBase<
 
 TEST_P(OpConstantInvalidFloatConstant, Samples) {
   // Check both kinds of instructions that take literal floats.
-  for (const auto& instruction : {"OpSpecConstant", "OpSpecConstant"}) {
+  for (const auto& instruction : {"OpConstant", "OpSpecConstant"}) {
     std::stringstream input;
     input << "%1 = OpTypeFloat " << GetParam().width << "\n"
           << "%2 = " << instruction << " %1 " << GetParam().literal;
