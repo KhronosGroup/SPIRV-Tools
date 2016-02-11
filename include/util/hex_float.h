@@ -828,14 +828,11 @@ ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
   // rounding toward zero.
   float_val.castTo(value, round_direction::kToZero);
 
-  // Our (current) rule is to allow overflow in 16-bit floats
-  // to validly map to infinities.  But we might have overflowed the
-  // 32-bit float in the first place and set the fail bit on the stream.
-  // If we did, then reset the fail bit.
-  // TODO(dneto): Overflow on 16-bit should behave the same as for 32- and
-  // 64-bit.  It should set the fail bit and set the lowest or highest value.
+  // Overflow on 16-bit behaves the same as for 32- and 64-bit: set the
+  // fail bit and set the lowest or highest value.
   if (Float16::isInfinity(value.value().getAsFloat())) {
-    is.clear(is.rdstate() & ~std::ios_base::failbit);
+    value.set_value(value.isNegative() ? Float16::lowest() : Float16::max());
+    is.setstate(std::ios_base::failbit);
   }
   return is;
 }
