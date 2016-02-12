@@ -1051,38 +1051,39 @@ FloatParseCase<T> GoodFloatParseCase(std::string literal, bool negate_value,
   return FloatParseCase<T>{literal, negate_value, true, proxy_expected_value};
 }
 
-INSTANTIATE_TEST_CASE_P(FloatParse, ParseNormalFloatTest,
-                        ::testing::ValuesIn(std::vector<FloatParseCase<float>>{
-                            // Failing cases due to trivially incorrect syntax.
-                            BadFloatParseCase<float>("abc", false, 0.0f),
-                            BadFloatParseCase<float>("abc", true, 0.0f),
+INSTANTIATE_TEST_CASE_P(
+    FloatParse, ParseNormalFloatTest,
+    ::testing::ValuesIn(std::vector<FloatParseCase<float>>{
+        // Failing cases due to trivially incorrect syntax.
+        BadFloatParseCase("abc", false, 0.0f),
+        BadFloatParseCase("abc", true, 0.0f),
 
-                            // Valid cases.
-                            GoodFloatParseCase<float>("0", false, 0.0f),
-                            GoodFloatParseCase<float>("0.0", false, 0.0f),
-                            GoodFloatParseCase<float>("-0.0", false, -0.0f),
-                            GoodFloatParseCase<float>("2.0", false, 2.0f),
-                            GoodFloatParseCase<float>("-2.0", false, -2.0f),
-                            GoodFloatParseCase<float>("+2.0", false, 2.0f),
-                            // Cases with negate_value being true.
-                            GoodFloatParseCase<float>("0.0", true, -0.0f),
-                            GoodFloatParseCase<float>("2.0", true, -2.0f),
+        // Valid cases.
+        GoodFloatParseCase("0", false, 0.0f),
+        GoodFloatParseCase("0.0", false, 0.0f),
+        GoodFloatParseCase("-0.0", false, -0.0f),
+        GoodFloatParseCase("2.0", false, 2.0f),
+        GoodFloatParseCase("-2.0", false, -2.0f),
+        GoodFloatParseCase("+2.0", false, 2.0f),
+        // Cases with negate_value being true.
+        GoodFloatParseCase("0.0", true, -0.0f),
+        GoodFloatParseCase("2.0", true, -2.0f),
 
-                            // When negate_value is true, we should not accept a
-                            // leading minus or plus.
-                            BadFloatParseCase<float>("-0.0", true, 0.0f),
-                            BadFloatParseCase<float>("-2.0", true, 0.0f),
-                            BadFloatParseCase<float>("+0.0", true, 0.0f),
-                            BadFloatParseCase<float>("+2.0", true, 0.0f),
+        // When negate_value is true, we should not accept a
+        // leading minus or plus.
+        BadFloatParseCase("-0.0", true, 0.0f),
+        BadFloatParseCase("-2.0", true, 0.0f),
+        BadFloatParseCase("+0.0", true, 0.0f),
+        BadFloatParseCase("+2.0", true, 0.0f),
 
-                            // Overflow is an error for 32-bit float parsing.
-                            BadFloatParseCase<float>("1e40", false, FLT_MAX),
-                            BadFloatParseCase<float>("1e40", true, -FLT_MAX),
-                            BadFloatParseCase<float>("-1e40", false, -FLT_MAX),
-                            // We can't have -1e40 and negate_value == true since
-                            // that represents an original case of "--1e40" which
-                            // is invalid.
-                        }));
+        // Overflow is an error for 32-bit float parsing.
+        BadFloatParseCase("1e40", false, FLT_MAX),
+        BadFloatParseCase("1e40", true, -FLT_MAX),
+        BadFloatParseCase("-1e40", false, -FLT_MAX),
+        // We can't have -1e40 and negate_value == true since
+        // that represents an original case of "--1e40" which
+        // is invalid.
+    }));
 
 using ParseNormalFloat16Test =
     ::testing::TestWithParam<FloatParseCase<Float16>>;
@@ -1127,16 +1128,16 @@ INSTANTIATE_TEST_CASE_P(
 
 // A test case for detecting infinities.
 template <typename T>
-struct InfinityParseCase {
+struct OverflowParseCase {
   std::string input;
   bool expect_success;
   T expected_value;
 };
 
-using FloatProxyParseInfinityFloatTest =
-    ::testing::TestWithParam<InfinityParseCase<float>>;
+using FloatProxyParseOverflowFloatTest =
+    ::testing::TestWithParam<OverflowParseCase<float>>;
 
-TEST_P(FloatProxyParseInfinityFloatTest, Sample) {
+TEST_P(FloatProxyParseOverflowFloatTest, Sample) {
   std::istringstream input(GetParam().input);
   HexFloat<FloatProxy<float>> value(0.0f);
   input >> value;
@@ -1145,8 +1146,8 @@ TEST_P(FloatProxyParseInfinityFloatTest, Sample) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    FloatInfinity, FloatProxyParseInfinityFloatTest,
-    ::testing::ValuesIn(std::vector<InfinityParseCase<float>>({
+    FloatOverflow, FloatProxyParseOverflowFloatTest,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<float>>({
         {"0", true, 0.0f},
         {"0.0", true, 0.0f},
         {"1.0", true, 1.0f},
@@ -1158,10 +1159,10 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e400", false, -FLT_MAX},
     })));
 
-using FloatProxyParseInfinityDoubleTest =
-    ::testing::TestWithParam<InfinityParseCase<double>>;
+using FloatProxyParseOverflowDoubleTest =
+    ::testing::TestWithParam<OverflowParseCase<double>>;
 
-TEST_P(FloatProxyParseInfinityDoubleTest, Sample) {
+TEST_P(FloatProxyParseOverflowDoubleTest, Sample) {
   std::istringstream input(GetParam().input);
   HexFloat<FloatProxy<double>> value(0.0);
   input >> value;
@@ -1170,8 +1171,8 @@ TEST_P(FloatProxyParseInfinityDoubleTest, Sample) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    DoubleInfinity, FloatProxyParseInfinityDoubleTest,
-    ::testing::ValuesIn(std::vector<InfinityParseCase<double>>({
+    DoubleOverflow, FloatProxyParseOverflowDoubleTest,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<double>>({
         {"0", true, 0.0},
         {"0.0", true, 0.0},
         {"1.0", true, 1.0},
@@ -1183,22 +1184,22 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e400", false, -DBL_MAX},
     })));
 
-using FloatProxyParseInfinityFloat16Test =
-    ::testing::TestWithParam<InfinityParseCase<uint16_t>>;
+using FloatProxyParseOverflowFloat16Test =
+    ::testing::TestWithParam<OverflowParseCase<uint16_t>>;
 
-TEST_P(FloatProxyParseInfinityFloat16Test, Sample) {
+TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
   std::istringstream input(GetParam().input);
   HexFloat<FloatProxy<Float16>> value(0);
   input >> value;
-  EXPECT_NE(GetParam().expect_success, input.fail())
-      << " literal: " << GetParam().input;
+  EXPECT_NE(GetParam().expect_success, input.fail()) << " literal: "
+                                                     << GetParam().input;
   EXPECT_THAT(value.value().data(), Eq(GetParam().expected_value))
       << " literal: " << GetParam().input;
 }
 
 INSTANTIATE_TEST_CASE_P(
-    Float16Infinity, FloatProxyParseInfinityFloat16Test,
-    ::testing::ValuesIn(std::vector<InfinityParseCase<uint16_t>>({
+    Float16Overflow, FloatProxyParseOverflowFloat16Test,
+    ::testing::ValuesIn(std::vector<OverflowParseCase<uint16_t>>({
         // For Float16, too-large values are parsed as
         // infinities, and also valid.
         // TODO(dneto): Overflow for 16-bit float should be an error,

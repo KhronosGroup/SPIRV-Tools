@@ -772,8 +772,11 @@ inline bool RejectParseDueToLeadingSign(std::istream& is, bool negate_value,
 // If negate_value is true then the number may not have a leading minus or
 // plus, and if it successfully parses, then the number is negated before
 // being stored into the value parameter.
-// If the value is an infinity, then set the fail bit on the stream, and set
-// the value to 0.
+// If the value cannot be correctly parsed, then set the fail bit on the
+// stream, and set the value to zero.
+// If the value overflows the target floating point type, then set the fail
+// bit on the stream and set the value to the nearest finite value for the
+// type, which can either be positive or negative.
 template <typename T, typename Traits>
 inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
                                       HexFloat<T, Traits>& value) {
