@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <cfloat>
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -441,10 +442,12 @@ TEST(AssemblyContextParseFloat, Sample) {
   EXPECT_EQ(-1e38f, f);
 }
 
-TEST(AssemblyContextParseFloat, Infinities) {
+TEST(AssemblyContextParseFloat, Overflow) {
   // The assembler parses using HexFloat<FloatProxy<float>>.  Make
   // sure that succeeds for in-range values, and fails for out of
-  // range values.
+  // range values.  When it does overflow, the value is set to the
+  // nearest finite value, matching C++11 behavior for operator>>
+  // on floating point.
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
   spvutils::HexFloat<spvutils::FloatProxy<float>> f(0.0f);
@@ -454,9 +457,13 @@ TEST(AssemblyContextParseFloat, Infinities) {
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e38", ec, &f, ""));
   EXPECT_EQ(-1e38f, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e40", ec, &f, ""));
+  EXPECT_EQ(FLT_MAX, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e40", ec, &f, ""));
+  EXPECT_EQ(-FLT_MAX, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_EQ(FLT_MAX, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", ec, &f, ""));
+  EXPECT_EQ(-FLT_MAX, f.value().getAsFloat());
 }
 
 TEST(AssemblyContextParseDouble, Sample) {
@@ -487,10 +494,12 @@ TEST(AssemblyContextParseDouble, Sample) {
   EXPECT_EQ(-1e40, f);
 }
 
-TEST(AssemblyContextParseDouble, Infinities) {
+TEST(AssemblyContextParseDouble, Overflow) {
   // The assembler parses using HexFloat<FloatProxy<double>>.  Make
   // sure that succeeds for in-range values, and fails for out of
-  // range values.
+  // range values.  When it does overflow, the value is set to the
+  // nearest finite value, matching C++11 behavior for operator>>
+  // on floating point.
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
   spvutils::HexFloat<spvutils::FloatProxy<double>> f(0.0);
@@ -504,13 +513,17 @@ TEST(AssemblyContextParseDouble, Infinities) {
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-1e40", ec, &f, ""));
   EXPECT_EQ(-1e40, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("1e400", ec, &f, ""));
+  EXPECT_EQ(DBL_MAX, f.value().getAsFloat());
   EXPECT_EQ(SPV_FAILED_MATCH, context.parseNumber("-1e400", ec, &f, ""));
+  EXPECT_EQ(-DBL_MAX, f.value().getAsFloat());
 }
 
-TEST(AssemblyContextParseFloat16, Infinities) {
+TEST(AssemblyContextParseFloat16, Overflow) {
   // The assembler parses using HexFloat<FloatProxy<Float16>>.  Make
-  // sure that succeeds for in-range values, and returns infinities
-  // for out of range values.
+  // sure that succeeds for in-range values, and fails for out of
+  // range values.  When it does overflow, the value is set to the
+  // nearest finite value, matching C++11 behavior for operator>>
+  // on floating point.
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
   spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0.0f);
