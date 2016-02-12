@@ -807,10 +807,14 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
 // This will parse the float as it were a 32-bit floating point number,
 // and then round it down to fit into a Float16 value.
 // The number is rounded towards zero.
-// Any floating point number that is too large will be rounded to +- infinity.
 // If negate_value is true then the number may not have a leading minus or
 // plus, and if it successfully parses, then the number is negated before
 // being stored into the value parameter.
+// If the value cannot be correctly parsed, then set the fail bit on the
+// stream, and set the value to zero.
+// If the value overflows the target floating point type, then set the fail
+// bit on the stream and set the value to the nearest finite value for the
+// type, which can either be positive or negative.
 template <>
 inline std::istream&
 ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
@@ -824,14 +828,11 @@ ParseNormalFloat<FloatProxy<Float16>, HexFloatTraits<FloatProxy<Float16>>>(
   // rounding toward zero.
   float_val.castTo(value, round_direction::kToZero);
 
-  // Our (current) rule is to allow overflow in 16-bit floats
-  // to validly map to infinities.  But we might have overflowed the
-  // 32-bit float in the first place and set the fail bit on the stream.
-  // If we did, then reset the fail bit.
-  // TODO(dneto): Overflow on 16-bit should behave the same as for 32- and
-  // 64-bit.  It should set the fail bit and set the lowest or highest value.
+  // Overflow on 16-bit behaves the same as for 32- and 64-bit: set the
+  // fail bit and set the lowest or highest value.
   if (Float16::isInfinity(value.value().getAsFloat())) {
-    is.clear(is.rdstate() & ~std::ios_base::failbit);
+    value.set_value(value.isNegative() ? Float16::lowest() : Float16::max());
+    is.setstate(std::ios_base::failbit);
   }
   return is;
 }

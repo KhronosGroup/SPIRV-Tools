@@ -310,8 +310,12 @@ INSTANTIATE_TEST_CASE_P(
         {16, "-+1"},
         {16, "+-1"},
         {16, "++1"},
-        // TODO(dneto): Overflow for 16-bit floats should be an error,
-        // just like for 32-bit and 64-bit.
+        {16, "1e30"}, // Overflow is an error for 16-bit floats.
+        {16, "-1e30"},
+        {16, "1e40"},
+        {16, "-1e40"},
+        {16, "1e400"},
+        {16, "-1e400"},
         {32, "abc"},
         {32, "--1"},
         {32, "-+1"},
