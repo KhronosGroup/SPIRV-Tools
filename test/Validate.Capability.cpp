@@ -220,7 +220,8 @@ const vector<string>& GeometryDependencies() {
   static const auto r = new vector<string>{
   "Geometry",
   "GeometryPointSize",
-  "GeometryStreams"};
+  "GeometryStreams",
+  "MultiviewPort"};
   return *r;
 }
 
@@ -234,11 +235,12 @@ const vector<string>& GeometryTessellationDependencies() {
   return *r;
 }
 
+// Returns the names of capabilities that directly depend on Kernel,
+// plus itself.
 const vector<string>& KernelDependencies() {
   static const auto r = new vector<string>{
   "Kernel",
   "Vector16",
-  "Float16",
   "Float16Buffer",
   "ImageBasic",
   "ImageReadWrite",
@@ -455,7 +457,7 @@ make_pair("OpDecorate %intt BufferBlock\n",                         ShaderDepend
 make_pair("OpDecorate %intt RowMajor\n",                            MatrixDependencies()),
 make_pair("OpDecorate %intt ColMajor\n",                            MatrixDependencies()),
 make_pair("OpDecorate %intt ArrayStride 1\n",                       ShaderDependencies()),
-make_pair("OpDecorate %intt MatrixStride 1\n",                      ShaderDependencies()),
+make_pair("OpDecorate %intt MatrixStride 1\n",                      MatrixDependencies()),
 make_pair("OpDecorate %intt GLSLShared\n",                          ShaderDependencies()),
 make_pair("OpDecorate %intt GLSLPacked\n",                          ShaderDependencies()),
 make_pair("OpDecorate %intt CPacked\n",                             KernelDependencies()),
@@ -463,7 +465,7 @@ make_pair("OpDecorate %intt NoPerspective\n",                       ShaderDepend
 make_pair("OpDecorate %intt Flat\n",                                ShaderDependencies()),
 make_pair("OpDecorate %intt Patch\n",                               TessellationDependencies()),
 make_pair("OpDecorate %intt Centroid\n",                            ShaderDependencies()),
-make_pair("OpDecorate %intt Sample\n",                              ShaderDependencies()),
+make_pair("OpDecorate %intt Sample\n",                              vector<string>{"SampleRateShading"}),
 make_pair("OpDecorate %intt Invariant\n",                           ShaderDependencies()),
 make_pair("OpDecorate %intt Restrict\n",                            AllCapabilities()),
 make_pair("OpDecorate %intt Aliased\n",                             AllCapabilities()),
@@ -480,7 +482,7 @@ make_pair("OpDecorate %intt Component 0\n",                         ShaderDepend
 make_pair("OpDecorate %intt Index 0\n",                             ShaderDependencies()),
 make_pair("OpDecorate %intt Binding 0\n",                           ShaderDependencies()),
 make_pair("OpDecorate %intt DescriptorSet 0\n",                     ShaderDependencies()),
-make_pair("OpDecorate %intt Offset 0\n",                            AllCapabilities()),
+make_pair("OpDecorate %intt Offset 0\n",                            ShaderDependencies()),
 make_pair("OpDecorate %intt XfbBuffer 0\n",                         vector<string>{"TransformFeedback"}),
 make_pair("OpDecorate %intt XfbStride 0\n",                         vector<string>{"TransformFeedback"}),
 make_pair("OpDecorate %intt FuncParamAttr Zext\n",                  KernelDependencies()),
@@ -499,14 +501,14 @@ INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
                             Values(
 make_pair("OpDecorate %intt BuiltIn Position\n",                  ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn PointSize\n",                 ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn ClipDistance\n",              ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn CullDistance\n",              ShaderDependencies()),
+make_pair("OpDecorate %intt BuiltIn ClipDistance\n",              vector<string>{"ClipDistance"}),
+make_pair("OpDecorate %intt BuiltIn CullDistance\n",              vector<string>{"CullDistance"}),
 make_pair("OpDecorate %intt BuiltIn VertexId\n",                  ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn InstanceId\n",                ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn PrimitiveId\n",               GeometryTessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn InvocationId\n",              GeometryTessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn Layer\n",                     GeometryDependencies()),
-make_pair("OpDecorate %intt BuiltIn ViewportIndex\n",             GeometryDependencies()),
+make_pair("OpDecorate %intt BuiltIn ViewportIndex\n",             vector<string>{"MultiviewPort"}),
 make_pair("OpDecorate %intt BuiltIn TessLevelOuter\n",            TessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn TessLevelInner\n",            TessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn TessCoord\n",                 TessellationDependencies()),
@@ -514,43 +516,26 @@ make_pair("OpDecorate %intt BuiltIn PatchVertices\n",             TessellationDe
 make_pair("OpDecorate %intt BuiltIn FragCoord\n",                 ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn PointCoord\n",                ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn FrontFacing\n",               ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn SampleId\n",                  ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn SamplePosition\n",            ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn SampleMask\n",                ShaderDependencies()),
+make_pair("OpDecorate %intt BuiltIn SampleId\n",                  vector<string>{"SampleRateShading"}),
+make_pair("OpDecorate %intt BuiltIn SamplePosition\n",            vector<string>{"SampleRateShading"}),
+make_pair("OpDecorate %intt BuiltIn SampleMask\n",                vector<string>{"SampleRateShading"}),
 make_pair("OpDecorate %intt BuiltIn FragDepth\n",                 ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn HelperInvocation\n",          ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn VertexIndex\n",               ShaderDependencies()),
 make_pair("OpDecorate %intt BuiltIn InstanceIndex\n",             ShaderDependencies()),
-// Though the remaining builtins don't require Shader, the BuiltIn keyword
-// itself currently does require it.
-make_pair("OpDecorate %intt BuiltIn NumWorkgroups\n",             ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn WorkgroupSize\n",             ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn WorkgroupId\n",               ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn LocalInvocationId\n",         ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn GlobalInvocationId\n",        ShaderDependencies()),
-make_pair("OpDecorate %intt BuiltIn LocalInvocationIndex",        ShaderDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn WorkDim\n",                   KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn GlobalSize\n",                KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn EnqueuedWorkgroupSize\n",     KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn GlobalOffset\n",              KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn GlobalLinearId\n",            KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn SubgroupSize\n",              KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn SubgroupMaxSize\n",           KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn NumSubgroups\n",              KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn NumEnqueuedSubgroups\n",      KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn SubgroupId\n",                KernelDependencies()),
-make_pair("OpCapability Shader\n"
-          "OpDecorate %intt BuiltIn SubgroupLocalInvocationId\n", KernelDependencies())
+make_pair("OpDecorate %intt BuiltIn WorkDim\n",                   KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn GlobalSize\n",                KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn EnqueuedWorkgroupSize\n",     KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn GlobalOffset\n",              KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn GlobalLinearId\n",            KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn SubgroupSize\n",              KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn SubgroupMaxSize\n",           KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn NumSubgroups\n",              KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn NumEnqueuedSubgroups\n",      KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn SubgroupId\n",                KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn SubgroupLocalInvocationId\n", KernelDependencies()),
+make_pair("OpDecorate %intt BuiltIn VertexIndex\n",               ShaderDependencies()),
+make_pair("OpDecorate %intt BuiltIn InstanceIndex\n",             ShaderDependencies())
                                                            )));
 
 // TODO(umar): Selection Control

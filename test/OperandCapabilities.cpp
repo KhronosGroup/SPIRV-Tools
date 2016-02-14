@@ -144,7 +144,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(STORAGE_CLASS, StorageClassCrossWorkgroup),
         CASE1(STORAGE_CLASS, StorageClassPrivate, Shader),
         CASE0(STORAGE_CLASS, StorageClassFunction),
-        CASE1(STORAGE_CLASS, StorageClassGeneric, Kernel),
+        CASE1(STORAGE_CLASS, StorageClassGeneric, GenericPointer), // Bug 14287
         CASE1(STORAGE_CLASS, StorageClassPushConstant, Shader),
         CASE1(STORAGE_CLASS, StorageClassAtomicCounter, AtomicStorage),
         CASE0(STORAGE_CLASS, StorageClassImage),
@@ -370,17 +370,17 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationRowMajor, Matrix),
         CASE1(DECORATION, DecorationColMajor, Matrix),
         CASE1(DECORATION, DecorationArrayStride, Shader),
-        CASE1(DECORATION, DecorationMatrixStride, Shader),
+        CASE1(DECORATION, DecorationMatrixStride, Matrix), // Bug 15234
         CASE1(DECORATION, DecorationGLSLShared, Shader),
         CASE1(DECORATION, DecorationGLSLPacked, Shader),
         CASE1(DECORATION, DecorationCPacked, Kernel),
-        CASE1(DECORATION, DecorationBuiltIn, Shader),
+        CASE0(DECORATION, DecorationBuiltIn), // Bug 15248
         // Value 12 placeholder
         CASE1(DECORATION, DecorationNoPerspective, Shader),
         CASE1(DECORATION, DecorationFlat, Shader),
         CASE1(DECORATION, DecorationPatch, Tessellation),
         CASE1(DECORATION, DecorationCentroid, Shader),
-        CASE1(DECORATION, DecorationSample, Shader),
+        CASE1(DECORATION, DecorationSample, SampleRateShading), // Bug 15234
         CASE1(DECORATION, DecorationInvariant, Shader),
         CASE0(DECORATION, DecorationRestrict),
         CASE0(DECORATION, DecorationAliased),
@@ -398,7 +398,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationIndex, Shader),
         CASE1(DECORATION, DecorationBinding, Shader),
         CASE1(DECORATION, DecorationDescriptorSet, Shader),
-        CASE0(DECORATION, DecorationOffset),
+        CASE1(DECORATION, DecorationOffset, Shader), // Bug 15268
         CASE1(DECORATION, DecorationXfbBuffer, TransformFeedback),
         CASE1(DECORATION, DecorationXfbStride, TransformFeedback),
         CASE1(DECORATION, DecorationFuncParamAttr, Kernel),
@@ -417,14 +417,14 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(BUILT_IN, BuiltInPosition, Shader),
         CASE1(BUILT_IN, BuiltInPointSize, Shader),
         // 2 is an intentional gap in the spec numbering.
-        CASE1(BUILT_IN, BuiltInClipDistance, Shader),
-        CASE1(BUILT_IN, BuiltInCullDistance, Shader),
+        CASE1(BUILT_IN, BuiltInClipDistance, ClipDistance), // Bug 1407, 15234
+        CASE1(BUILT_IN, BuiltInCullDistance, CullDistance), // Bug 1407, 15234
         CASE1(BUILT_IN, BuiltInVertexId, Shader),
         CASE1(BUILT_IN, BuiltInInstanceId, Shader),
         CASE2(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation),
         CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
         CASE1(BUILT_IN, BuiltInLayer, Geometry),
-        CASE1(BUILT_IN, BuiltInViewportIndex, Geometry),
+        CASE1(BUILT_IN, BuiltInViewportIndex, MultiViewport), // Bug 15234
         CASE1(BUILT_IN, BuiltInTessLevelOuter, Tessellation),
         CASE1(BUILT_IN, BuiltInTessLevelInner, Tessellation),
         CASE1(BUILT_IN, BuiltInTessCoord, Tessellation),
@@ -432,9 +432,9 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(BUILT_IN, BuiltInFragCoord, Shader),
         CASE1(BUILT_IN, BuiltInPointCoord, Shader),
         CASE1(BUILT_IN, BuiltInFrontFacing, Shader),
-        CASE1(BUILT_IN, BuiltInSampleId, Shader),
-        CASE1(BUILT_IN, BuiltInSamplePosition, Shader),
-        CASE1(BUILT_IN, BuiltInSampleMask, Shader),
+        CASE1(BUILT_IN, BuiltInSampleId, SampleRateShading), // Bug 15234
+        CASE1(BUILT_IN, BuiltInSamplePosition, SampleRateShading), // Bug 15234
+        CASE1(BUILT_IN, BuiltInSampleMask, SampleRateShading), // Bug 15234
         // Value 21 intentionally missing
         CASE1(BUILT_IN, BuiltInFragDepth, Shader),
         CASE1(BUILT_IN, BuiltInHelperInvocation, Shader),
@@ -502,7 +502,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsWorkgroupMemoryMask),
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsCrossWorkgroupMemoryMask),
         CASE1(MEMORY_SEMANTICS_ID, MemorySemanticsAtomicCounterMemoryMask,
-              Shader),
+              AtomicStorage), // Bug 15234
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsImageMemoryMask),
     }));
 
@@ -565,7 +565,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(CAPABILITY, CapabilityKernel),
         CASE1(CAPABILITY, CapabilityVector16, Kernel),
         CASE1(CAPABILITY, CapabilityFloat16Buffer, Kernel),
-        CASE1(CAPABILITY, CapabilityFloat16, Float16Buffer),
+        CASE0(CAPABILITY, CapabilityFloat16), // Bug 15234
         CASE0(CAPABILITY, CapabilityFloat64),
         CASE0(CAPABILITY, CapabilityInt64),
         CASE1(CAPABILITY, CapabilityInt64Atomics, Int64),
