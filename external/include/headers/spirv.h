@@ -51,11 +51,11 @@
 typedef unsigned int SpvId;
 
 #define SPV_VERSION 0x10000
-#define SPV_REVISION 2
+#define SPV_REVISION 3
 
 static const unsigned int SpvMagicNumber = 0x07230203;
 static const unsigned int SpvVersion = 0x00010000;
-static const unsigned int SpvRevision = 2;
+static const unsigned int SpvRevision = 3;
 static const unsigned int SpvOpCodeMask = 0xffff;
 static const unsigned int SpvWordCountShift = 16;
 
@@ -567,6 +567,7 @@ typedef enum SpvCapability_ {
     SpvCapabilityGeometryStreams = 54,
     SpvCapabilityStorageImageReadWithoutFormat = 55,
     SpvCapabilityStorageImageWriteWithoutFormat = 56,
+    SpvCapabilityMultiViewport = 57,
 } SpvCapability;
 
 typedef enum SpvOp_ {
@@ -863,6 +864,7 @@ typedef enum SpvOp_ {
     SpvOpNoLine = 317,
     SpvOpAtomicFlagTestAndSet = 318,
     SpvOpAtomicFlagClear = 319,
+    SpvOpImageSparseRead = 320,
 } SpvOp;
 
 #endif  // #ifndef spirv_H
