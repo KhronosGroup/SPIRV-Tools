@@ -81,7 +81,7 @@ TEST_F(DimTest, WrongDim) {
 using ImageFormatTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<SpvImageFormat>>>;
 
-TEST_P(ImageFormatTest, AnyImageFormat) {
+TEST_P(ImageFormatTest, AnyImageFormatAndNoAccessQualifier) {
   const std::string input =
       "%1 = OpTypeImage %2 1D 2 3 0 4 " + GetParam().name() + "\n";
   EXPECT_THAT(CompiledInstructions(input),
@@ -145,15 +145,44 @@ TEST_F(ImageFormatTest, WrongFormat) {
               Eq("Invalid image format 'xxyyzz'."));
 }
 
+// Test AccessQualifier enums via OpTypeImage.
+using ImageAccessQualifierTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<EnumCase<SpvAccessQualifier>>>;
+
+TEST_P(ImageAccessQualifierTest, AnyAccessQualifier) {
+  const std::string input =
+      "%1 = OpTypeImage %2 1D 2 3 0 4 Rgba8 " + GetParam().name() + "\n";
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(MakeInstruction(SpvOpTypeImage,
+                                 {1, 2, SpvDim1D, 2, 3, 0, 4,
+                                  SpvImageFormatRgba8, GetParam().value()})));
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
+}
+
+// clang-format off
+#define CASE(NAME) {SpvAccessQualifier##NAME, #NAME}
+INSTANTIATE_TEST_CASE_P(
+    AccessQualifier, ImageAccessQualifierTest,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvAccessQualifier>>{
+      CASE(ReadOnly),
+      CASE(WriteOnly),
+      CASE(ReadWrite),
+    }));
+// clang-format on
+#undef CASE
+
 // Test AccessQualifier enums via OpTypePipe.
 
 using OpTypePipeTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<EnumCase<SpvAccessQualifier>>>;
 
 TEST_P(OpTypePipeTest, AnyAccessQualifier) {
-  const std::string input = "%1 = OpTypePipe " + GetParam().name();
+  const std::string input = "%1 = OpTypePipe " + GetParam().name() + "\n";
   EXPECT_THAT(CompiledInstructions(input),
               Eq(MakeInstruction(SpvOpTypePipe, {1, GetParam().value()})));
+  // Check the disassembler as well.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
 
 // clang-format off

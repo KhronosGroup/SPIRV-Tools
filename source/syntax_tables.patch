@@ -11,7 +11,7 @@ index af51f86..5775510 100644
      header.cpp
      doc.cpp
 diff --git a/tools/spirv/OclDoc.cpp b/tools/spirv/OclDoc.cpp
-index c94eae2..ea47d42 100644
+index 1f25221..ff2c7c6 100644
 --- a/tools/spirv/OclDoc.cpp
 +++ b/tools/spirv/OclDoc.cpp
 @@ -28,11 +28,14 @@
@@ -30,7 +30,7 @@ index c94eae2..ea47d42 100644
  #include <algorithm>
  #include <map>
  
-@@ -2358,4 +2361,27 @@ void PrintOclCommonDoc()
+@@ -2187,4 +2190,31 @@ void PrintOclCommonDoc()
      PrintOclDoc(SPIROpenCLCommonVersion);
  }
  
@@ -52,7 +52,11 @@ index c94eae2..ea47d42 100644
 +    assert(inst.hasType());
 +    assert(inst.hasResult());
 +    out << "ExtInst(" << inst.opName << ", " << i << ", ";
-+    PrintOperandClasses(inst.operands.classes(), out);
++    std::vector<OperandClassInfo> classes_info;
++    for (const auto& operand_class : inst.operands.classes()) {
++      classes_info.push_back({operand_class, false /* not optional */});
++    }
++    PrintOperandClasses(classes_info, out);
 +    out << ")" << std::endl;
 +  }
 +}
@@ -90,10 +94,10 @@ index 8568880..7cf8a31 100644
  };  // end namespace spv
 diff --git a/tools/spirv/assembler_table.cpp b/tools/spirv/assembler_table.cpp
 new file mode 100644
-index 0000000..85bca89
+index 0000000..8dd8fa1
 --- /dev/null
 +++ b/tools/spirv/assembler_table.cpp
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,229 @@
 +// Copyright (c) 2015-2016 The Khronos Group Inc.
 +//
 +// Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,8 +141,6 @@ index 0000000..85bca89
 +  const OperandParameters& operands = inst.operands;
 +  for (int i = 0; i < operands.getNum() ; i++) {
 +    switch (operands.getClass(i)) {
-+      case spv::OperandOptionalId:
-+      case spv::OperandOptionalImage:
 +      case spv::OperandVariableIds:
 +      case spv::OperandOptionalLiteral:
 +      case spv::OperandOptionalLiteralString:
@@ -150,6 +152,7 @@ index 0000000..85bca89
 +      default:
 +        break;
 +    }
++    if (operands.isOptional(i)) return true;
 +  }
 +  return false;
 +}
@@ -160,8 +163,6 @@ index 0000000..85bca89
 +#define CASE(X) case X: return #X;
 +    CASE(OperandNone)
 +    CASE(OperandId)
-+    CASE(OperandOptionalId)
-+    CASE(OperandOptionalImage)
 +    CASE(OperandVariableIds)
 +    CASE(OperandOptionalLiteral)
 +    CASE(OperandOptionalLiteralString)
@@ -214,14 +215,35 @@ index 0000000..85bca89
 +// Prints a listing of the operand kinds for the given instruction.
 +// If the list is empty, then emit just "EmptyList",
 +// otherwise the output looks like a call to the "List" macro.
-+void PrintOperandClasses(const std::vector<OperandClass>& classes, std::ostream& out) {
++void PrintOperandClasses(const std::vector<OperandClassInfo>& classes, std::ostream& out) {
 +  std::stringstream contents;
 +  int numPrinted = 0;
-+  for (auto operandClass : classes) {
-+    if (const char* name = GetOperandClassString(operandClass)) {
++  for (auto class_info : classes) {
++    if (const char* name = GetOperandClassString(class_info.value)) {
 +      if (numPrinted) contents << ", ";
-+      contents << name;
++      switch (class_info.value) {
++        case OperandId:
++        case OperandImageOperands:
++        case OperandLiteralString:
++        case OperandMemoryAccess:
++        case OperandAccessQualifier:
++          if (class_info.is_optional) {
++            contents << "OperandOptional" << (name + strlen("Operand"));
++          } else {
++            contents << name;
++          }
++          break;
++        default:
++          contents << name;
++          break;
++      }
 +      numPrinted++;
++      if (class_info.value == OperandImageOperands) {
++        // There are Id and/or VariableIds after this.  Skip them
++        // because the bits in an OperandImageOperands determine
++        // exactly the number of Ids required to follow.
++        break;
++      }
 +    }
 +  }
 +
@@ -233,18 +255,17 @@ index 0000000..85bca89
 +}  // namespace spv
 +
 +namespace spv {
-+namespace {
 +
 +// Prints a listing of the operand kinds for the given instruction.
 +// If the list is empty, then emit just "EmptyList",
 +// otherwise the output looks like a call to the "List" macro.
 +void PrintOperandClassesForInstruction(const InstructionParameters& inst,
 +                                       std::ostream& out) {
-+  std::vector<OperandClass> result;
++  std::vector<OperandClassInfo> result;
 +
 +  const OperandParameters& operands = inst.operands;
 +  for (int i = 0; i < operands.getNum(); i++) {
-+    result.push_back(operands.getClass(i));
++    result.push_back({operands.getClass(i), operands.isOptional(i)});
 +  }
 +  PrintOperandClasses(result, out);
 +}
@@ -282,8 +303,6 @@ index 0000000..85bca89
 +  }
 +}
 +
-+} // anonymous namespace
-+
 +void PrintAssemblerTable(std::ostream& out) {
 +  out << "// Instruction fields are:\n"
 +      << "//    name - skips the \"Op\" prefix\n"
@@ -293,7 +312,7 @@ index 0000000..85bca89
 +      << "//    numCapabilities - we only handle 0 or 1 required capabilities\n"
 +      << "//    Capability(<capability-name>) - capability required to use this instruction. Might be None.\n"
 +      << "//       There can be Capability2(a,b) for dependence on two capabilities.\n"
-+      << "//    {0|1} - whether the instruction is variable number of words\n"
++      << "//    {0|1} - whether the instruction is variable number of logical operands\n"
 +      << "//    EmptyList or List(...) - list of classes of logical operands\n"
 +      << "// Example use:\n"
 +      << "// #define EmptyList {}\n"
@@ -310,10 +329,10 @@ index 0000000..85bca89
 +}
 diff --git a/tools/spirv/assembler_table.h b/tools/spirv/assembler_table.h
 new file mode 100644
-index 0000000..b98303a
+index 0000000..16ea384
 --- /dev/null
 +++ b/tools/spirv/assembler_table.h
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,55 @@
 +// Copyright (c) 2015-2016 The Khronos Group Inc.
 +//
 +// Permission is hereby granted, free of charge, to any person obtaining a
@@ -351,6 +370,12 @@ index 0000000..b98303a
 +
 +namespace spv {
 +
++    // Relevant facts about an operand class value.
++    struct OperandClassInfo {
++      OperandClass value;
++      bool is_optional;
++    };
++
 +    // Prints the tables used to define the structure of instructions.
 +    // Assumes that parameterization has already occurred
 +    void PrintAssemblerTable(std::ostream& out);
@@ -358,13 +383,13 @@ index 0000000..b98303a
 +    // Prints a listing of the operand kinds.
 +    // If the list is empty, then emit just "EmptyList",
 +    // otherwise the output looks like a call to the "List" macro.
-+    void PrintOperandClasses(const std::vector<OperandClass>& classes, std::ostream& out);
++    void PrintOperandClasses(const std::vector<OperandClassInfo>& classes, std::ostream& out);
 +
 +};  // end namespace spv
 +
 +#endif // ASSEMBLER_TABLE_H
 diff --git a/tools/spirv/doc.h b/tools/spirv/doc.h
-index 78b1031..a182509 100644
+index 4c11d3b..6e1718a 100644
 --- a/tools/spirv/doc.h
 +++ b/tools/spirv/doc.h
 @@ -32,6 +32,9 @@
@@ -385,7 +410,7 @@ index 78b1031..a182509 100644
  
  // For grouping opcodes into subsections
  enum OpcodeClass {
-@@ -159,6 +163,10 @@ enum OperandClass {
+@@ -157,6 +161,10 @@ enum OperandClass {
  
      OperandOpcode,
  
@@ -396,7 +421,7 @@ index 78b1031..a182509 100644
      OperandCount
  };
  
-@@ -257,3 +265,5 @@ const char* AccessQualifierString(int attr);
+@@ -259,3 +267,5 @@ const char* AccessQualifierString(int attr);
  void PrintOperands(const OperandParameters& operands, int reservedOperands);
  
  };  // end namespace spv

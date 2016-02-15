@@ -205,6 +205,8 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
   // An optional execution mode.
   SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
+  // An optional access qualifier
+  SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER,
   // An optional context-independent value, or CIV.  CIVs are tokens that we can
   // assemble regardless of where they occur -- literals, IDs, immediate
   // integers, etc.

@@ -86,13 +86,6 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
   // what is being repeated.
   if (operandClass == OperandOptionalLiteral) {
     switch (opcode) {
-      case SpvOpLoad:
-      case SpvOpStore:
-      case SpvOpCopyMemory:
-      case SpvOpCopyMemorySized:
-        // Expect an optional mask.  When the Aligned bit is set in the mask,
-        // we will later add the expectation of a literal number operand.
-        return SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS;
       case SpvOpExecutionMode:
         return SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE;
       default:
@@ -121,8 +114,6 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
       return SPV_OPERAND_TYPE_ID;
     case OperandOptionalId:
       return SPV_OPERAND_TYPE_OPTIONAL_ID;
-    case OperandOptionalImage:
-      return SPV_OPERAND_TYPE_OPTIONAL_IMAGE;
     case OperandVariableIds:
       if (opcode == SpvOpSpecConstantOp) {
         // These are the operands to the specialization constant opcode.
@@ -188,10 +179,9 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
       // OpImageQueryFormat. It is not used as an operand.
       break;
     case OperandImageOperands:
-      // This is not used in opcode.inc. It only exists to generate the
-      // corresponding spec section. In parsing, image operands meld into the
-      // OperandOptionalImage case.
-      break;
+      return SPV_OPERAND_TYPE_IMAGE;
+    case OperandOptionalImageOperands:
+      return SPV_OPERAND_TYPE_OPTIONAL_IMAGE;
     case OperandFPFastMath:
       return SPV_OPERAND_TYPE_FP_FAST_MATH_MODE;
     case OperandFPRoundingMode:
@@ -200,6 +190,8 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
       return SPV_OPERAND_TYPE_LINKAGE_TYPE;
     case OperandAccessQualifier:
       return SPV_OPERAND_TYPE_ACCESS_QUALIFIER;
+    case OperandOptionalAccessQualifier:
+      return SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER;
     case OperandFuncParamAttr:
       return SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE;
     case OperandDecoration:
@@ -220,6 +212,10 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
       // and we can remove the special casing above for memory operation
       // instructions.
       break;
+    case OperandOptionalMemoryAccess:
+      // Expect an optional mask.  When the Aligned bit is set in the mask,
+      // we will later add the expectation of a literal number operand.
+      return SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS;
     case OperandScope:
       return SPV_OPERAND_TYPE_SCOPE_ID;
     case OperandGroupOperation:

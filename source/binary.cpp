@@ -656,6 +656,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
+    case SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER:
     case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
     case SPV_OPERAND_TYPE_DECORATION:
     case SPV_OPERAND_TYPE_BUILT_IN:
@@ -663,6 +664,11 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       // A single word that is a plain enum value.
+
+      // Map an optional operand type to its corresponding concrete type.
+      if (type == SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER)
+        parsed_operand.type = SPV_OPERAND_TYPE_ACCESS_QUALIFIER;
+
       spv_operand_desc entry;
       if (grammar_.lookupOperand(type, word, &entry)) {
         return diagnostic() << "Invalid "
@@ -676,6 +682,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {

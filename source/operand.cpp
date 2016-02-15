@@ -1051,6 +1051,8 @@ static const spv_operand_desc_group_t opcodeEntryTypes[] = {
      linkageTypeEntries},
     {SPV_OPERAND_TYPE_ACCESS_QUALIFIER, ARRAY_SIZE(accessQualifierEntries),
      accessQualifierEntries},
+    {SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER,  // Same as *_ACCESS_QUALIFIER
+     ARRAY_SIZE(accessQualifierEntries), accessQualifierEntries},
     {SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
      ARRAY_SIZE(functionParameterAttributeEntries),
      functionParameterAttributeEntries},
@@ -1194,6 +1196,7 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
       return "linkage type";
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
+    case SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER:
       return "access qualifier";
     case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
       return "function parameter attribute";
