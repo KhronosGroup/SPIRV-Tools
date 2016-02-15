@@ -66,9 +66,13 @@ We intend to maintain a linear history on the GitHub `master` branch.
 The project contains a number of tests, used to drive development
 and ensure correctness.  The tests are written using the
 [googletest](https://github.com/google/googletest) framework.  The `googletest`
-source is not provided with this project.  Download the `googletest` source
-into the `<spirv-dir>/external/googletest` directory before configuring
-and building the project.
+source is not provided with this project.  There are two ways to enable
+tests:
+* If SPIR-V Tools is configured as part of an enclosing project, then the
+  enclosing project should configure `googletest` before configuring SPIR-V Tools.
+* If SPIR-V Tools is configured as a standalone project, then download the
+  `googletest` source into the `<spirv-dir>/external/googletest` directory before
+  configuring and building the project.
 
 *Note*: You must use a version of googletest that includes
 [a fix](https://github.com/google/googletest/pull/612) for
