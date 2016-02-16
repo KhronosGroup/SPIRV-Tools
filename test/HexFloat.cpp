@@ -1030,9 +1030,11 @@ TEST_P(ParseNormalFloatTest, Samples) {
   EXPECT_NE(GetParam().expect_success, input.fail())
       << " literal: " << GetParam().literal
       << " negate: " << GetParam().negate_value;
-  EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
-      << " literal: " << GetParam().literal
-      << " negate: " << GetParam().negate_value;
+  if (GetParam().expect_success) {
+    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
+        << " literal: " << GetParam().literal
+        << " negate: " << GetParam().negate_value;
+  }
 }
 
 // Returns a FloatParseCase with expected failure.
@@ -1095,9 +1097,11 @@ TEST_P(ParseNormalFloat16Test, Samples) {
   EXPECT_NE(GetParam().expect_success, input.fail())
       << " literal: " << GetParam().literal
       << " negate: " << GetParam().negate_value;
-  EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
-      << " literal: " << GetParam().literal
-      << " negate: " << GetParam().negate_value;
+  if (GetParam().expect_success) {
+    EXPECT_THAT(parsed_value.value(), Eq(GetParam().expected_value.value()))
+        << " literal: " << GetParam().literal
+        << " negate: " << GetParam().negate_value;
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -1142,7 +1146,9 @@ TEST_P(FloatProxyParseOverflowFloatTest, Sample) {
   HexFloat<FloatProxy<float>> value(0.0f);
   input >> value;
   EXPECT_NE(GetParam().expect_success, input.fail());
-  EXPECT_THAT(value.value().getAsFloat(), GetParam().expected_value);
+  if (GetParam().expect_success) {
+    EXPECT_THAT(value.value().getAsFloat(), GetParam().expected_value);
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -1167,7 +1173,9 @@ TEST_P(FloatProxyParseOverflowDoubleTest, Sample) {
   HexFloat<FloatProxy<double>> value(0.0);
   input >> value;
   EXPECT_NE(GetParam().expect_success, input.fail());
-  EXPECT_THAT(value.value().getAsFloat(), Eq(GetParam().expected_value));
+  if (GetParam().expect_success) {
+    EXPECT_THAT(value.value().getAsFloat(), Eq(GetParam().expected_value));
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -1193,8 +1201,10 @@ TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
   input >> value;
   EXPECT_NE(GetParam().expect_success, input.fail()) << " literal: "
                                                      << GetParam().input;
-  EXPECT_THAT(value.value().data(), Eq(GetParam().expected_value))
-      << " literal: " << GetParam().input;
+  if (GetParam().expect_success) {
+    EXPECT_THAT(value.value().data(), Eq(GetParam().expected_value))
+        << " literal: " << GetParam().input;
+  }
 }
 
 INSTANTIATE_TEST_CASE_P(
