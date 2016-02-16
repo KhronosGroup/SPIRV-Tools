@@ -743,7 +743,7 @@ static const spv_operand_desc_t builtInEntries[] = {
      {SPV_OPERAND_TYPE_NONE}},
     {"LocalInvocationIndex",
      SpvBuiltInLocalInvocationIndex,
-     SPV_CAPABILITY_AS_MASK(SpvCapabilityShader),
+     0,
      {SPV_OPERAND_TYPE_NONE}},
     {"WorkDim",
      SpvBuiltInWorkDim,

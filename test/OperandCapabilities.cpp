@@ -443,7 +443,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(BUILT_IN, BuiltInWorkgroupId),
         CASE0(BUILT_IN, BuiltInLocalInvocationId),
         CASE0(BUILT_IN, BuiltInGlobalInvocationId),
-        CASE1(BUILT_IN, BuiltInLocalInvocationIndex, Shader),
+        CASE0(BUILT_IN, BuiltInLocalInvocationIndex),
         CASE1(BUILT_IN, BuiltInWorkDim, Kernel),
         CASE1(BUILT_IN, BuiltInGlobalSize, Kernel),
         CASE1(BUILT_IN, BuiltInEnqueuedWorkgroupSize, Kernel),
