@@ -22,7 +22,7 @@ SPIR-V specification, headers, and XML registry.
 
 ### Assembler, binary parser, and disassembler
 
-* Based on SPIR-V 1.0 Revision 2.
+* Based on SPIR-V 1.0 Revision 3.
   * Supports GLSL std450 extended instructions.
   * Supports OpenCL extended instructions.
 * Assembler only does basic syntax checking.  No cross validation of
