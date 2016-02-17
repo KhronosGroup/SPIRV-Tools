@@ -282,6 +282,7 @@ class AssemblyContext {
   }
 
  private:
+
   // Appends the given floating point literal to the given instruction.
   // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
   // returns the given error code, and emits a diagnostic if that error
@@ -301,20 +302,6 @@ class AssemblyContext {
                                           spv_result_t error_code,
                                           const IdType& type,
                                           spv_instruction_t* pInst);
-
-  // Returns SPV_SUCCESS if the given value fits within the target scalar
-  // integral type.  The target type may have an unusual bit width.
-  // If the value was originally specified as a hexadecimal number, then
-  // the overflow bits should be zero.  If it was hex and the target type is
-  // signed, then return the sign-extended value through the
-  // updated_value_for_hex pointer argument.
-  // On failure, return the given error code and emit a diagnostic if that error
-  // code is not SPV_FAILED_MATCH.
-  template <typename T>
-  spv_result_t checkRangeAndIfHexThenSignExtend(T value,
-                                                spv_result_t error_code,
-                                                const IdType& type, bool is_hex,
-                                                T* updated_value_for_hex);
 
   // Writes the given 64-bit literal value into the instruction.
   // return SPV_SUCCESS if the value could be written in the instruction.
