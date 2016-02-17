@@ -31,7 +31,7 @@
 
 #include <iostream>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // Diagnostic API
 

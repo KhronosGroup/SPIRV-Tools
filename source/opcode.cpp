@@ -32,7 +32,7 @@
 #include <cstdlib>
 
 #include "instruction.h"
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
 #include "spirv_operands.h"

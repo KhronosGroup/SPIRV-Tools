@@ -24,8 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef _LIBSPIRV_UTIL_HEX_FLOAT_H_
-#define _LIBSPIRV_UTIL_HEX_FLOAT_H_
+#ifndef LIBSPIRV_UTIL_HEX_FLOAT_H_
+#define LIBSPIRV_UTIL_HEX_FLOAT_H_
 
 #include <cassert>
 #include <cctype>
@@ -1087,4 +1087,4 @@ inline std::ostream& operator<<<Float16>(std::ostream& os,
 }
 }
 
-#endif  // _LIBSPIRV_UTIL_HEX_FLOAT_H_
+#endif  // LIBSPIRV_UTIL_HEX_FLOAT_H_

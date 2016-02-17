@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_EXT_INST_H_
 #define LIBSPIRV_EXT_INST_H_
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "table.h"
 
 // Gets the type of the extended instruction set with the specified name.

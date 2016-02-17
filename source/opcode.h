@@ -28,7 +28,7 @@
 #define LIBSPIRV_OPCODE_H_
 
 #include "instruction.h"
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "table.h"
 
 // Returns the name of a registered SPIR-V generator as a null-terminated

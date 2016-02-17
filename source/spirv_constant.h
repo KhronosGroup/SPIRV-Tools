@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_SPIRV_CONSTANT_H_
 #define LIBSPIRV_SPIRV_CONSTANT_H_
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // Version number macros.
 

@@ -36,9 +36,9 @@
 #include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
-#include "libspirv/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
 

@@ -28,7 +28,7 @@
 
 #include <vector>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 void print_usage(char* argv0) {
   printf(

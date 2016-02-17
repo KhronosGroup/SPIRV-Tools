@@ -31,7 +31,6 @@
 
 #include <iomanip>
 
-#include "libspirv/libspirv.h"
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
@@ -40,6 +39,7 @@
 #include "source/text.h"
 #include "source/text_handler.h"
 #include "source/validate.h"
+#include "spirv-tools/libspirv.h"
 
 #include <gtest/gtest.h>
 

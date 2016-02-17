@@ -33,8 +33,8 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include "source/spirv_constant.h"
-#include "util/bitutils.h"
-#include "util/hex_float.h"
+#include "source/util/bitutils.h"
+#include "source/util/hex_float.h"
 
 namespace {
 

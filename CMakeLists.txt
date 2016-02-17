@@ -104,9 +104,12 @@ function(spvtools_default_compile_options TARGET)
 endfunction()
 
 set(SPIRV_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/util/bitutils.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/util/hex_float.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/spirv.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/GLSL.std.450.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/OpenCL.std.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/util/bitutils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.h
@@ -145,9 +148,7 @@ set(SPIRV_SOURCES
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})
-target_include_directories(${SPIRV_TOOLS} PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+target_include_directories(${SPIRV_TOOLS} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
@@ -277,5 +278,11 @@ install(TARGETS ${SPIRV_INSTALL_TARGETS}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/libspirv/libspirv.h
-  DESTINATION include/libspirv/)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
+  DESTINATION include/spirv-tools/)
+# The installation is broken without these header files from the SPIR-V Registry.
+# The libspirv.h header includes them.
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/spirv.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/GLSL.std.450.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/OpenCL.std.h
+  DESTINATION include/spirv/)

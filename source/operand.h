@@ -29,7 +29,7 @@
 
 #include <deque>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "table.h"
 
 // A sequence of operand types.

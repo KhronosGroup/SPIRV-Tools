@@ -27,8 +27,8 @@
 #ifndef LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 #define LIBSPIRV_ASSEMBLY_GRAMMAR_H_
 
-#include "libspirv/libspirv.h"
 #include "operand.h"
+#include "spirv-tools/libspirv.h"
 #include "table.h"
 
 namespace libspirv {

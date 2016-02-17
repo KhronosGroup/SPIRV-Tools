@@ -31,7 +31,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "headers/spirv.h"
+#include "spirv/spirv.h"
 
 #include "spirv_definition.h"
 #include "validate.h"

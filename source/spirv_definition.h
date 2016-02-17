@@ -29,7 +29,7 @@
 
 #include <cstdint>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 // A bit mask representing a set of capabilities.
 // Currently there are 57 distinct capabilities, so 64 bits

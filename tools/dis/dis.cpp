@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 static void print_usage(char* argv0) {
   printf(

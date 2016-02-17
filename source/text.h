@@ -29,8 +29,8 @@
 
 #include <string>
 
-#include "libspirv/libspirv.h"
 #include "operand.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 
 typedef enum spv_literal_type_t {

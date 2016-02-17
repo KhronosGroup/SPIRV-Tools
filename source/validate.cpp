@@ -30,7 +30,7 @@
 #include "binary.h"
 #include "diagnostic.h"
 #include "instruction.h"
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_constant.h"

@@ -30,7 +30,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "headers/spirv.h"
+#include "spirv/spirv.h"
 
 #include "source/validate.h"
 

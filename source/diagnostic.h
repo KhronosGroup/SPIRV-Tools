@@ -31,7 +31,7 @@
 #include <sstream>
 #include <utility>
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 
 namespace libspirv {
 

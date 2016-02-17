@@ -34,7 +34,7 @@
 
 #include "diagnostic.h"
 #include "instruction.h"
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "text.h"
 
 namespace libspirv {

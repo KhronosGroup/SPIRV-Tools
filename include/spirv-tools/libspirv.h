@@ -24,12 +24,12 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
-#define LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
+#ifndef SPIRV_TOOLS_LIBSPIRV_H_      
+#define SPIRV_TOOLS_LIBSPIRV_H_
 
-#include "headers/GLSL.std.450.h"
-#include "headers/OpenCL.std.h"
-#include "headers/spirv.h"
+#include "spirv/GLSL.std.450.h"
+#include "spirv/OpenCL.std.h"
+#include "spirv/spirv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -448,4 +448,4 @@ spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
 }
 #endif
 
-#endif  // LIBSPIRV_LIBSPIRV_LIBSPIRV_H_
+#endif  // SPIRV_TOOLS_LIBSPIRV_H_

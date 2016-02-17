@@ -31,8 +31,8 @@
 
 #include "diagnostic.h"
 #include "instruction.h"
-#include "libspirv/libspirv.h"
 #include "opcode.h"
+#include "spirv-tools/libspirv.h"
 #include "validate.h"
 
 #define spvCheck(condition, action) \

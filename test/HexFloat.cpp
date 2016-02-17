@@ -33,7 +33,7 @@
 
 #include <gmock/gmock.h>
 #include "UnitSPIRV.h"
-#include "util/hex_float.h"
+#include "source/util/hex_float.h"
 
 namespace {
 using ::testing::Eq;

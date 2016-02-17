@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
-#include "libspirv/libspirv.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_definition.h"
 #include "spirv_operands.h"
 

@@ -30,8 +30,8 @@
 
 #include <gmock/gmock.h>
 
+#include "source/util/bitutils.h"
 #include "TestFixture.h"
-#include "util/bitutils.h"
 
 namespace {
 
