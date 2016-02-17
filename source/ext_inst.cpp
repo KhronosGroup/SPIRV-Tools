@@ -120,6 +120,9 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst1(InterpolateAtCentroid)},
     {GLSL450Inst2(InterpolateAtSample)},
     {GLSL450Inst2(InterpolateAtOffset)},
+    {GLSL450Inst2(NMin)},
+    {GLSL450Inst2(NMax)},
+    {GLSL450Inst2(NClamp)},
 };
 
 static const spv_ext_inst_desc_t openclEntries[] = {

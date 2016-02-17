@@ -166,7 +166,7 @@ INSTANTIATE_TEST_CASE_P(
         {"UClamp", "%5 %5 %5", 44, 8, {5, 5, 5}},
         {"SClamp", "%5 %5 %5", 45, 8, {5, 5, 5}},
         {"FMix", "%5 %5 %5", 46, 8, {5, 5, 5}},
-        {"IMix", "%5 %5 %5", 47, 8, {5, 5, 5}},
+        {"IMix", "%5 %5 %5", 47, 8, {5, 5, 5}},  // Bug 15452. Reserved.
         {"Step", "%5 %5", 48, 7, {5, 5}},
         {"SmoothStep", "%5 %5 %5", 49, 8, {5, 5, 5}},
         {"Fma", "%5 %5 %5", 50, 8, {5, 5, 5}},
@@ -202,6 +202,9 @@ INSTANTIATE_TEST_CASE_P(
         {"InterpolateAtSample", "%5 %5", 77, 7, {5, 5}},
         {"InterpolateAtOffset", "%5 %5", 78, 7, {5, 5}},
         // clang-format on
+        {"NMin", "%5 %5", 79, 7, {5, 5}},
+        {"NMax", "%5 %5", 80, 7, {5, 5}},
+        {"NClamp", "%5 %5 %5", 81, 8, {5, 5, 5}},
     })));
 
 }  // anonymous namespace
