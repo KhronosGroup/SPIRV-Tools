@@ -1002,6 +1002,7 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE_CAP(GeometryStreams, Geometry),
     CASE_CAP(StorageImageReadWithoutFormat, Shader),
     CASE_CAP(StorageImageWriteWithoutFormat, Shader),
+    CASE_CAP(MultiViewport, Geometry),
 };
 // clang-format on
 #undef CASE
