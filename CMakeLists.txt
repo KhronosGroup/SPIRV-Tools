@@ -127,6 +127,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/source/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/diagnostic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/ext_inst.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/source/instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/source/print.cpp
