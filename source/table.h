@@ -65,6 +65,8 @@ typedef struct spv_operand_desc_group_t {
 typedef struct spv_ext_inst_desc_t {
   const char* name;
   const uint32_t ext_inst;
+  const spv_capability_mask_t
+      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_ext_inst_desc_t;
 

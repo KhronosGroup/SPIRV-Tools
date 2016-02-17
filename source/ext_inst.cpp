@@ -28,16 +28,28 @@
 
 #include <string.h>
 
+#include "spirv_definition.h"
+
 /// Generate a spv_ext_inst_desc_t literal for a GLSL std450 extended
 /// instruction with one/two/three <id> parameter(s).
 #define GLSL450Inst1(name) \
-  #name, GLSLstd450::GLSLstd450##name, { SPV_OPERAND_TYPE_ID }
+  #name, GLSLstd450::GLSLstd450##name, 0, { SPV_OPERAND_TYPE_ID }
+#define GLSL450Inst1Cap(name, cap)                        \
+  #name, GLSLstd450::GLSLstd450##name,                    \
+          SPV_CAPABILITY_AS_MASK(SpvCapability##cap), { \
+    SPV_OPERAND_TYPE_ID                                   \
+  }
 #define GLSL450Inst2(name)                   \
-  #name, GLSLstd450::GLSLstd450##name, {     \
+  #name, GLSLstd450::GLSLstd450##name, 0, {  \
     SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
   }
+#define GLSL450Inst2Cap(name, cap)                  \
+  #name, GLSLstd450::GLSLstd450##name,              \
+      SPV_CAPABILITY_AS_MASK(SpvCapability##cap), { \
+    SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID        \
+  }
 #define GLSL450Inst3(name)                                        \
-  #name, GLSLstd450::GLSLstd450##name, {                          \
+  #name, GLSLstd450::GLSLstd450##name, 0, {                       \
     SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_ID \
   }
 
@@ -100,7 +112,7 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst1(PackSnorm2x16)},
     {GLSL450Inst1(PackUnorm2x16)},
     {GLSL450Inst1(PackHalf2x16)},
-    {GLSL450Inst1(PackDouble2x32)},
+    {GLSL450Inst1Cap(PackDouble2x32, Float64)},
     {GLSL450Inst1(UnpackSnorm2x16)},
     {GLSL450Inst1(UnpackUnorm2x16)},
     {GLSL450Inst1(UnpackHalf2x16)},
@@ -117,9 +129,9 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
     {GLSL450Inst1(FindILsb)},
     {GLSL450Inst1(FindSMsb)},
     {GLSL450Inst1(FindUMsb)},
-    {GLSL450Inst1(InterpolateAtCentroid)},
-    {GLSL450Inst2(InterpolateAtSample)},
-    {GLSL450Inst2(InterpolateAtOffset)},
+    {GLSL450Inst1Cap(InterpolateAtCentroid, InterpolationFunction)},
+    {GLSL450Inst2Cap(InterpolateAtSample, InterpolationFunction)},
+    {GLSL450Inst2Cap(InterpolateAtOffset, InterpolationFunction)},
     {GLSL450Inst2(NMin)},
     {GLSL450Inst2(NMax)},
     {GLSL450Inst2(NClamp)},
@@ -127,7 +139,7 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
 
 static const spv_ext_inst_desc_t openclEntries[] = {
 #define ExtInst(Name, Opcode, OperandList) \
-  { #Name, Opcode, OperandList }           \
+  { #Name, Opcode, 0, OperandList }           \
   ,
 #define EmptyList \
   {}
