@@ -124,7 +124,8 @@ const vector<string>& AllCapabilities() {
     "TransformFeedback",
     "GeometryStreams",
     "StorageImageReadWithoutFormat",
-    "StorageImageWriteWithoutFormat"};
+    "StorageImageWriteWithoutFormat",
+    "MultiViewport"};
   return *r;
 }
 
@@ -165,7 +166,8 @@ const vector<string>& MatrixDependencies() {
   "TransformFeedback",
   "GeometryStreams",
   "StorageImageReadWithoutFormat",
-  "StorageImageWriteWithoutFormat"};
+  "StorageImageWriteWithoutFormat",
+  "MultiViewport"};
   return *r;
 }
 
@@ -205,7 +207,8 @@ const vector<string>& ShaderDependencies() {
   "TransformFeedback",
   "GeometryStreams",
   "StorageImageReadWithoutFormat",
-  "StorageImageWriteWithoutFormat"};
+  "StorageImageWriteWithoutFormat",
+  "MultiViewport"};
   return *r;
 }
 
@@ -221,7 +224,7 @@ const vector<string>& GeometryDependencies() {
   "Geometry",
   "GeometryPointSize",
   "GeometryStreams",
-  "MultiviewPort"};
+  "MultiViewport"};
   return *r;
 }
 
@@ -231,7 +234,8 @@ const vector<string>& GeometryTessellationDependencies() {
   "TessellationPointSize",
   "Geometry",
   "GeometryPointSize",
-  "GeometryStreams"};
+  "GeometryStreams",
+  "MultiViewport"};
   return *r;
 }
 
@@ -508,7 +512,7 @@ make_pair("OpDecorate %intt BuiltIn InstanceId\n",                ShaderDependen
 make_pair("OpDecorate %intt BuiltIn PrimitiveId\n",               GeometryTessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn InvocationId\n",              GeometryTessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn Layer\n",                     GeometryDependencies()),
-make_pair("OpDecorate %intt BuiltIn ViewportIndex\n",             vector<string>{"MultiviewPort"}),
+make_pair("OpDecorate %intt BuiltIn ViewportIndex\n",             vector<string>{"MultiViewport"}),
 make_pair("OpDecorate %intt BuiltIn TessLevelOuter\n",            TessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn TessLevelInner\n",            TessellationDependencies()),
 make_pair("OpDecorate %intt BuiltIn TessCoord\n",                 TessellationDependencies()),
@@ -635,7 +639,7 @@ TEST_P(ValidateCapability, Capability) {
   }
 
   CompileSuccessfully(ss.str());
-  ASSERT_EQ(res, ValidateInstructions());
+  ASSERT_EQ(res, ValidateInstructions()) << ss.str();
 }
 
 }  // namespace anonymous

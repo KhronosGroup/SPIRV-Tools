@@ -613,6 +613,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(CAPABILITY, CapabilityGeometryStreams, Geometry),
         CASE1(CAPABILITY, CapabilityStorageImageReadWithoutFormat, Shader),
         CASE1(CAPABILITY, CapabilityStorageImageWriteWithoutFormat, Shader),
+        CASE1(CAPABILITY, CapabilityMultiViewport, Geometry),
     }));
 
 #undef CASE0

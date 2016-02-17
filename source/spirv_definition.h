@@ -46,7 +46,7 @@ typedef uint64_t spv_capability_mask_t;
 // Min/max capability IDs.
 enum {
   kCapabilitiesMinValue = SpvCapabilityMatrix,
-  kCapabilitiesMaxValue = SpvCapabilityStorageImageWriteWithoutFormat
+  kCapabilitiesMaxValue = SpvCapabilityMultiViewport
 };
 
 // Applies f to every capability present in a mask.
