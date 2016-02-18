@@ -149,6 +149,10 @@ There are three main entry points into the library.
 
 ## Command line tools
 
+Command line tools, which wrap the above library functions, are provided to
+assemble or disassemble shader files.  It's a convention to name SPIR-V
+assembly and binary files with suffix `.spvasm` and `.spv`, respectively.
+
 ### Assembler tool
 
 The assembler reads the assembly language text, and emits the binary form.
