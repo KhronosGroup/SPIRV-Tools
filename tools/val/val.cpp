@@ -34,23 +34,23 @@
 
 void print_usage(char* argv0) {
   printf(
-      "Validate a SPIR-V binary file.\n\n"
-      "USAGE: %s [options] <filename>\n\n"
-      "        -basic                     Perform basic validation (disabled)\n"
-      "        -layout                    Perform layout validation "
-      "(disabled)\n"
-      "        -id                        Perform id validation (default ON)\n"
-      "        -capability <capability>   Performs OpCode validation "
-      "(disabled)\n",
-      argv0);
+      R"(%s - Validate a SPIR-V binary file.
+
+USAGE: %s [options] [<filename>]
+
+The SPIR-V binary is read from <filename>. If no file is specified,
+or if the filename is "-", then the binary is read from standard input.
+
+Options:
+  -basic                     Perform basic validation (disabled)
+  -layout                    Perform layout validation (disabled)
+  -id                        Perform id validation (default ON)
+  -capability <capability>   Performs OpCode validation (disabled)
+)",
+      argv0, argv0);
 }
 
 int main(int argc, char** argv) {
-  if (2 > argc) {
-    print_usage(argv[0]);
-    return 1;
-  }
-
   const char* inFile = nullptr;
   uint32_t options = 0;
 
@@ -64,6 +64,15 @@ int main(int argc, char** argv) {
         options |= SPV_VALIDATE_ID_BIT;
       } else if (!strcmp("rules", argv[argi] + 1)) {
         options |= SPV_VALIDATE_RULES_BIT;
+      } else if (0 == *(argv[argi] + 1)) {
+        // Setting a filename of "-" to indicate stdin.
+        if (!inFile) {
+          inFile = argv[argi];
+        } else {
+          fprintf(stderr, "error: More than one input file specified\n");
+          return 1;
+        }
+
       } else {
         print_usage(argv[0]);
         return 1;
@@ -72,19 +81,15 @@ int main(int argc, char** argv) {
       if (!inFile) {
         inFile = argv[argi];
       } else {
-        print_usage(argv[0]);
+        fprintf(stderr, "error: More than one input file specified\n");
         return 1;
       }
     }
   }
 
-  if (!inFile) {
-    fprintf(stderr, "error: input file is empty.\n");
-    return 1;
-  }
-
   std::vector<uint32_t> contents;
-  if (FILE* fp = fopen(inFile, "rb")) {
+  const bool use_file = inFile && strcmp("-", inFile);
+  if (FILE* fp = (use_file ? fopen(inFile, "rb") : stdin)) {
     uint32_t buf[1024];
     while (size_t len = fread(buf, sizeof(uint32_t),
                               sizeof(buf) / sizeof(uint32_t), fp)) {
