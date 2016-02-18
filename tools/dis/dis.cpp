@@ -85,15 +85,21 @@ int main(int argc, char** argv) {
         } break;
         case '-': {
           // Long options
-          if (0 == strcmp(argv[argi], "--no-color")) allow_color = false;
-          if (0 == strcmp(argv[argi], "--no-indent")) allow_indent = false;
-          if (0 == strcmp(argv[argi], "--offsets")) show_byte_offsets = true;
-          if (0 == strcmp(argv[argi], "--help")) {
+          if (0 == strcmp(argv[argi], "--no-color")) {
+            allow_color = false;
+          } else if (0 == strcmp(argv[argi], "--no-indent")) {
+            allow_indent = false;
+          } else if (0 == strcmp(argv[argi], "--offsets")) {
+            show_byte_offsets = true;
+          } else if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
+          } else {
+            print_usage(argv[0]);
+            return 1;
           }
         } break;
-        case 0:
+        case 0: {
           // Setting a filename of "-" to indicate stdin.
           if (!inFile) {
             inFile = argv[argi];
@@ -101,7 +107,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "error: More than one input file specified\n");
             return 1;
           }
-          break;
+        } break;
         default:
           print_usage(argv[0]);
           return 1;
