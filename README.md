@@ -51,11 +51,13 @@ We intend to maintain a linear history on the GitHub `master` branch.
 
 ### Source code organization
 
-* `external/headers`: Standard SPIR-V header files used by the implementation,
-   from the SPIR-V Registry
 * `external/googletest`: Intended location for the
-  [googletest](https://github.com/google/googletest) sources, not provided.
-* `include/libspirv/libspirv.h`: C API public interface
+  [googletest](https://github.com/google/googletest) sources, not provided
+* `include/` : API clients should add this directory to the include search
+  path
+* `include/spirv-tools/libspirv.h`: C API public interface
+* `include/spirv/` : Contains header files from the SPIR-V Registry, required
+  by the public API.
 * `source/`: API implementation
 * `test/`: Tests, using the [googletest](https://github.com/google/googletest)
   framework.
