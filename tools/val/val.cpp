@@ -42,10 +42,11 @@ The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
 
 Options:
-  -basic                     Perform basic validation (disabled)
-  -layout                    Perform layout validation (disabled)
-  -id                        Perform id validation (default ON)
-  -capability <capability>   Performs OpCode validation (disabled)
+  -all       Perform all validation (default OFF)
+  -basic     Perform basic validation (default OFF)
+  -id        Perform id validation (default OFF)
+  -layout    Perform layout validation (default OFF)
+  -rules     Perform rules validation (default OFF)
 )",
       argv0, argv0);
 }
@@ -55,19 +56,22 @@ int main(int argc, char** argv) {
   uint32_t options = 0;
 
   for (int argi = 1; argi < argc; ++argi) {
-    if ('-' == argv[argi][0]) {
-      if (!strcmp("basic", argv[argi] + 1)) {
+    const char* cur_arg = argv[argi];
+    if ('-' == cur_arg[0]) {
+      if (!strcmp("all", cur_arg + 1)) {
+        options |= SPV_VALIDATE_ALL;
+      } else if (!strcmp("basic", cur_arg + 1)) {
         options |= SPV_VALIDATE_BASIC_BIT;
-      } else if (!strcmp("layout", argv[argi] + 1)) {
-        options |= SPV_VALIDATE_LAYOUT_BIT;
-      } else if (!strcmp("id", argv[argi] + 1)) {
+      } else if (!strcmp("id", cur_arg + 1)) {
         options |= SPV_VALIDATE_ID_BIT;
-      } else if (!strcmp("rules", argv[argi] + 1)) {
+      } else if (!strcmp("layout", cur_arg + 1)) {
+        options |= SPV_VALIDATE_LAYOUT_BIT;
+      } else if (!strcmp("rules", cur_arg + 1)) {
         options |= SPV_VALIDATE_RULES_BIT;
-      } else if (0 == *(argv[argi] + 1)) {
+      } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
-          inFile = argv[argi];
+          inFile = cur_arg;
         } else {
           fprintf(stderr, "error: More than one input file specified\n");
           return 1;
@@ -79,7 +83,7 @@ int main(int argc, char** argv) {
       }
     } else {
       if (!inFile) {
-        inFile = argv[argi];
+        inFile = cur_arg;
       } else {
         fprintf(stderr, "error: More than one input file specified\n");
         return 1;
