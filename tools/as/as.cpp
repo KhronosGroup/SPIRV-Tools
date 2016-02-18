@@ -46,7 +46,7 @@ Options:
 
   -h              Print this help.
 
-  -o <filename>   Set the output filename.
+  -o <filename>   Set the output filename. Use '-' to mean stdout.
 )",
       argv0, argv0);
 }
@@ -121,13 +121,15 @@ int main(int argc, char** argv) {
     return error;
   }
 
-  if (FILE* fp = fopen(outFile, "wb")) {
+  const bool use_stdout = outFile[0] == '-' && outFile[1] == 0;
+  if (FILE* fp = (use_stdout ? stdout : fopen(outFile, "wb"))) {
     size_t written =
         fwrite(binary->code, sizeof(uint32_t), (size_t)binary->wordCount, fp);
     if (binary->wordCount != written) {
       fprintf(stderr, "error: could not write to file '%s'\n", outFile);
       return 1;
     }
+    fclose(fp);
   } else {
     fprintf(stderr, "error: could not open file '%s'\n", outFile);
     return 1;
