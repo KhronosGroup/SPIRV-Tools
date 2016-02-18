@@ -54,9 +54,7 @@ spv_diagnostic spvDiagnosticCreate(const spv_position position,
 
 void spvDiagnosticDestroy(spv_diagnostic diagnostic) {
   if (!diagnostic) return;
-  if (diagnostic->error) {
-    delete[] diagnostic->error;
-  }
+  delete[] diagnostic->error;
   delete diagnostic;
 }
 

@@ -757,8 +757,6 @@ spv_result_t spvTextToBinary(const spv_const_context context,
 
 void spvTextDestroy(spv_text text) {
   if (!text) return;
-  if (text->str) {
-    delete[] text->str;
-  }
+  delete[] text->str;
   delete text;
 }
