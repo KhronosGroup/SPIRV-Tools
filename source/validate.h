@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -230,33 +231,33 @@ class ValidationState_t {
   // Keeps track of ID definitions and uses.
   class UseDefTracker {
    public:
-    void AddDef(const spv_id_info_t& def) { defs_.push_back(def); }
+    void AddDef(const spv_id_info_t& def) { defs_[def.id] = def; }
 
     void AddUse(uint32_t id) { uses_.insert(id); }
 
     // Finds id's def, if it exists.  If found, returns <true, def>.  Otherwise,
     // returns <false, something>.
     std::pair<bool, spv_id_info_t> FindDef(uint32_t id) const {
-      auto found =
-          std::find_if(defs_.cbegin(), defs_.cend(),
-                       [id](const spv_id_info_t& e) { return e.id == id; });
-      if (found == defs_.cend()) {
+      if (defs_.count(id) == 0) {
         return std::make_pair(false, spv_id_info_t{});
       } else {
-        return std::make_pair(true, *found);
+        // We are in a const function, so we cannot use defs.operator[]().
+        // Luckily we know the key exists, so defs_.at() won't throw an
+        // exception.
+        return std::make_pair(true, defs_.at(id));
       }
     }
 
     // Returns uses of IDs lacking defs.
     std::unordered_set<uint32_t> FindUsesWithoutDefs() const {
       auto diff = uses_;
-      for (const auto d : defs_) diff.erase(d.id);
+      for (const auto d : defs_) diff.erase(d.first);
       return diff;
     }
 
    private:
     std::unordered_set<uint32_t> uses_;
-    std::vector<spv_id_info_t> defs_;
+    std::unordered_map<uint32_t, spv_id_info_t> defs_;
   };
 
   UseDefTracker& usedefs() { return usedefs_; }
