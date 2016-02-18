@@ -24,7 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 
 #include <vector>
 
@@ -34,10 +35,12 @@ void print_usage(char* argv0) {
   printf(
       R"(%s - Create a SPIR-V binary module from SPIR-V assembly text
 
-Usage: %s [options] <filename>
+Usage: %s [options] [<filename>]
 
-The SPIR-V assembly text is read from <filename>.  The SPIR-V binary
-module is written to file "out.spv", unless the -o option is used.
+The SPIR-V assembly text is read from <filename>.  If no file is specified,
+or if the filename is "-", then the binary is read from standard input.
+The SPIR-V binary module is written to file "out.spv", unless the -o option
+is used.
 
 Options:
 
@@ -49,11 +52,6 @@ Options:
 }
 
 int main(int argc, char** argv) {
-  if (2 > argc) {
-    print_usage(argv[0]);
-    return 1;
-  }
-
   const char* inFile = nullptr;
   const char* outFile = nullptr;
 
@@ -72,6 +70,15 @@ int main(int argc, char** argv) {
             return 1;
           }
         } break;
+        case 0: {
+          // Setting a filename of "-" to indicate stdin.
+          if (!inFile) {
+            inFile = argv[argi];
+          } else {
+            fprintf(stderr, "error: More than one input file specified\n");
+            return 1;
+          }
+        } break;
         default:
           print_usage(argv[0]);
           return 1;
@@ -80,7 +87,7 @@ int main(int argc, char** argv) {
       if (!inFile) {
         inFile = argv[argi];
       } else {
-        print_usage(argv[0]);
+        fprintf(stderr, "error: More than one input file specified\n");
         return 1;
       }
     }
@@ -90,13 +97,9 @@ int main(int argc, char** argv) {
     outFile = "out.spv";
   }
 
-  if (!inFile) {
-    fprintf(stderr, "error: input file is empty.\n");
-    return 1;
-  }
-
   std::vector<char> contents;
-  if (FILE* fp = fopen(inFile, "r")) {
+  const bool use_file = inFile && strcmp("-", inFile);
+  if (FILE* fp = (use_file ? fopen(inFile, "r") : stdin)) {
     char buf[1024];
     while (size_t len = fread(buf, 1, sizeof(buf), fp))
       contents.insert(contents.end(), buf, buf + len);
