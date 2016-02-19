@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     char buf[1024];
     while (size_t len = fread(buf, 1, sizeof(buf), fp))
       contents.insert(contents.end(), buf, buf + len);
-    fclose(fp);
+    if (use_file) fclose(fp);
   } else {
     fprintf(stderr, "error: file does not exist '%s'\n", inFile);
     return 1;
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
       fprintf(stderr, "error: could not write to file '%s'\n", outFile);
       return 1;
     }
-    fclose(fp);
+    if (!use_stdout) fclose(fp);
   } else {
     fprintf(stderr, "error: could not open file '%s'\n", outFile);
     return 1;

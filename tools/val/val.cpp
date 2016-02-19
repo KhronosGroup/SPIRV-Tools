@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
                               sizeof(buf) / sizeof(uint32_t), fp)) {
       contents.insert(contents.end(), buf, buf + len);
     }
-    fclose(fp);
+    if (use_file) fclose(fp);
   } else {
     fprintf(stderr, "error: file does not exist '%s'\n", inFile);
     return 1;
