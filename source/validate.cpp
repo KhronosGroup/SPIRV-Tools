@@ -30,9 +30,9 @@
 #include "binary.h"
 #include "diagnostic.h"
 #include "instruction.h"
-#include "spirv-tools/libspirv.h"
 #include "opcode.h"
 #include "operand.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
 
@@ -278,8 +278,7 @@ void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
          std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
   }
   for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {
-    if (spvIsIdType(op->type))
-      _.usedefs().AddUse(inst.words[op->offset]);
+    if (spvIsIdType(op->type)) _.usedefs().AddUse(inst.words[op->offset]);
   }
 }
 
@@ -287,7 +286,8 @@ spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.incrementInstructionCount();
-  if (inst->opcode == SpvOpEntryPoint) _.entry_points().push_back(inst->words[2]);
+  if (inst->opcode == SpvOpEntryPoint)
+    _.entry_points().push_back(inst->words[2]);
 
   DebugInstructionPass(_, inst);
   // TODO(umar): Perform data rules pass
@@ -303,7 +303,7 @@ spv_result_t ProcessInstruction(void* user_data,
 }  // anonymous namespace
 
 spv_result_t spvValidate(const spv_const_context context,
-                         const spv_const_binary binary, const uint32_t options,
+                         const spv_const_binary binary,
                          spv_diagnostic* pDiagnostic) {
   if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
 
@@ -322,7 +322,7 @@ spv_result_t spvValidate(const spv_const_context context,
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
-  ValidationState_t vstate(pDiagnostic, options, context);
+  ValidationState_t vstate(pDiagnostic, context);
   spvCheckReturn(spvBinaryParse(context, &vstate, binary->code,
                                 binary->wordCount, setHeader,
                                 ProcessInstruction, pDiagnostic));
@@ -358,13 +358,11 @@ spv_result_t spvValidate(const spv_const_context context,
     index += wordCount;
   }
 
-  if (spvIsInBitfield(SPV_VALIDATE_ID_BIT, options)) {
-    position.index = SPV_INDEX_INSTRUCTION;
-    spvCheckReturn(spvValidateIDs(instructions.data(), instructions.size(),
-                                  context->opcode_table, context->operand_table,
-                                  context->ext_inst_table, vstate, &position,
-                                  pDiagnostic));
-  }
+  position.index = SPV_INDEX_INSTRUCTION;
+  spvCheckReturn(spvValidateIDs(instructions.data(), instructions.size(),
+                                context->opcode_table, context->operand_table,
+                                context->ext_inst_table, vstate, &position,
+                                pDiagnostic));
 
   return SPV_SUCCESS;
 }

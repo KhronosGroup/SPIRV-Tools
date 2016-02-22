@@ -210,12 +210,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 namespace libspirv {
 
 ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
-                                     uint32_t options,
                                      const spv_const_context context)
     : diagnostic_(diagnostic),
       instruction_counter_(0),
       unresolved_forward_ids_{},
-      validation_flags_(options),
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
       module_functions_(*this),
@@ -257,10 +255,6 @@ vector<uint32_t> ValidationState_t::unresolvedForwardIds() const {
 
 bool ValidationState_t::isDefinedId(uint32_t id) const {
   return usedefs_.FindDef(id).first;
-}
-
-bool ValidationState_t::is_enabled(spv_validate_options_t flag) const {
-  return (flag & validation_flags_) == flag;
 }
 
 // Increments the instruction count. Used for diagnostic

@@ -42,35 +42,17 @@ The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
 
 NOTE: The validator is a work in progress.
-
-Options:
-  -all       Perform all validation (default OFF)
-  -basic     Perform basic validation (default OFF)
-  -id        Perform id validation (default OFF)
-  -layout    Perform layout validation (default OFF)
-  -rules     Perform rules validation (default OFF)
 )",
       argv0, argv0);
 }
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  uint32_t options = 0;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
-      if (!strcmp("all", cur_arg + 1)) {
-        options |= SPV_VALIDATE_ALL;
-      } else if (!strcmp("basic", cur_arg + 1)) {
-        options |= SPV_VALIDATE_BASIC_BIT;
-      } else if (!strcmp("id", cur_arg + 1)) {
-        options |= SPV_VALIDATE_ID_BIT;
-      } else if (!strcmp("layout", cur_arg + 1)) {
-        options |= SPV_VALIDATE_LAYOUT_BIT;
-      } else if (!strcmp("rules", cur_arg + 1)) {
-        options |= SPV_VALIDATE_RULES_BIT;
-      } else if (0 == cur_arg[1]) {
+      if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
           inFile = cur_arg;
@@ -111,7 +93,7 @@ int main(int argc, char** argv) {
 
   spv_diagnostic diagnostic = nullptr;
   spv_context context = spvContextCreate();
-  spv_result_t error = spvValidate(context, &binary, options, &diagnostic);
+  spv_result_t error = spvValidate(context, &binary, &diagnostic);
   spvContextDestroy(context);
   if (error) {
     spvDiagnosticPrint(diagnostic);

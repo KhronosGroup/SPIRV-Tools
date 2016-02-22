@@ -26,8 +26,8 @@
 
 // Common validation fixtures for unit tests
 
-#include "ValidateFixtures.h"
 #include "UnitSPIRV.h"
+#include "ValidateFixtures.h"
 
 #include <functional>
 #include <tuple>
@@ -35,22 +35,22 @@
 
 namespace spvtest {
 
-template <typename T, uint32_t OPTIONS>
-ValidateBase<T, OPTIONS>::ValidateBase()
+template <typename T>
+ValidateBase<T>::ValidateBase()
     : context_(spvContextCreate()), binary_(), diagnostic_() {}
 
-template <typename T, uint32_t OPTIONS>
-ValidateBase<T, OPTIONS>::~ValidateBase() {
+template <typename T>
+ValidateBase<T>::~ValidateBase() {
   spvContextDestroy(context_);
 }
 
-template <typename T, uint32_t OPTIONS>
-spv_const_binary ValidateBase<T, OPTIONS>::get_const_binary() {
+template <typename T>
+spv_const_binary ValidateBase<T>::get_const_binary() {
   return spv_const_binary(binary_);
 }
 
-template <typename T, uint32_t OPTIONS>
-void ValidateBase<T, OPTIONS>::TearDown() {
+template <typename T>
+void ValidateBase<T>::TearDown() {
   if (diagnostic_) {
     spvDiagnosticPrint(diagnostic_);
   }
@@ -58,8 +58,8 @@ void ValidateBase<T, OPTIONS>::TearDown() {
   spvBinaryDestroy(binary_);
 }
 
-template <typename T, uint32_t OPTIONS>
-void ValidateBase<T, OPTIONS>::CompileSuccessfully(std::string code) {
+template <typename T>
+void ValidateBase<T>::CompileSuccessfully(std::string code) {
   spv_diagnostic diagnostic = nullptr;
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
                                          &binary_, &diagnostic))
@@ -68,37 +68,28 @@ void ValidateBase<T, OPTIONS>::CompileSuccessfully(std::string code) {
       << code;
 }
 
-template <typename T, uint32_t OPTIONS>
-spv_result_t ValidateBase<T, OPTIONS>::ValidateInstructions() {
-  return spvValidate(context_, get_const_binary(), validation_options_,
-                     &diagnostic_);
+template <typename T>
+spv_result_t ValidateBase<T>::ValidateInstructions() {
+  return spvValidate(context_, get_const_binary(), &diagnostic_);
 }
 
-template <typename T, uint32_t OPTIONS>
-std::string ValidateBase<T, OPTIONS>::getDiagnosticString() {
+template <typename T>
+std::string ValidateBase<T>::getDiagnosticString() {
   return std::string(diagnostic_->error);
 }
 
-template <typename T, uint32_t OPTIONS>
-spv_position_t ValidateBase<T, OPTIONS>::getErrorPosition() {
+template <typename T>
+spv_position_t ValidateBase<T>::getErrorPosition() {
   return diagnostic_->position;
 }
 
-template class spvtest::ValidateBase<std::pair<std::string, bool>,
-                                     SPV_VALIDATE_SSA_BIT |
-                                         SPV_VALIDATE_LAYOUT_BIT>;
-template class spvtest::ValidateBase<bool, SPV_VALIDATE_SSA_BIT>;
+template class spvtest::ValidateBase<bool>;
+template class spvtest::ValidateBase<int>;
+template class spvtest::ValidateBase<std::string>;
+template class spvtest::ValidateBase<std::pair<std::string, bool>>;
+template class spvtest::ValidateBase<
+    std::tuple<std::string, std::pair<std::string, std::vector<std::string>>>>;
 template class spvtest::ValidateBase<
     std::tuple<int, std::tuple<std::string, std::function<spv_result_t(int)>,
-                               std::function<spv_result_t(int)>>>,
-    SPV_VALIDATE_LAYOUT_BIT>;
-template class spvtest::ValidateBase<int, SPV_VALIDATE_LAYOUT_BIT |
-                                              SPV_VALIDATE_ID_BIT>;
-
-template class spvtest::ValidateBase<
-    std::tuple<std::string, std::pair<std::string, std::vector<std::string>>>,
-    SPV_VALIDATE_INSTRUCTION_BIT>;
-
-template class spvtest::ValidateBase<
-    std::string, SPV_VALIDATE_LAYOUT_BIT | SPV_VALIDATE_INSTRUCTION_BIT>;
+                               std::function<spv_result_t(int)>>>>;
 }
