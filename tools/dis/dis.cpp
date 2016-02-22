@@ -43,6 +43,7 @@ or if the filename is "-", then the binary is read from standard input.
 Options:
 
   -h, --help      Print this help.
+  --version       Display disassembler version information.
 
   -o <filename>   Set the output filename.
                   Output goes to standard output if this option is
@@ -57,6 +58,10 @@ Options:
 )",
       argv0, argv0);
 }
+
+const char kBuildVersion[] =
+#include "build-version.inc"
+;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
@@ -93,6 +98,11 @@ int main(int argc, char** argv) {
             show_byte_offsets = true;
           } else if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
+            return 0;
+          } else if (0 == strcmp(argv[argi], "--version")) {
+            printf("%s\n", kBuildVersion);
+            printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
+                   SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
             return 0;
           } else {
             print_usage(argv[0]);

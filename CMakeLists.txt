@@ -103,6 +103,12 @@ function(spvtools_default_compile_options TARGET)
   endif()
 endfunction()
 
+add_custom_target(spirv-tools-build-version
+  ${PYTHON_EXE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils/update_build_version.py
+  ${spirv-tools_SOURCE_DIR}
+  COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
+
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/spirv.h
@@ -161,14 +167,21 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/tools/as/as.cpp)
   spvtools_default_compile_options(spirv-as)
   target_link_libraries(spirv-as PRIVATE ${SPIRV_TOOLS})
+  target_include_directories(spirv-as PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  add_dependencies(${SPIRV_TOOLS} spirv-tools-build-version)
+
 
   add_executable(spirv-dis ${CMAKE_CURRENT_SOURCE_DIR}/tools/dis/dis.cpp)
   spvtools_default_compile_options(spirv-dis)
   target_link_libraries(spirv-dis PRIVATE ${SPIRV_TOOLS})
+  target_include_directories(spirv-dis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  add_dependencies(${SPIRV_TOOLS} spirv-tools-build-version)
 
   add_executable(spirv-val ${CMAKE_CURRENT_SOURCE_DIR}/tools/val/val.cpp)
   spvtools_default_compile_options(spirv-val)
   target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
+  target_include_directories(spirv-val PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  add_dependencies(${SPIRV_TOOLS} spirv-tools-build-version)
 
   # Find gmock if we can. If it's not already configured, then try finding
   # it in external/googletest

@@ -47,9 +47,14 @@ Options:
   -h              Print this help.
 
   -o <filename>   Set the output filename. Use '-' to mean stdout.
+  --version       Display assembler version information.
 )",
       argv0, argv0);
 }
+
+const char kBuildVersion[] =
+#include "build-version.inc"
+;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
@@ -77,6 +82,15 @@ int main(int argc, char** argv) {
           } else {
             fprintf(stderr, "error: More than one input file specified\n");
             return 1;
+          }
+        } break;
+        case '-': {
+          // Long options
+          if (0 == strcmp(argv[argi], "--version")) {
+            printf("%s\n", kBuildVersion);
+            printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
+                   SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+            return 0;
           }
         } break;
         default:
