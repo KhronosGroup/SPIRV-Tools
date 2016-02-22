@@ -87,8 +87,8 @@ int main(int argc, char** argv) {
         case '-': {
           // Long options
           if (0 == strcmp(argv[argi], "--version")) {
-            printf("%s\r\n", kBuildVersion);
-            printf("Target: SPIR-V %d.%d rev %d\r\n", SPV_SPIRV_VERSION_MAJOR,
+            printf("%s\n", kBuildVersion);
+            printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
                    SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
             return 0;
           }

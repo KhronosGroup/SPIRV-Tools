@@ -155,8 +155,7 @@ set(SPIRV_SOURCES
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})
 target_include_directories(${SPIRV_TOOLS} PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_BINARY_DIR})
+  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
