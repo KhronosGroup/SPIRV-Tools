@@ -41,6 +41,8 @@ USAGE: %s [options] [<filename>]
 The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
 
+NOTE: The validator is a work in progress.
+
 Options:
   -all       Perform all validation (default OFF)
   -basic     Perform basic validation (default OFF)
