@@ -24,9 +24,9 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <functional>
 #include "opcode.h"
 #include "validate_passes.h"
-#include <functional>
 
 using std::function;
 using libspirv::ValidationState_t;
@@ -85,7 +85,6 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   }
   return out;
 }
-
 }
 
 namespace libspirv {
@@ -100,41 +99,39 @@ namespace libspirv {
 spv_result_t SsaPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
   auto can_have_forward_declared_ids =
-    getCanBeForwardDeclaredFunction(inst->opcode);
+      getCanBeForwardDeclaredFunction(inst->opcode);
 
-  if (_.is_enabled(SPV_VALIDATE_SSA_BIT)) {
-    for (unsigned i = 0; i < inst->num_operands; i++) {
-      const spv_parsed_operand_t& operand = inst->operands[i];
-      const spv_operand_type_t& type = operand.type;
-      const uint32_t* operand_ptr = inst->words + operand.offset;
+  for (unsigned i = 0; i < inst->num_operands; i++) {
+    const spv_parsed_operand_t& operand = inst->operands[i];
+    const spv_operand_type_t& type = operand.type;
+    const uint32_t* operand_ptr = inst->words + operand.offset;
 
-      auto ret = SPV_ERROR_INTERNAL;
-      switch (type) {
-        case SPV_OPERAND_TYPE_RESULT_ID:
-          _.removeIfForwardDeclared(*operand_ptr);
+    auto ret = SPV_ERROR_INTERNAL;
+    switch (type) {
+      case SPV_OPERAND_TYPE_RESULT_ID:
+        _.removeIfForwardDeclared(*operand_ptr);
+        ret = SPV_SUCCESS;
+        break;
+      case SPV_OPERAND_TYPE_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+      case SPV_OPERAND_TYPE_SCOPE_ID:
+        if (_.isDefinedId(*operand_ptr)) {
           ret = SPV_SUCCESS;
-          break;
-        case SPV_OPERAND_TYPE_ID:
-        case SPV_OPERAND_TYPE_TYPE_ID:
-        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-        case SPV_OPERAND_TYPE_SCOPE_ID:
-          if (_.isDefinedId(*operand_ptr)) {
-            ret = SPV_SUCCESS;
-          } else if (can_have_forward_declared_ids(i)) {
-            ret = _.forwardDeclareId(*operand_ptr);
-          } else {
-            ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
-                                               << _.getIdName(*operand_ptr)
-                                               << " has not been defined";
-          }
-          break;
-        default:
-          ret = SPV_SUCCESS;
-          break;
-      }
-      if (SPV_SUCCESS != ret) {
-        return ret;
-      }
+        } else if (can_have_forward_declared_ids(i)) {
+          ret = _.forwardDeclareId(*operand_ptr);
+        } else {
+          ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
+                                             << _.getIdName(*operand_ptr)
+                                             << " has not been defined";
+        }
+        break;
+      default:
+        ret = SPV_SUCCESS;
+        break;
+    }
+    if (SPV_SUCCESS != ret) {
+      return ret;
     }
   }
   return SPV_SUCCESS;

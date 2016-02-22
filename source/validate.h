@@ -173,7 +173,7 @@ class Functions {
 
 class ValidationState_t {
  public:
-  ValidationState_t(spv_diagnostic* diagnostic, uint32_t options,
+  ValidationState_t(spv_diagnostic* diagnostic,
                     const spv_const_context context);
 
   // Forward declares the id in the module
@@ -198,10 +198,6 @@ class ValidationState_t {
 
   // Returns true if the id has been defined
   bool isDefinedId(uint32_t id) const;
-
-  // Returns true if an spv_validate_options_t option is enabled in the
-  // validation instruction
-  bool is_enabled(spv_validate_options_t flag) const;
 
   // Increments the instruction count. Used for diagnostic
   int incrementInstructionCount();
@@ -285,9 +281,6 @@ class ValidationState_t {
 
   // IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;
-
-  // Validation options to determine the passes to execute
-  uint32_t validation_flags_;
 
   std::map<uint32_t, std::string> operand_names_;
 

@@ -33,9 +33,8 @@
 #include "ValidateFixtures.h"
 #include "gmock/gmock.h"
 
-using ValidateStorage =
-    spvtest::ValidateBase<std::string, SPV_VALIDATE_LAYOUT_BIT |
-                                           SPV_VALIDATE_INSTRUCTION_BIT>;
+using ValidateStorage = spvtest::ValidateBase<std::string>;
+
 namespace {
 
 TEST_F(ValidateStorage, FunctionStorageInsideFunction) {

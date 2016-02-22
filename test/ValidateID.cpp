@@ -24,6 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <string>
+
 #include "UnitSPIRV.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
@@ -41,23 +43,32 @@ class ValidateID : public ::testing::Test {
   spv_binary binary;
 };
 
-#define CHECK(str, expected)                                            \
-  spv_diagnostic diagnostic;                                            \
-  spv_context context = spvContextCreate();                             \
-  spv_result_t error =                                                  \
-      spvTextToBinary(context, str, strlen(str), &binary, &diagnostic); \
-  if (error) {                                                          \
-    spvDiagnosticPrint(diagnostic);                                     \
-    spvDiagnosticDestroy(diagnostic);                                   \
-    ASSERT_EQ(SPV_SUCCESS, error);                                      \
-  }                                                                     \
-  spv_result_t result = spvValidate(context, get_const_binary(),        \
-                                    SPV_VALIDATE_ID_BIT, &diagnostic);  \
-  if (SPV_SUCCESS != result) {                                          \
-    spvDiagnosticPrint(diagnostic);                                     \
-    spvDiagnosticDestroy(diagnostic);                                   \
-  }                                                                     \
-  ASSERT_EQ(expected, result);                                          \
+const char kGLSL450MemoryModel[] = R"(
+     OpCapability Shader
+     OpCapability Addresses
+     OpCapability Pipes
+     OpCapability LiteralSampler
+     OpCapability DeviceEnqueue
+     OpMemoryModel Logical GLSL450
+)";
+
+#define CHECK(str, expected)                                                   \
+  spv_diagnostic diagnostic;                                                   \
+  spv_context context = spvContextCreate();                                    \
+  std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
+  spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
+                                       &binary, &diagnostic);                  \
+  if (error) {                                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+    ASSERT_EQ(SPV_SUCCESS, error);                                             \
+  }                                                                            \
+  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
+  if (SPV_SUCCESS != result) {                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+  }                                                                            \
+  ASSERT_EQ(expected, result);                                                 \
   spvContextDestroy(context);
 
 // TODO: OpUndef
@@ -97,16 +108,16 @@ TEST_F(ValidateID, OpLineGood) {
 %1 = OpString "/path/to/source.file"
      OpLine %1 0 0
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Generic %2
-%4 = OpVariable %3 Generic)";
+%3 = OpTypePointer Input %2
+%4 = OpVariable %3 Input)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpLineFileBad) {
   const char* spirv = R"(
      OpLine %2 0 0
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer Generic %2
-%4 = OpVariable %3 Generic)";
+%3 = OpTypePointer Input %2
+%4 = OpVariable %3 Input)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
@@ -356,7 +367,7 @@ TEST_F(ValidateID, OpTypeStructGood) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeFloat 64
-%3 = OpTypePointer Generic %1
+%3 = OpTypePointer Input %1
 %4 = OpTypeStruct %1 %2 %3)";
   CHECK(spirv, SPV_SUCCESS);
 }
@@ -372,14 +383,14 @@ TEST_F(ValidateID, OpTypeStructMemberTypeBad) {
 TEST_F(ValidateID, OpTypePointerGood) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypePointer Generic %1)";
+%2 = OpTypePointer Input %1)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpTypePointerBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
-%3 = OpTypePointer Generic %2)";
+%3 = OpTypePointer Input %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
@@ -701,30 +712,30 @@ TEST_F(ValidateID, OpSpecConstantBad) {
 TEST_F(ValidateID, OpVariableGood) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 1
-%2 = OpTypePointer Generic %1
-%3 = OpVariable %2 Generic)";
+%2 = OpTypePointer Input %1
+%3 = OpVariable %2 Input)";
   CHECK(spirv, SPV_SUCCESS);
 }
 TEST_F(ValidateID, OpVariableInitializerGood) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 1
-%2 = OpTypePointer Generic %1
+%2 = OpTypePointer Input %1
 %3 = OpConstant %1 42
-%4 = OpVariable %2 Generic %3)";
+%4 = OpVariable %2 Input %3)";
   CHECK(spirv, SPV_SUCCESS);
 }
 // TODO: Positive test OpVariable with OpConstantNull of OpTypePointer
 TEST_F(ValidateID, OpVariableResultTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 1
-%2 = OpVariable %1 Generic)";
+%2 = OpVariable %1 Input)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpVariableInitializerBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 1
-%2 = OpTypePointer Generic %1
-%3 = OpVariable %2 Generic %2)";
+%2 = OpTypePointer Input %1
+%3 = OpVariable %2 Input %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
@@ -867,7 +878,8 @@ TEST_F(ValidateID, OpStoreLabel) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-// TODO: enable when this bug is fixed: https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
+// TODO: enable when this bug is fixed:
+// https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
 TEST_F(ValidateID, DISABLED_OpStoreFunction) {
   const char* spirv = R"(
 %2 = OpTypeInt 32 1
@@ -1096,8 +1108,8 @@ TEST_F(ValidateID, OpFunctionCallGood) {
 
 %10 = OpFunction %1 None %4
 %11 = OpLabel
-      OpReturn
 %12 = OpFunctionCall %2 %6 %5
+      OpReturn
       OpFunctionEnd)";
   CHECK(spirv, SPV_SUCCESS);
 }
@@ -1118,8 +1130,8 @@ TEST_F(ValidateID, OpFunctionCallResultTypeBad) {
 
 %10 = OpFunction %1 None %4
 %11 = OpLabel
-      OpReturn
 %12 = OpFunctionCall %1 %6 %5
+      OpReturn
       OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -1133,8 +1145,8 @@ TEST_F(ValidateID, OpFunctionCallFunctionBad) {
 
 %10 = OpFunction %1 None %4
 %11 = OpLabel
-      OpReturn
 %12 = OpFunctionCall %2 %5 %5
+      OpReturn
       OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -1158,8 +1170,8 @@ TEST_F(ValidateID, OpFunctionCallArgumentTypeBad) {
 
 %10 = OpFunction %1 None %4
 %11 = OpLabel
-      OpReturn
 %12 = OpFunctionCall %2 %6 %14
+      OpReturn
       OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -1413,7 +1425,8 @@ TEST_F(ValidateID, OpReturnValueIsVariable) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-// TODO: enable when this bug is fixed: https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
+// TODO: enable when this bug is fixed:
+// https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
 TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
   const char* spirv = R"(
 %1 = OpTypeVoid
@@ -1428,31 +1441,37 @@ TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
 
 TEST_F(ValidateID, UndefinedTypeId) {
   const char* spirv = R"(
-%f32 = OpTypeFloat 32
-%atype = OpTypeRuntimeArray %f32
-%stype = OpTypeStruct %atype
-%ptrtype = OpTypePointer Input %stype
-%svar = OpVariable %ptrtype Input
-%s = OpLoad %stype %svar
-%len = OpArrayLength %undef %s 0
+%s = OpTypeStruct %i32
 )";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, UndefinedIdScope) {
   const char* spirv = R"(
-%u32 = OpTypeInt 32 0
+%u32    = OpTypeInt 32 0
 %memsem = OpConstant %u32 0
-OpMemoryBarrier %undef %memsem
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%f      = OpFunction %void None %void_f
+%l      = OpLabel
+          OpMemoryBarrier %undef %memsem
+          OpReturn
+          OpFunctionEnd
 )";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
 TEST_F(ValidateID, UndefinedIdMemSem) {
   const char* spirv = R"(
-%u32 = OpTypeInt 32 0
-%scope = OpConstant %u32 0
-OpMemoryBarrier %scope %undef
+%u32    = OpTypeInt 32 0
+%scope  = OpConstant %u32 0
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%f      = OpFunction %void None %void_f
+%l      = OpLabel
+          OpMemoryBarrier %scope %undef
+          OpReturn
+          OpFunctionEnd
 )";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }

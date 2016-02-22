@@ -42,12 +42,11 @@ using std::stringstream;
 
 namespace {
 
-using Validate =
-    spvtest::ValidateBase<pair<string, bool>,
-                          SPV_VALIDATE_SSA_BIT | SPV_VALIDATE_LAYOUT_BIT>;
+using Validate = spvtest::ValidateBase<pair<string, bool>>;
 
 TEST_F(Validate, Default) {
   char str[] = R"(
+     OpCapability Shader
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
@@ -64,6 +63,7 @@ TEST_F(Validate, Default) {
 
 TEST_F(Validate, IdUndefinedBad) {
   char str[] = R"(
+          OpCapability Shader
           OpMemoryModel Logical GLSL450
           OpName %missing "missing"
 %voidt  = OpTypeVoid
@@ -80,6 +80,7 @@ TEST_F(Validate, IdUndefinedBad) {
 
 TEST_F(Validate, IdRedefinedBad) {
   char str[] = R"(
+     OpCapability Shader
      OpMemoryModel Logical GLSL450
      OpName %2 "redefined"
 %1 = OpTypeVoid
@@ -95,6 +96,7 @@ TEST_F(Validate, IdRedefinedBad) {
 
 TEST_F(Validate, DominateUsageBad) {
   char str[] = R"(
+     OpCapability Shader
      OpMemoryModel Logical GLSL450
      OpName %1 "not_dominant"
 %2 = OpTypeFunction %1              ; uses %1 before it's definition
@@ -107,6 +109,7 @@ TEST_F(Validate, DominateUsageBad) {
 
 TEST_F(Validate, ForwardNameGood) {
   char str[] = R"(
+     OpCapability Shader
      OpMemoryModel Logical GLSL450
      OpName %3 "main"
 %1 = OpTypeVoid
@@ -122,6 +125,7 @@ TEST_F(Validate, ForwardNameGood) {
 
 TEST_F(Validate, ForwardNameMissingTargetBad) {
   char str[] = R"(
+      OpCapability Shader
       OpMemoryModel Logical GLSL450
       OpName %5 "main"              ; Target never defined
 )";
@@ -132,6 +136,7 @@ TEST_F(Validate, ForwardNameMissingTargetBad) {
 
 TEST_F(Validate, ForwardMemberNameGood) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpMemberName %struct 0 "value"
            OpMemberName %struct 1 "size"
@@ -145,6 +150,7 @@ TEST_F(Validate, ForwardMemberNameGood) {
 
 TEST_F(Validate, ForwardMemberNameMissingTargetBad) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpMemberName %struct 0 "value"
            OpMemberName %bad 1 "size"     ; Target is not defined
@@ -159,6 +165,7 @@ TEST_F(Validate, ForwardMemberNameMissingTargetBad) {
 
 TEST_F(Validate, ForwardDecorateGood) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpDecorate %var Restrict
 %intt   =  OpTypeInt 32 1
@@ -171,6 +178,7 @@ TEST_F(Validate, ForwardDecorateGood) {
 
 TEST_F(Validate, ForwardDecorateInvalidIDBad) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %missing Restrict        ;Missing ID
@@ -191,7 +199,7 @@ TEST_F(Validate, ForwardDecorateInvalidIDBad) {
 
 TEST_F(Validate, ForwardMemberDecorateGood) {
   char str[] = R"(
-           OpCapability Matrix
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpMemberDecorate %struct 1 RowMajor
 %intt   =  OpTypeInt 32 1
@@ -205,7 +213,7 @@ TEST_F(Validate, ForwardMemberDecorateGood) {
 
 TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
   char str[] = R"(
-           OpCapability Matrix
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpMemberDecorate %missing 1 RowMajor ; Target not defined
@@ -221,7 +229,7 @@ TEST_F(Validate, ForwardMemberDecorateInvalidIdBad) {
 
 TEST_F(Validate, ForwardGroupDecorateGood) {
   char str[] = R"(
-          OpCapability Matrix
+          OpCapability Shader
           OpMemoryModel Logical GLSL450
           OpDecorate %dgrp RowMajor
 %dgrp   = OpDecorationGroup
@@ -238,7 +246,7 @@ TEST_F(Validate, ForwardGroupDecorateGood) {
 
 TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
   char str[] = R"(
-           OpCapability Matrix
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %dgrp RowMajor
@@ -257,7 +265,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingGroupBad) {
 
 TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
   char str[] = R"(
-           OpCapability Matrix
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %dgrp RowMajor
@@ -276,7 +284,7 @@ TEST_F(Validate, ForwardGroupDecorateMissingTargetBad) {
 
 TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
   char str[] = R"(
-           OpCapability Matrix
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %dgrp "group"
            OpDecorate %dgrp RowMajor
@@ -295,6 +303,7 @@ TEST_F(Validate, ForwardGroupDecorateDecorationGroupDominateBad) {
 
 TEST_F(Validate, ForwardDecorateInvalidIdBad) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %missing Restrict        ; Missing target
@@ -315,6 +324,7 @@ TEST_F(Validate, ForwardDecorateInvalidIdBad) {
 
 TEST_F(Validate, FunctionCallGood) {
   char str[] = R"(
+         OpCapability Shader
          OpMemoryModel Logical GLSL450
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
@@ -341,6 +351,7 @@ TEST_F(Validate, FunctionCallGood) {
 
 TEST_F(Validate, ForwardFunctionCallGood) {
   char str[] = R"(
+         OpCapability Shader
          OpMemoryModel Logical GLSL450
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
@@ -367,6 +378,7 @@ TEST_F(Validate, ForwardFunctionCallGood) {
 
 TEST_F(Validate, ForwardBranchConditionalGood) {
   char str[] = R"(
+            OpCapability Shader
             OpMemoryModel Logical GLSL450
 %voidt  =   OpTypeVoid
 %boolt  =   OpTypeBool
@@ -392,6 +404,7 @@ TEST_F(Validate, ForwardBranchConditionalGood) {
 
 TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
@@ -417,6 +430,7 @@ TEST_F(Validate, ForwardBranchConditionalWithWeightsGood) {
 
 TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %tcpy "conditional"
 %voidt  =  OpTypeVoid
@@ -445,6 +459,7 @@ TEST_F(Validate, ForwardBranchConditionalNonDominantConditionBad) {
 
 TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
   char str[] = R"(
+           OpCapability Shader
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
 %voidt  =  OpTypeVoid
@@ -473,7 +488,7 @@ TEST_F(Validate, ForwardBranchConditionalMissingTargetBad) {
 const string kHeader = R"(
 OpCapability Int8
 OpCapability DeviceEnqueue
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical OpenCL
 )";
 
 const string kBasicTypes = R"(
