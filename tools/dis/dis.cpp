@@ -43,7 +43,7 @@ or if the filename is "-", then the binary is read from standard input.
 Options:
 
   -h, --help      Print this help.
-  --version       Display disassebler version information.
+  --version       Display disassembler version information.
 
   -o <filename>   Set the output filename.
                   Output goes to standard output if this option is

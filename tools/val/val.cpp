@@ -47,7 +47,7 @@ Options:
   -id        Perform id validation (default OFF)
   -layout    Perform layout validation (default OFF)
   -rules     Perform rules validation (default OFF)
-  --version  Display validator verision information
+  --version  Display validator version information
 )",
       argv0, argv0);
 }

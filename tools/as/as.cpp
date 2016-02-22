@@ -47,7 +47,7 @@ Options:
   -h              Print this help.
 
   -o <filename>   Set the output filename. Use '-' to mean stdout.
-  --version       Display assembler verision information.
+  --version       Display assembler version information.
 )",
       argv0, argv0);
 }
