@@ -26,8 +26,8 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include "validate_passes.h"
 #include "spirv-tools/libspirv.h"
+#include "validate_passes.h"
 
 #include "diagnostic.h"
 #include "opcode.h"
@@ -182,28 +182,26 @@ namespace libspirv {
 // Performs logical layout validation. See Section 2.4
 spv_result_t ModuleLayoutPass(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst) {
-  if (_.is_enabled(SPV_VALIDATE_LAYOUT_BIT)) {
-    SpvOp opcode = inst->opcode;
+  SpvOp opcode = inst->opcode;
 
-    switch (_.getLayoutSection()) {
-      case kLayoutCapabilities:
-      case kLayoutExtensions:
-      case kLayoutExtInstImport:
-      case kLayoutMemoryModel:
-      case kLayoutEntryPoint:
-      case kLayoutExecutionMode:
-      case kLayoutDebug1:
-      case kLayoutDebug2:
-      case kLayoutAnnotations:
-      case kLayoutTypes:
-        spvCheckReturn(ModuleScopedInstructions(_, inst, opcode));
-        break;
-      case kLayoutFunctionDeclarations:
-      case kLayoutFunctionDefinitions:
-        spvCheckReturn(FunctionScopedInstructions(_, inst, opcode));
-        break;
-    }  // switch(getLayoutSection())
-  }
+  switch (_.getLayoutSection()) {
+    case kLayoutCapabilities:
+    case kLayoutExtensions:
+    case kLayoutExtInstImport:
+    case kLayoutMemoryModel:
+    case kLayoutEntryPoint:
+    case kLayoutExecutionMode:
+    case kLayoutDebug1:
+    case kLayoutDebug2:
+    case kLayoutAnnotations:
+    case kLayoutTypes:
+      spvCheckReturn(ModuleScopedInstructions(_, inst, opcode));
+      break;
+    case kLayoutFunctionDeclarations:
+    case kLayoutFunctionDefinitions:
+      spvCheckReturn(FunctionScopedInstructions(_, inst, opcode));
+      break;
+  }  // switch(getLayoutSection())
   return SPV_SUCCESS;
 }
 }

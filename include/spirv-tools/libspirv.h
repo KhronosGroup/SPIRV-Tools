@@ -24,7 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef SPIRV_TOOLS_LIBSPIRV_H_      
+#ifndef SPIRV_TOOLS_LIBSPIRV_H_
 #define SPIRV_TOOLS_LIBSPIRV_H_
 
 #include "spirv/GLSL.std.450.h"
@@ -48,7 +48,7 @@ extern "C" {
 
 // Helpers
 
-#define spvIsInBitfield(value, bitfield) ((value) == ((value) & bitfield))
+#define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 
 #define SPV_BIT(shift) (1 << (shift))
 
@@ -63,7 +63,7 @@ typedef enum spv_result_t {
   SPV_END_OF_STREAM = 2,
   SPV_WARNING = 3,
   SPV_FAILED_MATCH = 4,
-  SPV_REQUESTED_TERMINATION = 5, // Success, but signals early termination.
+  SPV_REQUESTED_TERMINATION = 5,  // Success, but signals early termination.
   SPV_ERROR_INTERNAL = -1,
   SPV_ERROR_OUT_OF_MEMORY = -2,
   SPV_ERROR_INVALID_POINTER = -3,
@@ -263,19 +263,6 @@ typedef enum spv_binary_to_text_options_t {
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
 
-typedef enum spv_validate_options_t {
-  SPV_VALIDATE_BASIC_BIT = SPV_BIT(0),
-  SPV_VALIDATE_LAYOUT_BIT = SPV_BIT(1),
-  SPV_VALIDATE_ID_BIT = SPV_BIT(2),
-  SPV_VALIDATE_RULES_BIT = SPV_BIT(3),
-  SPV_VALIDATE_SSA_BIT = SPV_BIT(4),
-  SPV_VALIDATE_INSTRUCTION_BIT = SPV_BIT(5),
-  SPV_VALIDATE_ALL = SPV_VALIDATE_BASIC_BIT | SPV_VALIDATE_LAYOUT_BIT |
-                     SPV_VALIDATE_ID_BIT | SPV_VALIDATE_RULES_BIT |
-                     SPV_VALIDATE_SSA_BIT | SPV_VALIDATE_INSTRUCTION_BIT ,
-  SPV_FORCE_32_BIT_ENUM(spv_validation_options_t)
-} spv_validate_options_t;
-
 // Structures
 
 // Information about an operand parsed from a binary SPIR-V module.
@@ -388,10 +375,9 @@ spv_result_t spvBinaryToText(const spv_const_context context,
 // pointer.
 void spvBinaryDestroy(spv_binary binary);
 
-// Validates a SPIR-V binary for correctness. The options parameter is a bit
-// field of spv_validation_options_t.
+// Validates a SPIR-V binary for correctness.
 spv_result_t spvValidate(const spv_const_context context,
-                         const spv_const_binary binary, const uint32_t options,
+                         const spv_const_binary binary,
                          spv_diagnostic* pDiagnostic);
 
 // Creates a diagnostic object. The position parameter specifies the location in

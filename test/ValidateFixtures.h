@@ -33,7 +33,7 @@
 
 namespace spvtest {
 
-template <typename T, uint32_t OPTIONS = SPV_VALIDATE_ALL>
+template <typename T>
 class ValidateBase : public ::testing::Test,
                      public ::testing::WithParamInterface<T> {
  public:
@@ -57,7 +57,6 @@ class ValidateBase : public ::testing::Test,
   spv_context context_;
   spv_binary binary_;
   spv_diagnostic diagnostic_;
-  static const uint32_t validation_options_ = OPTIONS;
 };
 }
 #endif

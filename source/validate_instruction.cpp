@@ -116,36 +116,31 @@ spv_result_t CapCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-// clang-format off
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
-  if (_.is_enabled(SPV_VALIDATE_INSTRUCTION_BIT)) {
-    if (inst->opcode == SpvOpCapability)
-        _.registerCapability(
-            static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
-    if (inst->opcode == SpvOpVariable) {
-        const auto storage_class =
-            static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
-        if (storage_class == SpvStorageClassGeneric)
-          return _.diag(SPV_ERROR_INVALID_BINARY)
-              << "OpVariable storage class cannot be Generic";
-        if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
-          if (storage_class != SpvStorageClassFunction) {
-            return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                   << "Variables must have a function[7] storage class inside"
-                      " of a function";
-          }
-        } else {
-          if (storage_class == SpvStorageClassFunction) {
-            return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                   << "Variables can not have a function[7] storage class "
-                      "outside of a function";
-          }
-        }
+  if (inst->opcode == SpvOpCapability)
+    _.registerCapability(
+        static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
+  if (inst->opcode == SpvOpVariable) {
+    const auto storage_class =
+        static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
+    if (storage_class == SpvStorageClassGeneric)
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "OpVariable storage class cannot be Generic";
+    if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
+      if (storage_class != SpvStorageClassFunction) {
+        return _.diag(SPV_ERROR_INVALID_LAYOUT)
+               << "Variables must have a function[7] storage class inside"
+                  " of a function";
+      }
+    } else {
+      if (storage_class == SpvStorageClassFunction) {
+        return _.diag(SPV_ERROR_INVALID_LAYOUT)
+               << "Variables can not have a function[7] storage class "
+                  "outside of a function";
+      }
     }
-    return CapCheck(_, inst);
   }
-  return SPV_SUCCESS;
+  return CapCheck(_, inst);
 }
-// clang-format on
 }  // namespace libspirv
