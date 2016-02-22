@@ -47,9 +47,14 @@ Options:
   -id        Perform id validation (default OFF)
   -layout    Perform layout validation (default OFF)
   -rules     Perform rules validation (default OFF)
+  --version  Display validator verision information
 )",
       argv0, argv0);
 }
+
+const char kBuildVersion[] =
+#include "build-version.inc"
+;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
@@ -58,7 +63,12 @@ int main(int argc, char** argv) {
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
-      if (!strcmp("all", cur_arg + 1)) {
+      if (0 == strcmp(cur_arg, "--version")) {
+        printf("%s\r\n", kBuildVersion);
+        printf("Target: SPIR-V %d.%d rev %d\r\n", SPV_SPIRV_VERSION_MAJOR,
+               SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+        return 0;
+      } else if (!strcmp("all", cur_arg + 1)) {
         options |= SPV_VALIDATE_ALL;
       } else if (!strcmp("basic", cur_arg + 1)) {
         options |= SPV_VALIDATE_BASIC_BIT;

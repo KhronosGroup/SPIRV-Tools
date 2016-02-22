@@ -103,6 +103,12 @@ function(spvtools_default_compile_options TARGET)
   endif()
 endfunction()
 
+add_custom_target(spirv-tools-build-version
+  ${PYTHON_EXE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils/update_build_version.py
+  ${spirv-tools_SOURCE_DIR}
+  COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
+
 set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/spirv.h
@@ -148,7 +154,10 @@ set(SPIRV_SOURCES
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})
-target_include_directories(${SPIRV_TOOLS} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${SPIRV_TOOLS} PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR})
+add_dependencies(${SPIRV_TOOLS} spirv-tools-build-version)
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
