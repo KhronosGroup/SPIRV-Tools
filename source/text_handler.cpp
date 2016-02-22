@@ -127,6 +127,11 @@ spv_result_t getWord(spv_text text, spv_position position, std::string& word,
 
   // NOTE: Assumes first character is not white space!
   while (true) {
+    if (endPosition->index >= text->length) {
+      word.assign(text->str + position->index,
+                  static_cast<size_t>(endPosition->index - position->index));
+      return SPV_SUCCESS;
+    }
     const char ch = text->str[endPosition->index];
     if (ch == '\\')
       escaping = !escaping;
@@ -142,8 +147,9 @@ spv_result_t getWord(spv_text text, spv_position position, std::string& word,
           if (escaping || quoting) break;
         // Fall through.
         case '\0': {  // NOTE: End of word found!
-          word.assign(text->str + position->index,
-                      (size_t)(endPosition->index - position->index));
+          word.assign(
+              text->str + position->index,
+              static_cast<size_t>(endPosition->index - position->index));
           return SPV_SUCCESS;
         }
         default:

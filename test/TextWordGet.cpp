@@ -80,6 +80,21 @@ TEST(TextWordGet, SemicolonTerminator) {
   ASSERT_STREQ("Wo", word.c_str());
 }
 
+TEST(TextWordGet, NoTerminator) {
+  const std::string full_text = "abcdefghijklmn";
+  for (size_t len = 1; len <= full_text.size(); ++len) {
+    std::string word;
+    spv_text_t text = {full_text.data(), len};
+    spv_position_t endPosition = {};
+    ASSERT_EQ(SPV_SUCCESS,
+              AssemblyContext(&text, nullptr).getWord(word, &endPosition));
+    ASSERT_EQ(0u, endPosition.line);
+    ASSERT_EQ(len, endPosition.column);
+    ASSERT_EQ(len, endPosition.index);
+    ASSERT_EQ(full_text.substr(0, len), word);
+  }
+}
+
 TEST(TextWordGet, MultipleWords) {
   AutoText input("Words in a sentence");
   AssemblyContext data(input, nullptr);
