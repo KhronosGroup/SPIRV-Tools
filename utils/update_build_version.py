@@ -34,8 +34,10 @@ def describe(dir):
     """Runs 'git describe' in dir.  If successful, returns the output; otherwise,
 returns 'unknown hash, <date>'."""
     try:
-        return subprocess.check_output(["git", "describe"], cwd=dir).rstrip()
-    except subprocess.CalledProcessError:
+        p = subprocess.Popen(["git", "describe"], stdout=subprocess.PIPE, cwd=dir)
+        (stdout, _) = p.communicate()
+        return stdout.rstrip()
+    except:
         return 'unknown hash, ' + datetime.date.today().isoformat()
 
 def main():
