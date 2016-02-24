@@ -1,0 +1,27 @@
+version: '{build}'
+
+skip_tags: true
+
+install: []
+
+environment:
+  matrix:
+    - VSVERSION: Visual Studio 12
+    - VSVERSION: Visual Studio 14
+
+platform:
+  - Win32
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+build_script:
+  - git clone https://github.com/google/googletest.git external/googletest
+  - md build
+  - cd build
+  - if "%PLATFORM%"=="x64" cmake -G "%VSVERSION% Win64" ..
+  - if "%PLATFORM%"=="Win32" cmake -G "%VSVERSION%" ..
+  - msbuild /m /p:Configuration="%CONFIGURATION%" /p:Platform="%PLATFORM%" spirv-tools.sln
+  - UnitSPIRV.exe --gtest_break_on_failure
