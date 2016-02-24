@@ -103,8 +103,21 @@ function(spvtools_default_compile_options TARGET)
   endif()
 endfunction()
 
+if(NOT COMMAND find_host_package)
+  macro(find_host_package)
+    find_package(${ARGN})
+  endmacro()
+endif()
+if(NOT COMMAND find_host_program)
+  macro(find_host_program)
+    find_program(${ARGN})
+  endmacro()
+endif()
+
+find_host_package(PythonInterp)
+
 add_custom_target(spirv-tools-build-version
-  ${PYTHON_EXE}
+  ${PYTHON_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/utils/update_build_version.py
   ${spirv-tools_SOURCE_DIR}
   COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
