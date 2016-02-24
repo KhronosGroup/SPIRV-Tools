@@ -27,6 +27,8 @@
 #ifndef LIBSPIRV_UTIL_BITUTILS_H_
 #define LIBSPIRV_UTIL_BITUTILS_H_
 
+#include <stdint.h>
+
 #include <cstring>
 
 namespace spvutils {
