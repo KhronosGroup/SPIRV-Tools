@@ -466,13 +466,6 @@ int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   }
 }
 
-int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* pTypeInst0,
-                               const spv_instruction_t* pTypeInst1) {
-  if (pTypeInst0->opcode != pTypeInst1->opcode) return false;
-  if (pTypeInst0->words[1] != pTypeInst1->words[1]) return false;
-  return true;
-}
-
 int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpVariable:
@@ -483,16 +476,6 @@ int32_t spvOpcodeIsPointer(const SpvOp opcode) {
     default:
       return false;
   }
-}
-
-int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* pFirstInst,
-                                     const spv_instruction_t* pInst) {
-  while (pFirstInst != pInst) {
-    if (SpvOpFunction == pInst->opcode) break;
-    pInst--;
-  }
-  if (SpvOpFunction != pInst->opcode) return false;
-  return true;
 }
 
 int32_t spvOpcodeGeneratesType(SpvOp op) {

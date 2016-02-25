@@ -62,47 +62,6 @@ spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
   return SPV_SUCCESS;
 }
 
-// TODO(dneto): This API is not powerful enough in the case that the
-// number and type of operands are not known until partway through parsing
-// the operation.  This happens when enum operands might have different number
-// of operands, or with extended instructions.
-spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
-                                        const uint16_t operandIndex,
-                                        const spv_opcode_desc opcodeEntry,
-                                        const spv_operand_table operandTable,
-                                        spv_operand_desc* pOperandEntry) {
-  spv_operand_type_t type;
-  if (operandIndex < opcodeEntry->numTypes) {
-    // NOTE: Do operand table lookup to set operandEntry if successful
-    const int index = operandIndex - 1;
-    type = opcodeEntry->operandTypes[index];
-    spv_operand_desc entry = nullptr;
-    if (!spvOperandTableValueLookup(operandTable, type, word, &entry)) {
-      if (SPV_OPERAND_TYPE_NONE != entry->operandTypes[0]) {
-        *pOperandEntry = entry;
-      }
-    }
-  } else if (*pOperandEntry) {
-    // NOTE: Use specified operand entry operand type for this word
-    const int index = operandIndex - opcodeEntry->numTypes;
-    type = (*pOperandEntry)->operandTypes[index];
-  } else if (SpvOpSwitch == opcodeEntry->opcode) {
-    // NOTE: OpSwitch is a special case which expects a list of paired extra
-    // operands
-    assert(0 &&
-           "This case is previously untested, remove this assert and ensure it "
-           "is behaving correctly!");
-    const int lastIndex = opcodeEntry->numTypes - 1;
-    const int index = lastIndex + ((operandIndex - lastIndex) % 2);
-    type = opcodeEntry->operandTypes[index];
-  } else {
-    // NOTE: Default to last operand type in opcode entry
-    const int index = opcodeEntry->numTypes - 1;
-    type = opcodeEntry->operandTypes[index];
-  }
-  return type;
-}
-
 namespace {
 
 // A SPIR-V binary parser.  A parser instance communicates detailed parse
@@ -228,7 +187,8 @@ class Parser {
           num_words(num_words_arg),
           diagnostic(diagnostic_arg),
           word_index(0),
-          endian() {}
+          endian(),
+          requires_endian_conversion(false) {}
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
     size_t num_words;            // Number of words in the module.

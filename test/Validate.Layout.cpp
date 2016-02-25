@@ -66,7 +66,7 @@ spv_result_t Equals(int order) {
 // returns true if order is between MIN and MAX(inclusive)
 template <int MIN, int MAX, spv_result_t RET = SPV_ERROR_INVALID_LAYOUT>
 struct Range {
-  Range(bool inverse = false) : inverse_(inverse) {}
+  explicit Range(bool inverse = false) : inverse_(inverse) {}
   spv_result_t operator()(int order) {
     return (inverse_ ^ (order >= MIN && order <= MAX)) ? SPV_SUCCESS : RET;
   }

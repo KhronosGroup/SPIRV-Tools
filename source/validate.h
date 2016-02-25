@@ -95,7 +95,7 @@ class ValidationState_t;
 // types are used to manage the state while parsing the function.
 class Functions {
  public:
-  Functions(ValidationState_t& module);
+  explicit Functions(ValidationState_t& module);
 
   // Registers the function in the module. Subsequent instructions will be
   // called against this function

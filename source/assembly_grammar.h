@@ -37,7 +37,7 @@ namespace libspirv {
 // Contains methods to query for valid instructions and operands.
 class AssemblyGrammar {
  public:
-  AssemblyGrammar(const spv_const_context context)
+  explicit AssemblyGrammar(const spv_const_context context)
       : operandTable_(context->operand_table),
         opcodeTable_(context->opcode_table),
         extInstTable_(context->ext_inst_table) {}

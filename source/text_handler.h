@@ -263,10 +263,9 @@ class AssemblyContext {
     // It also allows octal input, but we don't care about that case.
     text_stream >> std::setbase(0);
     text_stream >> *value_pointer;
-    bool ok = true;
 
     // We should have read something.
-    ok = (text[0] != 0) && !text_stream.bad();
+    bool ok = (text[0] != 0) && !text_stream.bad();
     // It should have been all the text.
     ok = ok && text_stream.eof();
     // It should have been in range.

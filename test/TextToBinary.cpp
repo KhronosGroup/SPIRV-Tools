@@ -134,12 +134,6 @@ INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
                             "Unroll"  // A good word, but for the wrong enum
                         }));
 
-// TODO(dneto): Aliasing like this relies on undefined behaviour. Fix this.
-union char_word_t {
-  char cs[4];
-  uint32_t u;
-};
-
 TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
             spvTextToBinary(context, nullptr, 0, &binary, &diagnostic));

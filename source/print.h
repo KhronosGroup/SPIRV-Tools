@@ -36,7 +36,7 @@ namespace libspirv {
 class out_stream {
  public:
   out_stream() : pStream(nullptr) {}
-  out_stream(std::stringstream& stream) : pStream(&stream) {}
+  explicit out_stream(std::stringstream& stream) : pStream(&stream) {}
 
   std::ostream& get() {
     if (pStream) {
