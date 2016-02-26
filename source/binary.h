@@ -39,14 +39,4 @@ spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t* header);
 
-// Determines the desired type of an operand. The operand's value is word, and
-// is the index-th word in the instruction described by the opcode_entry opcode
-// table entry. On success, returns SPV_SUCCESS and writes a handle of the
-// operand table entry for this operand into *operand_entry.
-spv_operand_type_t spvBinaryOperandInfo(const uint32_t word,
-                                        const uint16_t index,
-                                        const spv_opcode_desc opcode_entry,
-                                        const spv_operand_table operand_table,
-                                        spv_operand_desc* operand_entry);
-
 #endif  // LIBSPIRV_BINARY_H_

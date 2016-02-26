@@ -83,20 +83,9 @@ int32_t spvOpcodeIsConstant(const SpvOp opcode);
 // non-zero otherwise.
 int32_t spvOpcodeIsComposite(const SpvOp opcode);
 
-// Deep equal comparison of type declaration instructions. Returns zero if
-// false, non-zero otherwise.
-int32_t spvOpcodeAreTypesEqual(const spv_instruction_t* type_inst0,
-                               const spv_instruction_t* type_inst1);
-
 // Determines if the given opcode results in a pointer. Returns zero if false,
 // non-zero otherwise.
 int32_t spvOpcodeIsPointer(const SpvOp opcode);
-
-// Determines if an instruction is in a basic block. The first_inst parameter
-// specifies the first instruction in the stream, while the inst parameter
-// specifies the current instruction. Returns zero if false, non-zero otherwise.
-int32_t spvInstructionIsInBasicBlock(const spv_instruction_t* first_inst,
-                                     const spv_instruction_t* inst);
 
 // Determines if the given opcode generates a type. Returns zero if false,
 // non-zero otherwise.
