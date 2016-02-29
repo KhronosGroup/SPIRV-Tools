@@ -43,7 +43,7 @@ clr::blue::operator const char*() { return "\e[34m"; }
 
 }  // namespace libspirv
 #elif defined(SPIRV_WINDOWS)
-#include <Windows.h>
+#include <windows.h>
 
 namespace libspirv {
 

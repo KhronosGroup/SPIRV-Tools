@@ -45,7 +45,10 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 option(SPIRV_WERROR "Enable error on warning" ON)
-if(UNIX)
+if((${CMAKE_CXX_COMPILER_ID} MATCHES "GNU") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"))
+  set(COMPILER_IS_LIKE_GNU TRUE)
+endif()
+if(${COMPILER_IS_LIKE_GNU})
   set(SPIRV_WARNINGS -Wall -Wextra -Wno-missing-field-initializers)
 
   option(SPIRV_WARN_EVERYTHING "Enable -Weverything" ${SPIRV_WARN_EVERYTHING})
@@ -64,7 +67,7 @@ if(UNIX)
   if(${SPIRV_WERROR})
     set(SPIRV_WARNINGS ${SPIRV_WARNINGS} -Werror)
   endif()
-elseif(WIN32)
+elseif(MSVC)
   set(SPIRV_WARNINGS -D_CRT_SECURE_NO_WARNINGS /wd4800)
 
   if(${SPIRV_WERROR})
@@ -79,7 +82,8 @@ endif()
 
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
-  if (UNIX)
+
+  if (${COMPILER_IS_LIKE_GNU})
     target_compile_options(${TARGET} PRIVATE
       -std=c++11 -fno-exceptions -fno-rtti)
     target_compile_options(${TARGET} PRIVATE
@@ -99,6 +103,15 @@ function(spvtools_default_compile_options TARGET)
     else()
       target_compile_options(${TARGET} PRIVATE
          -Wno-missing-field-initializers)
+    endif()
+  endif()
+
+  # For MinGW cross compile, statically link to the C++ runtime.
+  # But it still depends on MSVCRT.dll.
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+      set_target_properties(${TARGET} PROPERTIES LINK_FLAGS
+	                    -static -static-libgcc -static-libstdc++)
     endif()
   endif()
 endfunction()
@@ -279,7 +292,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
 
     add_executable(UnitSPIRV ${TEST_SOURCES})
     spvtools_default_compile_options(UnitSPIRV)
-    if(UNIX)
+    if(${COMPILER_IS_LIKE_GNU})
       target_compile_options(UnitSPIRV PRIVATE -Wno-undef)
     endif()
     if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
