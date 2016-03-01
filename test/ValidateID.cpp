@@ -52,11 +52,50 @@ const char kGLSL450MemoryModel[] = R"(
      OpMemoryModel Logical GLSL450
 )";
 
+const char kOpenCLMemoryModel32[] = R"(
+     OpCapability Addresses
+     OpCapability Linkage
+     OpCapability Kernel
+%1 = OpExtInstImport "OpenCL.std"
+     OpMemoryModel Physical32 OpenCL
+)";
+
+const char kOpenCLMemoryModel64[] = R"(
+     OpCapability Addresses
+     OpCapability Linkage
+     OpCapability Kernel
+     OpCapability Int64
+%1 = OpExtInstImport "OpenCL.std"
+     OpMemoryModel Physical64 OpenCL
+)";
+
 #define CHECK(str, expected)                                                   \
   spv_diagnostic diagnostic;                                                   \
   spv_context context = spvContextCreate();                                    \
   std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
   spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
+                                       &binary, &diagnostic);                  \
+  if (error) {                                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+    ASSERT_EQ(SPV_SUCCESS, error);                                             \
+  }                                                                            \
+  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
+  if (SPV_SUCCESS != result) {                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+  }                                                                            \
+  ASSERT_EQ(expected, result);                                                 \
+  spvContextDestroy(context);
+
+#define CHECK_KERNEL(str, expected, bitness)                                   \
+  ASSERT_EQ(bitness == 32 || bitness == 64, true);                             \
+  spv_diagnostic diagnostic;                                                   \
+  spv_context context = spvContextCreate();                                    \
+  std::string kernel = std::string(bitness == 32 ?                             \
+                                   kOpenCLMemoryModel32 :                      \
+                                   kOpenCLMemoryModel64) + str;                \
+  spv_result_t error = spvTextToBinary(context, kernel.c_str(), kernel.size(), \
                                        &binary, &diagnostic);                  \
   if (error) {                                                                 \
     spvDiagnosticPrint(diagnostic);                                            \
@@ -1474,6 +1513,71 @@ TEST_F(ValidateID, UndefinedIdMemSem) {
           OpFunctionEnd
 )";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, KernelOpEntryPointAndOpInBoundsPtrAccessChainGood) {
+  const char* spirv = R"(
+      OpEntryPoint Kernel %2 "simple_kernel"
+      OpSource OpenCL_C 200000
+      OpDecorate %3 BuiltIn GlobalInvocationId
+      OpDecorate %3 Constant
+      OpDecorate %4 FuncParamAttr NoCapture
+      OpDecorate %3 LinkageAttributes "__spirv_GlobalInvocationId" Import
+ %5 = OpTypeInt 32 0
+ %6 = OpTypeVector %5 3
+ %7 = OpTypePointer UniformConstant %6
+ %3 = OpVariable %7 UniformConstant
+ %8 = OpTypeVoid
+ %9 = OpTypeStruct %5
+%10 = OpTypePointer CrossWorkgroup %9
+%11 = OpTypeFunction %8 %10
+%12 = OpConstant %5 0
+%13 = OpTypePointer CrossWorkgroup %5
+%14 = OpConstant %5 42
+ %2 = OpFunction %8 None %11
+ %4 = OpFunctionParameter %10
+%15 = OpLabel
+%16 = OpLoad %6 %3 Aligned 0
+%17 = OpCompositeExtract %5 %16 0
+%18 = OpInBoundsPtrAccessChain %13 %4 %17 %12
+      OpStore %18 %14 Aligned 4
+      OpReturn
+      OpFunctionEnd)";
+  CHECK_KERNEL(spirv, SPV_SUCCESS, 32);
+}
+
+TEST_F(ValidateID, OpPtrAccessChainGood) {
+  const char* spirv = R"(
+      OpEntryPoint Kernel %2 "another_kernel"
+      OpSource OpenCL_C 200000
+      OpDecorate %3 BuiltIn GlobalInvocationId
+      OpDecorate %3 Constant
+      OpDecorate %4 FuncParamAttr NoCapture
+      OpDecorate %3 LinkageAttributes "__spirv_GlobalInvocationId" Import
+ %5 = OpTypeInt 64 0
+ %6 = OpTypeVector %5 3
+ %7 = OpTypePointer UniformConstant %6
+ %3 = OpVariable %7 UniformConstant
+ %8 = OpTypeVoid
+ %9 = OpTypeInt 32 0
+%10 = OpTypeStruct %9
+%11 = OpTypePointer CrossWorkgroup %10
+%12 = OpTypeFunction %8 %11
+%13 = OpConstant %5 4294967295
+%14 = OpConstant %9 0
+%15 = OpTypePointer CrossWorkgroup %9
+%16 = OpConstant %9 42
+ %2 = OpFunction %8 None %12
+ %4 = OpFunctionParameter %11
+%17 = OpLabel
+%18 = OpLoad %6 %3 Aligned 0
+%19 = OpCompositeExtract %5 %18 0
+%20 = OpBitwiseAnd %5 %19 %13
+%21 = OpPtrAccessChain %15 %4 %20 %14
+      OpStore %21 %16 Aligned 4
+      OpReturn
+      OpFunctionEnd)";
+  CHECK_KERNEL(spirv, SPV_SUCCESS, 64);
 }
 
 // TODO: OpLifetimeStart
