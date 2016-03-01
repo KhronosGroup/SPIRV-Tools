@@ -33,6 +33,8 @@
 
 #ifdef __cplusplus
 extern "C" {
+#else
+#include <stdbool.h>
 #endif
 
 #include <stddef.h>
@@ -331,7 +333,7 @@ typedef struct spv_diagnostic_t {
 
 // Opaque struct containing the context used to operate on a SPIR-V module.
 // Its object is used by various translation API functions.
-struct spv_context_t;
+typedef struct spv_context_t spv_context_t;
 
 // Type Definitions
 
