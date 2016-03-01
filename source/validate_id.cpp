@@ -188,14 +188,18 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
                           << "' is not a function.";
     return false;
   }
-  // TODO: Check the entry point signature is void main(void), may be subject
-  // to change
-  auto entryPointType = usedefs_.FindDef(entryPoint.second.words[4]);
-  if (!entryPointType.first || 3 != entryPointType.second.words.size()) {
-    DIAG(entryPointIndex) << "OpEntryPoint Entry Point <id> '"
-                          << inst->words[entryPointIndex]
-                          << "'s function parameter count is not zero.";
-    return false;
+  // don't check kernel function signatures
+  auto executionModel = inst->words[1];
+  if (executionModel != SpvExecutionModelKernel) {
+    // TODO: Check the entry point signature is void main(void), may be subject
+    // to change
+    auto entryPointType = usedefs_.FindDef(entryPoint.second.words[4]);
+    if (!entryPointType.first || 3 != entryPointType.second.words.size()) {
+      DIAG(entryPointIndex) << "OpEntryPoint Entry Point <id> '"
+                            << inst->words[entryPointIndex]
+                            << "'s function parameter count is not zero.";
+      return false;
+    }
   }
   auto returnType = usedefs_.FindDef(entryPoint.second.type_id);
   if (!returnType.first || SpvOpTypeVoid != returnType.second.opcode) {
