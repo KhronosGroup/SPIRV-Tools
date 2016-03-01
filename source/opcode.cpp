@@ -470,7 +470,9 @@ int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpVariable:
     case SpvOpAccessChain:
+    case SpvOpPtrAccessChain:
     case SpvOpInBoundsAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
     case SpvOpFunctionParameter:
       return true;
     default:
