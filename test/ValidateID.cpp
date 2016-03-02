@@ -89,7 +89,7 @@ const char kOpenCLMemoryModel64[] = R"(
   spvContextDestroy(context);
 
 #define CHECK_KERNEL(str, expected, bitness)                                   \
-  ASSERT_EQ(bitness == 32 || bitness == 64, true);                             \
+  ASSERT_TRUE(bitness == 32 || bitness == 64);                                 \
   spv_diagnostic diagnostic;                                                   \
   spv_context context = spvContextCreate();                                    \
   std::string kernel = std::string(bitness == 32 ?                             \
