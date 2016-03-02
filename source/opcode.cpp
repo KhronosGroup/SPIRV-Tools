@@ -246,6 +246,18 @@ int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   }
 }
 
+int32_t spvOpcodeIsPotentialPointer(const SpvOp opcode) {
+  if (spvOpcodeIsPointer(opcode))
+    return true;
+
+  switch (opcode) {
+    case SpvOpBitcast:
+      return true;
+    default:
+      return false;
+  }
+}
+
 int32_t spvOpcodeGeneratesType(SpvOp op) {
   switch (op) {
     case SpvOpTypeVoid:

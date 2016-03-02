@@ -937,6 +937,40 @@ TEST_F(ValidateID, OpLoadPointerBad) {
 )";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
+TEST_F(ValidateID, OpLoadBitcastPointerGood) {
+  const char* spirv = R"(
+%1  = OpTypeVoid
+%2  = OpTypeInt 32 1
+%9  = OpTypeFloat 32
+%3  = OpTypePointer UniformConstant %2
+%10 = OpTypePointer UniformConstant %9
+%4  = OpTypeFunction %1
+%6  = OpFunction %1 None %4
+%7  = OpLabel
+%11 = OpBitcast %10 %3
+%8  = OpLoad %9 %11
+      OpReturn
+      OpFunctionEnd
+)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+TEST_F(ValidateID, OpLoadBitcastNonPointerBad) {
+  const char* spirv = R"(
+%1  = OpTypeVoid
+%2  = OpTypeInt 32 1
+%9  = OpTypeFloat 32
+%3  = OpTypePointer UniformConstant %2
+%4  = OpTypeFunction %1
+%6  = OpFunction %1 None %4
+%7  = OpLabel
+%8  = OpLoad %2 %3
+%10 = OpBitcast %9 %8
+%8  = OpLoad %2 %10
+      OpReturn
+      OpFunctionEnd
+)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
 
 TEST_F(ValidateID, OpStoreGood) {
   const char* spirv = R"(
@@ -966,6 +1000,41 @@ TEST_F(ValidateID, OpStorePointerBad) {
      OpStore %3 %5
      OpReturn
      OpFunctionEnd)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+TEST_F(ValidateID, OpStoreBitcastPointerGood) {
+  const char* spirv = R"(
+%1  = OpTypeVoid
+%2  = OpTypeInt 32 1
+%9  = OpTypeFloat 32
+%3  = OpTypePointer Function %2
+%10 = OpTypePointer Function %9
+%4  = OpTypeFunction %1
+%5  = OpConstant %2 42
+%7  = OpFunction %1 None %4
+%8  = OpLabel
+%6  = OpVariable %10 Function
+%11 = OpBitcast %3 %6
+      OpStore %11 %5
+      OpReturn
+      OpFunctionEnd)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+TEST_F(ValidateID, OpStoreBitcastNonPointerBad) {
+  const char* spirv = R"(
+%1  = OpTypeVoid
+%2  = OpTypeInt 32 1
+%9  = OpTypeFloat 32
+%10 = OpTypePointer Function %9
+%4  = OpTypeFunction %1
+%5  = OpConstant %9 42
+%7  = OpFunction %1 None %4
+%8  = OpLabel
+%6  = OpVariable %10 Function
+%11 = OpBitcast %2 %5
+      OpStore %11 %5
+      OpReturn
+      OpFunctionEnd)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpStoreObjectGood) {

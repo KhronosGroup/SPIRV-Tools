@@ -755,7 +755,7 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
            return false);
   auto pointerIndex = 3;
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
-  if (!pointer.first || !spvOpcodeIsPointer(pointer.second.opcode)) {
+  if (!pointer.first || !spvOpcodeIsPotentialPointer(pointer.second.opcode)) {
     DIAG(pointerIndex) << "OpLoad Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;
@@ -783,13 +783,18 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
                                   const spv_opcode_desc) {
   auto pointerIndex = 1;
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
-  if (!pointer.first || !spvOpcodeIsPointer(pointer.second.opcode)) {
+  if (!pointer.first || !spvOpcodeIsPotentialPointer(pointer.second.opcode)) {
     DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;
   }
   auto pointerType = usedefs_.FindDef(pointer.second.type_id);
-  assert(pointerType.first);
+  if (!pointer.first || pointerType.second.opcode != SpvOpTypePointer) {
+    DIAG(pointerIndex) << "OpStore type for pointer <id> '"
+                       << inst->words[pointerIndex]
+                       << "' is not a pointer type.";
+    return false;
+  }
   auto type = usedefs_.FindDef(pointerType.second.words[3]);
   assert(type.first);
   spvCheck(SpvOpTypeVoid == type.second.opcode, DIAG(pointerIndex)
