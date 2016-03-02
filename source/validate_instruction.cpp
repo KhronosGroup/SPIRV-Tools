@@ -122,6 +122,12 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (opcode == SpvOpCapability)
     _.registerCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
+  if (opcode == SpvOpMemoryModel) {
+    _.setAddressingModel(
+        static_cast<SpvAddressingModel>(inst->words[inst->operands[0].offset]));
+    _.setMemoryModel(
+        static_cast<SpvMemoryModel>(inst->words[inst->operands[1].offset]));
+  }
   if (opcode == SpvOpVariable) {
     const auto storage_class =
         static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);

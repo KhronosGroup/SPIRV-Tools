@@ -218,7 +218,9 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       current_layout_section_(kLayoutCapabilities),
       module_functions_(*this),
       module_capabilities_(0u),
-      grammar_(context) {}
+      grammar_(context),
+      addressing_model_(SpvAddressingModelLogical),
+      memory_model_(SpvMemoryModelSimple) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -315,6 +317,22 @@ bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
     found |= hasCapability(c);
   });
   return found;
+}
+	
+void ValidationState_t::setAddressingModel(SpvAddressingModel am) {
+  addressing_model_ = am;
+}
+
+SpvAddressingModel ValidationState_t::getAddressingModel() const {
+  return addressing_model_;
+}
+
+void ValidationState_t::setMemoryModel(SpvMemoryModel mm) {
+  memory_model_ = mm;
+}
+
+SpvMemoryModel ValidationState_t::getMemoryModel() const {
+  return memory_model_;
 }
 
 Functions::Functions(ValidationState_t& module)

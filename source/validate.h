@@ -272,6 +272,18 @@ class ValidationState_t {
   // capabilities==0.
   bool HasAnyOf(spv_capability_mask_t capabilities) const;
 
+  // Sets the addressing model of this module (logical/physical).
+  void setAddressingModel(SpvAddressingModel am);
+
+  // Returns the addressing model of this module, or Logical if uninitialized.
+  SpvAddressingModel getAddressingModel() const;
+
+  // Sets the memory model of this module.
+  void setMemoryModel(SpvMemoryModel mm);
+
+  // Returns the memory model of this module, or Simple if uninitialized.
+  SpvMemoryModel getMemoryModel() const;
+
   AssemblyGrammar& grammar() { return grammar_; }
 
  private:
@@ -298,6 +310,10 @@ class ValidationState_t {
   std::vector<uint32_t> entry_points_;
 
   AssemblyGrammar grammar_;
+
+  SpvAddressingModel addressing_model_;
+  SpvMemoryModel memory_model_;
+
 };
 
 }  // namespace libspirv
