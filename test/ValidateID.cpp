@@ -1580,39 +1580,6 @@ TEST_F(ValidateID, OpPtrAccessChainGood) {
   CHECK_KERNEL(spirv, SPV_SUCCESS, 64);
 }
 
-TEST_F(ValidateID, OpExtInstPowAndPownGood) {
-  const char* spirv = R"(
-      OpEntryPoint Kernel %10 "powtest"
-      OpSource OpenCL_C 200000
-      OpDecorate %5 BuiltIn GlobalInvocationId
-      OpDecorate %5 Constant
-      OpDecorate %11 FuncParamAttr NoCapture
-      OpDecorate %5 LinkageAttributes "__spirv_GlobalInvocationId" Import
-%2  = OpTypeInt 32 0
-%3  = OpTypeVector %2 3
-%4  = OpTypePointer UniformConstant %3
-%5  = OpVariable %4 UniformConstant
-%6  = OpTypeVoid
-%7  = OpTypeFloat 32
-%8  = OpTypePointer CrossWorkgroup %7
-%9  = OpTypeFunction %6 %8
-%17 = OpConstant %7 2
-%19 = OpConstant %2 3
-%10 = OpFunction %6 None %9
-%11 = OpFunctionParameter %8
-%12 = OpLabel
-%13 = OpLoad %3 %5 Aligned 0
-%14 = OpCompositeExtract %2 %13 0
-%15 = OpInBoundsPtrAccessChain %8 %11 %14
-%16 = OpLoad %7 %15 Aligned 4
-%18 = OpExtInst %7 %1 pow %16 %17
-%20 = OpExtInst %7 %1 pown %18 %19
-      OpStore %15 %20 Aligned 4
-      OpReturn
-      OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_SUCCESS, 32);
-}
-
 // TODO: OpLifetimeStart
 // TODO: OpLifetimeStop
 // TODO: OpAtomicInit
