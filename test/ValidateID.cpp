@@ -944,10 +944,11 @@ TEST_F(ValidateID, OpLoadBitcastPointerGood) {
 %9  = OpTypeFloat 32
 %3  = OpTypePointer UniformConstant %2
 %10 = OpTypePointer UniformConstant %9
+%5  = OpVariable %3 UniformConstant
 %4  = OpTypeFunction %1
 %6  = OpFunction %1 None %4
 %7  = OpLabel
-%11 = OpBitcast %10 %3
+%11 = OpBitcast %10 %5
 %8  = OpLoad %9 %11
       OpReturn
       OpFunctionEnd
@@ -961,11 +962,12 @@ TEST_F(ValidateID, OpLoadBitcastNonPointerBad) {
 %9  = OpTypeFloat 32
 %3  = OpTypePointer UniformConstant %2
 %4  = OpTypeFunction %1
+%5  = OpVariable %3 UniformConstant
 %6  = OpFunction %1 None %4
 %7  = OpLabel
-%8  = OpLoad %2 %3
+%8  = OpLoad %2 %5
 %10 = OpBitcast %9 %8
-%8  = OpLoad %2 %10
+%11 = OpLoad %2 %10
       OpReturn
       OpFunctionEnd
 )";
