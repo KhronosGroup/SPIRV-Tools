@@ -513,7 +513,7 @@ TEST(AssemblyContextParseFloat16, Overflow) {
   // on floating point.
   AssemblyContext context(AutoText(""), nullptr);
   const spv_result_t ec = SPV_FAILED_MATCH;
-  spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0.0f);
+  spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0);
 
   EXPECT_EQ(SPV_SUCCESS, context.parseNumber("-0.0", ec, &f, ""));
   EXPECT_EQ(uint16_t{0x8000}, f.value().getAsFloat().get_value());

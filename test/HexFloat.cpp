@@ -1092,7 +1092,7 @@ using ParseNormalFloat16Test =
 
 TEST_P(ParseNormalFloat16Test, Samples) {
   std::stringstream input(GetParam().literal);
-  HexFloat<FloatProxy<Float16>> parsed_value(0.0f);
+  HexFloat<FloatProxy<Float16>> parsed_value(0);
   ParseNormalFloat(input, GetParam().negate_value, parsed_value);
   EXPECT_NE(GetParam().expect_success, input.fail())
       << " literal: " << GetParam().literal
