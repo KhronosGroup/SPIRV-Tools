@@ -71,6 +71,11 @@ def main():
         sys.exit(1)
 
     new_content = '"spirv-tools {}\\n"\n'.format(
+        # decode() is needed here for Python3 compatibility. In Python2,
+        # str and bytes are the same type, but not in Python3.
+        # Popen.communicate() returns a bytes instance, which needs to be
+        # decoded into text data first in Python3. And this decode() won't
+        # hurt Python2.
         describe(sys.argv[1]).decode('ascii').replace('"', '\\"'))
     if os.path.isfile(OUTFILE) and new_content == open(OUTFILE, 'r').read():
         sys.exit(0)
