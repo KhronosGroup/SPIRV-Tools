@@ -62,7 +62,8 @@ def describe(dir):
         try:
             return command_output(['git', 'rev-parse', 'HEAD'], dir).rstrip()
         except:
-            return 'unknown hash, ' + datetime.date.today().isoformat()
+            return 'unknown hash, {}'.format(
+                datetime.date.today().isoformat()).encode('ascii')
 
 
 def main():
