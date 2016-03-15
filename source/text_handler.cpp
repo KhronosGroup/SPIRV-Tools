@@ -143,6 +143,8 @@ spv_result_t getWord(spv_text text, spv_position position, std::string& word,
         case ' ':
         case ';':
         case '\t':
+        case '\v':
+        case '\r':
         case '\n':
           if (escaping || quoting) break;
         // Fall through.
@@ -234,22 +236,11 @@ bool AssemblyContext::hasText() const {
 }
 
 std::string AssemblyContext::getWord() const {
-  uint64_t index = current_position_.index;
-  while (true) {
-    switch (text_->str[index]) {
-      case '\0':
-      case '\t':
-      case '\v':
-      case '\r':
-      case '\n':
-      case ' ':
-        return std::string(text_->str, text_->str + index);
-      default:
-        index++;
-    }
-  }
-  assert(0 && "Unreachable");
-  return "";  // Make certain compilers happy.
+  spv_position_t start_position = current_position_;
+  spv_position_t end_position = {};
+  std::string word;
+  ::getWord(text_, &start_position, word, &end_position);
+  return word;
 }
 
 void AssemblyContext::seekForward(uint32_t size) {

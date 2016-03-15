@@ -62,6 +62,34 @@ TEST(GetWord, Simple) {
   EXPECT_EQ("abc", AssemblyContext(AutoText("abc\n"), nullptr).getWord());
 }
 
+TEST(GetWord, MultipleWords) {
+  const std::string contents = "abc  def  ghi l mnopqrstuvwxyz12";
+  spv_text_t text = {contents.data(), contents.size()};
+  auto context = AssemblyContext(&text, nullptr);
+
+  EXPECT_EQ("abc", context.getWord());
+
+  size_t index = contents.find('d');
+  spv_position_t position = {0, index, index};
+  context.setPosition(position);
+  EXPECT_EQ("def", context.getWord());
+
+  index = contents.find('g');
+  position = {0, index, index};
+  context.setPosition(position);
+  EXPECT_EQ("ghi", context.getWord());
+
+  index = contents.find('l');
+  position = {0, index, index};
+  context.setPosition(position);
+  EXPECT_EQ("l", context.getWord());
+
+  index = contents.find('m');
+  position = {0, index, index};
+  context.setPosition(position);
+  EXPECT_EQ("mnopqrstuvwxyz12", context.getWord());
+}
+
 // An mask parsing test case.
 struct MaskCase {
   spv_operand_type_t which_enum;
