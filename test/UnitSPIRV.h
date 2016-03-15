@@ -169,7 +169,7 @@ inline std::vector<uint32_t> MakeVector(std::string input) {
 // A type for easily creating spv_text_t values, with an implicit conversion to
 // spv_text.
 struct AutoText {
-  explicit AutoText(std::string value)
+  explicit AutoText(const std::string& value)
       : str(value), text({str.data(), str.size()}) {}
   operator spv_text() { return &text; }
   std::string str;

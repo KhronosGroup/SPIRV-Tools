@@ -145,9 +145,9 @@ class AssemblyContext {
   // Returns SPV_SUCCESS on success.
   spv_result_t advance();
 
-  // Sets word to the next word in the input text. Fills endPosition with
+  // Sets word to the next word in the input text. Fills next_position with
   // the next location past the end of the word.
-  spv_result_t getWord(std::string& word, spv_position endPosition);
+  spv_result_t getWord(std::string* word, spv_position next_position);
 
   // Returns true if the next word in the input is the start of a new Opcode.
   bool startsWithOp();

@@ -448,7 +448,7 @@ spv_result_t encodeInstructionStartingWithImmediate(
     libspirv::AssemblyContext* context, spv_instruction_t* pInst) {
   std::string firstWord;
   spv_position_t nextPosition = {};
-  auto error = context->getWord(firstWord, &nextPosition);
+  auto error = context->getWord(&firstWord, &nextPosition);
   if (error) return context->diagnostic(error) << "Internal Error";
 
   if ((error = encodeImmediate(context, firstWord.c_str(), pInst))) {
@@ -461,7 +461,7 @@ spv_result_t encodeInstructionStartingWithImmediate(
     // Otherwise, there must be an operand that's either a literal, an ID, or
     // an immediate.
     std::string operandValue;
-    if ((error = context->getWord(operandValue, &nextPosition)))
+    if ((error = context->getWord(&operandValue, &nextPosition)))
       return context->diagnostic(error) << "Internal Error";
 
     if (operandValue == "=")
@@ -498,7 +498,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
   std::string firstWord;
   spv_position_t nextPosition = {};
-  spv_result_t error = context->getWord(firstWord, &nextPosition);
+  spv_result_t error = context->getWord(&firstWord, &nextPosition);
   if (error) return context->diagnostic() << "Internal Error";
 
   std::string opcodeName;
@@ -521,7 +521,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     if (context->advance())
       return context->diagnostic() << "Expected '=', found end of stream.";
     std::string equal_sign;
-    error = context->getWord(equal_sign, &nextPosition);
+    error = context->getWord(&equal_sign, &nextPosition);
     if ("=" != equal_sign)
       return context->diagnostic() << "'=' expected after result id.";
 
@@ -529,7 +529,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
     context->setPosition(nextPosition);
     if (context->advance())
       return context->diagnostic() << "Expected opcode, found end of stream.";
-    error = context->getWord(opcodeName, &nextPosition);
+    error = context->getWord(&opcodeName, &nextPosition);
     if (error) return context->diagnostic(error) << "Internal Error";
     if (!context->startsWithOp()) {
       return context->diagnostic() << "Invalid Opcode prefix '" << opcodeName
@@ -543,8 +543,8 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   spv_opcode_desc opcodeEntry;
   error = grammar.lookupOpcode(pInstName, &opcodeEntry);
   if (error) {
-    return context->diagnostic(error) << "Invalid Opcode name '"
-                                      << opcodeName << "'";
+    return context->diagnostic(error) << "Invalid Opcode name '" << opcodeName
+                                      << "'";
   }
   if (opcodeEntry->hasResult && result_id.empty()) {
     return context->diagnostic()
@@ -611,7 +611,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
       }
 
       std::string operandValue;
-      error = context->getWord(operandValue, &nextPosition);
+      error = context->getWord(&operandValue, &nextPosition);
       if (error) return context->diagnostic(error) << "Internal Error";
 
       error = spvTextEncodeOperand(grammar, context, type, operandValue.c_str(),

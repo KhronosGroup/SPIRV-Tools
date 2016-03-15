@@ -104,35 +104,28 @@ spv_result_t advance(spv_text text, spv_position position) {
   return SPV_SUCCESS;
 }
 
-/// @brief Fetch the next word from the text stream.
-///
-/// A word ends at the next comment or whitespace.  However, double-quoted
-/// strings remain intact, and a backslash always escapes the next character.
-///
-/// @param[in] text stream to read from
-/// @param[in] position current position in text stream
-/// @param[out] word returned word
-/// @param[out] endPosition one past the end of the returned word
-///
-/// @return result code
-spv_result_t getWord(spv_text text, spv_position position, std::string& word,
-                     spv_position endPosition) {
+// Fetches the next word from the given text stream starting from the given
+// *position. On success, writes the decoded word into *word and updates
+// *position to the location past the returned word.
+//
+// A word ends at the next comment or whitespace.  However, double-quoted
+// strings remain intact, and a backslash always escapes the next character.
+spv_result_t getWord(spv_text text, spv_position position, std::string* word) {
   if (!text->str || !text->length) return SPV_ERROR_INVALID_TEXT;
-  if (!position || !endPosition) return SPV_ERROR_INVALID_POINTER;
+  if (!position) return SPV_ERROR_INVALID_POINTER;
 
-  *endPosition = *position;
+  const size_t start_index = position->index;
 
   bool quoting = false;
   bool escaping = false;
 
   // NOTE: Assumes first character is not white space!
   while (true) {
-    if (endPosition->index >= text->length) {
-      word.assign(text->str + position->index,
-                  static_cast<size_t>(endPosition->index - position->index));
+    if (position->index >= text->length) {
+      word->assign(text->str + start_index, text->str + position->index);
       return SPV_SUCCESS;
     }
-    const char ch = text->str[endPosition->index];
+    const char ch = text->str[position->index];
     if (ch == '\\')
       escaping = !escaping;
     else {
@@ -147,9 +140,7 @@ spv_result_t getWord(spv_text text, spv_position position, std::string& word,
           if (escaping || quoting) break;
         // Fall through.
         case '\0': {  // NOTE: End of word found!
-          word.assign(
-              text->str + position->index,
-              static_cast<size_t>(endPosition->index - position->index));
+          word->assign(text->str + start_index, text->str + position->index);
           return SPV_SUCCESS;
         }
         default:
@@ -158,8 +149,8 @@ spv_result_t getWord(spv_text text, spv_position position, std::string& word,
       escaping = false;
     }
 
-    endPosition->column++;
-    endPosition->index++;
+    position->column++;
+    position->index++;
   }
 }
 
@@ -195,9 +186,10 @@ spv_result_t AssemblyContext::advance() {
   return ::advance(text_, &current_position_);
 }
 
-spv_result_t AssemblyContext::getWord(std::string& word,
-                                      spv_position endPosition) {
-  return ::getWord(text_, &current_position_, word, endPosition);
+spv_result_t AssemblyContext::getWord(std::string* word,
+                                      spv_position next_position) {
+  *next_position = current_position_;
+  return ::getWord(text_, next_position, word);
 }
 
 bool AssemblyContext::startsWithOp() {
@@ -205,23 +197,21 @@ bool AssemblyContext::startsWithOp() {
 }
 
 bool AssemblyContext::isStartOfNewInst() {
-  spv_position_t nextPosition = current_position_;
-  if (::advance(text_, &nextPosition)) return false;
-  if (::startsWithOp(text_, &nextPosition)) return true;
+  spv_position_t pos = current_position_;
+  if (::advance(text_, &pos)) return false;
+  if (::startsWithOp(text_, &pos)) return true;
 
   std::string word;
-  spv_position_t startPosition = current_position_;
-  if (::getWord(text_, &startPosition, word, &nextPosition)) return false;
+  pos = current_position_;
+  if (::getWord(text_, &pos, &word)) return false;
   if ('%' != word.front()) return false;
 
-  if (::advance(text_, &nextPosition)) return false;
-  startPosition = nextPosition;
-  if (::getWord(text_, &startPosition, word, &nextPosition)) return false;
+  if (::advance(text_, &pos)) return false;
+  if (::getWord(text_, &pos, &word)) return false;
   if ("=" != word) return false;
 
-  if (::advance(text_, &nextPosition)) return false;
-  startPosition = nextPosition;
-  if (::startsWithOp(text_, &startPosition)) return true;
+  if (::advance(text_, &pos)) return false;
+  if (::startsWithOp(text_, &pos)) return true;
   return false;
 }
 
