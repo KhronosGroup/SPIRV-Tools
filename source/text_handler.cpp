@@ -233,25 +233,6 @@ bool AssemblyContext::hasText() const {
   return text_->length > current_position_.index;
 }
 
-std::string AssemblyContext::getWord() const {
-  uint64_t index = current_position_.index;
-  while (true) {
-    switch (text_->str[index]) {
-      case '\0':
-      case '\t':
-      case '\v':
-      case '\r':
-      case '\n':
-      case ' ':
-        return std::string(text_->str, text_->str + index);
-      default:
-        index++;
-    }
-  }
-  assert(0 && "Unreachable");
-  return "";  // Make certain compilers happy.
-}
-
 void AssemblyContext::seekForward(uint32_t size) {
   current_position_.index += size;
   current_position_.column += size;

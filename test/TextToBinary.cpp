@@ -46,22 +46,6 @@ using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
 using testing::Eq;
 
-TEST(GetWord, Simple) {
-  EXPECT_EQ("", AssemblyContext(AutoText(""), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText("\0a"), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText(" a"), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText("\ta"), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText("\va"), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText("\ra"), nullptr).getWord());
-  EXPECT_EQ("", AssemblyContext(AutoText("\na"), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc"), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc "), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\t"), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\r"), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\v"), nullptr).getWord());
-  EXPECT_EQ("abc", AssemblyContext(AutoText("abc\n"), nullptr).getWord());
-}
-
 // An mask parsing test case.
 struct MaskCase {
   spv_operand_type_t which_enum;

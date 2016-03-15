@@ -29,8 +29,8 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
@@ -49,6 +49,20 @@ TEST_F(TextToBinaryMisc, OpUndef) {
   const uint32_t typeID = 1;
   EXPECT_THAT(code[1], Eq(typeID));
   EXPECT_THAT(Subvector(code, 3), Eq(MakeInstruction(SpvOpUndef, {typeID, 2})));
+}
+
+TEST_F(TextToBinaryMisc, OpWrong) {
+  EXPECT_THAT(CompileFailure(" OpWrong %1 %2"),
+              Eq("Invalid Opcode name 'OpWrong'"));
+}
+
+TEST_F(TextToBinaryMisc, OpWrongAfterRight) {
+  const auto assembly = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpXYZ
+)";
+  EXPECT_THAT(CompileFailure(assembly), Eq("Invalid Opcode name 'OpXYZ'"));
 }
 
 }  // anonymous namespace

@@ -478,7 +478,6 @@ spv_result_t encodeInstructionStartingWithImmediate(
   }
   return SPV_SUCCESS;
 }
-}  // anonymous namespace
 
 /// @brief Translate single Opcode and operands to binary form
 ///
@@ -545,7 +544,7 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   error = grammar.lookupOpcode(pInstName, &opcodeEntry);
   if (error) {
     return context->diagnostic(error) << "Invalid Opcode name '"
-                                      << context->getWord() << "'";
+                                      << opcodeName << "'";
   }
   if (opcodeEntry->hasResult && result_id.empty()) {
     return context->diagnostic()
@@ -651,8 +650,6 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
   return SPV_SUCCESS;
 }
-
-namespace {
 
 enum { kAssemblerVersion = 0 };
 
