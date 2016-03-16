@@ -30,6 +30,8 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <iterator>
+#include <iomanip>
 
 #include "spirv/spirv.h"
 
@@ -245,6 +247,17 @@ string ValidationState_t::getIdName(uint32_t id) const {
   return out.str();
 }
 
+string ValidationState_t::getIdOrName(uint32_t id) const {
+  std::stringstream out;
+  if (operand_names_.find(id) != end(operand_names_)) {
+    out << operand_names_.at(id);
+  }
+  else {
+    out << id;
+  }
+  return out.str();
+}
+
 size_t ValidationState_t::unresolvedForwardIdCount() const {
   return unresolved_forward_ids_.size();
 }
@@ -336,11 +349,20 @@ SpvMemoryModel ValidationState_t::getMemoryModel() const {
 }
 
 Functions::Functions(ValidationState_t& module)
-    : module_(module), in_function_(false), in_block_(false) {}
+  : module_(module), current_block_(nullptr), in_function_(false) {}
 
 bool Functions::in_function_body() const { return in_function_; }
 
-bool Functions::in_block() const { return in_block_; }
+bool Functions::in_block() const {
+  return static_cast<bool>(current_block_);
+}
+
+bool Functions::isFirstBlock(uint32_t id) const {
+  return end(first_blocks_) != find_if(begin(first_blocks_), end(first_blocks_),
+                                       [id] (const BasicBlock* block) {
+                                         return *block == id;
+                                       });
+}
 
 spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
                                          uint32_t function_control,
@@ -351,9 +373,11 @@ spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
   id_.emplace_back(id);
   type_id_.emplace_back(function_type_id);
   declaration_type_.emplace_back(FunctionDecl::kFunctionDeclUnknown);
-  block_ids_.emplace_back();
+  first_blocks_.emplace_back(nullptr);
+  blocks_.emplace_back();
   variable_ids_.emplace_back();
   parameter_ids_.emplace_back();
+  cfg_constructs_.emplace_back(module_);
 
   // TODO(umar): validate function type and type_id
   (void)ret_type_id;
@@ -376,6 +400,41 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
   return SPV_SUCCESS;
 }
 
+spv_result_t Functions::RegisterLoopMerge(uint32_t merge_id,
+                                          uint32_t continue_id) {
+  return cfg_constructs_.back().RegisterLoopMerge(get_current_block().get_id(),
+                                                  merge_id, continue_id);
+}
+
+spv_result_t Functions::RegisterSelectionMerge(uint32_t merge_id) {
+  return cfg_constructs_.back().RegisterSelectionMerge(
+      get_current_block().get_id(), merge_id);
+}
+
+  void Functions::printDotGraph() const {
+  using namespace std;
+  size_t num_func = id_.size();
+  for(size_t i = 0; i < num_func; i++) {
+    string func_name(module_.getIdOrName(id_[i]));
+    printf("digraph %s {\n", func_name.c_str());
+
+    cout << setw(10) << func_name << " -> "
+         << module_.getIdOrName(first_blocks_[i]->get_id())
+         << endl;
+    for(auto block: blocks_[i]) {
+      std::cout << setw(10) << block.second << std::endl;
+    }
+    printf("}\n");
+  }
+}
+
+void Functions::printBlocks() const {
+  printf("begin -> %s\n", module_.getIdOrName(first_blocks_.back()->get_id()).c_str());
+  for(auto block: blocks_.back()) {
+    std::cout << block.second << std::endl;
+  }
+}
+
 spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
   assert(declaration_type_.back() == FunctionDecl::kFunctionDeclUnknown);
   declaration_type_.back() = type;
@@ -384,22 +443,26 @@ spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
 
 spv_result_t Functions::RegisterBlock(uint32_t id) {
   assert(in_function_ == true && "Blocks can only exsist in functions");
-  assert(in_block_ == false && "Blocks cannot be nested");
+  assert(in_block() == false && "Blocks cannot be nested");
   assert(module_.getLayoutSection() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
          "Function declartions must appear before function definitions");
   assert(declaration_type_.back() == FunctionDecl::kFunctionDeclDefinition &&
          "Function declaration type should have already been defined");
 
-  block_ids_.back().push_back(id);
-  in_block_ = true;
+  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  tie(tmp, std::ignore) = blocks_.back().insert({id, BasicBlock(id, module_)});
+  current_block_ = &tmp->second;
+  if(blocks_.back().size() == 1) {
+    first_blocks_.back() = current_block_;
+  }
   return SPV_SUCCESS;
 }
 
 spv_result_t Functions::RegisterFunctionEnd() {
   assert(in_function_ == true &&
          "Function end can only be called in functions");
-  assert(in_block_ == false && "Function end cannot be called inside a block");
+  assert(in_block() == false && "Function end cannot be called inside a block");
   in_function_ = false;
   return SPV_SUCCESS;
 }
@@ -407,11 +470,115 @@ spv_result_t Functions::RegisterFunctionEnd() {
 spv_result_t Functions::RegisterBlockEnd() {
   assert(in_function_ == true &&
          "Branch instruction can only be called in a function");
-  assert(in_block_ == true &&
+  assert(in_block() == true &&
          "Branch instruction can only be called in a block");
-  in_block_ = false;
+  current_block_ = nullptr;
   return SPV_SUCCESS;
 }
 
-size_t Functions::get_block_count() const { return block_ids_.back().size(); }
+spv_result_t Functions::RegisterBlockEnd(uint32_t next_id) {
+  assert(in_function_ == true &&
+         "Branch instruction can only be called in a function");
+  assert(in_block() == true &&
+         "Branch instruction can only be called in a block");
+
+  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  tie(tmp, std::ignore) = blocks_.back().insert({next_id, BasicBlock(next_id, module_)});
+  current_block_->RegisterNext(tmp->second);
+
+  current_block_ = nullptr;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Functions::RegisterBlockEnd(vector<uint32_t> next_list) {
+  assert(in_function_ == true &&
+         "Branch instruction can only be called in a function");
+  assert(in_block() == true &&
+         "Branch instruction can only be called in a block");
+
+  vector<BasicBlock*> next_blocks;
+  next_blocks.reserve(next_list.size());
+
+  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  for(uint32_t id : next_list) {
+    tie(tmp, std::ignore) = blocks_.back().insert({id, BasicBlock(id, module_)});
+    next_blocks.push_back(&tmp->second);
+  }
+
+  current_block_->RegisterNext(next_blocks);
+  current_block_ = nullptr;
+  return SPV_SUCCESS;
+}
+
+size_t Functions::get_block_count() const { return blocks_.back().size(); }
+
+BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
+  : id_(id)
+  , immediate_dominator_()
+  , predecessors_()
+  , dominators_()
+  , out_blocks_()
+  , module_(module) {
+}
+
+void
+BasicBlock::RegisterNext(BasicBlock& next) {
+  next.predecessors_.push_back(this);
+  out_blocks_.push_back(&next);
+}
+
+void
+BasicBlock::RegisterNext(vector<BasicBlock*> next_blocks) {
+  for(auto &block: next_blocks) {
+    block->predecessors_.push_back(this);
+    out_blocks_.push_back(block);
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, const BasicBlock &other) {
+  os << other.module_.getIdOrName(other.id_) << " -> {";
+  if(other.out_blocks_.empty()) {
+    os << "end";
+  } else {
+    for(auto &block : other.out_blocks_) {
+      os << other.module_.getIdOrName(block->get_id()) << " ";
+    }
+  }
+  os << "}";
+  return os;
+}
+
+bool
+Functions::IsMergeBlock(uint32_t merge_block_id) const {
+  return cfg_constructs_.back().IsMergeBlock(merge_block_id);
+}
+
+bool
+CFConstructs::IsMergeBlock(uint32_t merge_block_id) const {
+  return merge_blocks_.find(merge_block_id) != end(merge_blocks_);
+}
+
+spv_result_t
+CFConstructs::RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id) {
+  loop_header_blocks_.push_back(header_id);
+  continue_blocks_.push_back(continue_id);
+
+  bool success;
+  tie(std::ignore, success) = merge_blocks_.insert(merge_id);
+  assert(success && "Merge blocks cannot be targeted by multiple headers");
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t
+CFConstructs::RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id) {
+  selection_header_blocks_.push_back(header_id);
+
+  bool success;
+  tie(std::ignore, success) = merge_blocks_.insert(merge_id);
+  assert(success && "Merge blocks cannot be targeted by multiple headers");
+
+  return SPV_SUCCESS;
+}
+
 }

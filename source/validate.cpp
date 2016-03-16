@@ -184,6 +184,7 @@ spv_result_t spvValidate(const spv_const_context context,
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.
+  vstate.get_functions().printDotGraph();
 
   if (vstate.unresolvedForwardIdCount() > 0) {
     stringstream ss;

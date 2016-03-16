@@ -28,6 +28,7 @@
 #define LIBSPIRV_VALIDATE_H_
 
 #include <algorithm>
+#include <array>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -42,6 +43,24 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_definition.h"
 #include "table.h"
+
+#define _printf_  printf
+#define MSG(msg,...) do {                       \
+    _printf_(__FILE__":%d: " msg "\n",          \
+             __LINE__, ##__VA_ARGS__);          \
+  } while (0)
+
+#ifdef DEBUG
+#define MSG_DBG      MSG
+#else
+#define MSG_DBG(...) do { /* nothing */ } while (0)
+#endif
+
+
+#define SHOW(exp)   do { MSG("%s  %ld",   #exp, (long)exp);   } while (0)
+#define SHOW_P(ptr) do { MSG("%s  %#zx",  #ptr, (size_t)ptr); } while (0)
+#define SHOW_F(exp) do { MSG("%s  %g",    #exp, (double)exp); } while (0)
+#define SHOW_S(exp) do { MSG("%s  %s",    #exp, exp);         } while (0)
 
 // Structures
 
@@ -85,6 +104,72 @@ enum class FunctionDecl {
 
 class ValidationState_t;
 
+class BasicBlock
+{
+public:
+  BasicBlock(uint32_t id, ValidationState_t& module);
+
+  uint32_t get_id() const {return id_; }
+
+  const std::vector<BasicBlock*>& get_dominators() const {return dominators_; }
+  std::vector<BasicBlock*>&       get_dominators()       {return dominators_; }
+
+  const std::vector<BasicBlock*>& get_out_blocks() const {return out_blocks_; }
+  std::vector<BasicBlock*>&       get_out_blocks()       {return out_blocks_; }
+
+  void RegisterNext(BasicBlock& next);
+  void RegisterNext(std::vector<BasicBlock*> next);
+
+  bool operator==(const BasicBlock &other) const { return other.id_ == id_; }
+  bool operator==(const uint32_t &id) const { return id == id_; }
+
+  friend std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
+private:
+  const uint32_t id_;
+  BasicBlock* immediate_dominator_;
+  std::vector<BasicBlock*> predecessors_;
+  std::vector<BasicBlock*> dominators_;
+  std::vector<BasicBlock*> out_blocks_;
+  ValidationState_t& module_;
+};
+
+class CFConstructs {
+
+// Universal Limit of ResultID + 1
+static const uint32_t kInitialValue = 0x400000;
+
+public:
+  CFConstructs(const ValidationState_t &module)
+    : module_(module)
+    , merge_blocks_()
+    , selection_header_blocks_()
+    , loop_header_blocks_()
+    , continue_blocks_()
+    , back_edges_() {}
+
+  bool IsMergeBlock(uint32_t merge_block_id) const;
+
+  spv_result_t RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id);
+
+  spv_result_t RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id);
+
+
+private:
+  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+
+  const ValidationState_t &module_;
+  std::unordered_set<uint32_t> merge_blocks_;
+  std::vector<uint32_t> selection_header_blocks_;
+
+  // Loop constructs
+  std::vector<uint32_t> loop_header_blocks_;
+  std::vector<uint32_t> continue_blocks_;
+  std::vector<std::pair<uint32_t, uint32_t> > back_edges_;
+
+};
+
+std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
+
 // This class manages all function declaration and definitions in a module. It
 // handles the state and id information while parsing a function in the SPIR-V
 // binary.
@@ -121,14 +206,22 @@ class Functions {
   spv_result_t RegisterBlockVariable(uint32_t type_id, uint32_t id,
                                      SpvStorageClass storage, uint32_t init_id);
 
-  spv_result_t RegisterBlockLoopMerge(uint32_t merge_id, uint32_t continue_id,
-                                      SpvLoopControlMask control);
+  spv_result_t RegisterLoopMerge(uint32_t merge_id, uint32_t continue_id);
 
-  spv_result_t RegisterBlockSelectionMerge(uint32_t merge_id,
-                                           SpvSelectionControlMask control);
+  spv_result_t RegisterSelectionMerge(uint32_t merge_id);
 
   // Registers the end of the block
   spv_result_t RegisterBlockEnd();
+
+  // Registers the end of the block
+  spv_result_t RegisterBlockEnd(uint32_t next_id);
+
+  // Registers the end of the block
+  spv_result_t RegisterBlockEnd(std::vector<uint32_t> next_list);
+
+  bool IsMergeBlock(uint32_t merge_block_id) const;
+
+  bool isFirstBlock(uint32_t id) const;
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
@@ -141,7 +234,12 @@ class Functions {
   // instruction
   bool in_block() const;
 
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
+        BasicBlock& get_current_block()       { return *current_block_; }
+  const BasicBlock& get_current_block() const { return *current_block_; }
+
+  void printDotGraph() const;
+
+  void printBlocks() const;
 
  private:
   // Parent module
@@ -157,8 +255,17 @@ class Functions {
   std::vector<FunctionDecl> declaration_type_;
 
   // TODO(umar): Probably needs better abstractions
+
+  // The first BasicBlock in a function
+  std::vector<BasicBlock*> first_blocks_;
+
   // The beginning of the block of functions
-  std::vector<std::vector<uint32_t>> block_ids_;
+  std::vector<std::unordered_map<uint32_t, BasicBlock>> blocks_;
+
+  // The block that is currently being parsed
+  BasicBlock* current_block_;
+
+  std::vector<CFConstructs> cfg_constructs_;
 
   // The variable IDs of the functions
   std::vector<std::vector<uint32_t>> variable_ids_;
@@ -168,7 +275,6 @@ class Functions {
 
   // NOTE: See correspoding getter functions
   bool in_function_;
-  bool in_block_;
 };
 
 class ValidationState_t {
@@ -189,6 +295,8 @@ class ValidationState_t {
   // the <id> is the numeric valid of the id and the Name is a name assigned by
   // the OpName instruction
   std::string getIdName(uint32_t id) const;
+
+  std::string getIdOrName(uint32_t id) const;
 
   // Returns the number of ID which have been forward referenced but not defined
   size_t unresolvedForwardIdCount() const;
