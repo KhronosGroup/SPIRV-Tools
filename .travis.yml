@@ -1,11 +1,13 @@
 # Linux Build Configuration for Travis
 
-sudo: false # Use Travis docker infrastructure
-
 language: cpp
 
 os:
   - linux
+
+# Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
+sudo: required
+dist: trusty
 
 env:
   matrix:
@@ -25,26 +27,10 @@ branches:
   only:
     - master
 
-# Travis CI is powered with Ubuntu 12.04, whose toolchain is outdated.
 addons:
   apt:
-    # Travis white list of ppa.
-    # https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
-    sources:
-      - ubuntu-toolchain-r-test     # For gcc 4.9
-      - kubuntu-backports           # For cmake 2.8.12
-      - llvm-toolchain-precise-3.7  # For clang 3.7
-    # Travis whitelist of packages.
-    # https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise
     packages:
-      - cmake
-      - g++-4.9
-      - clang-3.7
       - ninja-build
-
-install:
-  - if [ "$CC" = "gcc"   ]; then export CC=gcc-4.9 CXX=g++-4.9; fi       # Make sure that gcc-4.9 is selected.
-  - if [ "$CC" = "clang" ]; then export CC=clang-3.7 CXX=clang++-3.7; fi # Make sure that clang-3.7 is selected.
 
 before_script:
   - git clone https://github.com/google/googletest.git external/googletest
@@ -52,12 +38,9 @@ before_script:
 script:
   - mkdir build && cd build
   - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-    # Sometimes g++-4.9 flakes with an ICE. This may be an OOM thing when
-    # expanding many templates.
-    # If we fail the build the first time, then try to continue in
-    # single-process mode.
-  - ninja || ninja -j 1
-  - ./UnitSPIRV --gtest_break_on_failure
+  - ninja
+    # Be nice and only output if there are failures.
+  - ./UnitSPIRV --gtest_break_on_failure &> log || cat log
 
 
 notifications:
