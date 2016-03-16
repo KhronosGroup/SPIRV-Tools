@@ -120,7 +120,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   if (opcode == SpvOpCapability)
-    _.registerCapability(
+    _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
   if (opcode == SpvOpMemoryModel) {
     _.setAddressingModel(
@@ -139,6 +139,10 @@ spv_result_t InstructionPass(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_LAYOUT)
                << "Variables must have a function[7] storage class inside"
                   " of a function";
+      }
+      if(_.get_current_function().IsFirstBlock(_.get_current_function().get_current_block().get_id()) == false) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+          << "Variables can only be defined in the first block of a function";
       }
     } else {
       if (storage_class == SpvStorageClassFunction) {

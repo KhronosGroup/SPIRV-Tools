@@ -109,6 +109,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Capability.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/Validate.CFG.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Layout.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Storage.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Validate.SSA.cpp

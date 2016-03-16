@@ -26,17 +26,21 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iterator>
+#include <limits>
+#include <list>
 #include <map>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "spirv/spirv.h"
-
 #include "spirv_definition.h"
 #include "validate.h"
 
 using std::find;
+using std::list;
+using std::numeric_limits;
 using std::string;
 using std::unordered_set;
 using std::vector;
@@ -209,6 +213,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 
 namespace libspirv {
 
+void message(std::string file, size_t line, std::string name) {
+  std::cout << file << ":" << line << ": " << name << std::endl;
+}
+
 ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
                                      const spv_const_context context)
     : diagnostic_(diagnostic),
@@ -216,11 +224,12 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       unresolved_forward_ids_{},
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
-      module_functions_(*this),
+      module_functions_(),
       module_capabilities_(0u),
       grammar_(context),
       addressing_model_(SpvAddressingModelLogical),
-      memory_model_(SpvMemoryModelSimple) {}
+      memory_model_(SpvMemoryModelSimple),
+      in_function_(false) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -241,6 +250,16 @@ string ValidationState_t::getIdName(uint32_t id) const {
   out << id;
   if (operand_names_.find(id) != end(operand_names_)) {
     out << "[" << operand_names_.at(id) << "]";
+  }
+  return out.str();
+}
+
+string ValidationState_t::getIdOrName(uint32_t id) const {
+  std::stringstream out;
+  if (operand_names_.find(id) != end(operand_names_)) {
+    out << operand_names_.at(id);
+  } else {
+    out << id;
   }
   return out.str();
 }
@@ -286,23 +305,26 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-Functions& ValidationState_t::get_functions() { return module_functions_; }
+list<Function>& ValidationState_t::get_functions() { return module_functions_; }
 
-bool ValidationState_t::in_function_body() const {
-  return module_functions_.in_function_body();
+Function& ValidationState_t::get_current_function() {
+  assert(in_function_body());
+  return module_functions_.back();
 }
+
+bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
-  return module_functions_.in_block();
+  return module_functions_.back().in_block();
 }
 
-void ValidationState_t::registerCapability(SpvCapability cap) {
+void ValidationState_t::RegisterCapability(SpvCapability cap) {
   module_capabilities_ |= SPV_CAPABILITY_AS_MASK(cap);
   spv_operand_desc desc;
   if (SPV_SUCCESS ==
       grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
     libspirv::ForEach(desc->capabilities,
-                      [this](SpvCapability c) { registerCapability(c); });
+                      [this](SpvCapability c) { RegisterCapability(c); });
 }
 
 bool ValidationState_t::hasCapability(SpvCapability cap) const {
@@ -318,7 +340,7 @@ bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
   });
   return found;
 }
-	
+
 void ValidationState_t::setAddressingModel(SpvAddressingModel am) {
   addressing_model_ = am;
 }
@@ -335,40 +357,61 @@ SpvMemoryModel ValidationState_t::getMemoryModel() const {
   return memory_model_;
 }
 
-Functions::Functions(ValidationState_t& module)
-    : module_(module), in_function_(false), in_block_(false) {}
+Function::Function(uint32_t id, uint32_t result_type_id,
+                   SpvFunctionControlMask function_control,
+                   uint32_t function_type_id, ValidationState_t& module)
+    : module_(module),
+      id_(id),
+      function_type_id_(function_type_id),
+      result_type_id_(result_type_id),
+      function_control_(function_control),
+      declaration_type_(FunctionDecl::kFunctionDeclUnknown),
+      blocks_(),
+      current_block_(nullptr),
+      cfg_constructs_(),
+      variable_ids_(),
+      parameter_ids_() {}
 
-bool Functions::in_function_body() const { return in_function_; }
+bool Function::in_block() const { return static_cast<bool>(current_block_); }
 
-bool Functions::in_block() const { return in_block_; }
+bool Function::IsFirstBlock(uint32_t id) const {
+  return !ordered_blocks_.empty() && *get_first_block() == id;
+}
 
-spv_result_t Functions::RegisterFunction(uint32_t id, uint32_t ret_type_id,
-                                         uint32_t function_control,
-                                         uint32_t function_type_id) {
-  assert(in_function_ == false &&
-         "Function instructions can not be declared in a function");
+spv_result_t ValidationState_t::RegisterFunction(
+    uint32_t id, uint32_t ret_type_id, SpvFunctionControlMask function_control,
+    uint32_t function_type_id) {
+  assert(in_function_body() == false &&
+         "RegisterFunction can only be called when parsing the binary outside "
+         "of another function");
   in_function_ = true;
-  id_.emplace_back(id);
-  type_id_.emplace_back(function_type_id);
-  declaration_type_.emplace_back(FunctionDecl::kFunctionDeclUnknown);
-  block_ids_.emplace_back();
-  variable_ids_.emplace_back();
-  parameter_ids_.emplace_back();
+  module_functions_.emplace_back(id, ret_type_id, function_control,
+                                 function_type_id, *this);
 
   // TODO(umar): validate function type and type_id
-  (void)ret_type_id;
-  (void)function_control;
 
   return SPV_SUCCESS;
 }
 
-spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
-                                                  uint32_t type_id) {
-  assert(in_function_ == true &&
-         "Function parameter instructions cannot be declared outside of a "
-         "function");
+spv_result_t ValidationState_t::RegisterFunctionEnd() {
+  assert(in_function_body() == true &&
+         "RegisterFunctionEnd can only be called when parsing the binary "
+         "inside of another function");
   assert(in_block() == false &&
-         "Function parameters cannot be called in blocks");
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "ouside of a block");
+  in_function_ = false;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Function::RegisterFunctionParameter(uint32_t id,
+                                                 uint32_t type_id) {
+  assert(module_.in_function_body() == true &&
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "outside of another function");
+  assert(in_block() == false &&
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "ouside of a block");
   // TODO(umar): Validate function parameter type order and count
   // TODO(umar): Use these variables to validate parameter type
   (void)id;
@@ -376,42 +419,231 @@ spv_result_t Functions::RegisterFunctionParameter(uint32_t id,
   return SPV_SUCCESS;
 }
 
-spv_result_t Functions::RegisterSetFunctionDeclType(FunctionDecl type) {
-  assert(declaration_type_.back() == FunctionDecl::kFunctionDeclUnknown);
-  declaration_type_.back() = type;
+spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
+                                         uint32_t continue_id) {
+  RegisterBlock(merge_id, false);
+  RegisterBlock(continue_id, false);
+  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id),
+                               &blocks_.at(continue_id));
+
   return SPV_SUCCESS;
 }
 
-spv_result_t Functions::RegisterBlock(uint32_t id) {
-  assert(in_function_ == true && "Blocks can only exsist in functions");
-  assert(in_block_ == false && "Blocks cannot be nested");
+spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
+  RegisterBlock(merge_id, false);
+  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id));
+  return SPV_SUCCESS;
+}
+
+void printDot(const BasicBlock& other, const ValidationState_t& module) {
+  string block_string;
+  if (other.get_successors().empty()) {
+    block_string += "end ";
+  } else {
+    for (auto& block : other.get_successors()) {
+      block_string += module.getIdOrName(block->get_id()) + " ";
+    }
+  }
+  printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(),
+         block_string.c_str());
+}
+
+void Function::printDotGraph() const {
+  if (get_first_block()) {
+    string func_name(module_.getIdOrName(id_));
+    printf("digraph %s {\n", func_name.c_str());
+    printBlocks();
+    printf("}\n");
+  }
+}
+
+void Function::printBlocks() const {
+  if (get_first_block()) {
+    printf("%10s -> %s\n", module_.getIdOrName(id_).c_str(),
+           module_.getIdOrName(get_first_block()->get_id()).c_str());
+    for (const auto& block : blocks_) {
+      printDot(block.second, module_);
+    }
+  }
+}
+
+spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
+  assert(declaration_type_ == FunctionDecl::kFunctionDeclUnknown);
+  declaration_type_ = type;
+  return SPV_SUCCESS;
+}
+
+spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
+  assert(module_.in_function_body() == true &&
+         "RegisterBlocks can only be called when parsing a binary inside of a "
+         "function");
   assert(module_.getLayoutSection() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
-         "Function declartions must appear before function definitions");
-  assert(declaration_type_.back() == FunctionDecl::kFunctionDeclDefinition &&
-         "Function declaration type should have already been defined");
+         "RegisterBlocks cannot be called within a function declaration");
+  assert(
+      declaration_type_ == FunctionDecl::kFunctionDeclDefinition &&
+      "RegisterBlocks can only be called after declaration_type_ is defined");
 
-  block_ids_.back().push_back(id);
-  in_block_ = true;
+  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
+  bool success = false;
+  tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
+  if (is_definition) {  // new block definition
+    assert(in_block() == false &&
+           "Register Block can only be called when parsing a binary outside of "
+           "a BasicBlock");
+
+    undefined_blocks_.erase(id);
+    current_block_ = &inserted_block->second;
+    ordered_blocks_.push_back(current_block_);
+    if (IsFirstBlock(id)) current_block_->set_reachability(true);
+  } else if (success) {  // Block doesn't exsist but this is not a definition
+    undefined_blocks_.insert(id);
+  }
+
   return SPV_SUCCESS;
 }
 
-spv_result_t Functions::RegisterFunctionEnd() {
-  assert(in_function_ == true &&
-         "Function end can only be called in functions");
-  assert(in_block_ == false && "Function end cannot be called inside a block");
-  in_function_ = false;
-  return SPV_SUCCESS;
+void Function::RegisterBlockEnd(vector<uint32_t> next_list,
+                                SpvOp branch_instruction) {
+  assert(module_.in_function_body() == true &&
+         "RegisterBlockEnd can only be called when parsing a binary in a "
+         "function");
+  assert(
+      in_block() == true &&
+      "RegisterBlockEnd can only be called when parsing a binary in a block");
+
+  vector<BasicBlock*> next_blocks;
+  next_blocks.reserve(next_list.size());
+
+  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
+  bool success;
+  for (uint32_t id : next_list) {
+    tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
+    if (success) {
+      undefined_blocks_.insert(id);
+    }
+    next_blocks.push_back(&inserted_block->second);
+  }
+
+  current_block_->RegisterBranchInstruction(branch_instruction);
+  current_block_->RegisterSuccessors(next_blocks);
+  current_block_ = nullptr;
+  return;
 }
 
-spv_result_t Functions::RegisterBlockEnd() {
-  assert(in_function_ == true &&
-         "Branch instruction can only be called in a function");
-  assert(in_block_ == true &&
-         "Branch instruction can only be called in a block");
-  in_block_ = false;
-  return SPV_SUCCESS;
+size_t Function::get_block_count() const { return blocks_.size(); }
+
+size_t Function::get_undefined_block_count() const {
+  return undefined_blocks_.size();
 }
 
-size_t Functions::get_block_count() const { return block_ids_.back().size(); }
+const vector<BasicBlock*>& Function::get_blocks() const {
+  return ordered_blocks_;
 }
+vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
+
+const BasicBlock& Function::get_current_block() const {
+  return *current_block_;
+}
+BasicBlock& Function::get_current_block() { return *current_block_; }
+
+const list<CFConstruct>& Function::get_constructs() const {
+  return cfg_constructs_;
+}
+list<CFConstruct>& Function::get_constructs() { return cfg_constructs_; }
+
+const BasicBlock* Function::get_first_block() const {
+  if (ordered_blocks_.empty()) return nullptr;
+  return ordered_blocks_[0];
+}
+BasicBlock* Function::get_first_block() {
+  if (ordered_blocks_.empty()) return nullptr;
+  return ordered_blocks_[0];
+}
+
+BasicBlock::BasicBlock(uint32_t id)
+    : id_(id),
+      immediate_dominator_(nullptr),
+      predecessors_(),
+      successors_(),
+      reachable_(false) {}
+
+void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
+  immediate_dominator_ = dom_block;
+}
+
+const BasicBlock* BasicBlock::GetImmediateDominator() const {
+  return immediate_dominator_;
+}
+
+BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
+
+void BasicBlock::RegisterSuccessors(vector<BasicBlock*> next_blocks) {
+  for (auto& block : next_blocks) {
+    block->predecessors_.push_back(this);
+    successors_.push_back(block);
+    if (block->reachable_ == false) block->set_reachability(reachable_);
+  }
+}
+
+void BasicBlock::RegisterBranchInstruction(SpvOp branch_instruction) {
+  if (branch_instruction == SpvOpUnreachable) reachable_ = false;
+  return;
+}
+
+bool Function::IsMergeBlock(uint32_t merge_block_id) const {
+  const auto b = blocks_.find(merge_block_id);
+  if (b != end(blocks_)) {
+    return cfg_constructs_.end() !=
+           find_if(begin(cfg_constructs_), end(cfg_constructs_),
+                   [&](const CFConstruct& construct) {
+                     return construct.get_merge() == &b->second;
+                   });
+  } else {
+    return false;
+  }
+}
+
+BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
+BasicBlock::DominatorIterator::DominatorIterator(const BasicBlock* block)
+    : current_(block) {}
+
+BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
+  if (current_ == current_->GetImmediateDominator()) {
+    current_ = nullptr;
+  } else {
+    current_ = current_->GetImmediateDominator();
+  }
+  return *this;
+}
+
+const BasicBlock::DominatorIterator BasicBlock::dom_begin() const {
+  return DominatorIterator(this);
+}
+
+BasicBlock::DominatorIterator BasicBlock::dom_begin() {
+  return DominatorIterator(this);
+}
+
+const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
+  return DominatorIterator();
+}
+
+BasicBlock::DominatorIterator BasicBlock::dom_end() {
+  return DominatorIterator();
+}
+
+bool operator==(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs) {
+  return lhs.current_ == rhs.current_;
+}
+
+bool operator!=(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs) {
+  return !(lhs == rhs);
+}
+
+const BasicBlock*& BasicBlock::DominatorIterator::operator*() {
+  return current_;
+}
+}  // namespace libspirv
