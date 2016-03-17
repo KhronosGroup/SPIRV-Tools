@@ -44,7 +44,7 @@ is used.
 
 Options:
 
-  -h              Print this help.
+  -h, --help      Print this help.
 
   -o <filename>   Set the output filename. Use '-' to mean stdout.
   --version       Display assembler version information.
@@ -90,6 +90,10 @@ int main(int argc, char** argv) {
             printf("%s\n", kBuildVersion);
             printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
                    SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+            return 0;
+          }
+          if (0 == strcmp(argv[argi], "--help")) {
+            print_usage(argv[0]);
             return 0;
           }
         } break;

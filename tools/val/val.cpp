@@ -44,7 +44,8 @@ or if the filename is "-", then the binary is read from standard input.
 NOTE: The validator is a work in progress.
 
 Options:
-  --version  Display validator version information
+  -h, --help   Print this help.
+  --version    Display validator version information.
 )",
       argv0, argv0);
 }
@@ -63,6 +64,9 @@ int main(int argc, char** argv) {
         printf("%s\n", kBuildVersion);
         printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
                SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+        return 0;
+      } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
+        print_usage(argv[0]);
         return 0;
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
