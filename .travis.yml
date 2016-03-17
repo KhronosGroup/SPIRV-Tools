@@ -50,7 +50,7 @@ script:
   - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
   - ninja
     # Be nice and only output if there are failures.
-  - ./UnitSPIRV --gtest_break_on_failure &> log || cat log
+  - ./test/UnitSPIRV --gtest_break_on_failure &> log || (cat log; false)
 
 
 notifications:
