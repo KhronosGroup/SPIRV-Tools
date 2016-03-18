@@ -41,7 +41,6 @@ using std::pair;
 using std::stringstream;
 
 namespace {
-
 using Validate = spvtest::ValidateBase<pair<string, bool>>;
 
 TEST_F(Validate, Default) {
@@ -759,7 +758,7 @@ pair<string, bool> cases[] = {
     {"OpGetKernelWorkGroupSize", kNoNDrange},
     {"OpGetKernelPreferredWorkGroupSizeMultiple", kNoNDrange}};
 
-INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases));
+INSTANTIATE_TEST_CASE_P(KernelArgs, Validate, ::testing::ValuesIn(cases),);
 
 static const string return_instructions = R"(
   OpReturn

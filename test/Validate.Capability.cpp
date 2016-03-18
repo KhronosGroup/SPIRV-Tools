@@ -37,6 +37,7 @@
 
 namespace {
 
+
 using std::pair;
 using std::make_pair;
 using std::stringstream;
@@ -52,7 +53,7 @@ using ValidateCapability =
     spvtest::ValidateBase<tuple<string, pair<string, vector<string>>>>;
 
 TEST_F(ValidateCapability, Default) {
-  const char str[] = R"(
+    const char str[] = R"(
             OpCapability Kernel
             OpCapability Matrix
             OpMemoryModel Logical OpenCL
@@ -324,7 +325,7 @@ make_pair(string(kOpenCLMemoryModel) +
 make_pair(string(kGLSL450MemoryModel) +
           " OpEntryPoint Kernel %func \"shader\"" +
           string(kVoidFVoid), KernelDependencies())
-)));
+)),);
 
 INSTANTIATE_TEST_CASE_P(AddressingAndMemoryModel, ValidateCapability,
                         Combine(
@@ -348,7 +349,7 @@ make_pair(" OpCapability Shader"
           " OpMemoryModel Physical64 GLSL450", AddressesDependencies()),
 make_pair(" OpCapability Kernel"
           " OpMemoryModel Physical64 OpenCL",  AddressesDependencies())
-                                                           )));
+)),);
 
 INSTANTIATE_TEST_CASE_P(ExecutionMode, ValidateCapability,
                         Combine(
@@ -486,7 +487,7 @@ make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Kernel %func \"shader\" "
           "OpExecutionMode %func ContractionOff" +
           string(kVoidFVoid), KernelDependencies())
-)));
+)),);
 
 INSTANTIATE_TEST_CASE_P(StorageClass, ValidateCapability,
                         Combine(
@@ -532,7 +533,7 @@ make_pair(string(kGLSL450MemoryModel) +
           " %intt = OpTypeInt 32 0\n"
           " %ptrt = OpTypePointer Image %intt\n"
           " %var = OpVariable %ptrt Image\n", AllCapabilities())
-)));
+)),);
 
 INSTANTIATE_TEST_CASE_P(Dim, ValidateCapability,
                         Combine(
@@ -573,7 +574,7 @@ make_pair(" OpCapability ImageBasic" +
           " %voidt = OpTypeVoid"
           " %imgt = OpTypeImage %voidt SubpassData 0 0 0 2 Unknown",
           vector<string>{"InputAttachment"})
-)));
+)),);
 
 // NOTE: All Sampler Address Modes require kernel capabilities but the
 // OpConstantSampler requires LiteralSampler which depends on Kernel
@@ -601,7 +602,7 @@ make_pair(string(kGLSL450MemoryModel) +
           " %samplert = OpTypeSampler"
           " %sampler = OpConstantSampler %samplert RepeatMirrored 1 Nearest",
           vector<string>{"LiteralSampler"})
-)));
+)),);
 
 //TODO(umar): Sampler Filter Mode
 //TODO(umar): Image Format
@@ -744,7 +745,7 @@ make_pair(string(kOpenCLMemoryModel) +
 make_pair(string(kGLSL450MemoryModel) +
           "OpDecorate %intt Alignment 4\n"
           "%intt = OpTypeInt 32 1\n", KernelDependencies())
-)));
+)),);
 
 
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
@@ -880,7 +881,7 @@ make_pair(string(kOpenCLMemoryModel) +
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn InstanceIndex\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies())
-)));
+)),);
 
 // TODO(umar): Selection Control
 // TODO(umar): Loop Control
@@ -899,7 +900,7 @@ INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateCapability,
 make_pair(string(kOpenCLMemoryModel) +
           "%intt     = OpTypeInt 32 1\n"
           "%vec3     = OpTypeVector %intt 3\n"
-          "%mat33    = OpTypeMatrix %vec3 3\n", MatrixDependencies()))));
+          "%mat33    = OpTypeMatrix %vec3 3\n", MatrixDependencies()))),);
 // clang-format on
 
 // Creates assembly containing an OpImageFetch instruction using operands for
@@ -946,7 +947,7 @@ INSTANTIATE_TEST_CASE_P(
                make_pair(ImageOperandsTemplate("Sample|MinLod %izero %fzero"),
                          vector<string>{"MinLod"}),
                make_pair(ImageOperandsTemplate("Lod|Sample %fzero %izero"),
-                         AllCapabilities()))));
+                         AllCapabilities()))),);
 
 // TODO(umar): Instruction capability checks
 

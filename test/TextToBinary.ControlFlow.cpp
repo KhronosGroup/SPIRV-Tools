@@ -59,7 +59,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
                             CASE(MaskNone, "None"),
                             CASE(FlattenMask, "Flatten"),
                             CASE(DontFlattenMask, "DontFlatten"),
-                        }));
+                        }),);
 #undef CASE
 // clang-format on
 
@@ -95,7 +95,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
                             CASE(MaskNone, "None"),
                             CASE(UnrollMask, "Unroll"),
                             CASE(DontUnrollMask, "DontUnroll"),
-                        }));
+                        }),);
 #undef CASE
 // clang-format on
 
@@ -249,7 +249,7 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(16, 1, "0x8000", {0xffff8000}, "0x8100",
                            {0xffff8100}),
         MakeSwitchTestCase(16, 0, "0x8000", {0x00008000}, "0x8100", {0x8100}),
-    })));
+    })),);
 
 // NB: The words LOW ORDER bits show up first.
 INSTANTIATE_TEST_CASE_P(
@@ -270,7 +270,7 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(63, 0, "0x500000000", {0, 5}, "12", {12, 0}),
         MakeSwitchTestCase(64, 0, "0x600000000", {0, 6}, "12", {12, 0}),
         MakeSwitchTestCase(64, 1, "0x700000123", {0x123, 7}, "12", {12, 0}),
-    })));
+    })),);
 
 INSTANTIATE_TEST_CASE_P(
     OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
@@ -286,7 +286,7 @@ INSTANTIATE_TEST_CASE_P(
         // Unsigned 64-bit, three non-default cases.
         "%1 = OpTypeInt 64 0\n%2 = OpConstant %1 9223372036854775807\n"
         "OpSwitch %2 %3 100 %4 102 %5 9000000000000000000 %6\n",
-    })));
+    })),);
 
 INSTANTIATE_TEST_CASE_P(
     OpSwitchRoundTripSignedIntegers, RoundTripTest,
@@ -311,7 +311,7 @@ INSTANTIATE_TEST_CASE_P(
         "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
         "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 -9223372036854775808\n"
         "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
-    }));
+    }),);
 
 using OpSwitchInvalidTypeTestCase =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
@@ -354,7 +354,7 @@ INSTANTIATE_TEST_CASE_P(
            // At least one thing that isn't a type at all
        "OpNot %a %b"
       },
-    }));
+    }),);
 // clang-format on
 
 // TODO(dneto): OpPhi

@@ -65,7 +65,7 @@ INSTANTIATE_TEST_CASE_P(
                       SpvCapabilityClipDistance,
                       // Transformfeedback has value 53,
                       // and is the last capability.
-                      SpvCapabilityTransformFeedback));
+                      SpvCapabilityTransformFeedback),);
 
 TEST(OpcodeRequiresCapability, None) {
   spv_opcode_desc_t entry = {nullptr, (SpvOp)0, 0, 0, {}, false, false, {}};
@@ -81,7 +81,7 @@ TEST(CapabilityAsMaskMacro, Sample) {
             SPV_CAPABILITY_AS_MASK(SpvCapabilityClipDistance));
   EXPECT_EQ(uint64_t(1) << 53,
             SPV_CAPABILITY_AS_MASK(SpvCapabilityTransformFeedback));
-};
+}
 
 /// Capabilities required by an Opcode.
 struct ExpectedOpCodeCapabilities {
@@ -133,6 +133,6 @@ INSTANTIATE_TEST_CASE_P(
         ExpectedOpCodeCapabilities{SpvOpFunction, 0},
         ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0},
         ExpectedOpCodeCapabilities{SpvOpEmitStreamVertex,
-                                   mask(SpvCapabilityGeometryStreams)}));
+                                   mask(SpvCapabilityGeometryStreams)}),);
 
 }  // anonymous namespace

@@ -118,7 +118,7 @@ INSTANTIATE_TEST_CASE_P(
          SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask,
          {SUFFIX1},
          {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
-    }));
+    }),);
 #undef SUFFIX0
 #undef SUFFIX1
 
@@ -146,7 +146,7 @@ TEST_P(MatchableOperandExpansionTest, MatchableOperandsDontExpand) {
 
 INSTANTIATE_TEST_CASE_P(MatchableOperandExpansion,
                         MatchableOperandExpansionTest,
-                        ::testing::ValuesIn(allOperandTypes()));
+                        ::testing::ValuesIn(allOperandTypes()),);
 
 using VariableOperandExpansionTest =
     ::testing::TestWithParam<spv_operand_type_t>;
@@ -166,7 +166,7 @@ TEST_P(VariableOperandExpansionTest, NonMatchableOperandsExpand) {
 
 INSTANTIATE_TEST_CASE_P(NonMatchableOperandExpansion,
                         VariableOperandExpansionTest,
-                        ::testing::ValuesIn(allOperandTypes()));
+                        ::testing::ValuesIn(allOperandTypes()),);
 
 TEST(AlternatePatternFollowingImmediate, Empty) {
   EXPECT_THAT(spvAlternatePatternFollowingImmediate({}),

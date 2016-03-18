@@ -58,7 +58,7 @@ INSTANTIATE_TEST_CASE_P(
         "OpName %1 \"\\\"foo\nbar\\\"\"\n",       // escaped quote
         "OpName %1 \"\\\\foo\nbar\\\\\"\n",       // escaped backslash
         "OpName %1 \"\xE4\xBA\xB2\"\n",             // UTF-8
-    }));
+    }),);
 // clang-format on
 
 using RoundTripSpecialCaseLiteralsTest = spvtest::TextToBinaryTestBase<
@@ -78,7 +78,7 @@ INSTANTIATE_TEST_CASE_P(
       {"OpName %1 \"\\foo\"\n", "OpName %1 \"foo\"\n"}, // Escape f
       {"OpName %1 \"\\\nfoo\"\n", "OpName %1 \"\nfoo\"\n"}, // Escape newline
       {"OpName %1 \"\\\xE4\xBA\xB2\"\n", "OpName %1 \"\xE4\xBA\xB2\"\n"}, // Escape utf-8
-    }));
+    }),);
 // clang-format on
 
 }  // anonymous namespace

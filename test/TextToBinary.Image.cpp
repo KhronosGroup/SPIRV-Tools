@@ -75,7 +75,7 @@ INSTANTIATE_TEST_CASE_P(
         {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
         {" Sample %5", {MASK(Sample), 5}},
         {" MinLod %5", {MASK(MinLod), 5}},
-    }));
+    }),);
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
@@ -105,7 +105,7 @@ INSTANTIATE_TEST_CASE_P(
          " %5 %6 %7 %8 %9 %10 %11 %12",
          {MASK(Bias) | MASK(Lod) | MASK(Grad) | MASK(ConstOffset) |
               MASK(Offset) | MASK(ConstOffsets) | MASK(Sample),
-          5, 6, 7, 8, 9, 10, 11, 12}}}));
+          5, 6, 7, 8, 9, 10, 11, 12}}}),);
 #undef MASK
 
 TEST_F(ImageOperandsTest, WrongOperand) {
@@ -197,7 +197,7 @@ INSTANTIATE_TEST_CASE_P(ImageSparseReadImageOperandsAny,
                             {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
                             {" Sample %5", {MASK(Sample), 5}},
                             {" MinLod %5", {MASK(MinLod), 5}},
-                        }));
+                        }),);
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
@@ -222,7 +222,7 @@ INSTANTIATE_TEST_CASE_P(
           5, 6, 7, 8, 9, 10, 11, 12}},
         // Don't try the masks reversed, since this is a round trip test,
         // and the disassembler will sort them.
-    }));
+    }),);
 #undef MASK
 
 TEST_F(OpImageSparseReadTest, InvalidTypeOperand) {

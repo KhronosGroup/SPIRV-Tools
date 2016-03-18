@@ -29,17 +29,17 @@
 #if defined(SPIRV_LINUX) || defined(SPIRV_MAC)
 namespace libspirv {
 
-clr::reset::operator const char*() { return "\e[0m"; }
+clr::reset::operator const char*() { return "\x1b[0m"; }
 
-clr::grey::operator const char*() { return "\e[1;30m"; }
+clr::grey::operator const char*() { return "\x1b[1;30m"; }
 
-clr::red::operator const char*() { return "\e[31m"; }
+clr::red::operator const char*() { return "\x1b[31m"; }
 
-clr::green::operator const char*() { return "\e[32m"; }
+clr::green::operator const char*() { return "\x1b[32m"; }
 
-clr::yellow::operator const char*() { return "\e[33m"; }
+clr::yellow::operator const char*() { return "\x1b[33m"; }
 
-clr::blue::operator const char*() { return "\e[34m"; }
+clr::blue::operator const char*() { return "\x1b[34m"; }
 
 }  // namespace libspirv
 #elif defined(SPIRV_WINDOWS)

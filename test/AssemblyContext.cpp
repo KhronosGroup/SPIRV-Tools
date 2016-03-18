@@ -82,7 +82,7 @@ INSTANTIATE_TEST_CASE_P(
       // A very long string, encoded after an initial word.
       // SPIR-V limits strings to 65535 characters.
       {std::string(65535, 'a'), {1}},
-    }));
+    }),);
 // clang-format on
 
 }  // anonymous namespace

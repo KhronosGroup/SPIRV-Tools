@@ -205,6 +205,6 @@ INSTANTIATE_TEST_CASE_P(
         {"NMin", "%5 %5", 79, 7, {5, 5}},
         {"NMax", "%5 %5", 80, 7, {5, 5}},
         {"NClamp", "%5 %5 %5", 81, 8, {5, 5, 5}},
-    })));
+    })),);
 
 }  // anonymous namespace

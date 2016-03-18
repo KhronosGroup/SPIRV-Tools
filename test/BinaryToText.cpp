@@ -203,7 +203,7 @@ INSTANTIATE_TEST_CASE_P(
          "%2 = OpTypeVector %1 4",
          spvtest::MakeInstruction(SpvOpConstant, {2, 3, 999}),
          "Type Id 2 is not a scalar numeric type"},
-    }));
+    }),);
 
 INSTANTIATE_TEST_CASE_P(
     InvalidIdsCheckedDuringLiteralCaseParsing, BinaryToTextFail,
@@ -219,7 +219,7 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 1.5",
          spvtest::MakeInstruction(SpvOpSwitch, {2, 3, 4, 5}),
          "Invalid OpSwitch: selector id 2 is not a scalar integer"},
-    }));
+    }),);
 
 TEST_F(TextToBinaryTest, OneInstruction) {
   const std::string input = "OpSource OpenCL_C 12\n";
@@ -244,7 +244,7 @@ using RoundTripInstructionsTest =
 
 TEST_P(RoundTripInstructionsTest, Sample) {
   EXPECT_THAT(EncodeAndDecodeSuccessfully(GetParam()), Eq(GetParam()));
-};
+}
 
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
@@ -259,7 +259,7 @@ INSTANTIATE_TEST_CASE_P(
         "OpStore %1 %2 Volatile|Aligned 16\n",
         "OpStore %1 %2 Volatile|Nontemporal\n",
         "OpStore %1 %2 Volatile|Aligned|Nontemporal 32\n",
-    }));
+    }),);
 // clang-format on
 
 INSTANTIATE_TEST_CASE_P(
@@ -275,7 +275,7 @@ INSTANTIATE_TEST_CASE_P(
         "OpDecorate %1 FPFastMathMode NotNaN|NotInf\n",
         "OpDecorate %1 FPFastMathMode NSZ|AllowRecip\n",
         "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ|AllowRecip|Fast\n",
-    }));
+    }),);
 
 INSTANTIATE_TEST_CASE_P(LoopControlMasks, RoundTripInstructionsTest,
                         ::testing::ValuesIn(std::vector<std::string>{
@@ -283,7 +283,7 @@ INSTANTIATE_TEST_CASE_P(LoopControlMasks, RoundTripInstructionsTest,
                             "OpLoopMerge %1 %2 Unroll\n",
                             "OpLoopMerge %1 %2 DontUnroll\n",
                             "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
-                        }));
+                        }),);
 
 INSTANTIATE_TEST_CASE_P(SelectionControlMasks, RoundTripInstructionsTest,
                         ::testing::ValuesIn(std::vector<std::string>{
@@ -291,7 +291,7 @@ INSTANTIATE_TEST_CASE_P(SelectionControlMasks, RoundTripInstructionsTest,
                             "OpSelectionMerge %1 Flatten\n",
                             "OpSelectionMerge %1 DontFlatten\n",
                             "OpSelectionMerge %1 Flatten|DontFlatten\n",
-                        }));
+                        }),);
 
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
@@ -304,7 +304,7 @@ INSTANTIATE_TEST_CASE_P(
         "%2 = OpFunction %1 Const %3\n",
         "%2 = OpFunction %1 Inline|Pure|Const %3\n",
         "%2 = OpFunction %1 DontInline|Const %3\n",
-    }));
+    }),);
 // clang-format on
 
 // clang-format off
@@ -327,7 +327,8 @@ INSTANTIATE_TEST_CASE_P(
         "%2 = OpImageFetch %1 %3 %4 Sample|MinLod %5 %6\n",
         "%2 = OpImageFetch %1 %3 %4"
               " Bias|Lod|Grad|ConstOffset|Offset|ConstOffsets|Sample|MinLod"
-              " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"}));
+              " %5 %6 %7 %8 %9 %10 %11 %12 %13\n"
+    }),);
 // clang-format on
 
 using MaskSorting = TextToBinaryTest;
@@ -473,6 +474,6 @@ INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
                              "Khronos Glslang Reference Front End; 1"},
                             {9, 18, "Unknown(9); 18"},
                             {65535, 32767, "Unknown(65535); 32767"},
-                        }));
+                        }),);
 
 }  // anonymous namespace

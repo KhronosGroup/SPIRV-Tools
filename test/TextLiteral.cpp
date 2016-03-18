@@ -34,6 +34,7 @@
 using ::testing::Eq;
 namespace {
 
+
 TEST(TextLiteral, GoodI32) {
   spv_literal_t l;
 
@@ -130,7 +131,7 @@ INSTANTIATE_TEST_CASE_P(
         {"\"\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
         {"\"\\\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
         {"\"this \\\" and this \\\\ and \\\xE4\xBA\xB2\"",
-         "this \" and this \\ and \xE4\xBA\xB2"}}));
+         "this \" and this \\ and \xE4\xBA\xB2"}}),);
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
@@ -288,7 +289,7 @@ INSTANTIATE_TEST_CASE_P(
         Make_Ok__Unsigned(64, "18446744073709551615", {0xffffffff, 0xffffffff}),
         Make_Ok__Signed(64, "-9223372036854775808", {0x00000000, 0x80000000}),
 
-    }));
+    }),);
 // clang-format on
 
 using IntegerLeadingMinusTest =
@@ -315,7 +316,7 @@ INSTANTIATE_TEST_CASE_P(
         Make_Bad_Unsigned(64, "-0"),
         Make_Bad_Unsigned(64, "-0x0"),
         Make_Bad_Unsigned(64, "-0x1"),
-    }));
+    }),);
 
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
@@ -382,7 +383,7 @@ INSTANTIATE_TEST_CASE_P(
         Make_Ok__Signed(64, "0x8000000000000000", {0x00000000, 0x80000000}),
         Make_Ok__Unsigned(64, "0x7fffffffffffffff", {0xffffffff, 0x7fffffff}),
         Make_Ok__Unsigned(64, "0x8000000000000000", {0x00000000, 0x80000000}),
-    }));
+    }),);
 // clang-format on
 
 TEST(OverflowIntegerParse, Decimal) {

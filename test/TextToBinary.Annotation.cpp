@@ -106,7 +106,7 @@ INSTANTIATE_TEST_CASE_P(
         {CASE(NoContraction), {}},
         {CASE(InputAttachmentIndex), {102}},
         {CASE(Alignment), {16}},
-    }));
+    }),);
 #undef CASE
 
 TEST_F(OpDecorateSimpleTest, WrongDecoration) {
@@ -204,7 +204,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateBuiltIn, OpDecorateEnumTest,
                             CASE(SubgroupLocalInvocationId),
                             CASE(VertexIndex),
                             CASE(InstanceIndex),
-                        }));
+                        }),);
 #undef CASE
 // clang-format on
 
@@ -227,7 +227,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFuncParamAttr, OpDecorateEnumTest,
                             CASE(NoCapture),
                             CASE(NoWrite),
                             CASE(NoReadWrite),
-                      }));
+                      }),);
 #undef CASE
 // clang-format on
 
@@ -246,7 +246,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPRoundingMode, OpDecorateEnumTest,
                             CASE(RTZ),
                             CASE(RTP),
                             CASE(RTN),
-                      }));
+                      }),);
 #undef CASE
 // clang-format on
 
@@ -271,7 +271,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateFPFastMathMode, OpDecorateEnumTest,
                             CASE(NSZMask, NSZ),
                             CASE(AllowRecipMask, AllowRecip),
                             CASE(FastMask, Fast),
-                      }));
+                      }),);
 #undef CASE
 // clang-format on
 
@@ -329,7 +329,7 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateLinkage, OpDecorateLinkageTest,
                             { CASE(Export), "foo" },
                             { CASE(Import), "some kind of long name with spaces etc." },
                             // TODO(dneto): utf-8, escaping, quoting cases.
-                      }));
+                      }),);
 #undef CASE
 // clang-format on
 
@@ -455,7 +455,7 @@ INSTANTIATE_TEST_CASE_P(
         {CASE(NoContraction), {}},
         {CASE(InputAttachmentIndex), {102}},
         {CASE(Alignment), {16}},
-    }));
+    }),);
 #undef CASE
 
 TEST_F(OpMemberDecorateSimpleTest, WrongDecoration) {

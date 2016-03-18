@@ -174,7 +174,7 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
                      , make_tuple(string("OpLabel")                   , Equals<36>             , All)
                      , make_tuple(string("OpNop")                     , Equals<37>             , All)
                      , make_tuple(string("OpReturn")                  , Equals<38>             , All)
-    )));
+    )),);
 // clang-format on
 
 // Creates a new vector which removes the string if the substr is found in the

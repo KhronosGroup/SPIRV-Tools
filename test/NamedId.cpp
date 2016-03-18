@@ -109,6 +109,6 @@ INSTANTIATE_TEST_CASE_P(
                                                   {"5", false},
                                                   {"32", false},
                                                   {"foo", false},
-                                                  {"a%bar", false}})));
+                                                  {"a%bar", false}})),);
 
 }  // anonymous namespace

@@ -263,10 +263,10 @@ enum Entrypoints {
     UAbs = 201,
     UAbs_diff = 202,
     UMul_hi = 203,
-    UMad_hi = 204,
+    UMad_hi = 204
 };
 
 
 
-}; // end namespace OpenCL20
+} // end namespace OpenCL20
 
