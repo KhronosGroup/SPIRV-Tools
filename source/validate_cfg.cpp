@@ -32,11 +32,13 @@
 #include <unordered_map>
 
 using std::get;
-using std::vector;
+using std::make_tuple;
+using std::numeric_limits;
 using std::transform;
 using std::tuple;
-using std::make_tuple;
 using std::unordered_map;
+using std::vector;
+
 using libspirv::BasicBlock;
 
 namespace libspirv {
@@ -91,18 +93,18 @@ PostOrderSort(BasicBlock &entry, size_t size) {
 
   //  *for all nodes, b /* initialize the dominators array */
   //  *  doms[b] ← Undefined
-  //  *  doms[start node] ← start node
-  //  *  Changed ← true
-  //  *  while (Changed)
-  //  *    Changed ← false
-  //  *      for all nodes, b, in reverse postorder (except start node)
-  //          new idom ← first (processed) predecessor of b /* (pick one) */
-  //          for all other predecessors, p, of b
-  //            if doms[p] = Undefined /* i.e., if doms[p] already calculated */
-  //              new idom ← intersect(p, new idom)
-  //            if doms[b] = new idom
-  //              doms[b] ← new idom
-  //              Changed ← true
+  //  *doms[start node] ← start node
+  //  *Changed ← true
+  //  *while (Changed)
+  //  *  Changed ← false
+  //  *    for all nodes, b, in reverse postorder (except start node)
+  //        new idom ← first (processed) predecessor of b /* (pick one) */
+  //        for all other predecessors, p, of b
+  //          if doms[p] != Undefined /* i.e., if doms[p] already calculated */
+  //            new idom ← intersect(p, new idom)
+  //          if doms[b] != new idom
+  //            doms[b] ← new idom
+  //            Changed ← true
   //    function intersect(b1, b2) returns node
   //      finger1 ← b1
   //      finger2 ← b2
@@ -114,47 +116,61 @@ PostOrderSort(BasicBlock &entry, size_t size) {
   //      return finger1
 
 BasicBlock*
-intersect(BasicBlock* b1, BasicBlock* b2) {
-  BasicBlock* finger1 = b1;
-  BasicBlock* finger2 = b2;
+intersect(vector<BasicBlock*>& postorder, unordered_map<BasicBlock*, uint32_t>& dom, uint32_t b1, uint32_t b2) {
+  uint32_t finger1 = b1;
+  uint32_t finger2 = b2;
   while(finger1 != finger2) {
     while (finger1 < finger2) {
-      finger1 = finger1->get_dominators().back();
+      finger1 = dom[postorder[finger1]];
     }
     while (finger2 < finger1) {
-      finger2 = finger2->get_dominators().back();
+      finger2 = dom[postorder[finger2]];
     }
   }
-  return finger1;
+  return postorder[finger1];
 }
 
-void
-CalculateDominators(vector<BasicBlock*> &blocks) {
-  vector<BasicBlock*> post_order = PostOrderSort(*blocks[0], 10);
-  for(auto &block : post_order) {
-    block->get_dominators().clear();
+unordered_map<BasicBlock*, uint32_t>
+CalculateDominators(BasicBlock &first_block) {
+  vector<BasicBlock*> postorder = PostOrderSort(first_block, 10);
+  const uint32_t undefined_dom = static_cast<uint32_t>(postorder.size());
+  unordered_map<BasicBlock*, uint32_t> index; // pair(Block, postorder index)
+  unordered_map<BasicBlock*, uint32_t> dom; // pair(Block, postorder index)
+  for(auto block = begin(postorder); block != end(postorder); block++) {
+    dom[*block] = undefined_dom;
+    index[*block] = static_cast<uint32_t>(distance(begin(postorder), block));
   }
-  post_order[0]->get_dominators().push_back(post_order[0]);
+
+  dom[postorder.back()] = index[postorder.back()];
+
   bool changed = true;
-
-  vector<BasicBlock*> pred;
-  pred.push_back(post_order[0]);
-
   while (changed) {
     changed = false;
+    for(auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
+      uint32_t &b_dom = dom[*b];
+      vector<BasicBlock*>& predecessors = (*b)->get_predecessors();
 
-    for(auto b = post_order.rbegin() + 1; b != post_order.rend(); b++) {
-      if(post_order[0] == *b) {
-        continue;
-      }
-      BasicBlock* new_idom = *b;
-      for(auto p = pred.rbegin(); p != pred.rend(); p++) {
-        if((*p)->get_dominators().empty()){
-          new_idom = intersect(*p, new_idom);
+      BasicBlock* new_idom = *find_if(begin(predecessors),
+                                      end(predecessors),
+                                      [&dom, undefined_dom] (BasicBlock* pred) {
+                                        return dom[pred] != undefined_dom;
+                                      });
+
+      for(auto p = begin(predecessors); p != end(predecessors); p++) {
+        if(new_idom == *p) { continue; }
+        uint32_t &p_dom = dom[*p];
+        if(p_dom != undefined_dom) {
+          new_idom = intersect(postorder, dom, index[*p], index[new_idom]);
         }
+      }
+      if(b_dom != index[new_idom]) {
+        b_dom = index[new_idom];
+        changed = true;
       }
     }
   }
+
+  return dom;
 }
 
 // TODO(umar): Support for merge instructions

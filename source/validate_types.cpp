@@ -26,19 +26,20 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iomanip>
+#include <iterator>
+#include <limits>
 #include <map>
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <iterator>
-#include <iomanip>
 
 #include "spirv/spirv.h"
-
 #include "spirv_definition.h"
 #include "validate.h"
 
 using std::find;
+using std::numeric_limits;
 using std::string;
 using std::unordered_set;
 using std::vector;
@@ -514,11 +515,22 @@ size_t Functions::get_block_count() const { return blocks_.back().size(); }
 
 BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
   : id_(id)
-  , immediate_dominator_()
+  , immediate_dominator_(nullptr)
   , predecessors_()
-  , dominators_()
   , out_blocks_()
   , module_(module) {
+}
+
+void BasicBlock::SetImmediateDominator(BasicBlock *dom_block) {
+  immediate_dominator_ = &dom_block;
+}
+
+const BasicBlock* BasicBlock::GetImmediateDominator() const {
+  return immediate_dominator_;
+}
+
+BasicBlock* BasicBlock::GetImmediateDominator(){
+  return immediate_dominator_;
 }
 
 void

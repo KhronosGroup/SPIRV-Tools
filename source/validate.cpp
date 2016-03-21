@@ -186,6 +186,10 @@ spv_result_t spvValidate(const spv_const_context context,
   // checks.
   vstate.get_functions().printDotGraph();
 
+  for(auto& block : vstate.get_functions().get_first_blocks()) {
+    libspirv::CalculateDominators(*block);
+  }
+
   if (vstate.unresolvedForwardIdCount() > 0) {
     stringstream ss;
     vector<uint32_t> ids = vstate.unresolvedForwardIds();

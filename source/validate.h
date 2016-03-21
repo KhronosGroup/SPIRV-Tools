@@ -111,11 +111,15 @@ public:
 
   uint32_t get_id() const {return id_; }
 
-  const std::vector<BasicBlock*>& get_dominators() const {return dominators_; }
-  std::vector<BasicBlock*>&       get_dominators()       {return dominators_; }
+  const std::vector<BasicBlock*>& get_predecessors() const {return predecessors_; }
+  std::vector<BasicBlock*>&       get_predecessors()       {return predecessors_; }
 
   const std::vector<BasicBlock*>& get_out_blocks() const {return out_blocks_; }
   std::vector<BasicBlock*>&       get_out_blocks()       {return out_blocks_; }
+
+  void SetImmediateDominator(BasicBlock* dom_block);
+  BasicBlock* GetImmediateDominator();
+  const BasicBlock *const GetImmediateDominator() const;
 
   void RegisterNext(BasicBlock& next);
   void RegisterNext(std::vector<BasicBlock*> next);
@@ -128,7 +132,6 @@ private:
   const uint32_t id_;
   BasicBlock* immediate_dominator_;
   std::vector<BasicBlock*> predecessors_;
-  std::vector<BasicBlock*> dominators_;
   std::vector<BasicBlock*> out_blocks_;
   ValidationState_t& module_;
 };
@@ -222,6 +225,8 @@ class Functions {
   bool IsMergeBlock(uint32_t merge_block_id) const;
 
   bool isFirstBlock(uint32_t id) const;
+
+  std::vector<BasicBlock*>& get_first_blocks() { return first_blocks_; }
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
@@ -423,6 +428,10 @@ class ValidationState_t {
   SpvMemoryModel memory_model_;
 
 };
+
+
+std::unordered_map<BasicBlock*, uint32_t>
+CalculateDominators(BasicBlock &first_block);
 
 }  // namespace libspirv
 
