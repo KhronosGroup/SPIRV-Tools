@@ -29,7 +29,6 @@
 
 #include "spirv-tools/libspirv.h"
 #include "spirv_definition.h"
-#include "spirv_operands.h"
 
 typedef struct spv_opcode_desc_t {
   const char* name;
@@ -43,9 +42,6 @@ typedef struct spv_opcode_desc_t {
   spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
   const bool hasResult;  // Does the instruction have a result ID operand?
   const bool hasType;    // Does the instruction have a type ID operand?
-  // The operand class for each logical argument.  This does *not* include
-  // the result Id or type ID.  The list is terminated by SPV_OPERAND_TYPE_NONE.
-  const OperandClass operandClass[16];
 } spv_opcode_desc_t;
 
 typedef struct spv_operand_desc_t {
@@ -78,7 +74,7 @@ typedef struct spv_ext_inst_group_t {
 
 typedef struct spv_opcode_table_t {
   const uint32_t count;
-  spv_opcode_desc_t* entries;
+  const spv_opcode_desc_t* entries;
 } spv_opcode_table_t;
 
 typedef struct spv_operand_table_t {

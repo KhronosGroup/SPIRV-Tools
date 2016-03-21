@@ -135,6 +135,14 @@ add_custom_target(spirv-tools-build-version
   ${spirv-tools_SOURCE_DIR}
   COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
 
+add_custom_target(spirv-tools-build-tables
+  ${PYTHON_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
+  ${spirv-tools_SOURCE_DIR}/source/grammar.json
+  --opcode-file=${spirv-tools_BINARY_DIR}/opcode.inc
+  --operand-file=${spirv-tools_BINARY_DIR}/operand.inc
+  COMMENT "Generate info tables for SPIR-V instructions and operands.")
+
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
        "Skip building the executable and tests along with the library"

@@ -35,7 +35,6 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
-#include "spirv_operands.h"
 
 namespace {
 
@@ -49,252 +48,10 @@ namespace {
 // TODO(dneto): Some of the macros are quite unreadable.  We could make
 // good use of constexpr functions, but some compilers don't support that yet.
 const spv_opcode_desc_t opcodeTableEntries[] = {
-#define EmptyList \
-  {}
-#define List(...) \
-  { __VA_ARGS__ }
-#define Capability(X) SPV_CAPABILITY_AS_MASK(SpvCapability##X)
-#define Capability2(X, Y) Capability(X) | Capability(Y)
-#define SpvCapabilityNone \
-  0  // Needed so Capability(None) still expands to valid syntax.
-#define Instruction(Name, HasResult, HasType, NumLogicalOperands,        \
-                    NumCapabilities, CapabilityRequired, IsVariable,     \
-                    LogicalArgsList)                                     \
-  {#Name,     SpvOp##Name, (NumCapabilities) ? (CapabilityRequired) : 0, \
-   0,         {}, /* Filled in later. Operand list, including            \
-                     result id and type id, if needed */                 \
-   HasResult, HasType,     LogicalArgsList},
 #include "opcode.inc"
-#undef EmptyList
-#undef List
-#undef Capability
-#undef Capability2
-#undef CapabilityNone
-#undef Instruction
 };
 
-// Opcode API
-
-// Converts the given operand class enum (from the SPIR-V document generation
-// logic) to the operand type required by the parser.  The SPV_OPERAND_TYPE_NONE
-// value indicates there is no current operand and no further operands.
-// This only applies to logical operands.
-spv_operand_type_t convertOperandClassToType(SpvOp opcode,
-                                             OperandClass operandClass) {
-  // The spec document generator uses OptionalOperandLiteral for several kinds
-  // of repeating values.  Our parser needs more specific information about
-  // what is being repeated.
-  if (operandClass == OperandOptionalLiteral) {
-    switch (opcode) {
-      case SpvOpExecutionMode:
-        // An OpExecutionMode only takes a single ExecutionMode operand and the
-        // operands for that execution mode.  The OperandOptionalLiteral in the
-        // grammar from the spec is only used to generate the text "Optional
-        // literal(s)".  But we've already recorded the
-        // SPV_OPERAND_TYPE_EXECUTION_MODE which will absorb those extra
-        // literals.  Use a NONE operand type here to terminate the operands
-        // to the instruction.
-        return SPV_OPERAND_TYPE_NONE;
-      default:
-        break;
-    }
-  } else if (operandClass == OperandVariableLiterals) {
-    switch (opcode) {
-      case SpvOpConstant:
-      case SpvOpSpecConstant:
-        // The number type is determined by the type Id operand.
-        return SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
-      case SpvOpDecorate:
-      case SpvOpMemberDecorate:
-        // The operand types at the end of the instruction are
-        // determined instead by the decoration kind.
-        return SPV_OPERAND_TYPE_NONE;
-      default:
-        break;
-    }
-  }
-
-  switch (operandClass) {
-    case OperandNone:
-      return SPV_OPERAND_TYPE_NONE;
-    case OperandId:
-      return SPV_OPERAND_TYPE_ID;
-    case OperandOptionalId:
-      return SPV_OPERAND_TYPE_OPTIONAL_ID;
-    case OperandVariableIds:
-      if (opcode == SpvOpSpecConstantOp) {
-        // These are the operands to the specialization constant opcode.
-        // The assembler and binary parser set up the extra Id and literal
-        // arguments when processing the opcode operand.  So don't add
-        // an operand type for them here.
-        return SPV_OPERAND_TYPE_NONE;
-      }
-      return SPV_OPERAND_TYPE_VARIABLE_ID;
-    // The spec only uses OptionalLiteral for an optional literal number.
-    case OperandOptionalLiteral:
-      return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER;
-    case OperandOptionalLiteralString:
-      return SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING;
-    // This is only used for sequences of literal numbers.
-    case OperandVariableLiterals:
-      return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER;
-    case OperandLiteralNumber:
-      if (opcode == SpvOpExtInst) {
-        // We use a special operand type for the extension instruction number.
-        // For now, we assume there is only one LiteraNumber argument to
-        // OpExtInst, and it is the extension instruction argument.
-        // See the ExtInst entry in opcode.inc
-        // TODO(dneto): Use a function to confirm the assumption, and to verify
-        // that the index into the operandClass is 1, as expected.
-        return SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER;
-      } else if (opcode == SpvOpSpecConstantOp) {
-        // Use a special operand type for the opcode operand, so we can
-        // use mnemonic names instead of the numbers.  For example, the
-        // assembler should accept "IAdd" instead of the numeric value of
-        // SpvOpIAdd.
-        return SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER;
-      }
-      return SPV_OPERAND_TYPE_LITERAL_INTEGER;
-    case OperandLiteralString:
-      return SPV_OPERAND_TYPE_LITERAL_STRING;
-    case OperandSource:
-      return SPV_OPERAND_TYPE_SOURCE_LANGUAGE;
-    case OperandExecutionModel:
-      return SPV_OPERAND_TYPE_EXECUTION_MODEL;
-    case OperandAddressing:
-      return SPV_OPERAND_TYPE_ADDRESSING_MODEL;
-    case OperandMemory:
-      return SPV_OPERAND_TYPE_MEMORY_MODEL;
-    case OperandExecutionMode:
-      return SPV_OPERAND_TYPE_EXECUTION_MODE;
-    case OperandStorage:
-      return SPV_OPERAND_TYPE_STORAGE_CLASS;
-    case OperandDimensionality:
-      return SPV_OPERAND_TYPE_DIMENSIONALITY;
-    case OperandSamplerAddressingMode:
-      return SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE;
-    case OperandSamplerFilterMode:
-      return SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE;
-    case OperandSamplerImageFormat:
-      return SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT;
-    case OperandImageChannelOrder:
-      // This is only used to describe the value generated by OpImageQueryOrder.
-      // It is not used as an operand.
-      break;
-    case OperandImageChannelDataType:
-      // This is only used to describe the value generated by
-      // OpImageQueryFormat. It is not used as an operand.
-      break;
-    case OperandImageOperands:
-      return SPV_OPERAND_TYPE_IMAGE;
-    case OperandOptionalImageOperands:
-      return SPV_OPERAND_TYPE_OPTIONAL_IMAGE;
-    case OperandFPFastMath:
-      return SPV_OPERAND_TYPE_FP_FAST_MATH_MODE;
-    case OperandFPRoundingMode:
-      return SPV_OPERAND_TYPE_FP_ROUNDING_MODE;
-    case OperandLinkageType:
-      return SPV_OPERAND_TYPE_LINKAGE_TYPE;
-    case OperandAccessQualifier:
-      return SPV_OPERAND_TYPE_ACCESS_QUALIFIER;
-    case OperandOptionalAccessQualifier:
-      return SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER;
-    case OperandFuncParamAttr:
-      return SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE;
-    case OperandDecoration:
-      return SPV_OPERAND_TYPE_DECORATION;
-    case OperandBuiltIn:
-      return SPV_OPERAND_TYPE_BUILT_IN;
-    case OperandSelect:
-      return SPV_OPERAND_TYPE_SELECTION_CONTROL;
-    case OperandLoop:
-      return SPV_OPERAND_TYPE_LOOP_CONTROL;
-    case OperandFunction:
-      return SPV_OPERAND_TYPE_FUNCTION_CONTROL;
-    case OperandMemorySemantics:
-      return SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID;
-    case OperandMemoryAccess:
-      // This case does not occur in the table for SPIR-V 0.99 Rev 32.
-      // We expect that it will become SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
-      // and we can remove the special casing above for memory operation
-      // instructions.
-      break;
-    case OperandOptionalMemoryAccess:
-      // Expect an optional mask.  When the Aligned bit is set in the mask,
-      // we will later add the expectation of a literal number operand.
-      return SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS;
-    case OperandScope:
-      return SPV_OPERAND_TYPE_SCOPE_ID;
-    case OperandGroupOperation:
-      return SPV_OPERAND_TYPE_GROUP_OPERATION;
-    case OperandKernelEnqueueFlags:
-      return SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS;
-    case OperandKernelProfilingInfo:
-      return SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO;
-    case OperandCapability:
-      return SPV_OPERAND_TYPE_CAPABILITY;
-
-    // Used by GroupMemberDecorate
-    case OperandVariableIdLiteral:
-      return SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER;
-
-    // Used by Switch
-    case OperandVariableLiteralId:
-      return SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID;
-
-    // These exceptional cases shouldn't occur.
-    case OperandCount:
-    default:
-      break;
-  }
-  assert(0 && "Unexpected operand class");
-  return SPV_OPERAND_TYPE_NONE;
-}
-
 }  // anonymous namespace
-
-// Finish populating the opcodeTableEntries array.
-void spvOpcodeTableInitialize(spv_opcode_desc_t* entries,
-                              uint32_t num_entries) {
-  // Compute the operandTypes field for each entry.
-  for (uint32_t i = 0; i < num_entries; ++i) {
-    spv_opcode_desc_t& opcode = entries[i];
-    opcode.numTypes = 0;
-    // Type ID always comes first, if present.
-    if (opcode.hasType)
-      opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_TYPE_ID;
-    // Result ID always comes next, if present
-    if (opcode.hasResult)
-      opcode.operandTypes[opcode.numTypes++] = SPV_OPERAND_TYPE_RESULT_ID;
-    const uint16_t maxNumOperands = static_cast<uint16_t>(
-        sizeof(opcode.operandTypes) / sizeof(opcode.operandTypes[0]));
-    const uint16_t maxNumClasses = static_cast<uint16_t>(
-        sizeof(opcode.operandClass) / sizeof(opcode.operandClass[0]));
-    for (uint16_t classIndex = 0;
-         opcode.numTypes < maxNumOperands && classIndex < maxNumClasses;
-         classIndex++) {
-      const OperandClass operandClass = opcode.operandClass[classIndex];
-      const auto operandType =
-          convertOperandClassToType(opcode.opcode, operandClass);
-      opcode.operandTypes[opcode.numTypes++] = operandType;
-      // The OperandNone value is not explicitly represented in the .inc file.
-      // However, it is the zero value, and is created via implicit value
-      // initialization.  It converts to SPV_OPERAND_TYPE_NONE.
-      // The SPV_OPERAND_TYPE_NONE operand type indicates no current or futher
-      // operands.
-      if (operandType == SPV_OPERAND_TYPE_NONE) {
-        opcode.numTypes--;
-        break;
-      }
-    }
-
-    // We should have written the terminating SPV_OPERAND_TYPE_NONE entry, but
-    // also without overflowing.
-    assert((opcode.numTypes < maxNumOperands) &&
-           "Operand class list is too long.  Expand "
-           "spv_opcode_desc_t.operandClass");
-  }
-}
 
 const char* spvGeneratorStr(uint32_t generator) {
   switch (generator) {
@@ -334,22 +91,19 @@ void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount, SpvOp* pOpcode) {
   }
 }
 
+// Evaluates to the number of elements of array A.
+// If we could use constexpr, then we could make this a template function.
+// If the source arrays were std::array, then we could have used
+// std::array::size.
+#define ARRAY_SIZE(A) (static_cast<uint32_t>(sizeof(A) / sizeof(A[0])))
+
 spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable) {
   if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
 
-  const uint32_t size = sizeof(opcodeTableEntries);
-  spv_opcode_desc_t* copied_entries =
-      static_cast<spv_opcode_desc_t*>(::malloc(size));
-  if (!copied_entries) return SPV_ERROR_OUT_OF_MEMORY;
-  ::memcpy(copied_entries, opcodeTableEntries, size);
+  static const spv_opcode_table_t table = {ARRAY_SIZE(opcodeTableEntries),
+                                           opcodeTableEntries};
 
-  const uint32_t count = static_cast<uint32_t>(sizeof(opcodeTableEntries) /
-                                               sizeof(spv_opcode_desc_t));
-  spv_opcode_table_t* table = new spv_opcode_table_t{count, copied_entries};
-
-  spvOpcodeTableInitialize(copied_entries, count);
-
-  *pInstTable = table;
+  *pInstTable = &table;
 
   return SPV_SUCCESS;
 }
@@ -417,17 +171,13 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 }
 
 const char* spvOpcodeString(const SpvOp opcode) {
-// Use the syntax table so it's sure to be complete.
-#define Instruction(Name, ...) \
-  case SpvOp##Name:            \
-    return #Name;
-  switch (opcode) {
-#include "opcode.inc"
-    default:
-      assert(0 && "Unreachable!");
+  for (uint32_t i = 0;
+       i < sizeof(opcodeTableEntries) / sizeof(spv_opcode_desc_t); ++i) {
+    if (opcodeTableEntries[i].opcode == opcode)
+      return opcodeTableEntries[i].name;
   }
+  assert(0 && "Unreachable!");
   return "unknown";
-#undef Instruction
 }
 
 int32_t spvOpcodeIsScalarType(const SpvOp opcode) {

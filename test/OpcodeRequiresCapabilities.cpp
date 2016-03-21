@@ -37,8 +37,7 @@ class Requires : public ::testing::TestWithParam<SpvCapability> {
                0,
                {},
                false,
-               false,
-               {}}) {}
+               false}) {}
 
   virtual void SetUp() {}
 
@@ -65,10 +64,10 @@ INSTANTIATE_TEST_CASE_P(
                       SpvCapabilityClipDistance,
                       // Transformfeedback has value 53,
                       // and is the last capability.
-                      SpvCapabilityTransformFeedback),);
+                      SpvCapabilityTransformFeedback), );
 
 TEST(OpcodeRequiresCapability, None) {
-  spv_opcode_desc_t entry = {nullptr, (SpvOp)0, 0, 0, {}, false, false, {}};
+  spv_opcode_desc_t entry = {nullptr, (SpvOp)0, 0, 0, {}, false, false};
   ASSERT_EQ(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
@@ -133,6 +132,6 @@ INSTANTIATE_TEST_CASE_P(
         ExpectedOpCodeCapabilities{SpvOpFunction, 0},
         ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0},
         ExpectedOpCodeCapabilities{SpvOpEmitStreamVertex,
-                                   mask(SpvCapabilityGeometryStreams)}),);
+                                   mask(SpvCapabilityGeometryStreams)}), );
 
 }  // anonymous namespace

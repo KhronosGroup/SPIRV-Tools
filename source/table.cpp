@@ -50,8 +50,4 @@ spv_context spvContextCreate(spv_target_env env) {
   return new spv_context_t{opcode_table, operand_table, ext_inst_table};
 }
 
-void spvContextDestroy(spv_context context) {
-  ::free(context->opcode_table->entries);
-  delete context->opcode_table;
-  delete context;
-}
+void spvContextDestroy(spv_context context) { delete context; }

@@ -69,7 +69,11 @@ set(SPIRV_SOURCES
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})
-target_include_directories(${SPIRV_TOOLS} PUBLIC ${spirv-tools_SOURCE_DIR}/include)
+target_include_directories(${SPIRV_TOOLS}
+  PUBLIC ${spirv-tools_SOURCE_DIR}/include
+  PRIVATE ${spirv-tools_BINARY_DIR}
+  )
+add_dependencies(${SPIRV_TOOLS} spirv-tools-build-tables)
 
 install(TARGETS ${SPIRV_TOOLS}
   RUNTIME DESTINATION bin
