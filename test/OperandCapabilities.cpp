@@ -570,8 +570,8 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(CAPABILITY, CapabilityInt64),
         CASE1(CAPABILITY, CapabilityInt64Atomics, Int64),
         CASE1(CAPABILITY, CapabilityImageBasic, Kernel),
-        CASE1(CAPABILITY, CapabilityImageReadWrite, Kernel),
-        CASE1(CAPABILITY, CapabilityImageMipmap, Kernel),
+        CASE1(CAPABILITY, CapabilityImageReadWrite, ImageBasic),
+        CASE1(CAPABILITY, CapabilityImageMipmap, ImageBasic),
         // Value 16 intentionally missing.
         CASE1(CAPABILITY, CapabilityPipes, Kernel),
         CASE0(CAPABILITY, CapabilityGroups),

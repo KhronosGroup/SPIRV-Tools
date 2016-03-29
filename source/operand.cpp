@@ -959,8 +959,8 @@ static const spv_operand_desc_t capabilityInfoEntries[] = {
     CASE(Int64),
     CASE_CAP(Int64Atomics, Int64),
     CASE_CAP(ImageBasic, Kernel),
-    CASE_CAP(ImageReadWrite, Kernel),
-    CASE_CAP(ImageMipmap, Kernel),
+    CASE_CAP(ImageReadWrite, ImageBasic),
+    CASE_CAP(ImageMipmap, ImageBasic),
     // Value 16 intentionally missing.
     CASE_CAP(Pipes, Kernel),
     CASE(Groups),
