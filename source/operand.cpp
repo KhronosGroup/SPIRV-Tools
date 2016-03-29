@@ -1178,7 +1178,6 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
       return "memory model";
     case SPV_OPERAND_TYPE_EXECUTION_MODE:
-    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
       return "execution mode";
     case SPV_OPERAND_TYPE_STORAGE_CLASS:
       return "storage class";
@@ -1311,10 +1310,6 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
       pattern->insert(pattern->begin(),
                       {SPV_OPERAND_TYPE_OPTIONAL_ID,
                        SPV_OPERAND_TYPE_LITERAL_INTEGER, type});
-      return true;
-    case SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE:
-      pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE, type});
       return true;
     default:
       break;

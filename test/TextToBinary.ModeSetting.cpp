@@ -198,6 +198,12 @@ TEST_F(OpExecutionModeTest, WrongMode) {
               Eq("Invalid execution mode 'xxyyzz'."));
 }
 
+TEST_F(OpExecutionModeTest, TooManyModes) {
+  EXPECT_THAT(CompileFailure("OpExecutionMode %1 Xfb PointMode"),
+              Eq("Expected <opcode> or <result-id> at the beginning of an "
+                 "instruction, found 'PointMode'."));
+}
+
 // Test OpCapability
 
 using OpCapabilityTest = spvtest::TextToBinaryTestBase<

@@ -189,9 +189,6 @@ TEST(AlternatePatternFollowingImmediate, SingleElement) {
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_ID}),
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
-  EXPECT_THAT(spvAlternatePatternFollowingImmediate(
-                  {SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE}),
-              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
 }
 
 TEST(AlternatePatternFollowingImmediate, SingleResultId) {
@@ -206,8 +203,7 @@ TEST(AlternatePatternFollowingImmediate, MultipleNonResultIds) {
       spvAlternatePatternFollowingImmediate(
           {SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
            SPV_OPERAND_TYPE_CAPABILITY, SPV_OPERAND_TYPE_LOOP_CONTROL,
-           SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, SPV_OPERAND_TYPE_ID,
-           SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE}),
+           SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, SPV_OPERAND_TYPE_ID}),
       Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV}));
 }
 

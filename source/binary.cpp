@@ -599,9 +599,6 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       }
     } break;
 
-    case SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE:
-      parsed_operand.type = SPV_OPERAND_TYPE_EXECUTION_MODE;
-    // Fall through
     case SPV_OPERAND_TYPE_CAPABILITY:
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
     case SPV_OPERAND_TYPE_EXECUTION_MODEL:

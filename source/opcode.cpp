@@ -87,7 +87,14 @@ spv_operand_type_t convertOperandClassToType(SpvOp opcode,
   if (operandClass == OperandOptionalLiteral) {
     switch (opcode) {
       case SpvOpExecutionMode:
-        return SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE;
+        // An OpExecutionMode only takes a single ExecutionMode operand and the
+        // operands for that execution mode.  The OperandOptionalLiteral in the
+        // grammar from the spec is only used to generate the text "Optional
+        // literal(s)".  But we've already recorded the
+        // SPV_OPERAND_TYPE_EXECUTION_MODE which will absorb those extra
+        // literals.  Use a NONE operand type here to terminate the operands
+        // to the instruction.
+        return SPV_OPERAND_TYPE_NONE;
       default:
         break;
     }

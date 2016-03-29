@@ -205,8 +205,6 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER,
   // An optional literal string.
   SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING,
-  // An optional execution mode.
-  SPV_OPERAND_TYPE_OPTIONAL_EXECUTION_MODE,
   // An optional access qualifier
   SPV_OPERAND_TYPE_OPTIONAL_ACCESS_QUALIFIER,
   // An optional context-independent value, or CIV.  CIVs are tokens that we can
@@ -225,9 +223,7 @@ typedef enum spv_operand_type_t {
   // where the literal number must always be an integer of some sort.
   SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID,
   // A sequence of zero or more pairs of (Id, Literal integer)
-  SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER,
-  // A sequence of zero or more execution modes
-  LAST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_EXECUTION_MODE),
+  LAST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER),
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
