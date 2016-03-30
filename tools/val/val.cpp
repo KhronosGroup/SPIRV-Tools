@@ -52,10 +52,11 @@ Options:
 
 const char kBuildVersion[] =
 #include "build-version.inc"
-;
+    ;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -68,6 +69,8 @@ int main(int argc, char** argv) {
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);
         return 0;
+      } else if (0 == strcmp(cur_arg, "--vulkan")) {
+        target_env = SPV_ENV_VULKAN;
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
@@ -108,7 +111,7 @@ int main(int argc, char** argv) {
   spv_const_binary_t binary = {contents.data(), contents.size()};
 
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate();
+  spv_context context = spvContextCreate(target_env);
   spv_result_t error = spvValidate(context, &binary, &diagnostic);
   spvContextDestroy(context);
   if (error) {

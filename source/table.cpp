@@ -28,7 +28,15 @@
 
 #include <cstdlib>
 
-spv_context spvContextCreate() {
+spv_context spvContextCreate(spv_target_env env) {
+  switch (env) {
+    case SPV_ENV_UNIVERSAL:
+    case SPV_ENV_VULKAN:
+      break;
+    default:
+      return nullptr;
+  }
+
   spv_opcode_table opcode_table;
   spv_operand_table operand_table;
   spv_ext_inst_table ext_inst_table;
