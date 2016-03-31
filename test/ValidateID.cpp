@@ -71,7 +71,7 @@ const char kOpenCLMemoryModel64[] = R"(
 
 #define CHECK(str, expected)                                                   \
   spv_diagnostic diagnostic;                                                   \
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);             \
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
   std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
   spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
                                        &binary, &diagnostic);                  \
@@ -91,7 +91,7 @@ const char kOpenCLMemoryModel64[] = R"(
 #define CHECK_KERNEL(str, expected, bitness)                                   \
   ASSERT_TRUE(bitness == 32 || bitness == 64);                                 \
   spv_diagnostic diagnostic;                                                   \
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);             \
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
   std::string kernel = std::string(bitness == 32 ? kOpenCLMemoryModel32        \
                                                  : kOpenCLMemoryModel64) +     \
                        str;                                                    \

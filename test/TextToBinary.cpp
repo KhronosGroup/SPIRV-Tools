@@ -58,7 +58,7 @@ struct MaskCase {
 using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
 
 TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
 
   uint32_t value;
   EXPECT_EQ(SPV_SUCCESS,
@@ -103,7 +103,7 @@ INSTANTIATE_TEST_CASE_P(
 using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
 
 TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
 
   uint32_t value;
   EXPECT_NE(SPV_SUCCESS,
@@ -546,13 +546,13 @@ TEST(CreateContext, InvalidEnvironment) {
 }
 
 TEST(CreateContext, UniversalEnvironment) {
-  auto c = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
+  auto c = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
   EXPECT_THAT(c, NotNull());
   spvContextDestroy(c);
 }
 
 TEST(CreateContext, VulkanEnvironment) {
-  auto c = spvContextCreate(SPV_ENV_VULKAN_1_0_7);
+  auto c = spvContextCreate(SPV_ENV_VULKAN_1_0);
   EXPECT_THAT(c, NotNull());
   spvContextDestroy(c);
 }

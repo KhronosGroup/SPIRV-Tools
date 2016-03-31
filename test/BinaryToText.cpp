@@ -41,7 +41,7 @@ using spvtest::TextToBinaryTest;
 namespace {
 class BinaryToText : public ::testing::Test {
  public:
-  BinaryToText() : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4)) {}
+  BinaryToText() : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)) {}
   ~BinaryToText() { spvContextDestroy(context); }
 
   virtual void SetUp() {
