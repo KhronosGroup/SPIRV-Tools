@@ -28,6 +28,7 @@
 #define LIBSPIRV_TABLE_H_
 
 #include "spirv-tools/libspirv.h"
+#include "spirv/spirv.h"
 #include "spirv_definition.h"
 
 typedef struct spv_opcode_desc_t {
@@ -96,6 +97,7 @@ typedef const spv_operand_table_t* spv_operand_table;
 typedef const spv_ext_inst_table_t* spv_ext_inst_table;
 
 struct spv_context_t {
+  const spv_target_env target_env;
   const spv_opcode_table opcode_table;
   const spv_operand_table operand_table;
   const spv_ext_inst_table ext_inst_table;

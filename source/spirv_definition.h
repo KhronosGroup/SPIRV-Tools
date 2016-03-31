@@ -31,6 +31,8 @@
 
 #include "spirv-tools/libspirv.h"
 
+#define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
+
 // A bit mask representing a set of capabilities.
 // Currently there are 57 distinct capabilities, so 64 bits
 // should be enough.

@@ -128,7 +128,7 @@ void DebugInstructionPass(ValidationState_t& _,
 void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
     _.usedefs().AddDef(
-        {inst.result_id, inst.type_id, inst.opcode,
+        {inst.result_id, inst.type_id, static_cast<SpvOp>(inst.opcode),
          std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
   }
   for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {
@@ -140,7 +140,7 @@ spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
   _.incrementInstructionCount();
-  if (inst->opcode == SpvOpEntryPoint)
+  if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint)
     _.entry_points().push_back(inst->words[2]);
 
   DebugInstructionPass(_, inst);
@@ -203,11 +203,12 @@ spv_result_t spvValidate(const spv_const_context context,
   uint64_t index = SPV_INDEX_INSTRUCTION;
   while (index < binary->wordCount) {
     uint16_t wordCount;
-    SpvOp opcode;
+    uint16_t opcode;
     spvOpcodeSplit(spvFixWord(binary->code[index], endian), &wordCount,
                    &opcode);
     spv_instruction_t inst;
-    spvInstructionCopy(&binary->code[index], opcode, wordCount, endian, &inst);
+    spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
+                       wordCount, endian, &inst);
     instructions.push_back(inst);
     index += wordCount;
   }

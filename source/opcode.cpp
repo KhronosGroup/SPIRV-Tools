@@ -82,12 +82,13 @@ uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode) {
   return ((uint32_t)opcode) | (((uint32_t)wordCount) << 16);
 }
 
-void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount, SpvOp* pOpcode) {
+void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount,
+                    uint16_t* pOpcode) {
   if (pWordCount) {
     *pWordCount = (uint16_t)((0xffff0000 & word) >> 16);
   }
   if (pOpcode) {
-    *pOpcode = (SpvOp)(0x0000ffff & word);
+    *pOpcode = 0x0000ffff & word;
   }
 }
 
@@ -162,10 +163,10 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
     pInst->words[wordIndex] = spvFixWord(words[wordIndex], endian);
     if (!wordIndex) {
       uint16_t thisWordCount;
-      SpvOp thisOpcode;
+      uint16_t thisOpcode;
       spvOpcodeSplit(pInst->words[wordIndex], &thisWordCount, &thisOpcode);
-      assert(opcode == thisOpcode && wordCount == thisWordCount &&
-             "Endianness failed!");
+      assert(opcode == static_cast<SpvOp>(thisOpcode) &&
+             wordCount == thisWordCount && "Endianness failed!");
     }
   }
 }

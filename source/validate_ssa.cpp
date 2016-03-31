@@ -99,7 +99,7 @@ namespace libspirv {
 spv_result_t SsaPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
   auto can_have_forward_declared_ids =
-      getCanBeForwardDeclaredFunction(inst->opcode);
+      getCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
 
   for (unsigned i = 0; i < inst->num_operands; i++) {
     const spv_parsed_operand_t& operand = inst->operands[i];

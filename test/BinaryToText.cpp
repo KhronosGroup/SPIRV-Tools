@@ -421,8 +421,6 @@ TEST_F(TextToBinaryTest, VersionString) {
               Eq(SPV_SUCCESS));
   EXPECT_EQ(nullptr, diagnostic);
 
-  EXPECT_EQ(1, SPV_SPIRV_VERSION_MAJOR);
-  EXPECT_EQ(0, SPV_SPIRV_VERSION_MINOR);
   EXPECT_THAT(decoded_text->str, HasSubstr("Version: 1.0\n"))
       << EncodeAndDecodeSuccessfully("");
   spvTextDestroy(decoded_text);

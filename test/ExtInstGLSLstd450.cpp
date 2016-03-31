@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "UnitSPIRV.h"
+#include "spirv/GLSL.std.450.h"
 
 namespace {
 

@@ -28,10 +28,10 @@
 #include <string>
 #include <vector>
 
-#include "gmock/gmock.h"
-
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
+#include "gmock/gmock.h"
+#include "spirv/OpenCL.std.h"
 
 // Returns true if two spv_parsed_operand_t values are equal.
 // To use this operator, this definition must appear in the same namespace
@@ -60,7 +60,7 @@ using ::testing::_;
 struct ParsedInstruction {
   explicit ParsedInstruction(const spv_parsed_instruction_t& inst)
       : words(inst.words, inst.words + inst.num_words),
-        opcode(inst.opcode),
+        opcode(static_cast<SpvOp>(inst.opcode)),
         ext_inst_type(inst.ext_inst_type),
         type_id(inst.type_id),
         result_id(inst.result_id),
@@ -463,7 +463,7 @@ INSTANTIATE_TEST_CASE_P(
          "Module has incomplete header: only 3 words instead of 5"},
         {kHeaderForBound1, 4,
          "Module has incomplete header: only 4 words instead of 5"},
-    }),);
+    }), );
 
 // A binary parser diagnostic test case where a vector of words is
 // provided.  We'll use this to express cases that can't be created
@@ -696,7 +696,7 @@ INSTANTIATE_TEST_CASE_P(
              MakeInstruction(SpvOpConstant, {1, 2, 42}),
          }),
          "Type Id 1 is not a scalar numeric type"},
-    }),);
+    }), );
 
 // A binary parser diagnostic case generated from an assembly text input.
 struct AssemblyDiagnosticCase {
@@ -766,6 +766,6 @@ INSTANTIATE_TEST_CASE_P(
          "Invalid image operand: 511 has invalid mask component 256"},
         {"OpSelectionMerge %1 !7",
          "Invalid selection control operand: 7 has invalid mask component 4"},
-    }),);
+    }), );
 
 }  // anonymous namespace

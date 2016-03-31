@@ -618,10 +618,10 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
 // nullability transitively.
 bool IsTypeNullable(const std::vector<uint32_t>& instruction,
                     const UseDefTracker& usedefs) {
-  SpvOp opcode;
+  uint16_t opcode;
   uint16_t word_count;
   spvOpcodeSplit(instruction[0], &word_count, &opcode);
-  switch (opcode) {
+  switch (static_cast<SpvOp>(opcode)) {
     case SpvOpTypeBool:
     case SpvOpTypeInt:
     case SpvOpTypeFloat:

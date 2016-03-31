@@ -28,16 +28,18 @@
 
 #include <string.h>
 
+#include "spirv/GLSL.std.450.h"
+#include "spirv/OpenCL.std.h"
 #include "spirv_definition.h"
 
 /// Generate a spv_ext_inst_desc_t literal for a GLSL std450 extended
 /// instruction with one/two/three <id> parameter(s).
 #define GLSL450Inst1(name) \
   #name, GLSLstd450::GLSLstd450##name, 0, { SPV_OPERAND_TYPE_ID }
-#define GLSL450Inst1Cap(name, cap)                        \
-  #name, GLSLstd450::GLSLstd450##name,                    \
-          SPV_CAPABILITY_AS_MASK(SpvCapability##cap), { \
-    SPV_OPERAND_TYPE_ID                                   \
+#define GLSL450Inst1Cap(name, cap)                  \
+  #name, GLSLstd450::GLSLstd450##name,              \
+      SPV_CAPABILITY_AS_MASK(SpvCapability##cap), { \
+    SPV_OPERAND_TYPE_ID                             \
   }
 #define GLSL450Inst2(name)                   \
   #name, GLSLstd450::GLSLstd450##name, 0, {  \
@@ -138,9 +140,7 @@ static const spv_ext_inst_desc_t glslStd450Entries[] = {
 };
 
 static const spv_ext_inst_desc_t openclEntries[] = {
-#define ExtInst(Name, Opcode, OperandList) \
-  { #Name, Opcode, 0, OperandList }           \
-  ,
+#define ExtInst(Name, Opcode, OperandList) {#Name, Opcode, 0, OperandList},
 #define EmptyList \
   {}
 #define List(...) \

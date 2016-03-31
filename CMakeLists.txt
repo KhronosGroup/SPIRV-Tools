@@ -159,9 +159,3 @@ add_subdirectory(test)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
   DESTINATION include/spirv-tools/)
-# The installation is broken without these header files from the SPIR-V Registry.
-# The libspirv.h header includes them.
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/spirv.h
-              ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/GLSL.std.450.h
-              ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv/OpenCL.std.h
-  DESTINATION include/spirv/)

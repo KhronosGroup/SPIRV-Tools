@@ -182,7 +182,7 @@ spv_result_t Disassembler::HandleInstruction(
     stream_ << std::string(indent_, ' ');
   }
 
-  stream_ << "Op" << spvOpcodeString(inst.opcode);
+  stream_ << "Op" << spvOpcodeString(static_cast<SpvOp>(inst.opcode));
 
   for (uint16_t i = 0; i < inst.num_operands; i++) {
     const spv_operand_type_t type = inst.operands[i].type;

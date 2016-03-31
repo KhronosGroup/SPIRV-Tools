@@ -88,7 +88,6 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/Validate.SSA.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/Version.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
     add_executable(UnitSPIRV ${TEST_SOURCES})

@@ -653,22 +653,18 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
 
 enum { kAssemblerVersion = 0 };
 
-/// @brief Populate a binary stream's words with this generator's header.
-///
-/// @param[in,out] words the array of words
-/// @param[in] bound the upper ID bound
-///
-/// @return result code
-spv_result_t SetHeader(uint32_t* words, const uint32_t bound) {
-  if (!words) return SPV_ERROR_INVALID_BINARY;
+// Populates a binary stream's |header|. The target environment is specified via
+// |env| and Id bound is via |bound|.
+spv_result_t SetHeader(spv_target_env env, const uint32_t bound,
+                       uint32_t* header) {
+  if (!header) return SPV_ERROR_INVALID_BINARY;
 
-  words[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;
-  words[SPV_INDEX_VERSION_NUMBER] =
-      SPV_SPIRV_VERSION_WORD(SPV_SPIRV_VERSION_MAJOR, SPV_SPIRV_VERSION_MINOR);
-  words[SPV_INDEX_GENERATOR_NUMBER] =
+  header[SPV_INDEX_MAGIC_NUMBER] = SpvMagicNumber;
+  header[SPV_INDEX_VERSION_NUMBER] = spvVersionForTargetEnv(env);
+  header[SPV_INDEX_GENERATOR_NUMBER] =
       SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, kAssemblerVersion);
-  words[SPV_INDEX_BOUND] = bound;
-  words[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
+  header[SPV_INDEX_BOUND] = bound;
+  header[SPV_INDEX_SCHEMA] = 0;  // NOTE: Reserved
 
   return SPV_SUCCESS;
 }
@@ -721,7 +717,8 @@ spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
     currentIndex += inst.words.size();
   }
 
-  if (auto error = SetHeader(data, context.getBound())) return error;
+  if (auto error = SetHeader(grammar.target_env(), context.getBound(), data))
+    return error;
 
   spv_binary binary = new spv_binary_t();
   if (!binary) {

@@ -182,7 +182,7 @@ namespace libspirv {
 // Performs logical layout validation. See Section 2.4
 spv_result_t ModuleLayoutPass(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst) {
-  SpvOp opcode = inst->opcode;
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
 
   switch (_.getLayoutSection()) {
     case kLayoutCapabilities:

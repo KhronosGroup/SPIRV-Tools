@@ -83,10 +83,11 @@ namespace libspirv {
 spv_result_t CapCheck(ValidationState_t& _,
                       const spv_parsed_instruction_t* inst) {
   spv_opcode_desc opcode_desc;
-  if (SPV_SUCCESS == _.grammar().lookupOpcode(inst->opcode, &opcode_desc) &&
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  if (SPV_SUCCESS == _.grammar().lookupOpcode(opcode, &opcode_desc) &&
       !_.HasAnyOf(opcode_desc->capabilities))
     return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-           << "Opcode " << spvOpcodeString(inst->opcode)
+           << "Opcode " << spvOpcodeString(opcode)
            << " requires one of these capabilities: "
            << ToString(opcode_desc->capabilities, _.grammar());
   for (int i = 0; i < inst->num_operands; ++i) {
@@ -99,7 +100,7 @@ spv_result_t CapCheck(ValidationState_t& _,
           const auto caps =
               RequiredCapabilities(_.grammar(), operand.type, mask_bit);
           if (!_.HasAnyOf(caps)) {
-            return CapabilityError(_, i + 1, inst->opcode,
+            return CapabilityError(_, i + 1, opcode,
                                    ToString(caps, _.grammar()));
           }
         }
@@ -108,8 +109,7 @@ spv_result_t CapCheck(ValidationState_t& _,
       // Check the operand word as a whole.
       const auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
       if (!_.HasAnyOf(caps)) {
-        return CapabilityError(_, i + 1, inst->opcode,
-                               ToString(caps, _.grammar()));
+        return CapabilityError(_, i + 1, opcode, ToString(caps, _.grammar()));
       }
     }
   }
@@ -118,10 +118,11 @@ spv_result_t CapCheck(ValidationState_t& _,
 
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
-  if (inst->opcode == SpvOpCapability)
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  if (opcode == SpvOpCapability)
     _.registerCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
-  if (inst->opcode == SpvOpVariable) {
+  if (opcode == SpvOpVariable) {
     const auto storage_class =
         static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
     if (storage_class == SpvStorageClassGeneric)

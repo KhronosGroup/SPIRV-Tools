@@ -27,10 +27,6 @@
 #ifndef SPIRV_TOOLS_LIBSPIRV_H_
 #define SPIRV_TOOLS_LIBSPIRV_H_
 
-#include "spirv/GLSL.std.450.h"
-#include "spirv/OpenCL.std.h"
-#include "spirv/spirv.h"
-
 #ifdef __cplusplus
 extern "C" {
 #else
@@ -40,17 +36,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-// Versions
-// This library is based on SPIR-V 1.0 Rev2
-// TODO(dneto): Use the values from the SPIR-V header, when it's updated for
-// SPIR-V 1.0 public release.
-#define SPV_SPIRV_VERSION_MAJOR (SPV_VERSION >> 16)
-#define SPV_SPIRV_VERSION_MINOR (SPV_VERSION & 0xffff)
-#define SPV_SPIRV_VERSION_REVISION (SPV_REVISION)
-
 // Helpers
-
-#define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 
 #define SPV_BIT(shift) (1 << (shift))
 
@@ -287,7 +273,7 @@ typedef struct spv_parsed_instruction_t {
   const uint32_t* words;
   // The number of words in this instruction.
   uint16_t num_words;
-  SpvOp opcode;
+  uint16_t opcode;
   // The extended instruction type, if opcode is OpExtInst.  Otherwise
   // this is the "none" value.
   spv_ext_inst_type_t ext_inst_type;
@@ -352,6 +338,9 @@ typedef enum {
   SPV_ENV_VULKAN_1_0,       // Vulkan 1.0 any revision.
   SPV_ENV_VULKAN_1_0_7      // Vulkan 1.0 revision 7.
 } spv_target_env;
+
+// Returns a string describing the given SPIR-V target environment.
+const char* spvTargetEnvDescription(spv_target_env env);
 
 // Creates a context object.  Returns null if env is invalid.
 spv_context spvContextCreate(spv_target_env env);

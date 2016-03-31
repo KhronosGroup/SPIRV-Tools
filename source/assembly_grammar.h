@@ -29,6 +29,7 @@
 
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/spirv.h"
 #include "table.h"
 
 namespace libspirv {
@@ -38,12 +39,16 @@ namespace libspirv {
 class AssemblyGrammar {
  public:
   explicit AssemblyGrammar(const spv_const_context context)
-      : operandTable_(context->operand_table),
+      : target_env_(context->target_env),
+        operandTable_(context->operand_table),
         opcodeTable_(context->opcode_table),
         extInstTable_(context->ext_inst_table) {}
 
   // Returns true if the internal tables have been initialized with valid data.
   bool isValid() const;
+
+  // Returns the SPIR-V target environment.
+  spv_target_env target_env() const { return target_env_; }
 
   // Fills in the desc parameter with the information about the opcode
   // of the given name. Returns SPV_SUCCESS if the opcode was found, and
@@ -115,6 +120,7 @@ class AssemblyGrammar {
                                   spv_operand_pattern_t* pattern) const;
 
  private:
+  const spv_target_env target_env_;
   const spv_operand_table operandTable_;
   const spv_opcode_table opcodeTable_;
   const spv_ext_inst_table extInstTable_;

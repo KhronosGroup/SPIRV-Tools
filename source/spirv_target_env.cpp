@@ -1,4 +1,4 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright (c) 2015-2016 The Khronos Group Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and/or associated documentation files (the
@@ -24,16 +24,38 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "gmock/gmock.h"
+#include <assert.h>
 
-#include "UnitSPIRV.h"
+#include "spirv-tools/libspirv.h"
+#include "spirv_constant.h"
 
-namespace {
-
-TEST(LibspirvMacros, Version) {
-  EXPECT_EQ(1, SPV_SPIRV_VERSION_MAJOR);
-  EXPECT_EQ(0, SPV_SPIRV_VERSION_MINOR);
-  EXPECT_EQ(3, SPV_SPIRV_VERSION_REVISION);
+const char* spvTargetEnvDescription(spv_target_env env) {
+  switch (env) {
+    case SPV_ENV_UNIVERSAL_1_0:
+      return "SPIR-V 1.0";
+    case SPV_ENV_UNIVERSAL_1_0_4:
+      return "SPIR-V 1.0 rev 4";
+    case SPV_ENV_VULKAN_1_0:
+      return "SPIR-V 1.0 (under Vulkan 1.0 semantics)";
+    case SPV_ENV_VULKAN_1_0_7:
+      return "SPIR-V 1.0 (under Vulkan 1.0.7 semantics)";
+    default:
+      break;
+  }
+  assert(0 && "Unhandled SPIR-V target environment");
+  return "";
 }
 
-}  // anonymous namespace
+uint32_t spvVersionForTargetEnv(spv_target_env env) {
+  switch (env) {
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_UNIVERSAL_1_0_4:
+    case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_VULKAN_1_0_7:
+      return SPV_SPIRV_VERSION_WORD(1, 0);
+    default:
+      break;
+  }
+  assert(0 && "Unhandled SPIR-V target environment");
+  return SPV_SPIRV_VERSION_WORD(0, 0);
+}

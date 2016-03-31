@@ -29,6 +29,7 @@ set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv/spirv.h
   ${spirv-tools_SOURCE_DIR}/include/spirv/GLSL.std.450.h
   ${spirv-tools_SOURCE_DIR}/include/spirv/OpenCL.std.h
+
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.h
@@ -46,16 +47,18 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/validate.h
+
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/print.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp

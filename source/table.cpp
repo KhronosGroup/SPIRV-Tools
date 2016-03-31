@@ -47,7 +47,7 @@ spv_context spvContextCreate(spv_target_env env) {
   spvOperandTableGet(&operand_table);
   spvExtInstTableGet(&ext_inst_table);
 
-  return new spv_context_t{opcode_table, operand_table, ext_inst_table};
+  return new spv_context_t{env, opcode_table, operand_table, ext_inst_table};
 }
 
 void spvContextDestroy(spv_context context) { delete context; }

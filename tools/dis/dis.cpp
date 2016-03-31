@@ -61,7 +61,7 @@ Options:
 
 const char kBuildVersion[] =
 #include "build-version.inc"
-;
+    ;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
@@ -101,8 +101,8 @@ int main(int argc, char** argv) {
             return 0;
           } else if (0 == strcmp(argv[argi], "--version")) {
             printf("%s\n", kBuildVersion);
-            printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
-                   SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+            printf("Target: %s\n",
+                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0_4));
             return 0;
           } else {
             print_usage(argv[0]);
@@ -174,8 +174,7 @@ int main(int argc, char** argv) {
   // into the output stream.
   // If the printing option is off, then save the text in memory, so
   // it can be emitted later in this function.
-  const bool print_to_stdout =
-      spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options);
+  const bool print_to_stdout = SPV_BINARY_TO_TEXT_OPTION_PRINT & options;
   spv_text text;
   spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;

@@ -31,6 +31,8 @@
 
 #include "TestFixture.h"
 #include "gmock/gmock.h"
+#include "spirv/GLSL.std.450.h"
+#include "spirv/OpenCL.std.h"
 
 namespace {
 

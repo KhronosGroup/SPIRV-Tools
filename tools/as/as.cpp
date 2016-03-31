@@ -54,7 +54,7 @@ Options:
 
 const char kBuildVersion[] =
 #include "build-version.inc"
-;
+    ;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
@@ -88,8 +88,8 @@ int main(int argc, char** argv) {
           // Long options
           if (0 == strcmp(argv[argi], "--version")) {
             printf("%s\n", kBuildVersion);
-            printf("Target: SPIR-V %d.%d rev %d\n", SPV_SPIRV_VERSION_MAJOR,
-                   SPV_SPIRV_VERSION_MINOR, SPV_SPIRV_VERSION_REVISION);
+            printf("Target: %s\n",
+                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0_4));
             return 0;
           }
           if (0 == strcmp(argv[argi], "--help")) {

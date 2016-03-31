@@ -33,25 +33,24 @@ namespace libspirv {
 spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
   if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
-    SpvOp opcode = inst->opcode;
+    SpvOp opcode = static_cast<SpvOp>(inst->opcode);
     switch (opcode) {
-    case SpvOpLabel:
-      spvCheckReturn(_.get_functions().RegisterBlock(inst->result_id));
-      break;
-    case SpvOpBranch:
-    case SpvOpBranchConditional:
-    case SpvOpSwitch:
-    case SpvOpKill:
-    case SpvOpReturn:
-    case SpvOpReturnValue:
-    case SpvOpUnreachable:
-      spvCheckReturn(_.get_functions().RegisterBlockEnd());
-      break;
-    default:
-      break;
+      case SpvOpLabel:
+        spvCheckReturn(_.get_functions().RegisterBlock(inst->result_id));
+        break;
+      case SpvOpBranch:
+      case SpvOpBranchConditional:
+      case SpvOpSwitch:
+      case SpvOpKill:
+      case SpvOpReturn:
+      case SpvOpReturnValue:
+      case SpvOpUnreachable:
+        spvCheckReturn(_.get_functions().RegisterBlockEnd());
+        break;
+      default:
+        break;
     }
   }
   return SPV_SUCCESS;
 }
-
 }

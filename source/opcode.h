@@ -29,6 +29,7 @@
 
 #include "instruction.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/spirv.h"
 #include "table.h"
 
 // Returns the name of a registered SPIR-V generator as a null-terminated
@@ -43,7 +44,8 @@ const char* spvGeneratorStr(uint32_t generator);
 uint32_t spvOpcodeMake(uint16_t word_count, SpvOp opcode);
 
 // Splits word into into two constituent parts: word_count and opcode.
-void spvOpcodeSplit(const uint32_t word, uint16_t* word_count, SpvOp* opcode);
+void spvOpcodeSplit(const uint32_t word, uint16_t* word_count,
+                    uint16_t* opcode);
 
 // Finds the named opcode in the given opcode table. On success, returns
 // SPV_SUCCESS and writes a handle of the table entry into *entry.
