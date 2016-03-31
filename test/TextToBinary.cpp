@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <algorithm>
+#include <cstring>
 #include <utility>
 #include <vector>
 
@@ -541,8 +542,9 @@ TEST(AssemblyContextParseMessages, Errors) {
 }
 
 TEST(CreateContext, InvalidEnvironment) {
-  EXPECT_THAT(spvContextCreate(static_cast<spv_target_env>(99)),
-              IsNull());
+  spv_target_env env;
+  std::memset(&env, 99, sizeof(env));
+  EXPECT_THAT(spvContextCreate(env), IsNull());
 }
 
 TEST(CreateContext, UniversalEnvironment) {
