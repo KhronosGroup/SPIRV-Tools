@@ -541,7 +541,7 @@ TEST(AssemblyContextParseMessages, Errors) {
 }
 
 TEST(CreateContext, InvalidEnvironment) {
-  EXPECT_THAT(spvContextCreate(static_cast<spv_target_env>(-1)),
+  EXPECT_THAT(spvContextCreate(static_cast<spv_target_env>(99)),
               IsNull());
 }
 
