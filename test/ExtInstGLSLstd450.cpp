@@ -49,7 +49,7 @@ struct ExtInstContext {
 using ExtInstGLSLstd450RoundTripTest = ::testing::TestWithParam<ExtInstContext>;
 
 TEST_P(ExtInstGLSLstd450RoundTripTest, ParameterizedExtInst) {
-  spv_context context = spvContextCreate();
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
   const std::string spirv = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -94,8 +94,9 @@ OpFunctionEnd
   EXPECT_NE(binary->code + binary->wordCount,
             std::search(binary->code, binary->code + binary->wordCount,
                         expected_contains.begin(), expected_contains.end()))
-      << "Cannot find\n" << spvtest::WordVector(expected_contains).str()
-      << "in\n" << spvtest::WordVector(*binary).str();
+      << "Cannot find\n"
+      << spvtest::WordVector(expected_contains).str() << "in\n"
+      << spvtest::WordVector(*binary).str();
 
   // Check round trip gives the same text.
   spv_text output_text = nullptr;
@@ -205,6 +206,6 @@ INSTANTIATE_TEST_CASE_P(
         {"NMin", "%5 %5", 79, 7, {5, 5}},
         {"NMax", "%5 %5", 80, 7, {5, 5}},
         {"NClamp", "%5 %5 %5", 81, 8, {5, 5, 5}},
-    })),);
+    })), );
 
 }  // anonymous namespace

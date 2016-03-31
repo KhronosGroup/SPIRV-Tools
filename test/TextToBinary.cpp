@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <algorithm>
+#include <cstring>
 #include <utility>
 #include <vector>
 
@@ -45,6 +46,8 @@ using spvtest::Concatenate;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
 using testing::Eq;
+using testing::IsNull;
+using testing::NotNull;
 
 // An mask parsing test case.
 struct MaskCase {
@@ -56,7 +59,7 @@ struct MaskCase {
 using GoodMaskParseTest = ::testing::TestWithParam<MaskCase>;
 
 TEST_P(GoodMaskParseTest, GoodMaskExpressions) {
-  spv_context context = spvContextCreate();
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
 
   uint32_t value;
   EXPECT_EQ(SPV_SUCCESS,
@@ -96,12 +99,12 @@ INSTANTIATE_TEST_CASE_P(
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 4, "Pure"},
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 8, "Const"},
         {SPV_OPERAND_TYPE_FUNCTION_CONTROL, 0xd, "Inline|Const|Pure"},
-    }),);
+    }), );
 
 using BadFPFastMathMaskParseTest = ::testing::TestWithParam<const char*>;
 
 TEST_P(BadFPFastMathMaskParseTest, BadMaskExpressions) {
-  spv_context context = spvContextCreate();
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
 
   uint32_t value;
   EXPECT_NE(SPV_SUCCESS,
@@ -116,7 +119,7 @@ INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
                             nullptr, "", "NotValidEnum", "|", "NotInf|",
                             "|NotInf", "NotInf||NotNaN",
                             "Unroll"  // A good word, but for the wrong enum
-                        }),);
+                        }), );
 
 TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
@@ -220,7 +223,7 @@ INSTANTIATE_TEST_CASE_P(
         {"-2.5", 0xc0200000},
         {"!0xff800000", 0xff800000},  // -inf
         {"!0xff800001", 0xff800001},  // NaN
-    }),);
+    }), );
 
 using TextToBinaryHalfValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
@@ -252,7 +255,7 @@ INSTANTIATE_TEST_CASE_P(
         {"0x1.8p4", 0x00004e00},
         {"0x1.801p4", 0x00004e00},
         {"0x1.804p4", 0x00004e01},
-    }),);
+    }), );
 
 TEST(AssemblyContextParseNarrowSignedIntegers, Sample) {
   AssemblyContext context(AutoText(""), nullptr);
@@ -536,6 +539,24 @@ TEST(AssemblyContextParseMessages, Errors) {
   EXPECT_EQ("bad narrow int: abc", std::string(diag->error));
   // Don't leak.
   spvDiagnosticDestroy(diag);
+}
+
+TEST(CreateContext, InvalidEnvironment) {
+  spv_target_env env;
+  std::memset(&env, 99, sizeof(env));
+  EXPECT_THAT(spvContextCreate(env), IsNull());
+}
+
+TEST(CreateContext, UniversalEnvironment) {
+  auto c = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_THAT(c, NotNull());
+  spvContextDestroy(c);
+}
+
+TEST(CreateContext, VulkanEnvironment) {
+  auto c = spvContextCreate(SPV_ENV_VULKAN_1_0);
+  EXPECT_THAT(c, NotNull());
+  spvContextDestroy(c);
 }
 
 }  // anonymous namespace

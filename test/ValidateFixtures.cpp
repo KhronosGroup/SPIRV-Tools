@@ -26,8 +26,8 @@
 
 // Common validation fixtures for unit tests
 
-#include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
+#include "UnitSPIRV.h"
 
 #include <functional>
 #include <tuple>
@@ -37,7 +37,9 @@ namespace spvtest {
 
 template <typename T>
 ValidateBase<T>::ValidateBase()
-    : context_(spvContextCreate()), binary_(), diagnostic_() {}
+    : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
+      binary_(),
+      diagnostic_() {}
 
 template <typename T>
 ValidateBase<T>::~ValidateBase() {

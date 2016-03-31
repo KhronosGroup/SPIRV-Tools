@@ -343,8 +343,18 @@ typedef spv_context_t* spv_context;
 
 // Platform API
 
-// Creates a context object.
-spv_context spvContextCreate();
+// Certain target environments impose additional restrictions on SPIR-V, so it's
+// often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
+// environment-agnostic SPIR-V.
+typedef enum {
+  SPV_ENV_UNIVERSAL_1_0,    // SPIR-V 1.0 any revision, no other restrictions.
+  SPV_ENV_UNIVERSAL_1_0_4,  // SPIR-V 1.0 revision 4, no other restrictions.
+  SPV_ENV_VULKAN_1_0,       // Vulkan 1.0 any revision.
+  SPV_ENV_VULKAN_1_0_7      // Vulkan 1.0 revision 7.
+} spv_target_env;
+
+// Creates a context object.  Returns null if env is invalid.
+spv_context spvContextCreate(spv_target_env env);
 
 // Destroys the given context object.
 void spvContextDestroy(spv_context context);

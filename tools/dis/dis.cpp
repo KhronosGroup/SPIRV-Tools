@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
   spv_text text;
   spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate();
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
   spv_result_t error =
       spvBinaryToText(context, contents.data(), contents.size(), options,
                       textOrNull, &diagnostic);

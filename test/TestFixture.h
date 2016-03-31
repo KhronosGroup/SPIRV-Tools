@@ -43,7 +43,7 @@ class TextToBinaryTestBase : public T {
   const SpirvVector::size_type kFirstInstruction = 5;
 
   TextToBinaryTestBase()
-      : context(spvContextCreate()),
+      : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
         diagnostic(nullptr),
         text(),
         binary(nullptr) {
@@ -66,8 +66,8 @@ class TextToBinaryTestBase : public T {
   // Compiles SPIR-V text in the given assembly syntax format, asserting
   // compilation success. Returns the compiled code.
   SpirvVector CompileSuccessfully(const std::string& txt) {
-    spv_result_t status = spvTextToBinary(context, txt.c_str(), txt.size(),
-                                          &binary, &diagnostic);
+    spv_result_t status =
+        spvTextToBinary(context, txt.c_str(), txt.size(), &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << txt;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -100,8 +100,8 @@ class TextToBinaryTestBase : public T {
   std::string EncodeAndDecodeSuccessfully(const std::string& txt,
                                           uint32_t disassemble_options) {
     DestroyBinary();
-    spv_result_t error = spvTextToBinary(context, txt.c_str(), txt.size(),
-                                         &binary, &diagnostic);
+    spv_result_t error =
+        spvTextToBinary(context, txt.c_str(), txt.size(), &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
