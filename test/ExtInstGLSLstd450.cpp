@@ -49,7 +49,7 @@ struct ExtInstContext {
 using ExtInstGLSLstd450RoundTripTest = ::testing::TestWithParam<ExtInstContext>;
 
 TEST_P(ExtInstGLSLstd450RoundTripTest, ParameterizedExtInst) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL);
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
   const std::string spirv = R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"

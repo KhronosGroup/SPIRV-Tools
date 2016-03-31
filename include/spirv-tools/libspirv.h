@@ -346,7 +346,7 @@ typedef spv_context_t* spv_context;
 // Certain target environments impose additional restrictions on SPIR-V, so it's
 // often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
 // environment-agnostic SPIR-V.
-enum spv_target_env { SPV_ENV_UNIVERSAL, SPV_ENV_VULKAN };
+enum spv_target_env { SPV_ENV_UNIVERSAL_1_0_4, SPV_ENV_VULKAN_1_0_7 };
 
 // Creates a context object.  Returns null if env is invalid.
 spv_context spvContextCreate(spv_target_env env);

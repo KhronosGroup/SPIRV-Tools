@@ -43,7 +43,7 @@ class TextToBinaryTestBase : public T {
   const SpirvVector::size_type kFirstInstruction = 5;
 
   TextToBinaryTestBase()
-      : context(spvContextCreate(SPV_ENV_UNIVERSAL)),
+      : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4)),
         diagnostic(nullptr),
         text(),
         binary(nullptr) {

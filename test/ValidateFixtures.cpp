@@ -37,7 +37,9 @@ namespace spvtest {
 
 template <typename T>
 ValidateBase<T>::ValidateBase()
-    : context_(spvContextCreate(SPV_ENV_UNIVERSAL)), binary_(), diagnostic_() {}
+    : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4)),
+      binary_(),
+      diagnostic_() {}
 
 template <typename T>
 ValidateBase<T>::~ValidateBase() {

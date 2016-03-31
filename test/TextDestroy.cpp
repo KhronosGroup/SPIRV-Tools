@@ -31,7 +31,7 @@ namespace {
 TEST(TextDestroy, DestroyNull) { spvBinaryDestroy(nullptr); }
 
 TEST(TextDestroy, Default) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL);
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0_4);
   char textStr[] = R"(
       OpSource OpenCL_C 12
       OpMemoryModel Physical64 OpenCL
