@@ -195,6 +195,14 @@ TEST_F(TextToBinaryTest, WrongOpCode) {
   EXPECT_EQ(6u, diagnostic->position.column + 1);
 }
 
+TEST_F(TextToBinaryTest, CRLF) {
+  const std::string input =
+      "%i32 = OpTypeInt 32 1\r\n%c = OpConstant %i32 123\r\n";
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(Concatenate({MakeInstruction(SpvOpTypeInt, {1, 32, 1}),
+                              MakeInstruction(SpvOpConstant, {1, 2, 123})})));
+}
+
 using TextToBinaryFloatValueTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::pair<std::string, uint32_t>>>;
 

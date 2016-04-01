@@ -90,6 +90,7 @@ spv_result_t advance(spv_text text, spv_position position) {
       return advance(text, position);
     case ' ':
     case '\t':
+    case '\r':
       position->column++;
       position->index++;
       return advance(text, position);
@@ -137,6 +138,7 @@ spv_result_t getWord(spv_text text, spv_position position, std::string* word) {
         case ';':
         case '\t':
         case '\n':
+        case '\r':
           if (escaping || quoting) break;
         // Fall through.
         case '\0': {  // NOTE: End of word found!

@@ -245,4 +245,19 @@ TEST(TextWordGet, EscapingEscape) {
   ASSERT_STREQ("word" BACKSLASH BACKSLASH, word.c_str());
 }
 
+TEST(TextWordGet, CRLF) {
+  AutoText input("abc\r\nd");
+  AssemblyContext data(input, nullptr);
+  std::string word;
+  spv_position_t pos = {};
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(&word, &pos));
+  EXPECT_EQ(3u, pos.column);
+  EXPECT_STREQ("abc", word.c_str());
+  data.setPosition(pos);
+  data.advance();
+  ASSERT_EQ(SPV_SUCCESS, data.getWord(&word, &pos));
+  EXPECT_EQ(1u, pos.column);
+  EXPECT_STREQ("d", word.c_str());
+}
+
 }  // anonymous namespace

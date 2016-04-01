@@ -96,4 +96,40 @@ TEST(TextAdvance, NoNullTerminator) {
   ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }
 
+// Invokes AssemblyContext::advance() on text, asserts success, and returns
+// AssemblyContext::position().
+spv_position_t PositionAfterAdvance(const char* text) {
+  AutoText input(text);
+  AssemblyContext data(input, nullptr);
+  EXPECT_EQ(SPV_SUCCESS, data.advance());
+  return data.position();
+}
+
+TEST(TextAdvance, SkipOverCR) {
+  const auto pos = PositionAfterAdvance("\rWord");
+  EXPECT_EQ(1u, pos.column);
+  EXPECT_EQ(0u, pos.line);
+  EXPECT_EQ(1u, pos.index);
+}
+
+TEST(TextAdvance, SkipOverCRs) {
+  const auto pos = PositionAfterAdvance("\r\r\rWord");
+  EXPECT_EQ(3u, pos.column);
+  EXPECT_EQ(0u, pos.line);
+  EXPECT_EQ(3u, pos.index);
+}
+
+TEST(TextAdvance, SkipOverCRLF) {
+  const auto pos = PositionAfterAdvance("\r\nWord");
+  EXPECT_EQ(0u, pos.column);
+  EXPECT_EQ(1u, pos.line);
+  EXPECT_EQ(2u, pos.index);
+}
+
+TEST(TextAdvance, SkipOverCRLFs) {
+  const auto pos = PositionAfterAdvance("\r\n\r\nWord");
+  EXPECT_EQ(0u, pos.column);
+  EXPECT_EQ(2u, pos.line);
+  EXPECT_EQ(4u, pos.index);
+}
 }  // anonymous namespace
