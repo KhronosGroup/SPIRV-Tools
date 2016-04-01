@@ -448,13 +448,12 @@ int32_t spvOpcodeIsConstant(const SpvOp opcode) {
     case SpvOpConstant:
     case SpvOpConstantComposite:
     case SpvOpConstantSampler:
-    // case SpvOpConstantNull:
     case SpvOpConstantNull:
     case SpvOpSpecConstantTrue:
     case SpvOpSpecConstantFalse:
     case SpvOpSpecConstant:
     case SpvOpSpecConstantComposite:
-      // case SpvOpSpecConstantOp:
+    case SpvOpSpecConstantOp:
       return true;
     default:
       return false;

@@ -371,6 +371,7 @@ TEST_F(ValidateID, OpTypeArrayGood) {
 %3 = OpTypeArray %1 %2)";
   CHECK(spirv, SPV_SUCCESS);
 }
+
 TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
@@ -378,12 +379,23 @@ TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
 %3 = OpTypeArray %2 %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
+
 TEST_F(ValidateID, OpTypeArrayLengthBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeArray %1 %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthSpecConstOp) {
+  const char* spirv = R"(
+%i32 = OpTypeInt 32 1
+%c1 = OpConstant %i32 1
+%c2 = OpConstant %i32 2
+%len = OpSpecConstantOp %i32 IAdd %c1 %c2
+%ary = OpTypeArray %i32 %len)";
+  CHECK(spirv, SPV_SUCCESS);
 }
 
 TEST_F(ValidateID, OpTypeRuntimeArrayGood) {

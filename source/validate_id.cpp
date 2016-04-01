@@ -278,8 +278,7 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
   }
   auto lengthIndex = 3;
   auto length = usedefs_.FindDef(inst->words[lengthIndex]);
-  if (!length.first || (SpvOpConstant != length.second.opcode &&
-                        SpvOpSpecConstant != length.second.opcode)) {
+  if (!length.first || !spvOpcodeIsConstant(length.second.opcode)) {
     DIAG(lengthIndex) << "OpTypeArray Length <id> '" << inst->words[lengthIndex]
                       << "' is not a scalar constant type.";
     return false;
