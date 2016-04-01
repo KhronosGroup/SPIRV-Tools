@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <sstream>
 #include <string>
 
 #include "UnitSPIRV.h"
@@ -35,6 +36,9 @@
 // are stand alone.
 
 namespace {
+
+using std::ostringstream;
+using std::string;
 
 class ValidateID : public ::testing::Test {
  public:
@@ -78,7 +82,7 @@ const char kOpenCLMemoryModel64[] = R"(
   if (error) {                                                                 \
     spvDiagnosticPrint(diagnostic);                                            \
     spvDiagnosticDestroy(diagnostic);                                          \
-    ASSERT_EQ(SPV_SUCCESS, error);                                             \
+    ASSERT_EQ(SPV_SUCCESS, error) << shader;                                   \
   }                                                                            \
   spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
   if (SPV_SUCCESS != result) {                                                 \
@@ -380,12 +384,80 @@ TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthBad) {
+// Signed or unsigned.
+enum Signed { kSigned, kUnsigned };
+
+// Creates an assembly snippet declaring OpTypeArray with the given length.
+string MakeArrayLength(const string& len, Signed isSigned, int width) {
+  ostringstream ss;
+  ss << " %t = OpTypeInt " << width << (isSigned == kSigned ? " 1" : " 0")
+     << " %l = OpConstant %t " << len << " %a = OpTypeArray %t %l";
+  return ss.str();
+}
+
+TEST_F(ValidateID, OpTypeArrayLength0) {
+  CHECK(MakeArrayLength("0", kSigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength0U) {
+  CHECK(MakeArrayLength("0", kUnsigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthNegative1) {
+  CHECK(MakeArrayLength("-1", kSigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthNegative2) {
+  CHECK(MakeArrayLength("-2", kSigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthNegative123) {
+  CHECK(MakeArrayLength("-123", kSigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthNegativeMax) {
+  CHECK(MakeArrayLength("0x80000000", kSigned, 32), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64Bit0) {
+  CHECK(MakeArrayLength("0", kSigned, 64), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64Bit0U) {
+  CHECK(MakeArrayLength("0", kUnsigned, 64), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64BitNegative1) {
+  CHECK(MakeArrayLength("-1", kSigned, 64), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64BitNegative2) {
+  CHECK(MakeArrayLength("-2", kSigned, 64), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64BitNegative123) {
+  CHECK(MakeArrayLength("-123", kSigned, 64), SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLength64BitNegativeMax) {
+  CHECK(MakeArrayLength("0x8000000000000000", kSigned, 64),
+        SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthNull) {
   const char* spirv = R"(
-%1 = OpTypeInt 32 0
-%2 = OpConstant %1 0
-%3 = OpTypeArray %1 %2)";
+%i32 = OpTypeInt 32 1
+%len = OpConstantNull %i32
+%ary = OpTypeArray %i32 %len)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthSpecConst) {
+  const char* spirv = R"(
+%i32 = OpTypeInt 32 1
+%len = OpSpecConstant %i32 2
+%ary = OpTypeArray %i32 %len)";
+  CHECK(spirv, SPV_SUCCESS);
 }
 
 TEST_F(ValidateID, OpTypeArrayLengthSpecConstOp) {
