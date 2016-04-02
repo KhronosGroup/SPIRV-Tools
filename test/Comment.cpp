@@ -38,7 +38,7 @@ using testing::Eq;
 
 TEST_F(TextToBinaryTest, Whitespace) {
   std::string input = R"(
-; I'm a proud comment at the begining of the file
+; I'm a proud comment at the beginning of the file
 ; I hide:   OpCapability Shader
             OpMemoryModel Logical Simple ; comment after instruction
 ;;;;;;;; many ;'s

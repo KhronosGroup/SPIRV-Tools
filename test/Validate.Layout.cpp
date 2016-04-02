@@ -302,7 +302,7 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
 %funcl   = OpLabel
            OpNop
            OpBranch %next
-%func2p  = OpFunctionParameter %intt        ;FunctionParameter appears in a function but not immediatly afterwards
+%func2p  = OpFunctionParameter %intt        ;FunctionParameter appears in a function but not immediately afterwards
 %next    = OpLabel
            OpNop
            OpReturn

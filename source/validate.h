@@ -133,7 +133,7 @@ class Functions {
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
 
-  // Retuns true if called after a function instruction but before the
+  // Returns true if called after a function instruction but before the
   // function end instruction
   bool in_function_body() const;
 
@@ -147,7 +147,7 @@ class Functions {
   // Parent module
   ValidationState_t& module_;
 
-  // Funciton IDs in a module
+  // Function IDs in a module
   std::vector<uint32_t> id_;
 
   // OpTypeFunction IDs of each of the id_ functions
@@ -216,7 +216,7 @@ class ValidationState_t {
   // Returns the function states
   Functions& get_functions();
 
-  // Retuns true if the called after a function instruction but before the
+  // Returns true if the called after a function instruction but before the
   // function end instruction
   bool in_function_body() const;
 

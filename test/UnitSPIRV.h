@@ -199,7 +199,7 @@ class EnumCase {
 // each of which has a 4-byte UTF-8 encoding.
 inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
   // An example of a longest valid UTF-8 character.
-  // Be explicit about the character type becuase Microsoft compilers can
+  // Be explicit about the character type because Microsoft compilers can
   // otherwise interpret the character string as being over wide (16-bit)
   // characters.  Ideally, we would just use a C++11 UTF-8 string literal,
   // but we want to support older Microsoft compilers.

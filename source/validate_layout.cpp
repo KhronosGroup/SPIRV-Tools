@@ -103,7 +103,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         if (_.get_functions().get_block_count() != 0) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                 << "Function parameters must only appear immediatly after the "
+                 << "Function parameters must only appear immediately after the "
                     "function definition";
         }
         spvCheckReturn(_.get_functions().RegisterFunctionParameter(

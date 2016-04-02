@@ -330,7 +330,7 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     OpenCLMiscPrintf, ExtInstOpenCLStdRoundTripTest,
     ::testing::ValuesIn(std::vector<InstructionCase>({
-      // Printf is interesting becuase it takes a variable number of arguments.
+      // Printf is interesting because it takes a variable number of arguments.
       // Start with zero optional arguments.
       {PREFIX, "%4", {4}},
       {PREFIX, "%4 %5", {4, 5}},

@@ -32,7 +32,7 @@ using std::function;
 using libspirv::ValidationState_t;
 
 namespace {
-// This funciton takes the opcode of an instruction and returns
+// This function takes the opcode of an instruction and returns
 // a function object that will return true if the index
 // of the operand can be forwarad declared. This function will
 // used in the SSA validation stage of the pipeline
@@ -95,7 +95,7 @@ namespace libspirv {
 //
 // TODO(umar): Use dominators to correctly validate SSA. For example, the result
 // id from a 'then' block cannot dominate its usage in the 'else' block. This
-// is not yet performed by this funciton.
+// is not yet performed by this function.
 spv_result_t SsaPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
   auto can_have_forward_declared_ids =
