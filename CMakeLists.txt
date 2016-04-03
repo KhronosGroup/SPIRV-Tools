@@ -29,6 +29,8 @@ project(spirv-tools)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   add_definitions(-DSPIRV_LINUX)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
