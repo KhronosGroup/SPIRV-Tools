@@ -274,7 +274,7 @@ bool aboveZero(const std::vector<uint32_t>& constWords,
   const bool is_signed = typeWords[3];
   if (width == 64) {
     if (is_signed) {
-      int64_t value = constWords[3] | (int64_t{constWords[4]} << 32);
+      int64_t value = constWords[3] | (uint64_t{constWords[4]} << 32);
       return value > 0;
     } else {
       uint64_t value = constWords[3] | (uint64_t{constWords[4]} << 32);
