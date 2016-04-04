@@ -270,12 +270,12 @@ bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
 // OpTypeInt.
 bool aboveZero(const std::vector<uint32_t>& constWords,
                const std::vector<uint32_t>& typeWords) {
-  const auto width = typeWords[2];
+  const uint32_t width = typeWords[2];
   const bool is_signed = typeWords[3];
-  const auto loWord = constWords[3];
+  const uint32_t loWord = constWords[3];
   if (width > 32) {
     // The spec currently doesn't allow integers wider than 64 bits.
-    const auto hiWord = constWords[4];  // Must exist, per spec.
+    const uint32_t hiWord = constWords[4];  // Must exist, per spec.
     if (is_signed && (hiWord >> 31)) return false;
     return loWord | hiWord;
   } else {
