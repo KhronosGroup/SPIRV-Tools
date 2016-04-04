@@ -24,6 +24,9 @@
     "FROM,OUT OF OR IN CONNECTION WITH THE MATERIALS OR THE USE OR OTHER DEALINGS",
     "IN THE MATERIALS."
   ],
+  "magic_number" : "0x07230203",
+  "version" : "0x00010000",
+  "revision" : 4,
   "instructions" : [
     {
       "opname" : "OpNop",

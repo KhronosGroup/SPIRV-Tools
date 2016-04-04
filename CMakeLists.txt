@@ -140,7 +140,7 @@ add_custom_target(spirv-tools-build-version
 add_custom_target(spirv-tools-build-tables
   ${PYTHON_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-  ${spirv-tools_SOURCE_DIR}/source/grammar.json
+  ${spirv-tools_SOURCE_DIR}/source/spirv.core.grammar.json
   --opcode-file=${spirv-tools_BINARY_DIR}/opcode.inc
   --operand-file=${spirv-tools_BINARY_DIR}/operand.inc
   COMMENT "Generate info tables for SPIR-V instructions and operands.")
