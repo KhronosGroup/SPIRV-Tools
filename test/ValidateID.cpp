@@ -406,7 +406,8 @@ class OpTypeArrayLengthTest
     : public spvtest::TextToBinaryTestBase<::testing::TestWithParam<int>> {
  protected:
   OpTypeArrayLengthTest()
-      : position_{0, 0, 0}, diagnostic_(spvDiagnosticCreate(&position_, "")) {}
+      : position_(spv_position_t{0, 0, 0}),
+        diagnostic_(spvDiagnosticCreate(&position_, "")) {}
 
   ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
 
