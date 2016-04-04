@@ -75,6 +75,8 @@ const char kOpenCLMemoryModel64[] = R"(
      OpMemoryModel Physical64 OpenCL
 )";
 
+// TODO(dekimir): this can be removed by adding a method to ValidateID akin to
+// OpTypeArrayLengthTest::Val().
 #define CHECK(str, expected)                                                   \
   spv_diagnostic diagnostic;                                                   \
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
