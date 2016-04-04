@@ -412,8 +412,8 @@ class OpTypeArrayLengthTest
 
   // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
   spv_result_t Val(const SpirvVector& v) {
-    spv_const_binary_t binary{v.data(), v.size()};
-    const auto status = spvValidate(context, &binary, &diagnostic_);
+    spv_const_binary_t cbinary{v.data(), v.size()};
+    const auto status = spvValidate(context, &cbinary, &diagnostic_);
     if (status != SPV_SUCCESS) {
       spvDiagnosticPrint(diagnostic_);
     }
