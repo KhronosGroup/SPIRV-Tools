@@ -272,19 +272,15 @@ bool aboveZero(const std::vector<uint32_t>& constWords,
                const std::vector<uint32_t>& typeWords) {
   const auto width = typeWords[2];
   const bool is_signed = typeWords[3];
-  if (width == 64) {
-    if (is_signed) {
-      int64_t value = constWords[3] | (uint64_t{constWords[4]} << 32);
-      return value > 0;
-    } else {
-      uint64_t value = constWords[3] | (uint64_t{constWords[4]} << 32);
-      return value > 0;
-    }
-  } else {  // Per spec, must be 32 bits or less, sign-extended.
-    if (is_signed)
-      return (constWords[3] > 0) && !(constWords[3] >> 31);
-    else
-      return constWords[3] > 0;
+  const auto loWord = constWords[3];
+  if (width > 32) {
+    // The spec currently doesn't allow integers wider than 64 bits.
+    const auto hiWord = constWords[4];  // Must exist, per spec.
+    if (is_signed && (hiWord >> 31)) return false;
+    return loWord | hiWord;
+  } else {
+    if (is_signed && (loWord >> 31)) return false;
+    return loWord > 0;
   }
 }
 
