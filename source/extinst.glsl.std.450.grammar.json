@@ -1,0 +1,640 @@
+{
+  "copyright" : [
+    "Copyright (c) 2014-2016 The Khronos Group Inc.",
+    "",
+    "Permission is hereby granted, free of charge, to any person obtaining a copy",
+    "of this software and/or associated documentation files (the \"Materials\"),",
+    "to deal in the Materials without restriction, including without limitation",
+    "the rights to use, copy, modify, merge, publish, distribute, sublicense,",
+    "and/or sell copies of the Materials, and to permit persons to whom the",
+    "Materials are furnished to do so, subject to the following conditions:",
+    "",
+    "The above copyright notice and this permission notice shall be included in",
+    "all copies or substantial portions of the Materials.",
+    "",
+    "MODIFICATIONS TO THIS FILE MAY MEAN IT NO LONGER ACCURATELY REFLECTS KHRONOS",
+    "STANDARDS. THE UNMODIFIED, NORMATIVE VERSIONS OF KHRONOS SPECIFICATIONS AND",
+    "HEADER INFORMATION ARE LOCATED AT https://www.khronos.org/registry/ ",
+    "",
+    "THE MATERIALS ARE PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS",
+    "OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,",
+    "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL",
+    "THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER",
+    "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING",
+    "FROM,OUT OF OR IN CONNECTION WITH THE MATERIALS OR THE USE OR OTHER DEALINGS",
+    "IN THE MATERIALS."
+  ],
+  "version" : 100,
+  "revision" : 2,
+  "instructions" : [
+    {
+      "opname" : "Round",
+      "opcode" : 1,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "RoundEven",
+      "opcode" : 2,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Trunc",
+      "opcode" : 3,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FAbs",
+      "opcode" : 4,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SAbs",
+      "opcode" : 5,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FSign",
+      "opcode" : 6,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SSign",
+      "opcode" : 7,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Floor",
+      "opcode" : 8,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Ceil",
+      "opcode" : 9,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Fract",
+      "opcode" : 10,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Radians",
+      "opcode" : 11,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Degrees",
+      "opcode" : 12,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Sin",
+      "opcode" : 13,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Cos",
+      "opcode" : 14,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Tan",
+      "opcode" : 15,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Asin",
+      "opcode" : 16,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Acos",
+      "opcode" : 17,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Atan",
+      "opcode" : 18,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Sinh",
+      "opcode" : 19,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Cosh",
+      "opcode" : 20,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Tanh",
+      "opcode" : 21,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Asinh",
+      "opcode" : 22,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Acosh",
+      "opcode" : 23,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Atanh",
+      "opcode" : 24,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Atan2",
+      "opcode" : 25,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Pow",
+      "opcode" : 26,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Exp",
+      "opcode" : 27,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Log",
+      "opcode" : 28,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Exp2",
+      "opcode" : 29,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Log2",
+      "opcode" : 30,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Sqrt",
+      "opcode" : 31,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "InverseSqrt",
+      "opcode" : 32,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Determinant",
+      "opcode" : 33,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "MatrixInverse",
+      "opcode" : 34,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Modf",
+      "opcode" : 35,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "ModfStruct",
+      "opcode" : 36,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FMin",
+      "opcode" : 37,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UMin",
+      "opcode" : 38,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SMin",
+      "opcode" : 39,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FMax",
+      "opcode" : 40,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UMax",
+      "opcode" : 41,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SMax",
+      "opcode" : 42,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FClamp",
+      "opcode" : 43,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UClamp",
+      "opcode" : 44,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SClamp",
+      "opcode" : 45,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FMix",
+      "opcode" : 46,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "IMix",
+      "opcode" : 47,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Step",
+      "opcode" : 48,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "SmoothStep",
+      "opcode" : 49,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Fma",
+      "opcode" : 50,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Frexp",
+      "opcode" : 51,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FrexpStruct",
+      "opcode" : 52,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Ldexp",
+      "opcode" : 53,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackSnorm4x8",
+      "opcode" : 54,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackUnorm4x8",
+      "opcode" : 55,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackSnorm2x16",
+      "opcode" : 56,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackUnorm2x16",
+      "opcode" : 57,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackHalf2x16",
+      "opcode" : 58,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "PackDouble2x32",
+      "opcode" : 59,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ],
+      "capabilities" : [ "Float64" ]
+    },
+    {
+      "opname" : "UnpackSnorm2x16",
+      "opcode" : 60,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UnpackUnorm2x16",
+      "opcode" : 61,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UnpackHalf2x16",
+      "opcode" : 62,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UnpackSnorm4x8",
+      "opcode" : 63,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UnpackUnorm4x8",
+      "opcode" : 64,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "UnpackDouble2x32",
+      "opcode" : 65,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Length",
+      "opcode" : 66,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Distance",
+      "opcode" : 67,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Cross",
+      "opcode" : 68,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Normalize",
+      "opcode" : 69,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FaceForward",
+      "opcode" : 70,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Reflect",
+      "opcode" : 71,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "Refract",
+      "opcode" : 72,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FindILsb",
+      "opcode" : 73,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FindSMsb",
+      "opcode" : 74,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "FindUMsb",
+      "opcode" : 75,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "InterpolateAtCentroid",
+      "opcode" : 76,
+      "operands" : [
+        { "kind" : "IdRef" }
+      ],
+      "capabilities" : [ "InterpolationFunction" ]
+    },
+    {
+      "opname" : "InterpolateAtSample",
+      "opcode" : 77,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ],
+      "capabilities" : [ "InterpolationFunction" ]
+    },
+    {
+      "opname" : "InterpolateAtOffset",
+      "opcode" : 78,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ],
+      "capabilities" : [ "InterpolationFunction" ]
+    },
+    {
+      "opname" : "NMin",
+      "opcode" : 79,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "NMax",
+      "opcode" : 80,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    },
+    {
+      "opname" : "NClamp",
+      "opcode" : 81,
+      "operands" : [
+        { "kind" : "IdRef" },
+        { "kind" : "IdRef" }
+      ]
+    }
+  ]
+}

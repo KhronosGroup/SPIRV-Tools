@@ -102,7 +102,8 @@ def convert_operand_kind(operand_tuple):
 
 
 class InstInitializer(object):
-    """Prints a SPIR-V instruction as the initializer for spv_opcode_desc_t."""
+    """Instances holds a SPIR-V instruction suitable for printing as
+    the initializer for spv_opcode_desc_t."""
 
     def __init__(self, opname, caps, operands):
         """Initialization.
@@ -134,32 +135,71 @@ class InstInitializer(object):
             ref_type_id=(1 if self.ref_type_id else 0))
 
 
-def generate_instruction(inst):
+class ExtInstInitializer(object):
+    """Instances holds a SPIR-V extended instruction suitable for printing as
+    the initializer for spv_ext_inst_desc_t."""
+
+    def __init__(self, opname, opcode, caps, operands):
+        """Initialization.
+
+        Arguments:
+          - opname: opcode name
+          - opcode: enumerant value for this opcode
+          - caps: a sequence of capability names required by this opcode
+          - operands: a sequence of (operand-kind, operand-quantifier) tuples
+        """
+        self.opname = opname
+        self.opcode = opcode
+        self.caps_mask = compose_capability_mask(caps)
+        self.operands = [convert_operand_kind(o) for o in operands]
+        self.operands.append('SPV_OPERAND_TYPE_NONE')
+
+    def __str__(self):
+        template = ['{{"{opname}"', '{opcode}', '{caps_mask}',
+                    '{{{operands}}}}}']
+        return ', '.join(template).format(
+            opname=self.opname,
+            opcode=self.opcode,
+            caps_mask=self.caps_mask,
+            operands=', '.join(self.operands))
+
+
+def generate_instruction(inst, is_ext_inst):
     """Returns the C initializer for the given SPIR-V instruction.
 
     Arguments:
       - inst: a dict containing information about a SPIR-V instruction
+      - is_ext_inst: a bool indicating whether |inst| is an extended
+                     instruction.
 
     Returns:
-      a string containing the C initializer for spv_opcode_desc_t
+      a string containing the C initializer for spv_opcode_desc_t or
+      spv_ext_inst_desc_t
     """
     opname = inst.get('opname')
+    opcode = inst.get('opcode')
     caps = inst.get('capabilities', [])
     operands = inst.get('operands', {})
     operands = [(o['kind'], o.get('quantifier', '')) for o in operands]
 
     assert opname is not None
 
-    return str(InstInitializer(opname, caps, operands))
+    if is_ext_inst:
+        return str(ExtInstInitializer(opname, opcode, caps, operands))
+    else:
+        return str(InstInitializer(opname, caps, operands))
 
 
-def generate_instruction_table(inst_table):
+def generate_instruction_table(inst_table, is_ext_inst):
     """Returns the info table containing all SPIR-V instructions.
 
     Arguments:
       - inst_table: a dict containing all SPIR-V instructions.
+      - is_ext_inst: a bool indicating whether |inst_table| is for
+                     an extended instruction set.
     """
-    return ',\n'.join([generate_instruction(inst) for inst in inst_table])
+    return ',\n'.join([generate_instruction(inst, is_ext_inst)
+                       for inst in inst_table])
 
 
 class EnumerantInitializer(object):
@@ -264,17 +304,33 @@ def generate_operand_kind_table(enums):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Generate SPIR-V info tables')
-    parser.add_argument('grammar', metavar='<json-grammar-path>', type=str,
-                        help='input JSON file path for SPIR-V grammar')
-    parser.add_argument('--opcode-file', dest='opcode', metavar='<path>',
+    parser.add_argument('--spirv-core-grammar', metavar='<path>',
                         type=str, required=True,
-                        help='output file path for SPIR-V instructions')
-    parser.add_argument('--operand-file', dest='operand', metavar='<path>',
+                        help='input JSON grammar file for core SPIR-V '
+                        'instructions')
+    parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
                         type=str, required=True,
-                        help='output file path for SPIR-V operands')
+                        help='input JSON grammar file for GLSL extended '
+                        'instruction set')
+    parser.add_argument('--extinst-opencl-grammar', metavar='<path>',
+                        type=str, required=True,
+                        help='input JSON grammar file for OpenGL extended '
+                        'instruction set')
+    parser.add_argument('--core-insts-output', metavar='<path>',
+                        type=str, required=True,
+                        help='output file for core SPIR-V instructions')
+    parser.add_argument('--glsl-insts-output', metavar='<path>',
+                        type=str, required=True,
+                        help='output file for GLSL extended instruction set')
+    parser.add_argument('--opencl-insts-output', metavar='<path>',
+                        type=str, required=True,
+                        help='output file for OpenCL extended instruction set')
+    parser.add_argument('--operand-kinds-output', metavar='<path>',
+                        type=str, required=True,
+                        help='output file for operand kinds')
     args = parser.parse_args()
 
-    with open(args.grammar) as json_file:
+    with open(args.spirv_core_grammar) as json_file:
         grammar = json.loads(json_file.read())
 
         # Get the dict for the Capability operand kind.
@@ -283,10 +339,21 @@ def main():
         assert len(cap_dict) == 1
         populate_capability_bit_mapping_dict(cap_dict[0])
 
-        print(generate_instruction_table(grammar['instructions']),
-              file=open(args.opcode, 'w'))
+        print(generate_instruction_table(grammar['instructions'], False),
+              file=open(args.core_insts_output, 'w'))
         print(generate_operand_kind_table(grammar['operand_kinds']),
-              file=open(args.operand, 'w'))
+              file=open(args.operand_kinds_output, 'w'))
+
+    with open(args.extinst_glsl_grammar) as json_file:
+        grammar = json.loads(json_file.read())
+        print(generate_instruction_table(grammar['instructions'], True),
+              file=open(args.glsl_insts_output, 'w'))
+
+    with open(args.extinst_opencl_grammar) as json_file:
+        grammar = json.loads(json_file.read())
+        print(generate_instruction_table(grammar['instructions'], True),
+              file=open(args.opencl_insts_output, 'w'))
+
 
 if __name__ == '__main__':
     main()

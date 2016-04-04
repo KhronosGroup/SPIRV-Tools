@@ -48,7 +48,7 @@ namespace {
 // TODO(dneto): Some of the macros are quite unreadable.  We could make
 // good use of constexpr functions, but some compilers don't support that yet.
 const spv_opcode_desc_t opcodeTableEntries[] = {
-#include "opcode.inc"
+#include "core.insts.inc"
 };
 
 }  // anonymous namespace

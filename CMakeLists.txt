@@ -140,9 +140,13 @@ add_custom_target(spirv-tools-build-version
 add_custom_target(spirv-tools-build-tables
   ${PYTHON_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-  ${spirv-tools_SOURCE_DIR}/source/spirv.core.grammar.json
-  --opcode-file=${spirv-tools_BINARY_DIR}/opcode.inc
-  --operand-file=${spirv-tools_BINARY_DIR}/operand.inc
+  --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv.core.grammar.json
+  --extinst-glsl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst.glsl.std.450.grammar.json
+  --extinst-opencl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst.opencl.std.grammar.json
+  --core-insts-output=${spirv-tools_BINARY_DIR}/core.insts.inc
+  --glsl-insts-output=${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc
+  --opencl-insts-output=${spirv-tools_BINARY_DIR}/opencl.std.insts.inc
+  --operand-kinds-output=${spirv-tools_BINARY_DIR}/operand.kinds.inc
   COMMENT "Generate info tables for SPIR-V instructions and operands.")
 
 # Defaults to OFF if the user didn't set it.
