@@ -423,41 +423,47 @@ class OpTypeArrayLengthTest
   spv_diagnostic diagnostic_;
 };
 
-TEST_P(OpTypeArrayLengthTest, Length0) {
+TEST_P(OpTypeArrayLengthTest, LengthPositive) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("1", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("1", kUnsigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("2", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("2", kUnsigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("55", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("55", kUnsigned, width))));
+  const string fpad(width / 4 - 1, 'F');
   EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kSigned, GetParam()))));
+      SPV_SUCCESS,
+      Val(CompileSuccessfully(MakeArrayLength("0x7" + fpad, kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS, Val(CompileSuccessfully(
+                             MakeArrayLength("0xF" + fpad, kUnsigned, width))));
 }
 
-TEST_P(OpTypeArrayLengthTest, Length0U) {
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, GetParam()))));
+TEST_P(OpTypeArrayLengthTest, LengthZero) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width))));
 }
 
-TEST_P(OpTypeArrayLengthTest, LengthNegative1) {
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, GetParam()))));
-}
-
-TEST_P(OpTypeArrayLengthTest, LengthNegative2) {
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, GetParam()))));
-}
-
-TEST_P(OpTypeArrayLengthTest, LengthNegative123) {
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, GetParam()))));
-}
-
-TEST_P(OpTypeArrayLengthTest, LengthNegativeMax) {
-  const string neg_max = "0x8" + string(GetParam() / 4 - 1, '0');
-  EXPECT_EQ(
-      SPV_ERROR_INVALID_ID,
-      Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, GetParam()))));
+TEST_P(OpTypeArrayLengthTest, LengthNegative) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width))));
+  const string neg_max = "0x8" + string(width / 4 - 1, '0');
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width))));
 }
 
 INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
