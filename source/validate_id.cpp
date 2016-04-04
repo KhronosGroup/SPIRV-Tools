@@ -264,6 +264,26 @@ bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
   return true;
 }
 
+// True if the integer constant is > 0. constWords are words of the
+// constant-defining instruction (either OpConstant or
+// OpSpecConstant). typeWords are the words of the constant's-type-defining
+// OpTypeInt.
+bool aboveZero(const std::vector<uint32_t>& constWords,
+               const std::vector<uint32_t>& typeWords) {
+  const uint32_t width = typeWords[2];
+  const bool is_signed = typeWords[3];
+  const uint32_t loWord = constWords[3];
+  if (width > 32) {
+    // The spec currently doesn't allow integers wider than 64 bits.
+    const uint32_t hiWord = constWords[4];  // Must exist, per spec.
+    if (is_signed && (hiWord >> 31)) return false;
+    return loWord | hiWord;
+  } else {
+    if (is_signed && (loWord >> 31)) return false;
+    return loWord > 0;
+  }
+}
+
 template <>
 bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
                                       const spv_opcode_desc) {
@@ -278,8 +298,7 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
   }
   auto lengthIndex = 3;
   auto length = usedefs_.FindDef(inst->words[lengthIndex]);
-  if (!length.first || (SpvOpConstant != length.second.opcode &&
-                        SpvOpSpecConstant != length.second.opcode)) {
+  if (!length.first || !spvOpcodeIsConstant(length.second.opcode)) {
     DIAG(lengthIndex) << "OpTypeArray Length <id> '" << inst->words[lengthIndex]
                       << "' is not a scalar constant type.";
     return false;
@@ -294,27 +313,23 @@ bool idUsage::isValid<SpvOpTypeArray>(const spv_instruction_t* inst,
                       << "' is not a constant integer type.";
     return false;
   }
-  if (4 == constInst.size()) {
-    spvCheck(1 > constInst[3], DIAG(lengthIndex)
-                                   << "OpTypeArray Length <id> '"
-                                   << inst->words[lengthIndex]
-                                   << "' value must be at least 1.";
-             return false);
-  } else if (5 == constInst.size()) {
-    uint64_t value = constInst[3] | ((uint64_t)constInst[4]) << 32;
-    bool signedness = constResultType.second.words[3] != 0;
-    if (signedness) {
-      spvCheck(1 > (int64_t)value, DIAG(lengthIndex)
-                                       << "OpTypeArray Length <id> '"
-                                       << inst->words[lengthIndex]
-                                       << "' value must be at least 1.";
-               return false);
-    } else {
-      spvCheck(1 > value, DIAG(lengthIndex) << "OpTypeArray Length <id> '"
-                                            << inst->words[lengthIndex]
-                                            << "' value must be at least 1.";
-               return false);
+
+  switch (length.second.opcode) {
+    case SpvOpSpecConstant:
+    case SpvOpConstant:
+      if (aboveZero(length.second.words, constResultType.second.words)) break;
+    // Else fall through!
+    case SpvOpConstantNull: {
+      DIAG(lengthIndex) << "OpTypeArray Length <id> '"
+                        << inst->words[lengthIndex]
+                        << "' default value must be at least 1.";
+      return false;
     }
+    case SpvOpSpecConstantOp:
+      // Assume it's OK, rather than try to evaluate the operation.
+      break;
+    default:
+      assert(0 && "bug in spvOpcodeIsConstant() or result type isn't int");
   }
   return true;
 }

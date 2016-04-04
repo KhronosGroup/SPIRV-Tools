@@ -24,9 +24,10 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <sstream>
 #include <string>
 
-#include "UnitSPIRV.h"
+#include "TestFixture.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
 // SPIR-V does not follow the logical layout rules from the spec in all cases in
@@ -35,6 +36,11 @@
 // are stand alone.
 
 namespace {
+
+using ::testing::ValuesIn;
+using std::ostringstream;
+using std::string;
+using std::vector;
 
 class ValidateID : public ::testing::Test {
  public:
@@ -69,6 +75,8 @@ const char kOpenCLMemoryModel64[] = R"(
      OpMemoryModel Physical64 OpenCL
 )";
 
+// TODO(dekimir): this can be removed by adding a method to ValidateID akin to
+// OpTypeArrayLengthTest::Val().
 #define CHECK(str, expected)                                                   \
   spv_diagnostic diagnostic;                                                   \
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
@@ -78,7 +86,7 @@ const char kOpenCLMemoryModel64[] = R"(
   if (error) {                                                                 \
     spvDiagnosticPrint(diagnostic);                                            \
     spvDiagnosticDestroy(diagnostic);                                          \
-    ASSERT_EQ(SPV_SUCCESS, error);                                             \
+    ASSERT_EQ(SPV_SUCCESS, error) << shader;                                   \
   }                                                                            \
   spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
   if (SPV_SUCCESS != result) {                                                 \
@@ -371,6 +379,7 @@ TEST_F(ValidateID, OpTypeArrayGood) {
 %3 = OpTypeArray %1 %2)";
   CHECK(spirv, SPV_SUCCESS);
 }
+
 TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
@@ -378,12 +387,114 @@ TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
 %3 = OpTypeArray %2 %2)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
-TEST_F(ValidateID, OpTypeArrayLengthBad) {
+
+// Signed or unsigned.
+enum Signed { kSigned, kUnsigned };
+
+// Creates an assembly snippet declaring OpTypeArray with the given length.
+string MakeArrayLength(const string& len, Signed isSigned, int width) {
+  ostringstream ss;
+  ss << kGLSL450MemoryModel;
+  ss << " %t = OpTypeInt " << width << (isSigned == kSigned ? " 1" : " 0")
+     << " %l = OpConstant %t " << len << " %a = OpTypeArray %t %l";
+  return ss.str();
+}
+
+// Tests OpTypeArray.  Parameter is the width (in bits) of the array-length's
+// type.
+class OpTypeArrayLengthTest
+    : public spvtest::TextToBinaryTestBase<::testing::TestWithParam<int>> {
+ protected:
+  OpTypeArrayLengthTest()
+      : position_{0, 0, 0}, diagnostic_(spvDiagnosticCreate(&position_, "")) {}
+
+  ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
+
+  // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
+  spv_result_t Val(const SpirvVector& v) {
+    spv_const_binary_t cbinary{v.data(), v.size()};
+    const auto status = spvValidate(context, &cbinary, &diagnostic_);
+    if (status != SPV_SUCCESS) {
+      spvDiagnosticPrint(diagnostic_);
+    }
+    return status;
+  }
+
+ private:
+  spv_position_t position_;  // For creating diagnostic_.
+  spv_diagnostic diagnostic_;
+};
+
+TEST_P(OpTypeArrayLengthTest, LengthPositive) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("1", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("1", kUnsigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("2", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("2", kUnsigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("55", kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS,
+            Val(CompileSuccessfully(MakeArrayLength("55", kUnsigned, width))));
+  const string fpad(width / 4 - 1, 'F');
+  EXPECT_EQ(
+      SPV_SUCCESS,
+      Val(CompileSuccessfully(MakeArrayLength("0x7" + fpad, kSigned, width))));
+  EXPECT_EQ(SPV_SUCCESS, Val(CompileSuccessfully(
+                             MakeArrayLength("0xF" + fpad, kUnsigned, width))));
+}
+
+TEST_P(OpTypeArrayLengthTest, LengthZero) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, width))));
+}
+
+TEST_P(OpTypeArrayLengthTest, LengthNegative) {
+  const int width = GetParam();
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, width))));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, width))));
+  const string neg_max = "0x8" + string(width / 4 - 1, '0');
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width))));
+}
+
+INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
+                        ValuesIn(vector<int>{8, 16, 32, 48, 64}));
+
+TEST_F(ValidateID, OpTypeArrayLengthNull) {
   const char* spirv = R"(
-%1 = OpTypeInt 32 0
-%2 = OpConstant %1 0
-%3 = OpTypeArray %1 %2)";
+%i32 = OpTypeInt 32 1
+%len = OpConstantNull %i32
+%ary = OpTypeArray %i32 %len)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthSpecConst) {
+  const char* spirv = R"(
+%i32 = OpTypeInt 32 1
+%len = OpSpecConstant %i32 2
+%ary = OpTypeArray %i32 %len)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpTypeArrayLengthSpecConstOp) {
+  const char* spirv = R"(
+%i32 = OpTypeInt 32 1
+%c1 = OpConstant %i32 1
+%c2 = OpConstant %i32 2
+%len = OpSpecConstantOp %i32 IAdd %c1 %c2
+%ary = OpTypeArray %i32 %len)";
+  CHECK(spirv, SPV_SUCCESS);
 }
 
 TEST_F(ValidateID, OpTypeRuntimeArrayGood) {
