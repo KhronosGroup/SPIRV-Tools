@@ -27,7 +27,7 @@
 #include <sstream>
 #include <string>
 
-#include "UnitSPIRV.h"
+#include "TestFixture.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
 // SPIR-V does not follow the logical layout rules from the spec in all cases in
@@ -37,8 +37,10 @@
 
 namespace {
 
+using ::testing::ValuesIn;
 using std::ostringstream;
 using std::string;
+using std::vector;
 
 class ValidateID : public ::testing::Test {
  public:
@@ -390,59 +392,76 @@ enum Signed { kSigned, kUnsigned };
 // Creates an assembly snippet declaring OpTypeArray with the given length.
 string MakeArrayLength(const string& len, Signed isSigned, int width) {
   ostringstream ss;
+  ss << kGLSL450MemoryModel;
   ss << " %t = OpTypeInt " << width << (isSigned == kSigned ? " 1" : " 0")
      << " %l = OpConstant %t " << len << " %a = OpTypeArray %t %l";
   return ss.str();
 }
 
-TEST_F(ValidateID, OpTypeArrayLength0) {
-  CHECK(MakeArrayLength("0", kSigned, 32), SPV_ERROR_INVALID_ID);
+// Tests OpTypeArray.  Parameter is the width (in bits) of the array-length's
+// type.
+class OpTypeArrayLengthTest
+    : public spvtest::TextToBinaryTestBase<::testing::TestWithParam<int>> {
+ protected:
+  OpTypeArrayLengthTest()
+      : position_{0, 0, 0}, diagnostic_(spvDiagnosticCreate(&position_, "")) {}
+
+  ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
+
+  // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
+  spv_result_t Val(const SpirvVector& v) {
+    spv_const_binary_t binary{v.data(), v.size()};
+    const auto status = spvValidate(context, &binary, &diagnostic_);
+    if (status != SPV_SUCCESS) {
+      spvDiagnosticPrint(diagnostic_);
+    }
+    return status;
+  }
+
+ private:
+  spv_position_t position_;  // For creating diagnostic_.
+  spv_diagnostic diagnostic_;
+};
+
+TEST_P(OpTypeArrayLengthTest, Length0) {
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength("0", kSigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLength0U) {
-  CHECK(MakeArrayLength("0", kUnsigned, 32), SPV_ERROR_INVALID_ID);
+TEST_P(OpTypeArrayLengthTest, Length0U) {
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength("0", kUnsigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthNegative1) {
-  CHECK(MakeArrayLength("-1", kSigned, 32), SPV_ERROR_INVALID_ID);
+TEST_P(OpTypeArrayLengthTest, LengthNegative1) {
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength("-1", kSigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthNegative2) {
-  CHECK(MakeArrayLength("-2", kSigned, 32), SPV_ERROR_INVALID_ID);
+TEST_P(OpTypeArrayLengthTest, LengthNegative2) {
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength("-2", kSigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthNegative123) {
-  CHECK(MakeArrayLength("-123", kSigned, 32), SPV_ERROR_INVALID_ID);
+TEST_P(OpTypeArrayLengthTest, LengthNegative123) {
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength("-123", kSigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthNegativeMax) {
-  CHECK(MakeArrayLength("0x80000000", kSigned, 32), SPV_ERROR_INVALID_ID);
+TEST_P(OpTypeArrayLengthTest, LengthNegativeMax) {
+  const string neg_max = "0x8" + string(GetParam() / 4 - 1, '0');
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_ID,
+      Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, GetParam()))));
 }
 
-TEST_F(ValidateID, OpTypeArrayLength64Bit0) {
-  CHECK(MakeArrayLength("0", kSigned, 64), SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(ValidateID, OpTypeArrayLength64Bit0U) {
-  CHECK(MakeArrayLength("0", kUnsigned, 64), SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(ValidateID, OpTypeArrayLength64BitNegative1) {
-  CHECK(MakeArrayLength("-1", kSigned, 64), SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(ValidateID, OpTypeArrayLength64BitNegative2) {
-  CHECK(MakeArrayLength("-2", kSigned, 64), SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(ValidateID, OpTypeArrayLength64BitNegative123) {
-  CHECK(MakeArrayLength("-123", kSigned, 64), SPV_ERROR_INVALID_ID);
-}
-
-TEST_F(ValidateID, OpTypeArrayLength64BitNegativeMax) {
-  CHECK(MakeArrayLength("0x8000000000000000", kSigned, 64),
-        SPV_ERROR_INVALID_ID);
-}
+INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
+                        ValuesIn(vector<int>{8, 16, 32, 48, 64}));
 
 TEST_F(ValidateID, OpTypeArrayLengthNull) {
   const char* spirv = R"(

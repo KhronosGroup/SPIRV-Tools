@@ -383,10 +383,11 @@ spv_result_t spvBinaryToText(const spv_const_context context,
 // pointer.
 void spvBinaryDestroy(spv_binary binary);
 
-// Validates a SPIR-V binary for correctness.
+// Validates a SPIR-V binary for correctness. Any errors will be written into
+// *diagnostic.
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
-                         spv_diagnostic* pDiagnostic);
+                         spv_diagnostic* diagnostic);
 
 // Creates a diagnostic object. The position parameter specifies the location in
 // the text/binary stream. The message parameter, copied into the diagnostic
