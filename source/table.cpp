@@ -32,6 +32,7 @@ spv_context spvContextCreate(spv_target_env env) {
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_UNIVERSAL_1_1:
       break;
     default:
       return nullptr;
@@ -41,9 +42,9 @@ spv_context spvContextCreate(spv_target_env env) {
   spv_operand_table operand_table;
   spv_ext_inst_table ext_inst_table;
 
-  spvOpcodeTableGet(&opcode_table);
-  spvOperandTableGet(&operand_table);
-  spvExtInstTableGet(&ext_inst_table);
+  spvOpcodeTableGet(&opcode_table, env);
+  spvOperandTableGet(&operand_table, env);
+  spvExtInstTableGet(&ext_inst_table, env);
 
   return new spv_context_t{env, opcode_table, operand_table, ext_inst_table};
 }

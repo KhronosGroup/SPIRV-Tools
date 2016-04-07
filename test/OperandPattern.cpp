@@ -80,7 +80,8 @@ using MaskExpansionTest = ::testing::TestWithParam<MaskExpansionCase>;
 
 TEST_P(MaskExpansionTest, Sample) {
   spv_operand_table operandTable = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvOperandTableGet(&operandTable, SPV_ENV_UNIVERSAL_1_0));
 
   spv_operand_pattern_t pattern(GetParam().initial);
   spvPrependOperandTypesForMask(operandTable, GetParam().type, GetParam().mask,
@@ -118,7 +119,7 @@ INSTANTIATE_TEST_CASE_P(
          SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask,
          {SUFFIX1},
          {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
-    }),);
+    }), );
 #undef SUFFIX0
 #undef SUFFIX1
 
@@ -146,7 +147,7 @@ TEST_P(MatchableOperandExpansionTest, MatchableOperandsDontExpand) {
 
 INSTANTIATE_TEST_CASE_P(MatchableOperandExpansion,
                         MatchableOperandExpansionTest,
-                        ::testing::ValuesIn(allOperandTypes()),);
+                        ::testing::ValuesIn(allOperandTypes()), );
 
 using VariableOperandExpansionTest =
     ::testing::TestWithParam<spv_operand_type_t>;
@@ -166,7 +167,7 @@ TEST_P(VariableOperandExpansionTest, NonMatchableOperandsExpand) {
 
 INSTANTIATE_TEST_CASE_P(NonMatchableOperandExpansion,
                         VariableOperandExpansionTest,
-                        ::testing::ValuesIn(allOperandTypes()),);
+                        ::testing::ValuesIn(allOperandTypes()), );
 
 TEST(AlternatePatternFollowingImmediate, Empty) {
   EXPECT_THAT(spvAlternatePatternFollowingImmediate({}),

@@ -26,8 +26,8 @@
   ],
   "magic_number" : "0x07230203",
   "major_version" : 1,
-  "minor_version" : 0,
-  "revision" : 5,
+  "minor_version" : 1,
+  "revision" : 1,
   "instructions" : [
     {
       "opname" : "OpNop",
@@ -3007,6 +3007,108 @@
         { "kind" : "ImageOperands", "quantifier" : "?" }
       ],
       "capabilities" : [ "SparseResidency" ]
+    },
+    {
+      "opname" : "OpSizeOf",
+      "opcode" : 321,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "IdRef",        "name" : "'Pointer'" }
+      ],
+      "capabilities" : [ "Addresses" ]
+    },
+    {
+      "opname" : "OpTypePipeStorage",
+      "opcode" : 322,
+      "operands" : [
+        { "kind" : "IdResult" }
+      ],
+      "capabilities" : [ "PipeStorage" ]
+    },
+    {
+      "opname" : "OpConstantPipeStorage",
+      "opcode" : 323,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "LiteralInteger", "name" : "'Packet Size'" },
+        { "kind" : "LiteralInteger", "name" : "'Packet Alignment'" },
+        { "kind" : "LiteralInteger", "name" : "'Capacity'" }
+      ],
+      "capabilities" : [ "PipeStorage" ]
+    },
+    {
+      "opname" : "OpCreatePipeFromPipeStorage",
+      "opcode" : 324,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "IdRef",        "name" : "'Pipe Storage'" }
+      ],
+      "capabilities" : [ "PipeStorage" ]
+    },
+    {
+      "opname" : "OpGetKernelLocalSizeForSubgroupCount",
+      "opcode" : 325,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "IdRef",        "name" : "'Subgroup Count'" },
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
+      ],
+      "capabilities" : [ "SubgroupDispatch" ]
+    },
+    {
+      "opname" : "OpGetKernelMaxNumSubgroups",
+      "opcode" : 326,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
+      ],
+      "capabilities" : [ "SubgroupDispatch" ]
+    },
+    {
+      "opname" : "OpTypeNamedBarrier",
+      "opcode" : 327,
+      "operands" : [
+        { "kind" : "IdResult" }
+      ],
+      "capabilities" : [ "NamedBarrier" ]
+    },
+    {
+      "opname" : "OpNamedBarrierInitialize",
+      "opcode" : 328,
+      "operands" : [
+        { "kind" : "IdResultType" },
+        { "kind" : "IdResult" },
+        { "kind" : "IdRef",        "name" : "'Subgroup Count'" }
+      ],
+      "capabilities" : [ "NamedBarrier" ]
+    },
+    {
+      "opname" : "OpMemoryNamedBarrier",
+      "opcode" : 329,
+      "operands" : [
+        { "kind" : "IdRef",             "name" : "'Named Barrier'" },
+        { "kind" : "IdScope",           "name" : "'Memory'" },
+        { "kind" : "IdMemorySemantics", "name" : "'Semantics'" }
+      ],
+      "capabilities" : [ "NamedBarrier" ]
+    },
+    {
+      "opname" : "OpModuleProcessed",
+      "opcode" : 330,
+      "operands" : [
+        { "kind" : "LiteralString", "name" : "'Process'" }
+      ]
     }
   ],
   "operand_kinds" : [
@@ -3148,6 +3250,18 @@
         {
           "enumerant" : "DontUnroll",
           "value" : "0x0002"
+        },
+        {
+          "enumerant" : "DependencyInfinite",
+          "value" : "0x0004"
+        },
+        {
+          "enumerant" : "DependencyLength",
+          "value" : "0x0008",
+          "parameters" : [
+            { "kind" : "LiteralInteger" }
+          ]
+
         }
       ]
     },
@@ -3557,6 +3671,32 @@
           "enumerant" : "ContractionOff",
           "value" : 31,
           "capabilities" : [ "Kernel" ]
+        },
+        {
+          "enumerant" : "Initializer",
+          "value" : 33,
+          "capabilities" : [ "Kernel" ]
+        },
+        {
+          "enumerant" : "Finalizer",
+          "value" : 34,
+          "capabilities" : [ "Kernel" ]
+        },
+        {
+          "enumerant" : "SubgroupSize",
+          "value" : 35,
+          "capabilities" : [ "SubgroupDispatch" ],
+          "parameters" : [
+            { "kind" : "LiteralInteger", "name" : "'Subgroup Size'" }
+          ]
+        },
+        {
+          "enumerant" : "SubgroupsPerWorkgroup",
+          "value" : 36,
+          "capabilities" : [ "SubgroupDispatch" ],
+          "parameters" : [
+            { "kind" : "LiteralInteger", "name" : "'Subgroups Per Workgroup'" }
+          ]
         }
       ]
     },
@@ -4230,7 +4370,7 @@
         {
           "enumerant" : "SpecId",
           "value" : 1,
-          "capabilities" : [ "Shader" ],
+          "capabilities" : [ "Shader", "Kernel" ],
           "parameters" : [
             { "kind" : "LiteralInteger", "name" : "'Specialization Constant ID'" }
           ]
@@ -4486,6 +4626,14 @@
           "capabilities" : [ "Kernel" ],
           "parameters" : [
             { "kind" : "LiteralInteger", "name" : "'Alignment'" }
+          ]
+        },
+        {
+          "enumerant" : "MaxByteOffset",
+          "value" : 45,
+          "capabilities" : [ "Addresses" ],
+          "parameters" : [
+            { "kind" : "LiteralInteger", "name" : "'Max Byte Offset'" }
           ]
         }
       ]
@@ -5037,6 +5185,21 @@
           "enumerant" : "MultiViewport",
           "value" : 57,
           "capabilities" : [ "Geometry" ]
+        },
+        {
+          "enumerant" : "SubgroupDispatch",
+          "value" : 58,
+          "capabilities" : [ "DeviceEnqueue" ]
+        },
+        {
+          "enumerant" : "NamedBarrier",
+          "value" : 59,
+          "capabilities" : [ "Kernel" ]
+        },
+        {
+          "enumerant" : "PipeStorage",
+          "value" : 60,
+          "capabilities" : [ "Pipes" ]
         }
       ]
     },

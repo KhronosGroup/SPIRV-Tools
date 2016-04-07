@@ -41,7 +41,8 @@ using EnumCapabilityTest = ::testing::TestWithParam<EnumCapabilityCase>;
 
 TEST_P(EnumCapabilityTest, Sample) {
   spv_operand_table operandTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOperandTableGet(&operandTable));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvOperandTableGet(&operandTable, SPV_ENV_UNIVERSAL_1_0));
   spv_operand_desc entry;
   ASSERT_EQ(SPV_SUCCESS,
             spvOperandTableValueLookup(operandTable, GetParam().type,
@@ -75,7 +76,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(EXECUTION_MODEL, ExecutionModelFragment, Shader),
         CASE1(EXECUTION_MODEL, ExecutionModelGLCompute, Shader),
         CASE1(EXECUTION_MODEL, ExecutionModelKernel, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.4 Addressing Model
 INSTANTIATE_TEST_CASE_P(
@@ -84,7 +85,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(ADDRESSING_MODEL, AddressingModelLogical),
         CASE1(ADDRESSING_MODEL, AddressingModelPhysical32, Addresses),
         CASE1(ADDRESSING_MODEL, AddressingModelPhysical64, Addresses),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.5 Memory Model
 INSTANTIATE_TEST_CASE_P(MemoryModel, EnumCapabilityTest,
@@ -92,7 +93,7 @@ INSTANTIATE_TEST_CASE_P(MemoryModel, EnumCapabilityTest,
                             CASE1(MEMORY_MODEL, MemoryModelSimple, Shader),
                             CASE1(MEMORY_MODEL, MemoryModelGLSL450, Shader),
                             CASE1(MEMORY_MODEL, MemoryModelOpenCL, Kernel),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.6 Execution Mode
 INSTANTIATE_TEST_CASE_P(
@@ -130,7 +131,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(EXECUTION_MODE, ExecutionModeOutputTriangleStrip, Geometry),
         CASE1(EXECUTION_MODE, ExecutionModeVecTypeHint, Kernel),
         CASE1(EXECUTION_MODE, ExecutionModeContractionOff, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.7 Storage Class
 INSTANTIATE_TEST_CASE_P(
@@ -144,11 +145,11 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(STORAGE_CLASS, StorageClassCrossWorkgroup),
         CASE1(STORAGE_CLASS, StorageClassPrivate, Shader),
         CASE0(STORAGE_CLASS, StorageClassFunction),
-        CASE1(STORAGE_CLASS, StorageClassGeneric, GenericPointer), // Bug 14287
+        CASE1(STORAGE_CLASS, StorageClassGeneric, GenericPointer),  // Bug 14287
         CASE1(STORAGE_CLASS, StorageClassPushConstant, Shader),
         CASE1(STORAGE_CLASS, StorageClassAtomicCounter, AtomicStorage),
         CASE0(STORAGE_CLASS, StorageClassImage),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.8 Dim
 INSTANTIATE_TEST_CASE_P(
@@ -159,7 +160,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DIMENSIONALITY, DimRect, SampledRect),
         CASE1(DIMENSIONALITY, DimBuffer, SampledBuffer),
         CASE1(DIMENSIONALITY, DimSubpassData, InputAttachment),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.9 Sampler Addressing Mode
 INSTANTIATE_TEST_CASE_P(
@@ -172,7 +173,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeRepeat, Kernel),
         CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingModeRepeatMirrored,
               Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.10 Sampler Filter Mode
 INSTANTIATE_TEST_CASE_P(
@@ -180,7 +181,7 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
         CASE1(SAMPLER_FILTER_MODE, SamplerFilterModeNearest, Kernel),
         CASE1(SAMPLER_FILTER_MODE, SamplerFilterModeLinear, Kernel),
-    }),);
+    }), );
 
 // clang-format off
 // See SPIR-V Section 3.11 Image Format
@@ -253,7 +254,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(IMAGE_CHANNEL_ORDER, ImageChannelOrdersRGBx, Kernel),
         CASE1(IMAGE_CHANNEL_ORDER, ImageChannelOrdersRGBA, Kernel),
         CASE1(IMAGE_CHANNEL_ORDER, ImageChannelOrdersBGRA, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.13 Image Channel Data Type
 INSTANTIATE_TEST_CASE_P(
@@ -283,7 +284,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt24, Kernel),
         CASE1(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataTypeUnormInt101010_2,
               Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.14 Image Operands
 INSTANTIATE_TEST_CASE_P(
@@ -298,7 +299,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(OPTIONAL_IMAGE, ImageOperandsConstOffsetsMask),
         CASE0(OPTIONAL_IMAGE, ImageOperandsSampleMask),
         CASE1(OPTIONAL_IMAGE, ImageOperandsMinLodMask, MinLod),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.15 FP Fast Math Mode
 INSTANTIATE_TEST_CASE_P(
@@ -310,7 +311,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(FP_FAST_MATH_MODE, FPFastMathModeNSZMask, Kernel),
         CASE1(FP_FAST_MATH_MODE, FPFastMathModeAllowRecipMask, Kernel),
         CASE1(FP_FAST_MATH_MODE, FPFastMathModeFastMask, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.16 FP Rounding Mode
 INSTANTIATE_TEST_CASE_P(FPRoundingMode, EnumCapabilityTest,
@@ -319,14 +320,14 @@ INSTANTIATE_TEST_CASE_P(FPRoundingMode, EnumCapabilityTest,
                             CASE1(FP_ROUNDING_MODE, FPRoundingModeRTZ, Kernel),
                             CASE1(FP_ROUNDING_MODE, FPRoundingModeRTP, Kernel),
                             CASE1(FP_ROUNDING_MODE, FPRoundingModeRTN, Kernel),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.17 Linkage Type
 INSTANTIATE_TEST_CASE_P(LinkageType, EnumCapabilityTest,
                         ::testing::ValuesIn(std::vector<EnumCapabilityCase>{
                             CASE1(LINKAGE_TYPE, LinkageTypeExport, Linkage),
                             CASE1(LINKAGE_TYPE, LinkageTypeImport, Linkage),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.18 Access Qualifier
 INSTANTIATE_TEST_CASE_P(
@@ -335,7 +336,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(ACCESS_QUALIFIER, AccessQualifierReadOnly, Kernel),
         CASE1(ACCESS_QUALIFIER, AccessQualifierWriteOnly, Kernel),
         CASE1(ACCESS_QUALIFIER, AccessQualifierReadWrite, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.19 Function Parameter Attribute
 INSTANTIATE_TEST_CASE_P(FunctionParameterAttribute, EnumCapabilityTest,
@@ -357,7 +358,7 @@ INSTANTIATE_TEST_CASE_P(FunctionParameterAttribute, EnumCapabilityTest,
                             CASE1(FUNCTION_PARAMETER_ATTRIBUTE,
                                   FunctionParameterAttributeNoReadWrite,
                                   Kernel),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.20 Decoration
 INSTANTIATE_TEST_CASE_P(
@@ -370,17 +371,17 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationRowMajor, Matrix),
         CASE1(DECORATION, DecorationColMajor, Matrix),
         CASE1(DECORATION, DecorationArrayStride, Shader),
-        CASE1(DECORATION, DecorationMatrixStride, Matrix), // Bug 15234
+        CASE1(DECORATION, DecorationMatrixStride, Matrix),  // Bug 15234
         CASE1(DECORATION, DecorationGLSLShared, Shader),
         CASE1(DECORATION, DecorationGLSLPacked, Shader),
         CASE1(DECORATION, DecorationCPacked, Kernel),
-        CASE0(DECORATION, DecorationBuiltIn), // Bug 15248
+        CASE0(DECORATION, DecorationBuiltIn),  // Bug 15248
         // Value 12 placeholder
         CASE1(DECORATION, DecorationNoPerspective, Shader),
         CASE1(DECORATION, DecorationFlat, Shader),
         CASE1(DECORATION, DecorationPatch, Tessellation),
         CASE1(DECORATION, DecorationCentroid, Shader),
-        CASE1(DECORATION, DecorationSample, SampleRateShading), // Bug 15234
+        CASE1(DECORATION, DecorationSample, SampleRateShading),  // Bug 15234
         CASE1(DECORATION, DecorationInvariant, Shader),
         CASE0(DECORATION, DecorationRestrict),
         CASE0(DECORATION, DecorationAliased),
@@ -398,7 +399,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationIndex, Shader),
         CASE1(DECORATION, DecorationBinding, Shader),
         CASE1(DECORATION, DecorationDescriptorSet, Shader),
-        CASE1(DECORATION, DecorationOffset, Shader), // Bug 15268
+        CASE1(DECORATION, DecorationOffset, Shader),  // Bug 15268
         CASE1(DECORATION, DecorationXfbBuffer, TransformFeedback),
         CASE1(DECORATION, DecorationXfbStride, TransformFeedback),
         CASE1(DECORATION, DecorationFuncParamAttr, Kernel),
@@ -408,7 +409,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(DECORATION, DecorationNoContraction, Shader),
         CASE1(DECORATION, DecorationInputAttachmentIndex, InputAttachment),
         CASE1(DECORATION, DecorationAlignment, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.21 BuiltIn
 INSTANTIATE_TEST_CASE_P(
@@ -417,14 +418,14 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(BUILT_IN, BuiltInPosition, Shader),
         CASE1(BUILT_IN, BuiltInPointSize, Shader),
         // 2 is an intentional gap in the spec numbering.
-        CASE1(BUILT_IN, BuiltInClipDistance, ClipDistance), // Bug 1407, 15234
-        CASE1(BUILT_IN, BuiltInCullDistance, CullDistance), // Bug 1407, 15234
+        CASE1(BUILT_IN, BuiltInClipDistance, ClipDistance),  // Bug 1407, 15234
+        CASE1(BUILT_IN, BuiltInCullDistance, CullDistance),  // Bug 1407, 15234
         CASE1(BUILT_IN, BuiltInVertexId, Shader),
         CASE1(BUILT_IN, BuiltInInstanceId, Shader),
         CASE2(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation),
         CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
         CASE1(BUILT_IN, BuiltInLayer, Geometry),
-        CASE1(BUILT_IN, BuiltInViewportIndex, MultiViewport), // Bug 15234
+        CASE1(BUILT_IN, BuiltInViewportIndex, MultiViewport),  // Bug 15234
         CASE1(BUILT_IN, BuiltInTessLevelOuter, Tessellation),
         CASE1(BUILT_IN, BuiltInTessLevelInner, Tessellation),
         CASE1(BUILT_IN, BuiltInTessCoord, Tessellation),
@@ -432,9 +433,9 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(BUILT_IN, BuiltInFragCoord, Shader),
         CASE1(BUILT_IN, BuiltInPointCoord, Shader),
         CASE1(BUILT_IN, BuiltInFrontFacing, Shader),
-        CASE1(BUILT_IN, BuiltInSampleId, SampleRateShading), // Bug 15234
-        CASE1(BUILT_IN, BuiltInSamplePosition, SampleRateShading), // Bug 15234
-        CASE1(BUILT_IN, BuiltInSampleMask, SampleRateShading), // Bug 15234
+        CASE1(BUILT_IN, BuiltInSampleId, SampleRateShading),        // Bug 15234
+        CASE1(BUILT_IN, BuiltInSamplePosition, SampleRateShading),  // Bug 15234
+        CASE1(BUILT_IN, BuiltInSampleMask, SampleRateShading),      // Bug 15234
         // Value 21 intentionally missing
         CASE1(BUILT_IN, BuiltInFragDepth, Shader),
         CASE1(BUILT_IN, BuiltInHelperInvocation, Shader),
@@ -458,7 +459,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(BUILT_IN, BuiltInSubgroupLocalInvocationId, Kernel),
         CASE1(BUILT_IN, BuiltInVertexIndex, Shader),
         CASE1(BUILT_IN, BuiltInInstanceIndex, Shader),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.22 Selection Control
 INSTANTIATE_TEST_CASE_P(
@@ -467,7 +468,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(SELECTION_CONTROL, SelectionControlMaskNone),
         CASE0(SELECTION_CONTROL, SelectionControlFlattenMask),
         CASE0(SELECTION_CONTROL, SelectionControlDontFlattenMask),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.23 Loop Control
 INSTANTIATE_TEST_CASE_P(LoopControl, EnumCapabilityTest,
@@ -475,7 +476,7 @@ INSTANTIATE_TEST_CASE_P(LoopControl, EnumCapabilityTest,
                             CASE0(LOOP_CONTROL, LoopControlMaskNone),
                             CASE0(LOOP_CONTROL, LoopControlUnrollMask),
                             CASE0(LOOP_CONTROL, LoopControlDontUnrollMask),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.24 Function Control
 INSTANTIATE_TEST_CASE_P(FunctionControl, EnumCapabilityTest,
@@ -486,7 +487,7 @@ INSTANTIATE_TEST_CASE_P(FunctionControl, EnumCapabilityTest,
                                   FunctionControlDontInlineMask),
                             CASE0(FUNCTION_CONTROL, FunctionControlPureMask),
                             CASE0(FUNCTION_CONTROL, FunctionControlConstMask),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.25 Memory Semantics <id>
 INSTANTIATE_TEST_CASE_P(
@@ -502,9 +503,9 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsWorkgroupMemoryMask),
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsCrossWorkgroupMemoryMask),
         CASE1(MEMORY_SEMANTICS_ID, MemorySemanticsAtomicCounterMemoryMask,
-              AtomicStorage), // Bug 15234
+              AtomicStorage),  // Bug 15234
         CASE0(MEMORY_SEMANTICS_ID, MemorySemanticsImageMemoryMask),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.26 Memory Access
 INSTANTIATE_TEST_CASE_P(
@@ -514,7 +515,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessVolatileMask),
         CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessAlignedMask),
         CASE0(OPTIONAL_MEMORY_ACCESS, MemoryAccessNontemporalMask),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.27 Scope <id>
 INSTANTIATE_TEST_CASE_P(
@@ -523,7 +524,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(SCOPE_ID, ScopeCrossDevice), CASE0(SCOPE_ID, ScopeDevice),
         CASE0(SCOPE_ID, ScopeWorkgroup), CASE0(SCOPE_ID, ScopeSubgroup),
         CASE0(SCOPE_ID, ScopeInvocation),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.28 Group Operation
 INSTANTIATE_TEST_CASE_P(
@@ -532,7 +533,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(GROUP_OPERATION, GroupOperationReduce, Kernel),
         CASE1(GROUP_OPERATION, GroupOperationInclusiveScan, Kernel),
         CASE1(GROUP_OPERATION, GroupOperationExclusiveScan, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.29 Kernel Enqueue Flags
 INSTANTIATE_TEST_CASE_P(
@@ -541,7 +542,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsNoWait, Kernel),
         CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsWaitKernel, Kernel),
         CASE1(KERNEL_ENQ_FLAGS, KernelEnqueueFlagsWaitWorkGroup, Kernel),
-    }),);
+    }), );
 
 // See SPIR-V Section 3.30 Kernel Profiling Info
 INSTANTIATE_TEST_CASE_P(KernelProfilingInfo, EnumCapabilityTest,
@@ -550,7 +551,7 @@ INSTANTIATE_TEST_CASE_P(KernelProfilingInfo, EnumCapabilityTest,
                                   KernelProfilingInfoMaskNone),
                             CASE1(KERNEL_PROFILING_INFO,
                                   KernelProfilingInfoCmdExecTimeMask, Kernel),
-                        }),);
+                        }), );
 
 // See SPIR-V Section 3.31 Capability
 INSTANTIATE_TEST_CASE_P(
@@ -565,7 +566,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE0(CAPABILITY, CapabilityKernel),
         CASE1(CAPABILITY, CapabilityVector16, Kernel),
         CASE1(CAPABILITY, CapabilityFloat16Buffer, Kernel),
-        CASE0(CAPABILITY, CapabilityFloat16), // Bug 15234
+        CASE0(CAPABILITY, CapabilityFloat16),  // Bug 15234
         CASE0(CAPABILITY, CapabilityFloat64),
         CASE0(CAPABILITY, CapabilityInt64),
         CASE1(CAPABILITY, CapabilityInt64Atomics, Int64),
@@ -614,7 +615,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE1(CAPABILITY, CapabilityStorageImageReadWithoutFormat, Shader),
         CASE1(CAPABILITY, CapabilityStorageImageWriteWithoutFormat, Shader),
         CASE1(CAPABILITY, CapabilityMultiViewport, Geometry),
-    }),);
+    }), );
 
 #undef CASE0
 #undef CASE1

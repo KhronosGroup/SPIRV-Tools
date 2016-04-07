@@ -93,7 +93,8 @@ using OpcodeTableCapabilitiesTest =
 
 TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
   spv_opcode_table opcodeTable;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&opcodeTable));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvOpcodeTableGet(&opcodeTable, SPV_ENV_UNIVERSAL_1_0));
   spv_opcode_desc entry;
   ASSERT_EQ(SPV_SUCCESS,
             spvOpcodeTableValueLookup(opcodeTable, GetParam().opcode, &entry));

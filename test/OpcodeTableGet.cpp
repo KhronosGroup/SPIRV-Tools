@@ -24,19 +24,30 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <gmock/gmock.h>
+
 #include "UnitSPIRV.h"
 
 namespace {
 
-TEST(OpcodeTableGet, Default) {
+using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
+using ::testing::ValuesIn;
+using std::vector;
+
+TEST_P(GetTargetTest, SanityCheck) {
   spv_opcode_table table;
-  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&table));
+  ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&table, GetParam()));
   ASSERT_NE(0u, table->count);
   ASSERT_NE(nullptr, table->entries);
 }
 
-TEST(OpcodeTableGet, InvalidPointerTable) {
-  ASSERT_EQ(SPV_ERROR_INVALID_POINTER, spvOpcodeTableGet(nullptr));
+TEST_P(GetTargetTest, InvalidPointerTable) {
+  ASSERT_EQ(SPV_ERROR_INVALID_POINTER, spvOpcodeTableGet(nullptr, GetParam()));
 }
+
+INSTANTIATE_TEST_CASE_P(OpcodeTableGet, GetTargetTest,
+                        ValuesIn(vector<spv_target_env>{SPV_ENV_UNIVERSAL_1_0,
+                                                        SPV_ENV_UNIVERSAL_1_1,
+                                                        SPV_ENV_VULKAN_1_0}), );
 
 }  // anonymous namespace

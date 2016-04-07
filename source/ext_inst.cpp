@@ -26,41 +26,51 @@
 
 #include "ext_inst.h"
 
-#include <string.h>
+#include <cassert>
+#include <cstring>
 
 #include "spirv/GLSL.std.450.h"
 #include "spirv/OpenCL.std.h"
 #include "spirv_definition.h"
 
-static const spv_ext_inst_desc_t glslStd450Entries[] = {
+static const spv_ext_inst_desc_t glslStd450Entries_1_0[] = {
 #include "glsl.std.450.insts-1-0.inc"
 };
 
-static const spv_ext_inst_desc_t openclEntries[] = {
+static const spv_ext_inst_desc_t openclEntries_1_0[] = {
 #include "opencl.std.insts-1-0.inc"
 };
 
-spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable) {
+spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable,
+                                spv_target_env env) {
   if (!pExtInstTable) return SPV_ERROR_INVALID_POINTER;
 
-  static const spv_ext_inst_group_t groups[] = {
+  static const spv_ext_inst_group_t groups_1_0[] = {
       {SPV_EXT_INST_TYPE_GLSL_STD_450,
-       static_cast<uint32_t>(sizeof(glslStd450Entries) /
+       static_cast<uint32_t>(sizeof(glslStd450Entries_1_0) /
                              sizeof(spv_ext_inst_desc_t)),
-       glslStd450Entries},
+       glslStd450Entries_1_0},
       {SPV_EXT_INST_TYPE_OPENCL_STD,
-       static_cast<uint32_t>(sizeof(openclEntries) /
+       static_cast<uint32_t>(sizeof(openclEntries_1_0) /
                              sizeof(spv_ext_inst_desc_t)),
-       openclEntries},
+       openclEntries_1_0},
   };
 
-  static const spv_ext_inst_table_t table = {
-      static_cast<uint32_t>(sizeof(groups) / sizeof(spv_ext_inst_group_t)),
-      groups};
+  static const spv_ext_inst_table_t table_1_0 = {
+      static_cast<uint32_t>(sizeof(groups_1_0) / sizeof(spv_ext_inst_group_t)),
+      groups_1_0};
 
-  *pExtInstTable = &table;
-
-  return SPV_SUCCESS;
+  switch (env) {
+    // The extended instruction sets are all version 1.0 so far.
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_UNIVERSAL_1_1:
+      *pExtInstTable = &table_1_0;
+      return SPV_SUCCESS;
+    default:
+      assert(0 && "Unknown spv_target_env in spvExtInstTableGet()");
+      return SPV_ERROR_INVALID_TABLE;
+  }
 }
 
 spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {

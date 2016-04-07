@@ -103,13 +103,13 @@ struct spv_context_t {
   const spv_ext_inst_table ext_inst_table;
 };
 
-// Populates the given opcode table.
-spv_result_t spvOpcodeTableGet(spv_opcode_table* table);
+// Populates *table with entries for env.
+spv_result_t spvOpcodeTableGet(spv_opcode_table* table, spv_target_env env);
 
-// Populates the given operand table.
-spv_result_t spvOperandTableGet(spv_operand_table* table);
+// Populates *table with entries for env.
+spv_result_t spvOperandTableGet(spv_operand_table* table, spv_target_env env);
 
-// Populates the given extended instruction table.
-spv_result_t spvExtInstTableGet(spv_ext_inst_table* table);
+// Populates *table with entries for env.
+spv_result_t spvExtInstTableGet(spv_ext_inst_table* table, spv_target_env env);
 
 #endif  // LIBSPIRV_TABLE_H_

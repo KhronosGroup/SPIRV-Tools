@@ -335,6 +335,7 @@ typedef spv_context_t* spv_context;
 typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_0,     // Vulkan 1.0 latest revision.
+  SPV_ENV_UNIVERSAL_1_1,  // SPIR-V 1.1 any revision, no other restrictions.
 } spv_target_env;
 
 // Returns a string describing the given SPIR-V target environment.

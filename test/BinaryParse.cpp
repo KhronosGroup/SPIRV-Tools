@@ -140,7 +140,7 @@ const uint32_t kHeaderForBound1[] = {
 // Returns the expected SPIR-V module header words for the Khronos
 // Assembler generator, and with a given Id bound.
 std::vector<uint32_t> ExpectedHeaderForBound(uint32_t bound) {
-  return {SpvMagicNumber, SpvVersion,
+  return {SpvMagicNumber, 0x10000,
           SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), bound, 0};
 }
 
@@ -232,7 +232,7 @@ class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
 #define EXPECT_HEADER(bound)                                                 \
   EXPECT_CALL(client_,                                                       \
               Header(AnyOf(SPV_ENDIANNESS_LITTLE, SPV_ENDIANNESS_BIG),       \
-                     SpvMagicNumber, SpvVersion,                             \
+                     SpvMagicNumber, 0x10000,                                \
                      SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_ASSEMBLER, 0), \
                      bound, 0 /*reserved*/))
 

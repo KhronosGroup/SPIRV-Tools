@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
           if (0 == strcmp(argv[argi], "--version")) {
             printf("%s\n", kBuildVersion);
             printf("Target: %s\n",
-                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0));
+                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1));
             return 0;
           }
           if (0 == strcmp(argv[argi], "--help")) {
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   spv_result_t error = spvTextToBinary(context, contents.data(),
                                        contents.size(), &binary, &diagnostic);
   spvContextDestroy(context);

@@ -36,18 +36,35 @@
 #define ARRAY_SIZE(A) (static_cast<uint32_t>(sizeof(A) / sizeof(A[0])))
 
 // Pull in operand info tables automatically generated from JSON grammar.
+namespace v1_0 {
 #include "operand.kinds-1-0.inc"
+}  // namespace v1_0
+namespace v1_1 {
+#include "operand.kinds-1-1.inc"
+}  // namespace v1_1
 
-spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable) {
+spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
+                                spv_target_env env) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
 
-  static const spv_operand_table_t table = {
-      ARRAY_SIZE(pygen_variable_OperandInfoTable),
-      pygen_variable_OperandInfoTable};
+  static const spv_operand_table_t table_1_0 = {
+      ARRAY_SIZE(v1_0::pygen_variable_OperandInfoTable),
+      v1_0::pygen_variable_OperandInfoTable};
+  static const spv_operand_table_t table_1_1 = {
+      ARRAY_SIZE(v1_1::pygen_variable_OperandInfoTable),
+      v1_1::pygen_variable_OperandInfoTable};
 
-  *pOperandTable = &table;
-
-  return SPV_SUCCESS;
+  switch (env) {
+    case SPV_ENV_UNIVERSAL_1_0:
+    case SPV_ENV_VULKAN_1_0:
+      *pOperandTable = &table_1_0;
+      return SPV_SUCCESS;
+    case SPV_ENV_UNIVERSAL_1_1:
+      *pOperandTable = &table_1_1;
+      return SPV_SUCCESS;
+  }
+  assert(0 && "Unknown spv_target_env in spvOperandTableGet()");
+  return SPV_ERROR_INVALID_TABLE;
 }
 
 #undef ARRAY_SIZE
