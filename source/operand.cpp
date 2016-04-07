@@ -36,7 +36,7 @@
 #define ARRAY_SIZE(A) (static_cast<uint32_t>(sizeof(A) / sizeof(A[0])))
 
 // Pull in operand info tables automatically generated from JSON grammar.
-#include "operand.kinds.inc"
+#include "operand.kinds-1-0.inc"
 
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;

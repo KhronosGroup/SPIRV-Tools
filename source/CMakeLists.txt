@@ -76,7 +76,7 @@ target_include_directories(${SPIRV_TOOLS}
   PUBLIC ${spirv-tools_SOURCE_DIR}/include
   PRIVATE ${spirv-tools_BINARY_DIR}
   )
-add_dependencies(${SPIRV_TOOLS} spirv-tools-build-tables)
+add_dependencies(${SPIRV_TOOLS} spirv-tools-build-tables-1-0)
 
 install(TARGETS ${SPIRV_TOOLS}
   RUNTIME DESTINATION bin

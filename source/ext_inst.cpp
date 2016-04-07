@@ -33,11 +33,11 @@
 #include "spirv_definition.h"
 
 static const spv_ext_inst_desc_t glslStd450Entries[] = {
-#include "glsl.std.450.insts.inc"
+#include "glsl.std.450.insts-1-0.inc"
 };
 
 static const spv_ext_inst_desc_t openclEntries[] = {
-#include "opencl.std.insts.inc"
+#include "opencl.std.insts-1-0.inc"
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable) {

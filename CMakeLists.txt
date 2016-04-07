@@ -137,17 +137,21 @@ add_custom_target(spirv-tools-build-version
   ${spirv-tools_SOURCE_DIR}
   COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
 
-add_custom_target(spirv-tools-build-tables
-  ${PYTHON_EXECUTABLE}
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-  --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv.core.grammar.json
-  --extinst-glsl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst.glsl.std.450.grammar.json
-  --extinst-opencl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst.opencl.std.grammar.json
-  --core-insts-output=${spirv-tools_BINARY_DIR}/core.insts.inc
-  --glsl-insts-output=${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc
-  --opencl-insts-output=${spirv-tools_BINARY_DIR}/opencl.std.insts.inc
-  --operand-kinds-output=${spirv-tools_BINARY_DIR}/operand.kinds.inc
-  COMMENT "Generate info tables for SPIR-V instructions and operands.")
+function(spvtools_tables VERSION)
+  add_custom_target(spirv-tools-build-tables-${VERSION}
+    ${PYTHON_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
+    --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv-${VERSION}.core.grammar.json
+    --extinst-glsl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst-${VERSION}.glsl.std.450.grammar.json
+    --extinst-opencl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst-${VERSION}.opencl.std.grammar.json
+    --core-insts-output=${spirv-tools_BINARY_DIR}/core.insts-${VERSION}.inc
+    --glsl-insts-output=${spirv-tools_BINARY_DIR}/glsl.std.450.insts-${VERSION}.inc
+    --opencl-insts-output=${spirv-tools_BINARY_DIR}/opencl.std.insts-${VERSION}.inc
+    --operand-kinds-output=${spirv-tools_BINARY_DIR}/operand.kinds-${VERSION}.inc
+    COMMENT "Generate info tables for SPIR-V-${VERSION} instructions and operands.")
+endfunction(spvtools_tables)
+
+spvtools_tables("1-0")
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
