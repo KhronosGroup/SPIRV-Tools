@@ -309,26 +309,47 @@ def main():
                         help='input JSON grammar file for core SPIR-V '
                         'instructions')
     parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='input JSON grammar file for GLSL extended '
                         'instruction set')
     parser.add_argument('--extinst-opencl-grammar', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='input JSON grammar file for OpenGL extended '
                         'instruction set')
     parser.add_argument('--core-insts-output', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='output file for core SPIR-V instructions')
     parser.add_argument('--glsl-insts-output', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='output file for GLSL extended instruction set')
     parser.add_argument('--opencl-insts-output', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='output file for OpenCL extended instruction set')
     parser.add_argument('--operand-kinds-output', metavar='<path>',
-                        type=str, required=True,
+                        type=str, required=False, default=None,
                         help='output file for operand kinds')
     args = parser.parse_args()
+
+    if (args.core_insts_output is None) != \
+            (args.operand_kinds_output is None):
+        print('error: --core-insts-output and --operand_kinds_output '
+              'should be specified together.')
+        exit(1)
+    if (args.glsl_insts_output is None) != \
+            (args.extinst_glsl_grammar is None):
+        print('error: --glsl-insts-output and --extinst-glsl-grammar '
+              'should be specified together.')
+        exit(1)
+    if (args.opencl_insts_output is None) != \
+            (args.extinst_opencl_grammar is None):
+        print('error: --opencl-insts-output and --extinst-opencl-grammar '
+              'should be specified together.')
+        exit(1)
+    if all([args.core_insts_output is None,
+            args.glsl_insts_output is None,
+            args.opencl_insts_output is None]):
+        print('error: at least one output should be specified.')
+        exit(1)
 
     with open(args.spirv_core_grammar) as json_file:
         grammar = json.loads(json_file.read())
@@ -339,20 +360,23 @@ def main():
         assert len(cap_dict) == 1
         populate_capability_bit_mapping_dict(cap_dict[0])
 
-        print(generate_instruction_table(grammar['instructions'], False),
-              file=open(args.core_insts_output, 'w'))
-        print(generate_operand_kind_table(grammar['operand_kinds']),
-              file=open(args.operand_kinds_output, 'w'))
+        if args.core_insts_output is not None:
+            print(generate_instruction_table(grammar['instructions'], False),
+                  file=open(args.core_insts_output, 'w'))
+            print(generate_operand_kind_table(grammar['operand_kinds']),
+                  file=open(args.operand_kinds_output, 'w'))
 
-    with open(args.extinst_glsl_grammar) as json_file:
-        grammar = json.loads(json_file.read())
-        print(generate_instruction_table(grammar['instructions'], True),
-              file=open(args.glsl_insts_output, 'w'))
+    if args.extinst_glsl_grammar is not None:
+        with open(args.extinst_glsl_grammar) as json_file:
+            grammar = json.loads(json_file.read())
+            print(generate_instruction_table(grammar['instructions'], True),
+                  file=open(args.glsl_insts_output, 'w'))
 
-    with open(args.extinst_opencl_grammar) as json_file:
-        grammar = json.loads(json_file.read())
-        print(generate_instruction_table(grammar['instructions'], True),
-              file=open(args.opencl_insts_output, 'w'))
+    if args.extinst_opencl_grammar is not None:
+        with open(args.extinst_opencl_grammar) as json_file:
+            grammar = json.loads(json_file.read())
+            print(generate_instruction_table(grammar['instructions'], True),
+                  file=open(args.opencl_insts_output, 'w'))
 
 
 if __name__ == '__main__':
