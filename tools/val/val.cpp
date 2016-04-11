@@ -56,7 +56,7 @@ const char kBuildVersion[] =
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_0_4;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_0;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -64,14 +64,14 @@ int main(int argc, char** argv) {
       if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", kBuildVersion);
         printf("Targets:\n  %s\n  %s\n",
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0_4),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0_7));
+               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
+               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0));
         return 0;
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);
         return 0;
       } else if (0 == strcmp(cur_arg, "--vulkan")) {
-        target_env = SPV_ENV_VULKAN_1_0_7;
+        target_env = SPV_ENV_VULKAN_1_0;
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
