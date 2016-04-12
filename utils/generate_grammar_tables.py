@@ -68,13 +68,13 @@ def convert_operand_kind(operand_tuple):
     kind, quantifier = operand_tuple
     # The following cases are where we differ between the JSON grammar and
     # spirv-tools.
-    if kind == 'IdType':
+    if kind == 'IdResultType':
         kind = 'TypeId'
     elif kind == 'IdResult':
         kind = 'ResultId'
-    elif kind == 'IdMemorySemantics':
+    elif kind == 'IdMemorySemantics' or kind == 'MemorySemantics':
         kind = 'MemorySemanticsId'
-    elif kind == 'IdScope':
+    elif kind == 'IdScope' or kind == 'Scope':
         kind = 'ScopeId'
     elif kind == 'IdRef':
         kind = 'Id'
@@ -132,7 +132,7 @@ class InstInitializer(object):
         self.operands = [convert_operand_kind(o) for o in operands]
 
         operands = [o[0] for o in operands]
-        self.ref_type_id = 'IdType' in operands
+        self.ref_type_id = 'IdResultType' in operands
         self.def_result_id = 'IdResult' in operands
 
     def __str__(self):

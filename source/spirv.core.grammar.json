@@ -25,7 +25,8 @@
     "IN THE MATERIALS."
   ],
   "magic_number" : "0x07230203",
-  "version" : "0x00010000",
+  "major_version" : 1,
+  "minor_version" : 0,
   "revision" : 4,
   "instructions" : [
     {
@@ -36,7 +37,7 @@
       "opname" : "OpUndef",
       "opcode" : 1,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -117,7 +118,7 @@
       "opname" : "OpExtInst",
       "opcode" : 12,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                                     "name" : "'Set'" },
         { "kind" : "LiteralExtInstInteger",                     "name" : "'Instruction'" },
@@ -344,7 +345,7 @@
       "opname" : "OpConstantTrue",
       "opcode" : 41,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -352,7 +353,7 @@
       "opname" : "OpConstantFalse",
       "opcode" : 42,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -360,7 +361,7 @@
       "opname" : "OpConstant",
       "opcode" : 43,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "LiteralContextDependentNumber", "name" : "'Value'" }
       ]
@@ -369,16 +370,16 @@
       "opname" : "OpConstantComposite",
       "opcode" : 44,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Constituents'" }
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Constituents'" }
       ]
     },
     {
       "opname" : "OpConstantSampler",
       "opcode" : 45,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "SamplerAddressingMode" },
         { "kind" : "LiteralInteger",        "name" : "'Param'" },
@@ -390,7 +391,7 @@
       "opname" : "OpConstantNull",
       "opcode" : 46,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -398,7 +399,7 @@
       "opname" : "OpSpecConstantTrue",
       "opcode" : 48,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -406,7 +407,7 @@
       "opname" : "OpSpecConstantFalse",
       "opcode" : 49,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -414,7 +415,7 @@
       "opname" : "OpSpecConstant",
       "opcode" : 50,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "LiteralContextDependentNumber", "name" : "'Value'" }
       ]
@@ -423,16 +424,16 @@
       "opname" : "OpSpecConstantComposite",
       "opcode" : 51,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Constituents'" }
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Constituents'" }
       ]
     },
     {
       "opname" : "OpSpecConstantOp",
       "opcode" : 52,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "LiteralSpecConstantOpInteger", "name" : "'Opcode'" }
       ]
@@ -441,7 +442,7 @@
       "opname" : "OpFunction",
       "opcode" : 54,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "FunctionControl" },
         { "kind" : "IdRef",           "name" : "'Function Type'" }
@@ -451,7 +452,7 @@
       "opname" : "OpFunctionParameter",
       "opcode" : 55,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ]
     },
@@ -463,17 +464,17 @@
       "opname" : "OpFunctionCall",
       "opcode" : 57,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Function'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Argument 0', +\n'Argument 1', +\n..." }
+        { "kind" : "IdRef",                            "name" : "'Function'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Argument 0', +\n'Argument 1', +\n..." }
       ]
     },
     {
       "opname" : "OpVariable",
       "opcode" : 59,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "StorageClass" },
         { "kind" : "IdRef",        "quantifier" : "?", "name" : "'Initializer'" }
@@ -483,18 +484,18 @@
       "opname" : "OpImageTexelPointer",
       "opcode" : 60,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" },
-        { "kind" : "IdRef",    "name" : "'Coordinate'" },
-        { "kind" : "IdRef",    "name" : "'Sample'" }
+        { "kind" : "IdRef",        "name" : "'Image'" },
+        { "kind" : "IdRef",        "name" : "'Coordinate'" },
+        { "kind" : "IdRef",        "name" : "'Sample'" }
       ]
     },
     {
       "opname" : "OpLoad",
       "opcode" : 61,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                            "name" : "'Pointer'" },
         { "kind" : "MemoryAccess", "quantifier" : "?" }
@@ -533,31 +534,31 @@
       "opname" : "OpAccessChain",
       "opcode" : 65,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Base'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Indexes'" }
+        { "kind" : "IdRef",                            "name" : "'Base'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Indexes'" }
       ]
     },
     {
       "opname" : "OpInBoundsAccessChain",
       "opcode" : 66,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Base'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Indexes'" }
+        { "kind" : "IdRef",                            "name" : "'Base'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Indexes'" }
       ]
     },
     {
       "opname" : "OpPtrAccessChain",
       "opcode" : 67,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Base'" },
-        { "kind" : "IdRef",                        "name" : "'Element'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Indexes'" }
+        { "kind" : "IdRef",                            "name" : "'Base'" },
+        { "kind" : "IdRef",                            "name" : "'Element'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Indexes'" }
       ],
       "capabilities" : [ "Addresses" ]
     },
@@ -565,7 +566,7 @@
       "opname" : "OpArrayLength",
       "opcode" : 68,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",          "name" : "'Structure'" },
         { "kind" : "LiteralInteger", "name" : "'Array member'" }
@@ -576,9 +577,9 @@
       "opname" : "OpGenericPtrMemSemantics",
       "opcode" : 69,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" }
+        { "kind" : "IdRef",        "name" : "'Pointer'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -586,11 +587,11 @@
       "opname" : "OpInBoundsPtrAccessChain",
       "opcode" : 70,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Base'" },
-        { "kind" : "IdRef",                        "name" : "'Element'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Indexes'" }
+        { "kind" : "IdRef",                            "name" : "'Base'" },
+        { "kind" : "IdRef",                            "name" : "'Element'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Indexes'" }
       ],
       "capabilities" : [ "Addresses" ]
     },
@@ -638,28 +639,28 @@
       "opname" : "OpVectorExtractDynamic",
       "opcode" : 77,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" },
-        { "kind" : "IdRef",    "name" : "'Index'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" },
+        { "kind" : "IdRef",        "name" : "'Index'" }
       ]
     },
     {
       "opname" : "OpVectorInsertDynamic",
       "opcode" : 78,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" },
-        { "kind" : "IdRef",    "name" : "'Component'" },
-        { "kind" : "IdRef",    "name" : "'Index'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" },
+        { "kind" : "IdRef",        "name" : "'Component'" },
+        { "kind" : "IdRef",        "name" : "'Index'" }
       ]
     },
     {
       "opname" : "OpVectorShuffle",
       "opcode" : 79,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                              "name" : "'Vector 1'" },
         { "kind" : "IdRef",                              "name" : "'Vector 2'" },
@@ -670,16 +671,16 @@
       "opname" : "OpCompositeConstruct",
       "opcode" : 80,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Constituents'" }
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Constituents'" }
       ]
     },
     {
       "opname" : "OpCompositeExtract",
       "opcode" : 81,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                              "name" : "'Composite'" },
         { "kind" : "LiteralInteger", "quantifier" : "*", "name" : "'Indexes'" }
@@ -689,7 +690,7 @@
       "opname" : "OpCompositeInsert",
       "opcode" : 82,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                              "name" : "'Object'" },
         { "kind" : "IdRef",                              "name" : "'Composite'" },
@@ -700,18 +701,18 @@
       "opname" : "OpCopyObject",
       "opcode" : 83,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpTranspose",
       "opcode" : 84,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Matrix'" }
+        { "kind" : "IdRef",        "name" : "'Matrix'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -719,17 +720,17 @@
       "opname" : "OpSampledImage",
       "opcode" : 86,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" },
-        { "kind" : "IdRef",    "name" : "'Sampler'" }
+        { "kind" : "IdRef",        "name" : "'Image'" },
+        { "kind" : "IdRef",        "name" : "'Sampler'" }
       ]
     },
     {
       "opname" : "OpImageSampleImplicitLod",
       "opcode" : 87,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -741,7 +742,7 @@
       "opname" : "OpImageSampleExplicitLod",
       "opcode" : 88,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -752,7 +753,7 @@
       "opname" : "OpImageSampleDrefImplicitLod",
       "opcode" : 89,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -765,7 +766,7 @@
       "opname" : "OpImageSampleDrefExplicitLod",
       "opcode" : 90,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -778,7 +779,7 @@
       "opname" : "OpImageSampleProjImplicitLod",
       "opcode" : 91,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -790,7 +791,7 @@
       "opname" : "OpImageSampleProjExplicitLod",
       "opcode" : 92,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -802,7 +803,7 @@
       "opname" : "OpImageSampleProjDrefImplicitLod",
       "opcode" : 93,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -815,7 +816,7 @@
       "opname" : "OpImageSampleProjDrefExplicitLod",
       "opcode" : 94,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -828,7 +829,7 @@
       "opname" : "OpImageFetch",
       "opcode" : 95,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -839,7 +840,7 @@
       "opname" : "OpImageGather",
       "opcode" : 96,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -852,7 +853,7 @@
       "opname" : "OpImageDrefGather",
       "opcode" : 97,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -865,7 +866,7 @@
       "opname" : "OpImageRead",
       "opcode" : 98,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -886,18 +887,18 @@
       "opname" : "OpImage",
       "opcode" : 100,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Sampled Image'" }
+        { "kind" : "IdRef",        "name" : "'Sampled Image'" }
       ]
     },
     {
       "opname" : "OpImageQueryFormat",
       "opcode" : 101,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" }
+        { "kind" : "IdRef",        "name" : "'Image'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -905,9 +906,9 @@
       "opname" : "OpImageQueryOrder",
       "opcode" : 102,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" }
+        { "kind" : "IdRef",        "name" : "'Image'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -915,10 +916,10 @@
       "opname" : "OpImageQuerySizeLod",
       "opcode" : 103,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" },
-        { "kind" : "IdRef",    "name" : "'Level of Detail'" }
+        { "kind" : "IdRef",        "name" : "'Image'" },
+        { "kind" : "IdRef",        "name" : "'Level of Detail'" }
       ],
       "capabilities" : [ "Kernel", "ImageQuery" ]
     },
@@ -926,9 +927,9 @@
       "opname" : "OpImageQuerySize",
       "opcode" : 104,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" }
+        { "kind" : "IdRef",        "name" : "'Image'" }
       ],
       "capabilities" : [ "Kernel", "ImageQuery" ]
     },
@@ -936,10 +937,10 @@
       "opname" : "OpImageQueryLod",
       "opcode" : 105,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" },
-        { "kind" : "IdRef",    "name" : "'Coordinate'" }
+        { "kind" : "IdRef",        "name" : "'Image'" },
+        { "kind" : "IdRef",        "name" : "'Coordinate'" }
       ],
       "capabilities" : [ "ImageQuery" ]
     },
@@ -947,9 +948,9 @@
       "opname" : "OpImageQueryLevels",
       "opcode" : 106,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" }
+        { "kind" : "IdRef",        "name" : "'Image'" }
       ],
       "capabilities" : [ "Kernel", "ImageQuery" ]
     },
@@ -957,9 +958,9 @@
       "opname" : "OpImageQuerySamples",
       "opcode" : 107,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Image'" }
+        { "kind" : "IdRef",        "name" : "'Image'" }
       ],
       "capabilities" : [ "Kernel", "ImageQuery" ]
     },
@@ -967,81 +968,81 @@
       "opname" : "OpConvertFToU",
       "opcode" : 109,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Float Value'" }
+        { "kind" : "IdRef",        "name" : "'Float Value'" }
       ]
     },
     {
       "opname" : "OpConvertFToS",
       "opcode" : 110,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Float Value'" }
+        { "kind" : "IdRef",        "name" : "'Float Value'" }
       ]
     },
     {
       "opname" : "OpConvertSToF",
       "opcode" : 111,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Signed Value'" }
+        { "kind" : "IdRef",        "name" : "'Signed Value'" }
       ]
     },
     {
       "opname" : "OpConvertUToF",
       "opcode" : 112,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Unsigned Value'" }
+        { "kind" : "IdRef",        "name" : "'Unsigned Value'" }
       ]
     },
     {
       "opname" : "OpUConvert",
       "opcode" : 113,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Unsigned Value'" }
+        { "kind" : "IdRef",        "name" : "'Unsigned Value'" }
       ]
     },
     {
       "opname" : "OpSConvert",
       "opcode" : 114,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Signed Value'" }
+        { "kind" : "IdRef",        "name" : "'Signed Value'" }
       ]
     },
     {
       "opname" : "OpFConvert",
       "opcode" : 115,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Float Value'" }
+        { "kind" : "IdRef",        "name" : "'Float Value'" }
       ]
     },
     {
       "opname" : "OpQuantizeToF16",
       "opcode" : 116,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Value'" }
+        { "kind" : "IdRef",        "name" : "'Value'" }
       ]
     },
     {
       "opname" : "OpConvertPtrToU",
       "opcode" : 117,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" }
+        { "kind" : "IdRef",        "name" : "'Pointer'" }
       ],
       "capabilities" : [ "Addresses" ]
     },
@@ -1049,9 +1050,9 @@
       "opname" : "OpSatConvertSToU",
       "opcode" : 118,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Signed Value'" }
+        { "kind" : "IdRef",        "name" : "'Signed Value'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1059,9 +1060,9 @@
       "opname" : "OpSatConvertUToS",
       "opcode" : 119,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Unsigned Value'" }
+        { "kind" : "IdRef",        "name" : "'Unsigned Value'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1069,9 +1070,9 @@
       "opname" : "OpConvertUToPtr",
       "opcode" : 120,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Integer Value'" }
+        { "kind" : "IdRef",        "name" : "'Integer Value'" }
       ],
       "capabilities" : [ "Addresses" ]
     },
@@ -1079,9 +1080,9 @@
       "opname" : "OpPtrCastToGeneric",
       "opcode" : 121,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" }
+        { "kind" : "IdRef",        "name" : "'Pointer'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1089,9 +1090,9 @@
       "opname" : "OpGenericCastToPtr",
       "opcode" : 122,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" }
+        { "kind" : "IdRef",        "name" : "'Pointer'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1099,7 +1100,7 @@
       "opname" : "OpGenericCastToPtrExplicit",
       "opcode" : 123,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",        "name" : "'Pointer'" },
         { "kind" : "StorageClass", "name" : "'Storage'" }
@@ -1110,187 +1111,187 @@
       "opname" : "OpBitcast",
       "opcode" : 124,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpSNegate",
       "opcode" : 126,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpFNegate",
       "opcode" : 127,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpIAdd",
       "opcode" : 128,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFAdd",
       "opcode" : 129,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpISub",
       "opcode" : 130,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFSub",
       "opcode" : 131,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpIMul",
       "opcode" : 132,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFMul",
       "opcode" : 133,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpUDiv",
       "opcode" : 134,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSDiv",
       "opcode" : 135,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFDiv",
       "opcode" : 136,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpUMod",
       "opcode" : 137,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSRem",
       "opcode" : 138,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSMod",
       "opcode" : 139,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFRem",
       "opcode" : 140,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFMod",
       "opcode" : 141,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpVectorTimesScalar",
       "opcode" : 142,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" },
-        { "kind" : "IdRef",    "name" : "'Scalar'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" },
+        { "kind" : "IdRef",        "name" : "'Scalar'" }
       ]
     },
     {
       "opname" : "OpMatrixTimesScalar",
       "opcode" : 143,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Matrix'" },
-        { "kind" : "IdRef",    "name" : "'Scalar'" }
+        { "kind" : "IdRef",        "name" : "'Matrix'" },
+        { "kind" : "IdRef",        "name" : "'Scalar'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -1298,10 +1299,10 @@
       "opname" : "OpVectorTimesMatrix",
       "opcode" : 144,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" },
-        { "kind" : "IdRef",    "name" : "'Matrix'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" },
+        { "kind" : "IdRef",        "name" : "'Matrix'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -1309,10 +1310,10 @@
       "opname" : "OpMatrixTimesVector",
       "opcode" : 145,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Matrix'" },
-        { "kind" : "IdRef",    "name" : "'Vector'" }
+        { "kind" : "IdRef",        "name" : "'Matrix'" },
+        { "kind" : "IdRef",        "name" : "'Vector'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -1320,10 +1321,10 @@
       "opname" : "OpMatrixTimesMatrix",
       "opcode" : 146,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'LeftMatrix'" },
-        { "kind" : "IdRef",    "name" : "'RightMatrix'" }
+        { "kind" : "IdRef",        "name" : "'LeftMatrix'" },
+        { "kind" : "IdRef",        "name" : "'RightMatrix'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -1331,10 +1332,10 @@
       "opname" : "OpOuterProduct",
       "opcode" : 147,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector 1'" },
-        { "kind" : "IdRef",    "name" : "'Vector 2'" }
+        { "kind" : "IdRef",        "name" : "'Vector 1'" },
+        { "kind" : "IdRef",        "name" : "'Vector 2'" }
       ],
       "capabilities" : [ "Matrix" ]
     },
@@ -1342,95 +1343,95 @@
       "opname" : "OpDot",
       "opcode" : 148,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector 1'" },
-        { "kind" : "IdRef",    "name" : "'Vector 2'" }
+        { "kind" : "IdRef",        "name" : "'Vector 1'" },
+        { "kind" : "IdRef",        "name" : "'Vector 2'" }
       ]
     },
     {
       "opname" : "OpIAddCarry",
       "opcode" : 149,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpISubBorrow",
       "opcode" : 150,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpUMulExtended",
       "opcode" : 151,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSMulExtended",
       "opcode" : 152,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpAny",
       "opcode" : 154,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" }
       ]
     },
     {
       "opname" : "OpAll",
       "opcode" : 155,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Vector'" }
+        { "kind" : "IdRef",        "name" : "'Vector'" }
       ]
     },
     {
       "opname" : "OpIsNan",
       "opcode" : 156,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" }
+        { "kind" : "IdRef",        "name" : "'x'" }
       ]
     },
     {
       "opname" : "OpIsInf",
       "opcode" : 157,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" }
+        { "kind" : "IdRef",        "name" : "'x'" }
       ]
     },
     {
       "opname" : "OpIsFinite",
       "opcode" : 158,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" }
+        { "kind" : "IdRef",        "name" : "'x'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1438,9 +1439,9 @@
       "opname" : "OpIsNormal",
       "opcode" : 159,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" }
+        { "kind" : "IdRef",        "name" : "'x'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1448,9 +1449,9 @@
       "opname" : "OpSignBitSet",
       "opcode" : 160,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" }
+        { "kind" : "IdRef",        "name" : "'x'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1458,10 +1459,10 @@
       "opname" : "OpLessOrGreater",
       "opcode" : 161,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" },
-        { "kind" : "IdRef",    "name" : "'y'" }
+        { "kind" : "IdRef",        "name" : "'x'" },
+        { "kind" : "IdRef",        "name" : "'y'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1469,10 +1470,10 @@
       "opname" : "OpOrdered",
       "opcode" : 162,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" },
-        { "kind" : "IdRef",    "name" : "'y'" }
+        { "kind" : "IdRef",        "name" : "'x'" },
+        { "kind" : "IdRef",        "name" : "'y'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1480,10 +1481,10 @@
       "opname" : "OpUnordered",
       "opcode" : 163,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'x'" },
-        { "kind" : "IdRef",    "name" : "'y'" }
+        { "kind" : "IdRef",        "name" : "'x'" },
+        { "kind" : "IdRef",        "name" : "'y'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -1491,361 +1492,361 @@
       "opname" : "OpLogicalEqual",
       "opcode" : 164,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpLogicalNotEqual",
       "opcode" : 165,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpLogicalOr",
       "opcode" : 166,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpLogicalAnd",
       "opcode" : 167,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpLogicalNot",
       "opcode" : 168,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpSelect",
       "opcode" : 169,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Condition'" },
-        { "kind" : "IdRef",    "name" : "'Object 1'" },
-        { "kind" : "IdRef",    "name" : "'Object 2'" }
+        { "kind" : "IdRef",        "name" : "'Condition'" },
+        { "kind" : "IdRef",        "name" : "'Object 1'" },
+        { "kind" : "IdRef",        "name" : "'Object 2'" }
       ]
     },
     {
       "opname" : "OpIEqual",
       "opcode" : 170,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpINotEqual",
       "opcode" : 171,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpUGreaterThan",
       "opcode" : 172,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSGreaterThan",
       "opcode" : 173,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpUGreaterThanEqual",
       "opcode" : 174,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSGreaterThanEqual",
       "opcode" : 175,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpULessThan",
       "opcode" : 176,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSLessThan",
       "opcode" : 177,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpULessThanEqual",
       "opcode" : 178,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpSLessThanEqual",
       "opcode" : 179,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdEqual",
       "opcode" : 180,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordEqual",
       "opcode" : 181,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdNotEqual",
       "opcode" : 182,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordNotEqual",
       "opcode" : 183,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdLessThan",
       "opcode" : 184,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordLessThan",
       "opcode" : 185,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdGreaterThan",
       "opcode" : 186,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordGreaterThan",
       "opcode" : 187,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdLessThanEqual",
       "opcode" : 188,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordLessThanEqual",
       "opcode" : 189,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFOrdGreaterThanEqual",
       "opcode" : 190,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpFUnordGreaterThanEqual",
       "opcode" : 191,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpShiftRightLogical",
       "opcode" : 194,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Shift'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Shift'" }
       ]
     },
     {
       "opname" : "OpShiftRightArithmetic",
       "opcode" : 195,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Shift'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Shift'" }
       ]
     },
     {
       "opname" : "OpShiftLeftLogical",
       "opcode" : 196,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Shift'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Shift'" }
       ]
     },
     {
       "opname" : "OpBitwiseOr",
       "opcode" : 197,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpBitwiseXor",
       "opcode" : 198,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpBitwiseAnd",
       "opcode" : 199,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand 1'" },
-        { "kind" : "IdRef",    "name" : "'Operand 2'" }
+        { "kind" : "IdRef",        "name" : "'Operand 1'" },
+        { "kind" : "IdRef",        "name" : "'Operand 2'" }
       ]
     },
     {
       "opname" : "OpNot",
       "opcode" : 200,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Operand'" }
+        { "kind" : "IdRef",        "name" : "'Operand'" }
       ]
     },
     {
       "opname" : "OpBitFieldInsert",
       "opcode" : 201,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Insert'" },
-        { "kind" : "IdRef",    "name" : "'Offset'" },
-        { "kind" : "IdRef",    "name" : "'Count'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Insert'" },
+        { "kind" : "IdRef",        "name" : "'Offset'" },
+        { "kind" : "IdRef",        "name" : "'Count'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1853,11 +1854,11 @@
       "opname" : "OpBitFieldSExtract",
       "opcode" : 202,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Offset'" },
-        { "kind" : "IdRef",    "name" : "'Count'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Offset'" },
+        { "kind" : "IdRef",        "name" : "'Count'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1865,11 +1866,11 @@
       "opname" : "OpBitFieldUExtract",
       "opcode" : 203,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" },
-        { "kind" : "IdRef",    "name" : "'Offset'" },
-        { "kind" : "IdRef",    "name" : "'Count'" }
+        { "kind" : "IdRef",        "name" : "'Base'" },
+        { "kind" : "IdRef",        "name" : "'Offset'" },
+        { "kind" : "IdRef",        "name" : "'Count'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1877,9 +1878,9 @@
       "opname" : "OpBitReverse",
       "opcode" : 204,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" }
+        { "kind" : "IdRef",        "name" : "'Base'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1887,18 +1888,18 @@
       "opname" : "OpBitCount",
       "opcode" : 205,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Base'" }
+        { "kind" : "IdRef",        "name" : "'Base'" }
       ]
     },
     {
       "opname" : "OpDPdx",
       "opcode" : 207,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1906,9 +1907,9 @@
       "opname" : "OpDPdy",
       "opcode" : 208,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1916,9 +1917,9 @@
       "opname" : "OpFwidth",
       "opcode" : 209,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "Shader" ]
     },
@@ -1926,9 +1927,9 @@
       "opname" : "OpDPdxFine",
       "opcode" : 210,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -1936,9 +1937,9 @@
       "opname" : "OpDPdyFine",
       "opcode" : 211,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -1946,9 +1947,9 @@
       "opname" : "OpFwidthFine",
       "opcode" : 212,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -1956,9 +1957,9 @@
       "opname" : "OpDPdxCoarse",
       "opcode" : 213,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -1966,9 +1967,9 @@
       "opname" : "OpDPdyCoarse",
       "opcode" : 214,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -1976,9 +1977,9 @@
       "opname" : "OpFwidthCoarse",
       "opcode" : 215,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'P'" }
+        { "kind" : "IdRef",        "name" : "'P'" }
       ],
       "capabilities" : [ "DerivativeControl" ]
     },
@@ -2029,7 +2030,7 @@
       "opname" : "OpAtomicLoad",
       "opcode" : 227,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2050,7 +2051,7 @@
       "opname" : "OpAtomicExchange",
       "opcode" : 229,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2062,7 +2063,7 @@
       "opname" : "OpAtomicCompareExchange",
       "opcode" : 230,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2076,7 +2077,7 @@
       "opname" : "OpAtomicCompareExchangeWeak",
       "opcode" : 231,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2091,7 +2092,7 @@
       "opname" : "OpAtomicIIncrement",
       "opcode" : 232,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2102,7 +2103,7 @@
       "opname" : "OpAtomicIDecrement",
       "opcode" : 233,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2113,7 +2114,7 @@
       "opname" : "OpAtomicIAdd",
       "opcode" : 234,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2125,7 +2126,7 @@
       "opname" : "OpAtomicISub",
       "opcode" : 235,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2137,7 +2138,7 @@
       "opname" : "OpAtomicSMin",
       "opcode" : 236,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2149,7 +2150,7 @@
       "opname" : "OpAtomicUMin",
       "opcode" : 237,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2161,7 +2162,7 @@
       "opname" : "OpAtomicSMax",
       "opcode" : 238,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2173,7 +2174,7 @@
       "opname" : "OpAtomicUMax",
       "opcode" : 239,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2185,7 +2186,7 @@
       "opname" : "OpAtomicAnd",
       "opcode" : 240,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2197,7 +2198,7 @@
       "opname" : "OpAtomicOr",
       "opcode" : 241,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2209,7 +2210,7 @@
       "opname" : "OpAtomicXor",
       "opcode" : 242,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2221,9 +2222,9 @@
       "opname" : "OpPhi",
       "opcode" : 245,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Variable, Parent, ...'" }
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Variable, Parent, ...'" }
       ]
     },
     {
@@ -2318,14 +2319,14 @@
       "opname" : "OpGroupAsyncCopy",
       "opcode" : 259,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Destination'" },
-        { "kind" : "IdRef",    "name" : "'Source'" },
-        { "kind" : "IdRef",    "name" : "'Num Elements'" },
-        { "kind" : "IdRef",    "name" : "'Stride'" },
-        { "kind" : "IdRef",    "name" : "'Event'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Destination'" },
+        { "kind" : "IdRef",        "name" : "'Source'" },
+        { "kind" : "IdRef",        "name" : "'Num Elements'" },
+        { "kind" : "IdRef",        "name" : "'Stride'" },
+        { "kind" : "IdRef",        "name" : "'Event'" }
       ],
       "capabilities" : [ "Kernel" ]
     },
@@ -2343,10 +2344,10 @@
       "opname" : "OpGroupAll",
       "opcode" : 261,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Predicate'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Predicate'" }
       ],
       "capabilities" : [ "Groups" ]
     },
@@ -2354,10 +2355,10 @@
       "opname" : "OpGroupAny",
       "opcode" : 262,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Predicate'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Predicate'" }
       ],
       "capabilities" : [ "Groups" ]
     },
@@ -2365,11 +2366,11 @@
       "opname" : "OpGroupBroadcast",
       "opcode" : 263,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Value'" },
-        { "kind" : "IdRef",    "name" : "'LocalId'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Value'" },
+        { "kind" : "IdRef",        "name" : "'LocalId'" }
       ],
       "capabilities" : [ "Groups" ]
     },
@@ -2377,7 +2378,7 @@
       "opname" : "OpGroupIAdd",
       "opcode" : 264,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2389,7 +2390,7 @@
       "opname" : "OpGroupFAdd",
       "opcode" : 265,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2401,7 +2402,7 @@
       "opname" : "OpGroupFMin",
       "opcode" : 266,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2413,7 +2414,7 @@
       "opname" : "OpGroupUMin",
       "opcode" : 267,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2425,7 +2426,7 @@
       "opname" : "OpGroupSMin",
       "opcode" : 268,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2437,7 +2438,7 @@
       "opname" : "OpGroupFMax",
       "opcode" : 269,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2449,7 +2450,7 @@
       "opname" : "OpGroupUMax",
       "opcode" : 270,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2461,7 +2462,7 @@
       "opname" : "OpGroupSMax",
       "opcode" : 271,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdScope",        "name" : "'Execution'" },
         { "kind" : "GroupOperation", "name" : "'Operation'" },
@@ -2473,12 +2474,12 @@
       "opname" : "OpReadPipe",
       "opcode" : 274,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Pointer'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2486,12 +2487,12 @@
       "opname" : "OpWritePipe",
       "opcode" : 275,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Pointer'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2499,14 +2500,14 @@
       "opname" : "OpReservedReadPipe",
       "opcode" : 276,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Reserve Id'" },
-        { "kind" : "IdRef",    "name" : "'Index'" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Reserve Id'" },
+        { "kind" : "IdRef",        "name" : "'Index'" },
+        { "kind" : "IdRef",        "name" : "'Pointer'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2514,14 +2515,14 @@
       "opname" : "OpReservedWritePipe",
       "opcode" : 277,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Reserve Id'" },
-        { "kind" : "IdRef",    "name" : "'Index'" },
-        { "kind" : "IdRef",    "name" : "'Pointer'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Reserve Id'" },
+        { "kind" : "IdRef",        "name" : "'Index'" },
+        { "kind" : "IdRef",        "name" : "'Pointer'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2529,12 +2530,12 @@
       "opname" : "OpReserveReadPipePackets",
       "opcode" : 278,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Num Packets'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Num Packets'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2542,12 +2543,12 @@
       "opname" : "OpReserveWritePipePackets",
       "opcode" : 279,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Num Packets'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Num Packets'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2577,9 +2578,9 @@
       "opname" : "OpIsValidReserveId",
       "opcode" : 282,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Reserve Id'" }
+        { "kind" : "IdRef",        "name" : "'Reserve Id'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2587,11 +2588,11 @@
       "opname" : "OpGetNumPipePackets",
       "opcode" : 283,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2599,11 +2600,11 @@
       "opname" : "OpGetMaxPipePackets",
       "opcode" : 284,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2611,13 +2612,13 @@
       "opname" : "OpGroupReserveReadPipePackets",
       "opcode" : 285,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Num Packets'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Num Packets'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2625,13 +2626,13 @@
       "opname" : "OpGroupReserveWritePipePackets",
       "opcode" : 286,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdScope",  "name" : "'Execution'" },
-        { "kind" : "IdRef",    "name" : "'Pipe'" },
-        { "kind" : "IdRef",    "name" : "'Num Packets'" },
-        { "kind" : "IdRef",    "name" : "'Packet Size'" },
-        { "kind" : "IdRef",    "name" : "'Packet Alignment'" }
+        { "kind" : "IdScope",      "name" : "'Execution'" },
+        { "kind" : "IdRef",        "name" : "'Pipe'" },
+        { "kind" : "IdRef",        "name" : "'Num Packets'" },
+        { "kind" : "IdRef",        "name" : "'Packet Size'" },
+        { "kind" : "IdRef",        "name" : "'Packet Alignment'" }
       ],
       "capabilities" : [ "Pipes" ]
     },
@@ -2663,12 +2664,12 @@
       "opname" : "OpEnqueueMarker",
       "opcode" : 291,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Queue'" },
-        { "kind" : "IdRef",    "name" : "'Num Events'" },
-        { "kind" : "IdRef",    "name" : "'Wait Events'" },
-        { "kind" : "IdRef",    "name" : "'Ret Event'" }
+        { "kind" : "IdRef",        "name" : "'Queue'" },
+        { "kind" : "IdRef",        "name" : "'Num Events'" },
+        { "kind" : "IdRef",        "name" : "'Wait Events'" },
+        { "kind" : "IdRef",        "name" : "'Ret Event'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2676,19 +2677,19 @@
       "opname" : "OpEnqueueKernel",
       "opcode" : 292,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",                        "name" : "'Queue'" },
-        { "kind" : "IdRef",                        "name" : "'Flags'" },
-        { "kind" : "IdRef",                        "name" : "'ND Range'" },
-        { "kind" : "IdRef",                        "name" : "'Num Events'" },
-        { "kind" : "IdRef",                        "name" : "'Wait Events'" },
-        { "kind" : "IdRef",                        "name" : "'Ret Event'" },
-        { "kind" : "IdRef",                        "name" : "'Invoke'" },
-        { "kind" : "IdRef",                        "name" : "'Param'" },
-        { "kind" : "IdRef",                        "name" : "'Param Size'" },
-        { "kind" : "IdRef",                        "name" : "'Param Align'" },
-        { "kind" : "IdRef",    "quantifier" : "*", "name" : "'Local Size'" }
+        { "kind" : "IdRef",                            "name" : "'Queue'" },
+        { "kind" : "IdRef",                            "name" : "'Flags'" },
+        { "kind" : "IdRef",                            "name" : "'ND Range'" },
+        { "kind" : "IdRef",                            "name" : "'Num Events'" },
+        { "kind" : "IdRef",                            "name" : "'Wait Events'" },
+        { "kind" : "IdRef",                            "name" : "'Ret Event'" },
+        { "kind" : "IdRef",                            "name" : "'Invoke'" },
+        { "kind" : "IdRef",                            "name" : "'Param'" },
+        { "kind" : "IdRef",                            "name" : "'Param Size'" },
+        { "kind" : "IdRef",                            "name" : "'Param Align'" },
+        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Local Size'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2696,13 +2697,13 @@
       "opname" : "OpGetKernelNDrangeSubGroupCount",
       "opcode" : 293,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'ND Range'" },
-        { "kind" : "IdRef",    "name" : "'Invoke'" },
-        { "kind" : "IdRef",    "name" : "'Param'" },
-        { "kind" : "IdRef",    "name" : "'Param Size'" },
-        { "kind" : "IdRef",    "name" : "'Param Align'" }
+        { "kind" : "IdRef",        "name" : "'ND Range'" },
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2710,13 +2711,13 @@
       "opname" : "OpGetKernelNDrangeMaxSubGroupSize",
       "opcode" : 294,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'ND Range'" },
-        { "kind" : "IdRef",    "name" : "'Invoke'" },
-        { "kind" : "IdRef",    "name" : "'Param'" },
-        { "kind" : "IdRef",    "name" : "'Param Size'" },
-        { "kind" : "IdRef",    "name" : "'Param Align'" }
+        { "kind" : "IdRef",        "name" : "'ND Range'" },
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2724,12 +2725,12 @@
       "opname" : "OpGetKernelWorkGroupSize",
       "opcode" : 295,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Invoke'" },
-        { "kind" : "IdRef",    "name" : "'Param'" },
-        { "kind" : "IdRef",    "name" : "'Param Size'" },
-        { "kind" : "IdRef",    "name" : "'Param Align'" }
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2737,12 +2738,12 @@
       "opname" : "OpGetKernelPreferredWorkGroupSizeMultiple",
       "opcode" : 296,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Invoke'" },
-        { "kind" : "IdRef",    "name" : "'Param'" },
-        { "kind" : "IdRef",    "name" : "'Param Size'" },
-        { "kind" : "IdRef",    "name" : "'Param Align'" }
+        { "kind" : "IdRef",        "name" : "'Invoke'" },
+        { "kind" : "IdRef",        "name" : "'Param'" },
+        { "kind" : "IdRef",        "name" : "'Param Size'" },
+        { "kind" : "IdRef",        "name" : "'Param Align'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2766,7 +2767,7 @@
       "opname" : "OpCreateUserEvent",
       "opcode" : 299,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
@@ -2775,9 +2776,9 @@
       "opname" : "OpIsValidEvent",
       "opcode" : 300,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Event'" }
+        { "kind" : "IdRef",        "name" : "'Event'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2804,7 +2805,7 @@
       "opname" : "OpGetDefaultQueue",
       "opcode" : 303,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
@@ -2813,11 +2814,11 @@
       "opname" : "OpBuildNDRange",
       "opcode" : 304,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'GlobalWorkSize'" },
-        { "kind" : "IdRef",    "name" : "'LocalWorkSize'" },
-        { "kind" : "IdRef",    "name" : "'GlobalWorkOffset'" }
+        { "kind" : "IdRef",        "name" : "'GlobalWorkSize'" },
+        { "kind" : "IdRef",        "name" : "'LocalWorkSize'" },
+        { "kind" : "IdRef",        "name" : "'GlobalWorkOffset'" }
       ],
       "capabilities" : [ "DeviceEnqueue" ]
     },
@@ -2825,7 +2826,7 @@
       "opname" : "OpImageSparseSampleImplicitLod",
       "opcode" : 305,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2837,7 +2838,7 @@
       "opname" : "OpImageSparseSampleExplicitLod",
       "opcode" : 306,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -2849,7 +2850,7 @@
       "opname" : "OpImageSparseSampleDrefImplicitLod",
       "opcode" : 307,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2862,7 +2863,7 @@
       "opname" : "OpImageSparseSampleDrefExplicitLod",
       "opcode" : 308,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -2875,7 +2876,7 @@
       "opname" : "OpImageSparseSampleProjImplicitLod",
       "opcode" : 309,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2887,7 +2888,7 @@
       "opname" : "OpImageSparseSampleProjExplicitLod",
       "opcode" : 310,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -2899,7 +2900,7 @@
       "opname" : "OpImageSparseSampleProjDrefImplicitLod",
       "opcode" : 311,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2912,7 +2913,7 @@
       "opname" : "OpImageSparseSampleProjDrefExplicitLod",
       "opcode" : 312,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",         "name" : "'Sampled Image'" },
         { "kind" : "IdRef",         "name" : "'Coordinate'" },
@@ -2925,7 +2926,7 @@
       "opname" : "OpImageSparseFetch",
       "opcode" : 313,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2937,7 +2938,7 @@
       "opname" : "OpImageSparseGather",
       "opcode" : 314,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2950,7 +2951,7 @@
       "opname" : "OpImageSparseDrefGather",
       "opcode" : 315,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Sampled Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -2963,9 +2964,9 @@
       "opname" : "OpImageSparseTexelsResident",
       "opcode" : 316,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",    "name" : "'Resident Code'" }
+        { "kind" : "IdRef",        "name" : "'Resident Code'" }
       ],
       "capabilities" : [ "SparseResidency" ]
     },
@@ -2977,7 +2978,7 @@
       "opname" : "OpAtomicFlagTestAndSet",
       "opcode" : 318,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",             "name" : "'Pointer'" },
         { "kind" : "IdScope",           "name" : "'Scope'" },
@@ -2999,7 +3000,7 @@
       "opname" : "OpImageSparseRead",
       "opcode" : 320,
       "operands" : [
-        { "kind" : "IdType" },
+        { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
         { "kind" : "IdRef",                             "name" : "'Image'" },
         { "kind" : "IdRef",                             "name" : "'Coordinate'" },
@@ -3178,8 +3179,7 @@
     },
     {
       "category" : "BitEnum",
-      "kind" : "IdMemorySemantics",
-      "doc" : "Reference to an <id> representing a 32-bit integer that contains a mask. The rest of this object is about that mask.",
+      "kind" : "MemorySemantics",
       "enumerants" : [
         {
           "enumerant" : "Relaxed",
@@ -4692,8 +4692,7 @@
     },
     {
       "category" : "ValueEnum",
-      "kind" : "IdScope",
-      "doc" : "Reference to an <id> representing a 32-bit integer that contains a mask. The rest of this object is about that mask.",
+      "kind" : "Scope",
       "enumerants" : [
         {
           "enumerant" : "CrossDevice",
@@ -5038,13 +5037,23 @@
     },
     {
       "category" : "Id",
-      "kind" : "IdType",
-      "doc" : "Reference to an <id> representing a type"
+      "kind" : "IdResultType",
+      "doc" : "Reference to an <id> representing the result's type of the enclosing instruction"
     },
     {
       "category" : "Id",
       "kind" : "IdResult",
       "doc" : "Definition of an <id> representing the result of the enclosing instruction"
+    },
+    {
+      "category" : "Id",
+      "kind" : "IdMemorySemantics",
+      "doc" : "Reference to an <id> representing a 32-bit integer that is a mask from the MemorySemantics operand kind"
+    },
+    {
+      "category" : "Id",
+      "kind" : "IdScope",
+      "doc" : "Reference to an <id> representing a 32-bit integer that is a mask from the Scope operand kind"
     },
     {
       "category" : "Id",
