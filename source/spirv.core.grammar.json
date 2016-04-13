@@ -2224,7 +2224,7 @@
       "operands" : [
         { "kind" : "IdResultType" },
         { "kind" : "IdResult" },
-        { "kind" : "IdRef",        "quantifier" : "*", "name" : "'Variable, Parent, ...'" }
+        { "kind" : "PairIdRefIdRef", "quantifier" : "*", "name" : "'Variable, Parent, ...'" }
       ]
     },
     {
@@ -5094,6 +5094,11 @@
       "category" : "Composite",
       "kind" : "PairIdRefLiteralInteger",
       "bases" : [ "IdRef", "LiteralInteger" ]
+    },
+    {
+      "category" : "Composite",
+      "kind" : "PairIdRefIdRef",
+      "bases" : [ "IdRef", "IdRef" ]
     }
   ]
 }

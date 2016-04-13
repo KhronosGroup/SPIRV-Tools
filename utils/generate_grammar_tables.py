@@ -99,6 +99,8 @@ def convert_operand_kind(operand_tuple):
         kind = 'LiteralIntegerId'
     elif kind == 'PairIdRefLiteralInteger':
         kind = 'IdLiteralInteger'
+    elif kind == 'PairIdRefIdRef':  # Used by OpPhi in the grammar
+        kind = 'Id'
 
     if kind == 'FPRoundingMode':
         kind = 'FpRoundingMode'
