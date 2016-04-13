@@ -30,10 +30,13 @@
 #include <algorithm>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 
 using std::get;
 using std::make_tuple;
+using std::make_pair;
 using std::numeric_limits;
+using std::pair;
 using std::transform;
 using std::tuple;
 using std::unordered_map;
@@ -46,24 +49,26 @@ namespace libspirv {
 namespace {
 
 using bb_ptr = BasicBlock *;
-using bb_iter = vector<BasicBlock *>::iterator;
+using cbb_ptr = const BasicBlock *;
+using bb_iter = vector<BasicBlock *>::const_iterator;
 enum                    {kBlock, kIter  , kEnd };
-using stack_info = tuple<bb_ptr, bb_iter, bb_iter>;
+using stack_info = tuple<cbb_ptr, bb_iter, bb_iter>;
 
-stack_info CreateStack(BasicBlock &block) {
-  return make_tuple(&block, begin(block.get_out_blocks()),
-                    end(block.get_out_blocks()));
+stack_info CreateStack(const BasicBlock &block) {
+  return make_tuple(&block, begin(block.get_successors()),
+                    end(block.get_successors()));
 }
 
 template <typename T>
-bool Contains(vector<T> &vec, T val) {
+bool Contains(const vector<T> &vec, T val) {
   return find(begin(vec), end(vec), val) == end(vec);
 }
+
 }
 
-vector<BasicBlock*>
-PostOrderSort(BasicBlock &entry, size_t size) {
-  vector<bb_ptr> out;
+vector<const BasicBlock*>
+PostOrderSort(const BasicBlock &entry, size_t size) {
+  vector<cbb_ptr> out;
   vector<stack_info> stack;
   vector<uint32_t> processed;
 
@@ -91,93 +96,88 @@ PostOrderSort(BasicBlock &entry, size_t size) {
   return out;
 }
 
-  //  *for all nodes, b /* initialize the dominators array */
-  //  *  doms[b] ← Undefined
-  //  *doms[start node] ← start node
-  //  *Changed ← true
-  //  *while (Changed)
-  //  *  Changed ← false
-  //  *    for all nodes, b, in reverse postorder (except start node)
-  //        new idom ← first (processed) predecessor of b /* (pick one) */
-  //        for all other predecessors, p, of b
-  //          if doms[p] != Undefined /* i.e., if doms[p] already calculated */
-  //            new idom ← intersect(p, new idom)
-  //          if doms[b] != new idom
-  //            doms[b] ← new idom
-  //            Changed ← true
-  //    function intersect(b1, b2) returns node
-  //      finger1 ← b1
-  //      finger2 ← b2
-  //      while (finger1 != finger2)
-  //        while (finger1 < finger2)
-  //          finger1 = doms[finger1]
-  //        while (finger2 < finger1)
-  //          finger2 = doms[finger2]
-  //      return finger1
+vector< pair<BasicBlock*, BasicBlock*> >
+CalculateDominators(const BasicBlock &first_block) {
+  vector<cbb_ptr> postorder = PostOrderSort(first_block, 10);
+  const size_t undefined_dom = static_cast<uint32_t>(postorder.size());
 
-BasicBlock*
-intersect(vector<BasicBlock*>& postorder, unordered_map<BasicBlock*, uint32_t>& dom, uint32_t b1, uint32_t b2) {
-  uint32_t finger1 = b1;
-  uint32_t finger2 = b2;
-  while(finger1 != finger2) {
-    while (finger1 < finger2) {
-      finger1 = dom[postorder[finger1]];
-    }
-    while (finger2 < finger1) {
-      finger2 = dom[postorder[finger2]];
-    }
-  }
-  return postorder[finger1];
-}
+  enum block_info           { DOM , INDEX };
+  using block_detail = pair<size_t, size_t>;
 
-unordered_map<BasicBlock*, uint32_t>
-CalculateDominators(BasicBlock &first_block) {
-  vector<BasicBlock*> postorder = PostOrderSort(first_block, 10);
-  const uint32_t undefined_dom = static_cast<uint32_t>(postorder.size());
-  unordered_map<BasicBlock*, uint32_t> index; // pair(Block, postorder index)
-  unordered_map<BasicBlock*, uint32_t> dom; // pair(Block, postorder index)
-  for(auto block = begin(postorder); block != end(postorder); block++) {
-    dom[*block] = undefined_dom;
-    index[*block] = static_cast<uint32_t>(distance(begin(postorder), block));
+  // pair(Block, postorder index of dominator)
+  unordered_map<cbb_ptr, block_detail> idoms;
+  for(size_t i = 0; i < postorder.size(); i++) {
+    idoms[postorder[i]] = make_pair(undefined_dom, i);
   }
 
-  dom[postorder.back()] = index[postorder.back()];
+  get<DOM>(idoms[postorder.back()]) = get<INDEX>(idoms[postorder.back()]);
 
   bool changed = true;
   while (changed) {
     changed = false;
     for(auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
-      uint32_t &b_dom = dom[*b];
-      vector<BasicBlock*>& predecessors = (*b)->get_predecessors();
+      //printf("processing: %d\n", (*b)->get_id());
+      size_t &b_dom = get<DOM>(idoms[*b]);
+      const vector<BasicBlock*>& predecessors = (*b)->get_predecessors();
 
-      BasicBlock* new_idom = *find_if(begin(predecessors),
+      // first processed predecessor
+      BasicBlock* idom = *find_if(begin(predecessors),
                                       end(predecessors),
-                                      [&dom, undefined_dom] (BasicBlock* pred) {
-                                        return dom[pred] != undefined_dom;
+                                      [&idoms, undefined_dom] (BasicBlock* pred) {
+                                        return get<DOM>(idoms[pred]) != undefined_dom;
                                       });
+      size_t idom_idx = get<INDEX>(idoms[idom]);
 
-      for(auto p = begin(predecessors); p != end(predecessors); p++) {
-        if(new_idom == *p) { continue; }
-        uint32_t &p_dom = dom[*p];
-        if(p_dom != undefined_dom) {
-          new_idom = intersect(postorder, dom, index[*p], index[new_idom]);
+      // all other predecessors
+      for(auto p : predecessors) {
+        if(idom == p) { continue; }
+        if(get<DOM>(idoms[p]) != undefined_dom) {
+          size_t finger1 = get<INDEX>(idoms[p]);
+          size_t finger2 = idom_idx;
+          while(finger1 != finger2) {
+            while (finger1 < finger2) {finger1 = get<DOM>(idoms[postorder[finger1]]);}
+            while (finger2 < finger1) {finger2 = get<DOM>(idoms[postorder[finger2]]);}
+          }
+          idom_idx = finger1;
         }
       }
-      if(b_dom != index[new_idom]) {
-        b_dom = index[new_idom];
+      if(b_dom != idom_idx) {
+        b_dom = idom_idx;
         changed = true;
       }
     }
   }
 
-  return dom;
+  vector<pair<bb_ptr, bb_ptr> > out;
+  for(auto idom : idoms) {
+    // NOTE: performing a const cast for convenience usage with UpdateImmediateDominators
+    out.push_back({const_cast<BasicBlock*>(get<0>(idom)),
+                   const_cast<BasicBlock*>(postorder[get<DOM>(get<1>(idom))])});
+  }
+  return out;
+}
+
+void
+UpdateImmediateDominators(vector<pair<bb_ptr, bb_ptr> >& dom_edges) {
+  for(auto &edge : dom_edges) {
+    get<0>(edge)->SetImmediateDominator(get<1>(edge));
+  }
+}
+
+void printDominatorList(BasicBlock &b) {
+  std::cout << b.get_id() << " is dominated by: ";
+  const BasicBlock* bb = &b;
+  while (bb->GetImmediateDominator() != bb) {
+    bb = bb->GetImmediateDominator();
+    std::cout << bb->get_id() << " ";
+  }
 }
 
 // TODO(umar): Support for merge instructions
 // TODO(umar): Structured control flow checks
 spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
-  SpvOp opcode = inst->opcode;
+  SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   switch (opcode) {
     case SpvOpLabel:
       spvCheckReturn(_.get_functions().RegisterBlock(inst->result_id));

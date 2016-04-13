@@ -184,10 +184,11 @@ spv_result_t spvValidate(const spv_const_context context,
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.
-  vstate.get_functions().printDotGraph();
+  //vstate.get_functions().printDotGraph();
 
   for(auto& block : vstate.get_functions().get_first_blocks()) {
-    libspirv::CalculateDominators(*block);
+    auto edges = libspirv::CalculateDominators(*block);
+    libspirv::UpdateImmediateDominators(edges);
   }
 
   if (vstate.unresolvedForwardIdCount() > 0) {

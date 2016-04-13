@@ -485,7 +485,7 @@ spv_result_t Functions::RegisterBlockEnd(uint32_t next_id) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   tie(tmp, std::ignore) = blocks_.back().insert({next_id, BasicBlock(next_id, module_)});
-  current_block_->RegisterNext(tmp->second);
+  current_block_->RegisterSuccessor(tmp->second);
 
   current_block_ = nullptr;
   return SPV_SUCCESS;
@@ -506,7 +506,7 @@ spv_result_t Functions::RegisterBlockEnd(vector<uint32_t> next_list) {
     next_blocks.push_back(&tmp->second);
   }
 
-  current_block_->RegisterNext(next_blocks);
+  current_block_->RegisterSuccessor(next_blocks);
   current_block_ = nullptr;
   return SPV_SUCCESS;
 }
@@ -517,12 +517,12 @@ BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
   : id_(id)
   , immediate_dominator_(nullptr)
   , predecessors_()
-  , out_blocks_()
+  , successors_()
   , module_(module) {
 }
 
 void BasicBlock::SetImmediateDominator(BasicBlock *dom_block) {
-  immediate_dominator_ = &dom_block;
+  immediate_dominator_ = dom_block;
 }
 
 const BasicBlock* BasicBlock::GetImmediateDominator() const {
@@ -534,25 +534,25 @@ BasicBlock* BasicBlock::GetImmediateDominator(){
 }
 
 void
-BasicBlock::RegisterNext(BasicBlock& next) {
+BasicBlock::RegisterSuccessor(BasicBlock& next) {
   next.predecessors_.push_back(this);
-  out_blocks_.push_back(&next);
+  successors_.push_back(&next);
 }
 
 void
-BasicBlock::RegisterNext(vector<BasicBlock*> next_blocks) {
+BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
   for(auto &block: next_blocks) {
     block->predecessors_.push_back(this);
-    out_blocks_.push_back(block);
+    successors_.push_back(block);
   }
 }
 
 std::ostream& operator<<(std::ostream& os, const BasicBlock &other) {
   os << other.module_.getIdOrName(other.id_) << " -> {";
-  if(other.out_blocks_.empty()) {
+  if(other.successors_.empty()) {
     os << "end";
   } else {
-    for(auto &block : other.out_blocks_) {
+    for(auto &block : other.successors_) {
       os << other.module_.getIdOrName(block->get_id()) << " ";
     }
   }

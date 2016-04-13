@@ -104,35 +104,60 @@ enum class FunctionDecl {
 
 class ValidationState_t;
 
+// This class represents a basic block in a SPIR-V module
 class BasicBlock
 {
 public:
   BasicBlock(uint32_t id, ValidationState_t& module);
 
+  // Returns the id of the BasicBlock
   uint32_t get_id() const {return id_; }
 
+  // Returns the predecessors of the BasicBlock
   const std::vector<BasicBlock*>& get_predecessors() const {return predecessors_; }
+
+  // Returns the predecessors of the BasicBlock
   std::vector<BasicBlock*>&       get_predecessors()       {return predecessors_; }
 
-  const std::vector<BasicBlock*>& get_out_blocks() const {return out_blocks_; }
-  std::vector<BasicBlock*>&       get_out_blocks()       {return out_blocks_; }
+  // Returns the successors of the BasicBlock
+  const std::vector<BasicBlock*>& get_successors() const {return successors_; }
+  std::vector<BasicBlock*>&       get_successors()       {return successors_; }
 
+  // Sets the immedate dominator of this basic block
+  //
+  // @param[in] dom_block The dominator block
   void SetImmediateDominator(BasicBlock* dom_block);
-  BasicBlock* GetImmediateDominator();
-  const BasicBlock *const GetImmediateDominator() const;
 
-  void RegisterNext(BasicBlock& next);
-  void RegisterNext(std::vector<BasicBlock*> next);
+  // Returns the immedate dominator of this basic block
+  //
+  // @return The dominator block
+  BasicBlock* GetImmediateDominator();
+
+  // Returns the immedate dominator of this basic block
+  const BasicBlock * GetImmediateDominator() const;
+
+  // Sets the @p next BasicBlock as the successor of this BasicBlock
+  void RegisterSuccessor(BasicBlock& next);
+
+  // Sets the @p next BasicBlock as the successor of this BasicBlock
+  void RegisterSuccessor(std::vector<BasicBlock*> next);
 
   bool operator==(const BasicBlock &other) const { return other.id_ == id_; }
   bool operator==(const uint32_t &id) const { return id == id_; }
 
   friend std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
 private:
+  // Id of the BasicBlock
   const uint32_t id_;
+
+  // Pointer to the immediate dominator of the BasicBlock
   BasicBlock* immediate_dominator_;
+
+  // The set of predecessors of the BasicBlock
   std::vector<BasicBlock*> predecessors_;
-  std::vector<BasicBlock*> out_blocks_;
+
+  // The set of successors of the BasicBlock
+  std::vector<BasicBlock*> successors_;
   ValidationState_t& module_;
 };
 
@@ -430,8 +455,31 @@ class ValidationState_t {
 };
 
 
-std::unordered_map<BasicBlock*, uint32_t>
-CalculateDominators(BasicBlock &first_block);
+// @brief Calculates dominator edges of a root basic block
+//
+// This function calculates the dominator edges form a root BasicBlock. Uses
+// the dominator algorithm by Cooper et al.
+//
+// @param[in] first_block the root or entry BasicBlock of a function
+//
+// @return a set of dominator edges represented as a pair of blocks
+std::vector< std::pair<BasicBlock*, BasicBlock*> >
+CalculateDominators(const BasicBlock &first_block);
+
+// @brief Updates the immediate dominator for each of the block edges
+//
+// Updates the immediate dominator of the blocks for each of the edges
+// provided by the @p dom_edges parameter
+//
+// @param[in,out] dom_edges The edges of the dominator tree
+void
+UpdateImmediateDominators(std::vector<std::pair<BasicBlock*, BasicBlock*> >& dom_edges);
+
+// @brief Prints all of the dominators of a BasicBlock
+//
+// @param[in] block The dominators of this block will be printed
+void
+printDominatorList(BasicBlock &block);
 
 }  // namespace libspirv
 
