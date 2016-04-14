@@ -15,8 +15,8 @@ also enabling integration into other code bases directly.
 The interfaces are still under development, and are expected to change.
 
 SPIR-V is defined by the Khronos Group Inc.
-See the [SPIR-V Registry](https://www.khronos.org/registry/spir-v/) for the
-SPIR-V specification, headers, and XML registry.
+See the [SPIR-V Registry][spirv-registry] for the SPIR-V specification,
+headers, and XML registry.
 
 ## Supported features
 
@@ -38,12 +38,12 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 ## Source code
 
 The SPIR-V Tools are maintained by members of the The Khronos Group Inc.,
-at [https://github.com/KhronosGroup/SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools).
+at https://github.com/KhronosGroup/SPIRV-Tools.
 
 Contributions via merge request are welcome. Changes should:
 * Be provided under the [Khronos license](#license).
 * Include tests to cover updated functionality.
-* C++ code should follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+* C++ code should follow the [Google C++ Style Guide][cpp-style-guide].
 * Code should be formatted with `clang-format`.  Settings are defined by
   the included [.clang-format](.clang-format) file.
 
@@ -52,22 +52,20 @@ We intend to maintain a linear history on the GitHub `master` branch.
 ### Source code organization
 
 * `external/googletest`: Intended location for the
-  [googletest](https://github.com/google/googletest) sources, not provided
-* `include/` : API clients should add this directory to the include search
-  path
+  [googletest][googletest] sources, not provided
+* `include/`: API clients should add this directory to the include search path
 * `include/spirv-tools/libspirv.h`: C API public interface
 * `include/spirv/` : Contains header files from the SPIR-V Registry, required
   by the public API.
 * `source/`: API implementation
-* `test/`: Tests, using the [googletest](https://github.com/google/googletest)
-  framework.
+* `test/`: Tests, using the [googletest][googletest] framework
 * `tools/`: Command line executables
 
 ### Tests
 
 The project contains a number of tests, used to drive development
 and ensure correctness.  The tests are written using the
-[googletest](https://github.com/google/googletest) framework.  The `googletest`
+[googletest][googletest] framework.  The `googletest`
 source is not provided with this project.  There are two ways to enable
 tests:
 * If SPIR-V Tools is configured as part of an enclosing project, then the
@@ -77,16 +75,14 @@ tests:
   configuring and building the project.
 
 *Note*: You must use a version of googletest that includes
-[a fix](https://github.com/google/googletest/pull/612) for
-[googletest issue 610](https://github.com/google/googletest/issues/610).
+[a fix][googletest-pull-612] for [googletest issue 610][googletest-issue-610].
 The fix is included on the googletest master branch any time after 2015-11-10.
 In particular, googletest must be newer than version 1.7.0.
 
 ## Build
 
-The project uses [CMake](https://cmake.org/) to generate platform-specific
-build configurations.  To generate these build files, issue the following
-commands:
+The project uses [CMake][cmake] to generate platform-specific build
+configurations.  To generate these build files, issue the following commands:
 
 ```
 mkdir <spirv-dir>/build
@@ -104,10 +100,9 @@ The following CMake options are supported:
 * `SPIRV_COLOR_TERMINAL={ON|OFF}`, default `ON` - Enables color console output.
 * `SPIRV_SKIP_EXECUTABLES={ON|OFF}`, default `OFF`- Build only the library, not
   the command line tools.  This will also prevent the tests from being built.
-* `SPIRV_USE_SANITIZER=<sanitizer>`, default is no sanitizing - On UNIX platforms
-  with an appropriate version of `clang` this option enables the use of the
-  sanitizers documented
-  [here](http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation).
+* `SPIRV_USE_SANITIZER=<sanitizer>`, default is no sanitizing - On UNIX
+  platforms with an appropriate version of `clang` this option enables the use
+  of the sanitizers documented [here][clang-sanitizers].
   This should only be used with a debug build.
 * `SPIRV_WARN_EVERYTHING={ON|OFF}`, default `OFF` - On UNIX platforms enable
   more strict warnings.  The code might not compile with this option enabled.
@@ -123,10 +118,10 @@ The following CMake options are supported:
 
 The library provides a C API, but the internals use C++11.
 
-In order to use the library from an application, the include path should point to
-`<spirv-dir>/include`, which will enable the application to include the header
-`<spirv-dir>/include/libspirv/libspirv.h` then linking against the static
-library in `<spirv-build-dir>/libSPIRV-Tools.a` or
+In order to use the library from an application, the include path should point
+to `<spirv-dir>/include`, which will enable the application to include the
+header `<spirv-dir>/include/libspirv/libspirv.h` then linking against the
+static library in `<spirv-build-dir>/libSPIRV-Tools.a` or
 `<spirv-build-dir>/SPIRV-Tools.lib`.
 
 * `SPIRV-Tools` CMake target: Creates the static library:
@@ -250,3 +245,11 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 ```
+
+[spirv-registry]: https://www.khronos.org/registry/spir-v/
+[googletest]: https://github.com/google/googletest
+[googletest-pull-612]: https://github.com/google/googletest/pull/612
+[googletest-issue-610]: https://github.com/google/googletest/issues/610
+[CMake]: https://cmake.org/
+[cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
+[clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
