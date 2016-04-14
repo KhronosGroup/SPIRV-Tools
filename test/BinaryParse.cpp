@@ -31,7 +31,7 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include "gmock/gmock.h"
-#include "spirv/OpenCL.std.h"
+#include "spirv/1.0/OpenCL.std.h"
 
 // Returns true if two spv_parsed_operand_t values are equal.
 // To use this operator, this definition must appear in the same namespace

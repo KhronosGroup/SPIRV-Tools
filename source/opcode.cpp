@@ -42,10 +42,10 @@ namespace {
 // Descriptions of each opcode.  Each entry describes the format of the
 // instruction that follows a particular opcode.
 const spv_opcode_desc_t opcodeTableEntries_1_0[] = {
-#include "core.insts-1-0.inc"
+#include "core.insts-1.0.inc"
 };
 const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
-#include "core.insts-1-1.inc"
+#include "core.insts-1.1.inc"
 };
 
 }  // anonymous namespace

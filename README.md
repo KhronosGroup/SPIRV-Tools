@@ -74,9 +74,9 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `external/googletest`: Intended location for the
   [googletest][googletest] sources, not provided
 * `include/`: API clients should add this directory to the include search path
+* `external/spirv-headers`: Intended location for
+  [SPIR-V headers][spirv-headers], not provided
 * `include/spirv-tools/libspirv.h`: C API public interface
-* `include/spirv/` : Contains header files from the SPIR-V Registry, required
-  by the public API.
 * `source/`: API implementation
 * `test/`: Tests, using the [googletest][googletest] framework
 * `tools/`: Command line executables
@@ -102,7 +102,8 @@ In particular, googletest must be newer than version 1.7.0.
 ## Build
 
 The project uses [CMake][cmake] to generate platform-specific build
-configurations.  To generate these build files, issue the following commands:
+configurations. After checking out [SPIR-V headers][spirv-headers] and
+[googletest][googletest] into `external/`. issue the following commands:
 
 ```
 mkdir <spirv-dir>/build
@@ -267,6 +268,7 @@ MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 ```
 
 [spirv-registry]: https://www.khronos.org/registry/spir-v/
+[spirv-headers]: https://github.com/KhronosGroup/SPIRV-Headers
 [googletest]: https://github.com/google/googletest
 [googletest-pull-612]: https://github.com/google/googletest/pull/612
 [googletest-issue-610]: https://github.com/google/googletest/issues/610

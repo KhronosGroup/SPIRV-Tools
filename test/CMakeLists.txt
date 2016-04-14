@@ -39,6 +39,7 @@ function(add_spvtools_unittest target srcs libs)
   endif()
   target_include_directories(${target} PRIVATE
     ${spirv-tools_SOURCE_DIR}
+    ${SPIRV_HEADER_INCLUDE_DIR}
     ${gtest_SOURCE_DIR}/include
     ${gmock_SOURCE_DIR}/include
   )

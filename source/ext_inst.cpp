@@ -29,18 +29,18 @@
 #include <cassert>
 #include <cstring>
 
-#include "spirv/GLSL.std.450.h"
-#include "spirv/OpenCL.std.h"
+#include "spirv/1.0/GLSL.std.450.h"
+#include "spirv/1.0/OpenCL.std.h"
 #include "spirv_definition.h"
 
 #include "macro.h"
 
 static const spv_ext_inst_desc_t glslStd450Entries_1_0[] = {
-#include "glsl.std.450.insts-1-0.inc"
+#include "glsl.std.450.insts-1.0.inc"
 };
 
 static const spv_ext_inst_desc_t openclEntries_1_0[] = {
-#include "opencl.std.insts-1-0.inc"
+#include "opencl.std.insts-1.0.inc"
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable,

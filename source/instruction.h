@@ -30,7 +30,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "spirv/spirv.h"
+#include "spirv/1.1/spirv.h"
 
 #include "table.h"
 
