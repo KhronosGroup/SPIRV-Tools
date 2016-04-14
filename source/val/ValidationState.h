@@ -37,7 +37,7 @@
 #include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/spirv.h"
+#include "spirv/1.1/spirv.h"
 #include "spirv_definition.h"
 
 namespace libspirv {

@@ -31,7 +31,7 @@ set(GRAMMAR_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_grammar_
 # later used by set_source_files_properties() calls.
 # function() definitions are not suitable because they create new scopes.
 macro(spvtools_core_tables VERSION)
-  set(GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/spirv-${VERSION}.core.grammar.json")
+  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
   set(GRAMMAR_INSTS_INC_FILE "${spirv-tools_BINARY_DIR}/core.insts-${VERSION}.inc")
   set(GRAMMAR_KINDS_INC_FILE "${spirv-tools_BINARY_DIR}/operand.kinds-${VERSION}.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INSTS_INC_FILE} ${GRAMMAR_KINDS_INC_FILE}
@@ -46,8 +46,8 @@ macro(spvtools_core_tables VERSION)
 endmacro(spvtools_core_tables)
 
 macro(spvtools_glsl_tables VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/spirv-${VERSION}.core.grammar.json")
-  set(GLSL_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst-${VERSION}.glsl.std.450.grammar.json")
+  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
+  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts-${VERSION}.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
@@ -60,7 +60,7 @@ macro(spvtools_glsl_tables VERSION)
 endmacro(spvtools_glsl_tables)
 
 macro(spvtools_opencl_tables VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/spirv-${VERSION}.core.grammar.json")
+  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
   set(OPENCL_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst-${VERSION}.opencl.std.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts-${VERSION}.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
@@ -73,10 +73,10 @@ macro(spvtools_opencl_tables VERSION)
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_opencl_tables)
 
-spvtools_core_tables("1-0")
-spvtools_core_tables("1-1")
-spvtools_opencl_tables("1-0")
-spvtools_glsl_tables("1-0")
+spvtools_core_tables("1.0")
+spvtools_core_tables("1.1")
+spvtools_opencl_tables("1.0")
+spvtools_glsl_tables("1.0")
 
 # The following .cpp files include the above generated .inc files.
 # Add those .inc files as their dependencies.
@@ -122,9 +122,6 @@ add_custom_target(spirv-tools-build-version
 
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
-  ${spirv-tools_SOURCE_DIR}/include/spirv/spirv.h
-  ${spirv-tools_SOURCE_DIR}/include/spirv/GLSL.std.450.h
-  ${spirv-tools_SOURCE_DIR}/include/spirv/OpenCL.std.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
@@ -192,6 +189,7 @@ spvtools_default_compile_options(${SPIRV_TOOLS})
 target_include_directories(${SPIRV_TOOLS}
   PUBLIC ${spirv-tools_SOURCE_DIR}/include
   PRIVATE ${spirv-tools_BINARY_DIR}
+  PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
   )
 
 install(TARGETS ${SPIRV_TOOLS}

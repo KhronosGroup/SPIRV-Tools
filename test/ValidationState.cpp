@@ -32,7 +32,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "spirv/spirv.h"
+#include "spirv/1.1/spirv.h"
 #include "val/Construct.h"
 #include "val/Function.h"
 #include "validate.h"

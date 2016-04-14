@@ -28,7 +28,7 @@
 
 #include <gmock/gmock.h>
 #include "TestFixture.h"
-#include "spirv/OpenCL.std.h"
+#include "spirv/1.0/OpenCL.std.h"
 
 namespace {
 

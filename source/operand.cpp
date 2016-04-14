@@ -33,10 +33,10 @@
 
 // Pull in operand info tables automatically generated from JSON grammar.
 namespace v1_0 {
-#include "operand.kinds-1-0.inc"
+#include "operand.kinds-1.0.inc"
 }  // namespace v1_0
 namespace v1_1 {
-#include "operand.kinds-1-1.inc"
+#include "operand.kinds-1.1.inc"
 }  // namespace v1_1
 
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,

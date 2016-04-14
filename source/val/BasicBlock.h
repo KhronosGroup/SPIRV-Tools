@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_VAL_BASICBLOCK_H_
 #define LIBSPIRV_VAL_BASICBLOCK_H_
 
-#include "spirv/spirv.h"
+#include "spirv/1.1/spirv.h"
 
 #include <cstdint>
 #include <vector>

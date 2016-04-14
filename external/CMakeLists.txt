@@ -24,6 +24,20 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+if (DEFINED SPIRV-Headers_SOURCE_DIR)
+  # This allows flexible position of the SPIRV-Headers repo.
+  set(SPIRV_HEADER_DIR ${SPIRV-Headers_SOURCE_DIR})
+else()
+  set(SPIRV_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers)
+endif()
+
+if (IS_DIRECTORY ${SPIRV_HEADER_DIR})
+  set(SPIRV_HEADER_INCLUDE_DIR ${SPIRV_HEADER_DIR}/include PARENT_SCOPE)
+else()
+  message(FATAL_ERROR
+    "SPIRV-Headers was not found - please checkout a copy under external/.")
+endif()
+
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
   # Find gmock if we can. If it's not already configured, then try finding
   # it in external/googletest.
