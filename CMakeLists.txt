@@ -139,41 +139,6 @@ add_custom_target(spirv-tools-build-version
   ${spirv-tools_SOURCE_DIR}
   COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
 
-function(spvtools_core_tables VERSION)
-  add_custom_target(spirv-tools-build-core-tables-${VERSION}
-    ${PYTHON_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-    --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv-${VERSION}.core.grammar.json
-    --core-insts-output=${spirv-tools_BINARY_DIR}/core.insts-${VERSION}.inc
-    --operand-kinds-output=${spirv-tools_BINARY_DIR}/operand.kinds-${VERSION}.inc
-    COMMENT "Generate info tables for SPIR-V v${VERSION} core instructions and operands.")
-endfunction(spvtools_core_tables)
-
-function(spvtools_glsl_tables VERSION)
-  add_custom_target(spirv-tools-build-glsl-tables-${VERSION}
-    ${PYTHON_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-    --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv-${VERSION}.core.grammar.json
-    --extinst-glsl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst-${VERSION}.glsl.std.450.grammar.json
-    --glsl-insts-output=${spirv-tools_BINARY_DIR}/glsl.std.450.insts-${VERSION}.inc
-    COMMENT "Generate info tables for GLSL extended instructions and operands v${VERSION}.")
-endfunction(spvtools_glsl_tables)
-
-function(spvtools_opencl_tables VERSION)
-  add_custom_target(spirv-tools-build-opencl-tables-${VERSION}
-    ${PYTHON_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils/generate_grammar_tables.py
-    --spirv-core-grammar=${spirv-tools_SOURCE_DIR}/source/spirv-${VERSION}.core.grammar.json
-    --extinst-opencl-grammar=${spirv-tools_SOURCE_DIR}/source/extinst-${VERSION}.opencl.std.grammar.json
-    --opencl-insts-output=${spirv-tools_BINARY_DIR}/opencl.std.insts-${VERSION}.inc
-    COMMENT "Generate info tables for OpenCL extended instructions and operands v${VERSION}.")
-endfunction(spvtools_opencl_tables)
-
-spvtools_core_tables("1-0")
-spvtools_core_tables("1-1")
-spvtools_opencl_tables("1-0")
-spvtools_glsl_tables("1-0")
-
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
        "Skip building the executable and tests along with the library"
