@@ -99,7 +99,7 @@ set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
   PROPERTIES OBJECT_DEPENDS "${OPERAND_CPP_DEPENDS}")
 set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   PROPERTIES OBJECT_DEPENDS "${EXTINST_CPP_DEPENDS}")
 
 set(SPIRV_SOURCES
