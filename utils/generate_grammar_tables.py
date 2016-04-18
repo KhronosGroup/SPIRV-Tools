@@ -22,8 +22,10 @@ def make_path_to_file(f):
         f: The file whose ancestor directories are to be created.
     """
     dir = os.path.dirname(os.path.abspath(f))
-    if not os.path.isdir(dir):
+    try:
         os.makedirs(dir)
+    except:
+        pass
 
 
 def populate_capability_bit_mapping_dict(cap_dict):
