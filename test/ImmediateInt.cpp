@@ -30,8 +30,8 @@
 
 #include <gmock/gmock.h>
 
-#include "source/util/bitutils.h"
 #include "TestFixture.h"
+#include "source/util/bitutils.h"
 
 namespace {
 
@@ -46,8 +46,8 @@ using ::testing::StrEq;
 
 TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
   SetText("!0x00FF00FF");
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
-                                         &binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(ScopedContext().context, text.str,
+                                         text.length, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FFu, binary->code[5]);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);
@@ -56,8 +56,8 @@ TEST_F(TextToBinaryTest, ImmediateIntOpCode) {
 
 TEST_F(TextToBinaryTest, ImmediateIntOperand) {
   SetText("OpCapability !0x00FF00FF");
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
-                                         &binary, &diagnostic));
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(ScopedContext().context, text.str,
+                                         text.length, &binary, &diagnostic));
   EXPECT_EQ(0x00FF00FFu, binary->code[6]);
   if (diagnostic) {
     spvDiagnosticPrint(diagnostic);

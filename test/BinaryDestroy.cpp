@@ -43,8 +43,8 @@ TEST_F(BinaryDestroySomething, Default) {
   // Use a binary object constructed by the API instead of rolling our own.
   SetText("OpSource OpenCL_C 120");
   spv_binary my_binary = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, text.str, text.length,
-                                         &my_binary, &diagnostic));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(ScopedContext().context, text.str,
+                                         text.length, &my_binary, &diagnostic));
   ASSERT_NE(nullptr, my_binary);
   spvBinaryDestroy(my_binary);
 }

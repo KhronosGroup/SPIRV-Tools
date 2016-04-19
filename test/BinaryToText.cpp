@@ -415,9 +415,9 @@ OpMemoryModel Logical GLSL450 ; 0x0000001c
 TEST_F(TextToBinaryTest, VersionString) {
   auto words = CompileSuccessfully("");
   spv_text decoded_text = nullptr;
-  EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
-                              SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
-                              &diagnostic),
+  EXPECT_THAT(spvBinaryToText(ScopedContext().context, words.data(),
+                              words.size(), SPV_BINARY_TO_TEXT_OPTION_NONE,
+                              &decoded_text, &diagnostic),
               Eq(SPV_SUCCESS));
   EXPECT_EQ(nullptr, diagnostic);
 
@@ -446,9 +446,9 @@ TEST_P(GeneratorStringTest, Sample) {
       SPV_GENERATOR_WORD(GetParam().generator, GetParam().misc);
 
   spv_text decoded_text = nullptr;
-  EXPECT_THAT(spvBinaryToText(context, words.data(), words.size(),
-                              SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
-                              &diagnostic),
+  EXPECT_THAT(spvBinaryToText(ScopedContext().context, words.data(),
+                              words.size(), SPV_BINARY_TO_TEXT_OPTION_NONE,
+                              &decoded_text, &diagnostic),
               Eq(SPV_SUCCESS));
   EXPECT_THAT(diagnostic, Eq(nullptr));
   EXPECT_THAT(std::string(decoded_text->str), HasSubstr(GetParam().expected));
