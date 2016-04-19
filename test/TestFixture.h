@@ -160,8 +160,9 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text, asserts success, and returns the words representing
   // the instructions.  In particular, skip the words in the SPIR-V header.
-  SpirvVector CompiledInstructions(const std::string& txt) {
-    const SpirvVector code = CompileSuccessfully(txt);
+  SpirvVector CompiledInstructions(const std::string& txt,
+                                   spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
+    const SpirvVector code = CompileSuccessfully(txt, env);
     SpirvVector result;
     // Extract just the instructions.
     // If the code fails to compile, then return the empty vector.

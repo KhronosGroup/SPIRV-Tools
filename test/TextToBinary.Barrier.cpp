@@ -88,20 +88,7 @@ TEST_F(OpMemoryBarrier, BadInvalidMemorySemanticsId) {
 // TODO(dneto): OpGroupUMax
 // TODO(dneto): OpGroupSMax
 
-// Matches if the SpirvVector under test has length+opcode in the first word of
-// the first instruction.
-MATCHER_P2(StartsWith, opcode, length, "") {
-  return arg[TextToBinaryTest::kFirstInstruction] ==
-         spvOpcodeMake(length, opcode);
-}
-
 using NamedMemoryBarrierTest = spvtest::TextToBinaryTest;
-
-TEST_F(NamedMemoryBarrierTest, OpcodeRecognizedInV11) {
-  EXPECT_THAT(CompileSuccessfully("OpMemoryNamedBarrier %bar %scope %semantics",
-                                  SPV_ENV_UNIVERSAL_1_1),
-              StartsWith(SpvOpMemoryNamedBarrier, 4));
-}
 
 TEST_F(NamedMemoryBarrierTest, OpcodeUnrecognizedInV10) {
   EXPECT_THAT(CompileFailure("OpMemoryNamedBarrier %bar %scope %semantics",
@@ -119,6 +106,10 @@ TEST_F(NamedMemoryBarrierTest, ArgumentCount) {
       CompileFailure("OpMemoryNamedBarrier %bar %scope", SPV_ENV_UNIVERSAL_1_1),
       Eq("Expected operand, found end of stream."));
   EXPECT_THAT(
+      CompiledInstructions("OpMemoryNamedBarrier %bar %scope %semantics",
+                           SPV_ENV_UNIVERSAL_1_1),
+      ElementsAre(spvOpcodeMake(4, SpvOpMemoryNamedBarrier), _, _, _));
+  EXPECT_THAT(
       CompileFailure("OpMemoryNamedBarrier %bar %scope %semantics %extra",
                      SPV_ENV_UNIVERSAL_1_1),
       Eq("Expected '=', found end of stream."));
@@ -135,12 +126,6 @@ TEST_F(NamedMemoryBarrierTest, ArgumentTypes) {
 
 using TypeNamedBarrierTest = spvtest::TextToBinaryTest;
 
-TEST_F(TypeNamedBarrierTest, OpcodeRecognizedInV11) {
-  EXPECT_THAT(
-      CompileSuccessfully("%t = OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_1),
-      StartsWith(SpvOpTypeNamedBarrier, 2));
-}
-
 TEST_F(TypeNamedBarrierTest, OpcodeUnrecognizedInV10) {
   EXPECT_THAT(CompileFailure("%t = OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_0),
               Eq("Invalid Opcode name 'OpTypeNamedBarrier'"));
@@ -151,19 +136,15 @@ TEST_F(TypeNamedBarrierTest, ArgumentCount) {
               Eq("Expected <result-id> at the beginning of an instruction, "
                  "found 'OpTypeNamedBarrier'."));
   EXPECT_THAT(
+      CompiledInstructions("%t = OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_1),
+      ElementsAre(spvOpcodeMake(2, SpvOpTypeNamedBarrier), _));
+  EXPECT_THAT(
       CompileFailure("%t = OpTypeNamedBarrier 1 2 3", SPV_ENV_UNIVERSAL_1_1),
       Eq("Expected <opcode> or <result-id> at the beginning of an instruction, "
          "found '1'."));
 }
 
 using NamedBarrierInitializeTest = spvtest::TextToBinaryTest;
-
-TEST_F(NamedBarrierInitializeTest, OpcodeRecognizedInV11) {
-  EXPECT_THAT(
-      CompileSuccessfully("%bar = OpNamedBarrierInitialize %type %count",
-                          SPV_ENV_UNIVERSAL_1_1),
-      StartsWith(SpvOpNamedBarrierInitialize, 4));
-}
 
 TEST_F(NamedBarrierInitializeTest, OpcodeUnrecognizedInV10) {
   EXPECT_THAT(CompileFailure("%bar = OpNamedBarrierInitialize %type %count",
@@ -178,6 +159,10 @@ TEST_F(NamedBarrierInitializeTest, ArgumentCount) {
   EXPECT_THAT(CompileFailure("%bar = OpNamedBarrierInitialize %ype",
                              SPV_ENV_UNIVERSAL_1_1),
               Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompiledInstructions("%bar = OpNamedBarrierInitialize %type %count",
+                           SPV_ENV_UNIVERSAL_1_1),
+      ElementsAre(spvOpcodeMake(4, SpvOpNamedBarrierInitialize), _, _, _));
   EXPECT_THAT(
       CompileFailure("%bar = OpNamedBarrierInitialize %type %count \"extra\"",
                      SPV_ENV_UNIVERSAL_1_1),
