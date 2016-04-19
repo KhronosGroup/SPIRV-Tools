@@ -40,13 +40,17 @@ class TextToBinaryTestBase : public T {
   using SpirvVector = std::vector<uint32_t>;
 
   // Offset into a SpirvVector at which the first instruction starts.
-  const SpirvVector::size_type kFirstInstruction = 5;
+  static const SpirvVector::size_type kFirstInstruction = 5;
 
-  TextToBinaryTestBase()
-      : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
-        diagnostic(nullptr),
-        text(),
-        binary(nullptr) {
+  // RAII for spv_context.
+  struct ScopedContext {
+    ScopedContext(spv_target_env env = SPV_ENV_UNIVERSAL_1_0)
+        : context(spvContextCreate(env)) {}
+    ~ScopedContext() { spvContextDestroy(context); }
+    spv_context context;
+  };
+
+  TextToBinaryTestBase() : diagnostic(nullptr), text(), binary(nullptr) {
     char textStr[] = "substitute the text member variable with your test";
     text = {textStr, strlen(textStr)};
   }
@@ -54,7 +58,6 @@ class TextToBinaryTestBase : public T {
   virtual ~TextToBinaryTestBase() {
     DestroyBinary();
     if (diagnostic) spvDiagnosticDestroy(diagnostic);
-    spvContextDestroy(context);
   }
 
   // Returns subvector v[from:end).
@@ -65,9 +68,11 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text in the given assembly syntax format, asserting
   // compilation success. Returns the compiled code.
-  SpirvVector CompileSuccessfully(const std::string& txt) {
+  SpirvVector CompileSuccessfully(const std::string& txt,
+                                  spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
     spv_result_t status =
-        spvTextToBinary(context, txt.c_str(), txt.size(), &binary, &diagnostic);
+        spvTextToBinary(ScopedContext(env).context, txt.c_str(), txt.size(),
+                        &binary, &diagnostic);
     EXPECT_EQ(SPV_SUCCESS, status) << txt;
     SpirvVector code_copy;
     if (status == SPV_SUCCESS) {
@@ -81,9 +86,11 @@ class TextToBinaryTestBase : public T {
 
   // Compiles SPIR-V text with the given format, asserting compilation failure.
   // Returns the error message(s).
-  std::string CompileFailure(const std::string& txt) {
-    EXPECT_NE(SPV_SUCCESS, spvTextToBinary(context, txt.c_str(), txt.size(),
-                                           &binary, &diagnostic))
+  std::string CompileFailure(const std::string& txt,
+                             spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
+    EXPECT_NE(SPV_SUCCESS,
+              spvTextToBinary(ScopedContext(env).context, txt.c_str(),
+                              txt.size(), &binary, &diagnostic))
         << txt;
     DestroyBinary();
     return diagnostic->error;
@@ -100,8 +107,9 @@ class TextToBinaryTestBase : public T {
   std::string EncodeAndDecodeSuccessfully(const std::string& txt,
                                           uint32_t disassemble_options) {
     DestroyBinary();
-    spv_result_t error =
-        spvTextToBinary(context, txt.c_str(), txt.size(), &binary, &diagnostic);
+    ScopedContext context;
+    spv_result_t error = spvTextToBinary(context.context, txt.c_str(),
+                                         txt.size(), &binary, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
@@ -110,7 +118,7 @@ class TextToBinaryTestBase : public T {
     if (!binary) return "";
 
     spv_text decoded_text;
-    error = spvBinaryToText(context, binary->code, binary->wordCount,
+    error = spvBinaryToText(context.context, binary->code, binary->wordCount,
                             disassemble_options, &decoded_text, &diagnostic);
     if (error) {
       spvDiagnosticPrint(diagnostic);
@@ -137,9 +145,10 @@ class TextToBinaryTestBase : public T {
         spvtest::Concatenate({CompileSuccessfully(txt), words_to_append});
 
     spv_text decoded_text;
-    EXPECT_NE(SPV_SUCCESS, spvBinaryToText(context, code.data(), code.size(),
-                                           SPV_BINARY_TO_TEXT_OPTION_NONE,
-                                           &decoded_text, &diagnostic));
+    EXPECT_NE(SPV_SUCCESS,
+              spvBinaryToText(ScopedContext().context, code.data(), code.size(),
+                              SPV_BINARY_TO_TEXT_OPTION_NONE, &decoded_text,
+                              &diagnostic));
     if (diagnostic) {
       std::string error_message = diagnostic->error;
       spvDiagnosticDestroy(diagnostic);
@@ -174,7 +183,6 @@ class TextToBinaryTestBase : public T {
     binary = nullptr;
   }
 
-  spv_context context;
   spv_diagnostic diagnostic;
 
   std::string textString;

@@ -46,7 +46,7 @@ class Requires : public ::testing::TestWithParam<SpvCapability> {
   spv_opcode_desc_t entry;
 };
 
-TEST_P(Requires, Capabilityabilities) {
+TEST_P(Requires, Capabilities) {
   ASSERT_NE(0, spvOpcodeRequiresCapabilities(&entry));
 }
 
@@ -94,7 +94,7 @@ using OpcodeTableCapabilitiesTest =
 TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
   spv_opcode_table opcodeTable;
   ASSERT_EQ(SPV_SUCCESS,
-            spvOpcodeTableGet(&opcodeTable, SPV_ENV_UNIVERSAL_1_0));
+            spvOpcodeTableGet(&opcodeTable, SPV_ENV_UNIVERSAL_1_1));
   spv_opcode_desc entry;
   ASSERT_EQ(SPV_SUCCESS,
             spvOpcodeTableValueLookup(opcodeTable, GetParam().opcode, &entry));
@@ -133,6 +133,8 @@ INSTANTIATE_TEST_CASE_P(
         ExpectedOpCodeCapabilities{SpvOpFunction, 0},
         ExpectedOpCodeCapabilities{SpvOpConvertFToS, 0},
         ExpectedOpCodeCapabilities{SpvOpEmitStreamVertex,
-                                   mask(SpvCapabilityGeometryStreams)}), );
+                                   mask(SpvCapabilityGeometryStreams)},
+        ExpectedOpCodeCapabilities{SpvOpTypeNamedBarrier,
+                                   mask(SpvCapabilityNamedBarrier)}), );
 
 }  // anonymous namespace

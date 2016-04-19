@@ -29,14 +29,16 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
+using ::testing::ElementsAre;
+using ::testing::Eq;
+using ::testing::_;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
-using ::testing::Eq;
 
 // Test OpMemoryBarrier
 
@@ -85,5 +87,102 @@ TEST_F(OpMemoryBarrier, BadInvalidMemorySemanticsId) {
 // TODO(dneto): OpGroupFMax
 // TODO(dneto): OpGroupUMax
 // TODO(dneto): OpGroupSMax
+
+// Matches if the SpirvVector under test has length+opcode in the first word of
+// the first instruction.
+MATCHER_P2(StartsWith, opcode, length, "") {
+  return arg[TextToBinaryTest::kFirstInstruction] ==
+         spvOpcodeMake(length, opcode);
+}
+
+using NamedMemoryBarrierTest = spvtest::TextToBinaryTest;
+
+TEST_F(NamedMemoryBarrierTest, OpcodeRecognizedInV11) {
+  EXPECT_THAT(CompileSuccessfully("OpMemoryNamedBarrier %bar %scope %semantics",
+                                  SPV_ENV_UNIVERSAL_1_1),
+              StartsWith(SpvOpMemoryNamedBarrier, 4));
+}
+
+TEST_F(NamedMemoryBarrierTest, OpcodeUnrecognizedInV10) {
+  EXPECT_THAT(CompileFailure("OpMemoryNamedBarrier %bar %scope %semantics",
+                             SPV_ENV_UNIVERSAL_1_0),
+              Eq("Invalid Opcode name 'OpMemoryNamedBarrier'"));
+}
+
+TEST_F(NamedMemoryBarrierTest, ArgumentCount) {
+  EXPECT_THAT(CompileFailure("OpMemoryNamedBarrier", SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompileFailure("OpMemoryNamedBarrier %bar", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompileFailure("OpMemoryNamedBarrier %bar %scope", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompileFailure("OpMemoryNamedBarrier %bar %scope %semantics %extra",
+                     SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected '=', found end of stream."));
+}
+
+TEST_F(NamedMemoryBarrierTest, ArgumentTypes) {
+  EXPECT_THAT(CompileFailure("OpMemoryNamedBarrier 123 %scope %semantics",
+                             SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected id to start with %."));
+  EXPECT_THAT(CompileFailure("OpMemoryNamedBarrier %bar %scope \"semantics\"",
+                             SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected id to start with %."));
+}
+
+using TypeNamedBarrierTest = spvtest::TextToBinaryTest;
+
+TEST_F(TypeNamedBarrierTest, OpcodeRecognizedInV11) {
+  EXPECT_THAT(
+      CompileSuccessfully("%t = OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_1),
+      StartsWith(SpvOpTypeNamedBarrier, 2));
+}
+
+TEST_F(TypeNamedBarrierTest, OpcodeUnrecognizedInV10) {
+  EXPECT_THAT(CompileFailure("%t = OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_0),
+              Eq("Invalid Opcode name 'OpTypeNamedBarrier'"));
+}
+
+TEST_F(TypeNamedBarrierTest, ArgumentCount) {
+  EXPECT_THAT(CompileFailure("OpTypeNamedBarrier", SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected <result-id> at the beginning of an instruction, "
+                 "found 'OpTypeNamedBarrier'."));
+  EXPECT_THAT(
+      CompileFailure("%t = OpTypeNamedBarrier 1 2 3", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected <opcode> or <result-id> at the beginning of an instruction, "
+         "found '1'."));
+}
+
+using NamedBarrierInitializeTest = spvtest::TextToBinaryTest;
+
+TEST_F(NamedBarrierInitializeTest, OpcodeRecognizedInV11) {
+  EXPECT_THAT(
+      CompileSuccessfully("%bar = OpNamedBarrierInitialize %type %count",
+                          SPV_ENV_UNIVERSAL_1_1),
+      StartsWith(SpvOpNamedBarrierInitialize, 4));
+}
+
+TEST_F(NamedBarrierInitializeTest, OpcodeUnrecognizedInV10) {
+  EXPECT_THAT(CompileFailure("%bar = OpNamedBarrierInitialize %type %count",
+                             SPV_ENV_UNIVERSAL_1_0),
+              Eq("Invalid Opcode name 'OpNamedBarrierInitialize'"));
+}
+
+TEST_F(NamedBarrierInitializeTest, ArgumentCount) {
+  EXPECT_THAT(
+      CompileFailure("%bar = OpNamedBarrierInitialize", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(CompileFailure("%bar = OpNamedBarrierInitialize %ype",
+                             SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompileFailure("%bar = OpNamedBarrierInitialize %type %count \"extra\"",
+                     SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected <opcode> or <result-id> at the beginning of an instruction, "
+         "found '\"extra\"'."));
+}
 
 }  // anonymous namespace

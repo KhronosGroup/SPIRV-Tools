@@ -63,10 +63,9 @@ int main(int argc, char** argv) {
     if ('-' == cur_arg[0]) {
       if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", kBuildVersion);
-        printf("Targets:\n  %s\n  %s\n  %s\n",
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1));
+        printf("Targets:\n  %s\n  %s\n",
+               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
+               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0));
         return 0;
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);

@@ -123,7 +123,8 @@ INSTANTIATE_TEST_CASE_P(ParseMask, BadFPFastMathMaskParseTest,
 
 TEST_F(TextToBinaryTest, InvalidText) {
   ASSERT_EQ(SPV_ERROR_INVALID_TEXT,
-            spvTextToBinary(context, nullptr, 0, &binary, &diagnostic));
+            spvTextToBinary(ScopedContext().context, nullptr, 0, &binary,
+                            &diagnostic));
   EXPECT_NE(nullptr, diagnostic);
   EXPECT_THAT(diagnostic->error, Eq(std::string("Missing assembly text.")));
 }
@@ -131,16 +132,17 @@ TEST_F(TextToBinaryTest, InvalidText) {
 TEST_F(TextToBinaryTest, InvalidPointer) {
   SetText(
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
-  ASSERT_EQ(
-      SPV_ERROR_INVALID_POINTER,
-      spvTextToBinary(context, text.str, text.length, nullptr, &diagnostic));
+  ASSERT_EQ(SPV_ERROR_INVALID_POINTER,
+            spvTextToBinary(ScopedContext().context, text.str, text.length,
+                            nullptr, &diagnostic));
 }
 
 TEST_F(TextToBinaryTest, InvalidDiagnostic) {
   SetText(
       "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
   ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvTextToBinary(context, text.str, text.length, &binary, nullptr));
+            spvTextToBinary(ScopedContext().context, text.str, text.length,
+                            &binary, nullptr));
 }
 
 TEST_F(TextToBinaryTest, InvalidPrefix) {
