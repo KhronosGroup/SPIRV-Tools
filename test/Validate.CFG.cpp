@@ -43,7 +43,10 @@
 #include "source/diagnostic.h"
 
 using std::array;
+using std::make_pair;
+using std::pair;
 using std::string;
+using std::stringstream;
 using std::vector;
 
 using ::testing::HasSubstr;
@@ -54,28 +57,112 @@ using libspirv::ValidationState_t;
 using ValidateCFG = spvtest::ValidateBase<bool>;
 
 using libspirv::BasicBlock;
-namespace libspirv{
-  vector<const BasicBlock*> PostOrderSort(const BasicBlock &entry, size_t size = 10);
+namespace libspirv {
+vector<const BasicBlock *> PostOrderSort(const BasicBlock &entry,
+                                         size_t size = 10);
 }
 
 namespace {
+
+string nameOps() { return ""; }
+
+template <typename... Args>
+string nameOps(pair<string, string> head, Args... names) {
+  return "OpName %" + head.first + " \"" + head.second + "\"\n" +
+         nameOps(names...);
+}
+
+template <typename... Args>
+string nameOps(string head, Args... names) {
+  return "OpName %" + head + " \"" + head + "\"\n" + nameOps(names...);
+}
+
+class Block {
+  string label_;
+  string body_;
+  SpvOp type_;
+  vector<Block> successors_;
+
+ public:
+  Block(string label, SpvOp type = SpvOpBranch)
+      : label_(label), body_(), type_(type), successors_() {}
+
+  Block &setBody(std::string body) {
+    body_ = body;
+    return *this;
+  }
+
+  operator string() {
+    stringstream out;
+    out << std::setw(8) << "%" + label_ + "  = OpLabel \n";
+    if (!body_.empty()) {
+      out << body_;
+    }
+
+    switch (type_) {
+      case SpvOpBranchConditional:
+        out << "OpBranchConditional %cond ";
+        for (Block &b : successors_) {
+          out << "%" + b.label_ + " ";
+        }
+        break;
+      case SpvOpSwitch: {
+        out << "OpSwitch %one %" + successors_.front().label_ ;
+        stringstream ss;
+        for (size_t i = 1; i < successors_.size(); i++) {
+          ss << " " << i << " %" << successors_[i].label_;
+        }
+        out << ss.str();
+      } break;
+      case SpvOpReturn:
+        out << "OpReturn\n OpFunctionEnd\n";
+        break;
+      case SpvOpBranch:
+        out << "OpBranch %" + successors_.front().label_;
+        break;
+      default:
+        assert(1 != 1 && "Unhandled");
+    }
+    out << "\n";
+
+    return out.str();
+  }
+  friend Block &operator>>(Block &curr, vector<Block> successors);
+  friend Block &operator>>(Block &lhs, Block &successor);
+};
+
+Block &operator>>(Block &lhs, vector<Block> successors) {
+  if (lhs.type_ == SpvOpBranchConditional) {
+    assert(successors.size() == 2);
+  } else if (lhs.type_ == SpvOpSwitch) {
+    assert(successors.size() > 1);
+  }
+  lhs.successors_ = successors;
+  return lhs;
+}
+
+Block &operator>>(Block &lhs, Block &successor) {
+  assert(lhs.type_ == SpvOpBranch);
+  lhs.successors_.push_back(successor);
+  return lhs;
+}
 
 TEST_F(ValidateCFG, PostOrderLinear) {
   vector<BasicBlock> blocks;
   ValidationState_t state(nullptr, context_);
 
-  for(int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
   }
 
-  for(int i = 0; i < 6; i++) {
-    blocks[i].RegisterSuccessor({&blocks[i+1]});
+  for (int i = 0; i < 6; i++) {
+    blocks[i].RegisterSuccessor({&blocks[i + 1]});
   }
 
-  vector<const BasicBlock*> out = PostOrderSort(blocks[0]);
+  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
   vector<uint32_t> gold = {6, 5, 4, 3, 2, 1, 0};
 
-  for(size_t i = 0; i < gold.size(); i++) {
+  for (size_t i = 0; i < gold.size(); i++) {
     ASSERT_EQ(gold[i], out[i]->get_id());
   }
 }
@@ -84,7 +171,7 @@ TEST_F(ValidateCFG, PostOrderWithCycle) {
   vector<BasicBlock> blocks;
   ValidationState_t state(nullptr, context_);
 
-  for(int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
   }
 
@@ -95,11 +182,9 @@ TEST_F(ValidateCFG, PostOrderWithCycle) {
   blocks[5].RegisterSuccessor({&blocks[6]});
   blocks[4].RegisterSuccessor({&blocks[2]});
 
-  vector<const BasicBlock*> out = PostOrderSort(blocks[0]);
-  vector<array<uint32_t, 7>> possible_gold = {
-    {{4, 6, 5, 3, 2, 1, 0}},
-    {{6, 5, 3, 4, 2, 1, 0}}
-  };
+  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
+  vector<array<uint32_t, 7>> possible_gold = {{{4, 6, 5, 3, 2, 1, 0}},
+                                              {{6, 5, 3, 4, 2, 1, 0}}};
 
   ASSERT_TRUE(any_of(begin(possible_gold), end(possible_gold),
                      [&](array<uint32_t, 7> gold) {
@@ -114,7 +199,7 @@ TEST_F(ValidateCFG, PostOrderWithSwitch) {
   vector<BasicBlock> blocks;
   ValidationState_t state(nullptr, context_);
 
-  for(int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
   }
 
@@ -125,22 +210,20 @@ TEST_F(ValidateCFG, PostOrderWithSwitch) {
   blocks[5].RegisterSuccessor({&blocks[6]});
   blocks[4].RegisterSuccessor({&blocks[5]});
 
-  vector<const BasicBlock*> out = PostOrderSort(blocks[0]);
-  vector<std::array<uint32_t, 7>> gold = {
-    {{6, 3, 5, 4, 2, 1, 0}},
-    {{6, 5, 4, 3, 2, 1, 0}}
-  };
+  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
+  vector<std::array<uint32_t, 7>> gold = {{{6, 3, 5, 4, 2, 1, 0}},
+                                          {{6, 5, 4, 3, 2, 1, 0}}};
 
   auto dom = libspirv::CalculateDominators(blocks[0]);
   libspirv::UpdateImmediateDominators(dom);
 
-  //for(auto &block : blocks) {
+  // for(auto &block : blocks) {
   //  printDominatorList(block);
   //  std::cout << std::endl;
   //}
 
-  ASSERT_TRUE(
-      any_of(begin(gold), end(gold), [&out](std::array<uint32_t, 7> &gold_array) {
+  ASSERT_TRUE(any_of(
+      begin(gold), end(gold), [&out](std::array<uint32_t, 7> &gold_array) {
         return std::equal(begin(gold_array), end(gold_array), begin(out),
                           [](uint32_t val, const BasicBlock *block) {
                             return val == block->get_id();
@@ -148,192 +231,233 @@ TEST_F(ValidateCFG, PostOrderWithSwitch) {
       }));
 }
 
+string header =
+    "OpCapability Shader\n"
+    "OpMemoryModel Logical GLSL450\n";
+
+string types_consts =
+    nameOps("voidt", "boolt", "intt", "one", "two", "ptrt", "funct") +
+    "%voidt   = OpTypeVoid\n"
+    "%boolt   = OpTypeBool\n"
+    "%intt    = OpTypeInt 32 1\n"
+    "%one     = OpConstant %intt 1\n"
+    "%two     = OpConstant %intt 2\n"
+    "%ptrt    = OpTypePointer Function %intt\n"
+    "%funct   = OpTypeFunction %voidt\n";
+
 TEST_F(ValidateCFG, Default) {
-  string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpName %loop "loop"
-           OpName %first "first"
-           OpName %cont "cont"
-           OpName %merge "merge"
-           OpName %func "Main"
-%voidt   = OpTypeVoid
-%boolt   = OpTypeBool
-%intt    = OpTypeInt 32 1
-%one     = OpConstant %intt 1
-%two     = OpConstant %intt 2
-%funct   = OpTypeFunction %voidt
-%func    = OpFunction %voidt None %funct
-%first   = OpLabel
-           OpBranch %loop
-%loop    = OpLabel
-%cond    = OpSLessThan %intt %one %two
-           OpLoopMerge %merge %cont None
-           OpBranchConditional %cond %cont %merge
-%cont    = OpLabel
-           OpNop
-           OpBranch %loop
-%merge   = OpLabel
-           OpNop
-           OpReturn
-           OpFunctionEnd
-  )";
+  Block first("first");
+  Block loop("loop", SpvOpBranchConditional);
+  Block cont("cont");
+  Block merge("merge", SpvOpReturn);
+
+  loop.setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %merge %cont None\n");
+
+  string str = header + nameOps("loop", "first", "cont", "merge",
+                                make_pair("func", "Main")) +
+               types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += first >> loop;
+  str += loop >> vector<Block>({cont, merge});
+  str += cont >> loop;
+  str += merge;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateCFG, Variable) {
-    string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpName %func "Main"
-%voidt   = OpTypeVoid
-%boolt   = OpTypeBool
-%intt    = OpTypeInt 32 1
-%ptrt    = OpTypePointer Function %intt
-%one     = OpConstant %intt 1
-%two     = OpConstant %intt 2
-%funct   = OpTypeFunction %voidt
-%func    = OpFunction %voidt None %funct
-%first   = OpLabel
-%var     = OpVariable %ptrt Function
-           OpBranch %loop
-%loop    = OpLabel
-%cond    = OpSLessThan %intt %one %two
-           OpLoopMerge %merge %cont None
-           OpBranchConditional %cond %cont %merge
-%cont    = OpLabel
-           OpNop
-           OpBranch %loop
-%merge   = OpLabel
-           OpNop
-           OpReturn
-           OpFunctionEnd
-  )";
+  Block entry("entry");
+  Block cont("cont");
+  Block exit("exit", SpvOpReturn);
+
+  entry.setBody("%var = OpVariable %ptrt Function\n");
+
+  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+               " %func    = OpFunction %voidt None %funct\n";
+  str += entry >> cont;
+  str += cont >> exit;
+  str += exit;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
-  string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpName %func "Main"
-%voidt   = OpTypeVoid
-%boolt   = OpTypeBool
-%intt    = OpTypeInt 32 1
-%ptrt    = OpTypePointer Function %intt
-%one     = OpConstant %intt 1
-%two     = OpConstant %intt 2
-%funct   = OpTypeFunction %voidt
-%func    = OpFunction %voidt None %funct
-%first   = OpLabel
-           OpBranch %loop
-%loop    = OpLabel
-%varbad  = OpVariable %ptrt Function   ;Varaible not in first block
-%cond    = OpSLessThan %intt %one %two
-           OpLoopMerge %merge %cont None
-           OpBranchConditional %cond %cont %merge
-%cont    = OpLabel
-           OpNop
-           OpBranch %loop
-%merge   = OpLabel
-           OpNop
-           OpReturn
-           OpFunctionEnd
-  )";
+  Block entry("entry");
+  Block cont("cont");
+  Block exit("exit", SpvOpReturn);
+
+  // This operation should only be performed in the entry block
+  cont.setBody("%var = OpVariable %ptrt Function\n");
+
+  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+               " %func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> cont;
+  str += cont >> exit;
+  str += exit;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, NonDominantContinueConstruct) {
-  string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpName %func "Main"
-%voidt   = OpTypeVoid
-%boolt   = OpTypeBool
-%intt    = OpTypeInt 32 1
-%one     = OpConstant %intt 1
-%two     = OpConstant %intt 2
-%funct   = OpTypeFunction %voidt
-%func    = OpFunction %voidt None %funct
+TEST_F(ValidateCFG, DISABLED_NonInlineBlock) {
+  Block entry("entry");
+  Block cont("cont");
+  Block loop("loop", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
 
-%first   = OpLabel
-           OpBranch %loop
+  loop.setBody(R"(
+ %cond    = OpSLessThan %intt %one %two
+            OpLoopMerge %merge %cont None
 
-%cont    = OpLabel
-           OpNop
-           OpBranch %loop
+)");
 
-%loop    = OpLabel
-%cond    = OpSLessThan %intt %one %two
-           OpLoopMerge %merge %cont None
-           OpBranchConditional %cond %cont %merge
+  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
 
-%merge   = OpLabel
-           OpNop
-           OpReturn
-
-           OpFunctionEnd
-  )";
+  str += entry >> loop;
+  str += cont >> loop;
+  str += loop >> vector<Block>({cont, merge});
+  str += merge;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
-    string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpName %func "Main"
-%voidt   = OpTypeVoid
-%boolt   = OpTypeBool
-%intt    = OpTypeInt 32 1
-%one     = OpConstant %intt 1
-%two     = OpConstant %intt 2
-%funct   = OpTypeFunction %voidt
-%func    = OpFunction %voidt None %funct
+  Block entry("entry");
+  Block loop("loop", SpvOpBranch);
+  Block badhead("badhead", SpvOpBranchConditional);
+  Block t("t");
+  Block f("f");
+  Block cont("cont");
+  Block merge("merge");
+  Block end("end", SpvOpReturn);
 
-%first   = OpLabel
-           OpBranch %loop
+  // cannot share the same merge
+  loop.setBody(
+      " %cond2   = OpSLessThan %intt %one %two\n"
+      " OpLoopMerge %merge %cont None\n");
+  badhead.setBody(
+      " %cond1   = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %merge None\n");
 
-%loop    = OpLabel
-%cond2   = OpSLessThan %intt %one %two
-           OpLoopMerge %merge1 %cont None
-           OpBranch %badhead
+  string str = header
+             + nameOps(make_pair("func", "Main"))
+             + types_consts
+             + "%func    = OpFunction %voidt None %funct\n";
 
-%badhead = OpLabel
-%cond1   = OpSLessThan %intt %one %two
-           OpSelectionMerge %merge1 None    ; cannot share the same merge
-           OpBranchConditional %cond1 %t %f
-
-%t       = OpLabel
-           OpBranch %merge1
-%f       = OpLabel
-           OpBranch %cont
-
-%cont    = OpLabel
-           OpNop
-           OpBranch %loop
-
-%merge1  = OpLabel
-           OpNop
-           OpBranch %end
-
-%end     = OpLabel
-           OpReturn
-
-           OpFunctionEnd
-  )";
+  str += entry >> loop;
+  str += loop >> badhead;
+  str += badhead >> vector<Block>({t, f});
+  str += t >> merge;
+  str += f >> cont;
+  str += cont >> loop;
+  str += merge >> end;
+  str += end;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
+  Block entry("entry");
+  Block bad("bad");
+  Block end("end", SpvOpReturn);
+  string str = header
+             + nameOps(make_pair("func", "Main"))
+             + types_consts
+    + "%func    = OpFunction %voidt None %funct\n";
 
-// TODO(umar): Test optional instructions
+  str += entry >> bad;
+  str += bad >> entry; // Cannot target entry block
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
+  Block entry("entry");
+  Block bad("bad", SpvOpBranchConditional);
+  Block f("f");
+  Block merge("merge");
+  Block end("end", SpvOpReturn);
+
+  bad.setBody(" %cond    = OpSLessThan %intt %one %two\n"
+              "OpLoopMerge %merge %cont None\n");
+
+  string str = header
+             + nameOps(make_pair("func", "Main"))
+             + types_consts
+             + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> bad;
+  str += bad >> vector<Block>({entry, f}); // cannot target entry block
+  str += f >> merge;
+  str += merge >> end;
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
+  Block entry("entry");
+  Block bad("bad", SpvOpBranchConditional);
+  Block t("t");
+  Block merge("merge");
+  Block end("end", SpvOpReturn);
+
+  bad.setBody("%cond    = OpSLessThan %intt %one %two\n"
+              "OpLoopMerge %merge %cont None\n");
+
+  string str = header
+             + nameOps(make_pair("func", "Main"))
+             + types_consts
+             + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> bad;
+  str += bad >> vector<Block>({t, entry});
+  str += merge >> end;
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
+  Block entry("entry");
+  Block bad("bad", SpvOpSwitch);
+  Block block1("block1");
+  Block block2("block2");
+  Block block3("block3");
+  Block def("def"); // default block
+  Block merge("merge");
+  Block end("end", SpvOpReturn);
+
+  bad.setBody("OpSelectionMerge %merge None\n");
+
+  string str = header
+             + nameOps(make_pair("func", "Main"))
+             + types_consts
+             + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> bad;
+  str += bad >> vector<Block>({def, block1, block2, block3, entry});
+  str += def >> merge;
+  str += block1 >> merge;
+  str += block2 >> merge;
+  str += block3 >> merge;
+  str += merge >> end;
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
 }

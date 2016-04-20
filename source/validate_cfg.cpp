@@ -173,6 +173,27 @@ void printDominatorList(BasicBlock &b) {
   }
 }
 
+#define CFG_ASSERT(ASSERT_FUNC, TARGET)                         \
+  if(spv_result_t rcode = ASSERT_FUNC(_, TARGET)) return rcode
+
+
+spv_result_t
+FirstBlockAssert(ValidationState_t& _, uint32_t target) {
+  if(_.get_functions().isFirstBlock(target)) {
+    return _.diag(SPV_ERROR_INVALID_CFG) << "First block cannot be a target of any branch";
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t
+MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
+  if(_.get_functions().IsMergeBlock(merge_block)) {
+    return _.diag(SPV_ERROR_INVALID_CFG)
+      << "Block " << _.getIdName(merge_block) << " is already a merge block for another header";
+  }
+  return SPV_SUCCESS;
+}
+
 // TODO(umar): Support for merge instructions
 // TODO(umar): Structured control flow checks
 spv_result_t CfgPass(ValidationState_t& _,
@@ -186,30 +207,27 @@ spv_result_t CfgPass(ValidationState_t& _,
       // TODO(umar): mark current block as a loop header
       uint32_t merge_block = inst->words[inst->operands[0].offset];
       uint32_t continue_block = inst->words[inst->operands[1].offset];
-
-      if(_.get_functions().IsMergeBlock(merge_block)) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-          << "Block " << _.getIdName(merge_block) << " is already a merge block for another header";
-      }
+      CFG_ASSERT(MergeBlockAssert, merge_block);
 
       spvCheckReturn(_.get_functions().RegisterLoopMerge(merge_block, continue_block));
     } break;
     case SpvOpSelectionMerge: {
       uint32_t merge_block = inst->words[inst->operands[0].offset];
-
-      if(_.get_functions().IsMergeBlock(merge_block)) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-          << "Block " << _.getIdName(merge_block) << " is already a merge block for another header";
-      }
+      CFG_ASSERT(MergeBlockAssert, merge_block);
 
       spvCheckReturn(_.get_functions().RegisterSelectionMerge(merge_block));
     } break;
-    case SpvOpBranch:
-      spvCheckReturn(_.get_functions().RegisterBlockEnd(inst->words[inst->operands[0].offset]));
-      break;
+    case SpvOpBranch: {
+      uint32_t target = inst->words[inst->operands[0].offset];
+      CFG_ASSERT(FirstBlockAssert, target);
+
+      spvCheckReturn(_.get_functions().RegisterBlockEnd(target));
+    } break;
     case SpvOpBranchConditional: {
       uint32_t tlabel = inst->words[inst->operands[1].offset];
       uint32_t flabel = inst->words[inst->operands[2].offset];
+      CFG_ASSERT(FirstBlockAssert, tlabel);
+      CFG_ASSERT(FirstBlockAssert, flabel);
 
       spvCheckReturn(_.get_functions().RegisterBlockEnd({tlabel, flabel}));
     } break;
@@ -217,7 +235,9 @@ spv_result_t CfgPass(ValidationState_t& _,
     case SpvOpSwitch: {
       vector<uint32_t> cases((inst->num_operands - 2) / 2);
         for(int i = 3; i < inst->num_operands; i += 2) {
-          cases.push_back(inst->words[inst->operands[i].offset]);
+          uint32_t target = inst->words[inst->operands[i].offset];
+          CFG_ASSERT(FirstBlockAssert, target);
+          cases.push_back(target);
         }
         spvCheckReturn(_.get_functions().RegisterBlockEnd(cases));
     } break;
