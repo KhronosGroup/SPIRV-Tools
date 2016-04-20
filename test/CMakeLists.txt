@@ -79,6 +79,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Miscellaneous.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.ModeSetting.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.TypeDeclaration.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.SubgroupDispatch.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextWordGet.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
