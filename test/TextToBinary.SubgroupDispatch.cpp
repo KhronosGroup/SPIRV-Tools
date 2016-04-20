@@ -34,16 +34,66 @@
 
 namespace {
 
+using ::testing::AllOf;
 using ::testing::Eq;
+using ::testing::Matcher;
+using ::testing::Property;
+using ::testing::SizeIs;
+using std::vector;
 
-using OpGetKernelLocalSizeForSubgroupCount = spvtest::TextToBinaryTest;
+// Creates a matcher of SPIR-V word vectors that matches a single instruction
+// with the given opcode and length. TODO(dekimir): move this into TestFixture
+// and DRY other tests that perform this match in longhand.
+Matcher<vector<uint32_t>> IsOpcode(SpvOp opcode, uint16_t length) {
+  return AllOf(SizeIs(length), Property(&vector<uint32_t>::front,
+                                        spvOpcodeMake(length, opcode)));
+}
 
-TEST_F(OpGetKernelLocalSizeForSubgroupCount, OpcodeUnrecognizedInV10) {
+using OpGetKernelLocalSizeForSubgroupCountTest = spvtest::TextToBinaryTest;
+
+TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, OpcodeUnrecognizedInV10) {
   EXPECT_THAT(
       CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount %type "
                      "%sgcount %invoke %param %param_size %param_align",
                      SPV_ENV_UNIVERSAL_1_0),
       Eq("Invalid Opcode name 'OpGetKernelLocalSizeForSubgroupCount'"));
+}
+
+TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, ArgumentCount) {
+  EXPECT_THAT(CompileFailure("OpGetKernelLocalSizeForSubgroupCount",
+                             SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected <result-id> at the beginning of an instruction, "
+                 "found 'OpGetKernelLocalSizeForSubgroupCount'."));
+  EXPECT_THAT(CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount",
+                             SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(CompileFailure(
+                  "%res = OpGetKernelLocalSizeForSubgroupCount %1 %2 %3 %4 %5",
+                  SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected operand, found end of stream."));
+  EXPECT_THAT(
+      CompiledInstructions("%res = OpGetKernelLocalSizeForSubgroupCount %type "
+                           "%sgcount %invoke %param %param_size %param_align",
+                           SPV_ENV_UNIVERSAL_1_1),
+      IsOpcode(SpvOpGetKernelLocalSizeForSubgroupCount, 8));
+  EXPECT_THAT(
+      CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount %type "
+                     "%sgcount %invoke %param %param_size %param_align %extra",
+                     SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected '=', found end of stream."));
+}
+
+TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, ArgumentTypes) {
+  EXPECT_THAT(
+      CompileFailure(
+          "%res = OpGetKernelLocalSizeForSubgroupCount 1 %2 %3 %4 %5 %6",
+          SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected id to start with %."));
+  EXPECT_THAT(
+      CompileFailure(
+          "%res = OpGetKernelLocalSizeForSubgroupCount %1 %2 %3 %4 %5 \"abc\"",
+          SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected id to start with %."));
 }
 
 }  // anonymous namespace
