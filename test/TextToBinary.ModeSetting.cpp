@@ -29,8 +29,8 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
@@ -140,22 +140,30 @@ TEST_F(OpEntryPointTest, WrongModel) {
 
 // Test OpExecutionMode
 
-using OpExecutionModeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<SpvExecutionMode>>>;
+template <spv_target_env env>
+class OpExecutionModeTest
+    : public spvtest::TextToBinaryTestBase<
+          ::testing::TestWithParam<EnumCase<SpvExecutionMode>>> {
+ protected:
+  spv_target_env env_ = env;
+};
 
-TEST_P(OpExecutionModeTest, AnyExecutionMode) {
+using OpExecutionModeTestV10 = OpExecutionModeTest<SPV_ENV_UNIVERSAL_1_0>;
+using OpExecutionModeTestV11 = OpExecutionModeTest<SPV_ENV_UNIVERSAL_1_1>;
+
+TEST_P(OpExecutionModeTestV10, AnyExecutionMode) {
   // This string should assemble, but should not validate.
   std::stringstream input;
   input << "OpExecutionMode %1 " << GetParam().name();
   for (auto operand : GetParam().operands()) input << " " << operand;
-  EXPECT_THAT(CompiledInstructions(input.str()),
+  EXPECT_THAT(CompiledInstructions(input.str(), env_),
               Eq(MakeInstruction(SpvOpExecutionMode, {1, GetParam().value()},
                                  GetParam().operands())));
 }
 
 #define CASE(NAME) SpvExecutionMode##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(
-    TextToBinaryExecutionMode, OpExecutionModeTest,
+    TextToBinaryExecutionMode, OpExecutionModeTestV10,
     ::testing::ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
         // The operand literal values are arbitrarily chosen,
         // but there are the right number of them.
@@ -190,15 +198,26 @@ INSTANTIATE_TEST_CASE_P(
         {CASE(OutputTriangleStrip), {}},
         {CASE(VecTypeHint), {96}},
         {CASE(ContractionOff), {}},
-    }),);
+    }), );
+
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryExecutionMode, OpExecutionModeTestV11,
+    ::testing::ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
+        {CASE(SubgroupSize), {12}},
+        {CASE(SubgroupsPerWorkgroup), {64}},
+        {CASE(LocalSize), {64, 1, 2}},
+        {CASE(LocalSizeHint), {8, 2, 4}},
+        {CASE(Quads), {}},
+        {CASE(Isolines), {}},
+        {CASE(OutputVertices), {21}}}), );
 #undef CASE
 
-TEST_F(OpExecutionModeTest, WrongMode) {
+TEST_F(OpExecutionModeTestV10, WrongMode) {
   EXPECT_THAT(CompileFailure("OpExecutionMode %1 xxyyzz"),
               Eq("Invalid execution mode 'xxyyzz'."));
 }
 
-TEST_F(OpExecutionModeTest, TooManyModes) {
+TEST_F(OpExecutionModeTestV10, TooManyModes) {
   EXPECT_THAT(CompileFailure("OpExecutionMode %1 Xfb PointMode"),
               Eq("Expected <opcode> or <result-id> at the beginning of an "
                  "instruction, found 'PointMode'."));
