@@ -41,7 +41,7 @@ struct EnumCapabilityCase {
 template <spv_target_env env>
 class EnumCapabilityTest : public ::testing::TestWithParam<EnumCapabilityCase> {
  protected:
-  spv_target_env env_ = env;  // Target environment to use in tests.
+  const spv_target_env env_ = env;  // Target environment to use in tests.
 };
 
 using EnumCapabilityTestV10 = EnumCapabilityTest<SPV_ENV_UNIVERSAL_1_0>;

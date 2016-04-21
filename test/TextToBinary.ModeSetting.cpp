@@ -145,7 +145,7 @@ class OpExecutionModeTest
     : public spvtest::TextToBinaryTestBase<
           ::testing::TestWithParam<EnumCase<SpvExecutionMode>>> {
  protected:
-  spv_target_env env_ = env;
+  const spv_target_env env_ = env;
 };
 
 using OpExecutionModeTestV10 = OpExecutionModeTest<SPV_ENV_UNIVERSAL_1_0>;
@@ -203,8 +203,10 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryExecutionMode, OpExecutionModeTestV11,
     ::testing::ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
+        // New in v1.1:
         {CASE(SubgroupSize), {12}},
         {CASE(SubgroupsPerWorkgroup), {64}},
+        // Spot checks for a few v1.0 modes:
         {CASE(LocalSize), {64, 1, 2}},
         {CASE(LocalSizeHint), {8, 2, 4}},
         {CASE(Quads), {}},
