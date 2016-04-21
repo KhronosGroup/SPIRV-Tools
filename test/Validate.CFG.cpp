@@ -305,6 +305,7 @@ TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("first block"));
 }
 
 TEST_F(ValidateCFG, DISABLED_NonInlineBlock) {
@@ -350,7 +351,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
       "OpSelectionMerge %merge None\n");
 
   string str = header
-             + nameOps(make_pair("func", "Main"))
+             + nameOps("merge", make_pair("func", "Main"))
              + types_consts
              + "%func    = OpFunction %voidt None %funct\n";
 
@@ -365,6 +366,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("merge"));
 }
 
 TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
@@ -382,6 +384,7 @@ TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
@@ -407,6 +410,7 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
@@ -431,6 +435,7 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
 }
 
 TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
@@ -461,6 +466,7 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
 }
 
 }
