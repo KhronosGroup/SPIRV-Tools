@@ -46,14 +46,11 @@ using spvutils::BitwiseCast;
 using spvutils::FloatProxy;
 using spvutils::HexFloat;
 
-/// @brief Advance text to the start of the next line
-///
-/// @param[in] text to be parsed
-/// @param[in,out] position position text has been advanced to
-///
-/// @return result code
+// Advances |text| to the start of the next line and writes the new position to
+// |position|.
 spv_result_t advanceLine(spv_text text, spv_position position) {
   while (true) {
+    if (position->index >= text->length) return SPV_END_OF_STREAM;
     switch (text->str[position->index]) {
       case '\0':
         return SPV_END_OF_STREAM;
@@ -70,15 +67,11 @@ spv_result_t advanceLine(spv_text text, spv_position position) {
   }
 }
 
-/// @brief Advance text to first non white space character
-/// If a null terminator is found during the text advance SPV_END_OF_STREAM is
-/// returned, SPV_SUCCESS otherwise. No error checking is performed on the
-/// parameters, its the users responsibility to ensure these are non null.
-///
-/// @param[in] text to be parsed
-/// @param[in,out] position text has been advanced to
-///
-/// @return result code
+// Advances |text| to first non white space character and writes the new
+// position to |position|.
+// If a null terminator is found during the text advance, SPV_END_OF_STREAM is
+// returned, SPV_SUCCESS otherwise. No error checking is performed on the
+// parameters, its the users responsibility to ensure these are non null.
 spv_result_t advance(spv_text text, spv_position position) {
   // NOTE: Consume white space, otherwise don't advance.
   if (position->index >= text->length) return SPV_END_OF_STREAM;

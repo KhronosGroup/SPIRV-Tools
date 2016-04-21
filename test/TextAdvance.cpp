@@ -88,6 +88,14 @@ TEST(TextAdvance, NullTerminator) {
   ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
 }
 
+TEST(TextAdvance, NoNullTerminatorAfterCommentLine) {
+  std::string input = "; comment|padding beyond the end";
+  spv_text_t text = {input.data(), 9};
+  AssemblyContext data(&text, nullptr);
+  ASSERT_EQ(SPV_END_OF_STREAM, data.advance());
+  EXPECT_EQ(9u, data.position().index);
+}
+
 TEST(TextAdvance, NoNullTerminator) {
   spv_text_t text = {"OpNop\nSomething else in memory", 6};
   AssemblyContext data(&text, nullptr);
