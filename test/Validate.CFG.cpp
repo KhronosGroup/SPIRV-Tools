@@ -40,6 +40,7 @@
 #include "UnitSPIRV.h"
 #include "source/validate.h"
 #include "ValidateFixtures.h"
+#include "TestFixture.h"
 #include "source/diagnostic.h"
 
 using std::array;
@@ -57,6 +58,8 @@ using libspirv::ValidationState_t;
 using ValidateCFG = spvtest::ValidateBase<bool>;
 
 using libspirv::BasicBlock;
+using spvtest::ScopedContext;
+
 namespace libspirv {
 vector<const BasicBlock *> PostOrderSort(const BasicBlock &entry,
                                          size_t size = 10);
@@ -149,7 +152,7 @@ Block &operator>>(Block &lhs, Block &successor) {
 
 TEST_F(ValidateCFG, PostOrderLinear) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, context_);
+  ValidationState_t state(nullptr, ScopedContext().context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
@@ -169,7 +172,7 @@ TEST_F(ValidateCFG, PostOrderLinear) {
 
 TEST_F(ValidateCFG, PostOrderWithCycle) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, context_);
+  ValidationState_t state(nullptr, ScopedContext().context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
@@ -197,7 +200,7 @@ TEST_F(ValidateCFG, PostOrderWithCycle) {
 
 TEST_F(ValidateCFG, PostOrderWithSwitch) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, context_);
+  ValidationState_t state(nullptr, ScopedContext().context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);

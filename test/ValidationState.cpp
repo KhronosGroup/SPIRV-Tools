@@ -63,27 +63,27 @@ class ValidationState_HasAnyOfTest : public ValidationStateTest {
 
 TEST_F(ValidationState_HasAnyOfTest, EmptyMask) {
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityMatrix);
+  state_.RegisterCapability(SpvCapabilityMatrix);
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityImageMipmap);
+  state_.RegisterCapability(SpvCapabilityImageMipmap);
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityPipes);
+  state_.RegisterCapability(SpvCapabilityPipes);
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityStorageImageArrayDynamicIndexing);
+  state_.RegisterCapability(SpvCapabilityStorageImageArrayDynamicIndexing);
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityClipDistance);
+  state_.RegisterCapability(SpvCapabilityClipDistance);
   EXPECT_TRUE(state_.HasAnyOf(0));
-  state_.registerCapability(SpvCapabilityStorageImageWriteWithoutFormat);
+  state_.RegisterCapability(SpvCapabilityStorageImageWriteWithoutFormat);
   EXPECT_TRUE(state_.HasAnyOf(0));
 }
 
 TEST_F(ValidationState_HasAnyOfTest, SingleCapMask) {
   EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
   EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
-  state_.registerCapability(SpvCapabilityMatrix);
+  state_.RegisterCapability(SpvCapabilityMatrix);
   EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
   EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
-  state_.registerCapability(SpvCapabilityImageMipmap);
+  state_.RegisterCapability(SpvCapabilityImageMipmap);
   EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
   EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
 }
@@ -95,7 +95,7 @@ TEST_F(ValidationState_HasAnyOfTest, MultiCapMask) {
                            SpvCapabilityGeometryStreams});
   EXPECT_FALSE(state_.HasAnyOf(mask1));
   EXPECT_FALSE(state_.HasAnyOf(mask2));
-  state_.registerCapability(SpvCapabilityImageBuffer);
+  state_.RegisterCapability(SpvCapabilityImageBuffer);
   EXPECT_TRUE(state_.HasAnyOf(mask1));
   EXPECT_FALSE(state_.HasAnyOf(mask2));
 }

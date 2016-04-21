@@ -201,26 +201,17 @@ std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
 // This class manages all function declaration and definitions in a module. It
 // handles the state and id information while parsing a function in the SPIR-V
 // binary.
-//
-// NOTE: This class is designed to be a Structure of Arrays. Therefore each
-// member variable is a vector whose elements represent the values for the
-// corresponding function in a SPIR-V module. Variables that are not vector
-// types are used to manage the state while parsing the function.
-class Functions {
+class Function {
  public:
-  explicit Functions(ValidationState_t& module);
+  Function(
+           uint32_t id, uint32_t result_type_id,
+           SpvFunctionControlMask function_control,
+           uint32_t function_type_id,
+           ValidationState_t& module);
 
-  // Registers the function in the module. Subsequent instructions will be
-  // called against this function
-  spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
-                                uint32_t function_control,
-                                uint32_t function_type_id);
 
   // Registers a function parameter in the current function
   spv_result_t RegisterFunctionParameter(uint32_t id, uint32_t type_id);
-
-  // Register a function end instruction
-  spv_result_t RegisterFunctionEnd();
 
   // Sets the declaration type of the current function
   spv_result_t RegisterSetFunctionDeclType(FunctionDecl type);
@@ -251,14 +242,10 @@ class Functions {
 
   bool isFirstBlock(uint32_t id) const;
 
-  std::vector<BasicBlock*>& get_first_blocks() { return first_blocks_; }
+  BasicBlock* get_first_block() { return first_block_; }
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
-
-  // Returns true if called after a function instruction but before the
-  // function end instruction
-  bool in_function_body() const;
 
   // Returns true if called after a label instruction but before a branch
   // instruction
@@ -276,35 +263,39 @@ class Functions {
   ValidationState_t& module_;
 
   // Function IDs in a module
-  std::vector<uint32_t> id_;
+  uint32_t id_;
 
-  // OpTypeFunction IDs of each of the id_ functions
-  std::vector<uint32_t> type_id_;
+  // The type of the function
+  uint32_t function_type_id_;
+
+  // The type of the return value
+  uint32_t result_type_id_;
+
+  SpvFunctionControlMask function_control_;
 
   // The type of declaration of each function
-  std::vector<FunctionDecl> declaration_type_;
+  FunctionDecl declaration_type_;
+
 
   // TODO(umar): Probably needs better abstractions
 
   // The first BasicBlock in a function
-  std::vector<BasicBlock*> first_blocks_;
+  BasicBlock* first_block_;
 
   // The beginning of the block of functions
-  std::vector<std::unordered_map<uint32_t, BasicBlock>> blocks_;
+  std::unordered_map<uint32_t, BasicBlock> blocks_;
 
   // The block that is currently being parsed
   BasicBlock* current_block_;
 
-  std::vector<CFConstructs> cfg_constructs_;
+  CFConstructs cfg_constructs_;
 
   // The variable IDs of the functions
-  std::vector<std::vector<uint32_t>> variable_ids_;
+  std::vector<uint32_t> variable_ids_;
 
   // The function parameter ids of the functions
-  std::vector<std::vector<uint32_t>> parameter_ids_;
+  std::vector<uint32_t> parameter_ids_;
 
-  // NOTE: See correspoding getter functions
-  bool in_function_;
 };
 
 class ValidationState_t {
@@ -352,7 +343,10 @@ class ValidationState_t {
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
   // Returns the function states
-  Functions& get_functions();
+  std::vector<Function>& get_functions();
+
+  // Returns the function states
+  Function& get_current_function();
 
   // Returns true if the called after a function instruction but before the
   // function end instruction
@@ -401,7 +395,17 @@ class ValidationState_t {
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
   // Registers the capability and its dependent capabilities
-  void registerCapability(SpvCapability cap);
+  void RegisterCapability(SpvCapability cap);
+
+  // Registers the function in the module. Subsequent instructions will be
+  // called against this function
+  spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
+                                SpvFunctionControlMask function_control,
+                                uint32_t function_type_id);
+
+  // Register a function end instruction
+  spv_result_t RegisterFunctionEnd();
+
 
   // Returns true if the capability is enabled in the module.
   bool hasCapability(SpvCapability cap) const;
@@ -437,7 +441,7 @@ class ValidationState_t {
   // The section of the code being processed
   ModuleLayoutSection current_layout_section_;
 
-  Functions module_functions_;
+  std::vector<Function> module_functions_;
 
   spv_capability_mask_t module_capabilities_;  // Module's declared capabilities.
 
@@ -452,6 +456,8 @@ class ValidationState_t {
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
 
+  // NOTE: See correspoding getter functions
+  bool in_function_;
 };
 
 
@@ -482,8 +488,6 @@ void
 printDominatorList(BasicBlock &block);
 
 }  // namespace libspirv
-
-// Functions
 
 /// @brief Validate the ID usage of the instruction stream
 ///
