@@ -34,7 +34,7 @@
 #define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 
 // A bit mask representing a set of capabilities.
-// Currently there are 57 distinct capabilities, so 64 bits
+// Currently there are 60 distinct capabilities, so 64 bits
 // should be enough.
 typedef uint64_t spv_capability_mask_t;
 
@@ -45,10 +45,10 @@ typedef uint64_t spv_capability_mask_t;
 #define SPV_CAPABILITY_AS_MASK(capability) \
   (spv_capability_mask_t(1) << (capability))
 
-// Min/max capability IDs.
+// Min/max capability IDs. TODO(dekimir): move this into context.
 enum {
   kCapabilitiesMinValue = SpvCapabilityMatrix,
-  kCapabilitiesMaxValue = SpvCapabilityMultiViewport
+  kCapabilitiesMaxValue = SpvCapabilityPipeStorage
 };
 
 // Applies f to every capability present in a mask.
