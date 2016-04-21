@@ -184,13 +184,6 @@ spv_result_t spvValidate(const spv_const_context context,
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.
-  //vstate.get_functions().printDotGraph();
-
-  for(auto& block : vstate.get_functions().get_first_blocks()) {
-    auto edges = libspirv::CalculateDominators(*block);
-    libspirv::UpdateImmediateDominators(edges);
-  }
-
   if (vstate.unresolvedForwardIdCount() > 0) {
     stringstream ss;
     vector<uint32_t> ids = vstate.unresolvedForwardIds();
@@ -203,6 +196,15 @@ spv_result_t spvValidate(const spv_const_context context,
            << "The following forward referenced IDs have not be defined:\n"
            << id_str.substr(0, id_str.size() - 1);
   }
+
+  //vstate.get_functions().printDotGraph();
+  for(auto& function : vstate.get_functions()) {
+    if(auto* block = function.get_first_block()) {
+      auto edges = libspirv::CalculateDominators(*block);
+      libspirv::UpdateImmediateDominators(edges);
+    }
+  }
+
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
