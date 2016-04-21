@@ -34,20 +34,9 @@
 
 namespace {
 
-using ::testing::AllOf;
+using ::spvtest::MakeInstruction;
 using ::testing::Eq;
-using ::testing::Matcher;
-using ::testing::Property;
-using ::testing::SizeIs;
 using std::vector;
-
-// Creates a matcher of SPIR-V word vectors that matches a single instruction
-// with the given opcode and length. TODO(dekimir): move this into TestFixture
-// and DRY other tests that perform this match in longhand.
-Matcher<vector<uint32_t>> IsSingleInstruction(SpvOp opcode, uint16_t length) {
-  return AllOf(SizeIs(length), Property(&vector<uint32_t>::front,
-                                        spvOpcodeMake(length, opcode)));
-}
 
 using OpGetKernelLocalSizeForSubgroupCountTest = spvtest::TextToBinaryTest;
 
@@ -75,7 +64,8 @@ TEST_F(OpGetKernelLocalSizeForSubgroupCountTest, ArgumentCount) {
       CompiledInstructions("%res = OpGetKernelLocalSizeForSubgroupCount %type "
                            "%sgcount %invoke %param %param_size %param_align",
                            SPV_ENV_UNIVERSAL_1_1),
-      IsSingleInstruction(SpvOpGetKernelLocalSizeForSubgroupCount, 8));
+      Eq(MakeInstruction(SpvOpGetKernelLocalSizeForSubgroupCount,
+                         {1, 2, 3, 4, 5, 6, 7})));
   EXPECT_THAT(
       CompileFailure("%res = OpGetKernelLocalSizeForSubgroupCount %type "
                      "%sgcount %invoke %param %param_size %param_align %extra",
@@ -115,10 +105,11 @@ TEST_F(OpGetKernelMaxNumSubgroupsTest, ArgumentCount) {
   EXPECT_THAT(CompileFailure("%1 = OpGetKernelMaxNumSubgroups %2 %3 %4 %5",
                              SPV_ENV_UNIVERSAL_1_1),
               Eq("Expected operand, found end of stream."));
-  EXPECT_THAT(CompiledInstructions("%res = OpGetKernelMaxNumSubgroups %type "
-                                   "%invoke %param %param_size %param_align",
-                                   SPV_ENV_UNIVERSAL_1_1),
-              IsSingleInstruction(SpvOpGetKernelMaxNumSubgroups, 7));
+  EXPECT_THAT(
+      CompiledInstructions("%res = OpGetKernelMaxNumSubgroups %type "
+                           "%invoke %param %param_size %param_align",
+                           SPV_ENV_UNIVERSAL_1_1),
+      Eq(MakeInstruction(SpvOpGetKernelMaxNumSubgroups, {1, 2, 3, 4, 5, 6})));
   EXPECT_THAT(CompileFailure("%res = OpGetKernelMaxNumSubgroups %type %invoke "
                              "%param %param_size %param_align %extra",
                              SPV_ENV_UNIVERSAL_1_1),
