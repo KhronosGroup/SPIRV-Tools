@@ -44,6 +44,7 @@ using libspirv::AssemblyGrammar;
 using spvtest::AutoText;
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
+using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
 using testing::Eq;
 using testing::IsNull;

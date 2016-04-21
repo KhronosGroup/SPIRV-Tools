@@ -37,6 +37,7 @@ namespace {
 
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
+using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
 using spvutils::BitwiseCast;
 using ::testing::ElementsAre;

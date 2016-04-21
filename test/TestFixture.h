@@ -31,6 +31,14 @@
 
 namespace spvtest {
 
+// RAII for spv_context.
+struct ScopedContext {
+  ScopedContext(spv_target_env env = SPV_ENV_UNIVERSAL_1_0)
+      : context(spvContextCreate(env)) {}
+  ~ScopedContext() { spvContextDestroy(context); }
+  spv_context context;
+};
+
 // Common setup for TextToBinary tests. SetText() should be called to populate
 // the actual test text.
 template <typename T>
@@ -41,14 +49,6 @@ class TextToBinaryTestBase : public T {
 
   // Offset into a SpirvVector at which the first instruction starts.
   static const SpirvVector::size_type kFirstInstruction = 5;
-
-  // RAII for spv_context.
-  struct ScopedContext {
-    ScopedContext(spv_target_env env = SPV_ENV_UNIVERSAL_1_0)
-        : context(spvContextCreate(env)) {}
-    ~ScopedContext() { spvContextDestroy(context); }
-    spv_context context;
-  };
 
   TextToBinaryTestBase() : diagnostic(nullptr), text(), binary(nullptr) {
     char textStr[] = "substitute the text member variable with your test";

@@ -27,24 +27,17 @@
 // Common validation fixtures for unit tests
 
 #include "ValidateFixtures.h"
-#include "UnitSPIRV.h"
 
 #include <functional>
 #include <tuple>
 #include <utility>
 
+#include "TestFixture.h"
+
 namespace spvtest {
 
 template <typename T>
-ValidateBase<T>::ValidateBase()
-    : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
-      binary_(),
-      diagnostic_() {}
-
-template <typename T>
-ValidateBase<T>::~ValidateBase() {
-  spvContextDestroy(context_);
-}
+ValidateBase<T>::ValidateBase() : binary_(), diagnostic_() {}
 
 template <typename T>
 spv_const_binary ValidateBase<T>::get_const_binary() {
@@ -61,18 +54,21 @@ void ValidateBase<T>::TearDown() {
 }
 
 template <typename T>
-void ValidateBase<T>::CompileSuccessfully(std::string code) {
+void ValidateBase<T>::CompileSuccessfully(std::string code,
+                                          spv_target_env env) {
   spv_diagnostic diagnostic = nullptr;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context_, code.c_str(), code.size(),
-                                         &binary_, &diagnostic))
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinary(ScopedContext(env).context, code.c_str(),
+                            code.size(), &binary_, &diagnostic))
       << "ERROR: " << diagnostic->error
       << "\nSPIR-V could not be compiled into binary:\n"
       << code;
 }
 
 template <typename T>
-spv_result_t ValidateBase<T>::ValidateInstructions() {
-  return spvValidate(context_, get_const_binary(), &diagnostic_);
+spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
+  return spvValidate(ScopedContext(env).context, get_const_binary(),
+                     &diagnostic_);
 }
 
 template <typename T>

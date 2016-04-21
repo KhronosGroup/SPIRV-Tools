@@ -33,12 +33,14 @@
 #include "TestFixture.h"
 #include "source/spirv_constant.h"
 
+namespace {
+
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using spvtest::AutoText;
+using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
 
-namespace {
 class BinaryToText : public ::testing::Test {
  public:
   BinaryToText() : context(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)) {}
