@@ -308,28 +308,26 @@ TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("first block"));
 }
 
-TEST_F(ValidateCFG, DISABLED_NonInlineBlock) {
+TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   Block entry("entry");
   Block cont("cont");
-  Block loop("loop", SpvOpBranchConditional);
+  Block branch("branch", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  loop.setBody(R"(
- %cond    = OpSLessThan %intt %one %two
-            OpLoopMerge %merge %cont None
-
-)");
+  branch.setBody(" %cond    = OpSLessThan %intt %one %two\n"
+               "OpSelectionMerge %merge None\n");
 
   string str = header + nameOps(make_pair("func", "Main")) + types_consts +
                "%func    = OpFunction %voidt None %funct\n";
 
-  str += entry >> loop;
-  str += cont >> loop;
-  str += loop >> vector<Block>({cont, merge});
+  str += entry >> branch;
+  str += cont >> merge; // cont appears before its dominator
+  str += branch >> vector<Block>({cont, merge});
   str += merge;
 
   CompileSuccessfully(str);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Dominators"));
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {

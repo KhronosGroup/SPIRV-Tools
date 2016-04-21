@@ -103,6 +103,7 @@ enum class FunctionDecl {
 };
 
 class ValidationState_t;
+class Function;
 
 // This class represents a basic block in a SPIR-V module
 class BasicBlock
@@ -159,6 +160,7 @@ private:
   // The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
   ValidationState_t& module_;
+  Function* function_;
 };
 
 class CFConstructs {
@@ -242,7 +244,11 @@ class Function {
 
   bool isFirstBlock(uint32_t id) const;
 
-  BasicBlock* get_first_block() { return first_block_; }
+  const BasicBlock* get_first_block() const { return ordered_blocks_[0]; }
+        BasicBlock* get_first_block()       { return ordered_blocks_[0]; }
+
+  const std::vector<BasicBlock*>& get_blocks() const;
+        std::vector<BasicBlock*>& get_blocks();
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
@@ -276,14 +282,11 @@ class Function {
   // The type of declaration of each function
   FunctionDecl declaration_type_;
 
-
-  // TODO(umar): Probably needs better abstractions
-
-  // The first BasicBlock in a function
-  BasicBlock* first_block_;
-
   // The beginning of the block of functions
   std::unordered_map<uint32_t, BasicBlock> blocks_;
+
+  // A list of blocks in the order they appeared in the binary
+  std::vector<BasicBlock*> ordered_blocks_;
 
   // The block that is currently being parsed
   BasicBlock* current_block_;
@@ -460,7 +463,6 @@ class ValidationState_t {
   bool in_function_;
 };
 
-
 // @brief Calculates dominator edges of a root basic block
 //
 // This function calculates the dominator edges form a root BasicBlock. Uses
@@ -471,6 +473,14 @@ class ValidationState_t {
 // @return a set of dominator edges represented as a pair of blocks
 std::vector< std::pair<BasicBlock*, BasicBlock*> >
 CalculateDominators(const BasicBlock &first_block);
+
+/// @brief Performs the Control Flow Graph checks
+///
+/// @param[in] _ the validation state of the module
+///
+/// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
+spv_result_t PerformCfgChecks(ValidationState_t& _);
+
 
 // @brief Updates the immediate dominator for each of the block edges
 //

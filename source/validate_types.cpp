@@ -365,7 +365,6 @@ Function::Function(  uint32_t id, uint32_t result_type_id,
   , result_type_id_(result_type_id)
   , function_control_(function_control)
   , declaration_type_(FunctionDecl::kFunctionDeclUnknown)
-  , first_block_(nullptr)
   , blocks_()
   , current_block_(nullptr)
   , cfg_constructs_(module)
@@ -380,7 +379,7 @@ bool Function::in_block() const {
 }
 
 bool Function::isFirstBlock(uint32_t id) const {
-  return *first_block_ == id;
+  return *get_first_block() == id;
 }
 
 spv_result_t ValidationState_t::RegisterFunction(uint32_t id, uint32_t ret_type_id,
@@ -431,13 +430,13 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
       get_current_block().get_id(), merge_id);
 }
 
-  void Function::printDotGraph() const {
+void Function::printDotGraph() const {
   using namespace std;
   string func_name(module_.getIdOrName(id_));
   printf("digraph %s {\n", func_name.c_str());
 
   cout << setw(10) << func_name << " -> "
-       << module_.getIdOrName(first_block_->get_id())
+       << module_.getIdOrName(get_first_block()->get_id())
        << endl;
   for(auto block: blocks_) {
     std::cout << setw(10) << block.second << std::endl;
@@ -446,7 +445,7 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
 }
 
 void Function::printBlocks() const {
-  printf("begin -> %s\n", module_.getIdOrName(first_block_->get_id()).c_str());
+  printf("begin -> %s\n", module_.getIdOrName(get_first_block()->get_id()).c_str());
   for(auto block: blocks_) {
     std::cout << block.second << std::endl;
   }
@@ -470,9 +469,7 @@ spv_result_t Function::RegisterBlock(uint32_t id) {
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   tie(tmp, std::ignore) = blocks_.insert({id, BasicBlock(id, module_)});
   current_block_ = &tmp->second;
-  if(blocks_.size() == 1) {
-    first_block_ = current_block_;
-  }
+  ordered_blocks_.push_back(current_block_);
   return SPV_SUCCESS;
 }
 
@@ -520,6 +517,9 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
 }
 
 size_t Function::get_block_count() const { return blocks_.size(); }
+
+const vector<BasicBlock*>& Function::get_blocks() const { return ordered_blocks_; }
+      vector<BasicBlock*>& Function::get_blocks()       { return ordered_blocks_; }
 
 BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
   : id_(id)

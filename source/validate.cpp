@@ -197,14 +197,9 @@ spv_result_t spvValidate(const spv_const_context context,
            << id_str.substr(0, id_str.size() - 1);
   }
 
-  //vstate.get_functions().printDotGraph();
-  for(auto& function : vstate.get_functions()) {
-    if(auto* block = function.get_first_block()) {
-      auto edges = libspirv::CalculateDominators(*block);
-      libspirv::UpdateImmediateDominators(edges);
-    }
-  }
-
+  // CFG checks are performed after the binary has been parsed
+  // and the CFGPass has collected information about the control flow
+  spvCheckReturn(PerformCfgChecks(vstate));
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;

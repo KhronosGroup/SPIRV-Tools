@@ -194,6 +194,29 @@ MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
   return SPV_SUCCESS;
 }
 
+spv_result_t PerformCfgChecks(ValidationState_t& _) {
+  //vstate.get_functions().printDotGraph();
+  for(auto& function : _.get_functions()) {
+    if(auto* block = function.get_first_block()) {
+      auto edges = libspirv::CalculateDominators(*block);
+      libspirv::UpdateImmediateDominators(edges);
+    }
+
+    auto& blocks = function.get_blocks();
+    for(size_t i = 1; i < blocks.size(); i++) {
+      auto block = blocks[i];
+      auto idom = block->GetImmediateDominator();
+
+      auto this_block = blocks.begin() + i;
+      if(this_block == std::find(begin(blocks), this_block, idom)) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+          << "Dominators must appear before the blocks they dominate";
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 // TODO(umar): Support for merge instructions
 // TODO(umar): Structured control flow checks
 spv_result_t CfgPass(ValidationState_t& _,
