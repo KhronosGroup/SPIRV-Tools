@@ -625,11 +625,10 @@ INSTANTIATE_TEST_CASE_P(Decoration, ValidateCapability,
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt RelaxedPrecision\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
-#if 0  // TODO(dekimir): re-enable this (adding Kernel) once 1.1 is the default
-make_pair(string(kOpenCLMemoryModel) +
-          "OpDecorate %intt SpecId 1\n"
-          "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
-#endif  // 0
+// TODO(dekimir): re-enable this (adding Kernel) once 1.1 is the default
+// make_pair(string(kOpenCLMemoryModel) +
+//           "OpDecorate %intt SpecId 1\n"
+//           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt Block\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
