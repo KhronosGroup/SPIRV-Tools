@@ -27,8 +27,10 @@
 // Validation tests for Logical Layout
 
 #include <gmock/gmock.h>
+#include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include "ValidateFixtures.h"
+#include "source/assembly_grammar.h"
 
 #include <sstream>
 #include <string>
@@ -37,14 +39,13 @@
 
 namespace {
 
-
-using std::pair;
+using spvtest::ScopedContext;
 using std::make_pair;
-using std::stringstream;
+using std::pair;
 using std::string;
+using std::stringstream;
 using std::tuple;
 using std::vector;
-
 using testing::Combine;
 using testing::Values;
 using testing::ValuesIn;
@@ -53,7 +54,7 @@ using ValidateCapability =
     spvtest::ValidateBase<tuple<string, pair<string, vector<string>>>>;
 
 TEST_F(ValidateCapability, Default) {
-    const char str[] = R"(
+  const char str[] = R"(
             OpCapability Kernel
             OpCapability Matrix
             OpMemoryModel Logical OpenCL
@@ -125,7 +126,8 @@ const vector<string>& AllCapabilities() {
     "GeometryStreams",
     "StorageImageReadWithoutFormat",
     "StorageImageWriteWithoutFormat",
-    "MultiViewport"};
+    "MultiViewport",
+    "SubgroupDispatch"};
   return *r;
 }
 
@@ -252,7 +254,8 @@ const vector<string>& KernelDependencies() {
   "Pipes",
   "DeviceEnqueue",
   "LiteralSampler",
-  "Int8"};
+  "Int8",
+  "SubgroupDispatch"};
   return *r;
 }
 
@@ -622,9 +625,11 @@ INSTANTIATE_TEST_CASE_P(Decoration, ValidateCapability,
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt RelaxedPrecision\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
+#if 0  // TODO(dekimir): re-enable this (adding Kernel) once 1.1 is the default
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt SpecId 1\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
+#endif  // 0
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt Block\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
@@ -947,9 +952,18 @@ INSTANTIATE_TEST_CASE_P(
                make_pair(ImageOperandsTemplate("Sample|MinLod %izero %fzero"),
                          vector<string>{"MinLod"}),
                make_pair(ImageOperandsTemplate("Lod|Sample %fzero %izero"),
-                         AllCapabilities()))),);
+                         AllCapabilities()))), );
 
 // TODO(umar): Instruction capability checks
+
+// True if capability exists in env.
+bool Exists(const std::string& capability, spv_target_env env) {
+  spv_operand_desc dummy;
+  return SPV_SUCCESS ==
+         libspirv::AssemblyGrammar(ScopedContext(env).context)
+             .lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability.c_str(),
+                            capability.size(), &dummy);
+}
 
 TEST_P(ValidateCapability, Capability) {
   string capability;
@@ -973,8 +987,12 @@ TEST_P(ValidateCapability, Capability) {
     res = SPV_ERROR_INVALID_CAPABILITY;
   }
 
-  CompileSuccessfully(ss.str());
-  ASSERT_EQ(res, ValidateInstructions()) << ss.str();
+  spv_target_env env =
+      (capability.empty() || Exists(capability, SPV_ENV_UNIVERSAL_1_0))
+          ? SPV_ENV_UNIVERSAL_1_0
+          : SPV_ENV_UNIVERSAL_1_1;
+  CompileSuccessfully(ss.str(), env);
+  ASSERT_EQ(res, ValidateInstructions(env)) << ss.str();
 }
 
 }  // namespace anonymous

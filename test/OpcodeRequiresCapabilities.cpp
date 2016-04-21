@@ -135,6 +135,8 @@ INSTANTIATE_TEST_CASE_P(
         ExpectedOpCodeCapabilities{SpvOpEmitStreamVertex,
                                    mask(SpvCapabilityGeometryStreams)},
         ExpectedOpCodeCapabilities{SpvOpTypeNamedBarrier,
-                                   mask(SpvCapabilityNamedBarrier)}), );
+                                   mask(SpvCapabilityNamedBarrier)},
+        ExpectedOpCodeCapabilities{SpvOpGetKernelMaxNumSubgroups,
+                                   mask(SpvCapabilitySubgroupDispatch)}), );
 
 }  // anonymous namespace

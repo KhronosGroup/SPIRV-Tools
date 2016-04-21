@@ -48,6 +48,7 @@ namespace {
 using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;
+using ::spvtest::ScopedContext;
 using ::testing::AnyOf;
 using ::testing::Eq;
 using ::testing::InSequence;

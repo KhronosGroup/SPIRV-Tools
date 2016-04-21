@@ -28,6 +28,7 @@
 
 namespace {
 
+using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
 
 TEST_F(TextToBinaryTest, NotPlacingResultIDAtTheBeginning) {

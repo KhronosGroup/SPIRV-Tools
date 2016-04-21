@@ -38,6 +38,7 @@
 namespace {
 
 using ::testing::ValuesIn;
+using spvtest::ScopedContext;
 using std::ostringstream;
 using std::string;
 using std::vector;

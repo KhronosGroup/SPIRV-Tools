@@ -30,6 +30,8 @@
 
 namespace {
 
+using spvtest::ScopedContext;
+
 TEST(BinaryDestroy, Null) {
   // There is no state or return value to check. Just check
   // for the ability to call the API without abnormal termination.
