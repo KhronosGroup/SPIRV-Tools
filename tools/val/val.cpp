@@ -24,10 +24,9 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
@@ -46,6 +45,8 @@ NOTE: The validator is a work in progress.
 Options:
   -h, --help   Print this help.
   --version    Display validator version information.
+  --target-env {vulkan1.0|spv1.0|spv1.1}
+               Use Vulkan/SPIR-V1.0/SPIR-V1.1 validation rules.
 )",
       argv0, argv0);
 }
@@ -66,8 +67,17 @@ int main(int argc, char** argv) {
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);
         return 0;
-      } else if (0 == strcmp(cur_arg, "--vulkan")) {
-        target_env = SPV_ENV_VULKAN_1_0;
+      } else if (0 == strcmp(cur_arg, "--target-env")) {
+        if (argi + 1 < argc) {
+          const auto env_str = argv[++argi];
+          if (!spvParseTargetEnv(env_str, &target_env)) {
+            fprintf(stderr, "error: Unrecognized target env: %s\n", env_str);
+            return 1;
+          }
+        } else {
+          fprintf(stderr, "error: Missing argument to --target-env\n");
+          return 1;
+        }
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
