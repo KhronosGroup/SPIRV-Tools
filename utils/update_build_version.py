@@ -19,13 +19,13 @@
 #
 # Args: <spirv-tools_dir> <output-file>
 #
-# For the given directory, there will be a line in build-version.inc containing
-# two C source syntax string literals separated by a comma:
-#  - The software version deduced from the CHANGES file.
+# The output file will contain a line of text consisting of two C source syntax
+# string literals separated by a comma:
+#  - The software version deduced from the CHANGES file in the given directory.
 #  - A longer string with the project name, the software version number, and
 #    git commit information for the directory.  The commit information
-#    is "git describe" if that succeeds, or "git rev-parse HEAD" if that
-#    succeeds, or otherwise a message containing the phrase "unknown hash".
+#    is the output of "git describe" if that succeeds, or "git rev-parse HEAD"
+#    if that succeeds, or otherwise a message containing the phrase "unknown hash".
 # The string contents are escaped as necessary.
 
 from __future__ import print_function
@@ -94,7 +94,7 @@ def describe(dir):
 
 def main():
     if len(sys.argv) != 3:
-        print('usage: {0} <spirv-tools_dir>'.format(sys.argv[0]))
+        print('usage: {0} <spirv-tools_dir> <output-file>'.format(sys.argv[0]))
         sys.exit(1)
 
     output_file = sys.argv[2]
