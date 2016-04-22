@@ -59,6 +59,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/OperandCapabilities.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Operand.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/OperandPattern.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/SoftwareVersion.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextAdvance.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextDestroy.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/TextLiteral.cpp

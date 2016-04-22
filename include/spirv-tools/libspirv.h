@@ -329,6 +329,16 @@ typedef spv_context_t* spv_context;
 
 // Platform API
 
+// Returns the SPIRV-Tools software version as a null-terminated string.
+// The contents of the underlying storage is valid for the remainder of
+// the process.
+const char* spvSoftwareVersionString();
+// Returns a null-terminated string containing the name of the project,
+// the software version string, and commit details.
+// The contents of the underlying storage is valid for the remainder of
+// the process.
+const char* spvSoftwareVersionDetailsString();
+
 // Certain target environments impose additional restrictions on SPIR-V, so it's
 // often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
 // environment-agnostic SPIR-V.

@@ -102,6 +102,24 @@ set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   PROPERTIES OBJECT_DEPENDS "${EXTINST_CPP_DEPENDS}")
 
+set(SPIRV_TOOLS_BUILD_VERSION_INC
+	${spirv-tools_BINARY_DIR}/build-version.inc)
+set(SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR
+	${spirv-tools_SOURCE_DIR}/utils/update_build_version.py)
+set(SPIRV_TOOLS_CHANGES_FILE
+	${spirv-tools_SOURCE_DIR}/CHANGES)
+add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
+   COMMAND ${PYTHON_EXECUTABLE}
+           ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+           ${spirv-tools_SOURCE_DIR} ${SPIRV_TOOLS_BUILD_VERSION_INC}
+   DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+           ${SPIRV_TOOLS_CHANGES_FILE}
+   COMMENT "Update build-version.inc in the SPIRV-Tools build directory (if necessary).")
+# Convenience target for standalone generation of the build-version.inc file.
+# This is not required for any dependence chain.
+add_custom_target(spirv-tools-build-version
+   DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
+
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
   ${spirv-tools_SOURCE_DIR}/include/spirv/spirv.h
@@ -135,6 +153,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/print.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
@@ -147,6 +166,22 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_ssa.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_types.cpp)
+
+# The software_version.cpp file includes build-version.inc.
+# Rebuild the software_version.cpp object file if it is older than
+# build-version.inc or whenever build-version.inc itself is out of
+# date.  In the latter case, rebuild build-version.inc first.
+# CMake is not smart enough to detect this dependency automatically.
+# Without this, the dependency detection system for #included files
+# does not kick in on a clean build for the following reason:  The
+# build will fail early because it doesn't know how to build the
+# missing source file build-version.inc. That occurs before the
+# preprocessor is run on software_version.cpp to detect the
+# #include dependency.
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
+  PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
+
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})

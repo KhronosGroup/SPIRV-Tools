@@ -14,23 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Updates build-version.inc in the current directory, unless the update is
-# identical to the existing content.
+# Updates an output file with version info unless the new content is the same
+# as the existing content.
 #
-# Args: <spirv-tools_dir>
+# Args: <spirv-tools_dir> <output-file>
 #
-# For each directory, there will be a line in build-version.inc containing that
-# directory's "git describe" output enclosed in double quotes and appropriately
-# escaped.
+# The output file will contain a line of text consisting of two C source syntax
+# string literals separated by a comma:
+#  - The software version deduced from the CHANGES file in the given directory.
+#  - A longer string with the project name, the software version number, and
+#    git commit information for the directory.  The commit information
+#    is the output of "git describe" if that succeeds, or "git rev-parse HEAD"
+#    if that succeeds, or otherwise a message containing the phrase "unknown hash".
+# The string contents are escaped as necessary.
 
 from __future__ import print_function
 
 import datetime
 import os.path
+import re
 import subprocess
 import sys
-
-OUTFILE = 'build-version.inc'
 
 
 def command_output(cmd, dir):
@@ -48,6 +52,23 @@ def command_output(cmd, dir):
     if p.returncode != 0:
         raise RuntimeError('Failed to run %s in %s' % (cmd, dir))
     return stdout
+
+
+def deduceSoftwareVersion(dir):
+    """Returns a software version number parsed from the CHANGES file
+    in the given dir.
+
+    The CHANGES file describes most recent versions first.
+    """
+
+    pattern = re.compile('(v\d+\.\d+(-dev)) \d\d\d\d-\d\d-\d\d$')
+    changes_file = os.path.join(dir, 'CHANGES')
+    with open(changes_file) as f:
+        for line in f.readlines():
+            match = pattern.match(line)
+            if match:
+                return match.group(1)
+    raise Exception('No version number found in {}'.format(changes_file))
 
 
 def describe(dir):
@@ -72,15 +93,19 @@ def describe(dir):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print('usage: {0} <spirv-tools_dir>'.format(sys.argv[0]))
+    if len(sys.argv) != 3:
+        print('usage: {0} <spirv-tools_dir> <output-file>'.format(sys.argv[0]))
         sys.exit(1)
 
-    new_content = '"spirv-tools {}\\n"\n'.format(
+    output_file = sys.argv[2]
+
+    software_version = deduceSoftwareVersion(sys.argv[1])
+    new_content = '"{}", "SPIRV-Tools {} {}"\n'.format(
+        software_version, software_version,
         describe(sys.argv[1]).replace('"', '\\"'))
-    if os.path.isfile(OUTFILE) and new_content == open(OUTFILE, 'r').read():
+    if os.path.isfile(output_file) and new_content == open(output_file, 'r').read():
         sys.exit(0)
-    open(OUTFILE, 'w').write(new_content)
+    open(output_file, 'w').write(new_content)
 
 if __name__ == '__main__':
     main()

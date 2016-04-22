@@ -133,11 +133,6 @@ endif()
 
 find_host_package(PythonInterp)
 
-add_custom_target(spirv-tools-build-version
-  ${PYTHON_EXECUTABLE}
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils/update_build_version.py
-  ${spirv-tools_SOURCE_DIR}
-  COMMENT "Update build-version.inc in the Spirv-tools build directory (if necessary).")
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
