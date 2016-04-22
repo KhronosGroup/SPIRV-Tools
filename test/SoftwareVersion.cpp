@@ -31,11 +31,11 @@
 using ::testing::AnyOf;
 using ::testing::Eq;
 using ::testing::Ge;
+using ::testing::StartsWith;
 
 namespace {
 
-TEST(SoftwareVersion, CorrectForm) {
-  const std::string version(spvSoftwareVersionString());
+void CheckFormOfHighLevelVersion(std::string version) {
   std::istringstream s(version);
   char v = 'x';
   int year = -1;
@@ -50,7 +50,24 @@ TEST(SoftwareVersion, CorrectForm) {
 
   std::string rest;
   s >> rest;
-  EXPECT_THAT(rest, AnyOf("", "wip"));
+  EXPECT_THAT(rest, AnyOf("", "-dev"));
+}
+
+TEST(SoftwareVersion, ShortIsCorrectForm) {
+  CheckFormOfHighLevelVersion(spvSoftwareVersionString());
+}
+
+TEST(SoftwareVersion, DetailedIsCorrectForm) {
+  const std::string detailed_version(spvSoftwareVersionDetailsString());
+  EXPECT_THAT(detailed_version, StartsWith("SPIRV-Tools v"));
+
+  // Parse the high level version.
+  const std::string from_v =
+      detailed_version.substr(detailed_version.find_first_of('v'));
+  const size_t first_space_after_v_or_npos = from_v.find_first_of(' ');
+  CheckFormOfHighLevelVersion(from_v.substr(0, first_space_after_v_or_npos));
+
+  // We don't actually care about what comes after the version number.
 }
 
 }  // anonymous namespace

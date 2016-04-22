@@ -1,9 +1,9 @@
 Revision history for SPIRV-Tools
 
-v2016.0wip 2016-04-21
+v2016.0-dev 2016-04-22
 
- - Adds v<year>.<index> versioning, with "wip" indicating
-   work-in-progress.  The intent is to more easly report
+ - Adds v<year>.<index> versioning, with "-dev" indicating
+   work in progress.  The intent is to more easly report
    and summarize functionality when SPIRV-Tools is incorporated
    in downstream projects.
 

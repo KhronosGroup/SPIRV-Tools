@@ -61,7 +61,7 @@ def deduceSoftwareVersion(dir):
     The CHANGES file describes most recent versions first.
     """
 
-    pattern = re.compile('(v\d+\.\d+(wip)?) ')
+    pattern = re.compile('(v\d+\.\d+(-dev)) \d\d\d\d-\d\d-\d\d$')
     changes_file = os.path.join(dir, 'CHANGES')
     with open(changes_file) as f:
         for line in f.readlines():
@@ -98,7 +98,7 @@ def main():
         sys.exit(1)
 
     software_version = deduceSoftwareVersion(sys.argv[1])
-    new_content = '"{}", "SPIRV-Tools {} {}\\n"\n'.format(
+    new_content = '"{}", "SPIRV-Tools {} {}"\n'.format(
         software_version, software_version,
         describe(sys.argv[1]).replace('"', '\\"'))
     if os.path.isfile(OUTFILE) and new_content == open(OUTFILE, 'r').read():

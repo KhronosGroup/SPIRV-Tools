@@ -59,10 +59,6 @@ Options:
       argv0, argv0);
 }
 
-const char* kBuildVersions[] = {
-#include "build-version.inc"
-};
-
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr;
@@ -100,7 +96,7 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 0;
           } else if (0 == strcmp(argv[argi], "--version")) {
-            printf("%s\n", kBuildVersions[1]);
+            printf("%s\n", spvSoftwareVersionDetailsString());
             printf("Target: %s\n",
                    spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1));
             return 0;

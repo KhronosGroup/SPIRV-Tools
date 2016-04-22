@@ -26,9 +26,18 @@
 
 #include "spirv-tools/libspirv.h"
 
-const char* spvSoftwareVersionString() {
-  static const char* kBuildVersions[] = {
+namespace {
+
+const char* kBuildVersions[] = {
 #include "build-version.inc"
-  };
+};
+
+}  // anonymous namespace
+
+const char* spvSoftwareVersionString() {
   return kBuildVersions[0];
+}
+
+const char* spvSoftwareVersionDetailsString() {
+  return kBuildVersions[1];
 }
