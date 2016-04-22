@@ -19,14 +19,18 @@
 #
 # Args: <spirv-tools_dir>
 #
-# For each directory, there will be a line in build-version.inc containing that
-# directory's "git describe" output enclosed in double quotes and appropriately
-# escaped.
+# For each directory, there will be a line in build-version.inc containing two
+# strings:
+#  - the software version deduced from the CHANGES file
+#  - a longer string with the project name, the software version number, and
+#    that directory's "git describe" output enclosed in double quotes and
+#    appropriately escaped.
 
 from __future__ import print_function
 
 import datetime
 import os.path
+import re
 import subprocess
 import sys
 
@@ -48,6 +52,23 @@ def command_output(cmd, dir):
     if p.returncode != 0:
         raise RuntimeError('Failed to run %s in %s' % (cmd, dir))
     return stdout
+
+
+def deduceSoftwareVersion(dir):
+    """Returns a software version number parsed from the CHANGES file
+    in the given dir.
+
+    The CHANGES file describes most recent versions first.
+    """
+
+    pattern = re.compile('(v\d+\.\d+(wip)?) ')
+    changes_file = os.path.join(dir, 'CHANGES')
+    with open(changes_file) as f:
+        for line in f.readlines():
+            match = pattern.match(line)
+            if match:
+                return match.group(1)
+    raise Exception('No version number found in {}'.format(changes_file))
 
 
 def describe(dir):
@@ -76,7 +97,9 @@ def main():
         print('usage: {0} <spirv-tools_dir>'.format(sys.argv[0]))
         sys.exit(1)
 
-    new_content = '"spirv-tools {}\\n"\n'.format(
+    software_version = deduceSoftwareVersion(sys.argv[1])
+    new_content = '"{}", "SPIRV-Tools {} {}\\n"\n'.format(
+        software_version, software_version,
         describe(sys.argv[1]).replace('"', '\\"'))
     if os.path.isfile(OUTFILE) and new_content == open(OUTFILE, 'r').read():
         sys.exit(0)

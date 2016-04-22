@@ -135,6 +135,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/opcode.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/operand.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/print.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
@@ -147,6 +148,12 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_ssa.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_types.cpp)
+
+# The software_version.cpp file includes build-version.inc
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
+  PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
+
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})

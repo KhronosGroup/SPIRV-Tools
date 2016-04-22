@@ -18,6 +18,23 @@ SPIR-V is defined by the Khronos Group Inc.
 See the [SPIR-V Registry][spirv-registry] for the SPIR-V specification,
 headers, and XML registry.
 
+## Verisoning SPIRV-Tools
+
+See [`CHANGES`](CHANGES) for a high level summary of recent changes, by version.
+
+SPIRV-Tools project version numbers are of the form `v`*year*`.`*index* and with
+an optional `wip` suffix to indicate work in progress.  For exampe, the
+following versions are ordered from oldest to newest:
+
+* `v2016.0`
+* `v2016.1wip`
+* `v2016.1`
+* `v2016.2wip`
+* `v2016.2`
+
+Use the `--version` option on each command line tool to see the software
+version.  An API call reports the software version as a C-style string.
+
 ## Supported features
 
 ### Assembler, binary parser, and disassembler
