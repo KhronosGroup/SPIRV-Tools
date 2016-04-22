@@ -217,7 +217,7 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       operand_names_{},
       current_layout_section_(kLayoutCapabilities),
       module_functions_(*this),
-      module_capabilities_(kCapabilitiesMaxValue + 1, false),
+      module_capabilities_(0u),
       grammar_(context) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
@@ -295,7 +295,7 @@ bool ValidationState_t::in_block() const {
 }
 
 void ValidationState_t::registerCapability(SpvCapability cap) {
-  module_capabilities_[cap] = true;
+  module_capabilities_ |= SPV_CAPABILITY_AS_MASK(cap);
   spv_operand_desc desc;
   if (SPV_SUCCESS ==
       grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
@@ -304,7 +304,7 @@ void ValidationState_t::registerCapability(SpvCapability cap) {
 }
 
 bool ValidationState_t::hasCapability(SpvCapability cap) const {
-  return module_capabilities_[cap];
+  return module_capabilities_ & SPV_CAPABILITY_AS_MASK(cap);
 }
 
 bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
