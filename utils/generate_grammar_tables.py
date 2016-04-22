@@ -37,6 +37,12 @@ def populate_capability_bit_mapping_dict(cap_dict):
     assert cap_dict['category'] == 'ValueEnum'
     assert cap_dict['kind'] == 'Capability'
     for enumerant in cap_dict['enumerants']:
+        if enumerant['value'] > 63:
+            print(
+                "error: capability enumerant {} valued {} is over 63; "
+                "spv_capability_mask_t doesn't support this".format(
+                    enumerant['enumerant'], enumerant['value']))
+            exit(1)
         CAPABILITY_BIT_MAPPING[enumerant['enumerant']] = enumerant['value']
 
 
