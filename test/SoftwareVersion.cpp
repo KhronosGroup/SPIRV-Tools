@@ -26,6 +26,8 @@
 
 #include "UnitSPIRV.h"
 
+#include <sstream>
+
 #include "gmock/gmock.h"
 
 using ::testing::AnyOf;
@@ -35,7 +37,7 @@ using ::testing::StartsWith;
 
 namespace {
 
-void CheckFormOfHighLevelVersion(std::string version) {
+void CheckFormOfHighLevelVersion(const std::string& version) {
   std::istringstream s(version);
   char v = 'x';
   int year = -1;
@@ -54,6 +56,7 @@ void CheckFormOfHighLevelVersion(std::string version) {
 }
 
 TEST(SoftwareVersion, ShortIsCorrectForm) {
+  SCOPED_TRACE("short form");
   CheckFormOfHighLevelVersion(spvSoftwareVersionString());
 }
 
@@ -65,6 +68,7 @@ TEST(SoftwareVersion, DetailedIsCorrectForm) {
   const std::string from_v =
       detailed_version.substr(detailed_version.find_first_of('v'));
   const size_t first_space_after_v_or_npos = from_v.find_first_of(' ');
+  SCOPED_TRACE(detailed_version);
   CheckFormOfHighLevelVersion(from_v.substr(0, first_space_after_v_or_npos));
 
   // We don't actually care about what comes after the version number.
