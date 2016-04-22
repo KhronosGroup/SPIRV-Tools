@@ -446,7 +446,8 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
   Block merge("merge");
   Block end("end", SpvOpReturn);
 
-  bad.setBody("OpSelectionMerge %merge None\n");
+  bad.setBody("%cond    = OpSLessThan %intt %one %two\n"
+              "OpSelectionMerge %merge None\n");
 
   string str = header
              + nameOps(make_pair("func", "Main"))
@@ -467,4 +468,34 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
 }
 
+TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
+  Block entry("entry");
+  Block middle("middle", SpvOpBranchConditional);
+  Block end("end", SpvOpReturn);
+
+  middle.setBody("%cond    = OpSLessThan %intt %one %two\n"
+                 "OpSelectionMerge %end None\n");
+
+  Block entry2("entry2");
+  Block middle2("middle2");
+  Block end2("end2", SpvOpReturn);
+
+  string str = header
+    + nameOps(make_pair("func", "Main"))
+    + types_consts
+    + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> middle;
+  str += middle >> vector<Block>({end, middle2});
+  str += end;
+
+  str += "%func2    = OpFunction %voidt None %funct\n";
+  str += entry2 >> middle2;
+  str += middle2 >> end2;
+  str += end2;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("within the same function"));
+}
 }

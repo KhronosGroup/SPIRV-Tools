@@ -378,7 +378,7 @@ bool Function::in_block() const {
   return static_cast<bool>(current_block_);
 }
 
-bool Function::isFirstBlock(uint32_t id) const {
+bool Function::IsFirstBlock(uint32_t id) const {
   return *get_first_block() == id;
 }
 
@@ -468,6 +468,8 @@ spv_result_t Function::RegisterBlock(uint32_t id) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   tie(tmp, std::ignore) = blocks_.insert({id, BasicBlock(id, module_)});
+  undefined_blocks_.erase(tmp->first);
+
   current_block_ = &tmp->second;
   ordered_blocks_.push_back(current_block_);
   return SPV_SUCCESS;
@@ -489,7 +491,11 @@ spv_result_t Function::RegisterBlockEnd(uint32_t next_id) {
          "Branch instruction can only be called in a block");
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
-  tie(tmp, std::ignore) = blocks_.insert({next_id, BasicBlock(next_id, module_)});
+  bool success;
+  tie(tmp, success) = blocks_.insert({next_id, BasicBlock(next_id, module_)});
+  if(success) {
+    undefined_blocks_.insert(next_id);
+  }
   current_block_->RegisterSuccessor(tmp->second);
 
   current_block_ = nullptr;
@@ -506,8 +512,12 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
   next_blocks.reserve(next_list.size());
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  bool success;
   for(uint32_t id : next_list) {
-    tie(tmp, std::ignore) = blocks_.insert({id, BasicBlock(id, module_)});
+    tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
+    if(success) {
+      undefined_blocks_.insert(id);
+    }
     next_blocks.push_back(&tmp->second);
   }
 
@@ -518,8 +528,23 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
 
 size_t Function::get_block_count() const { return blocks_.size(); }
 
+size_t Function::get_undefined_block_count() const { return undefined_blocks_.size(); }
+
 const vector<BasicBlock*>& Function::get_blocks() const { return ordered_blocks_; }
       vector<BasicBlock*>& Function::get_blocks()       { return ordered_blocks_; }
+
+const BasicBlock& Function::get_current_block() const { return *current_block_; }
+      BasicBlock& Function::get_current_block()       { return *current_block_; }
+
+
+const BasicBlock* Function::get_first_block() const {
+  if(ordered_blocks_.empty()) return nullptr;
+  return ordered_blocks_[0];
+}
+BasicBlock* Function::get_first_block() {
+  if(ordered_blocks_.empty()) return nullptr;
+  return ordered_blocks_[0];
+}
 
 BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
   : id_(id)

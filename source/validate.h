@@ -183,7 +183,6 @@ public:
 
   spv_result_t RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id);
 
-
 private:
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
@@ -242,23 +241,29 @@ class Function {
 
   bool IsMergeBlock(uint32_t merge_block_id) const;
 
-  bool isFirstBlock(uint32_t id) const;
+  bool IsFirstBlock(uint32_t id) const;
 
-  const BasicBlock* get_first_block() const { return ordered_blocks_[0]; }
-        BasicBlock* get_first_block()       { return ordered_blocks_[0]; }
+  const BasicBlock* get_first_block() const;
+        BasicBlock* get_first_block();
 
   const std::vector<BasicBlock*>& get_blocks() const;
         std::vector<BasicBlock*>& get_blocks();
 
+  const CFConstructs& get_constructs() const;
+        CFConstructs& get_constructs();
+
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
+
+  // Returns the number of blocks in the current function being parsed
+  size_t get_undefined_block_count() const;
 
   // Returns true if called after a label instruction but before a branch
   // instruction
   bool in_block() const;
 
-        BasicBlock& get_current_block()       { return *current_block_; }
-  const BasicBlock& get_current_block() const { return *current_block_; }
+        BasicBlock& get_current_block();
+  const BasicBlock& get_current_block() const;
 
   void printDotGraph() const;
 
@@ -287,6 +292,9 @@ class Function {
 
   // A list of blocks in the order they appeared in the binary
   std::vector<BasicBlock*> ordered_blocks_;
+
+  // Blocks which are forward referenced by blocks but not defined
+  std::unordered_set<uint32_t> undefined_blocks_;
 
   // The block that is currently being parsed
   BasicBlock* current_block_;

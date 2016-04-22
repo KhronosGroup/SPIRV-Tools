@@ -179,7 +179,7 @@ void printDominatorList(BasicBlock &b) {
 
 spv_result_t
 FirstBlockAssert(ValidationState_t& _, uint32_t target) {
-  if(_.get_current_function().isFirstBlock(target)) {
+  if(_.get_current_function().IsFirstBlock(target)) {
     return _.diag(SPV_ERROR_INVALID_CFG) << "First block cannot be a target of any branch";
   }
   return SPV_SUCCESS;
@@ -197,11 +197,13 @@ MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
   //vstate.get_functions().printDotGraph();
   for(auto& function : _.get_functions()) {
-    if(auto* block = function.get_first_block()) {
-      auto edges = libspirv::CalculateDominators(*block);
+    // Updates each blocks immediate dominators
+    if(auto* first_block = function.get_first_block()) {
+      auto edges = libspirv::CalculateDominators(*first_block);
       libspirv::UpdateImmediateDominators(edges);
     }
 
+    // Check if the dominators appear before the blocks they dominate
     auto& blocks = function.get_blocks();
     for(size_t i = 1; i < blocks.size(); i++) {
       auto block = blocks[i];
@@ -213,6 +215,13 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           << "Dominators must appear before the blocks they dominate";
       }
     }
+
+    // TODO(umar): Branched blocks appear within a function
+    if(function.get_undefined_block_count() != 0) {
+      return _.diag(SPV_ERROR_INVALID_CFG)
+        << "Branches can only reference blocks within the same function";
+    }
+
   }
   return SPV_SUCCESS;
 }

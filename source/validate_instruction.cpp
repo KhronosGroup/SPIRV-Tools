@@ -140,7 +140,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
                << "Variables must have a function[7] storage class inside"
                   " of a function";
       }
-      if(_.get_current_function().isFirstBlock(_.get_current_function().get_current_block().get_id()) == false) {
+      if(_.get_current_function().IsFirstBlock(_.get_current_function().get_current_block().get_id()) == false) {
         return _.diag(SPV_ERROR_INVALID_CFG)
           << "Variables can only be defined in the first block of a function";
       }
