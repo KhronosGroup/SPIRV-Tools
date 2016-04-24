@@ -252,8 +252,7 @@ string ValidationState_t::getIdOrName(uint32_t id) const {
   std::stringstream out;
   if (operand_names_.find(id) != end(operand_names_)) {
     out << operand_names_.at(id);
-  }
-  else {
+  } else {
     out << id;
   }
   return out.str();
@@ -309,9 +308,7 @@ Function& ValidationState_t::get_current_function() {
   return module_functions_.back();
 }
 
-bool ValidationState_t::in_function_body() const {
-  return in_function_;
-}
+bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
   return module_functions_.back().in_block();
@@ -320,7 +317,8 @@ bool ValidationState_t::in_block() const {
 void ValidationState_t::RegisterCapability(SpvCapability cap) {
   module_capabilities_ |= SPV_CAPABILITY_AS_MASK(cap);
   spv_operand_desc desc;
-  if (SPV_SUCCESS == grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
+  if (SPV_SUCCESS ==
+      grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
     libspirv::ForEach(desc->capabilities,
                       [this](SpvCapability c) { RegisterCapability(c); });
 }
@@ -355,42 +353,37 @@ SpvMemoryModel ValidationState_t::getMemoryModel() const {
   return memory_model_;
 }
 
-Function::Function(  uint32_t id, uint32_t result_type_id,
-                     SpvFunctionControlMask function_control,
-                     uint32_t function_type_id,
-                     ValidationState_t& module)
-  : module_(module)
-  , id_(id)
-  , function_type_id_(function_type_id)
-  , result_type_id_(result_type_id)
-  , function_control_(function_control)
-  , declaration_type_(FunctionDecl::kFunctionDeclUnknown)
-  , blocks_()
-  , current_block_(nullptr)
-  , cfg_constructs_()
-  , variable_ids_()
-  , parameter_ids_()
-{
+Function::Function(uint32_t id, uint32_t result_type_id,
+                   SpvFunctionControlMask function_control,
+                   uint32_t function_type_id, ValidationState_t& module)
+    : module_(module),
+      id_(id),
+      function_type_id_(function_type_id),
+      result_type_id_(result_type_id),
+      function_control_(function_control),
+      declaration_type_(FunctionDecl::kFunctionDeclUnknown),
+      blocks_(),
+      current_block_(nullptr),
+      cfg_constructs_(),
+      variable_ids_(),
+      parameter_ids_() {}
 
-}
-
-bool Function::in_block() const {
-  return static_cast<bool>(current_block_);
-}
+bool Function::in_block() const { return static_cast<bool>(current_block_); }
 
 bool Function::IsFirstBlock(uint32_t id) const {
   return *get_first_block() == id;
 }
 
-spv_result_t ValidationState_t::RegisterFunction(uint32_t id, uint32_t ret_type_id,
-                                         SpvFunctionControlMask function_control,
-                                         uint32_t function_type_id) {
+spv_result_t ValidationState_t::RegisterFunction(
+    uint32_t id, uint32_t ret_type_id, SpvFunctionControlMask function_control,
+    uint32_t function_type_id) {
   assert(in_function_ == false &&
          "Function instructions can not be declared in a function");
   assert(in_function_ == false &&
          "Function instructions can not be declared in a function");
   in_function_ = true;
-  module_functions_.emplace_back(id, ret_type_id, function_control, function_type_id, *this);
+  module_functions_.emplace_back(id, ret_type_id, function_control,
+                                 function_type_id, *this);
 
   // TODO(umar): validate function type and type_id
 
@@ -406,7 +399,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
 }
 
 spv_result_t Function::RegisterFunctionParameter(uint32_t id,
-                                                  uint32_t type_id) {
+                                                 uint32_t type_id) {
   assert(module_.in_function_body() == true &&
          "Function parameter instructions cannot be declared outside of a "
          "function");
@@ -420,19 +413,18 @@ spv_result_t Function::RegisterFunctionParameter(uint32_t id,
 }
 
 spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
-                                          uint32_t continue_id) {
+                                         uint32_t continue_id) {
   RegisterBlock(merge_id, false);
   RegisterBlock(continue_id, false);
-  cfg_constructs_.emplace_back(&get_current_block(),
-                               &blocks_.at(merge_id), &blocks_.at(continue_id));
+  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id),
+                               &blocks_.at(continue_id));
 
   return SPV_SUCCESS;
 }
 
 spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   RegisterBlock(merge_id, false);
-  cfg_constructs_.emplace_back(&get_current_block(),
-                               &blocks_.at(merge_id));
+  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id));
   return SPV_SUCCESS;
 }
 
@@ -442,17 +434,17 @@ void Function::printDotGraph() const {
   printf("digraph %s {\n", func_name.c_str());
 
   cout << setw(10) << func_name << " -> "
-       << module_.getIdOrName(get_first_block()->get_id())
-       << endl;
-  for(auto block: blocks_) {
+       << module_.getIdOrName(get_first_block()->get_id()) << endl;
+  for (auto block : blocks_) {
     std::cout << setw(10) << block.second << std::endl;
   }
   printf("}\n");
 }
 
 void Function::printBlocks() const {
-  printf("begin -> %s\n", module_.getIdOrName(get_first_block()->get_id()).c_str());
-  for(auto block: blocks_) {
+  printf("begin -> %s\n",
+         module_.getIdOrName(get_first_block()->get_id()).c_str());
+  for (auto block : blocks_) {
     std::cout << block.second << std::endl;
   }
 }
@@ -464,7 +456,8 @@ spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
 }
 
 spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
-  assert(module_.in_function_body() == true && "Blocks can only exsist in functions");
+  assert(module_.in_function_body() == true &&
+         "Blocks can only exsist in functions");
   assert(module_.getLayoutSection() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
          "Function declartions must appear before function definitions");
@@ -474,13 +467,13 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success = false;
   tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
-  if(is_definition) { // new block definition
+  if (is_definition) {  // new block definition
     assert(in_block() == false && "Blocks cannot be nested");
 
     undefined_blocks_.erase(id);
     current_block_ = &tmp->second;
     ordered_blocks_.push_back(current_block_);
-  } else if (success) { // Block doesn't exsist but this is not a definition
+  } else if (success) {  // Block doesn't exsist but this is not a definition
     undefined_blocks_.insert(id);
   }
 
@@ -505,7 +498,7 @@ spv_result_t Function::RegisterBlockEnd(uint32_t next_id) {
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success;
   tie(tmp, success) = blocks_.insert({next_id, BasicBlock(next_id, module_)});
-  if(success) {
+  if (success) {
     undefined_blocks_.insert(next_id);
   }
   current_block_->RegisterSuccessor(tmp->second);
@@ -525,9 +518,9 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success;
-  for(uint32_t id : next_list) {
+  for (uint32_t id : next_list) {
     tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
-    if(success) {
+    if (success) {
       undefined_blocks_.insert(id);
     }
     next_blocks.push_back(&tmp->second);
@@ -540,36 +533,42 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
 
 size_t Function::get_block_count() const { return blocks_.size(); }
 
-size_t Function::get_undefined_block_count() const { return undefined_blocks_.size(); }
+size_t Function::get_undefined_block_count() const {
+  return undefined_blocks_.size();
+}
 
-const vector<BasicBlock*>& Function::get_blocks() const { return ordered_blocks_; }
-      vector<BasicBlock*>& Function::get_blocks()       { return ordered_blocks_; }
+const vector<BasicBlock*>& Function::get_blocks() const {
+  return ordered_blocks_;
+}
+vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 
-const BasicBlock& Function::get_current_block() const { return *current_block_; }
-      BasicBlock& Function::get_current_block()       { return *current_block_; }
+const BasicBlock& Function::get_current_block() const {
+  return *current_block_;
+}
+BasicBlock& Function::get_current_block() { return *current_block_; }
 
-const vector<CFConstruct>& Function::get_constructs() const { return cfg_constructs_; }
-      vector<CFConstruct>& Function::get_constructs()       { return cfg_constructs_; }
-
+const vector<CFConstruct>& Function::get_constructs() const {
+  return cfg_constructs_;
+}
+vector<CFConstruct>& Function::get_constructs() { return cfg_constructs_; }
 
 const BasicBlock* Function::get_first_block() const {
-  if(ordered_blocks_.empty()) return nullptr;
+  if (ordered_blocks_.empty()) return nullptr;
   return ordered_blocks_[0];
 }
 BasicBlock* Function::get_first_block() {
-  if(ordered_blocks_.empty()) return nullptr;
+  if (ordered_blocks_.empty()) return nullptr;
   return ordered_blocks_[0];
 }
 
-BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module )
-  : id_(id)
-  , immediate_dominator_(nullptr)
-  , predecessors_()
-  , successors_()
-  , module_(module) {
-}
+BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module)
+    : id_(id),
+      immediate_dominator_(nullptr),
+      predecessors_(),
+      successors_(),
+      module_(module) {}
 
-void BasicBlock::SetImmediateDominator(BasicBlock *dom_block) {
+void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
   immediate_dominator_ = dom_block;
 }
 
@@ -577,30 +576,26 @@ const BasicBlock* BasicBlock::GetImmediateDominator() const {
   return immediate_dominator_;
 }
 
-BasicBlock* BasicBlock::GetImmediateDominator(){
-  return immediate_dominator_;
-}
+BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
 
-void
-BasicBlock::RegisterSuccessor(BasicBlock& next) {
+void BasicBlock::RegisterSuccessor(BasicBlock& next) {
   next.predecessors_.push_back(this);
   successors_.push_back(&next);
 }
 
-void
-BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
-  for(auto &block: next_blocks) {
+void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
+  for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock &other) {
+std::ostream& operator<<(std::ostream& os, const BasicBlock& other) {
   os << other.module_.getIdOrName(other.id_) << " -> {";
-  if(other.successors_.empty()) {
+  if (other.successors_.empty()) {
     os << "end";
   } else {
-    for(auto &block : other.successors_) {
+    for (auto& block : other.successors_) {
       os << other.module_.getIdOrName(block->get_id()) << " ";
     }
   }
@@ -608,28 +603,25 @@ std::ostream& operator<<(std::ostream& os, const BasicBlock &other) {
   return os;
 }
 
-bool
-Function::IsMergeBlock(uint32_t merge_block_id) const {
-  const auto b =  blocks_.find(merge_block_id);
-  if(b != end(blocks_)) {
-    return cfg_constructs_.end() != find_if(begin(cfg_constructs_), end(cfg_constructs_), [&](const CFConstruct &construct) {
-        return construct.merge_block_ == &b->second;
-      });
-  }
-  else {
+bool Function::IsMergeBlock(uint32_t merge_block_id) const {
+  const auto b = blocks_.find(merge_block_id);
+  if (b != end(blocks_)) {
+    return cfg_constructs_.end() !=
+           find_if(begin(cfg_constructs_), end(cfg_constructs_),
+                   [&](const CFConstruct& construct) {
+                     return construct.merge_block_ == &b->second;
+                   });
+  } else {
     return false;
   }
-
 }
 
-BasicBlock::DominatorIterator::DominatorIterator()
-  : current_(nullptr) {}
+BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
 BasicBlock::DominatorIterator::DominatorIterator(BasicBlock* block)
-  : current_(block) {
-}
+    : current_(block) {}
 
 BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
-  if(current_ == current_->GetImmediateDominator()) {
+  if (current_ == current_->GetImmediateDominator()) {
     current_ = nullptr;
   } else {
     current_ = current_->GetImmediateDominator();

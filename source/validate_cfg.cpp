@@ -198,16 +198,16 @@ MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
 }
 
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
-  //vstate.get_functions().printDotGraph();
   for(auto& function : _.get_functions()) {
+
     // Updates each blocks immediate dominators
     if(auto* first_block = function.get_first_block()) {
       auto edges = libspirv::CalculateDominators(*first_block);
       libspirv::UpdateImmediateDominators(edges);
     }
 
-    // Check the order of blocks in the binary appear dominators appear before
-    // the blocks they dominate
+    // Check if the order of blocks in the binary appear before the blocks they
+    // dominate
     auto& blocks = function.get_blocks();
     for(size_t i = 1; i < blocks.size(); i++) {
       auto block = blocks[i];
@@ -246,12 +246,19 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           << " doesn't dominate its merge block " << _.getIdName(merge->get_id());
       }
     }
+
+    // TODO(umar): All CFG back edges must branch to a loop header, with each
+    // loop header having exactly one back edge branching to it
+
+    // TODO(umar): For a given loop, its back-edge block must post dominate the
+    // OpLoopMerge's Continue Target, and that Continue Target must dominate the
+    // back-edge block
+
+
   }
   return SPV_SUCCESS;
 }
 
-// TODO(umar): Support for merge instructions
-// TODO(umar): Structured control flow checks
 spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst) {
   SpvOp opcode = static_cast<SpvOp>(inst->opcode);

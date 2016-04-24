@@ -44,6 +44,7 @@
 #include "spirv_definition.h"
 #include "table.h"
 
+// clang-format off
 #define _printf_  printf
 #define MSG(msg,...) do {                       \
     _printf_(__FILE__":%d: " msg "\n",          \
@@ -61,6 +62,7 @@
 #define SHOW_P(ptr) do { MSG("%s  %#zx",  #ptr, (size_t)ptr); } while (0)
 #define SHOW_F(exp) do { MSG("%s  %g",    #exp, (double)exp); } while (0)
 #define SHOW_S(exp) do { MSG("%s  %s",    #exp, exp);         } while (0)
+// clang-format on
 
 // Structures
 
@@ -106,66 +108,89 @@ class ValidationState_t;
 class Function;
 
 // This class represents a basic block in a SPIR-V module
-class BasicBlock
-{
-public:
+class BasicBlock {
+ public:
+  /// Constructor for a BasicBlock
+  ///
+  /// @param[in] id The ID of the basic block
+  /// @param[in] module A reference of the module of the basic block
   BasicBlock(uint32_t id, ValidationState_t& module);
 
-  // Returns the id of the BasicBlock
-  uint32_t get_id() const {return id_; }
+  /// Returns the id of the BasicBlock
+  uint32_t get_id() const { return id_; }
 
-  // Returns the predecessors of the BasicBlock
-  const std::vector<BasicBlock*>& get_predecessors() const {return predecessors_; }
+  /// Returns the predecessors of the BasicBlock
+  const std::vector<BasicBlock*>& get_predecessors() const {
+    return predecessors_;
+  }
 
-  // Returns the predecessors of the BasicBlock
-  std::vector<BasicBlock*>&       get_predecessors()       {return predecessors_; }
+  /// Returns the predecessors of the BasicBlock
+  std::vector<BasicBlock*>& get_predecessors() { return predecessors_; }
 
-  // Returns the successors of the BasicBlock
-  const std::vector<BasicBlock*>& get_successors() const {return successors_; }
-  std::vector<BasicBlock*>&       get_successors()       {return successors_; }
+  /// Returns the successors of the BasicBlock
+  const std::vector<BasicBlock*>& get_successors() const { return successors_; }
 
-  // Sets the immedate dominator of this basic block
-  //
-  // @param[in] dom_block The dominator block
+  /// Returns the successors of the BasicBlock
+  std::vector<BasicBlock*>& get_successors() { return successors_; }
+
+  /// Sets the immedate dominator of this basic block
+  ///
+  /// @param[in] dom_block The dominator block
   void SetImmediateDominator(BasicBlock* dom_block);
 
-  // Returns the immedate dominator of this basic block
-  //
-  // @return The dominator block
+  /// Returns the immedate dominator of this basic block
   BasicBlock* GetImmediateDominator();
 
-  // Returns the immedate dominator of this basic block
-  const BasicBlock * GetImmediateDominator() const;
+  /// Returns the immedate dominator of this basic block
+  const BasicBlock* GetImmediateDominator() const;
 
-  // Sets the @p next BasicBlock as the successor of this BasicBlock
+  /// Sets the @p next BasicBlock as the successor of this BasicBlock
   void RegisterSuccessor(BasicBlock& next);
 
-  // Sets the @p next BasicBlock as the successor of this BasicBlock
+  /// Sets the @p next BasicBlock as the successor of this BasicBlock
   void RegisterSuccessor(std::vector<BasicBlock*> next);
 
-  bool operator==(const BasicBlock &other) const { return other.id_ == id_; }
-  bool operator==(const uint32_t &id) const { return id == id_; }
+  /// Returns true if the id of the BasicBlock matches
+  bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
 
+  /// Returns true if the id of the BasicBlock matches
+  bool operator==(const uint32_t& id) const { return id == id_; }
+
+  /// @brief A BasicBlock dominator iterator class
+  ///
+  /// This iterator will iterate to the the immediate dominators
+  /// of the block
   class DominatorIterator {
-    BasicBlock* current_;
-
    public:
+    /// @brief Constructs the end of dominator iterator
+    ///
+    /// This will create an iterator which will represent the element
+    /// before the root node of the dominator tree
     DominatorIterator();
+
+    /// @brief Constructs an iterator for the given block which points
     DominatorIterator(BasicBlock* block);
 
+    /// @brief Advances the iterator
     DominatorIterator& operator++();
+
+    /// @brief Returns the current element
+    BasicBlock*& operator*();
 
     friend bool operator==(const DominatorIterator& lhs,
                            const DominatorIterator& rhs);
-    BasicBlock*& operator*();
+
+   private:
+    BasicBlock* current_;
   };
 
   DominatorIterator dom_begin();
 
   DominatorIterator dom_end();
 
-  friend std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
-private:
+  friend std::ostream& operator<<(std::ostream& os, const BasicBlock& other);
+
+ private:
   // Id of the BasicBlock
   const uint32_t id_;
 
@@ -181,139 +206,179 @@ private:
   Function* function_;
 };
 
-bool operator==(const BasicBlock::DominatorIterator& lhs, const BasicBlock::DominatorIterator& rhs);
-bool operator!=(const BasicBlock::DominatorIterator& lhs, const BasicBlock::DominatorIterator& rhs);
+/// @brief Returns true if the iterators point to the same element
+bool operator==(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs);
 
+/// @brief Returns true if the iterators point to the differet element
+bool operator!=(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs);
+
+/// @brief This class tracks the CFG constructs as defined in the SPIR-V spec
 class CFConstruct {
+  // Universal Limit of ResultID + 1
+  static const uint32_t kInitialValue = 0x400000;
 
-// Universal Limit of ResultID + 1
-static const uint32_t kInitialValue = 0x400000;
+ public:
+  CFConstruct(BasicBlock* header_block, BasicBlock* merge_block,
+              BasicBlock* continue_block = nullptr)
+      : header_block_(header_block),
+        merge_block_(merge_block),
+        continue_block_(continue_block) {}
 
-public:
-  CFConstruct(BasicBlock* header_block, BasicBlock* merge_block, BasicBlock* continue_block = nullptr)
-    : header_block_(header_block)
-    , merge_block_(merge_block)
-    , continue_block_(continue_block) {}
-
-  BasicBlock* header_block_;
-  BasicBlock* merge_block_;
-  BasicBlock* continue_block_;
-private:
+  BasicBlock* header_block_;    ///< The header block of a loop or selection
+  BasicBlock* merge_block_;     ///< The merge block of a loop or selection
+  BasicBlock* continue_block_;  ///< The continue block of a loop block
+ private:
 };
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
+std::ostream& operator<<(std::ostream& os, const BasicBlock& other);
 
 // This class manages all function declaration and definitions in a module. It
 // handles the state and id information while parsing a function in the SPIR-V
 // binary.
 class Function {
  public:
-  Function(
-           uint32_t id, uint32_t result_type_id,
-           SpvFunctionControlMask function_control,
-           uint32_t function_type_id,
+  Function(uint32_t id, uint32_t result_type_id,
+           SpvFunctionControlMask function_control, uint32_t function_type_id,
            ValidationState_t& module);
 
-
-  // Registers a function parameter in the current function
+  /// Registers a function parameter in the current function
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterFunctionParameter(uint32_t id, uint32_t type_id);
 
-  // Sets the declaration type of the current function
+  /// Sets the declaration type of the current function
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterSetFunctionDeclType(FunctionDecl type);
 
   // Registers a block in the current function. Subsequent block instructions
   // will target this block
   // @param id The ID of the label of the block
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterBlock(uint32_t id, bool is_definition = true);
 
-  // Registers a variable in the current block
+  /// Registers a variable in the current block
+  ///
+  /// @param[in] type_id The type ID of the varaible
+  /// @param[in] id      The ID of the varaible
+  /// @param[in] storage The storage of the variable
+  /// @param[in] init_id The initializer ID of the variable
+  ///
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterBlockVariable(uint32_t type_id, uint32_t id,
                                      SpvStorageClass storage, uint32_t init_id);
 
+  /// Registers a loop merge construct in the function
+  ///
+  /// @param[in] merge_id The merge block ID of the loop
+  /// @param[in] continue_id The continue block ID of the loop
+  ///
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterLoopMerge(uint32_t merge_id, uint32_t continue_id);
 
+  /// Registers a selection merge construct in the function
+  /// @return Returns SPV_SUCCESS if the call was successful
   spv_result_t RegisterSelectionMerge(uint32_t merge_id);
 
-  // Registers the end of the block
+  /// Registers the end of the block
   spv_result_t RegisterBlockEnd();
 
-  // Registers the end of the block
+  /// Registers the end of the block
   spv_result_t RegisterBlockEnd(uint32_t next_id);
 
-  // Registers the end of the block
+  /// Registers the end of the block
   spv_result_t RegisterBlockEnd(std::vector<uint32_t> next_list);
 
+  /// Returns true if the \p merge_block_id is a merge block
   bool IsMergeBlock(uint32_t merge_block_id) const;
 
+  /// Returns true if the \p id is the first block of this function
   bool IsFirstBlock(uint32_t id) const;
 
+  /// Returns the first block of the current function
   const BasicBlock* get_first_block() const;
-        BasicBlock* get_first_block();
 
+  /// Returns the first block of the current function
+  BasicBlock* get_first_block();
+
+  /// Returns a vector of all the blocks in the function
   const std::vector<BasicBlock*>& get_blocks() const;
-        std::vector<BasicBlock*>& get_blocks();
 
+  /// Returns a vector of all the blocks in the function
+  std::vector<BasicBlock*>& get_blocks();
+
+  /// Returns a vector of all the cfg constructs in the function
   const std::vector<CFConstruct>& get_constructs() const;
-        std::vector<CFConstruct>& get_constructs();
+  /// Returns a vector of all the cfg constructs in the function
+  std::vector<CFConstruct>& get_constructs();
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
 
+  /// Returns the id of the funciton
   uint32_t get_id() const { return id_; };
 
   // Returns the number of blocks in the current function being parsed
   size_t get_undefined_block_count() const;
-  const std::unordered_set<uint32_t>& get_undefined_blocks() const{return undefined_blocks_;}
+  const std::unordered_set<uint32_t>& get_undefined_blocks() const {
+    return undefined_blocks_;
+  }
 
   // Returns true if called after a label instruction but before a branch
   // instruction
   bool in_block() const;
 
-        BasicBlock& get_current_block();
+  /// Returns the block that is currently being parsed in the binary
+  BasicBlock& get_current_block();
+
+  /// Returns the block that is currently being parsed in the binary
   const BasicBlock& get_current_block() const;
 
+  /// Prints a GraphViz digraph of the CFG of the current funciton
   void printDotGraph() const;
 
+  /// Prints a directed graph of the CFG of the current funciton
   void printBlocks() const;
 
  private:
-  // Parent module
+  /// Parent module
   ValidationState_t& module_;
 
-  // Function IDs in a module
+  /// Function ID of
   uint32_t id_;
 
-  // The type of the function
+  /// The type of the function
   uint32_t function_type_id_;
 
-  // The type of the return value
+  /// The type of the return value
   uint32_t result_type_id_;
 
+  /// The control fo the funciton
   SpvFunctionControlMask function_control_;
 
-  // The type of declaration of each function
+  /// The type of declaration of each function
   FunctionDecl declaration_type_;
 
-  // The beginning of the block of functions
+  /// The beginning of the block of functions
   std::unordered_map<uint32_t, BasicBlock> blocks_;
 
-  // A list of blocks in the order they appeared in the binary
+  /// A list of blocks in the order they appeared in the binary
   std::vector<BasicBlock*> ordered_blocks_;
 
-  // Blocks which are forward referenced by blocks but not defined
+  /// Blocks which are forward referenced by blocks but not defined
   std::unordered_set<uint32_t> undefined_blocks_;
 
-  // The block that is currently being parsed
+  /// The block that is currently being parsed
   BasicBlock* current_block_;
 
+  /// The constructs that are available in this function
   std::vector<CFConstruct> cfg_constructs_;
 
-  // The variable IDs of the functions
+  /// The variable IDs of the functions
   std::vector<uint32_t> variable_ids_;
 
-  // The function parameter ids of the functions
+  /// The function parameter ids of the functions
   std::vector<uint32_t> parameter_ids_;
-
 };
 
 class ValidationState_t {
@@ -424,11 +489,6 @@ class ValidationState_t {
   // Register a function end instruction
   spv_result_t RegisterFunctionEnd();
 
-  spv_result_t RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id);
-
-  spv_result_t RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id);
-
-
   // Returns true if the capability is enabled in the module.
   bool hasCapability(SpvCapability cap) const;
 
@@ -465,7 +525,8 @@ class ValidationState_t {
 
   std::vector<Function> module_functions_;
 
-  spv_capability_mask_t module_capabilities_;  // Module's declared capabilities.
+  spv_capability_mask_t
+      module_capabilities_;  // Module's declared capabilities.
 
   // Definitions and uses of all the IDs in the module.
   UseDefTracker usedefs_;
@@ -490,8 +551,8 @@ class ValidationState_t {
 // @param[in] first_block the root or entry BasicBlock of a function
 //
 // @return a set of dominator edges represented as a pair of blocks
-std::vector< std::pair<BasicBlock*, BasicBlock*> >
-CalculateDominators(const BasicBlock &first_block);
+std::vector<std::pair<BasicBlock*, BasicBlock*> > CalculateDominators(
+    const BasicBlock& first_block);
 
 /// @brief Performs the Control Flow Graph checks
 ///
@@ -500,21 +561,19 @@ CalculateDominators(const BasicBlock &first_block);
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
 spv_result_t PerformCfgChecks(ValidationState_t& _);
 
-
 // @brief Updates the immediate dominator for each of the block edges
 //
 // Updates the immediate dominator of the blocks for each of the edges
 // provided by the @p dom_edges parameter
 //
 // @param[in,out] dom_edges The edges of the dominator tree
-void
-UpdateImmediateDominators(std::vector<std::pair<BasicBlock*, BasicBlock*> >& dom_edges);
+void UpdateImmediateDominators(
+    std::vector<std::pair<BasicBlock*, BasicBlock*> >& dom_edges);
 
 // @brief Prints all of the dominators of a BasicBlock
 //
 // @param[in] block The dominators of this block will be printed
-void
-printDominatorList(BasicBlock &block);
+void printDominatorList(BasicBlock& block);
 
 }  // namespace libspirv
 
