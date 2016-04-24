@@ -367,7 +367,7 @@ Function::Function(  uint32_t id, uint32_t result_type_id,
   , declaration_type_(FunctionDecl::kFunctionDeclUnknown)
   , blocks_()
   , current_block_(nullptr)
-  , cfg_constructs_(module)
+  , cfg_constructs_()
   , variable_ids_()
   , parameter_ids_()
 {
@@ -421,13 +421,19 @@ spv_result_t Function::RegisterFunctionParameter(uint32_t id,
 
 spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
                                           uint32_t continue_id) {
-  return cfg_constructs_.RegisterLoopMerge(get_current_block().get_id(),
-                                                  merge_id, continue_id);
+  RegisterBlock(merge_id, false);
+  RegisterBlock(continue_id, false);
+  cfg_constructs_.emplace_back(&get_current_block(),
+                               &blocks_.at(merge_id), &blocks_.at(continue_id));
+
+  return SPV_SUCCESS;
 }
 
 spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
-  return cfg_constructs_.RegisterSelectionMerge(
-      get_current_block().get_id(), merge_id);
+  RegisterBlock(merge_id, false);
+  cfg_constructs_.emplace_back(&get_current_block(),
+                               &blocks_.at(merge_id));
+  return SPV_SUCCESS;
 }
 
 void Function::printDotGraph() const {
@@ -457,9 +463,8 @@ spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
   return SPV_SUCCESS;
 }
 
-spv_result_t Function::RegisterBlock(uint32_t id) {
+spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   assert(module_.in_function_body() == true && "Blocks can only exsist in functions");
-  assert(in_block() == false && "Blocks cannot be nested");
   assert(module_.getLayoutSection() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
          "Function declartions must appear before function definitions");
@@ -467,11 +472,18 @@ spv_result_t Function::RegisterBlock(uint32_t id) {
          "Function declaration type should have already been defined");
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
-  tie(tmp, std::ignore) = blocks_.insert({id, BasicBlock(id, module_)});
-  undefined_blocks_.erase(tmp->first);
+  bool success = false;
+  tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
+  if(is_definition) { // new block definition
+    assert(in_block() == false && "Blocks cannot be nested");
 
-  current_block_ = &tmp->second;
-  ordered_blocks_.push_back(current_block_);
+    undefined_blocks_.erase(id);
+    current_block_ = &tmp->second;
+    ordered_blocks_.push_back(current_block_);
+  } else if (success) { // Block doesn't exsist but this is not a definition
+    undefined_blocks_.insert(id);
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -536,6 +548,9 @@ const vector<BasicBlock*>& Function::get_blocks() const { return ordered_blocks_
 const BasicBlock& Function::get_current_block() const { return *current_block_; }
       BasicBlock& Function::get_current_block()       { return *current_block_; }
 
+const vector<CFConstruct>& Function::get_constructs() const { return cfg_constructs_; }
+      vector<CFConstruct>& Function::get_constructs()       { return cfg_constructs_; }
+
 
 const BasicBlock* Function::get_first_block() const {
   if(ordered_blocks_.empty()) return nullptr;
@@ -595,35 +610,50 @@ std::ostream& operator<<(std::ostream& os, const BasicBlock &other) {
 
 bool
 Function::IsMergeBlock(uint32_t merge_block_id) const {
-  return cfg_constructs_.IsMergeBlock(merge_block_id);
+  const auto b =  blocks_.find(merge_block_id);
+  if(b != end(blocks_)) {
+    return cfg_constructs_.end() != find_if(begin(cfg_constructs_), end(cfg_constructs_), [&](const CFConstruct &construct) {
+        return construct.merge_block_ == &b->second;
+      });
+  }
+  else {
+    return false;
+  }
+
 }
 
-bool
-CFConstructs::IsMergeBlock(uint32_t merge_block_id) const {
-  return merge_blocks_.find(merge_block_id) != end(merge_blocks_);
+BasicBlock::DominatorIterator::DominatorIterator()
+  : current_(nullptr) {}
+BasicBlock::DominatorIterator::DominatorIterator(BasicBlock* block)
+  : current_(block) {
 }
 
-spv_result_t
-CFConstructs::RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id) {
-  loop_header_blocks_.push_back(header_id);
-  continue_blocks_.push_back(continue_id);
-
-  bool success;
-  tie(std::ignore, success) = merge_blocks_.insert(merge_id);
-  assert(success && "Merge blocks cannot be targeted by multiple headers");
-
-  return SPV_SUCCESS;
+BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
+  if(current_ == current_->GetImmediateDominator()) {
+    current_ = nullptr;
+  } else {
+    current_ = current_->GetImmediateDominator();
+  }
+  return *this;
 }
 
-spv_result_t
-CFConstructs::RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id) {
-  selection_header_blocks_.push_back(header_id);
-
-  bool success;
-  tie(std::ignore, success) = merge_blocks_.insert(merge_id);
-  assert(success && "Merge blocks cannot be targeted by multiple headers");
-
-  return SPV_SUCCESS;
+BasicBlock::DominatorIterator BasicBlock::dom_begin() {
+  return DominatorIterator(this);
 }
 
+BasicBlock::DominatorIterator BasicBlock::dom_end() {
+  return DominatorIterator();
+}
+
+bool operator==(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs) {
+  return lhs.current_ == rhs.current_;
+}
+
+bool operator!=(const BasicBlock::DominatorIterator& lhs,
+                const BasicBlock::DominatorIterator& rhs) {
+  return !(lhs == rhs);
+}
+
+BasicBlock*& BasicBlock::DominatorIterator::operator*() { return current_; }
 }

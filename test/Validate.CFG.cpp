@@ -44,7 +44,7 @@
 #include "source/diagnostic.h"
 
 using std::array;
-using std::make_pair;
+using std::tie;
 using std::pair;
 using std::string;
 using std::stringstream;
@@ -152,7 +152,7 @@ Block &operator>>(Block &lhs, Block &successor) {
 
 TEST_F(ValidateCFG, PostOrderLinear) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, ScopedContext().context);
+  ValidationState_t state(nullptr, ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
@@ -172,7 +172,7 @@ TEST_F(ValidateCFG, PostOrderLinear) {
 
 TEST_F(ValidateCFG, PostOrderWithCycle) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, ScopedContext().context);
+  ValidationState_t state(nullptr, ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
@@ -200,7 +200,7 @@ TEST_F(ValidateCFG, PostOrderWithCycle) {
 
 TEST_F(ValidateCFG, PostOrderWithSwitch) {
   vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr, ScopedContext().context);
+  ValidationState_t state(nullptr, ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
     blocks.emplace_back(i, state);
@@ -259,7 +259,7 @@ TEST_F(ValidateCFG, Default) {
       "OpLoopMerge %merge %cont None\n");
 
   string str = header + nameOps("loop", "first", "cont", "merge",
-                                make_pair("func", "Main")) +
+                                tie("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += first >> loop;
@@ -278,7 +278,7 @@ TEST_F(ValidateCFG, Variable) {
 
   entry.setBody("%var = OpVariable %ptrt Function\n");
 
-  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+  string str = header + nameOps(tie("func", "Main")) + types_consts +
                " %func    = OpFunction %voidt None %funct\n";
   str += entry >> cont;
   str += cont >> exit;
@@ -296,7 +296,7 @@ TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
   // This operation should only be performed in the entry block
   cont.setBody("%var = OpVariable %ptrt Function\n");
 
-  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+  string str = header + nameOps(tie("func", "Main")) + types_consts +
                " %func    = OpFunction %voidt None %funct\n";
 
   str += entry >> cont;
@@ -317,7 +317,7 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   branch.setBody(" %cond    = OpSLessThan %intt %one %two\n"
                "OpSelectionMerge %merge None\n");
 
-  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
+  string str = header + nameOps("cont", "branch", tie("func", "Main")) + types_consts +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> branch;
@@ -327,12 +327,14 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Dominators"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("appears in the binary before its dominator"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("cont"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("branch"));
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   Block entry("entry");
-  Block loop("loop", SpvOpBranch);
+  Block loop("loop");
   Block badhead("badhead", SpvOpBranchConditional);
   Block t("t");
   Block f("f");
@@ -349,7 +351,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
       "OpSelectionMerge %merge None\n");
 
   string str = header
-             + nameOps("merge", make_pair("func", "Main"))
+             + nameOps("merge", tie("func", "Main"))
              + types_consts
              + "%func    = OpFunction %voidt None %funct\n";
 
@@ -367,12 +369,47 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("merge"));
 }
 
+TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
+  Block entry("entry");
+  Block loop("loop");
+  Block badhead("badhead", SpvOpBranchConditional);
+  Block t("t");
+  Block f("f");
+  Block cont("cont");
+  Block merge("merge");
+  Block end("end", SpvOpReturn);
+
+  // cannot share the same merge
+  loop.setBody(" OpLoopMerge %merge %cont None\n");
+
+  badhead.setBody(" %cond   = OpSLessThan %intt %one %two\n"
+                  " OpSelectionMerge %merge None\n");
+
+  string str = header
+             + nameOps("merge", tie("func", "Main"))
+             + types_consts
+             + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> badhead;
+  str += badhead >> vector<Block>({t, f});
+  str += t >> merge;
+  str += f >> cont;
+  str += cont >> loop;
+  str += loop >> merge;
+  str += merge >> end;
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("merge"));
+}
+
 TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
   Block entry("entry");
   Block bad("bad");
   Block end("end", SpvOpReturn);
   string str = header
-             + nameOps(make_pair("func", "Main"))
+    + nameOps("entry", "bad", tie("func", "Main"))
              + types_consts
     + "%func    = OpFunction %voidt None %funct\n";
 
@@ -383,6 +420,9 @@ TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("entry"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Main"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("bad"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
@@ -396,7 +436,7 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
               "OpLoopMerge %merge %cont None\n");
 
   string str = header
-             + nameOps(make_pair("func", "Main"))
+             + nameOps("entry", "bad", tie("func", "Main"))
              + types_consts
              + "%func    = OpFunction %voidt None %funct\n";
 
@@ -409,6 +449,9 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("entry"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Main"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("bad"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
@@ -422,7 +465,7 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
               "OpLoopMerge %merge %cont None\n");
 
   string str = header
-             + nameOps(make_pair("func", "Main"))
+             + nameOps("entry", "bad", tie("func", "Main"))
              + types_consts
              + "%func    = OpFunction %voidt None %funct\n";
 
@@ -434,6 +477,9 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("entry"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Main"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("bad"));
 }
 
 TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
@@ -450,7 +496,7 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
               "OpSelectionMerge %merge None\n");
 
   string str = header
-             + nameOps(make_pair("func", "Main"))
+             + nameOps("entry", "bad", tie("func", "Main"))
              + types_consts
              + "%func    = OpFunction %voidt None %funct\n";
 
@@ -466,6 +512,9 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("First block"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("entry"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Main"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("bad"));
 }
 
 TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
@@ -481,7 +530,7 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   Block end2("end2", SpvOpReturn);
 
   string str = header
-    + nameOps(make_pair("func", "Main"))
+    + nameOps("middle2", tie("func", "Main"))
     + types_consts
     + "%func    = OpFunction %voidt None %funct\n";
 
@@ -496,6 +545,43 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("within the same function"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Main"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("middle2"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("are referenced but not defined"));
 }
+
+  // TODO (umar): Fix this
+TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
+  Block entry("entry");
+  Block bad("bad", SpvOpBranchConditional);
+  Block f("f");
+  Block merge("merge", SpvOpBranchConditional);
+  Block cont("cont");
+  Block end("end", SpvOpReturn);
+
+  bad.setBody("OpLoopMerge %merge %cont None\n");
+
+  merge.setBody(" %cond    = OpSLessThan %intt %one %two\n"
+                "OpSelectionMerge %end None\n");
+
+  string str = header
+    + nameOps("bad", "merge", tie("func", "Main"))
+    + types_consts
+    + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> merge;
+  str += merge >> vector<Block>({bad, end});
+  str += bad >> vector<Block>({cont, f});
+  str += cont >> merge;
+  str += f >> end;
+  str += end;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Header block"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("doesn't dominate"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("[bad]"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("[merge]"));
+}
+
 }

@@ -180,7 +180,10 @@ void printDominatorList(BasicBlock &b) {
 spv_result_t
 FirstBlockAssert(ValidationState_t& _, uint32_t target) {
   if(_.get_current_function().IsFirstBlock(target)) {
-    return _.diag(SPV_ERROR_INVALID_CFG) << "First block cannot be a target of any branch";
+    return _.diag(SPV_ERROR_INVALID_CFG)
+      << "First block " << _.getIdName(target)
+      << " of funciton "<< _.getIdName(_.get_current_function().get_id())
+      << " is targeted by block " << _.getIdName(_.get_current_function().get_current_block().get_id());
   }
   return SPV_SUCCESS;
 }
@@ -203,7 +206,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       libspirv::UpdateImmediateDominators(edges);
     }
 
-    // Check if the dominators appear before the blocks they dominate
+    // Check the order of blocks in the binary appear dominators appear before
+    // the blocks they dominate
     auto& blocks = function.get_blocks();
     for(size_t i = 1; i < blocks.size(); i++) {
       auto block = blocks[i];
@@ -212,16 +216,36 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       auto this_block = blocks.begin() + i;
       if(this_block == std::find(begin(blocks), this_block, idom)) {
         return _.diag(SPV_ERROR_INVALID_CFG)
-          << "Dominators must appear before the blocks they dominate";
+          << "Block " << _.getIdName(block->get_id())
+          << " appears in the binary before its dominator "
+          << _.getIdName(idom->get_id());
       }
     }
 
-    // TODO(umar): Branched blocks appear within a function
+    // Check all referenced blocks are defined within a function
     if(function.get_undefined_block_count() != 0) {
+      std::stringstream ss;
+      ss << "{";
+      for(auto undefined_block : function.get_undefined_blocks()) {
+        ss << _.getIdName(undefined_block) << " ";
+      }
       return _.diag(SPV_ERROR_INVALID_CFG)
-        << "Branches can only reference blocks within the same function";
+        << "Block(s) " << ss.str() << "\b}"
+        << " are referenced but not defined in function "
+        << _.getIdName(function.get_id());
     }
 
+    // Check all headers dominate their merge blocks
+    for(CFConstruct& construct : function.get_constructs()) {
+      auto header = construct.header_block_;
+      auto merge = construct.merge_block_;
+
+      if(merge->dom_end() == std::find(merge->dom_begin(), merge->dom_end(), header)) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+          << "Header block " << _.getIdName(header->get_id())
+          << " doesn't dominate its merge block " << _.getIdName(merge->get_id());
+      }
+    }
   }
   return SPV_SUCCESS;
 }

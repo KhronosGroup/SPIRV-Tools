@@ -146,6 +146,24 @@ public:
   bool operator==(const BasicBlock &other) const { return other.id_ == id_; }
   bool operator==(const uint32_t &id) const { return id == id_; }
 
+  class DominatorIterator {
+    BasicBlock* current_;
+
+   public:
+    DominatorIterator();
+    DominatorIterator(BasicBlock* block);
+
+    DominatorIterator& operator++();
+
+    friend bool operator==(const DominatorIterator& lhs,
+                           const DominatorIterator& rhs);
+    BasicBlock*& operator*();
+  };
+
+  DominatorIterator dom_begin();
+
+  DominatorIterator dom_end();
+
   friend std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
 private:
   // Id of the BasicBlock
@@ -163,38 +181,24 @@ private:
   Function* function_;
 };
 
-class CFConstructs {
+bool operator==(const BasicBlock::DominatorIterator& lhs, const BasicBlock::DominatorIterator& rhs);
+bool operator!=(const BasicBlock::DominatorIterator& lhs, const BasicBlock::DominatorIterator& rhs);
+
+class CFConstruct {
 
 // Universal Limit of ResultID + 1
 static const uint32_t kInitialValue = 0x400000;
 
 public:
-  CFConstructs(const ValidationState_t &module)
-    : module_(module)
-    , merge_blocks_()
-    , selection_header_blocks_()
-    , loop_header_blocks_()
-    , continue_blocks_()
-    , back_edges_() {}
+  CFConstruct(BasicBlock* header_block, BasicBlock* merge_block, BasicBlock* continue_block = nullptr)
+    : header_block_(header_block)
+    , merge_block_(merge_block)
+    , continue_block_(continue_block) {}
 
-  bool IsMergeBlock(uint32_t merge_block_id) const;
-
-  spv_result_t RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id);
-
-  spv_result_t RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id);
-
+  BasicBlock* header_block_;
+  BasicBlock* merge_block_;
+  BasicBlock* continue_block_;
 private:
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
-
-  const ValidationState_t &module_;
-  std::unordered_set<uint32_t> merge_blocks_;
-  std::vector<uint32_t> selection_header_blocks_;
-
-  // Loop constructs
-  std::vector<uint32_t> loop_header_blocks_;
-  std::vector<uint32_t> continue_blocks_;
-  std::vector<std::pair<uint32_t, uint32_t> > back_edges_;
-
 };
 
 std::ostream& operator<<(std::ostream& os, const BasicBlock &other);
@@ -220,7 +224,7 @@ class Function {
   // Registers a block in the current function. Subsequent block instructions
   // will target this block
   // @param id The ID of the label of the block
-  spv_result_t RegisterBlock(uint32_t id);
+  spv_result_t RegisterBlock(uint32_t id, bool is_definition = true);
 
   // Registers a variable in the current block
   spv_result_t RegisterBlockVariable(uint32_t type_id, uint32_t id,
@@ -249,14 +253,17 @@ class Function {
   const std::vector<BasicBlock*>& get_blocks() const;
         std::vector<BasicBlock*>& get_blocks();
 
-  const CFConstructs& get_constructs() const;
-        CFConstructs& get_constructs();
+  const std::vector<CFConstruct>& get_constructs() const;
+        std::vector<CFConstruct>& get_constructs();
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
 
+  uint32_t get_id() const { return id_; };
+
   // Returns the number of blocks in the current function being parsed
   size_t get_undefined_block_count() const;
+  const std::unordered_set<uint32_t>& get_undefined_blocks() const{return undefined_blocks_;}
 
   // Returns true if called after a label instruction but before a branch
   // instruction
@@ -299,7 +306,7 @@ class Function {
   // The block that is currently being parsed
   BasicBlock* current_block_;
 
-  CFConstructs cfg_constructs_;
+  std::vector<CFConstruct> cfg_constructs_;
 
   // The variable IDs of the functions
   std::vector<uint32_t> variable_ids_;
@@ -416,6 +423,10 @@ class ValidationState_t {
 
   // Register a function end instruction
   spv_result_t RegisterFunctionEnd();
+
+  spv_result_t RegisterLoopMerge(uint32_t header_id, uint32_t merge_id, uint32_t continue_id);
+
+  spv_result_t RegisterSelectionMerge(uint32_t header_id, uint32_t merge_id);
 
 
   // Returns true if the capability is enabled in the module.
