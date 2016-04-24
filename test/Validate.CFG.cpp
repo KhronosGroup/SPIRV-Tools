@@ -44,10 +44,10 @@
 #include "source/validate.h"
 
 using std::array;
+using std::make_pair;
 using std::pair;
 using std::string;
 using std::stringstream;
-using std::tie;
 using std::vector;
 
 using ::testing::HasSubstr;
@@ -260,7 +260,7 @@ TEST_F(ValidateCFG, Default) {
       "OpLoopMerge %merge %cont None\n");
 
   string str = header +
-               nameOps("loop", "first", "cont", "merge", tie("func", "Main")) +
+               nameOps("loop", "first", "cont", "merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += first >> loop;
@@ -279,7 +279,7 @@ TEST_F(ValidateCFG, Variable) {
 
   entry.setBody("%var = OpVariable %ptrt Function\n");
 
-  string str = header + nameOps(tie("func", "Main")) + types_consts +
+  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
                " %func    = OpFunction %voidt None %funct\n";
   str += entry >> cont;
   str += cont >> exit;
@@ -297,7 +297,7 @@ TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
   // This operation should only be performed in the entry block
   cont.setBody("%var = OpVariable %ptrt Function\n");
 
-  string str = header + nameOps(tie("func", "Main")) + types_consts +
+  string str = header + nameOps(make_pair("func", "Main")) + types_consts +
                " %func    = OpFunction %voidt None %funct\n";
 
   str += entry >> cont;
@@ -319,7 +319,7 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
       " %cond    = OpSLessThan %intt %one %two\n"
       "OpSelectionMerge %merge None\n");
 
-  string str = header + nameOps("cont", "branch", tie("func", "Main")) +
+  string str = header + nameOps("cont", "branch", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> branch;
@@ -353,7 +353,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
       " %cond1   = OpSLessThan %intt %one %two\n"
       "OpSelectionMerge %merge None\n");
 
-  string str = header + nameOps("merge", tie("func", "Main")) + types_consts +
+  string str = header + nameOps("merge", make_pair("func", "Main")) + types_consts +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
@@ -387,7 +387,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
       " %cond   = OpSLessThan %intt %one %two\n"
       " OpSelectionMerge %merge None\n");
 
-  string str = header + nameOps("merge", tie("func", "Main")) + types_consts +
+  string str = header + nameOps("merge", make_pair("func", "Main")) + types_consts +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> badhead;
@@ -408,7 +408,7 @@ TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
   Block entry("entry");
   Block bad("bad");
   Block end("end", SpvOpReturn);
-  string str = header + nameOps("entry", "bad", tie("func", "Main")) +
+  string str = header + nameOps("entry", "bad", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
@@ -434,7 +434,7 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
       " %cond    = OpSLessThan %intt %one %two\n"
       "OpLoopMerge %merge %cont None\n");
 
-  string str = header + nameOps("entry", "bad", tie("func", "Main")) +
+  string str = header + nameOps("entry", "bad", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
@@ -462,7 +462,7 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
       "%cond    = OpSLessThan %intt %one %two\n"
       "OpLoopMerge %merge %cont None\n");
 
-  string str = header + nameOps("entry", "bad", tie("func", "Main")) +
+  string str = header + nameOps("entry", "bad", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
@@ -492,7 +492,7 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
       "%cond    = OpSLessThan %intt %one %two\n"
       "OpSelectionMerge %merge None\n");
 
-  string str = header + nameOps("entry", "bad", tie("func", "Main")) +
+  string str = header + nameOps("entry", "bad", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
@@ -525,7 +525,7 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   Block middle2("middle2");
   Block end2("end2", SpvOpReturn);
 
-  string str = header + nameOps("middle2", tie("func", "Main")) + types_consts +
+  string str = header + nameOps("middle2", make_pair("func", "Main")) + types_consts +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> middle;
@@ -559,7 +559,7 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
       " %cond    = OpSLessThan %intt %one %two\n"
       "OpSelectionMerge %end None\n");
 
-  string str = header + nameOps("bad", "merge", tie("func", "Main")) +
+  string str = header + nameOps("bad", "merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> merge;

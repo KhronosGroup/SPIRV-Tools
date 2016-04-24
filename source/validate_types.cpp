@@ -29,6 +29,7 @@
 #include <iomanip>
 #include <iterator>
 #include <limits>
+#include <list>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -39,6 +40,7 @@
 #include "validate.h"
 
 using std::find;
+using std::list;
 using std::numeric_limits;
 using std::string;
 using std::unordered_set;
@@ -223,7 +225,8 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       module_capabilities_(0u),
       grammar_(context),
       addressing_model_(SpvAddressingModelLogical),
-      memory_model_(SpvMemoryModelSimple) {}
+      memory_model_(SpvMemoryModelSimple),
+      in_function_(false) {}
 
 spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
@@ -299,7 +302,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-vector<Function>& ValidationState_t::get_functions() {
+list<Function>& ValidationState_t::get_functions() {
   return module_functions_;
 }
 
@@ -430,22 +433,25 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
 
 void Function::printDotGraph() const {
   using namespace std;
-  string func_name(module_.getIdOrName(id_));
-  printf("digraph %s {\n", func_name.c_str());
-
-  cout << setw(10) << func_name << " -> "
-       << module_.getIdOrName(get_first_block()->get_id()) << endl;
-  for (auto block : blocks_) {
-    std::cout << setw(10) << block.second << std::endl;
+  if(get_first_block()) {
+    string func_name(module_.getIdOrName(id_));
+    printf("digraph %s {\n", func_name.c_str());
+    cout << setw(10) << func_name << " -> "
+         << module_.getIdOrName(get_first_block()->get_id()) << endl;
+    for (auto& block : blocks_) {
+      std::cout << setw(10) << block.second << std::endl;
+    }
+    printf("}\n");
   }
-  printf("}\n");
 }
 
 void Function::printBlocks() const {
-  printf("begin -> %s\n",
-         module_.getIdOrName(get_first_block()->get_id()).c_str());
-  for (auto block : blocks_) {
-    std::cout << block.second << std::endl;
+  if(get_first_block()) {
+    printf("begin -> %s\n",
+          module_.getIdOrName(get_first_block()->get_id()).c_str());
+    for (auto block : blocks_) {
+      std::cout << block.second << std::endl;
+    }
   }
 }
 
@@ -547,10 +553,10 @@ const BasicBlock& Function::get_current_block() const {
 }
 BasicBlock& Function::get_current_block() { return *current_block_; }
 
-const vector<CFConstruct>& Function::get_constructs() const {
+const list<CFConstruct>& Function::get_constructs() const {
   return cfg_constructs_;
 }
-vector<CFConstruct>& Function::get_constructs() { return cfg_constructs_; }
+list<CFConstruct>& Function::get_constructs() { return cfg_constructs_; }
 
 const BasicBlock* Function::get_first_block() const {
   if (ordered_blocks_.empty()) return nullptr;

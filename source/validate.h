@@ -35,6 +35,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <list>
 
 #include "assembly_grammar.h"
 #include "binary.h"
@@ -160,7 +161,7 @@ class BasicBlock {
   ///
   /// This iterator will iterate to the the immediate dominators
   /// of the block
-  class DominatorIterator {
+  class DominatorIterator : public std::iterator<std::forward_iterator_tag, BasicBlock*> {
    public:
     /// @brief Constructs the end of dominator iterator
     ///
@@ -308,9 +309,9 @@ class Function {
   std::vector<BasicBlock*>& get_blocks();
 
   /// Returns a vector of all the cfg constructs in the function
-  const std::vector<CFConstruct>& get_constructs() const;
+  const std::list<CFConstruct>& get_constructs() const;
   /// Returns a vector of all the cfg constructs in the function
-  std::vector<CFConstruct>& get_constructs();
+  std::list<CFConstruct>& get_constructs();
 
   // Returns the number of blocks in the current function being parsed
   size_t get_block_count() const;
@@ -372,7 +373,7 @@ class Function {
   BasicBlock* current_block_;
 
   /// The constructs that are available in this function
-  std::vector<CFConstruct> cfg_constructs_;
+  std::list<CFConstruct> cfg_constructs_;
 
   /// The variable IDs of the functions
   std::vector<uint32_t> variable_ids_;
@@ -426,7 +427,7 @@ class ValidationState_t {
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
   // Returns the function states
-  std::vector<Function>& get_functions();
+  std::list<Function>& get_functions();
 
   // Returns the function states
   Function& get_current_function();
@@ -523,7 +524,7 @@ class ValidationState_t {
   // The section of the code being processed
   ModuleLayoutSection current_layout_section_;
 
-  std::vector<Function> module_functions_;
+  std::list<Function> module_functions_;
 
   spv_capability_mask_t
       module_capabilities_;  // Module's declared capabilities.
