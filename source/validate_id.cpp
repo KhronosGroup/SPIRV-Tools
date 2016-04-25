@@ -50,6 +50,8 @@ class idUsage {
           const spv_operand_table operandTableArg,
           const spv_ext_inst_table extInstTableArg,
           const spv_instruction_t* pInsts, const uint64_t instCountArg,
+          const SpvMemoryModel memoryModelArg,
+          const SpvAddressingModel addressingModelArg,
           const UseDefTracker& usedefs,
           const std::vector<uint32_t>& entry_points, spv_position positionArg,
           spv_diagnostic* pDiagnosticArg)
@@ -58,6 +60,8 @@ class idUsage {
         extInstTable(extInstTableArg),
         firstInst(pInsts),
         instCount(instCountArg),
+        memoryModel(memoryModelArg),
+        addressingModel(addressingModelArg),
         position(positionArg),
         pDiagnostic(pDiagnosticArg),
         usedefs_(usedefs),
@@ -74,6 +78,8 @@ class idUsage {
   const spv_ext_inst_table extInstTable;
   const spv_instruction_t* const firstInst;
   const uint64_t instCount;
+  const SpvMemoryModel memoryModel;
+  const SpvAddressingModel addressingModel;
   spv_position position;
   spv_diagnostic* pDiagnostic;
   UseDefTracker usedefs_;
@@ -755,7 +761,9 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
            return false);
   auto pointerIndex = 3;
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
-  if (!pointer.first || !spvOpcodeIsPotentialPointer(pointer.second.opcode)) {
+  if (!pointer.first ||
+      (addressingModel == SpvAddressingModelLogical &&
+       !spvOpcodeIsPointer(pointer.second.opcode))) {
     DIAG(pointerIndex) << "OpLoad Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;
@@ -783,7 +791,9 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
                                   const spv_opcode_desc) {
   auto pointerIndex = 1;
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
-  if (!pointer.first || !spvOpcodeIsPotentialPointer(pointer.second.opcode)) {
+  if (!pointer.first ||
+      (addressingModel == SpvAddressingModelLogical &&
+       !spvOpcodeIsPointer(pointer.second.opcode))) {
     DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;
@@ -2337,6 +2347,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        spv_position position,
                                        spv_diagnostic* pDiag) {
   idUsage idUsage(opcodeTable, operandTable, extInstTable, pInsts, instCount,
+                  state.getMemoryModel(), state.getAddressingModel(),
                   state.usedefs(), state.entry_points(), position, pDiag);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     spvCheck(!idUsage.isValid(&pInsts[instIndex]), return SPV_ERROR_INVALID_ID);

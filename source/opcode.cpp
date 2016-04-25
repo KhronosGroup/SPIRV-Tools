@@ -236,22 +236,10 @@ int32_t spvOpcodeIsPointer(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpVariable:
     case SpvOpAccessChain:
-    case SpvOpPtrAccessChain:
     case SpvOpInBoundsAccessChain:
-    case SpvOpInBoundsPtrAccessChain:
     case SpvOpFunctionParameter:
-      return true;
-    default:
-      return false;
-  }
-}
-
-int32_t spvOpcodeIsPotentialPointer(const SpvOp opcode) {
-  if (spvOpcodeIsPointer(opcode))
-    return true;
-
-  switch (opcode) {
-    case SpvOpBitcast:
+    case SpvOpImageTexelPointer:
+    case SpvOpCopyObject:
       return true;
     default:
       return false;
