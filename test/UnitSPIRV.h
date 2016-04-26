@@ -180,6 +180,7 @@ struct AutoText {
 template <typename E>
 class EnumCase {
  public:
+  EnumCase() = default;  // Required by ::testing::Combine().
   EnumCase(E val, std::string enum_name, std::vector<uint32_t> ops = {})
       : enum_value_(val), name_(enum_name), operands_(ops) {}
   // Returns the enum value as a uint32_t.
