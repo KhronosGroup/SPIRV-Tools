@@ -45,25 +45,15 @@
 #include "spirv_definition.h"
 #include "table.h"
 
-// clang-format off
-#define _printf_  printf
-#define MSG(msg,...) do {                       \
-    _printf_(__FILE__":%d: " msg "\n",          \
-             __LINE__, ##__VA_ARGS__);          \
+#define MSG(msg)                                        \
+  do {                                                  \
+    libspirv::message(__FILE__, size_t(__LINE__), msg); \
   } while (0)
 
-#ifdef DEBUG
-#define MSG_DBG      MSG
-#else
-#define MSG_DBG(...) do { /* nothing */ } while (0)
-#endif
-
-
-#define SHOW(exp)   do { MSG("%s  %ld",   #exp, (long)exp);   } while (0)
-#define SHOW_P(ptr) do { MSG("%s  %#zx",  #ptr, (size_t)ptr); } while (0)
-#define SHOW_F(exp) do { MSG("%s  %g",    #exp, (double)exp); } while (0)
-#define SHOW_S(exp) do { MSG("%s  %s",    #exp, exp);         } while (0)
-// clang-format on
+#define SHOW(exp)                                               \
+  do {                                                          \
+    libspirv::message(__FILE__, size_t(__LINE__), #exp, (exp)); \
+  } while (0)
 
 // Structures
 
@@ -80,6 +70,13 @@ typedef struct spv_id_info_t {
 } spv_id_info_t;
 
 namespace libspirv {
+
+void message(std::string file, size_t line, std::string name);
+
+template<typename T>
+void message(std::string file, size_t line, std::string name, T val) {
+  std::cout << file << ":" << line << ": " << name << " " << val << std::endl;
+}
 
 // This enum represents the sections of a SPIRV module. See section 2.4
 // of the SPIRV spec for additional details of the order. The enumerant values

@@ -213,6 +213,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 
 namespace libspirv {
 
+void message(std::string file, size_t line, std::string name) {
+  std::cout << file << ":" << line << ": " << name << std::endl;
+}
+
 ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
                                      const spv_const_context context)
     : diagnostic_(diagnostic),
