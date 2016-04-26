@@ -632,7 +632,7 @@ INSTANTIATE_TEST_CASE_P(
 
 // See SPIR-V Section 3.31 Capability
 INSTANTIATE_TEST_CASE_P(
-    Capability, EnumCapabilityTest,
+    CapabilityDependsOn, EnumCapabilityTest,
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
         ValuesIn(std::vector<EnumCapabilityCase>{
@@ -697,6 +697,15 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(CAPABILITY, CapabilityMultiViewport, Geometry),
             // clang-format on
         })), );
+
+INSTANTIATE_TEST_CASE_P(
+    CapabilityDependsOnV11, EnumCapabilityTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCapabilityCase>{
+                CASE1(CAPABILITY, CapabilitySubgroupDispatch, DeviceEnqueue),
+                CASE1(CAPABILITY, CapabilityNamedBarrier, Kernel),
+                CASE1(CAPABILITY, CapabilityPipeStorage, Pipes),
+            })), );
 
 #undef CASE0
 #undef CASE1
