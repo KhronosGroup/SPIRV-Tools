@@ -115,7 +115,7 @@ class BasicBlock {
   ///
   /// @param[in] id The ID of the basic block
   /// @param[in] module A reference of the module of the basic block
-  BasicBlock(uint32_t id, ValidationState_t& module);
+  BasicBlock(uint32_t id);
 
   /// Returns the id of the BasicBlock
   uint32_t get_id() const { return id_; }
@@ -169,7 +169,10 @@ class BasicBlock {
     /// before the root node of the dominator tree
     DominatorIterator();
 
-    /// @brief Constructs an iterator for the given block which points
+    /// @brief Constructs an iterator for the given block which points to
+    ///        @p block
+    ///
+    /// @param block The block which is referenced by the iterator
     DominatorIterator(BasicBlock* block);
 
     /// @brief Advances the iterator
@@ -185,11 +188,11 @@ class BasicBlock {
     BasicBlock* current_;
   };
 
+  /// Returns an iterator which points to the current block
   DominatorIterator dom_begin();
 
+  /// Returns an iterator which points to one element past the first block
   DominatorIterator dom_end();
-
-  friend std::ostream& operator<<(std::ostream& os, const BasicBlock& other);
 
  private:
   // Id of the BasicBlock
@@ -203,15 +206,18 @@ class BasicBlock {
 
   // The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
-  ValidationState_t& module_;
+
+  // The function which contains this block
   Function* function_;
 };
 
-/// @brief Returns true if the iterators point to the same element
+/// @brief Returns true if the iterators point to the same element or if both
+///        iterators point to the @p dom_end block
 bool operator==(const BasicBlock::DominatorIterator& lhs,
                 const BasicBlock::DominatorIterator& rhs);
 
-/// @brief Returns true if the iterators point to the differet element
+/// @brief Returns true if the iterators point to different elements and they
+///        do not both point to the @p dom_end block
 bool operator!=(const BasicBlock::DominatorIterator& lhs,
                 const BasicBlock::DominatorIterator& rhs);
 
@@ -232,8 +238,6 @@ class CFConstruct {
   BasicBlock* continue_block_;  ///< The continue block of a loop block
  private:
 };
-
-std::ostream& operator<<(std::ostream& os, const BasicBlock& other);
 
 // This class manages all function declaration and definitions in a module. It
 // handles the state and id information while parsing a function in the SPIR-V

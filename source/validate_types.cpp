@@ -26,7 +26,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iomanip>
 #include <iterator>
 #include <limits>
 #include <list>
@@ -431,26 +430,34 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   return SPV_SUCCESS;
 }
 
+void printDot(const BasicBlock& other, const ValidationState_t& module) {
+  string block_string;
+  if (other.get_successors().empty()) {
+    block_string += "end ";
+  } else {
+    for (auto& block : other.get_successors()) {
+      block_string += module.getIdOrName(block->get_id()) + " ";
+    }
+  }
+  printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(), block_string.c_str());
+}
+
 void Function::printDotGraph() const {
   using namespace std;
   if(get_first_block()) {
     string func_name(module_.getIdOrName(id_));
     printf("digraph %s {\n", func_name.c_str());
-    cout << setw(10) << func_name << " -> "
-         << module_.getIdOrName(get_first_block()->get_id()) << endl;
-    for (auto& block : blocks_) {
-      std::cout << setw(10) << block.second << std::endl;
-    }
+    printBlocks();
     printf("}\n");
   }
 }
 
 void Function::printBlocks() const {
   if(get_first_block()) {
-    printf("begin -> %s\n",
-          module_.getIdOrName(get_first_block()->get_id()).c_str());
-    for (auto block : blocks_) {
-      std::cout << block.second << std::endl;
+    printf("%10s -> %s\n",
+           module_.getIdOrName(id_).c_str() , module_.getIdOrName(get_first_block()->get_id()).c_str());
+    for (const auto& block : blocks_) {
+      printDot(block.second, module_);
     }
   }
 }
@@ -472,7 +479,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success = false;
-  tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
+  tie(tmp, success) = blocks_.insert({id, BasicBlock(id)});
   if (is_definition) {  // new block definition
     assert(in_block() == false && "Blocks cannot be nested");
 
@@ -503,7 +510,7 @@ spv_result_t Function::RegisterBlockEnd(uint32_t next_id) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success;
-  tie(tmp, success) = blocks_.insert({next_id, BasicBlock(next_id, module_)});
+  tie(tmp, success) = blocks_.insert({next_id, BasicBlock(next_id)});
   if (success) {
     undefined_blocks_.insert(next_id);
   }
@@ -525,7 +532,7 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
   std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
   bool success;
   for (uint32_t id : next_list) {
-    tie(tmp, success) = blocks_.insert({id, BasicBlock(id, module_)});
+    tie(tmp, success) = blocks_.insert({id, BasicBlock(id)});
     if (success) {
       undefined_blocks_.insert(id);
     }
@@ -567,12 +574,11 @@ BasicBlock* Function::get_first_block() {
   return ordered_blocks_[0];
 }
 
-BasicBlock::BasicBlock(uint32_t id, ValidationState_t& module)
+BasicBlock::BasicBlock(uint32_t id)
     : id_(id),
       immediate_dominator_(nullptr),
       predecessors_(),
-      successors_(),
-      module_(module) {}
+      successors_() {}
 
 void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
   immediate_dominator_ = dom_block;
@@ -596,18 +602,6 @@ void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock& other) {
-  os << other.module_.getIdOrName(other.id_) << " -> {";
-  if (other.successors_.empty()) {
-    os << "end";
-  } else {
-    for (auto& block : other.successors_) {
-      os << other.module_.getIdOrName(block->get_id()) << " ";
-    }
-  }
-  os << "}";
-  return os;
-}
 
 bool Function::IsMergeBlock(uint32_t merge_block_id) const {
   const auto b = blocks_.find(merge_block_id);

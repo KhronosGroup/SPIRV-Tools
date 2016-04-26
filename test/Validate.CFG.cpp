@@ -154,7 +154,7 @@ TEST_F(ValidateCFG, PostOrderLinear) {
                           ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i, state);
+    blocks.emplace_back(i);
   }
 
   for (int i = 0; i < 6; i++) {
@@ -175,7 +175,7 @@ TEST_F(ValidateCFG, PostOrderWithCycle) {
                           ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i, state);
+    blocks.emplace_back(i);
   }
 
   blocks[0].RegisterSuccessor({&blocks[1]});
@@ -204,7 +204,7 @@ TEST_F(ValidateCFG, PostOrderWithSwitch) {
                           ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
 
   for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i, state);
+    blocks.emplace_back(i);
   }
 
   blocks[0].RegisterSuccessor({&blocks[1]});
