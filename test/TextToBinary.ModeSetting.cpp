@@ -203,6 +203,8 @@ INSTANTIATE_TEST_CASE_P(
     TextToBinaryExecutionModeV11, OpExecutionModeTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCase<SpvExecutionMode>>{
+                {CASE(Initializer)},
+                {CASE(Finalizer)},
                 {CASE(SubgroupSize), {12}},
                 {CASE(SubgroupsPerWorkgroup), {64}}})), );
 #undef CASE
