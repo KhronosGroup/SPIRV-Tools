@@ -27,23 +27,34 @@
 // Assembler tests for instructions in the "Control Flow" section of the
 // SPIR-V spec.
 
+#include <sstream>
+#include <tuple>
+#include <vector>
+
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
+using ::testing::Combine;
+using ::testing::Eq;
+using ::testing::TestWithParam;
+using ::testing::Values;
+using ::testing::ValuesIn;
+using spvtest::Concatenate;
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
-using spvtest::Concatenate;
 using spvtest::TextToBinaryTest;
-using ::testing::Eq;
+using std::get;
+using std::ostringstream;
+using std::tuple;
 
 // Test OpSelectionMerge
 
 using OpSelectionMergeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<SpvSelectionControlMask>>>;
+    TestWithParam<EnumCase<SpvSelectionControlMask>>>;
 
 TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
   const std::string input = "OpSelectionMerge %1 " + GetParam().name();
@@ -55,7 +66,7 @@ TEST_P(OpSelectionMergeTest, AnySingleSelectionControlMask) {
 // clang-format off
 #define CASE(VALUE,NAME) { SpvSelectionControl##VALUE, NAME}
 INSTANTIATE_TEST_CASE_P(TextToBinarySelectionMerge, OpSelectionMergeTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<SpvSelectionControlMask>>{
+                        ValuesIn(std::vector<EnumCase<SpvSelectionControlMask>>{
                             CASE(MaskNone, "None"),
                             CASE(FlattenMask, "Flatten"),
                             CASE(DontFlattenMask, "DontFlatten"),
@@ -80,24 +91,48 @@ TEST_F(OpSelectionMergeTest, WrongSelectionControl) {
 // Test OpLoopMerge
 
 using OpLoopMergeTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<SpvLoopControlMask>>>;
+    TestWithParam<tuple<spv_target_env, EnumCase<int>>>>;
 
 TEST_P(OpLoopMergeTest, AnySingleLoopControlMask) {
-  const std::string input = "OpLoopMerge %merge %continue " + GetParam().name();
-  EXPECT_THAT(CompiledInstructions(input),
-              Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, GetParam().value()})));
+  const auto ctrl = get<1>(GetParam());
+  ostringstream input;
+  input << "OpLoopMerge %merge %continue " << ctrl.name();
+  for (auto num : ctrl.operands()) input << " " << num;
+  EXPECT_THAT(CompiledInstructions(input.str(), get<0>(GetParam())),
+              Eq(MakeInstruction(SpvOpLoopMerge, {1, 2, ctrl.value()},
+                                 ctrl.operands())));
 }
 
-// clang-format off
-#define CASE(VALUE,NAME) { SpvLoopControl##VALUE, NAME}
-INSTANTIATE_TEST_CASE_P(TextToBinaryLoopMerge, OpLoopMergeTest,
-                        ::testing::ValuesIn(std::vector<EnumCase<SpvLoopControlMask>>{
-                            CASE(MaskNone, "None"),
-                            CASE(UnrollMask, "Unroll"),
-                            CASE(DontUnrollMask, "DontUnroll"),
-                        }),);
+#define CASE(VALUE, NAME) \
+  { SpvLoopControl##VALUE, NAME }
+#define CASE1(VALUE, NAME, PARM)          \
+  {                                       \
+    SpvLoopControl##VALUE, NAME, { PARM } \
+  }
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryLoopMerge, OpLoopMergeTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCase<int>>{
+                // clang-format off
+                CASE(MaskNone, "None"),
+                CASE(UnrollMask, "Unroll"),
+                CASE(DontUnrollMask, "DontUnroll"),
+                // clang-format on
+            })), );
+
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryLoopMergeV11, OpLoopMergeTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCase<int>>{
+                // clang-format off
+                CASE(DependencyInfiniteMask, "DependencyInfinite"),
+                CASE1(DependencyLengthMask, "DependencyLength", 234),
+                {SpvLoopControlUnrollMask|SpvLoopControlDependencyLengthMask,
+                      "DependencyLength|Unroll", {33}},
+                // clang-format on
+            })), );
 #undef CASE
-// clang-format on
+#undef CASE1
 
 TEST_F(OpLoopMergeTest, CombinedLoopControlMask) {
   const std::string input = "OpLoopMerge %merge %continue Unroll|DontUnroll";
@@ -189,7 +224,7 @@ struct SwitchTestCase {
 };
 
 using OpSwitchValidTest =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<SwitchTestCase>>;
+    spvtest::TextToBinaryTestBase<TestWithParam<SwitchTestCase>>;
 
 // Tests the encoding of OpConstant literal values, and also
 // the literal integer cases in an OpSwitch.  This can
@@ -232,7 +267,7 @@ SwitchTestCase MakeSwitchTestCase(uint32_t integer_width,
 
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpSwitchValid1Word, OpSwitchValidTest,
-    ::testing::ValuesIn(std::vector<SwitchTestCase>({
+    ValuesIn(std::vector<SwitchTestCase>({
         MakeSwitchTestCase(32, 0, "42", {42}, "100", {100}),
         MakeSwitchTestCase(32, 1, "-1", {0xffffffff}, "100", {100}),
         // SPIR-V 1.0 Rev 1 clarified that for an integer narrower than 32-bits,
@@ -249,12 +284,12 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(16, 1, "0x8000", {0xffff8000}, "0x8100",
                            {0xffff8100}),
         MakeSwitchTestCase(16, 0, "0x8000", {0x00008000}, "0x8100", {0x8100}),
-    })),);
+    })), );
 
 // NB: The words LOW ORDER bits show up first.
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpSwitchValid2Words, OpSwitchValidTest,
-    ::testing::ValuesIn(std::vector<SwitchTestCase>({
+    ValuesIn(std::vector<SwitchTestCase>({
         MakeSwitchTestCase(33, 0, "101", {101, 0}, "500", {500, 0}),
         MakeSwitchTestCase(48, 1, "-1", {0xffffffff, 0xffffffff}, "900",
                            {900, 0}),
@@ -270,11 +305,11 @@ INSTANTIATE_TEST_CASE_P(
         MakeSwitchTestCase(63, 0, "0x500000000", {0, 5}, "12", {12, 0}),
         MakeSwitchTestCase(64, 0, "0x600000000", {0, 6}, "12", {12, 0}),
         MakeSwitchTestCase(64, 1, "0x700000123", {0x123, 7}, "12", {12, 0}),
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     OpSwitchRoundTripUnsignedIntegers, RoundTripTest,
-    ::testing::ValuesIn(std::vector<std::string>({
+    ValuesIn(std::vector<std::string>({
         // Unsigned 16-bit.
         "%1 = OpTypeInt 16 0\n%2 = OpConstant %1 65535\nOpSwitch %2 %3\n",
         // Unsigned 32-bit, three non-default cases.
@@ -286,11 +321,11 @@ INSTANTIATE_TEST_CASE_P(
         // Unsigned 64-bit, three non-default cases.
         "%1 = OpTypeInt 64 0\n%2 = OpConstant %1 9223372036854775807\n"
         "OpSwitch %2 %3 100 %4 102 %5 9000000000000000000 %6\n",
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     OpSwitchRoundTripSignedIntegers, RoundTripTest,
-    ::testing::ValuesIn(std::vector<std::string>{
+    ValuesIn(std::vector<std::string>{
         // Signed 16-bit, with two non-default cases
         "%1 = OpTypeInt 16 1\n%2 = OpConstant %1 32767\n"
         "OpSwitch %2 %3 99 %4 -102 %5\n",
@@ -311,10 +346,10 @@ INSTANTIATE_TEST_CASE_P(
         "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
         "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 -9223372036854775808\n"
         "OpSwitch %2 %3 100 %4 7000000000 %5 -1000000000000000000 %6\n",
-    }),);
+    }), );
 
 using OpSwitchInvalidTypeTestCase =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<std::string>>;
+    spvtest::TextToBinaryTestBase<TestWithParam<std::string>>;
 
 TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes) {
   const std::string input =
@@ -330,7 +365,7 @@ TEST_P(OpSwitchInvalidTypeTestCase, InvalidTypes) {
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryOpSwitchInvalidTests, OpSwitchInvalidTypeTestCase,
-    ::testing::ValuesIn(std::vector<std::string>{
+    ValuesIn(std::vector<std::string>{
       {"OpTypeVoid",
        "OpTypeBool",
        "OpTypeFloat 32",
