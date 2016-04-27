@@ -244,6 +244,36 @@ TEST_F(OpTypeForwardPointerTest, WrongClass) {
               Eq("Invalid storage class 'xxyyzz'."));
 }
 
+using OpSizeOfTest = spvtest::TextToBinaryTest;
+
+TEST_F(OpSizeOfTest, OpcodeUnrecognizedInV10) {
+  EXPECT_THAT(CompileFailure("%1 = OpSizeOf %2 %3", SPV_ENV_UNIVERSAL_1_0),
+              Eq("Invalid Opcode name 'OpSizeOf'"));
+}
+
+TEST_F(OpSizeOfTest, ArgumentCount) {
+  EXPECT_THAT(
+      CompileFailure("OpSizeOf", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected <result-id> at the beginning of an instruction, found "
+         "'OpSizeOf'."));
+  EXPECT_THAT(CompileFailure("%res = OpSizeOf OpNop", SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected operand, found next instruction instead."));
+  EXPECT_THAT(
+      CompiledInstructions("%1 = OpSizeOf %2 %3", SPV_ENV_UNIVERSAL_1_1),
+      Eq(MakeInstruction(SpvOpSizeOf, {1, 2, 3})));
+  EXPECT_THAT(
+      CompileFailure("%1 = OpSizeOf %2 %3 44 55 ", SPV_ENV_UNIVERSAL_1_1),
+      Eq("Expected <opcode> or <result-id> at the beginning of an instruction, "
+         "found '44'."));
+}
+
+TEST_F(OpSizeOfTest, ArgumentTypes) {
+  EXPECT_THAT(CompileFailure("%1 = OpSizeOf 2 %3", SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected id to start with %."));
+  EXPECT_THAT(CompileFailure("%1 = OpSizeOf %2 \"abc\"", SPV_ENV_UNIVERSAL_1_1),
+              Eq("Expected id to start with %."));
+}
+
 // TODO(dneto): OpTypeVoid
 // TODO(dneto): OpTypeBool
 // TODO(dneto): OpTypeInt
