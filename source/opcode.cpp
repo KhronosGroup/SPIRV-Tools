@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "instruction.h"
+#include "macro.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
@@ -87,12 +88,6 @@ void spvOpcodeSplit(const uint32_t word, uint16_t* pWordCount,
     *pOpcode = 0x0000ffff & word;
   }
 }
-
-// Evaluates to the number of elements of array A.
-// If we could use constexpr, then we could make this a template function.
-// If the source arrays were std::array, then we could have used
-// std::array::size.
-#define ARRAY_SIZE(A) (static_cast<uint32_t>(sizeof(A) / sizeof(A[0])))
 
 spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
                                spv_target_env env) {
@@ -181,8 +176,7 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
-  for (uint32_t i = 0;
-       i < sizeof(opcodeTableEntries_1_1) / sizeof(spv_opcode_desc_t); ++i) {
+  for (uint32_t i = 0; i < ARRAY_SIZE(opcodeTableEntries_1_1); ++i) {
     if (opcodeTableEntries_1_1[i].opcode == opcode)
       return opcodeTableEntries_1_1[i].name;
   }

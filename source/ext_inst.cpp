@@ -33,6 +33,8 @@
 #include "spirv/OpenCL.std.h"
 #include "spirv_definition.h"
 
+#include "macro.h"
+
 static const spv_ext_inst_desc_t glslStd450Entries_1_0[] = {
 #include "glsl.std.450.insts-1-0.inc"
 };
@@ -46,19 +48,14 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable,
   if (!pExtInstTable) return SPV_ERROR_INVALID_POINTER;
 
   static const spv_ext_inst_group_t groups_1_0[] = {
-      {SPV_EXT_INST_TYPE_GLSL_STD_450,
-       static_cast<uint32_t>(sizeof(glslStd450Entries_1_0) /
-                             sizeof(spv_ext_inst_desc_t)),
+      {SPV_EXT_INST_TYPE_GLSL_STD_450, ARRAY_SIZE(glslStd450Entries_1_0),
        glslStd450Entries_1_0},
-      {SPV_EXT_INST_TYPE_OPENCL_STD,
-       static_cast<uint32_t>(sizeof(openclEntries_1_0) /
-                             sizeof(spv_ext_inst_desc_t)),
+      {SPV_EXT_INST_TYPE_OPENCL_STD, ARRAY_SIZE(openclEntries_1_0),
        openclEntries_1_0},
   };
 
-  static const spv_ext_inst_table_t table_1_0 = {
-      static_cast<uint32_t>(sizeof(groups_1_0) / sizeof(spv_ext_inst_group_t)),
-      groups_1_0};
+  static const spv_ext_inst_table_t table_1_0 = {ARRAY_SIZE(groups_1_0),
+                                                 groups_1_0};
 
   switch (env) {
     // The extended instruction sets are all version 1.0 so far.
@@ -93,14 +90,13 @@ spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
-    auto& group = table->groups[groupIndex];
-    if (type == group.type) {
-      for (uint32_t index = 0; index < group.count; index++) {
-        auto& entry = group.entries[index];
-        if (!strcmp(name, entry.name)) {
-          *pEntry = &table->groups[groupIndex].entries[index];
-          return SPV_SUCCESS;
-        }
+    const auto& group = table->groups[groupIndex];
+    if (type != group.type) continue;
+    for (uint32_t index = 0; index < group.count; index++) {
+      const auto& entry = group.entries[index];
+      if (!strcmp(name, entry.name)) {
+        *pEntry = &entry;
+        return SPV_SUCCESS;
       }
     }
   }
@@ -116,14 +112,13 @@ spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint32_t groupIndex = 0; groupIndex < table->count; groupIndex++) {
-    auto& group = table->groups[groupIndex];
-    if (type == group.type) {
-      for (uint32_t index = 0; index < group.count; index++) {
-        auto& entry = group.entries[index];
-        if (value == entry.ext_inst) {
-          *pEntry = &table->groups[groupIndex].entries[index];
-          return SPV_SUCCESS;
-        }
+    const auto& group = table->groups[groupIndex];
+    if (type != group.type) continue;
+    for (uint32_t index = 0; index < group.count; index++) {
+      const auto& entry = group.entries[index];
+      if (value == entry.ext_inst) {
+        *pEntry = &entry;
+        return SPV_SUCCESS;
       }
     }
   }

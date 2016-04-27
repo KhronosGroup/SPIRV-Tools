@@ -29,11 +29,7 @@
 #include <assert.h>
 #include <string.h>
 
-// Evaluates to the number of elements of array A.
-// If we could use constexpr, then we could make this a template function.
-// If the source arrays were std::array, then we could have used
-// std::array::size.
-#define ARRAY_SIZE(A) (static_cast<uint32_t>(sizeof(A) / sizeof(A[0])))
+#include "macro.h"
 
 // Pull in operand info tables automatically generated from JSON grammar.
 namespace v1_0 {
@@ -78,16 +74,14 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
   if (!name || !pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
-    if (type == table->types[typeIndex].type) {
-      for (uint64_t operandIndex = 0;
-           operandIndex < table->types[typeIndex].count; ++operandIndex) {
-        if (nameLength ==
-                strlen(table->types[typeIndex].entries[operandIndex].name) &&
-            !strncmp(table->types[typeIndex].entries[operandIndex].name, name,
-                     nameLength)) {
-          *pEntry = &table->types[typeIndex].entries[operandIndex];
-          return SPV_SUCCESS;
-        }
+    const auto& group = table->types[typeIndex];
+    if (type != group.type) continue;
+    for (uint64_t index = 0; index < group.count; ++index) {
+      const auto& entry = group.entries[index];
+      if (nameLength == strlen(entry.name) &&
+          !strncmp(entry.name, name, nameLength)) {
+        *pEntry = &entry;
+        return SPV_SUCCESS;
       }
     }
   }
@@ -103,13 +97,13 @@ spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
   for (uint64_t typeIndex = 0; typeIndex < table->count; ++typeIndex) {
-    if (type == table->types[typeIndex].type) {
-      for (uint64_t operandIndex = 0;
-           operandIndex < table->types[typeIndex].count; ++operandIndex) {
-        if (value == table->types[typeIndex].entries[operandIndex].value) {
-          *pEntry = &table->types[typeIndex].entries[operandIndex];
-          return SPV_SUCCESS;
-        }
+    const auto& group = table->types[typeIndex];
+    if (type != group.type) continue;
+    for (uint64_t index = 0; index < group.count; ++index) {
+      const auto& entry = group.entries[index];
+      if (value == entry.value) {
+        *pEntry = &entry;
+        return SPV_SUCCESS;
       }
     }
   }
