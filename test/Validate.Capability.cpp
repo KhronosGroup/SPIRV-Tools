@@ -127,7 +127,9 @@ const vector<string>& AllCapabilities() {
     "StorageImageReadWithoutFormat",
     "StorageImageWriteWithoutFormat",
     "MultiViewport",
-    "SubgroupDispatch"};
+    "SubgroupDispatch",
+    "NamedBarrier",
+    "PipeStorage"};
   return *r;
 }
 
@@ -255,7 +257,9 @@ const vector<string>& KernelDependencies() {
   "DeviceEnqueue",
   "LiteralSampler",
   "Int8",
-  "SubgroupDispatch"};
+  "SubgroupDispatch",
+  "NamedBarrier",
+  "PipeStorage"};
   return *r;
 }
 
@@ -489,8 +493,26 @@ make_pair(string(kGLSL450MemoryModel) +
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Kernel %func \"shader\" "
           "OpExecutionMode %func ContractionOff" +
-          string(kVoidFVoid), KernelDependencies())
-)),);
+          string(kVoidFVoid), KernelDependencies()))),);
+
+// clang-format on
+using ValidateCapabilityV11 = ValidateCapability;
+
+INSTANTIATE_TEST_CASE_P(
+    ExecutionModeV11, ValidateCapabilityV11,
+    Combine(ValuesIn(AllCapabilities()),
+            Values(make_pair(string(kOpenCLMemoryModel) +
+                                 "OpEntryPoint Kernel %func \"shader\" "
+                                 "OpExecutionMode %func SubgroupSize 1" +
+                                 string(kVoidFVoid),
+                             vector<string>{"SubgroupDispatch"}),
+                   make_pair(
+                       string(kOpenCLMemoryModel) +
+                           "OpEntryPoint Kernel %func \"shader\" "
+                           "OpExecutionMode %func SubgroupsPerWorkgroup 65535" +
+                           string(kVoidFVoid),
+                       vector<string>{"SubgroupDispatch"}))), );
+// clang-format off
 
 INSTANTIATE_TEST_CASE_P(StorageClass, ValidateCapability,
                         Combine(
@@ -992,6 +1014,28 @@ TEST_P(ValidateCapability, Capability) {
           : SPV_ENV_UNIVERSAL_1_1;
   CompileSuccessfully(ss.str(), env);
   ASSERT_EQ(res, ValidateInstructions(env)) << ss.str();
+}
+
+TEST_P(ValidateCapabilityV11, Capability) {
+  string capability;
+  pair<string, vector<string>> operation;
+  std::tie(capability, operation) = GetParam();
+  stringstream ss;
+  if (!capability.empty()) {
+    ss << "OpCapability " + capability + " ";
+  }
+
+  ss << operation.first;
+
+  auto& valid_capabilities = operation.second;
+  auto found =
+      find(begin(valid_capabilities), end(valid_capabilities), capability);
+  spv_result_t res = (found == end(valid_capabilities))
+                         ? SPV_ERROR_INVALID_CAPABILITY
+                         : SPV_SUCCESS;
+
+  CompileSuccessfully(ss.str(), SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(res, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1)) << ss.str();
 }
 
 }  // namespace anonymous
