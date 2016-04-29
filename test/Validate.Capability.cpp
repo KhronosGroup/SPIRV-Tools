@@ -51,11 +51,17 @@ using testing::Combine;
 using testing::Values;
 using testing::ValuesIn;
 
-// Parameter for validation test fixtures.  Contains parts of the assembly to
-// test, which is composed from a variable top line and a fixed remainder.  The
-// top line will be an OpCapability instruction, while the remainder will be
-// some assembly text that succeeds or fails to assemble depending on which
-// capability was chosen.  For instance, the following will succeed:
+// Parameter for validation test fixtures.  The first string is a capability
+// name that will begin the assembly under test, the second the remainder
+// assembly, and the vector at the end determines whether the test expects
+// success or failure.  See below for details and convenience methods to access
+// each one.
+//
+// The assembly to test is composed from a variable top line and a fixed
+// remainder.  The top line will be an OpCapability instruction, while the
+// remainder will be some assembly text that succeeds or fails to assemble
+// depending on which capability was chosen.  For instance, the following will
+// succeed:
 //
 // OpCapability Pipes ; implies Kernel
 // OpLifetimeStop %1 0 ; requires Kernel
@@ -76,10 +82,6 @@ using testing::ValuesIn;
 // cases to try the assembly with every possible capability that could be
 // declared. However, Combine() only produces tuples -- it cannot produce, say,
 // a struct.  Therefore, this type must be a tuple.
-//
-// The first string is a capability name for the first line, the second the
-// remainder assembly, and the vector at the end has all capabilities that must
-// succeed.  See below for convenience methods to access each one.
 using CapTestParameter = tuple<string, pair<string, vector<string>>>;
 
 const string& Capability(const CapTestParameter& p) { return get<0>(p); }
