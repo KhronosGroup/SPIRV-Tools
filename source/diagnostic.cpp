@@ -75,8 +75,6 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
               << diagnostic->error << "\n";
     return SPV_SUCCESS;
   }
-
-  return SPV_ERROR_INVALID_VALUE;
 }
 
 namespace libspirv {

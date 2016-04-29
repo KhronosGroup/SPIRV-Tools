@@ -515,7 +515,7 @@ class HexFloat {
     // If we are up-casting, then we just have to shift to the right location.
     if (num_throwaway_bits <= 0) {
       out_val = static_cast<other_uint_type>(significand);
-      uint_type shift_amount = -num_throwaway_bits;
+      uint_type shift_amount = static_cast<uint_type>(-num_throwaway_bits);
       out_val = static_cast<other_uint_type>(out_val << shift_amount);
       return out_val;
     }
@@ -567,9 +567,6 @@ class HexFloat {
       return static_cast<other_uint_type>(
           negatable_right_shift<num_throwaway_bits>::val(significand));
     }
-    // We really shouldn't get here.
-    assert(false && "We should not have ended up here");
-    return 0;
   }
 
   // Casts this value to another HexFloat. If the cast is widening,
