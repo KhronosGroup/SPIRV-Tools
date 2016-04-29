@@ -232,7 +232,7 @@ int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   }
 }
 
-int32_t spvOpcodeIsPointer(const SpvOp opcode) {
+int32_t spvOpcodeReturnsLogicalPointer(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpVariable:
     case SpvOpAccessChain:

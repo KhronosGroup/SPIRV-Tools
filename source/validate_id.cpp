@@ -763,7 +763,7 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
   if (!pointer.first ||
       (addressingModel == SpvAddressingModelLogical &&
-       !spvOpcodeIsPointer(pointer.second.opcode))) {
+       !spvOpcodeReturnsLogicalPointer(pointer.second.opcode))) {
     DIAG(pointerIndex) << "OpLoad Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;
@@ -793,7 +793,7 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   auto pointer = usedefs_.FindDef(inst->words[pointerIndex]);
   if (!pointer.first ||
       (addressingModel == SpvAddressingModelLogical &&
-       !spvOpcodeIsPointer(pointer.second.opcode))) {
+       !spvOpcodeReturnsLogicalPointer(pointer.second.opcode))) {
     DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex]
                        << "' is not a pointer.";
     return false;

@@ -85,9 +85,9 @@ int32_t spvOpcodeIsConstant(const SpvOp opcode);
 // non-zero otherwise.
 int32_t spvOpcodeIsComposite(const SpvOp opcode);
 
-// Determines if the given opcode results in a pointer. Returns zero if false,
-// non-zero otherwise.
-int32_t spvOpcodeIsPointer(const SpvOp opcode);
+// Determines if the given opcode results in a pointer when using the logical
+// addressing model. Returns zero if false, non-zero otherwise.
+int32_t spvOpcodeReturnsLogicalPointer(const SpvOp opcode);
 
 // Determines if the given opcode generates a type. Returns zero if false,
 // non-zero otherwise.
