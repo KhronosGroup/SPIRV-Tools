@@ -40,18 +40,51 @@
 namespace {
 
 using spvtest::ScopedContext;
+using std::get;
 using std::make_pair;
 using std::pair;
 using std::string;
-using std::stringstream;
+using std::ostringstream;
 using std::tuple;
 using std::vector;
 using testing::Combine;
 using testing::Values;
 using testing::ValuesIn;
 
-using ValidateCapability =
-    spvtest::ValidateBase<tuple<string, pair<string, vector<string>>>>;
+// Parameter for validation test fixtures. It's a tuple so Combine() can be used
+// to produce it.  The first string is a capability name, the second an assembly
+// text.  See below methods for how they're interpreted.
+using CapTestParameter = tuple<string, pair<string, vector<string>>>;
+
+const string& Capability(const CapTestParameter& p) { return get<0>(p); }
+const string& Assembly(const CapTestParameter& p) { return get<1>(p).first; }
+const vector<string>& RequiredCapabilities(const CapTestParameter& p) {
+  return get<1>(p).second;
+}
+
+// Creates assembly to test from p.
+string MakeAssembly(const CapTestParameter& p) {
+  ostringstream ss;
+  const string& capability = Capability(p);
+  if (!capability.empty()) {
+    ss << "OpCapability " << capability << "\n";
+  }
+  ss << Assembly(p);
+  return ss.str();
+}
+
+// Expected validation result for p.
+spv_result_t ExpectedResult(const CapTestParameter& p) {
+  const auto& reqcaps = RequiredCapabilities(p);
+  auto found = find(begin(reqcaps), end(reqcaps), Capability(p));
+  return (found == end(reqcaps)) ? SPV_ERROR_INVALID_CAPABILITY : SPV_SUCCESS;
+}
+
+// Assembles using v1.0, unless the parameter's capability requires v1.1.
+using ValidateCapability = spvtest::ValidateBase<CapTestParameter>;
+
+// Always assembles using v1.1.
+using ValidateCapabilityV11 = spvtest::ValidateBase<CapTestParameter>;
 
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
@@ -496,7 +529,6 @@ make_pair(string(kGLSL450MemoryModel) +
           string(kVoidFVoid), KernelDependencies()))),);
 
 // clang-format on
-using ValidateCapabilityV11 = ValidateCapability;
 
 INSTANTIATE_TEST_CASE_P(
     ExecutionModeV11, ValidateCapabilityV11,
@@ -934,7 +966,7 @@ make_pair(string(kOpenCLMemoryModel) +
 // that can be used for operands where IDs are required.  The assembly is valid,
 // apart from not declaring any capabilities required by the operands.
 string ImageOperandsTemplate(const string& operands) {
-  stringstream ss;
+  ostringstream ss;
   // clang-format off
   ss << R"(
 OpCapability Kernel
@@ -987,55 +1019,22 @@ bool Exists(const std::string& capability, spv_target_env env) {
 }
 
 TEST_P(ValidateCapability, Capability) {
-  string capability;
-  pair<string, vector<string>> operation;
-  std::tie(capability, operation) = GetParam();
-  stringstream ss;
-  if (!capability.empty()) {
-    ss << "OpCapability " + capability + " ";
-  }
-
-  ss << operation.first;
-
-  spv_result_t res = SPV_ERROR_INTERNAL;
-  auto& valid_capabilities = operation.second;
-
-  auto it =
-      find(begin(valid_capabilities), end(valid_capabilities), capability);
-  if (it != end(valid_capabilities)) {
-    res = SPV_SUCCESS;
-  } else {
-    res = SPV_ERROR_INVALID_CAPABILITY;
-  }
-
+  const string capability = Capability(GetParam());
   spv_target_env env =
       (capability.empty() || Exists(capability, SPV_ENV_UNIVERSAL_1_0))
           ? SPV_ENV_UNIVERSAL_1_0
           : SPV_ENV_UNIVERSAL_1_1;
-  CompileSuccessfully(ss.str(), env);
-  ASSERT_EQ(res, ValidateInstructions(env)) << ss.str();
+  const string test_code = MakeAssembly(GetParam());
+  CompileSuccessfully(test_code, env);
+  ASSERT_EQ(ExpectedResult(GetParam()), ValidateInstructions(env)) << test_code;
 }
 
 TEST_P(ValidateCapabilityV11, Capability) {
-  string capability;
-  pair<string, vector<string>> operation;
-  std::tie(capability, operation) = GetParam();
-  stringstream ss;
-  if (!capability.empty()) {
-    ss << "OpCapability " + capability + " ";
-  }
-
-  ss << operation.first;
-
-  auto& valid_capabilities = operation.second;
-  auto found =
-      find(begin(valid_capabilities), end(valid_capabilities), capability);
-  spv_result_t res = (found == end(valid_capabilities))
-                         ? SPV_ERROR_INVALID_CAPABILITY
-                         : SPV_SUCCESS;
-
-  CompileSuccessfully(ss.str(), SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(res, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1)) << ss.str();
+  const string test_code = MakeAssembly(GetParam());
+  CompileSuccessfully(test_code, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(ExpectedResult(GetParam()),
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1))
+      << test_code;
 }
 
 }  // namespace anonymous
