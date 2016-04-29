@@ -51,11 +51,11 @@ using testing::Combine;
 using testing::Values;
 using testing::ValuesIn;
 
-// Parameter for validation test fixtures.  Captures assembly to test in two
-// parts: a variable top line and a fixed remainder.  The top line will be an
-// OpCapability instruction, while the remainder will be some assembly text that
-// succeeds or fails to assemble depending on which capability was chosen.  For
-// instance, the following will succeed:
+// Parameter for validation test fixtures.  Contains parts of the assembly to
+// test, which is composed from a variable top line and a fixed remainder.  The
+// top line will be an OpCapability instruction, while the remainder will be
+// some assembly text that succeeds or fails to assemble depending on which
+// capability was chosen.  For instance, the following will succeed:
 //
 // OpCapability Pipes ; implies Kernel
 // OpLifetimeStop %1 0 ; requires Kernel
