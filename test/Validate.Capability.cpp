@@ -42,23 +42,49 @@ namespace {
 using spvtest::ScopedContext;
 using std::get;
 using std::make_pair;
+using std::ostringstream;
 using std::pair;
 using std::string;
-using std::ostringstream;
 using std::tuple;
 using std::vector;
 using testing::Combine;
 using testing::Values;
 using testing::ValuesIn;
 
-// Parameter for validation test fixtures. It's a tuple so Combine() can be used
-// to produce it.  The first string is a capability name, the second an assembly
-// text.  See below methods for how they're interpreted.
+// Parameter for validation test fixtures.  Captures assembly to test in two
+// parts: a variable top line and a fixed remainder.  The top line will be an
+// OpCapability instruction, while the remainder will be some assembly text that
+// succeeds or fails to assemble depending on which capability was chosen.  For
+// instance, the following will succeed:
+//
+// OpCapability Pipes ; implies Kernel
+// OpLifetimeStop %1 0 ; requires Kernel
+//
+// and the following will fail:
+//
+// OpCapability Kernel
+// %1 = OpTypeNamedBarrier ; requires NamedBarrier
+//
+// So how does the test parameter capture which capabilities should cause
+// success and which shouldn't?  The answer is in the last element: it's a
+// vector of capabilities that make the remainder assembly succeed.  So if the
+// first-line capability exists in that vector, success is expected; otherwise,
+// failure is expected in the tests.
+//
+// We will use testing::Combine() to vary the first line: when we combine
+// AllCapabilities() with a single remainder assembly, we generate enough test
+// cases to try the assembly with every possible capability that could be
+// declared. However, Combine() only produces tuples -- it cannot produce, say,
+// a struct.  Therefore, this type must be a tuple.
+//
+// The first string is a capability name for the first line, the second the
+// remainder assembly, and the vector at the end has all capabilities that must
+// succeed.  See below for convenience methods to access each one.
 using CapTestParameter = tuple<string, pair<string, vector<string>>>;
 
 const string& Capability(const CapTestParameter& p) { return get<0>(p); }
-const string& Assembly(const CapTestParameter& p) { return get<1>(p).first; }
-const vector<string>& RequiredCapabilities(const CapTestParameter& p) {
+const string& Remainder(const CapTestParameter& p) { return get<1>(p).first; }
+const vector<string>& MustSucceed(const CapTestParameter& p) {
   return get<1>(p).second;
 }
 
@@ -69,15 +95,15 @@ string MakeAssembly(const CapTestParameter& p) {
   if (!capability.empty()) {
     ss << "OpCapability " << capability << "\n";
   }
-  ss << Assembly(p);
+  ss << Remainder(p);
   return ss.str();
 }
 
 // Expected validation result for p.
 spv_result_t ExpectedResult(const CapTestParameter& p) {
-  const auto& reqcaps = RequiredCapabilities(p);
-  auto found = find(begin(reqcaps), end(reqcaps), Capability(p));
-  return (found == end(reqcaps)) ? SPV_ERROR_INVALID_CAPABILITY : SPV_SUCCESS;
+  const auto& caps = MustSucceed(p);
+  auto found = find(begin(caps), end(caps), Capability(p));
+  return (found == end(caps)) ? SPV_ERROR_INVALID_CAPABILITY : SPV_SUCCESS;
 }
 
 // Assembles using v1.0, unless the parameter's capability requires v1.1.
