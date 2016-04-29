@@ -306,7 +306,7 @@ void ValidationState_t::registerCapability(SpvCapability cap) {
 }
 
 bool ValidationState_t::hasCapability(SpvCapability cap) const {
-  return module_capabilities_ & SPV_CAPABILITY_AS_MASK(cap);
+  return (module_capabilities_ & SPV_CAPABILITY_AS_MASK(cap)) != 0;
 }
 
 bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
