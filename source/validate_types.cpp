@@ -606,7 +606,6 @@ void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
   }
 }
 
-
 bool Function::IsMergeBlock(uint32_t merge_block_id) const {
   const auto b = blocks_.find(merge_block_id);
   if (b != end(blocks_)) {

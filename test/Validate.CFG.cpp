@@ -58,11 +58,6 @@ using libspirv::ValidationState_t;
 using ValidateCFG = spvtest::ValidateBase<bool>;
 using spvtest::ScopedContext;
 
-namespace libspirv {
-vector<const BasicBlock *> PostOrderSort(const BasicBlock &entry,
-                                         size_t size = 10);
-}
-
 namespace {
 
 string nameOps() { return ""; }
@@ -146,93 +141,6 @@ Block &operator>>(Block &lhs, Block &successor) {
   assert(lhs.type_ == SpvOpBranch);
   lhs.successors_.push_back(successor);
   return lhs;
-}
-
-TEST_F(ValidateCFG, PostOrderLinear) {
-  vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr,
-                          ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
-
-  for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i);
-  }
-
-  for (int i = 0; i < 6; i++) {
-    blocks[i].RegisterSuccessor({&blocks[i + 1]});
-  }
-
-  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
-  vector<uint32_t> gold = {6, 5, 4, 3, 2, 1, 0};
-
-  for (size_t i = 0; i < gold.size(); i++) {
-    ASSERT_EQ(gold[i], out[i]->get_id());
-  }
-}
-
-TEST_F(ValidateCFG, PostOrderWithCycle) {
-  vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr,
-                          ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
-
-  for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i);
-  }
-
-  blocks[0].RegisterSuccessor({&blocks[1]});
-  blocks[1].RegisterSuccessor({&blocks[2]});
-  blocks[2].RegisterSuccessor({&blocks[3], &blocks[4]});
-  blocks[3].RegisterSuccessor({&blocks[5]});
-  blocks[5].RegisterSuccessor({&blocks[6]});
-  blocks[4].RegisterSuccessor({&blocks[2]});
-
-  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
-  vector<array<uint32_t, 7>> possible_gold = {{{4, 6, 5, 3, 2, 1, 0}},
-                                              {{6, 5, 3, 4, 2, 1, 0}}};
-
-  ASSERT_TRUE(any_of(begin(possible_gold), end(possible_gold),
-                     [&](array<uint32_t, 7> gold) {
-                       return equal(begin(gold), end(gold), begin(out),
-                                    [](uint32_t val, const BasicBlock *block) {
-                                      return val == block->get_id();
-                                    });
-                     }));
-}
-
-TEST_F(ValidateCFG, PostOrderWithSwitch) {
-  vector<BasicBlock> blocks;
-  ValidationState_t state(nullptr,
-                          ScopedContext(SPV_ENV_UNIVERSAL_1_0).context);
-
-  for (int i = 0; i < 7; i++) {
-    blocks.emplace_back(i);
-  }
-
-  blocks[0].RegisterSuccessor({&blocks[1]});
-  blocks[1].RegisterSuccessor({&blocks[2]});
-  blocks[2].RegisterSuccessor({&blocks[3], &blocks[4], &blocks[6]});
-  blocks[3].RegisterSuccessor({&blocks[6]});
-  blocks[5].RegisterSuccessor({&blocks[6]});
-  blocks[4].RegisterSuccessor({&blocks[5]});
-
-  vector<const BasicBlock *> out = PostOrderSort(blocks[0]);
-  vector<std::array<uint32_t, 7>> gold = {{{6, 3, 5, 4, 2, 1, 0}},
-                                          {{6, 5, 4, 3, 2, 1, 0}}};
-
-  auto dom = libspirv::CalculateDominators(blocks[0]);
-  libspirv::UpdateImmediateDominators(dom);
-
-  // for(auto &block : blocks) {
-  //  printDominatorList(block);
-  //  std::cout << std::endl;
-  //}
-
-  ASSERT_TRUE(any_of(
-      begin(gold), end(gold), [&out](std::array<uint32_t, 7> &gold_array) {
-        return std::equal(begin(gold_array), end(gold_array), begin(out),
-                          [](uint32_t val, const BasicBlock *block) {
-                            return val == block->get_id();
-                          });
-      }));
 }
 
 string header =

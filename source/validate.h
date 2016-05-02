@@ -29,13 +29,13 @@
 
 #include <algorithm>
 #include <array>
+#include <list>
 #include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <list>
 
 #include "assembly_grammar.h"
 #include "binary.h"
@@ -73,14 +73,14 @@ namespace libspirv {
 
 void message(std::string file, size_t line, std::string name);
 
-template<typename T>
+template <typename T>
 void message(std::string file, size_t line, std::string name, T val) {
   std::cout << file << ":" << line << ": " << name << " " << val << std::endl;
 }
 
-// This enum represents the sections of a SPIRV module. See section 2.4
-// of the SPIRV spec for additional details of the order. The enumerant values
-// are in the same order as the vector returned by GetModuleOrder
+/// This enum represents the sections of a SPIRV module. See section 2.4
+/// of the SPIRV spec for additional details of the order. The enumerant values
+/// are in the same order as the vector returned by GetModuleOrder
 enum ModuleLayoutSection {
   kLayoutCapabilities,          // < Section 2.4 #1
   kLayoutExtensions,            // < Section 2.4 #2
@@ -142,10 +142,10 @@ class BasicBlock {
   /// Returns the immedate dominator of this basic block
   const BasicBlock* GetImmediateDominator() const;
 
-  /// Sets the @p next BasicBlock as the successor of this BasicBlock
+  /// Adds @p next as a successor of this BasicBlock
   void RegisterSuccessor(BasicBlock& next);
 
-  /// Sets the @p next BasicBlock as the successor of this BasicBlock
+  /// Adds @p next BasicBlocks as successors of this BasicBlock
   void RegisterSuccessor(std::vector<BasicBlock*> next);
 
   /// Returns true if the id of the BasicBlock matches
@@ -156,9 +156,9 @@ class BasicBlock {
 
   /// @brief A BasicBlock dominator iterator class
   ///
-  /// This iterator will iterate to the the immediate dominators
-  /// of the block
-  class DominatorIterator : public std::iterator<std::forward_iterator_tag, BasicBlock*> {
+  /// This iterator will iterate over the dominators of the block
+  class DominatorIterator
+      : public std::iterator<std::forward_iterator_tag, BasicBlock*> {
    public:
     /// @brief Constructs the end of dominator iterator
     ///
@@ -192,19 +192,19 @@ class BasicBlock {
   DominatorIterator dom_end();
 
  private:
-  // Id of the BasicBlock
+  /// Id of the BasicBlock
   const uint32_t id_;
 
-  // Pointer to the immediate dominator of the BasicBlock
+  /// Pointer to the immediate dominator of the BasicBlock
   BasicBlock* immediate_dominator_;
 
-  // The set of predecessors of the BasicBlock
+  /// The set of predecessors of the BasicBlock
   std::vector<BasicBlock*> predecessors_;
 
-  // The set of successors of the BasicBlock
+  /// The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
 
-  // The function which contains this block
+  /// The function which contains this block
   Function* function_;
 };
 
@@ -309,9 +309,10 @@ class Function {
   /// Returns a vector of all the blocks in the function
   std::vector<BasicBlock*>& get_blocks();
 
-  /// Returns a vector of all the cfg constructs in the function
+  /// Returns a list of all the cfg constructs in the function
   const std::list<CFConstruct>& get_constructs() const;
-  /// Returns a vector of all the cfg constructs in the function
+
+  /// Returns a list of all the cfg constructs in the function
   std::list<CFConstruct>& get_constructs();
 
   // Returns the number of blocks in the current function being parsed
@@ -326,8 +327,8 @@ class Function {
     return undefined_blocks_;
   }
 
-  // Returns true if called after a label instruction but before a branch
-  // instruction
+  /// Returns true if called after a label instruction but before a branch
+  /// instruction
   bool in_block() const;
 
   /// Returns the block that is currently being parsed in the binary
@@ -545,14 +546,14 @@ class ValidationState_t {
   bool in_function_;
 };
 
-// @brief Calculates dominator edges of a root basic block
-//
-// This function calculates the dominator edges form a root BasicBlock. Uses
-// the dominator algorithm by Cooper et al.
-//
-// @param[in] first_block the root or entry BasicBlock of a function
-//
-// @return a set of dominator edges represented as a pair of blocks
+/// @brief Calculates dominator edges of a root basic block
+///
+/// This function calculates the dominator edges form a root BasicBlock. Uses
+/// the dominator algorithm by Cooper et al.
+///
+/// @param[in] first_block the root or entry BasicBlock of a function
+///
+/// @return a set of dominator edges represented as a pair of blocks
 std::vector<std::pair<BasicBlock*, BasicBlock*> > CalculateDominators(
     const BasicBlock& first_block);
 
