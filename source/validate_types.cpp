@@ -497,16 +497,18 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   return SPV_SUCCESS;
 }
 
-spv_result_t Function::RegisterBlockEnd() {
+void Function::RegisterBlockEnd(SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
          "Branch instruction can only be called in a function");
   assert(in_block() == true &&
          "Branch instruction can only be called in a block");
+
+  current_block_->RegisterBranchWithoutSuccessor(branch_instruction);
   current_block_ = nullptr;
-  return SPV_SUCCESS;
+  return;
 }
 
-spv_result_t Function::RegisterBlockEnd(uint32_t next_id) {
+void Function::RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
          "Branch instruction can only be called in a function");
   assert(in_block() == true &&
@@ -518,13 +520,13 @@ spv_result_t Function::RegisterBlockEnd(uint32_t next_id) {
   if (success) {
     undefined_blocks_.insert(next_id);
   }
-  current_block_->RegisterSuccessor(tmp->second);
+  current_block_->RegisterSuccessor(tmp->second, branch_instruction);
 
   current_block_ = nullptr;
-  return SPV_SUCCESS;
+  return;
 }
 
-spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
+void Function::RegisterBlockEnd(vector<uint32_t> next_list, SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
          "Branch instruction can only be called in a function");
   assert(in_block() == true &&
@@ -543,9 +545,9 @@ spv_result_t Function::RegisterBlockEnd(vector<uint32_t> next_list) {
     next_blocks.push_back(&tmp->second);
   }
 
-  current_block_->RegisterSuccessor(next_blocks);
+  current_block_->RegisterSuccessor(next_blocks, branch_instruction);
   current_block_ = nullptr;
-  return SPV_SUCCESS;
+  return;
 }
 
 size_t Function::get_block_count() const { return blocks_.size(); }
@@ -594,16 +596,23 @@ const BasicBlock* BasicBlock::GetImmediateDominator() const {
 
 BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
 
-void BasicBlock::RegisterSuccessor(BasicBlock& next) {
+void BasicBlock::RegisterSuccessor(BasicBlock& next, SpvOp branch_instruction) {
   next.predecessors_.push_back(this);
   successors_.push_back(&next);
+  branch_instruction_ = branch_instruction;
 }
 
-void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
+void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks, SpvOp branch_instruction) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);
+    branch_instruction_ = branch_instruction;
   }
+}
+
+void BasicBlock::RegisterBranchWithoutSuccessor(SpvOp branch_instruction) {
+  branch_instruction_ = branch_instruction;
+  return;
 }
 
 bool Function::IsMergeBlock(uint32_t merge_block_id) const {

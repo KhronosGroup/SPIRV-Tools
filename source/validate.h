@@ -131,6 +131,9 @@ class BasicBlock {
   /// Returns the successors of the BasicBlock
   std::vector<BasicBlock*>& get_successors() { return successors_; }
 
+  /// Returns true if the  block should be reachable in the CFG
+  bool is_reachable() { return SpvOpUnreachable != branch_instruction_; }
+
   /// Sets the immedate dominator of this basic block
   ///
   /// @param[in] dom_block The dominator block
@@ -143,10 +146,13 @@ class BasicBlock {
   const BasicBlock* GetImmediateDominator() const;
 
   /// Adds @p next as a successor of this BasicBlock
-  void RegisterSuccessor(BasicBlock& next);
+  void RegisterBranchWithoutSuccessor(SpvOp branch_instruction);
+
+  /// Adds @p next as a successor of this BasicBlock
+  void RegisterSuccessor(BasicBlock& next, SpvOp branch_instruction);
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
-  void RegisterSuccessor(std::vector<BasicBlock*> next);
+  void RegisterSuccessor(std::vector<BasicBlock*> next, SpvOp branch_instruction);
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
@@ -206,6 +212,8 @@ class BasicBlock {
 
   /// The function which contains this block
   Function* function_;
+
+  SpvOp branch_instruction_;
 };
 
 /// @brief Returns true if the iterators point to the same element or if both
@@ -283,13 +291,13 @@ class Function {
   spv_result_t RegisterSelectionMerge(uint32_t merge_id);
 
   /// Registers the end of the block
-  spv_result_t RegisterBlockEnd();
+  void RegisterBlockEnd(SpvOp branch_instruction);
 
   /// Registers the end of the block
-  spv_result_t RegisterBlockEnd(uint32_t next_id);
+  void RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction);
 
   /// Registers the end of the block
-  spv_result_t RegisterBlockEnd(std::vector<uint32_t> next_list);
+  void RegisterBlockEnd(std::vector<uint32_t> next_list, SpvOp branch_instruction);
 
   /// Returns true if the \p merge_block_id is a merge block
   bool IsMergeBlock(uint32_t merge_block_id) const;

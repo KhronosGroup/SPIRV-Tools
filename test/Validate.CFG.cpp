@@ -111,7 +111,10 @@ class Block {
         out << ss.str();
       } break;
       case SpvOpReturn:
-        out << "OpReturn\n OpFunctionEnd\n";
+        out << "OpReturn\n";
+        break;
+      case SpvOpUnreachable:
+        out << "OpUnreachable\n";
         break;
       case SpvOpBranch:
         out << "OpBranch %" + successors_.front().label_;
@@ -175,6 +178,7 @@ TEST_F(ValidateCFG, Default) {
   str += loop >> vector<Block>({cont, merge});
   str += cont >> loop;
   str += merge;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -192,6 +196,7 @@ TEST_F(ValidateCFG, Variable) {
   str += entry >> cont;
   str += cont >> exit;
   str += exit;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -211,6 +216,7 @@ TEST_F(ValidateCFG, VariableNotInFirstBlockBad) {
   str += entry >> cont;
   str += cont >> exit;
   str += exit;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -234,6 +240,7 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   str += cont >> merge;  // cont appears before its dominator
   str += branch >> vector<Block>({cont, merge});
   str += merge;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -272,6 +279,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   str += cont >> loop;
   str += merge >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -306,6 +314,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   str += loop >> merge;
   str += merge >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -322,6 +331,7 @@ TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
   str += entry >> bad;
   str += bad >> entry;  // Cannot target entry block
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -350,6 +360,7 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   str += f >> merge;
   str += merge >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -377,6 +388,7 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   str += bad >> vector<Block>({t, entry});
   str += merge >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -411,6 +423,7 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
   str += block3 >> merge;
   str += merge >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -439,11 +452,13 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   str += entry >> middle;
   str += middle >> vector<Block>({end, middle2});
   str += end;
+  str += "OpFunctionEnd\n";
 
   str += "%func2    = OpFunction %voidt None %funct\n";
   str += entry2 >> middle2;
   str += middle2 >> end2;
   str += end2;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -476,6 +491,7 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   str += cont >> merge;
   str += f >> end;
   str += end;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -484,4 +500,31 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("[bad]"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("[merge]"));
 }
+
+TEST_F(ValidateCFG, UnreachableMerge) {
+  Block entry("entry");
+  Block branch("branch", SpvOpBranchConditional);
+  Block t("t", SpvOpReturn);
+  Block f("f", SpvOpReturn);
+  Block merge("merge", SpvOpUnreachable);
+  Block end("end", SpvOpReturn);
+
+  branch.setBody(
+      " %cond    = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %merge None\n");
+
+  string str = header + nameOps("branch", "merge", make_pair("func", "Main")) +
+               types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> branch;
+  str += branch >> vector<Block>({t, f});
+  str += t;
+  str += f;
+  str += merge;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }

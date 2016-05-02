@@ -32,9 +32,10 @@
 #include <unordered_map>
 #include <utility>
 
+using std::find;
 using std::get;
-using std::make_tuple;
 using std::make_pair;
+using std::make_tuple;
 using std::numeric_limits;
 using std::pair;
 using std::transform;
@@ -94,8 +95,9 @@ vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
 
       if (!Contains(processed, (*child_iter)->get_id())) {
         // Process next child
-        staged.emplace_back(block_info{*child_iter, begin((*child_iter)->get_successors()),
-              end((*child_iter)->get_successors())});
+        staged.emplace_back(block_info{*child_iter,
+                                       begin((*child_iter)->get_successors()),
+                                       end((*child_iter)->get_successors())});
         processed.push_back((*child_iter)->get_id());
       }
       child_iter++;
@@ -105,8 +107,8 @@ vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
 }
 }
 
-vector<pair<BasicBlock*, BasicBlock*>>
-CalculateDominators(const BasicBlock& first_block) {
+vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
+    const BasicBlock& first_block) {
   struct block_detail {
     size_t dominator;
     size_t postorder_index;
@@ -224,16 +226,16 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // Check if the order of blocks in the binary appear before the blocks they
     // dominate
     auto& blocks = function.get_blocks();
-    for (size_t i = 1; i < blocks.size(); i++) {
-      auto block = blocks[i];
-      auto idom = block->GetImmediateDominator();
-
-      auto this_block = blocks.begin() + i;
-      if (this_block == std::find(begin(blocks), this_block, idom)) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Block " << _.getIdName(block->get_id())
-               << " appears in the binary before its dominator "
-               << _.getIdName(idom->get_id());
+    if(blocks.empty() == false) {
+      for (auto block = begin(blocks) + 1; block != end(blocks); block++) {
+        if (auto idom = (*block)->GetImmediateDominator()) {
+          if (block == std::find(begin(blocks), block, idom)) {
+            return _.diag(SPV_ERROR_INVALID_CFG)
+                  << "Block " << _.getIdName((*block)->get_id())
+                  << " appears in the binary before its dominator "
+                  << _.getIdName(idom->get_id());
+          }
+        }
       }
     }
 
@@ -255,8 +257,9 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       auto header = construct.header_block_;
       auto merge = construct.merge_block_;
 
-      if (merge->dom_end() ==
-          std::find(merge->dom_begin(), merge->dom_end(), header)) {
+      if (merge->is_reachable() &&
+          find(merge->dom_begin(), merge->dom_end(), header) ==
+              merge->dom_end()) {
         return _.diag(SPV_ERROR_INVALID_CFG)
                << "Header block " << _.getIdName(header->get_id())
                << " doesn't dominate its merge block "
@@ -301,7 +304,7 @@ spv_result_t CfgPass(ValidationState_t& _,
       uint32_t target = inst->words[inst->operands[0].offset];
       CFG_ASSERT(FirstBlockAssert, target);
 
-      spvCheckReturn(_.get_current_function().RegisterBlockEnd(target));
+      _.get_current_function().RegisterBlockEnd(target, opcode);
     } break;
     case SpvOpBranchConditional: {
       uint32_t tlabel = inst->words[inst->operands[1].offset];
@@ -309,8 +312,7 @@ spv_result_t CfgPass(ValidationState_t& _,
       CFG_ASSERT(FirstBlockAssert, tlabel);
       CFG_ASSERT(FirstBlockAssert, flabel);
 
-      spvCheckReturn(
-          _.get_current_function().RegisterBlockEnd({tlabel, flabel}));
+      _.get_current_function().RegisterBlockEnd({tlabel, flabel}, opcode);
     } break;
 
     case SpvOpSwitch: {
@@ -320,13 +322,13 @@ spv_result_t CfgPass(ValidationState_t& _,
         CFG_ASSERT(FirstBlockAssert, target);
         cases.push_back(target);
       }
-      spvCheckReturn(_.get_current_function().RegisterBlockEnd(cases));
+      _.get_current_function().RegisterBlockEnd(cases, opcode);
     } break;
     case SpvOpKill:
     case SpvOpReturn:
     case SpvOpReturnValue:
     case SpvOpUnreachable:
-      spvCheckReturn(_.get_current_function().RegisterBlockEnd());
+      _.get_current_function().RegisterBlockEnd(opcode);
       break;
     default:
       break;
