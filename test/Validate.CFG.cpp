@@ -506,7 +506,7 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   Block branch("branch", SpvOpBranchConditional);
   Block t("t", SpvOpReturn);
   Block f("f", SpvOpReturn);
-  Block merge("merge", SpvOpUnreachable);
+  Block merge("merge");
   Block end("end", SpvOpReturn);
 
   branch.setBody(
@@ -520,7 +520,78 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   str += branch >> vector<Block>({t, f});
   str += t;
   str += f;
+  str += merge >> end;
+  str += end;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, UnreachableMergeInstruction) {
+  Block entry("entry");
+  Block branch("branch", SpvOpBranchConditional);
+  Block t("t", SpvOpReturn);
+  Block f("f", SpvOpReturn);
+  Block merge("merge", SpvOpUnreachable);
+  Block end("end", SpvOpReturn);
+
+  branch.setBody(
+                  " %cond    = OpSLessThan %intt %one %two\n"
+                  "OpSelectionMerge %merge None\n");
+
+  string str = header + nameOps("branch", "merge", make_pair("func", "Main")) +
+    types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> branch;
+  str += branch >> vector<Block>({t, f});
+  str += t;
+  str += f;
   str += merge;
+  str += end;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, UnreachableBlock) {
+  Block entry("entry");
+  Block unreachable("unreachable");
+  Block exit("exit", SpvOpReturn);
+
+  string str = header + nameOps("unreachable", "exit", make_pair("func", "Main")) +
+    types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> exit;
+  str += unreachable >> exit;
+  str += exit;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, UnreachableBranch) {
+  Block entry("entry");
+  Block unreachable("unreachable", SpvOpBranchConditional);
+  Block unreachablechildt("unreachablechildt");
+  Block unreachablechildf("unreachablechildf");
+  Block merge("merge");
+  Block exit("exit", SpvOpReturn);
+
+  unreachable.setBody(
+                      " %cond    = OpSLessThan %intt %one %two\n"
+                      "OpSelectionMerge %merge None\n");
+  string str = header + nameOps("unreachable", "exit", make_pair("func", "Main")) +
+    types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> exit;
+  str += unreachable >> vector<Block>({unreachablechildt, unreachablechildf});
+  str += unreachablechildt >> merge;
+  str += unreachablechildf >> merge;
+  str += merge >> exit;
+  str += exit;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);

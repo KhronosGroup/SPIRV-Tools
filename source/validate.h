@@ -132,7 +132,9 @@ class BasicBlock {
   std::vector<BasicBlock*>& get_successors() { return successors_; }
 
   /// Returns true if the  block should be reachable in the CFG
-  bool is_reachable() { return SpvOpUnreachable != branch_instruction_; }
+  bool is_reachable() const { return reachable_; }
+
+  void set_reachability(bool reachability) { reachable_ = reachability; }
 
   /// Sets the immedate dominator of this basic block
   ///
@@ -176,25 +178,27 @@ class BasicBlock {
     ///        @p block
     ///
     /// @param block The block which is referenced by the iterator
-    DominatorIterator(BasicBlock* block);
+    DominatorIterator(const BasicBlock* block);
 
     /// @brief Advances the iterator
     DominatorIterator& operator++();
 
     /// @brief Returns the current element
-    BasicBlock*& operator*();
+    const BasicBlock*& operator*();
 
     friend bool operator==(const DominatorIterator& lhs,
                            const DominatorIterator& rhs);
 
    private:
-    BasicBlock* current_;
+    const BasicBlock* current_;
   };
 
   /// Returns an iterator which points to the current block
+  const DominatorIterator dom_begin() const;
   DominatorIterator dom_begin();
 
   /// Returns an iterator which points to one element past the first block
+  const DominatorIterator dom_end() const;
   DominatorIterator dom_end();
 
  private:
@@ -214,6 +218,8 @@ class BasicBlock {
   Function* function_;
 
   SpvOp branch_instruction_;
+
+  bool reachable_;
 };
 
 /// @brief Returns true if the iterators point to the same element or if both
@@ -238,10 +244,14 @@ class CFConstruct {
         merge_block_(merge_block),
         continue_block_(continue_block) {}
 
+  const BasicBlock* get_header() const { return header_block_; }
+  const BasicBlock* get_merge() const { return merge_block_; }
+  const BasicBlock* get_continue() const { return continue_block_; }
+
+ private:
   BasicBlock* header_block_;    ///< The header block of a loop or selection
   BasicBlock* merge_block_;     ///< The merge block of a loop or selection
   BasicBlock* continue_block_;  ///< The continue block of a loop block
- private:
 };
 
 // This class manages all function declaration and definitions in a module. It
@@ -355,7 +365,7 @@ class Function {
   /// Parent module
   ValidationState_t& module_;
 
-  /// Function ID of
+  /// The result id of the OpLabel that defined this block
   uint32_t id_;
 
   /// The type of the function

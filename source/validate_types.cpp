@@ -489,6 +489,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
 
     undefined_blocks_.erase(id);
     current_block_ = &tmp->second;
+    if(ordered_blocks_.empty()) current_block_->set_reachability(true);
     ordered_blocks_.push_back(current_block_);
   } else if (success) {  // Block doesn't exsist but this is not a definition
     undefined_blocks_.insert(id);
@@ -521,7 +522,6 @@ void Function::RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction) {
     undefined_blocks_.insert(next_id);
   }
   current_block_->RegisterSuccessor(tmp->second, branch_instruction);
-
   current_block_ = nullptr;
   return;
 }
@@ -584,7 +584,8 @@ BasicBlock::BasicBlock(uint32_t id)
     : id_(id),
       immediate_dominator_(nullptr),
       predecessors_(),
-      successors_() {}
+      successors_(),
+      reachable_(false) {}
 
 void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
   immediate_dominator_ = dom_block;
@@ -600,6 +601,8 @@ void BasicBlock::RegisterSuccessor(BasicBlock& next, SpvOp branch_instruction) {
   next.predecessors_.push_back(this);
   successors_.push_back(&next);
   branch_instruction_ = branch_instruction;
+  if(next.reachable_ == false)
+    next.set_reachability(reachable_);
 }
 
 void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks, SpvOp branch_instruction) {
@@ -607,10 +610,13 @@ void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks, SpvOp branch
     block->predecessors_.push_back(this);
     successors_.push_back(block);
     branch_instruction_ = branch_instruction;
+    if(block->reachable_ == false)
+      block->set_reachability(reachable_);
   }
 }
 
 void BasicBlock::RegisterBranchWithoutSuccessor(SpvOp branch_instruction) {
+  if(branch_instruction == SpvOpUnreachable) reachable_ = false;
   branch_instruction_ = branch_instruction;
   return;
 }
@@ -621,7 +627,7 @@ bool Function::IsMergeBlock(uint32_t merge_block_id) const {
     return cfg_constructs_.end() !=
            find_if(begin(cfg_constructs_), end(cfg_constructs_),
                    [&](const CFConstruct& construct) {
-                     return construct.merge_block_ == &b->second;
+                     return construct.get_merge() == &b->second;
                    });
   } else {
     return false;
@@ -629,7 +635,7 @@ bool Function::IsMergeBlock(uint32_t merge_block_id) const {
 }
 
 BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
-BasicBlock::DominatorIterator::DominatorIterator(BasicBlock* block)
+BasicBlock::DominatorIterator::DominatorIterator(const BasicBlock* block)
     : current_(block) {}
 
 BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
@@ -641,9 +647,18 @@ BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
   return *this;
 }
 
+const BasicBlock::DominatorIterator BasicBlock::dom_begin() const {
+  return DominatorIterator(this);
+}
+
 BasicBlock::DominatorIterator BasicBlock::dom_begin() {
   return DominatorIterator(this);
 }
+
+
+const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
+    return DominatorIterator();
+  }
 
 BasicBlock::DominatorIterator BasicBlock::dom_end() {
   return DominatorIterator();
@@ -659,5 +674,5 @@ bool operator!=(const BasicBlock::DominatorIterator& lhs,
   return !(lhs == rhs);
 }
 
-BasicBlock*& BasicBlock::DominatorIterator::operator*() { return current_; }
+const BasicBlock*& BasicBlock::DominatorIterator::operator*() { return current_; }
 }

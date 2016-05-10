@@ -28,19 +28,19 @@
 #include "validate_passes.h"
 
 #include <algorithm>
-#include <tuple>
+#include <cassert>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 using std::find;
 using std::get;
 using std::make_pair;
-using std::make_tuple;
 using std::numeric_limits;
 using std::pair;
 using std::transform;
-using std::tuple;
 using std::unordered_map;
+using std::unordered_set;
 using std::vector;
 
 using libspirv::BasicBlock;
@@ -52,11 +52,6 @@ namespace {
 using bb_ptr = BasicBlock*;
 using cbb_ptr = const BasicBlock*;
 using bb_iter = vector<BasicBlock*>::const_iterator;
-
-template <typename T>
-bool Contains(const vector<T>& vec, T val) {
-  return find(begin(vec), end(vec), val) != end(vec);
-}
 
 /// @brief Sorts the blocks in a CFG given the entry node
 ///
@@ -71,36 +66,29 @@ bool Contains(const vector<T>& vec, T val) {
 vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
   struct block_info {
     cbb_ptr block;
-    bb_iter current_successor;
-    bb_iter end_successor;
+    bb_iter iter;
   };
 
   vector<cbb_ptr> out;
   vector<block_info> staged;
-  vector<uint32_t> processed;
+  unordered_set<uint32_t> processed;
 
   staged.reserve(size);
-  staged.emplace_back(block_info{&entry, begin(entry.get_successors()),
-                                 end(entry.get_successors())});
-  processed.push_back(entry.get_id());
+  staged.emplace_back(block_info{&entry, begin(entry.get_successors())});
+  processed.insert(entry.get_id());
 
   while (!staged.empty()) {
     block_info& top = staged.back();
-    if (top.current_successor == top.end_successor) {
-      // No children left to process
+    if (top.iter == end(top.block->get_successors())) {
       out.push_back(top.block);
       staged.pop_back();
     } else {
-      bb_iter& child_iter = top.current_successor;
-
-      if (!Contains(processed, (*child_iter)->get_id())) {
-        // Process next child
-        staged.emplace_back(block_info{*child_iter,
-                                       begin((*child_iter)->get_successors()),
-                                       end((*child_iter)->get_successors())});
-        processed.push_back((*child_iter)->get_id());
+      BasicBlock* child = *top.iter;
+      if (processed.find(child->get_id()) == end(processed)) {
+        staged.emplace_back(block_info{child, begin(child->get_successors())});
+        processed.insert(child->get_id());
       }
-      child_iter++;
+      top.iter++;
     }
   }
   return out;
@@ -115,7 +103,7 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
   };
 
   vector<cbb_ptr> postorder = PostOrderSort(first_block, 10);
-  const size_t undefined_dom = static_cast<uint32_t>(postorder.size());
+  const size_t undefined_dom = static_cast<size_t>(postorder.size());
 
   unordered_map<cbb_ptr, block_detail> idoms;
   for (size_t i = 0; i < postorder.size(); i++) {
@@ -128,21 +116,21 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
   while (changed) {
     changed = false;
     for (auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
-      // printf("processing: %d\n", (*b)->get_id());
       size_t& b_dom = idoms[*b].dominator;
       const vector<BasicBlock*>& predecessors = (*b)->get_predecessors();
 
       // first processed predecessor
-      BasicBlock* idom =
-          *find_if(begin(predecessors), end(predecessors),
-                   [&idoms, undefined_dom](BasicBlock* pred) {
-                     return idoms[pred].dominator != undefined_dom;
-                   });
+      auto res = find_if(begin(predecessors), end(predecessors),
+                         [&idoms, undefined_dom](BasicBlock* pred) {
+                           return idoms[pred].dominator != undefined_dom;
+                         });
+      assert(res != end(predecessors));
+      BasicBlock* idom = *res;
       size_t idom_idx = idoms[idom].postorder_index;
 
       // all other predecessors
       for (auto p : predecessors) {
-        if (idom == p) {
+        if (idom == p || p->is_reachable() == false) {
           continue;
         }
         if (idoms[p].dominator != undefined_dom) {
@@ -168,7 +156,7 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
 
   vector<pair<bb_ptr, bb_ptr>> out;
   for (auto idom : idoms) {
-    // NOTE: performing a const cast for convenience usage with
+    // NOTE: performing a const cast for convenient usage with
     // UpdateImmediateDominators
     out.push_back({const_cast<BasicBlock*>(get<0>(idom)),
                    const_cast<BasicBlock*>(postorder[get<1>(idom).dominator])});
@@ -226,14 +214,14 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // Check if the order of blocks in the binary appear before the blocks they
     // dominate
     auto& blocks = function.get_blocks();
-    if(blocks.empty() == false) {
+    if (blocks.empty() == false) {
       for (auto block = begin(blocks) + 1; block != end(blocks); block++) {
         if (auto idom = (*block)->GetImmediateDominator()) {
           if (block == std::find(begin(blocks), block, idom)) {
             return _.diag(SPV_ERROR_INVALID_CFG)
-                  << "Block " << _.getIdName((*block)->get_id())
-                  << " appears in the binary before its dominator "
-                  << _.getIdName(idom->get_id());
+                   << "Block " << _.getIdName((*block)->get_id())
+                   << " appears in the binary before its dominator "
+                   << _.getIdName(idom->get_id());
           }
         }
       }
@@ -254,8 +242,9 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     // Check all headers dominate their merge blocks
     for (CFConstruct& construct : function.get_constructs()) {
-      auto header = construct.header_block_;
-      auto merge = construct.merge_block_;
+      auto header = construct.get_header();
+      auto merge = construct.get_merge();
+      // auto cont = construct.get_continue();
 
       if (merge->is_reachable() &&
           find(merge->dom_begin(), merge->dom_end(), header) ==
@@ -316,8 +305,8 @@ spv_result_t CfgPass(ValidationState_t& _,
     } break;
 
     case SpvOpSwitch: {
-      vector<uint32_t> cases((inst->num_operands - 2) / 2);
-      for (int i = 3; i < inst->num_operands; i += 2) {
+      vector<uint32_t> cases;
+      for (int i = 1; i < inst->num_operands; i += 2) {
         uint32_t target = inst->words[inst->operands[i].offset];
         CFG_ASSERT(FirstBlockAssert, target);
         cases.push_back(target);
