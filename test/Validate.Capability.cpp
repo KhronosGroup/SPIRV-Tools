@@ -833,6 +833,17 @@ make_pair(string(kGLSL450MemoryModel) +
           "%intt = OpTypeInt 32 1\n", KernelDependencies())
 )),);
 
+// clang-format on
+INSTANTIATE_TEST_CASE_P(
+    DecorationV11, ValidateCapabilityV11,
+    Combine(ValuesIn(AllCapabilities()),
+            Values(make_pair(string(kOpenCLMemoryModel) +
+                                 "OpDecorate %p MaxByteOffset 0 "
+                                 "%i32 = OpTypeInt 32 1 "
+                                 "%pi32 = OpTypePointer Workgroup %i32 "
+                                 "%p = OpVariable %pi32 Workgroup ",
+                             AddressesDependencies()))), );
+// clang-format off
 
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
                         Combine(

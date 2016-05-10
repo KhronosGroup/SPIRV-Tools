@@ -465,12 +465,11 @@ INSTANTIATE_TEST_CASE_P(
                 SPV_CAPABILITY_AS_MASK(SpvCapabilityShader)})));
 
 INSTANTIATE_TEST_CASE_P(
-    DecorationSpecIdV11, EnumCapabilityTest,
+    DecorationV11, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_1),
-            Values(EnumCapabilityCase{
-                SPV_OPERAND_TYPE_DECORATION, uint32_t(SpvDecorationSpecId),
-                (SPV_CAPABILITY_AS_MASK(SpvCapabilityShader) |
-                 SPV_CAPABILITY_AS_MASK(SpvCapabilityKernel))})));
+            ValuesIn(std::vector<EnumCapabilityCase>{
+                CASE2(DECORATION, DecorationSpecId, Shader, Kernel),
+                CASE1(DECORATION, DecorationMaxByteOffset, Addresses)})), );
 
 // See SPIR-V Section 3.21 BuiltIn
 INSTANTIATE_TEST_CASE_P(

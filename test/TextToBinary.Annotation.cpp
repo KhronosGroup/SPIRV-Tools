@@ -30,83 +30,98 @@
 #include "UnitSPIRV.h"
 
 #include <sstream>
+#include <tuple>
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
 
 namespace {
 
+using ::testing::Combine;
+using ::testing::Eq;
+using ::testing::Values;
+using ::testing::ValuesIn;
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
 using spvtest::TextToBinaryTest;
-using ::testing::Eq;
+using std::get;
+using std::tuple;
 
 // Test OpDecorate
 
 using OpDecorateSimpleTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<SpvDecoration>>>;
+    ::testing::TestWithParam<tuple<spv_target_env, EnumCase<SpvDecoration>>>>;
 
 TEST_P(OpDecorateSimpleTest, AnySimpleDecoration) {
   // This string should assemble, but should not validate.
   std::stringstream input;
-  input << "OpDecorate %1 " << GetParam().name();
-  for (auto operand : GetParam().operands()) input << " " << operand;
+  input << "OpDecorate %1 " << get<1>(GetParam()).name();
+  for (auto operand : get<1>(GetParam()).operands()) input << " " << operand;
   input << std::endl;
-  EXPECT_THAT(
-      CompiledInstructions(input.str()),
-      Eq(MakeInstruction(SpvOpDecorate, {1, uint32_t(GetParam().value())},
-                         GetParam().operands())));
+  EXPECT_THAT(CompiledInstructions(input.str(), get<0>(GetParam())),
+              Eq(MakeInstruction(SpvOpDecorate,
+                                 {1, uint32_t(get<1>(GetParam()).value())},
+                                 get<1>(GetParam()).operands())));
   // Also check disassembly.
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), Eq(input.str()));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(input.str(), SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                  get<0>(GetParam())),
+      Eq(input.str()));
 }
 
 #define CASE(NAME) SpvDecoration##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryDecorateSimple, OpDecorateSimpleTest,
-    ::testing::ValuesIn(std::vector<EnumCase<SpvDecoration>>{
-        // The operand literal values are arbitrarily chosen,
-        // but there are the right number of them.
-        {CASE(RelaxedPrecision), {}},
-        {CASE(SpecId), {100}},
-        {CASE(Block), {}},
-        {CASE(BufferBlock), {}},
-        {CASE(RowMajor), {}},
-        {CASE(ColMajor), {}},
-        {CASE(ArrayStride), {4}},
-        {CASE(MatrixStride), {16}},
-        {CASE(GLSLShared), {}},
-        {CASE(GLSLPacked), {}},
-        {CASE(CPacked), {}},
-        // Placeholder line for enum value 12
-        {CASE(NoPerspective), {}},
-        {CASE(Flat), {}},
-        {CASE(Patch), {}},
-        {CASE(Centroid), {}},
-        {CASE(Sample), {}},
-        {CASE(Invariant), {}},
-        {CASE(Restrict), {}},
-        {CASE(Aliased), {}},
-        {CASE(Volatile), {}},
-        {CASE(Constant), {}},
-        {CASE(Coherent), {}},
-        {CASE(NonWritable), {}},
-        {CASE(NonReadable), {}},
-        {CASE(Uniform), {}},
-        {CASE(SaturatedConversion), {}},
-        {CASE(Stream), {2}},
-        {CASE(Location), {6}},
-        {CASE(Component), {3}},
-        {CASE(Index), {14}},
-        {CASE(Binding), {19}},
-        {CASE(DescriptorSet), {7}},
-        {CASE(Offset), {12}},
-        {CASE(XfbBuffer), {1}},
-        {CASE(XfbStride), {8}},
-        {CASE(NoContraction), {}},
-        {CASE(InputAttachmentIndex), {102}},
-        {CASE(Alignment), {16}},
-    }),);
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCase<SpvDecoration>>{
+                // The operand literal values are arbitrarily chosen,
+                // but there are the right number of them.
+                {CASE(RelaxedPrecision), {}},
+                {CASE(SpecId), {100}},
+                {CASE(Block), {}},
+                {CASE(BufferBlock), {}},
+                {CASE(RowMajor), {}},
+                {CASE(ColMajor), {}},
+                {CASE(ArrayStride), {4}},
+                {CASE(MatrixStride), {16}},
+                {CASE(GLSLShared), {}},
+                {CASE(GLSLPacked), {}},
+                {CASE(CPacked), {}},
+                // Placeholder line for enum value 12
+                {CASE(NoPerspective), {}},
+                {CASE(Flat), {}},
+                {CASE(Patch), {}},
+                {CASE(Centroid), {}},
+                {CASE(Sample), {}},
+                {CASE(Invariant), {}},
+                {CASE(Restrict), {}},
+                {CASE(Aliased), {}},
+                {CASE(Volatile), {}},
+                {CASE(Constant), {}},
+                {CASE(Coherent), {}},
+                {CASE(NonWritable), {}},
+                {CASE(NonReadable), {}},
+                {CASE(Uniform), {}},
+                {CASE(SaturatedConversion), {}},
+                {CASE(Stream), {2}},
+                {CASE(Location), {6}},
+                {CASE(Component), {3}},
+                {CASE(Index), {14}},
+                {CASE(Binding), {19}},
+                {CASE(DescriptorSet), {7}},
+                {CASE(Offset), {12}},
+                {CASE(XfbBuffer), {1}},
+                {CASE(XfbStride), {8}},
+                {CASE(NoContraction), {}},
+                {CASE(InputAttachmentIndex), {102}},
+                {CASE(Alignment), {16}},
+            })), );
+
+INSTANTIATE_TEST_CASE_P(TextToBinaryDecorateSimpleV11, OpDecorateSimpleTest,
+                        Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+                                Values(EnumCase<SpvDecoration>{
+                                    CASE(MaxByteOffset), {128}})), );
 #undef CASE
 
 TEST_F(OpDecorateSimpleTest, WrongDecoration) {
@@ -289,8 +304,9 @@ TEST_F(OpDecorateEnumTest, CombinedFPFastMathMask) {
 }
 
 TEST_F(OpDecorateEnumTest, WrongFPFastMathMode) {
-  EXPECT_THAT(CompileFailure("OpDecorate %1 FPFastMathMode NotNaN|xxyyzz"),
-              Eq("Invalid floating-point fast math mode operand 'NotNaN|xxyyzz'."));
+  EXPECT_THAT(
+      CompileFailure("OpDecorate %1 FPFastMathMode NotNaN|xxyyzz"),
+      Eq("Invalid floating-point fast math mode operand 'NotNaN|xxyyzz'."));
 }
 
 // Test OpDecorate Linkage
@@ -394,68 +410,77 @@ TEST_F(TextToBinaryTest, GroupMemberDecorateInvalidSecondTargetMemberNumber) {
 // Test OpMemberDecorate
 
 using OpMemberDecorateSimpleTest = spvtest::TextToBinaryTestBase<
-    ::testing::TestWithParam<EnumCase<SpvDecoration>>>;
+    ::testing::TestWithParam<tuple<spv_target_env, EnumCase<SpvDecoration>>>>;
 
 TEST_P(OpMemberDecorateSimpleTest, AnySimpleDecoration) {
   // This string should assemble, but should not validate.
   std::stringstream input;
-  input << "OpMemberDecorate %1 42 " << GetParam().name();
-  for (auto operand : GetParam().operands()) input << " " << operand;
+  input << "OpMemberDecorate %1 42 " << get<1>(GetParam()).name();
+  for (auto operand : get<1>(GetParam()).operands()) input << " " << operand;
   input << std::endl;
-  EXPECT_THAT(CompiledInstructions(input.str()),
+  EXPECT_THAT(CompiledInstructions(input.str(), get<0>(GetParam())),
               Eq(MakeInstruction(SpvOpMemberDecorate,
-                                 {1, 42, uint32_t(GetParam().value())},
-                                 GetParam().operands())));
+                                 {1, 42, uint32_t(get<1>(GetParam()).value())},
+                                 get<1>(GetParam()).operands())));
   // Also check disassembly.
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(input.str()), Eq(input.str()));
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(input.str(), SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                  get<0>(GetParam())),
+      Eq(input.str()));
 }
 
 #define CASE(NAME) SpvDecoration##NAME, #NAME
 INSTANTIATE_TEST_CASE_P(
     TextToBinaryDecorateSimple, OpMemberDecorateSimpleTest,
-    ::testing::ValuesIn(std::vector<EnumCase<SpvDecoration>>{
-        // The operand literal values are arbitrarily chosen,
-        // but there are the right number of them.
-        {CASE(RelaxedPrecision), {}},
-        {CASE(SpecId), {100}},
-        {CASE(Block), {}},
-        {CASE(BufferBlock), {}},
-        {CASE(RowMajor), {}},
-        {CASE(ColMajor), {}},
-        {CASE(ArrayStride), {4}},
-        {CASE(MatrixStride), {16}},
-        {CASE(GLSLShared), {}},
-        {CASE(GLSLPacked), {}},
-        {CASE(CPacked), {}},
-        // Placeholder line for enum value 12
-        {CASE(NoPerspective), {}},
-        {CASE(Flat), {}},
-        {CASE(Patch), {}},
-        {CASE(Centroid), {}},
-        {CASE(Sample), {}},
-        {CASE(Invariant), {}},
-        {CASE(Restrict), {}},
-        {CASE(Aliased), {}},
-        {CASE(Volatile), {}},
-        {CASE(Constant), {}},
-        {CASE(Coherent), {}},
-        {CASE(NonWritable), {}},
-        {CASE(NonReadable), {}},
-        {CASE(Uniform), {}},
-        {CASE(SaturatedConversion), {}},
-        {CASE(Stream), {2}},
-        {CASE(Location), {6}},
-        {CASE(Component), {3}},
-        {CASE(Index), {14}},
-        {CASE(Binding), {19}},
-        {CASE(DescriptorSet), {7}},
-        {CASE(Offset), {12}},
-        {CASE(XfbBuffer), {1}},
-        {CASE(XfbStride), {8}},
-        {CASE(NoContraction), {}},
-        {CASE(InputAttachmentIndex), {102}},
-        {CASE(Alignment), {16}},
-    }),);
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCase<SpvDecoration>>{
+                // The operand literal values are arbitrarily chosen,
+                // but there are the right number of them.
+                {CASE(RelaxedPrecision), {}},
+                {CASE(SpecId), {100}},
+                {CASE(Block), {}},
+                {CASE(BufferBlock), {}},
+                {CASE(RowMajor), {}},
+                {CASE(ColMajor), {}},
+                {CASE(ArrayStride), {4}},
+                {CASE(MatrixStride), {16}},
+                {CASE(GLSLShared), {}},
+                {CASE(GLSLPacked), {}},
+                {CASE(CPacked), {}},
+                // Placeholder line for enum value 12
+                {CASE(NoPerspective), {}},
+                {CASE(Flat), {}},
+                {CASE(Patch), {}},
+                {CASE(Centroid), {}},
+                {CASE(Sample), {}},
+                {CASE(Invariant), {}},
+                {CASE(Restrict), {}},
+                {CASE(Aliased), {}},
+                {CASE(Volatile), {}},
+                {CASE(Constant), {}},
+                {CASE(Coherent), {}},
+                {CASE(NonWritable), {}},
+                {CASE(NonReadable), {}},
+                {CASE(Uniform), {}},
+                {CASE(SaturatedConversion), {}},
+                {CASE(Stream), {2}},
+                {CASE(Location), {6}},
+                {CASE(Component), {3}},
+                {CASE(Index), {14}},
+                {CASE(Binding), {19}},
+                {CASE(DescriptorSet), {7}},
+                {CASE(Offset), {12}},
+                {CASE(XfbBuffer), {1}},
+                {CASE(XfbStride), {8}},
+                {CASE(NoContraction), {}},
+                {CASE(InputAttachmentIndex), {102}},
+                {CASE(Alignment), {16}},
+            })), );
+
+INSTANTIATE_TEST_CASE_P(
+    TextToBinaryDecorateSimpleV11, OpMemberDecorateSimpleTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+            Values(EnumCase<SpvDecoration>{CASE(MaxByteOffset), {128}})), );
 #undef CASE
 
 TEST_F(OpMemberDecorateSimpleTest, WrongDecoration) {

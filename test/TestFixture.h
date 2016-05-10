@@ -97,17 +97,13 @@ class TextToBinaryTestBase : public T {
   }
 
   // Encodes SPIR-V text into binary and then decodes the binary using
-  // default options. Returns the decoded text.
-  std::string EncodeAndDecodeSuccessfully(const std::string& txt) {
-    return EncodeAndDecodeSuccessfully(txt, SPV_BINARY_TO_TEXT_OPTION_NONE);
-  }
-
-  // Encodes SPIR-V text into binary and then decodes the binary using
   // given options. Returns the decoded text.
-  std::string EncodeAndDecodeSuccessfully(const std::string& txt,
-                                          uint32_t disassemble_options) {
+  std::string EncodeAndDecodeSuccessfully(
+      const std::string& txt,
+      uint32_t disassemble_options = SPV_BINARY_TO_TEXT_OPTION_NONE,
+      spv_target_env env = SPV_ENV_UNIVERSAL_1_0) {
     DestroyBinary();
-    ScopedContext context;
+    ScopedContext context(env);
     spv_result_t error = spvTextToBinary(context.context, txt.c_str(),
                                          txt.size(), &binary, &diagnostic);
     if (error) {
