@@ -194,6 +194,68 @@ const vector<string>& AllCapabilities() {
   return *r;
 }
 
+const vector<string>& AllV10Capabilities() {
+  static const auto r = new vector<string>{
+    "",
+    "Matrix",
+    "Shader",
+    "Geometry",
+    "Tessellation",
+    "Addresses",
+    "Linkage",
+    "Kernel",
+    "Vector16",
+    "Float16Buffer",
+    "Float16",
+    "Float64",
+    "Int64",
+    "Int64Atomics",
+    "ImageBasic",
+    "ImageReadWrite",
+    "ImageMipmap",
+    "Pipes",
+    "Groups",
+    "DeviceEnqueue",
+    "LiteralSampler",
+    "AtomicStorage",
+    "Int16",
+    "TessellationPointSize",
+    "GeometryPointSize",
+    "ImageGatherExtended",
+    "StorageImageMultisample",
+    "UniformBufferArrayDynamicIndexing",
+    "SampledImageArrayDynamicIndexing",
+    "StorageBufferArrayDynamicIndexing",
+    "StorageImageArrayDynamicIndexing",
+    "ClipDistance",
+    "CullDistance",
+    "ImageCubeArray",
+    "SampleRateShading",
+    "ImageRect",
+    "SampledRect",
+    "GenericPointer",
+    "Int8",
+    "InputAttachment",
+    "SparseResidency",
+    "MinLod",
+    "Sampled1D",
+    "Image1D",
+    "SampledCubeArray",
+    "SampledBuffer",
+    "ImageBuffer",
+    "ImageMSArray",
+    "StorageImageExtendedFormats",
+    "ImageQuery",
+    "DerivativeControl",
+    "InterpolationFunction",
+    "TransformFeedback",
+    "GeometryStreams",
+    "StorageImageReadWithoutFormat",
+    "StorageImageWriteWithoutFormat",
+    "MultiViewport"};
+  return *r;
+}
+
 const vector<string>& MatrixDependencies() {
   static const auto r = new vector<string>{
   "Matrix",
@@ -707,10 +769,6 @@ INSTANTIATE_TEST_CASE_P(Decoration, ValidateCapability,
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt RelaxedPrecision\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
-// TODO(dekimir): re-enable this (adding Kernel) once 1.1 is the default
-// make_pair(string(kOpenCLMemoryModel) +
-//           "OpDecorate %intt SpecId 1\n"
-//           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt Block\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
@@ -835,6 +893,14 @@ make_pair(string(kGLSL450MemoryModel) +
 
 // clang-format on
 INSTANTIATE_TEST_CASE_P(
+    DecorationSpecId, ValidateCapability,
+    Combine(ValuesIn(AllV10Capabilities()),
+            Values(make_pair(string(kOpenCLMemoryModel) +
+                                 "OpDecorate %intt SpecId 1\n"
+                                 "%intt = OpTypeInt 32 1\n",
+                             ShaderDependencies()))), );
+
+INSTANTIATE_TEST_CASE_P(
     DecorationV11, ValidateCapabilityV11,
     Combine(ValuesIn(AllCapabilities()),
             Values(make_pair(string(kOpenCLMemoryModel) +
@@ -842,7 +908,18 @@ INSTANTIATE_TEST_CASE_P(
                                  "%i32 = OpTypeInt 32 1 "
                                  "%pi32 = OpTypePointer Workgroup %i32 "
                                  "%p = OpVariable %pi32 Workgroup ",
-                             AddressesDependencies()))), );
+                             AddressesDependencies()),
+                   // Trying to test OpDecorate here, but if this fails due to
+                   // incorrect OpMemoryModel validation, that must also be
+                   // fixed.
+                   make_pair(string("OpMemoryModel Logical OpenCL "
+                                    "OpDecorate %intt SpecId 1 "
+                                    "%intt = OpTypeInt 32 1 "),
+                             KernelDependencies()),
+                   make_pair(string("OpMemoryModel Logical Simple "
+                                    "OpDecorate %intt SpecId 1 "
+                                    "%intt = OpTypeInt 32 1 "),
+                             ShaderDependencies()))), );
 // clang-format off
 
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
