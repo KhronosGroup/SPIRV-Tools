@@ -205,4 +205,17 @@ INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpMemberNameTest,
 
 // TODO(dneto): Parse failures?
 
+using OpModuleProcessedTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<const char*>>;
+
+TEST_P(OpModuleProcessedTest, AnyString) {
+  const std::string input =
+      std::string("OpModuleProcessed \"") + GetParam() + "\"";
+  EXPECT_THAT(
+      CompiledInstructions(input, SPV_ENV_UNIVERSAL_1_1),
+      Eq(MakeInstruction(SpvOpModuleProcessed, MakeVector(GetParam()))));
+}
+
+INSTANTIATE_TEST_CASE_P(TextToBinaryTestDebug, OpModuleProcessedTest,
+                        ::testing::Values("", "foo bar this and that"), );
 }  // anonymous namespace
