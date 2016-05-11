@@ -228,6 +228,7 @@ typedef enum SpvImageChannelOrder_ {
     SpvImageChannelOrdersRGBx = 16,
     SpvImageChannelOrdersRGBA = 17,
     SpvImageChannelOrdersBGRA = 18,
+    SpvImageChannelOrderABGR = 19,
 } SpvImageChannelOrder;
 
 typedef enum SpvImageChannelDataType_ {

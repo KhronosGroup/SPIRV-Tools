@@ -298,6 +298,12 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(IMAGE_CHANNEL_ORDER, ImageChannelOrdersBGRA, Kernel),
         })), );
 
+INSTANTIATE_TEST_CASE_P(
+    ImageChannelOrderV11, EnumCapabilityTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+            Values(EnumCapabilityCase CASE1(IMAGE_CHANNEL_ORDER,
+                                            ImageChannelOrderABGR, Kernel))), );
+
 // See SPIR-V Section 3.13 Image Channel Data Type
 INSTANTIATE_TEST_CASE_P(
     ImageChannelDataType, EnumCapabilityTest,
