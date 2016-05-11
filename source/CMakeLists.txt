@@ -140,6 +140,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_constant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_definition.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.h
   ${CMAKE_CURRENT_SOURCE_DIR}/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h

@@ -351,10 +351,6 @@ typedef enum {
 // Returns a string describing the given SPIR-V target environment.
 const char* spvTargetEnvDescription(spv_target_env env);
 
-// Parses s into *env and returns true if successful.  If unparsable, returns
-// false and sets *env to SPV_ENV_UNIVERSAL_1_0.
-bool spvParseTargetEnv(const char* s, spv_target_env* env);
-
 // Creates a context object.  Returns null if env is invalid.
 spv_context spvContextCreate(spv_target_env env);
 

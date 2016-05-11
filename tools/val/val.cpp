@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
+#include "spirv_target_env.h"
 
 void print_usage(char* argv0) {
   printf(
@@ -46,7 +47,7 @@ Options:
   -h, --help   Print this help.
   --version    Display validator version information.
   --target-env {vulkan1.0|spv1.0|spv1.1}
-               Use Vulkan/SPIR-V1.0/SPIR-V1.1 validation rules.
+               Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
 )",
       argv0, argv0);
 }

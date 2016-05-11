@@ -26,10 +26,10 @@
 
 #include <cstdio>
 #include <cstring>
-
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
+#include "spirv_target_env.h"
 
 void print_usage(char* argv0) {
   printf(
@@ -48,6 +48,8 @@ Options:
 
   -o <filename>   Set the output filename. Use '-' to mean stdout.
   --version       Display assembler version information.
+  --target-env {vulkan1.0|spv1.0|spv1.1}
+                  Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
 )",
       argv0, argv0);
 }
