@@ -24,11 +24,11 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_TARGET_ENV_H_
-#define LIBSPIRV_TARGET_ENV_H_
+#ifndef LIBSPIRV_SPIRV_TARGET_ENV_H_
+#define LIBSPIRV_SPIRV_TARGET_ENV_H_
 
 // Parses s into *env and returns true if successful.  If unparsable, returns
 // false and sets *env to SPV_ENV_UNIVERSAL_1_0.
 bool spvParseTargetEnv(const char* s, spv_target_env* env);
 
-#endif  // LIBSPIRV_TARGET_ENV_H_
+#endif  // LIBSPIRV_SPIRV_TARGET_ENV_H_
