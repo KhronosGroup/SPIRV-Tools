@@ -24,7 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <assert.h>
+#include <cassert>
+#include <cstring>
 
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
@@ -56,4 +57,20 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
   }
   assert(0 && "Unhandled SPIR-V target environment");
   return SPV_SPIRV_VERSION_WORD(0, 0);
+}
+
+bool spvParseTargetEnv(const char* s, spv_target_env* env) {
+  if (!strncmp(s, "vulkan1.0", strlen("vulkan1.0"))) {
+    if (env) *env = SPV_ENV_VULKAN_1_0;
+    return true;
+  } else if (!strncmp(s, "spv1.0", strlen("spv1.0"))) {
+    if (env) *env = SPV_ENV_UNIVERSAL_1_0;
+    return true;
+  } else if (!strncmp(s, "spv1.1", strlen("spv1.1"))) {
+    if (env) *env = SPV_ENV_UNIVERSAL_1_1;
+    return true;
+  } else {
+    if (env) *env = SPV_ENV_UNIVERSAL_1_0;
+    return false;
+  }
 }

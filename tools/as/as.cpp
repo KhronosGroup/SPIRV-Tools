@@ -26,10 +26,10 @@
 
 #include <cstdio>
 #include <cstring>
-
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
+#include "spirv_target_env.h"
 
 void print_usage(char* argv0) {
   printf(
@@ -48,6 +48,8 @@ Options:
 
   -o <filename>   Set the output filename. Use '-' to mean stdout.
   --version       Display assembler version information.
+  --target-env {vulkan1.0|spv1.0|spv1.1}
+                  Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
 )",
       argv0, argv0);
 }
@@ -55,7 +57,7 @@ Options:
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr;
-
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       switch (argv[argi][1]) {
@@ -92,6 +94,19 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 0;
           }
+          if (0 == strcmp(argv[argi], "--target-env")) {
+            if (argi + 1 < argc) {
+              const auto env_str = argv[++argi];
+              if (!spvParseTargetEnv(env_str, &target_env)) {
+                fprintf(stderr, "error: Unrecognized target env: %s\n",
+                        env_str);
+                return 1;
+              }
+            } else {
+              fprintf(stderr, "error: Missing argument to --target-env\n");
+              return 1;
+            }
+          }
         } break;
         default:
           print_usage(argv[0]);
@@ -125,7 +140,7 @@ int main(int argc, char** argv) {
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  spv_context context = spvContextCreate(target_env);
   spv_result_t error = spvTextToBinary(context, contents.data(),
                                        contents.size(), &binary, &diagnostic);
   spvContextDestroy(context);

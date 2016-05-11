@@ -30,17 +30,20 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/as/as.cpp)
   spvtools_default_compile_options(spirv-as)
   target_link_libraries(spirv-as PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-as PRIVATE ${spirv-tools_BINARY_DIR})
+  target_include_directories(spirv-as
+    PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
 
   add_executable(spirv-dis ${CMAKE_CURRENT_SOURCE_DIR}/dis/dis.cpp)
   spvtools_default_compile_options(spirv-dis)
   target_link_libraries(spirv-dis PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-dis PRIVATE ${spirv-tools_BINARY_DIR})
+  target_include_directories(spirv-dis
+    PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
 
   add_executable(spirv-val ${CMAKE_CURRENT_SOURCE_DIR}/val/val.cpp)
   spvtools_default_compile_options(spirv-val)
   target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-val PRIVATE ${spirv-tools_BINARY_DIR})
+  target_include_directories(spirv-val
+    PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
 
   install(TARGETS ${SPIRV_INSTALL_TARGETS}
     RUNTIME DESTINATION bin
