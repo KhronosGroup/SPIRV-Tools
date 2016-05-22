@@ -120,6 +120,8 @@ add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
 add_custom_target(spirv-tools-build-version
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
 
+add_subdirectory(opt)
+
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
   ${spirv-tools_SOURCE_DIR}/include/spirv/spirv.h
