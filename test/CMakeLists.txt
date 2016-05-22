@@ -49,6 +49,7 @@ function(add_spvtools_unittest)
   endif()
   target_include_directories(${ARG_TARGET} PRIVATE
     ${spirv-tools_SOURCE_DIR}
+    ${spirv-tools_SOURCE_DIR}/include
     ${SPIRV_HEADER_INCLUDE_DIR}
     ${gtest_SOURCE_DIR}/include
     ${gmock_SOURCE_DIR}/include
@@ -131,6 +132,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       TARGET UnitSPIRV
       SRCS ${TEST_SOURCES}
       LIBS ${SPIRV_TOOLS})
+    add_subdirectory(opt)
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")

@@ -28,8 +28,8 @@
 #define LIBSPIRV_OPT_MODULE_H_
 
 #include <functional>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "function.h"
 #include "instruction.h"
@@ -61,8 +61,8 @@ class Module {
   // Appends an extension instruction to this module.
   void AddExtension(Instruction&& e) { extensions_.push_back(std::move(e)); }
   // Appends an extended instruction set instruction to this module.
-  void AddExtInstSet(Instruction&& e) {
-    ext_inst_sets_.push_back(std::move(e));
+  void AddExtInstImport(Instruction&& e) {
+    ext_inst_imports_.push_back(std::move(e));
   }
   // Appends a memory model instruction to this module.
   void SetMemoryModel(Instruction&& m) { memory_model_ = std::move(m); }
@@ -79,15 +79,13 @@ class Module {
     annotations_.push_back(std::move(a));
   }
   // Appends a type-declaration instruction to this module.
-  void AddType(Instruction&& t) {
-    types_and_constants_.push_back(std::move(t));
-  }
+  void AddType(Instruction&& t) { types_values_.push_back(std::move(t)); }
   // Appends a constant-creation instruction to this module.
-  void AddConstant(Instruction&& c) {
-    types_and_constants_.push_back(std::move(c));
+  void AddConstant(Instruction&& c) { types_values_.push_back(std::move(c)); }
+  // Appends a global variable-declaration instruction to this module.
+  void AddGlobalVariable(Instruction&& v) {
+    types_values_.push_back(std::move(v));
   }
-  // Appends a variable-declaration instruction to this module.
-  void AddVariable(Instruction&& v) { variables_.push_back(std::move(v)); }
   // Appends a function to this module.
   void AddFunction(Function&& f) { functions_.push_back(std::move(f)); }
 
@@ -115,16 +113,14 @@ class Module {
   // Section 2.4 of the SPIR-V specification.
   std::vector<Instruction> capabilities_;
   std::vector<Instruction> extensions_;
-  std::vector<Instruction> ext_inst_sets_;
+  std::vector<Instruction> ext_inst_imports_;
   Instruction memory_model_;  // A module only has one memory model instruction.
   std::vector<Instruction> entry_points_;
   std::vector<Instruction> execution_modes_;
   std::vector<Instruction> debugs_;
   std::vector<Instruction> annotations_;
-  // Types and constants may depends on each other; thus they are grouped
-  // together.
-  std::vector<Instruction> types_and_constants_;
-  std::vector<Instruction> variables_;
+  // Type declarations, constants, and global variable declarations.
+  std::vector<Instruction> types_values_;
   std::vector<Function> functions_;
 };
 

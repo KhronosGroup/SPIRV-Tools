@@ -33,9 +33,9 @@ namespace ir {
 
 std::vector<Instruction*> Module::types() {
   std::vector<Instruction*> insts;
-  for (uint32_t i = 0; i < types_and_constants_.size(); ++i) {
-    if (IsTypeInst(types_and_constants_[i].opcode()))
-      insts.push_back(&types_and_constants_[i]);
+  for (uint32_t i = 0; i < types_values_.size(); ++i) {
+    if (IsTypeInst(types_values_[i].opcode()))
+      insts.push_back(&types_values_[i]);
   }
   return insts;
 };
@@ -43,14 +43,13 @@ std::vector<Instruction*> Module::types() {
 void Module::ForEachInst(const std::function<void(Instruction*)>& f) {
   for (auto& i : capabilities_) f(&i);
   for (auto& i : extensions_) f(&i);
-  for (auto& i : ext_inst_sets_) f(&i);
+  for (auto& i : ext_inst_imports_) f(&i);
   f(&memory_model_);
   for (auto& i : entry_points_) f(&i);
   for (auto& i : execution_modes_) f(&i);
   for (auto& i : debugs_) f(&i);
   for (auto& i : annotations_) f(&i);
-  for (auto& i : types_and_constants_) f(&i);
-  for (auto& i : variables_) f(&i);
+  for (auto& i : types_values_) f(&i);
   for (auto& i : functions_) i.ForEachInst(f);
 }
 
@@ -65,14 +64,13 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   // TODO(antiagainst): wow, looks like a duplication of the above.
   for (const auto& c : capabilities_) c.ToBinary(binary, skip_nop);
   for (const auto& e : extensions_) e.ToBinary(binary, skip_nop);
-  for (const auto& e : ext_inst_sets_) e.ToBinary(binary, skip_nop);
+  for (const auto& e : ext_inst_imports_) e.ToBinary(binary, skip_nop);
   memory_model_.ToBinary(binary, skip_nop);
   for (const auto& e : entry_points_) e.ToBinary(binary, skip_nop);
   for (const auto& e : execution_modes_) e.ToBinary(binary, skip_nop);
   for (const auto& d : debugs_) d.ToBinary(binary, skip_nop);
   for (const auto& a : annotations_) a.ToBinary(binary, skip_nop);
-  for (const auto& t : types_and_constants_) t.ToBinary(binary, skip_nop);
-  for (const auto& v : variables_) v.ToBinary(binary, skip_nop);
+  for (const auto& t : types_values_) t.ToBinary(binary, skip_nop);
   for (const auto& f : functions_) f.ToBinary(binary, skip_nop);
 }
 
