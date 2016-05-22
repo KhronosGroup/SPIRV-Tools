@@ -39,6 +39,7 @@ function(add_spvtools_unittest target srcs libs)
   endif()
   target_include_directories(${target} PRIVATE
     ${spirv-tools_SOURCE_DIR}
+    ${spirv-tools_SOURCE_DIR}/include
     ${gtest_SOURCE_DIR}/include
     ${gmock_SOURCE_DIR}/include
   )
@@ -116,6 +117,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
     )
     add_spvtools_unittest(UnitSPIRV "${TEST_SOURCES}" ${SPIRV_TOOLS})
+    add_subdirectory(opt)
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
