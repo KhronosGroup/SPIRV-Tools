@@ -45,38 +45,37 @@ const Type* TypeBuilder::CreateType(const ir::Inst& inst) {
       type.reset(new Bool());
       break;
     case SpvOpTypeInt:
-      type.reset(new Integer(inst.GetOperandWord(0), inst.GetOperandWord(1)));
+      type.reset(new Integer(inst.GetSingleWordOperand(0),
+                             inst.GetSingleWordOperand(1)));
       break;
     case SpvOpTypeFloat:
-      type.reset(new Float(inst.GetOperandWord(0)));
+      type.reset(new Float(inst.GetSingleWordOperand(0)));
       break;
     case SpvOpTypeVector:
     case SpvOpTypeMatrix:
     case SpvOpTypeArray: {
-      type.reset(
-          new Vector(GetType(inst.GetOperandWord(0)), inst.GetOperandWord(1)));
+      type.reset(new Vector(GetType(inst.GetSingleWordOperand(0)),
+                            inst.GetSingleWordOperand(1)));
     } break;
     case SpvOpTypeStruct: {
-      const uint32_t num_operand_words = inst.NumOperandWord();
       std::vector<const Type*> element_types;
-      for (uint32_t i = 0; i < num_operand_words; ++i) {
-        element_types.push_back(GetType(inst.GetOperandWord(i)));
+      for (uint32_t i = 0; i < inst.NumOperands(); ++i) {
+        element_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
       type.reset(new Struct(element_types));
     } break;
     case SpvOpTypeFunction: {
-      const uint32_t num_operand_words = inst.NumOperandWord();
-      const Type* return_type = GetType(inst.GetOperandWord(0));
+      const Type* return_type = GetType(inst.GetSingleWordOperand(0));
       std::vector<const Type*> param_types;
-      for (uint32_t i = 1; i < num_operand_words; ++i) {
-        param_types.push_back(GetType(inst.GetOperandWord(i)));
+      for (uint32_t i = 1; i < inst.NumOperands(); ++i) {
+        param_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
       type.reset(new Function(return_type, param_types));
     } break;
     case SpvOpTypePointer: {
-      type.reset(
-          new Pointer(GetType(inst.GetOperandWord(1)),
-                      static_cast<SpvStorageClass>(inst.GetOperandWord(0))));
+      type.reset(new Pointer(
+          GetType(inst.GetSingleWordOperand(1)),
+          static_cast<SpvStorageClass>(inst.GetSingleWordOperand(0))));
     } break;
     case SpvOpTypeImage:
     case SpvOpTypeSampler:

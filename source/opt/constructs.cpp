@@ -35,27 +35,52 @@ namespace ir {
 Inst::Inst(const spv_parsed_instruction_t& inst)
     : opcode_(static_cast<SpvOp>(inst.opcode)),
       type_id_(inst.type_id),
-      result_id_(inst.result_id),
-      words_(inst.words, inst.words + inst.num_words),
-      operands_(inst.operands, inst.operands + inst.num_operands) {}
+      result_id_(inst.result_id) {
+  for (uint32_t i = 0; i < inst.num_operands; ++i) {
+    const auto& current_payload = inst.operands[i];
+    std::vector<uint32_t> words(
+        inst.words + current_payload.offset,
+        inst.words + current_payload.offset + current_payload.num_words);
+    payloads_.emplace_back(current_payload.type, std::move(words));
+  }
+}
 
-uint32_t Inst::GetOperandWord(size_t index) const {
-  // March towards the start of "real" operands.
-  index += 1 + (type_id_ != 0) + (result_id_ != 0);
-  if (index >= words_.size()) {
+uint32_t Inst::GetSingleWordOperand(uint32_t index) const {
+  index += TypeResultIdCount();
+  if (index >= payloads_.size()) {
+    // TODO(antiagainst): do better than panicking.
+    assert(0 && "operand index out of bound");
+  }
+  if (payloads_[index].words.size() != 1) {
+    // TODO(antiagainst): do better than panicking.
+    assert(0 && "expected the operand only taking one word");
+  }
+
+  return payloads_[index].words.front();
+}
+
+uint32_t Inst::NumOperandWords() const {
+  uint32_t size = 0;
+  for (uint32_t i = TypeResultIdCount(); i < payloads_.size(); ++i)
+    size += static_cast<uint32_t>(payloads_[i].words.size());
+  return size;
+}
+
+const Payload& Inst::GetOperand(uint32_t index) const {
+  index += TypeResultIdCount();
+  if (index >= payloads_.size()) {
     // TODO(antiagainst): do better than panicking.
     assert(0 && "operand index out of bound");
   }
 
-  return words_[index];
-}
+  return payloads_[index];
+};
 
-uint32_t Inst::NumOperandWord() const {
-  // March towards the start of "real" operands.
-  const uint32_t count = static_cast<uint32_t>(words_.size());
-  const uint32_t pre_operand = 1 + (type_id_ != 0) + (result_id_ != 0);
-  assert(count >= pre_operand && "invalid instruction");
-  return count - pre_operand;
+void Inst::ToBinary(std::vector<uint32_t>* binary) const {
+  const uint32_t num_words = 1 + NumPayloadWords();
+  binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
+  for (const auto& operand : payloads_)
+    binary->insert(binary->end(), operand.words.begin(), operand.words.end());
 }
 
 void BasicBlock::ToBinary(std::vector<uint32_t>* binary) const {

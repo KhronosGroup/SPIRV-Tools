@@ -39,6 +39,16 @@ namespace ir {
 class Function;
 class Module;
 
+struct Payload {
+  Payload(spv_operand_type_t t, std::vector<uint32_t>&& w)
+      : type(t), words(std::move(w)) {}
+
+  spv_operand_type_t type;
+  std::vector<uint32_t> words;
+
+  // TODO(antiagainst): create fields for literal number kind, width, etc.
+};
+
 class Inst {
  public:
   Inst() : opcode_(SpvOpNop), type_id_(0), result_id_(0) {}
@@ -46,20 +56,29 @@ class Inst {
   Inst(const spv_parsed_instruction_t& inst);
 
   SpvOp opcode() const { return opcode_; }
+  uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
-  uint32_t GetOperandWord(size_t index) const;
-  uint32_t NumOperandWord() const;
-
-  void ToBinary(std::vector<uint32_t>* binary) const {
-    binary->insert(binary->end(), words_.begin(), words_.end());
+  uint32_t GetSingleWordOperand(uint32_t index) const;
+  uint32_t NumOperandWords() const;
+  const Payload& GetOperand(uint32_t index) const;
+  uint32_t NumOperands() const {
+    return static_cast<uint32_t>(payloads_.size() - TypeResultIdCount());
+  }
+  uint32_t NumPayloadWords() const {
+    return NumOperandWords() + TypeResultIdCount();
   }
 
+  void ToBinary(std::vector<uint32_t>* binary) const;
+
  private:
+  uint32_t TypeResultIdCount() const {
+    return (type_id_ != 0) + (result_id_ != 0);
+  }
+
   SpvOp opcode_;
   uint32_t type_id_;
   uint32_t result_id_;
-  std::vector<uint32_t> words_;
-  std::vector<spv_parsed_operand_t> operands_;
+  std::vector<Payload> payloads_;
 };
 
 class BasicBlock {
