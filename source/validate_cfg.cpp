@@ -98,8 +98,8 @@ vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     const BasicBlock& first_block) {
   struct block_detail {
-    size_t dominator;
-    size_t postorder_index;
+    size_t dominator; ///< The index of the blocks's dominator in the post order array
+    size_t postorder_index;///< The index of the block in the post order array
   };
 
   vector<cbb_ptr> postorder = PostOrderSort(first_block, 10);

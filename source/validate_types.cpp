@@ -305,9 +305,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-list<Function>& ValidationState_t::get_functions() {
-  return module_functions_;
-}
+list<Function>& ValidationState_t::get_functions() { return module_functions_; }
 
 Function& ValidationState_t::get_current_function() {
   assert(in_function_body());
@@ -342,7 +340,7 @@ bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
   });
   return found;
 }
-	
+
 void ValidationState_t::setAddressingModel(SpvAddressingModel am) {
   addressing_model_ = am;
 }
@@ -377,16 +375,15 @@ Function::Function(uint32_t id, uint32_t result_type_id,
 bool Function::in_block() const { return static_cast<bool>(current_block_); }
 
 bool Function::IsFirstBlock(uint32_t id) const {
-  return *get_first_block() == id;
+  return !ordered_blocks_.empty() && *get_first_block() == id;
 }
 
 spv_result_t ValidationState_t::RegisterFunction(
     uint32_t id, uint32_t ret_type_id, SpvFunctionControlMask function_control,
     uint32_t function_type_id) {
-  assert(in_function_ == false &&
-         "Function instructions can not be declared in a function");
-  assert(in_function_ == false &&
-         "Function instructions can not be declared in a function");
+  assert(in_function_body() == false &&
+         "RegisterFunction can only be called when parsing the binary outside "
+         "of another function");
   in_function_ = true;
   module_functions_.emplace_back(id, ret_type_id, function_control,
                                  function_type_id, *this);
@@ -398,8 +395,11 @@ spv_result_t ValidationState_t::RegisterFunction(
 
 spv_result_t ValidationState_t::RegisterFunctionEnd() {
   assert(in_function_body() == true &&
-         "Function end can only be called in functions");
-  assert(in_block() == false && "Function end cannot be called inside a block");
+         "RegisterFunctionEnd can only be called when parsing the binary "
+         "inside of another function");
+  assert(in_block() == false &&
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "ouside of a block");
   in_function_ = false;
   return SPV_SUCCESS;
 }
@@ -407,10 +407,11 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
 spv_result_t Function::RegisterFunctionParameter(uint32_t id,
                                                  uint32_t type_id) {
   assert(module_.in_function_body() == true &&
-         "Function parameter instructions cannot be declared outside of a "
-         "function");
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "outside of another function");
   assert(in_block() == false &&
-         "Function parameters cannot be called in blocks");
+         "RegisterFunctionParameter can only be called when parsing the binary "
+         "ouside of a block");
   // TODO(umar): Validate function parameter type order and count
   // TODO(umar): Use these variables to validate parameter type
   (void)id;
@@ -443,12 +444,13 @@ void printDot(const BasicBlock& other, const ValidationState_t& module) {
       block_string += module.getIdOrName(block->get_id()) + " ";
     }
   }
-  printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(), block_string.c_str());
+  printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(),
+         block_string.c_str());
 }
 
 void Function::printDotGraph() const {
   using namespace std;
-  if(get_first_block()) {
+  if (get_first_block()) {
     string func_name(module_.getIdOrName(id_));
     printf("digraph %s {\n", func_name.c_str());
     printBlocks();
@@ -457,9 +459,9 @@ void Function::printDotGraph() const {
 }
 
 void Function::printBlocks() const {
-  if(get_first_block()) {
-    printf("%10s -> %s\n",
-           module_.getIdOrName(id_).c_str() , module_.getIdOrName(get_first_block()->get_id()).c_str());
+  if (get_first_block()) {
+    printf("%10s -> %s\n", module_.getIdOrName(id_).c_str(),
+           module_.getIdOrName(get_first_block()->get_id()).c_str());
     for (const auto& block : blocks_) {
       printDot(block.second, module_);
     }
@@ -474,23 +476,27 @@ spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
 
 spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   assert(module_.in_function_body() == true &&
-         "Blocks can only exsist in functions");
+         "RegisterBlocks can only be called when parsing a binary inside of a "
+         "function");
   assert(module_.getLayoutSection() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
-         "Function declartions must appear before function definitions");
-  assert(declaration_type_ == FunctionDecl::kFunctionDeclDefinition &&
-         "Function declaration type should have already been defined");
+         "RegisterBlocks cannot be called within a function declaration");
+  assert(
+      declaration_type_ == FunctionDecl::kFunctionDeclDefinition &&
+      "RegisterBlocks can only be called after declaration_type_ is defined");
 
-  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
   bool success = false;
-  tie(tmp, success) = blocks_.insert({id, BasicBlock(id)});
+  tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
   if (is_definition) {  // new block definition
-    assert(in_block() == false && "Blocks cannot be nested");
+    assert(in_block() == false &&
+           "Register Block can only be called when parsing a binary outside of "
+           "a BasicBlock");
 
     undefined_blocks_.erase(id);
-    current_block_ = &tmp->second;
-    if(ordered_blocks_.empty()) current_block_->set_reachability(true);
+    current_block_ = &inserted_block->second;
     ordered_blocks_.push_back(current_block_);
+    if (IsFirstBlock(id)) current_block_->set_reachability(true);
   } else if (success) {  // Block doesn't exsist but this is not a definition
     undefined_blocks_.insert(id);
   }
@@ -500,52 +506,61 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
 
 void Function::RegisterBlockEnd(SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
-         "Branch instruction can only be called in a function");
+         "RegisterFunction can only be called when parsing the binary inside "
+         "of a function");
   assert(in_block() == true &&
-         "Branch instruction can only be called in a block");
+         "RegisterBlockEnd can only be called when parsing the binary inside "
+         "of a block");
 
-  current_block_->RegisterBranchWithoutSuccessor(branch_instruction);
+  current_block_->RegisterBranchInstruction(branch_instruction);
   current_block_ = nullptr;
   return;
 }
 
 void Function::RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
-         "Branch instruction can only be called in a function");
-  assert(in_block() == true &&
-         "Branch instruction can only be called in a block");
+         "RegisterBlockEnd can only be called when parsing a binary in a "
+         "function");
+  assert(
+      in_block() == true &&
+      "RegisterBlockEnd can only be called when parsing a binary in a block");
 
-  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
   bool success;
-  tie(tmp, success) = blocks_.insert({next_id, BasicBlock(next_id)});
+  tie(inserted_block, success) = blocks_.insert({next_id, BasicBlock(next_id)});
   if (success) {
     undefined_blocks_.insert(next_id);
   }
-  current_block_->RegisterSuccessor(tmp->second, branch_instruction);
+  current_block_->RegisterBranchInstruction(branch_instruction);
+  current_block_->RegisterSuccessor({&inserted_block->second});
   current_block_ = nullptr;
   return;
 }
 
-void Function::RegisterBlockEnd(vector<uint32_t> next_list, SpvOp branch_instruction) {
+void Function::RegisterBlockEnd(vector<uint32_t> next_list,
+                                SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&
-         "Branch instruction can only be called in a function");
-  assert(in_block() == true &&
-         "Branch instruction can only be called in a block");
+         "RegisterBlockEnd can only be called when parsing a binary in a "
+         "function");
+  assert(
+      in_block() == true &&
+      "RegisterBlockEnd can only be called when parsing a binary in a block");
 
   vector<BasicBlock*> next_blocks;
   next_blocks.reserve(next_list.size());
 
-  std::unordered_map<uint32_t, BasicBlock>::iterator tmp;
+  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
   bool success;
   for (uint32_t id : next_list) {
-    tie(tmp, success) = blocks_.insert({id, BasicBlock(id)});
+    tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
     if (success) {
       undefined_blocks_.insert(id);
     }
-    next_blocks.push_back(&tmp->second);
+    next_blocks.push_back(&inserted_block->second);
   }
 
-  current_block_->RegisterSuccessor(next_blocks, branch_instruction);
+  current_block_->RegisterBranchInstruction(branch_instruction);
+  current_block_->RegisterSuccessor(next_blocks);
   current_block_ = nullptr;
   return;
 }
@@ -597,27 +612,16 @@ const BasicBlock* BasicBlock::GetImmediateDominator() const {
 
 BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
 
-void BasicBlock::RegisterSuccessor(BasicBlock& next, SpvOp branch_instruction) {
-  next.predecessors_.push_back(this);
-  successors_.push_back(&next);
-  branch_instruction_ = branch_instruction;
-  if(next.reachable_ == false)
-    next.set_reachability(reachable_);
-}
-
-void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks, SpvOp branch_instruction) {
+void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);
-    branch_instruction_ = branch_instruction;
-    if(block->reachable_ == false)
-      block->set_reachability(reachable_);
+    if (block->reachable_ == false) block->set_reachability(reachable_);
   }
 }
 
-void BasicBlock::RegisterBranchWithoutSuccessor(SpvOp branch_instruction) {
-  if(branch_instruction == SpvOpUnreachable) reachable_ = false;
-  branch_instruction_ = branch_instruction;
+void BasicBlock::RegisterBranchInstruction(SpvOp branch_instruction) {
+  if (branch_instruction == SpvOpUnreachable) reachable_ = false;
   return;
 }
 
@@ -655,10 +659,9 @@ BasicBlock::DominatorIterator BasicBlock::dom_begin() {
   return DominatorIterator(this);
 }
 
-
 const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
-    return DominatorIterator();
-  }
+  return DominatorIterator();
+}
 
 BasicBlock::DominatorIterator BasicBlock::dom_end() {
   return DominatorIterator();
@@ -674,5 +677,7 @@ bool operator!=(const BasicBlock::DominatorIterator& lhs,
   return !(lhs == rhs);
 }
 
-const BasicBlock*& BasicBlock::DominatorIterator::operator*() { return current_; }
+const BasicBlock*& BasicBlock::DominatorIterator::operator*() {
+  return current_;
+}
 }

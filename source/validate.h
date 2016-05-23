@@ -147,14 +147,11 @@ class BasicBlock {
   /// Returns the immedate dominator of this basic block
   const BasicBlock* GetImmediateDominator() const;
 
-  /// Adds @p next as a successor of this BasicBlock
-  void RegisterBranchWithoutSuccessor(SpvOp branch_instruction);
-
-  /// Adds @p next as a successor of this BasicBlock
-  void RegisterSuccessor(BasicBlock& next, SpvOp branch_instruction);
+  /// Ends the block without a successor
+  void RegisterBranchInstruction(SpvOp branch_instruction);
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
-  void RegisterSuccessor(std::vector<BasicBlock*> next, SpvOp branch_instruction);
+  void RegisterSuccessor(std::vector<BasicBlock*> next = {});
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
@@ -248,6 +245,10 @@ class CFConstruct {
   const BasicBlock* get_merge() const { return merge_block_; }
   const BasicBlock* get_continue() const { return continue_block_; }
 
+  BasicBlock* get_header() { return header_block_; }
+  BasicBlock* get_merge() { return merge_block_; }
+  BasicBlock* get_continue() { return continue_block_; }
+
  private:
   BasicBlock* header_block_;    ///< The header block of a loop or selection
   BasicBlock* merge_block_;     ///< The merge block of a loop or selection
@@ -337,7 +338,7 @@ class Function {
   size_t get_block_count() const;
 
   /// Returns the id of the funciton
-  uint32_t get_id() const { return id_; };
+  uint32_t get_id() const { return id_; }
 
   // Returns the number of blocks in the current function being parsed
   size_t get_undefined_block_count() const;
@@ -380,7 +381,7 @@ class Function {
   /// The type of declaration of each function
   FunctionDecl declaration_type_;
 
-  /// The beginning of the block of functions
+  /// The blocks in the function mapped by block ID
   std::unordered_map<uint32_t, BasicBlock> blocks_;
 
   /// A list of blocks in the order they appeared in the binary
