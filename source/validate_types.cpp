@@ -449,7 +449,6 @@ void printDot(const BasicBlock& other, const ValidationState_t& module) {
 }
 
 void Function::printDotGraph() const {
-  using namespace std;
   if (get_first_block()) {
     string func_name(module_.getIdOrName(id_));
     printf("digraph %s {\n", func_name.c_str());
@@ -680,4 +679,4 @@ bool operator!=(const BasicBlock::DominatorIterator& lhs,
 const BasicBlock*& BasicBlock::DominatorIterator::operator*() {
   return current_;
 }
-}
+}  // namespace libspirv

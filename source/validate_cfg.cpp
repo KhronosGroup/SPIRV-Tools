@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 using std::find;
 using std::get;
@@ -93,13 +94,13 @@ vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
   }
   return out;
 }
-}
+}  // namespace
 
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     const BasicBlock& first_block) {
   struct block_detail {
-    size_t dominator; ///< The index of the blocks's dominator in the post order array
-    size_t postorder_index;///< The index of the block in the post order array
+    size_t dominator;  ///< The index of blocks's dominator in post order array
+    size_t postorder_index;  ///< The index of the block in the post order array
   };
 
   vector<cbb_ptr> postorder = PostOrderSort(first_block, 10);
@@ -324,4 +325,4 @@ spv_result_t CfgPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}
+}  // namespace libspirv

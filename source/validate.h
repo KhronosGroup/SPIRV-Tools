@@ -112,7 +112,7 @@ class BasicBlock {
   ///
   /// @param[in] id The ID of the basic block
   /// @param[in] module A reference of the module of the basic block
-  BasicBlock(uint32_t id);
+  explicit BasicBlock(uint32_t id);
 
   /// Returns the id of the BasicBlock
   uint32_t get_id() const { return id_; }
@@ -175,7 +175,7 @@ class BasicBlock {
     ///        @p block
     ///
     /// @param block The block which is referenced by the iterator
-    DominatorIterator(const BasicBlock* block);
+    explicit DominatorIterator(const BasicBlock* block);
 
     /// @brief Advances the iterator
     DominatorIterator& operator++();
@@ -210,9 +210,6 @@ class BasicBlock {
 
   /// The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
-
-  /// The function which contains this block
-  Function* function_;
 
   SpvOp branch_instruction_;
 
@@ -308,7 +305,8 @@ class Function {
   void RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction);
 
   /// Registers the end of the block
-  void RegisterBlockEnd(std::vector<uint32_t> next_list, SpvOp branch_instruction);
+  void RegisterBlockEnd(std::vector<uint32_t> next_list,
+                        SpvOp branch_instruction);
 
   /// Returns true if the \p merge_block_id is a merge block
   bool IsMergeBlock(uint32_t merge_block_id) const;

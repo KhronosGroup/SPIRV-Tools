@@ -24,6 +24,16 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <cassert>
+#include <cstdio>
+
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "validate.h"
 #include "validate_passes.h"
 
@@ -35,15 +45,6 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
-
-#include <algorithm>
-#include <cassert>
-#include <cstdio>
-#include <functional>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <vector>
 
 using std::function;
 using std::ostream_iterator;
