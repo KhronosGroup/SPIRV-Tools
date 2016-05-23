@@ -43,6 +43,7 @@ class TypeBuilder {
  public:
   TypeBuilder(IdToTypeMap* type_map) : type_map_(type_map) {}
   Type* CreateType(const ir::Inst& inst);
+  void AttachDecoration(const ir::Inst& inst);
 
  private:
   Type* GetType(uint32_t id) const;

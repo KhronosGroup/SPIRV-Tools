@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <algorithm>
 #include <cassert>
 #include <sstream>
 
@@ -33,10 +34,40 @@ namespace spvtools {
 namespace opt {
 namespace type {
 
+bool Type::HasSameDecorations(const Type* that) const {
+  const auto size = decorations_.size();
+  if (size != that->decorations_.size()) return false;
+  // Shortcut for common cases.
+  if (size == 0 || size == 1) return decorations_ == that->decorations_;
+
+  // TODO(antiagainst): The following code, involving a shallow copying, is a
+  // little complicated. Find a better way.
+  std::vector<const std::vector<uint32_t> *> this_decorations, that_decorations;
+  this_decorations.reserve(size);
+  this_decorations.reserve(size);
+  for (uint32_t i = 0; i < size; ++i) {
+    this_decorations.push_back(&decorations_[i]);
+    that_decorations.push_back(&that->decorations_[i]);
+  }
+
+  const auto cmp = [](const std::vector<uint32_t>* a,
+                      const std::vector<uint32_t>* b) {
+    return a->front() < b->front();
+  };
+
+  std::sort(this_decorations.begin(), this_decorations.end(), cmp);
+  std::sort(that_decorations.begin(), that_decorations.end(), cmp);
+
+  for (uint32_t i = 0; i < size; ++i) {
+    if (*this_decorations[i] != *that_decorations[i]) return false;
+  }
+  return true;
+}
+
 bool Integer::IsSame(Type* that) const {
   const Integer* it = that->AsInteger();
-  if (!it) return false;
-  return width_ == it->width_ && signed_ == it->signed_;
+  return it && width_ == it->width_ && signed_ == it->signed_ &&
+         HasSameDecorations(that);
 }
 
 std::string Integer::str() const {
@@ -47,8 +78,7 @@ std::string Integer::str() const {
 
 bool Float::IsSame(Type* that) const {
   const Float* ft = that->AsFloat();
-  if (!ft) return false;
-  return width_ == ft->width_;
+  return ft && width_ == ft->width_ && HasSameDecorations(that);
 }
 
 std::string Float::str() const {
@@ -65,7 +95,8 @@ Vector::Vector(Type* type, uint32_t count)
 bool Vector::IsSame(Type* that) const {
   const Vector* vt = that->AsVector();
   if (!vt) return false;
-  return count_ == vt->count_ && element_type_->IsSame(vt->element_type_);
+  return count_ == vt->count_ && element_type_->IsSame(vt->element_type_) &&
+         HasSameDecorations(that);
 }
 
 std::string Vector::str() const {
@@ -82,7 +113,8 @@ Matrix::Matrix(Type* type, uint32_t count)
 bool Matrix::IsSame(Type* that) const {
   const Matrix* mt = that->AsMatrix();
   if (!mt) return false;
-  return count_ == mt->count_ && element_type_->IsSame(mt->element_type_);
+  return count_ == mt->count_ && element_type_->IsSame(mt->element_type_) &&
+         HasSameDecorations(that);
 }
 
 std::string Matrix::str() const {
@@ -100,7 +132,7 @@ bool Array::IsSame(Type* that) const {
   const Array* at = that->AsArray();
   if (!at) return false;
   return length_id_ == at->length_id_ &&
-         element_type_->IsSame(at->element_type_);
+         element_type_->IsSame(at->element_type_) && HasSameDecorations(that);
 }
 
 std::string Array::str() const {
@@ -116,7 +148,7 @@ RuntimeArray::RuntimeArray(Type* type) : element_type_(type) {
 bool RuntimeArray::IsSame(Type* that) const {
   const RuntimeArray* rat = that->AsRuntimeArray();
   if (!rat) return false;
-  return element_type_->IsSame(rat->element_type_);
+  return element_type_->IsSame(rat->element_type_) && HasSameDecorations(that);
 }
 
 std::string RuntimeArray::str() const {
@@ -132,6 +164,16 @@ Struct::Struct(const std::vector<Type*>& types) : element_types_(types) {
   }
 }
 
+void Struct::AddMemeberDecoration(uint32_t index,
+                                  std::vector<uint32_t>&& decoration) {
+  if (index >= element_types_.size()) {
+    assert(0 && "index out of bound");
+    return;
+  }
+
+  element_types_[index]->AddDecoration(std::move(decoration));
+}
+
 bool Struct::IsSame(Type* that) const {
   const Struct* st = that->AsStruct();
   if (!st) return false;
@@ -139,7 +181,7 @@ bool Struct::IsSame(Type* that) const {
   for (size_t i = 0; i < element_types_.size(); ++i) {
     if (!element_types_[i]->IsSame(st->element_types_[i])) return false;
   }
-  return true;
+  return HasSameDecorations(that);
 }
 
 std::string Struct::str() const {
@@ -164,7 +206,7 @@ bool Pointer::IsSame(Type* that) const {
   if (!pt) return false;
   if (storage_class_ != pt->storage_class_) return false;
   if (!pointee_type_->IsSame(pt->pointee_type_)) return false;
-  return true;
+  return HasSameDecorations(that);
 }
 
 std::string Pointer::str() const { return pointee_type_->str() + "*"; }
@@ -185,7 +227,7 @@ bool Function::IsSame(Type* that) const {
   for (size_t i = 0; i < param_types_.size(); ++i) {
     if (!param_types_[i]->IsSame(ft->param_types_[i])) return false;
   }
-  return true;
+  return HasSameDecorations(that);
 }
 
 std::string Function::str() const {

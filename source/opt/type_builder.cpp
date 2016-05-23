@@ -26,6 +26,7 @@
 
 #include <cassert>
 
+#include "reflect.h"
 #include "type_builder.h"
 
 namespace spvtools {
@@ -98,6 +99,47 @@ Type* TypeBuilder::CreateType(const ir::Inst& inst) {
   }
 
   return type.get();
+}
+
+void TypeBuilder::AttachDecoration(const ir::Inst& inst) {
+  const SpvOp opcode = inst.opcode();
+  if (!ir::IsAnnotationInst(opcode)) return;
+  const uint32_t id = inst.GetSingleWordPayload(0);
+  // Do nothing if the id to be decorated is not for a known type.
+  if (!type_map_->count(id)) return;
+
+  Type* target_type = (*type_map_)[id].get();
+  switch (opcode) {
+    case SpvOpDecorate: {
+      const auto count = inst.NumPayloads();
+      std::vector<uint32_t> data;
+      for (uint32_t i = 1; i < count; ++i) {
+        data.push_back(inst.GetSingleWordPayload(i));
+      }
+      target_type->AddDecoration(std::move(data));
+    } break;
+    case SpvOpMemberDecorate: {
+      const auto count = inst.NumPayloads();
+      const uint32_t index = inst.GetSingleWordPayload(1);
+      std::vector<uint32_t> data;
+      for (uint32_t i = 2; i < count; ++i) {
+        data.push_back(inst.GetSingleWordPayload(i));
+      }
+      if (Struct* st = target_type->AsStruct()) {
+        st->AddMemeberDecoration(index, std::move(data));
+      } else {
+        assert(0 && "OpMemberDecorate on non-struct type");
+      }
+    } break;
+    case SpvOpDecorationGroup:
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+      assert(0 && "unhandled decoration");
+      break;
+    default:
+      assert(0 && "unreachable");
+      break;
+  }
 }
 
 Type* TypeBuilder::GetType(uint32_t id) const {

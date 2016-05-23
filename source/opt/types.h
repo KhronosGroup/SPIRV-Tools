@@ -53,6 +53,10 @@ class Type {
  public:
   virtual ~Type() {}
 
+  void AddDecoration(std::vector<uint32_t>&& d) {
+    decorations_.push_back(std::move(d));
+  }
+  bool HasSameDecorations(const Type* that) const;
   virtual bool IsSame(Type* that) const = 0;
   virtual std::string str() const = 0;
 
@@ -67,11 +71,19 @@ class Type {
   virtual Struct* AsStruct() { return nullptr; }
   virtual Pointer* AsPointer() { return nullptr; }
   virtual Function* AsFunction() { return nullptr; }
+
+ protected:
+  // Decorations attached to this type. Each decoration is encoded as a vector
+  // of uint32_t numbers. The first uint32_t number is the decoration value,
+  // while the rest are the parameters to the decoration (if exists).
+  std::vector<std::vector<uint32_t>> decorations_;
 };
 
 class Void : public Type {
  public:
-  bool IsSame(Type* that) const override { return that->AsVoid(); }
+  bool IsSame(Type* that) const override {
+    return that->AsVoid() && HasSameDecorations(that);
+  }
   std::string str() const override { return "void"; }
 
   Void* AsVoid() override { return this; }
@@ -79,7 +91,9 @@ class Void : public Type {
 
 class Bool : public Type {
  public:
-  bool IsSame(Type* that) const override { return that->AsBool(); }
+  bool IsSame(Type* that) const override {
+    return that->AsBool() && HasSameDecorations(that);
+  }
   std::string str() const override { return "bool"; }
 
   Bool* AsBool() override { return this; }
@@ -177,6 +191,8 @@ class Struct : public Type {
  public:
   Struct(const std::vector<Type*>& element_types);
   Struct(const Struct&) = default;
+
+  void AddMemeberDecoration(uint32_t index, std::vector<uint32_t>&& decoration);
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
