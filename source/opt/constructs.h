@@ -27,6 +27,7 @@
 #ifndef LIBSPIRV_OPT_CONSTRUCTS_H_
 #define LIBSPIRV_OPT_CONSTRUCTS_H_
 
+#include <functional>
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
@@ -58,15 +59,25 @@ class Inst {
   SpvOp opcode() const { return opcode_; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
-  uint32_t GetSingleWordOperand(uint32_t index) const;
+  uint32_t GetSingleWordOperand(uint32_t index) const {
+    return GetSingleWordPayload(index + TypeResultIdCount());
+  }
   uint32_t NumOperandWords() const;
-  const Payload& GetOperand(uint32_t index) const;
+  const Payload& GetOperand(uint32_t index) const {
+    return GetPayload(index + TypeResultIdCount());
+  }
   uint32_t NumOperands() const {
     return static_cast<uint32_t>(payloads_.size() - TypeResultIdCount());
   }
+  uint32_t GetSingleWordPayload(uint32_t index) const;
   uint32_t NumPayloadWords() const {
     return NumOperandWords() + TypeResultIdCount();
   }
+  const Payload& GetPayload(uint32_t index) const;
+  uint32_t NumPayloads() const {
+    return static_cast<uint32_t>(payloads_.size());
+  }
+  void SetPayload(uint32_t index, std::vector<uint32_t>&& data);
 
   void ToBinary(std::vector<uint32_t>* binary) const;
 
@@ -88,6 +99,8 @@ class BasicBlock {
 
   void AddInstruction(Inst&& i) { insts_.push_back(std::move(i)); }
 
+  void ForEachInst(const std::function<void(Inst*)>& f);
+
   void ToBinary(std::vector<uint32_t>* binary) const;
 
  private:
@@ -103,6 +116,8 @@ class Function {
 
   void AddParameter(Inst&& p) { params_.push_back(std::move(p)); }
   void AddBasicBlock(BasicBlock&& b) { blocks_.push_back(std::move(b)); }
+
+  void ForEachInst(const std::function<void(Inst*)>& f);
 
   void ToBinary(std::vector<uint32_t>* binary) const;
 
@@ -139,6 +154,8 @@ class Module {
   void AddConstant(Inst&& c) { constants_.push_back(std::move(c)); }
   void AddVariable(Inst&& v) { variables_.push_back(std::move(v)); }
   void AddFunction(Function&& f) { functions_.push_back(std::move(f)); }
+
+  void ForEachInst(const std::function<void(Inst*)>& f);
 
   void ToBinary(std::vector<uint32_t>* binary) const;
 

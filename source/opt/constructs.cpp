@@ -45,8 +45,7 @@ Inst::Inst(const spv_parsed_instruction_t& inst)
   }
 }
 
-uint32_t Inst::GetSingleWordOperand(uint32_t index) const {
-  index += TypeResultIdCount();
+uint32_t Inst::GetSingleWordPayload(uint32_t index) const {
   if (index >= payloads_.size()) {
     // TODO(antiagainst): do better than panicking.
     assert(0 && "operand index out of bound");
@@ -66,8 +65,7 @@ uint32_t Inst::NumOperandWords() const {
   return size;
 }
 
-const Payload& Inst::GetOperand(uint32_t index) const {
-  index += TypeResultIdCount();
+const Payload& Inst::GetPayload(uint32_t index) const {
   if (index >= payloads_.size()) {
     // TODO(antiagainst): do better than panicking.
     assert(0 && "operand index out of bound");
@@ -76,6 +74,15 @@ const Payload& Inst::GetOperand(uint32_t index) const {
   return payloads_[index];
 };
 
+void Inst::SetPayload(uint32_t index, std::vector<uint32_t>&& data) {
+  if (index >= payloads_.size()) {
+    // TODO(antiagainst): do better than panicking.
+    assert(0 && "operand index out of bound");
+  }
+
+  payloads_[index].words = std::move(data);
+}
+
 void Inst::ToBinary(std::vector<uint32_t>* binary) const {
   const uint32_t num_words = 1 + NumPayloadWords();
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
@@ -83,9 +90,21 @@ void Inst::ToBinary(std::vector<uint32_t>* binary) const {
     binary->insert(binary->end(), operand.words.begin(), operand.words.end());
 }
 
+void BasicBlock::ForEachInst(const std::function<void(Inst*)>& f) {
+  f(&label_);
+  for (auto& inst : insts_) f(&inst);
+}
+
 void BasicBlock::ToBinary(std::vector<uint32_t>* binary) const {
   label_.ToBinary(binary);
   for (const auto& inst : insts_) inst.ToBinary(binary);
+}
+
+void Function::ForEachInst(const std::function<void(Inst*)>& f) {
+  f(&def_inst_);
+  for (auto& param : params_) f(&param);
+  for (auto& bb : blocks_) bb.ForEachInst(f);
+  f(&end_inst_);
 }
 
 void Function::ToBinary(std::vector<uint32_t>* binary) const {
@@ -93,6 +112,21 @@ void Function::ToBinary(std::vector<uint32_t>* binary) const {
   for (const auto& param : params_) param.ToBinary(binary);
   for (const auto& bb : blocks_) bb.ToBinary(binary);
   end_inst_.ToBinary(binary);
+}
+
+void Module::ForEachInst(const std::function<void(Inst*)>& f) {
+  for (auto& i : capabilities_) f(&i);
+  for (auto& i : extensions_) f(&i);
+  for (auto& i : ext_inst_sets_) f(&i);
+  f(&memory_model_);
+  for (auto& i : entry_points_) f(&i);
+  for (auto& i : execution_modes_) f(&i);
+  for (auto& i : debugs_) f(&i);
+  for (auto& i : annotations_) f(&i);
+  for (auto& i : types_) f(&i);
+  for (auto& i : constants_) f(&i);
+  for (auto& i : variables_) f(&i);
+  for (auto& i : functions_) i.ForEachInst(f);
 }
 
 void Module::ToBinary(std::vector<uint32_t>* binary) const {
