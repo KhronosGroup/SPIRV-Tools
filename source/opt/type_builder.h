@@ -42,10 +42,10 @@ using IdToTypeMap = std::unordered_map<uint32_t, std::unique_ptr<Type>>;
 class TypeBuilder {
  public:
   TypeBuilder(IdToTypeMap* type_map) : type_map_(type_map) {}
-  const Type* CreateType(const ir::Inst& inst);
+  Type* CreateType(const ir::Inst& inst);
 
  private:
-  const Type* GetType(uint32_t id) const;
+  Type* GetType(uint32_t id) const;
 
   IdToTypeMap* type_map_;
 };

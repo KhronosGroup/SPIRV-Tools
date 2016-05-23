@@ -53,36 +53,36 @@ class Type {
  public:
   virtual ~Type() {}
 
-  virtual bool IsSame(const Type* that) const = 0;
+  virtual bool IsSame(Type* that) const = 0;
   virtual std::string str() const = 0;
 
-  virtual const Void* AsVoid() const { return nullptr; }
-  virtual const Bool* AsBool() const { return nullptr; }
-  virtual const Integer* AsInteger() const { return nullptr; }
-  virtual const Float* AsFloat() const { return nullptr; }
-  virtual const Vector* AsVector() const { return nullptr; }
-  virtual const Matrix* AsMatrix() const { return nullptr; }
-  virtual const Array* AsArray() const { return nullptr; }
-  virtual const RuntimeArray* AsRuntimeArray() const { return nullptr; }
-  virtual const Struct* AsStruct() const { return nullptr; }
-  virtual const Pointer* AsPointer() const { return nullptr; }
-  virtual const Function* AsFunction() const { return nullptr; }
+  virtual Void* AsVoid() { return nullptr; }
+  virtual Bool* AsBool() { return nullptr; }
+  virtual Integer* AsInteger() { return nullptr; }
+  virtual Float* AsFloat() { return nullptr; }
+  virtual Vector* AsVector() { return nullptr; }
+  virtual Matrix* AsMatrix() { return nullptr; }
+  virtual Array* AsArray() { return nullptr; }
+  virtual RuntimeArray* AsRuntimeArray() { return nullptr; }
+  virtual Struct* AsStruct() { return nullptr; }
+  virtual Pointer* AsPointer() { return nullptr; }
+  virtual Function* AsFunction() { return nullptr; }
 };
 
 class Void : public Type {
  public:
-  bool IsSame(const Type* that) const override { return that->AsVoid(); }
+  bool IsSame(Type* that) const override { return that->AsVoid(); }
   std::string str() const override { return "void"; }
 
-  const Void* AsVoid() const override { return this; }
+  Void* AsVoid() override { return this; }
 };
 
 class Bool : public Type {
  public:
-  bool IsSame(const Type* that) const override { return that->AsBool(); }
+  bool IsSame(Type* that) const override { return that->AsBool(); }
   std::string str() const override { return "bool"; }
 
-  const Bool* AsBool() const override { return this; }
+  Bool* AsBool() override { return this; }
 };
 
 class Integer : public Type {
@@ -90,10 +90,10 @@ class Integer : public Type {
   Integer(uint32_t width, bool is_signed) : width_(width), signed_(is_signed) {}
   Integer(const Integer& that) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Integer* AsInteger() const override { return this; }
+  Integer* AsInteger() override { return this; }
 
  private:
   uint32_t width_;
@@ -105,10 +105,10 @@ class Float : public Type {
   Float(uint32_t width) : width_(width) {}
   Float(const Float&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Float* AsFloat() const override { return this; }
+  Float* AsFloat() override { return this; }
 
  private:
   uint32_t width_;
@@ -116,106 +116,105 @@ class Float : public Type {
 
 class Vector : public Type {
  public:
-  Vector(const Type* element_type, uint32_t count);
+  Vector(Type* element_type, uint32_t count);
   Vector(const Vector&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Vector* AsVector() const override { return this; }
+  Vector* AsVector() override { return this; }
 
  private:
-  const Type* element_type_;
+  Type* element_type_;
   uint32_t count_;
 };
 
 class Matrix : public Type {
  public:
-  Matrix(const Type* element_type, uint32_t count);
+  Matrix(Type* element_type, uint32_t count);
   Matrix(const Matrix&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Matrix* AsMatrix() const override { return this; }
+  Matrix* AsMatrix() override { return this; }
 
  private:
-  const Type* element_type_;
+  Type* element_type_;
   uint32_t count_;
 };
 
 class Array : public Type {
  public:
-  Array(const Type* element_type, uint32_t length_id);
+  Array(Type* element_type, uint32_t length_id);
   Array(const Array&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Array* AsArray() const override { return this; }
+  Array* AsArray() override { return this; }
 
  private:
-  const Type* element_type_;
+  Type* element_type_;
   uint32_t length_id_;
 };
 
 class RuntimeArray : public Type {
  public:
-  RuntimeArray(const Type* element_type);
+  RuntimeArray(Type* element_type);
   RuntimeArray(const RuntimeArray&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const RuntimeArray* AsRuntimeArray() const override { return this; }
+  RuntimeArray* AsRuntimeArray() override { return this; }
 
  private:
-  const Type* element_type_;
+  Type* element_type_;
 };
 
 class Struct : public Type {
  public:
-  Struct(const std::vector<const Type*>& element_types);
+  Struct(const std::vector<Type*>& element_types);
   Struct(const Struct&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Struct* AsStruct() const override { return this; }
+  Struct* AsStruct() override { return this; }
 
  private:
-  std::vector<const Type*> element_types_;
+  std::vector<Type*> element_types_;
 };
 
 class Pointer : public Type {
  public:
-  Pointer(const Type* pointee_type, SpvStorageClass storage_class);
+  Pointer(Type* pointee_type, SpvStorageClass storage_class);
   Pointer(const Pointer&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Pointer* AsPointer() const override { return this; }
+  Pointer* AsPointer() override { return this; }
 
  private:
-  const Type* pointee_type_;
+  Type* pointee_type_;
   SpvStorageClass storage_class_;
 };
 
 class Function : public Type {
  public:
-  Function(const Type* return_type,
-           const std::vector<const Type*>& param_types);
+  Function(Type* return_type, const std::vector<Type*>& param_types);
   Function(const Function&) = default;
 
-  bool IsSame(const Type* that) const override;
+  bool IsSame(Type* that) const override;
   std::string str() const override;
 
-  const Function* AsFunction() const override { return this; }
+  Function* AsFunction() override { return this; }
 
  private:
-  const Type* return_type_;
-  const std::vector<const Type*> param_types_;
+  Type* return_type_;
+  std::vector<Type*> param_types_;
 };
 
 }  // namespace type

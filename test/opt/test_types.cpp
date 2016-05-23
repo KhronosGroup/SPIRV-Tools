@@ -39,30 +39,30 @@ TEST(Types, Equality) {
   std::vector<std::unique_ptr<Type>> types;
 
   types.emplace_back(new Void());
-  const auto* voidt = types.back().get();
+  auto* voidt = types.back().get();
   types.emplace_back(new Bool());
-  const auto* boolt = types.back().get();
+  auto* boolt = types.back().get();
 
   // Integer
   types.emplace_back(new Integer(32, true));
-  const auto* s32 = types.back().get();
+  auto* s32 = types.back().get();
   types.emplace_back(new Integer(32, false));
   types.emplace_back(new Integer(64, true));
   types.emplace_back(new Integer(64, false));
-  const auto* u64 = types.back().get();
+  auto* u64 = types.back().get();
 
   // Float
   types.emplace_back(new Float(32));
-  const auto* f32 = types.back().get();
+  auto* f32 = types.back().get();
   types.emplace_back(new Float(64));
 
   // Vector
   types.emplace_back(new Vector(s32, 2));
   types.emplace_back(new Vector(s32, 3));
-  const auto* v3s32 = types.back().get();
+  auto* v3s32 = types.back().get();
   types.emplace_back(new Vector(u64, 4));
   types.emplace_back(new Vector(f32, 3));
-  const auto* v3f32 = types.back().get();
+  auto* v3f32 = types.back().get();
 
   // Matrix
   types.emplace_back(new Matrix(v3s32, 3));
@@ -72,18 +72,18 @@ TEST(Types, Equality) {
   // Array
   types.emplace_back(new Array(f32, 100));
   types.emplace_back(new Array(f32, 42));
-  const auto* a42f32 = types.back().get();
+  auto* a42f32 = types.back().get();
   types.emplace_back(new Array(u64, 24));
 
   // RuntimeArray
   types.emplace_back(new RuntimeArray(v3f32));
   types.emplace_back(new RuntimeArray(v3s32));
-  const auto* rav3s32 = types.back().get();
+  auto* rav3s32 = types.back().get();
 
   // Struct
   types.emplace_back(new Struct({s32}));
   types.emplace_back(new Struct({s32, f32}));
-  const auto* sts32f32 = types.back().get();
+  auto* sts32f32 = types.back().get();
   types.emplace_back(new Struct({u64, a42f32, rav3s32}));
 
   // Pointer

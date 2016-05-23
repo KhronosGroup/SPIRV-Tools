@@ -32,7 +32,7 @@ namespace spvtools {
 namespace opt {
 namespace type {
 
-const Type* TypeBuilder::CreateType(const ir::Inst& inst) {
+Type* TypeBuilder::CreateType(const ir::Inst& inst) {
   const uint32_t id = inst.result_id();
   assert(type_map_->count(id) == 0 && "id taken by another type");
 
@@ -58,15 +58,15 @@ const Type* TypeBuilder::CreateType(const ir::Inst& inst) {
                             inst.GetSingleWordOperand(1)));
     } break;
     case SpvOpTypeStruct: {
-      std::vector<const Type*> element_types;
+      std::vector<Type*> element_types;
       for (uint32_t i = 0; i < inst.NumOperands(); ++i) {
         element_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
       type.reset(new Struct(element_types));
     } break;
     case SpvOpTypeFunction: {
-      const Type* return_type = GetType(inst.GetSingleWordOperand(0));
-      std::vector<const Type*> param_types;
+      Type* return_type = GetType(inst.GetSingleWordOperand(0));
+      std::vector<Type*> param_types;
       for (uint32_t i = 1; i < inst.NumOperands(); ++i) {
         param_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
@@ -100,7 +100,7 @@ const Type* TypeBuilder::CreateType(const ir::Inst& inst) {
   return type.get();
 }
 
-const Type* TypeBuilder::GetType(uint32_t id) const {
+Type* TypeBuilder::GetType(uint32_t id) const {
   assert(type_map_->count(id) && "id for element type not found");
   return (*type_map_)[id].get();
 }
