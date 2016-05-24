@@ -28,3 +28,8 @@ add_spvtools_unittest(types
   ${CMAKE_CURRENT_SOURCE_DIR}/test_types.cpp
   SpvToolsOpt
 )
+
+add_spvtools_unittest(type_builder
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_type_builder.cpp
+  "SpvToolsOpt;${SPIRV_TOOLS}"
+)
