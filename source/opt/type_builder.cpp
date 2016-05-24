@@ -38,33 +38,39 @@ Type* TypeBuilder::CreateType(const ir::Inst& inst) {
   const uint32_t id = inst.result_id();
   assert(type_map_->count(id) == 0 && "id taken by another type");
 
-  auto& type = (*type_map_)[id];
+  Type* type = nullptr;
   switch (inst.opcode()) {
     case SpvOpTypeVoid:
-      type.reset(new Void());
+      type = new Void();
       break;
     case SpvOpTypeBool:
-      type.reset(new Bool());
+      type = new Bool();
       break;
     case SpvOpTypeInt:
-      type.reset(new Integer(inst.GetSingleWordOperand(0),
-                             inst.GetSingleWordOperand(1)));
+      type = new Integer(inst.GetSingleWordOperand(0),
+                         inst.GetSingleWordOperand(1));
       break;
     case SpvOpTypeFloat:
-      type.reset(new Float(inst.GetSingleWordOperand(0)));
+      type = new Float(inst.GetSingleWordOperand(0));
       break;
     case SpvOpTypeVector:
+      type = new Vector(GetType(inst.GetSingleWordOperand(0)),
+                        inst.GetSingleWordOperand(1));
+      break;
     case SpvOpTypeMatrix:
-    case SpvOpTypeArray: {
-      type.reset(new Vector(GetType(inst.GetSingleWordOperand(0)),
-                            inst.GetSingleWordOperand(1)));
-    } break;
+      type = new Matrix(GetType(inst.GetSingleWordOperand(0)),
+                        inst.GetSingleWordOperand(1));
+      break;
+    case SpvOpTypeArray:
+      type = new Array(GetType(inst.GetSingleWordOperand(0)),
+                       inst.GetSingleWordOperand(1));
+      break;
     case SpvOpTypeStruct: {
       std::vector<Type*> element_types;
       for (uint32_t i = 0; i < inst.NumOperands(); ++i) {
         element_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
-      type.reset(new Struct(element_types));
+      type = new Struct(element_types);
     } break;
     case SpvOpTypeFunction: {
       Type* return_type = GetType(inst.GetSingleWordOperand(0));
@@ -72,17 +78,19 @@ Type* TypeBuilder::CreateType(const ir::Inst& inst) {
       for (uint32_t i = 1; i < inst.NumOperands(); ++i) {
         param_types.push_back(GetType(inst.GetSingleWordOperand(i)));
       }
-      type.reset(new Function(return_type, param_types));
+      type = new Function(return_type, param_types);
     } break;
     case SpvOpTypePointer: {
-      type.reset(new Pointer(
+      type = new Pointer(
           GetType(inst.GetSingleWordOperand(1)),
-          static_cast<SpvStorageClass>(inst.GetSingleWordOperand(0))));
+          static_cast<SpvStorageClass>(inst.GetSingleWordOperand(0)));
     } break;
+    case SpvOpTypeRuntimeArray:
+      type = new RuntimeArray(GetType(inst.GetSingleWordOperand(0)));
+      break;
     case SpvOpTypeImage:
     case SpvOpTypeSampler:
     case SpvOpTypeSampledImage:
-    case SpvOpTypeRuntimeArray:
     case SpvOpTypeOpaque:
     case SpvOpTypeEvent:
     case SpvOpTypeDeviceEvent:
@@ -95,11 +103,12 @@ Type* TypeBuilder::CreateType(const ir::Inst& inst) {
       assert(0 && "unhandled type");
       break;
     default:
-      assert(0 && "expected type-declaring instruction");
+      return nullptr;
       break;
   }
 
-  return type.get();
+  (*type_map_)[id].reset(type);
+  return type;
 }
 
 void TypeBuilder::AttachDecoration(const ir::Inst& inst) {
