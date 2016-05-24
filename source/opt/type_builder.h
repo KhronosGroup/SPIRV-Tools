@@ -44,6 +44,7 @@ class TypeBuilder {
   TypeBuilder(IdToTypeMap* type_map) : type_map_(type_map) {}
   Type* CreateType(const ir::Inst& inst);
   void AttachDecoration(const ir::Inst& inst);
+  std::vector<std::vector<uint32_t>> GroupSameTypes() const;
 
  private:
   Type* GetType(uint32_t id) const;

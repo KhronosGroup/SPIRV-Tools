@@ -24,6 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <algorithm>
 #include <cassert>
 
 #include "reflect.h"
@@ -140,6 +141,35 @@ void TypeBuilder::AttachDecoration(const ir::Inst& inst) {
       assert(0 && "unreachable");
       break;
   }
+}
+
+std::vector<std::vector<uint32_t>> TypeBuilder::GroupSameTypes() const {
+  std::vector<std::vector<uint32_t>> groups;
+  const auto size = type_map_->size();
+
+  std::vector<uint32_t> ids;
+  for (const auto& t : *type_map_) ids.push_back(t.first);
+  std::sort(ids.begin(), ids.end());
+  std::vector<bool> id_done(size, false);
+
+  // TODO(antiagainst): Well, this is not optimal. Try to improve it. Maybe
+  // using some kind of hasing mechanism?
+  for (uint32_t i = 0; i < size; ++i) {
+    if (id_done[i]) continue;
+    std::vector<uint32_t> group = {ids[i]};
+    for (uint32_t j = i + 1; j < size; ++j) {
+      if (id_done[j]) continue;
+      Type* itype = (*type_map_)[ids[i]].get();
+      Type* jtype = (*type_map_)[ids[j]].get();
+      if (itype->IsSame(jtype)) {
+        group.push_back(ids[j]);
+        id_done[j] = true;
+      }
+    }
+    groups.push_back(std::move(group));
+  }
+
+  return groups;
 }
 
 Type* TypeBuilder::GetType(uint32_t id) const {
