@@ -26,33 +26,12 @@
 
 #include <cassert>
 
+#include "reflect.h"
 #include "spv_builder.h"
 
 namespace spvtools {
 namespace opt {
 namespace ir {
-
-namespace {
-
-inline bool IsDebugInst(SpvOp opcode) {
-  return (opcode >= SpvOpSourceContinued && opcode <= SpvOpLine) ||
-         opcode == SpvOpNoLine || opcode == SpvOpModuleProcessed;
-}
-inline bool IsAnnotationInst(SpvOp opcode) {
-  return opcode >= SpvOpDecorate && opcode <= SpvOpGroupMemberDecorate;
-}
-inline bool IsTypeInst(SpvOp opcode) {
-  return (opcode >= SpvOpTypeVoid && opcode <= SpvOpTypeForwardPointer) ||
-         opcode == SpvOpTypePipeStorage || opcode == SpvOpTypeNamedBarrier;
-}
-inline bool IsConstantInst(SpvOp opcode) {
-  return opcode >= SpvOpConstantTrue && opcode <= SpvOpSpecConstantOp;
-}
-inline bool IsTerminatorInst(SpvOp opcode) {
-  return opcode >= SpvOpBranch && opcode <= SpvOpUnreachable;
-}
-
-}  // anonymous namespace
 
 void SpvBuilder::AddInstruction(const spv_parsed_instruction_t* inst) {
   const auto opcode = static_cast<SpvOp>(inst->opcode);
