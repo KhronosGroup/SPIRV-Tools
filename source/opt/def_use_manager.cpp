@@ -33,9 +33,9 @@
 
 namespace spvtools {
 namespace opt {
-namespace ir {
+namespace analysis {
 
-void DefUseManager::AnalyzeDefUse(Module* module) {
+void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
                                 std::placeholders::_1));
 }
@@ -47,7 +47,7 @@ void DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   }
 }
 
-void DefUseManager::AnalyzeInstDefUse(Inst* inst) {
+void DefUseManager::AnalyzeInstDefUse(ir::Inst* inst) {
   if (inst->result_id() != 0) id_to_defs_[inst->result_id()] = inst;
 
   for (uint32_t i = 0; i < inst->NumPayloads(); ++i) {
@@ -60,6 +60,6 @@ void DefUseManager::AnalyzeInstDefUse(Inst* inst) {
   }
 }
 
-}  // namespace ir
+}  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools

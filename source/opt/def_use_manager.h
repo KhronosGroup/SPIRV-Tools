@@ -33,28 +33,31 @@
 
 namespace spvtools {
 namespace opt {
-namespace ir {
 
+namespace ir {
 class Inst;
 class Module;
+}
 
-using IdToDefMap = std::unordered_map<uint32_t, Inst*>;
+namespace analysis {
+
+using IdToDefMap = std::unordered_map<uint32_t, ir::Inst*>;
 using IdToUseMap =
-    std::unordered_map<uint32_t, std::vector<std::pair<Inst*, uint32_t>>>;
+    std::unordered_map<uint32_t, std::vector<std::pair<ir::Inst*, uint32_t>>>;
 
 class DefUseManager {
  public:
-  void AnalyzeDefUse(Module* module);
+  void AnalyzeDefUse(ir::Module* module);
   void ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
-  void AnalyzeInstDefUse(Inst* inst);
+  void AnalyzeInstDefUse(ir::Inst* inst);
 
   IdToDefMap id_to_defs_;
   IdToUseMap id_to_uses_;
 };
 
-}  // namespace ir
+}  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools
 
