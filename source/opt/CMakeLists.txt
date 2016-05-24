@@ -10,6 +10,7 @@ add_library(SpvToolsOpt
 
   ${CMAKE_CURRENT_SOURCE_DIR}/constructs.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/def_use_manager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/passes.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spv_builder.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/type_builder.cpp

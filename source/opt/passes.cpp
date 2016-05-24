@@ -24,46 +24,29 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
-
-#include <memory>
-
-#include "constructs.h"
-#include "def_use_manager.h"
-#include "type_builder.h"
+#include "passes.h"
 
 namespace spvtools {
 namespace opt {
 
-class Pass {
- public:
-  virtual const char* name() const = 0;
-  virtual bool process(ir::Module* module) = 0;
-};
+bool TypeUnificationPass::process(ir::Module* module) {
+  def_use_manager_.AnalyzeDefUse(module);
 
-class DebugInfoRemovalPass : public Pass {
- public:
-  const char* name() const override { return "DebugInfoRemoval"; }
-  bool process(ir::Module* module) override {
-    module->debugs().clear();
-    return true;
+  for (const auto& inst : module->types()) {
+    type_builder_.CreateType(inst);
   }
-};
+  for (const auto& inst : module->annotations()) {
+    type_builder_.AttachDecoration(inst);
+  }
 
-class TypeUnificationPass : public Pass {
- public:
-  TypeUnificationPass() : type_builder_(&type_map_) {}
-  const char* name() const override { return "TypeUnification"; }
-  bool process(ir::Module* module) override;
+  const auto groups = type_builder_.GroupSameTypes();
+  for (const auto& group : groups) {
+    for (uint32_t i = 1; i < group.size(); ++i)
+      def_use_manager_.ReplaceAllUsesWith(group[i], group.front());
+  }
 
- private:
-  type::IdToTypeMap type_map_;
-  type::TypeBuilder type_builder_;
-  analysis::DefUseManager def_use_manager_;
-};
+  return true;
+}
 
 }  // namespace opt
 }  // namespace spvtools
-
-#endif  // LIBSPIRV_OPT_PASSES_H_

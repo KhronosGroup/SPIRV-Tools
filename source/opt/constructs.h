@@ -155,8 +155,12 @@ class Module {
   void AddVariable(Inst&& v) { variables_.push_back(std::move(v)); }
   void AddFunction(Function&& f) { functions_.push_back(std::move(f)); }
 
+  const std::vector<Inst>& types() const { return types_; }
+  std::vector<Inst>& types() { return types_; }
   const std::vector<Inst>& debugs() const { return debugs_; }
   std::vector<Inst>& debugs() { return debugs_; }
+  const std::vector<Inst>& annotations() const { return annotations_; }
+  std::vector<Inst>& annotations() { return annotations_; }
 
   void ForEachInst(const std::function<void(Inst*)>& f);
 

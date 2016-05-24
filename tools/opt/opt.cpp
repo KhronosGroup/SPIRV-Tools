@@ -73,9 +73,10 @@ spv_result_t BuildSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
 int main(int argc, char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
-  bool strip_debug_info = false;
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
+
+  PassManager pass_manager;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -94,7 +95,11 @@ int main(int argc, char** argv) {
           return 1;
         }
       } else if (0 == strcmp(cur_arg, "--strip-debug-info")) {
-        strip_debug_info = true;
+        std::unique_ptr<DebugInfoRemovalPass> pass(new DebugInfoRemovalPass);
+        pass_manager.AddPass(std::move(pass));
+      } else if (0 == strcmp(cur_arg, "--unify-types")) {
+        std::unique_ptr<TypeUnificationPass> pass(new TypeUnificationPass);
+        pass_manager.AddPass(std::move(pass));
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {
@@ -155,11 +160,6 @@ int main(int argc, char** argv) {
   spvBinaryParse(context, &spv_builder, source.data(), source.size(),
                  BuildSpvHeader, BuildSpvInst, &diagnostic);
 
-  PassManager pass_manager;
-  if (strip_debug_info) {
-    std::unique_ptr<DebugInfoRemovalPass> pass(new DebugInfoRemovalPass);
-    pass_manager.AddPass(std::move(pass));
-  }
   pass_manager.run(&module);
 
   std::vector<uint32_t> target;
