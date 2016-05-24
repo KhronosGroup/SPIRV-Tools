@@ -155,6 +155,9 @@ class Module {
   void AddVariable(Inst&& v) { variables_.push_back(std::move(v)); }
   void AddFunction(Function&& f) { functions_.push_back(std::move(f)); }
 
+  const std::vector<Inst>& debugs() const { return debugs_; }
+  std::vector<Inst>& debugs() { return debugs_; }
+
   void ForEachInst(const std::function<void(Inst*)>& f);
 
   void ToBinary(std::vector<uint32_t>* binary) const;
