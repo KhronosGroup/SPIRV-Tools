@@ -79,13 +79,18 @@ class Inst {
   }
   void SetPayload(uint32_t index, std::vector<uint32_t>&& data);
   std::vector<Inst>& dbg_line_info() { return dbg_line_info_; }
+
+  bool IsNop() const {
+    return opcode_ == SpvOpNop && type_id_ == 0 && result_id_ == 0 &&
+           payloads_.empty();
+  }
   void ToNop() {
     opcode_ = SpvOpNop;
     type_id_ = result_id_ = 0;
     payloads_.clear();
   }
 
-  void ToBinary(std::vector<uint32_t>* binary) const;
+  void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
   uint32_t TypeResultIdCount() const {
@@ -110,7 +115,7 @@ class BasicBlock {
 
   void ForEachInst(const std::function<void(Inst*)>& f);
 
-  void ToBinary(std::vector<uint32_t>* binary) const;
+  void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
   Function* function_;
@@ -128,7 +133,7 @@ class Function {
 
   void ForEachInst(const std::function<void(Inst*)>& f);
 
-  void ToBinary(std::vector<uint32_t>* binary) const;
+  void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
   Module* module_;
@@ -173,7 +178,7 @@ class Module {
   // module.
   void ForEachInst(const std::function<void(Inst*)>& f);
 
-  void ToBinary(std::vector<uint32_t>* binary) const;
+  void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
   ModuleHeader header_;

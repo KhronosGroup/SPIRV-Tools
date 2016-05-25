@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
   pass_manager.run(&module);
 
   std::vector<uint32_t> target;
-  module.ToBinary(&target);
+  module.ToBinary(&target, /*keep_nop = */ false);
 
   const bool use_stdout = out_file[0] == '-' && out_file[1] == 0;
   if (FILE* fp = (use_stdout ? stdout : fopen(out_file, "wb"))) {

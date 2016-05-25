@@ -87,8 +87,11 @@ void Inst::SetPayload(uint32_t index, std::vector<uint32_t>&& data) {
   payloads_[index].words = std::move(data);
 }
 
-void Inst::ToBinary(std::vector<uint32_t>* binary) const {
-  for (const auto& dbg_line : dbg_line_info_) dbg_line.ToBinary(binary);
+void Inst::ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const {
+  for (const auto& dbg_line : dbg_line_info_)
+    dbg_line.ToBinary(binary, keep_nop);
+
+  if (!keep_nop && IsNop()) return;
 
   const uint32_t num_words = 1 + NumPayloadWords();
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
@@ -101,9 +104,9 @@ void BasicBlock::ForEachInst(const std::function<void(Inst*)>& f) {
   for (auto& inst : insts_) f(&inst);
 }
 
-void BasicBlock::ToBinary(std::vector<uint32_t>* binary) const {
-  label_.ToBinary(binary);
-  for (const auto& inst : insts_) inst.ToBinary(binary);
+void BasicBlock::ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const {
+  label_.ToBinary(binary, keep_nop);
+  for (const auto& inst : insts_) inst.ToBinary(binary, keep_nop);
 }
 
 void Function::ForEachInst(const std::function<void(Inst*)>& f) {
@@ -113,11 +116,11 @@ void Function::ForEachInst(const std::function<void(Inst*)>& f) {
   f(&end_inst_);
 }
 
-void Function::ToBinary(std::vector<uint32_t>* binary) const {
-  def_inst_.ToBinary(binary);
-  for (const auto& param : params_) param.ToBinary(binary);
-  for (const auto& bb : blocks_) bb.ToBinary(binary);
-  end_inst_.ToBinary(binary);
+void Function::ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const {
+  def_inst_.ToBinary(binary, keep_nop);
+  for (const auto& param : params_) param.ToBinary(binary, keep_nop);
+  for (const auto& bb : blocks_) bb.ToBinary(binary, keep_nop);
+  end_inst_.ToBinary(binary, keep_nop);
 }
 
 std::vector<Inst*> Module::types() {
@@ -143,7 +146,7 @@ void Module::ForEachInst(const std::function<void(Inst*)>& f) {
   for (auto& i : functions_) i.ForEachInst(f);
 }
 
-void Module::ToBinary(std::vector<uint32_t>* binary) const {
+void Module::ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const {
   binary->push_back(header_.magic_number);
   binary->push_back(header_.version);
   // TODO(antiagainst): should we change the generator number?
@@ -151,17 +154,17 @@ void Module::ToBinary(std::vector<uint32_t>* binary) const {
   binary->push_back(header_.bound);
   binary->push_back(header_.reserved);
 
-  for (const auto& c : capabilities_) c.ToBinary(binary);
-  for (const auto& e : extensions_) e.ToBinary(binary);
-  for (const auto& e : ext_inst_sets_) e.ToBinary(binary);
-  memory_model_.ToBinary(binary);
-  for (const auto& e : entry_points_) e.ToBinary(binary);
-  for (const auto& e : execution_modes_) e.ToBinary(binary);
-  for (const auto& d : debugs_) d.ToBinary(binary);
-  for (const auto& a : annotations_) a.ToBinary(binary);
-  for (const auto& t : types_and_constants_) t.ToBinary(binary);
-  for (const auto& v : variables_) v.ToBinary(binary);
-  for (const auto& f : functions_) f.ToBinary(binary);
+  for (const auto& c : capabilities_) c.ToBinary(binary, keep_nop);
+  for (const auto& e : extensions_) e.ToBinary(binary, keep_nop);
+  for (const auto& e : ext_inst_sets_) e.ToBinary(binary, keep_nop);
+  memory_model_.ToBinary(binary, keep_nop);
+  for (const auto& e : entry_points_) e.ToBinary(binary, keep_nop);
+  for (const auto& e : execution_modes_) e.ToBinary(binary, keep_nop);
+  for (const auto& d : debugs_) d.ToBinary(binary, keep_nop);
+  for (const auto& a : annotations_) a.ToBinary(binary, keep_nop);
+  for (const auto& t : types_and_constants_) t.ToBinary(binary, keep_nop);
+  for (const auto& v : variables_) v.ToBinary(binary, keep_nop);
+  for (const auto& f : functions_) f.ToBinary(binary, keep_nop);
 }
 
 }  // namespace ir

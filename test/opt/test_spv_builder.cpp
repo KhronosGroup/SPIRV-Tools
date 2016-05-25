@@ -56,7 +56,7 @@ TEST(SpvBuilder, KeepLineDebugInfo) {
 
   std::unique_ptr<ir::Module> module = BuildSpv(Assemble(text));
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary);
+  module->ToBinary(&binary, /*keep_nop = */ true);
 
   EXPECT_EQ(text, Disassemble(binary));
 }

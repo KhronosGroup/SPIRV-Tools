@@ -86,7 +86,7 @@ TEST(Passes, StripDebugInfo) {
   manager.run(module.get());
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary);
+  module->ToBinary(&binary, /*keep_nop = */ true);
 
   EXPECT_EQ(expected_text, Disassemble(binary));
 }
@@ -169,7 +169,7 @@ TEST(Passes, UnifyTypes) {
   manager.run(module.get());
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary);
+  module->ToBinary(&binary, /*keep_nop = */ true);
 
   EXPECT_EQ(expected_text, Disassemble(binary));
 }
