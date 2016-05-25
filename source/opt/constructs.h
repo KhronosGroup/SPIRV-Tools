@@ -79,6 +79,11 @@ class Inst {
   }
   void SetPayload(uint32_t index, std::vector<uint32_t>&& data);
   std::vector<Inst>& dbg_line_info() { return dbg_line_info_; }
+  void ToNop() {
+    opcode_ = SpvOpNop;
+    type_id_ = result_id_ = 0;
+    payloads_.clear();
+  }
 
   void ToBinary(std::vector<uint32_t>* binary) const;
 

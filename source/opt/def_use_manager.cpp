@@ -41,7 +41,9 @@ void DefUseManager::AnalyzeDefUse(ir::Module* module) {
 }
 
 void DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
-  assert(id_to_uses_.count(before) != 0 && "id to replace unknown");
+  assert(id_to_defs_.count(before) != 0 && "id to be replace unknown");
+  id_to_defs_[before]->ToNop();
+  if (!id_to_uses_.count(before)) return;
   for (const auto& p : id_to_uses_[before]) {
     p.first->SetPayload(p.second, {after});
   }
