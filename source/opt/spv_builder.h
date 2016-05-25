@@ -36,6 +36,7 @@ namespace spvtools {
 namespace opt {
 namespace ir {
 
+// A class for building Module.
 class SpvBuilder {
  public:
   SpvBuilder(Module* module) : module_(module) {}
@@ -47,9 +48,13 @@ class SpvBuilder {
   void AddInstruction(const spv_parsed_instruction_t* inst);
 
  private:
+  // The module to be built.
   Module* module_;
+  // The current Function under construction.
   std::unique_ptr<Function> function_;
+  // The current BasicBlock under construction.
   std::unique_ptr<BasicBlock> block_;
+  // Line related deug instructions accumulated thus far.
   std::vector<Inst> dbg_line_info_;
 };
 

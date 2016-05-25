@@ -45,9 +45,12 @@ using IdToDefMap = std::unordered_map<uint32_t, ir::Inst*>;
 using IdToUseMap =
     std::unordered_map<uint32_t, std::vector<std::pair<ir::Inst*, uint32_t>>>;
 
+// A class for managing defs and uses in a ir::Module.
 class DefUseManager {
  public:
+  // Analyzes the defs and uses in the given |module|.
   void AnalyzeDefUse(ir::Module* module);
+  // Replaces all uses of |before| id with |after| id.
   void ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:

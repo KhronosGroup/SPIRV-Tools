@@ -36,6 +36,7 @@
 namespace spvtools {
 namespace opt {
 
+// An optimization pass.
 class Pass {
  public:
   virtual const char* name() const = 0;

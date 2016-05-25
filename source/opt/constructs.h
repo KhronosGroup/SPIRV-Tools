@@ -24,6 +24,9 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+// This file defines the language constructs for representing a SPIR-V
+// module in memory.
+
 #ifndef LIBSPIRV_OPT_CONSTRUCTS_H_
 #define LIBSPIRV_OPT_CONSTRUCTS_H_
 
@@ -40,12 +43,19 @@ namespace ir {
 class Function;
 class Module;
 
+// Operand is a overloaded term. For better understanding, in this file, we
+// use payload to mean what "operand" is supposed to mean in the SPIR-V spec.
+// Operand itself is reserved to mean the real operands to an instruction,
+// excluding type ids and result ids.
+
+// A payload to an Inst. It can be a type id, a result id, or a real logical
+// operand.
 struct Payload {
   Payload(spv_operand_type_t t, std::vector<uint32_t>&& w)
       : type(t), words(std::move(w)) {}
 
-  spv_operand_type_t type;
-  std::vector<uint32_t> words;
+  spv_operand_type_t type;      // Type of this payload.
+  std::vector<uint32_t> words;  // Binary segments of this payload.
 
   // TODO(antiagainst): create fields for literal number kind, width, etc.
 };
@@ -59,20 +69,24 @@ class Inst {
   SpvOp opcode() const { return opcode_; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
+  // Returns the first word of |index|th operand.
   uint32_t GetSingleWordOperand(uint32_t index) const {
     return GetSingleWordPayload(index + TypeResultIdCount());
   }
   uint32_t NumOperandWords() const;
+  // Returns the payload at the |index|th operand.
   const Payload& GetOperand(uint32_t index) const {
     return GetPayload(index + TypeResultIdCount());
   }
   uint32_t NumOperands() const {
     return static_cast<uint32_t>(payloads_.size() - TypeResultIdCount());
   }
+  // Returns the first word of |index|th payload.
   uint32_t GetSingleWordPayload(uint32_t index) const;
   uint32_t NumPayloadWords() const {
     return NumOperandWords() + TypeResultIdCount();
   }
+  // Returns the |index|th payload.
   const Payload& GetPayload(uint32_t index) const;
   uint32_t NumPayloads() const {
     return static_cast<uint32_t>(payloads_.size());
@@ -90,6 +104,8 @@ class Inst {
     payloads_.clear();
   }
 
+  // Pushes the binary segments for this instruction into the back of *|binary|.
+  // If |keep_nop| is true and this is a OpNop, avoids pushing.
   void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
@@ -115,6 +131,8 @@ class BasicBlock {
 
   void ForEachInst(const std::function<void(Inst*)>& f);
 
+  // Pushes the binary segments for this instruction into the back of *|binary|.
+  // If |keep_nop| is true and this is a OpNop, avoids pushing.
   void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
@@ -133,6 +151,8 @@ class Function {
 
   void ForEachInst(const std::function<void(Inst*)>& f);
 
+  // Pushes the binary segments for this instruction into the back of *|binary|.
+  // If |keep_nop| is true and this is a OpNop, avoids pushing.
   void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
@@ -178,6 +198,8 @@ class Module {
   // module.
   void ForEachInst(const std::function<void(Inst*)>& f);
 
+  // Pushes the binary segments for this instruction into the back of *|binary|.
+  // If |keep_nop| is true and this is a OpNop, avoids pushing.
   void ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const;
 
  private:
@@ -193,6 +215,8 @@ class Module {
   std::vector<Inst> execution_modes_;
   std::vector<Inst> debugs_;
   std::vector<Inst> annotations_;
+  // Types and constants may depends on each other; thus they are grouped
+  // together.
   std::vector<Inst> types_and_constants_;
   std::vector<Inst> variables_;
   std::vector<Function> functions_;

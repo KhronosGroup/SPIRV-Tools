@@ -55,7 +55,6 @@ uint32_t Inst::GetSingleWordPayload(uint32_t index) const {
     assert(0 && "operand index out of bound");
   }
   if (payloads_[index].words.size() != 1) {
-    // TODO(antiagainst): do better than panicking.
     assert(0 && "expected the operand only taking one word");
   }
 
@@ -71,7 +70,6 @@ uint32_t Inst::NumOperandWords() const {
 
 const Payload& Inst::GetPayload(uint32_t index) const {
   if (index >= payloads_.size()) {
-    // TODO(antiagainst): do better than panicking.
     assert(0 && "operand index out of bound");
   }
 
@@ -80,7 +78,6 @@ const Payload& Inst::GetPayload(uint32_t index) const {
 
 void Inst::SetPayload(uint32_t index, std::vector<uint32_t>&& data) {
   if (index >= payloads_.size()) {
-    // TODO(antiagainst): do better than panicking.
     assert(0 && "operand index out of bound");
   }
 
@@ -154,6 +151,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool keep_nop) const {
   binary->push_back(header_.bound);
   binary->push_back(header_.reserved);
 
+  // TODO(antiagainst): wow, looks like a duplication of the above.
   for (const auto& c : capabilities_) c.ToBinary(binary, keep_nop);
   for (const auto& e : extensions_) e.ToBinary(binary, keep_nop);
   for (const auto& e : ext_inst_sets_) e.ToBinary(binary, keep_nop);

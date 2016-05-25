@@ -24,6 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+// This file provides a class hierarchy for representing SPIR-V types.
+
 #ifndef LIBSPIRV_OPT_TYPES_H_
 #define LIBSPIRV_OPT_TYPES_H_
 
@@ -50,6 +52,10 @@ class Struct;
 class Pointer;
 class Function;
 
+// TODO(antiaginst): add missing types.
+
+// Abstract class for a SPIR-V type. It has a bunch of As<sublcass>() methods,
+// which is used as a way to probe the actual <subclass>.
 class Type {
  public:
   virtual ~Type() {}
