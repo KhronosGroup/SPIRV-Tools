@@ -150,14 +150,12 @@ class Module {
   void AddExecutionMode(Inst&& e) { execution_modes_.push_back(std::move(e)); }
   void AddDebugInst(Inst&& d) { debugs_.push_back(std::move(d)); }
   void AddAnnotationInst(Inst&& a) { annotations_.push_back(std::move(a)); }
-  void AddType(Inst&& t) { types_.push_back(std::move(t)); }
-  void AddConstant(Inst&& c) { constants_.push_back(std::move(c)); }
+  void AddType(Inst&& t) { types_and_constants_.push_back(std::move(t)); }
+  void AddConstant(Inst&& c) { types_and_constants_.push_back(std::move(c)); }
   void AddVariable(Inst&& v) { variables_.push_back(std::move(v)); }
   void AddFunction(Function&& f) { functions_.push_back(std::move(f)); }
 
-  const std::vector<Inst>& types() const { return types_; }
-  std::vector<Inst>& types() { return types_; }
-  const std::vector<Inst>& debugs() const { return debugs_; }
+  std::vector<Inst*> types();
   std::vector<Inst>& debugs() { return debugs_; }
   const std::vector<Inst>& annotations() const { return annotations_; }
   std::vector<Inst>& annotations() { return annotations_; }
@@ -179,8 +177,7 @@ class Module {
   std::vector<Inst> execution_modes_;
   std::vector<Inst> debugs_;
   std::vector<Inst> annotations_;
-  std::vector<Inst> types_;
-  std::vector<Inst> constants_;
+  std::vector<Inst> types_and_constants_;
   std::vector<Inst> variables_;
   std::vector<Function> functions_;
 };

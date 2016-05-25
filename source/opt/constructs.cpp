@@ -27,6 +27,7 @@
 #include <cassert>
 
 #include "constructs.h"
+#include "reflect.h"
 
 namespace spvtools {
 namespace opt {
@@ -114,6 +115,15 @@ void Function::ToBinary(std::vector<uint32_t>* binary) const {
   end_inst_.ToBinary(binary);
 }
 
+std::vector<Inst*> Module::types() {
+  std::vector<Inst*> insts;
+  for (uint32_t i = 0; i < types_and_constants_.size(); ++i) {
+    if (IsTypeInst(types_and_constants_[i].opcode()))
+      insts.push_back(&types_and_constants_[i]);
+  }
+  return insts;
+};
+
 void Module::ForEachInst(const std::function<void(Inst*)>& f) {
   for (auto& i : capabilities_) f(&i);
   for (auto& i : extensions_) f(&i);
@@ -123,8 +133,7 @@ void Module::ForEachInst(const std::function<void(Inst*)>& f) {
   for (auto& i : execution_modes_) f(&i);
   for (auto& i : debugs_) f(&i);
   for (auto& i : annotations_) f(&i);
-  for (auto& i : types_) f(&i);
-  for (auto& i : constants_) f(&i);
+  for (auto& i : types_and_constants_) f(&i);
   for (auto& i : variables_) f(&i);
   for (auto& i : functions_) i.ForEachInst(f);
 }
@@ -145,8 +154,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary) const {
   for (const auto& e : execution_modes_) e.ToBinary(binary);
   for (const auto& d : debugs_) d.ToBinary(binary);
   for (const auto& a : annotations_) a.ToBinary(binary);
-  for (const auto& t : types_) t.ToBinary(binary);
-  for (const auto& c : constants_) c.ToBinary(binary);
+  for (const auto& t : types_and_constants_) t.ToBinary(binary);
   for (const auto& v : variables_) v.ToBinary(binary);
   for (const auto& f : functions_) f.ToBinary(binary);
 }

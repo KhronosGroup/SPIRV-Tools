@@ -32,8 +32,8 @@ namespace opt {
 bool TypeUnificationPass::process(ir::Module* module) {
   def_use_manager_.AnalyzeDefUse(module);
 
-  for (const auto& inst : module->types()) {
-    type_builder_.CreateType(inst);
+  for (const auto inst : module->types()) {
+    type_builder_.CreateType(*inst);
   }
   for (const auto& inst : module->annotations()) {
     type_builder_.AttachDecoration(inst);
