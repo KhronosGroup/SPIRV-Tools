@@ -34,34 +34,45 @@ namespace spvtools {
 namespace opt {
 namespace type {
 
-bool Type::HasSameDecorations(const Type* that) const {
-  const auto size = decorations_.size();
-  if (size != that->decorations_.size()) return false;
+using U32VecVec = std::vector<std::vector<uint32_t>>;
+
+namespace {
+
+bool CompareTwoVectors(const U32VecVec a, const U32VecVec b) {
+  const auto size = a.size();
+  if (size != b.size()) return false;
+
   // Shortcut for common cases.
-  if (size == 0 || size == 1) return decorations_ == that->decorations_;
+  if (size == 0 || size == 1) return a == b;
 
   // TODO(antiagainst): The following code, involving a shallow copying, is a
   // little complicated. Find a better way.
-  std::vector<const std::vector<uint32_t> *> this_decorations, that_decorations;
-  this_decorations.reserve(size);
-  this_decorations.reserve(size);
+  std::vector<const std::vector<uint32_t> *> a_ptrs, b_ptrs;
+  a_ptrs.reserve(size);
+  a_ptrs.reserve(size);
   for (uint32_t i = 0; i < size; ++i) {
-    this_decorations.push_back(&decorations_[i]);
-    that_decorations.push_back(&that->decorations_[i]);
+    a_ptrs.push_back(&a[i]);
+    b_ptrs.push_back(&b[i]);
   }
 
-  const auto cmp = [](const std::vector<uint32_t>* a,
-                      const std::vector<uint32_t>* b) {
-    return a->front() < b->front();
+  const auto cmp = [](const std::vector<uint32_t>* m,
+                      const std::vector<uint32_t>* n) {
+    return m->front() < n->front();
   };
 
-  std::sort(this_decorations.begin(), this_decorations.end(), cmp);
-  std::sort(that_decorations.begin(), that_decorations.end(), cmp);
+  std::sort(a_ptrs.begin(), a_ptrs.end(), cmp);
+  std::sort(b_ptrs.begin(), b_ptrs.end(), cmp);
 
   for (uint32_t i = 0; i < size; ++i) {
-    if (*this_decorations[i] != *that_decorations[i]) return false;
+    if (*a_ptrs[i] != *b_ptrs[i]) return false;
   }
   return true;
+}
+
+}  // anonymous namespace
+
+bool Type::HasSameDecorations(const Type* that) const {
+  return CompareTwoVectors(decorations_, that->decorations_);
 }
 
 bool Integer::IsSame(Type* that) const {
@@ -171,7 +182,7 @@ void Struct::AddMemeberDecoration(uint32_t index,
     return;
   }
 
-  element_types_[index]->AddDecoration(std::move(decoration));
+  element_decorations_[index].push_back(std::move(decoration));
 }
 
 bool Struct::IsSame(Type* that) const {
@@ -181,7 +192,16 @@ bool Struct::IsSame(Type* that) const {
   for (size_t i = 0; i < element_types_.size(); ++i) {
     if (!element_types_[i]->IsSame(st->element_types_[i])) return false;
   }
-  return HasSameDecorations(that);
+
+  if (!HasSameDecorations(that)) return false;
+
+  const auto size = element_decorations_.size();
+  if (size != st->element_decorations_.size()) return false;
+  for (const auto& p : element_decorations_) {
+    if (!CompareTwoVectors(p.second, st->element_decorations_.at(p.first)))
+      return false;
+  }
+  return true;
 }
 
 std::string Struct::str() const {

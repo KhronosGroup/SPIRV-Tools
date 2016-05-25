@@ -28,6 +28,7 @@
 #define LIBSPIRV_OPT_TYPES_H_
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
@@ -201,6 +202,8 @@ class Struct : public Type {
 
  private:
   std::vector<Type*> element_types_;
+  std::unordered_map<uint32_t, std::vector<std::vector<uint32_t>>>
+      element_decorations_;
 };
 
 class Pointer : public Type {
