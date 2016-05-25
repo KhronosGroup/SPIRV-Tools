@@ -54,7 +54,7 @@ class Inst {
  public:
   Inst() : opcode_(SpvOpNop), type_id_(0), result_id_(0) {}
   Inst(SpvOp op) : opcode_(op), type_id_(0), result_id_(0) {}
-  Inst(const spv_parsed_instruction_t& inst);
+  Inst(const spv_parsed_instruction_t& inst, std::vector<Inst>&& dbg_line = {});
 
   SpvOp opcode() const { return opcode_; }
   uint32_t type_id() const { return type_id_; }
@@ -78,6 +78,7 @@ class Inst {
     return static_cast<uint32_t>(payloads_.size());
   }
   void SetPayload(uint32_t index, std::vector<uint32_t>&& data);
+  std::vector<Inst>& dbg_line_info() { return dbg_line_info_; }
 
   void ToBinary(std::vector<uint32_t>* binary) const;
 
@@ -90,6 +91,9 @@ class Inst {
   uint32_t type_id_;
   uint32_t result_id_;
   std::vector<Payload> payloads_;
+  // Opline and OpNoLine instructions preceding this instruction. Note that for
+  // Insts representing OpLine or OpNonLine itself, this field should be empty.
+  std::vector<Inst> dbg_line_info_;
 };
 
 class BasicBlock {
@@ -160,6 +164,8 @@ class Module {
   const std::vector<Inst>& annotations() const { return annotations_; }
   std::vector<Inst>& annotations() { return annotations_; }
 
+  // Invokes function |f| on all but OpLine and OpNoLine instructions in this
+  // module.
   void ForEachInst(const std::function<void(Inst*)>& f);
 
   void ToBinary(std::vector<uint32_t>* binary) const;

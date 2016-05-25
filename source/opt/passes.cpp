@@ -29,6 +29,12 @@
 namespace spvtools {
 namespace opt {
 
+bool DebugInfoRemovalPass::process(ir::Module* module) {
+  module->debugs().clear();
+  module->ForEachInst([](ir::Inst* inst) { inst->dbg_line_info().clear(); });
+  return true;
+}
+
 bool TypeUnificationPass::process(ir::Module* module) {
   def_use_manager_.AnalyzeDefUse(module);
 

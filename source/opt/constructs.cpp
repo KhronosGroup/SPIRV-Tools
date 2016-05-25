@@ -33,10 +33,13 @@ namespace spvtools {
 namespace opt {
 namespace ir {
 
-Inst::Inst(const spv_parsed_instruction_t& inst)
+Inst::Inst(const spv_parsed_instruction_t& inst, std::vector<Inst>&& dbg_line)
     : opcode_(static_cast<SpvOp>(inst.opcode)),
       type_id_(inst.type_id),
-      result_id_(inst.result_id) {
+      result_id_(inst.result_id),
+      dbg_line_info_(std::move(dbg_line)) {
+  assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
+         "Op(No)Line attaching to Op(No)Line found");
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
     const auto& current_payload = inst.operands[i];
     std::vector<uint32_t> words(
@@ -85,6 +88,8 @@ void Inst::SetPayload(uint32_t index, std::vector<uint32_t>&& data) {
 }
 
 void Inst::ToBinary(std::vector<uint32_t>* binary) const {
+  for (const auto& dbg_line : dbg_line_info_) dbg_line.ToBinary(binary);
+
   const uint32_t num_words = 1 + NumPayloadWords();
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
   for (const auto& operand : payloads_)

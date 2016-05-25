@@ -24,37 +24,41 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_SPVBUILDER_H_
-#define LIBSPIRV_OPT_SPVBUILDER_H_
+#include "opt_test_common.h"
 
-#include <memory>
+namespace {
 
-#include "constructs.h"
-#include "spirv-tools/libspirv.h"
+using namespace spvtools::opt;
 
-namespace spvtools {
-namespace opt {
-namespace ir {
+TEST(SpvBuilder, KeepLineDebugInfo) {
+  const std::string text =
+      "OpCapability Shader\n"
+      "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+      "OpMemoryModel Logical GLSL450\n"
+      "OpEntryPoint Vertex %2 \"main\"\n"
+      "%3 = OpString \"minimal.vert\"\n"
+      "OpSource ESSL 310\n"
+      "OpName %2 \"main\"\n"
+      "OpLine %3 10 10\n"
+      "%4 = OpTypeVoid\n"
+      "OpLine %3 100 100\n"
+      "%5 = OpTypeFunction %4\n"
+      "%2 = OpFunction %4 None %5\n"
+      "OpLine %3 1 1\n"
+      "OpNoLine\n"
+      "OpLine %3 2 2\n"
+      "OpLine %3 3 3\n"
+      "%6 = OpLabel\n"
+      "OpLine %3 4 4\n"
+      "OpNoLine\n"
+      "OpReturn\n"
+      "OpFunctionEnd\n";
 
-class SpvBuilder {
- public:
-  SpvBuilder(Module* module) : module_(module) {}
+  std::unique_ptr<ir::Module> module = BuildSpv(Assemble(text));
+  std::vector<uint32_t> binary;
+  module->ToBinary(&binary);
 
-  void SetModuleHeader(uint32_t magic, uint32_t version, uint32_t generator,
-                       uint32_t bound, uint32_t reserved) {
-    module_->SetHeader({magic, version, generator, bound, reserved});
-  }
-  void AddInstruction(const spv_parsed_instruction_t* inst);
+  EXPECT_EQ(text, Disassemble(binary));
+}
 
- private:
-  Module* module_;
-  std::unique_ptr<Function> function_;
-  std::unique_ptr<BasicBlock> block_;
-  std::vector<Inst> dbg_line_info_;
-};
-
-}  // namespace ir
-}  // namespace opt
-}  // namespace spvtools
-
-#endif  // LIBSPIRV_OPT_SPVBUILDER_H_
+}  // anonymous namespace

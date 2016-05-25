@@ -45,10 +45,7 @@ class Pass {
 class DebugInfoRemovalPass : public Pass {
  public:
   const char* name() const override { return "DebugInfoRemoval"; }
-  bool process(ir::Module* module) override {
-    module->debugs().clear();
-    return true;
-  }
+  bool process(ir::Module* module) override;
 };
 
 class TypeUnificationPass : public Pass {

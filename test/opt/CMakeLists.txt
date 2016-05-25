@@ -33,3 +33,13 @@ add_spvtools_unittest(type_builder
   ${CMAKE_CURRENT_SOURCE_DIR}/test_type_builder.cpp
   "SpvToolsOpt;${SPIRV_TOOLS}"
 )
+
+add_spvtools_unittest(spv_builder
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_spv_builder.cpp
+  "SpvToolsOpt;${SPIRV_TOOLS}"
+)
+
+add_spvtools_unittest(opt_passes
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_passes.cpp
+  "SpvToolsOpt;${SPIRV_TOOLS}"
+)
