@@ -49,8 +49,7 @@ script:
   - mkdir build && cd build
   - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
   - ninja
-    # Be nice and only output if there are failures.
-  - ./test/UnitSPIRV --gtest_break_on_failure &> log || (cat log; false)
+  - ctest -j`nproc` --output_on_failure
 
 
 notifications:
