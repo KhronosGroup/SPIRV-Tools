@@ -531,7 +531,7 @@ void Function::RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction) {
     undefined_blocks_.insert(next_id);
   }
   current_block_->RegisterBranchInstruction(branch_instruction);
-  current_block_->RegisterSuccessor({&inserted_block->second});
+  current_block_->RegisterSuccessors({&inserted_block->second});
   current_block_ = nullptr;
   return;
 }
@@ -559,7 +559,7 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
   }
 
   current_block_->RegisterBranchInstruction(branch_instruction);
-  current_block_->RegisterSuccessor(next_blocks);
+  current_block_->RegisterSuccessors(next_blocks);
   current_block_ = nullptr;
   return;
 }
@@ -611,7 +611,7 @@ const BasicBlock* BasicBlock::GetImmediateDominator() const {
 
 BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
 
-void BasicBlock::RegisterSuccessor(vector<BasicBlock*> next_blocks) {
+void BasicBlock::RegisterSuccessors(vector<BasicBlock*> next_blocks) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);

@@ -111,7 +111,6 @@ class BasicBlock {
   /// Constructor for a BasicBlock
   ///
   /// @param[in] id The ID of the basic block
-  /// @param[in] module A reference of the module of the basic block
   explicit BasicBlock(uint32_t id);
 
   /// Returns the id of the BasicBlock
@@ -151,7 +150,7 @@ class BasicBlock {
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
-  void RegisterSuccessor(std::vector<BasicBlock*> next = {});
+  void RegisterSuccessors(std::vector<BasicBlock*> next = {});
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
@@ -420,6 +419,7 @@ class ValidationState_t {
   // the OpName instruction
   std::string getIdName(uint32_t id) const;
 
+  /// Like getIdName but does not display the id if the \p id has a name
   std::string getIdOrName(uint32_t id) const;
 
   // Returns the number of ID which have been forward referenced but not defined
