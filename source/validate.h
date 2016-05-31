@@ -298,13 +298,10 @@ class Function {
   spv_result_t RegisterSelectionMerge(uint32_t merge_id);
 
   /// Registers the end of the block
-  void RegisterBlockEnd(SpvOp branch_instruction);
-
-  /// Registers the end of the block
-  void RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction);
-
-  /// Registers the end of the block
-  void RegisterBlockEnd(std::vector<uint32_t> next_list,
+  ///
+  /// @param[in] successors_list A list of ids to the blocks successors
+  /// @param[in] branch_instruction the branch instruction that ended the block
+  void RegisterBlockEnd(std::vector<uint32_t> successors_list,
                         SpvOp branch_instruction);
 
   /// Returns true if the \p merge_block_id is a merge block

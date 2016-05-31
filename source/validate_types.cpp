@@ -503,39 +503,6 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   return SPV_SUCCESS;
 }
 
-void Function::RegisterBlockEnd(SpvOp branch_instruction) {
-  assert(module_.in_function_body() == true &&
-         "RegisterFunction can only be called when parsing the binary inside "
-         "of a function");
-  assert(in_block() == true &&
-         "RegisterBlockEnd can only be called when parsing the binary inside "
-         "of a block");
-
-  current_block_->RegisterBranchInstruction(branch_instruction);
-  current_block_ = nullptr;
-  return;
-}
-
-void Function::RegisterBlockEnd(uint32_t next_id, SpvOp branch_instruction) {
-  assert(module_.in_function_body() == true &&
-         "RegisterBlockEnd can only be called when parsing a binary in a "
-         "function");
-  assert(
-      in_block() == true &&
-      "RegisterBlockEnd can only be called when parsing a binary in a block");
-
-  std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
-  bool success;
-  tie(inserted_block, success) = blocks_.insert({next_id, BasicBlock(next_id)});
-  if (success) {
-    undefined_blocks_.insert(next_id);
-  }
-  current_block_->RegisterBranchInstruction(branch_instruction);
-  current_block_->RegisterSuccessors({&inserted_block->second});
-  current_block_ = nullptr;
-  return;
-}
-
 void Function::RegisterBlockEnd(vector<uint32_t> next_list,
                                 SpvOp branch_instruction) {
   assert(module_.in_function_body() == true &&

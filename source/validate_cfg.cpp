@@ -294,7 +294,7 @@ spv_result_t CfgPass(ValidationState_t& _,
       uint32_t target = inst->words[inst->operands[0].offset];
       CFG_ASSERT(FirstBlockAssert, target);
 
-      _.get_current_function().RegisterBlockEnd(target, opcode);
+      _.get_current_function().RegisterBlockEnd({target}, opcode);
     } break;
     case SpvOpBranchConditional: {
       uint32_t tlabel = inst->words[inst->operands[1].offset];
@@ -312,13 +312,13 @@ spv_result_t CfgPass(ValidationState_t& _,
         CFG_ASSERT(FirstBlockAssert, target);
         cases.push_back(target);
       }
-      _.get_current_function().RegisterBlockEnd(cases, opcode);
+      _.get_current_function().RegisterBlockEnd({cases}, opcode);
     } break;
     case SpvOpKill:
     case SpvOpReturn:
     case SpvOpReturnValue:
     case SpvOpUnreachable:
-      _.get_current_function().RegisterBlockEnd(opcode);
+      _.get_current_function().RegisterBlockEnd({}, opcode);
       break;
     default:
       break;
