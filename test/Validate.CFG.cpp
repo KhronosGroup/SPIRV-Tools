@@ -91,7 +91,7 @@ class Block {
       : label_(label), body_(), type_(type), successors_() {}
 
   /// Sets the instructions which will appear in the body of the block
-  Block &setBody(std::string body) {
+  Block& setBody(std::string body) {
     body_ = body;
     return *this;
   }
@@ -107,7 +107,7 @@ class Block {
     switch (type_) {
       case SpvOpBranchConditional:
         out << "OpBranchConditional %cond ";
-        for (Block &b : successors_) {
+        for (Block& b : successors_) {
           out << "%" + b.label_ + " ";
         }
         break;
@@ -135,12 +135,12 @@ class Block {
 
     return out.str();
   }
-  friend Block &operator>>(Block &curr, vector<Block> successors);
-  friend Block &operator>>(Block &lhs, Block &successor);
+  friend Block& operator>>(Block& curr, vector<Block> successors);
+  friend Block& operator>>(Block& lhs, Block& successor);
 };
 
 /// Assigns the successors for the Block on the lhs
-Block &operator>>(Block &lhs, vector<Block> successors) {
+Block& operator>>(Block& lhs, vector<Block> successors) {
   if (lhs.type_ == SpvOpBranchConditional) {
     assert(successors.size() == 2);
   } else if (lhs.type_ == SpvOpSwitch) {
@@ -151,7 +151,7 @@ Block &operator>>(Block &lhs, vector<Block> successors) {
 }
 
 /// Assigns the successor for the Block on the lhs
-Block &operator>>(Block &lhs, Block &successor) {
+Block& operator>>(Block& lhs, Block& successor) {
   assert(lhs.type_ == SpvOpBranch);
   lhs.successors_.push_back(successor);
   return lhs;
@@ -259,7 +259,7 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("Block [0-9]\\[cont\\] appears in the binary "
-                            "before its dominator [0-9]\\[branch\\]"));
+                           "before its dominator [0-9]\\[branch\\]"));
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
@@ -274,8 +274,9 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
 
   // cannot share the same merge
   loop.setBody(" OpLoopMerge %merge %cont None\n");
-  badhead.setBody(" %cond   = OpSLessThan %intt %one %two\n"
-                  "OpSelectionMerge %merge None\n");
+  badhead.setBody(
+      " %cond   = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %merge None\n");
 
   string str = header + nameOps("merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
@@ -294,7 +295,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("Block [0-9]\\[merge\\] is already a merge block "
-                            "for another header"));
+                           "for another header"));
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
@@ -331,7 +332,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("Block [0-9]\\[merge\\] is already a merge block "
-                            "for another header"));
+                           "for another header"));
 }
 
 TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
@@ -479,45 +480,32 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
 }
 
 TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
-  Block entry("entry", SpvOpBranchConditional);
-  Block loop_head("loop_head");
-  Block branch("branch", SpvOpBranchConditional);
-  Block t("t");
+  Block entry("entry");
+  Block merge("merge");
+  Block head("head", SpvOpBranchConditional);
   Block f("f");
-  Block entry_merge("entry_merge");
-  Block loop_merge("loop_merge");
-  Block branch_merge("branch_merge");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody(
-      "%cond = OpSLessThan %intt %one %two\n"
-      "OpSelectionMerge %entry_merge None\n");
+  entry.setBody("%cond = OpSLessThan %intt %one %two\n");
 
-  branch.setBody("OpSelectionMerge %branch_merge None\n");
+  head.setBody("OpSelectionMerge %merge None\n");
 
-  loop_head.setBody("OpLoopMerge %loop_merge %branch None\n");
+  string str = header + nameOps("head", "merge", make_pair("func", "Main")) +
+               types_consts + "%func    = OpFunction %voidt None %funct\n";
 
-  string str = header + nameOps("loop_head", "loop_merge", make_pair("func", "Main")) + types_consts +
-               "%func    = OpFunction %voidt None %funct\n";
-
-  str += entry >> vector<Block>({loop_head, loop_merge});
-  str += loop_head >> branch;
-  str += branch >> vector<Block>({t, f});
-  str += t >> loop_head;
-  str += f >> branch_merge;
-  str += branch_merge >> loop_merge;
-  str += loop_merge >> entry_merge;
-  str += entry_merge >> exit;
+  str += entry >> merge;
+  str += head >> vector<Block>({merge, f});
+  str += f >> merge;
+  str += merge >> exit;
   str += exit;
-  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "Header block [0-9]\\[loop_head\\] doesn't dominate its merge block "
-          "[0-9]\\[loop_merge\\]"));
+          "Header block [0-9]\\[head\\] doesn't dominate its merge block "
+          "[0-9]\\[merge\\]"));
 }
 
 TEST_F(ValidateCFG, UnreachableMerge) {
@@ -553,7 +541,6 @@ TEST_F(ValidateCFG, UnreachableMergeDefinedByOpUnreachable) {
   Block t("t", SpvOpReturn);
   Block f("f", SpvOpReturn);
   Block merge("merge", SpvOpUnreachable);
-  Block end("end", SpvOpReturn);
 
   branch.setBody(
       " %cond    = OpSLessThan %intt %one %two\n"
@@ -567,7 +554,6 @@ TEST_F(ValidateCFG, UnreachableMergeDefinedByOpUnreachable) {
   str += t;
   str += f;
   str += merge;
-  str += end;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
@@ -625,5 +611,4 @@ TEST_F(ValidateCFG, UnreachableBranch) {
 /// TODO(umar): Switch instructions
 /// TODO(umar): CFG branching outside of CFG construct
 /// TODO(umar): Nested CFG constructs
-
 }
