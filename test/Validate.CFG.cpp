@@ -265,30 +265,23 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   Block entry("entry");
   Block loop("loop");
-  Block badhead("badhead", SpvOpBranchConditional);
-  Block t("t");
-  Block f("f");
-  Block cont("cont");
-  Block merge("merge");
-  Block end("end", SpvOpReturn);
+  Block selection("selection", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
 
+  loop.setBody(
+    " %cond   = OpSLessThan %intt %one %two\n"
+    " OpLoopMerge %merge %loop None\n");
   // cannot share the same merge
-  loop.setBody(" OpLoopMerge %merge %cont None\n");
-  badhead.setBody(
-      " %cond   = OpSLessThan %intt %one %two\n"
+  selection.setBody(
       "OpSelectionMerge %merge None\n");
 
   string str = header + nameOps("merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
-  str += loop >> badhead;
-  str += badhead >> vector<Block>({t, f});
-  str += t >> merge;
-  str += f >> cont;
-  str += cont >> loop;
-  str += merge >> end;
-  str += end;
+  str += loop >> selection;
+  str += selection >> vector<Block>({loop, merge});
+  str += merge;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
@@ -300,32 +293,24 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   Block entry("entry");
-  Block loop("loop");
-  Block badhead("badhead", SpvOpBranchConditional);
-  Block t("t");
-  Block f("f");
-  Block cont("cont");
-  Block merge("merge");
-  Block end("end", SpvOpReturn);
+  Block loop("loop", SpvOpBranchConditional);
+  Block selection("selection", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
 
-  // cannot share the same merge
-  loop.setBody(" OpLoopMerge %merge %cont None\n");
-
-  badhead.setBody(
+  selection.setBody(
       " %cond   = OpSLessThan %intt %one %two\n"
       " OpSelectionMerge %merge None\n");
+  // cannot share the same merge
+  loop.setBody(" OpLoopMerge %merge %loop None\n");
+
 
   string str = header + nameOps("merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
-  str += entry >> loop;
-  str += loop >> badhead;
-  str += badhead >> vector<Block>({t, f});
-  str += t >> merge;
-  str += f >> cont;
-  str += cont >> loop;
-  str += merge >> end;
-  str += end;
+  str += entry >> selection;
+  str += selection >> vector<Block>({merge, loop});
+  str += loop >> vector<Block>({loop, merge});
+  str += merge;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
