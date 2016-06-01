@@ -87,7 +87,7 @@ class Block {
   ///
   /// @param[in]: label the label id of the block
   /// @param[in]: type the branch instruciton that ends the block
-  Block(string label, SpvOp type = SpvOpBranch)
+  explicit Block(string label, SpvOp type = SpvOpBranch)
       : label_(label), body_(), type_(type), successors_() {}
 
   /// Sets the instructions which will appear in the body of the block
@@ -120,16 +120,19 @@ class Block {
         out << ss.str();
       } break;
       case SpvOpReturn:
+        assert(successors_.size() == 0);
         out << "OpReturn\n";
         break;
       case SpvOpUnreachable:
+        assert(successors_.size() == 0);
         out << "OpUnreachable\n";
         break;
       case SpvOpBranch:
+        assert(successors_.size() == 1);
         out << "OpBranch %" + successors_.front().label_;
         break;
       default:
-        assert(1 != 1 && "Unhandled");
+        assert(1 == 0 && "Unhandled");
     }
     out << "\n";
 
@@ -459,10 +462,9 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
 
 TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   Block entry("entry");
-  Block merge("merge");
   Block head("head", SpvOpBranchConditional);
   Block f("f");
-  Block exit("exit", SpvOpReturn);
+  Block merge("merge", SpvOpReturn);
 
   entry.setBody("%cond = OpSLessThan %intt %one %two\n");
 
@@ -474,8 +476,7 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   str += entry >> merge;
   str += head >> vector<Block>({merge, f});
   str += f >> merge;
-  str += merge >> exit;
-  str += exit;
+  str += merge;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -490,8 +491,7 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   Block branch("branch", SpvOpBranchConditional);
   Block t("t", SpvOpReturn);
   Block f("f", SpvOpReturn);
-  Block merge("merge");
-  Block end("end", SpvOpReturn);
+  Block merge("merge", SpvOpReturn);
 
   branch.setBody(
       " %cond    = OpSLessThan %intt %one %two\n"
@@ -504,8 +504,7 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   str += branch >> vector<Block>({t, f});
   str += t;
   str += f;
-  str += merge >> end;
-  str += end;
+  str += merge;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
@@ -581,10 +580,135 @@ TEST_F(ValidateCFG, UnreachableBranch) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-/// TODO(umar): Empty function
-/// TODO(umar): Single block loops
-/// TODO(umar): Nested loops
-/// TODO(umar): Nested selection
+
+TEST_F(ValidateCFG, EmptyFunction) {
+  string str = header + types_consts +
+               "%func    = OpFunction %voidt None %funct\n" + "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, SingleBlockLoop) {
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block exit("exit", SpvOpReturn);
+
+  loop.setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %exit %loop None\n");
+
+  string str =
+      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({loop, exit});
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, NestedLoops) {
+  Block entry("entry");
+  Block loop1("loop1");
+  Block loop1_cont_break_block("loop1_cont_break_block",
+                               SpvOpBranchConditional);
+  Block loop2("loop2", SpvOpBranchConditional);
+  Block loop2_merge("loop2_merge");
+  Block loop1_merge("loop1_merge");
+  Block exit("exit", SpvOpReturn);
+
+  loop1.setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %loop1_merge %loop2 None\n");
+
+  loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
+
+  string str =
+      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop1;
+  str += loop1 >> loop1_cont_break_block;
+  str += loop1_cont_break_block >> vector<Block>({loop1_merge, loop2});
+  str += loop2 >> vector<Block>({loop2, loop2_merge});
+  str += loop2_merge >> loop1;
+  str += loop1_merge >> exit;
+  str += exit;
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, NestedSelection) {
+  Block entry("entry");
+  const int N = 256;
+  vector<Block> if_blocks;
+  vector<Block> merge_blocks;
+  Block inner("inner");
+
+  if_blocks.emplace_back("if0", SpvOpBranchConditional);
+  if_blocks[0].setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %if_merge0 None\n");
+  merge_blocks.emplace_back("if_merge0", SpvOpReturn);
+
+  for (int i = 1; i < N; i++) {
+    stringstream ss;
+    ss << i;
+    if_blocks.emplace_back("if" + ss.str(), SpvOpBranchConditional);
+    if_blocks[i].setBody("OpSelectionMerge %if_merge" + ss.str() + " None\n");
+    merge_blocks.emplace_back("if_merge" + ss.str(), SpvOpBranch);
+  }
+  string str =
+      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  for (int i = 0; i < N - 1; i++) {
+    str += if_blocks[i] >> vector<Block>({if_blocks[i + 1], merge_blocks[i]});
+  }
+  str += if_blocks.back() >> vector<Block>({inner, merge_blocks.back()});
+  str += inner >> merge_blocks.back();
+  for (int i = N - 1; i > 0; i--) {
+    str += merge_blocks[i] >> merge_blocks[i - 1];
+  }
+  str += merge_blocks[0];
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// TODO(umar): enable this test
+TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
+  Block entry("entry");
+  Block loop1("loop1", SpvOpBranchConditional);
+  Block loop2("loop2", SpvOpBranchConditional);
+  Block loop2_merge("loop2_merge");
+  Block loop1_merge("loop1_merge", SpvOpBranchConditional);
+  Block exit("exit", SpvOpReturn);
+
+  loop1.setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %loop1_merge %loop2 None\n");
+
+  loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
+
+  string str =
+      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop1;
+  str += loop1 >> vector<Block>({loop2, loop1_merge});
+  str += loop2 >> vector<Block>({loop2, loop2_merge});
+  str += loop2_merge >> loop1_merge;
+  str += loop1_merge >> vector<Block>({loop1, exit});
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): CFG branching outside of CFG construct
 /// TODO(umar): Nested CFG constructs
