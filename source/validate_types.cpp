@@ -315,7 +315,7 @@ Function& ValidationState_t::get_current_function() {
 bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
-  return module_functions_.back().in_block();
+  return module_functions_.back().get_current_block() != nullptr;
 }
 
 void ValidationState_t::RegisterCapability(SpvCapability cap) {
@@ -372,8 +372,6 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       variable_ids_(),
       parameter_ids_() {}
 
-bool Function::in_block() const { return static_cast<bool>(current_block_); }
-
 bool Function::IsFirstBlock(uint32_t id) const {
   return !ordered_blocks_.empty() && *get_first_block() == id;
 }
@@ -409,7 +407,7 @@ spv_result_t Function::RegisterFunctionParameter(uint32_t id,
   assert(module_.in_function_body() == true &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "outside of another function");
-  assert(in_block() == false &&
+  assert(get_current_block() == nullptr &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "ouside of a block");
   // TODO(umar): Validate function parameter type order and count
@@ -423,7 +421,7 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
                                          uint32_t continue_id) {
   RegisterBlock(merge_id, false);
   RegisterBlock(continue_id, false);
-  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id),
+  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id),
                                &blocks_.at(continue_id));
 
   return SPV_SUCCESS;
@@ -431,7 +429,7 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
 
 spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   RegisterBlock(merge_id, false);
-  cfg_constructs_.emplace_back(&get_current_block(), &blocks_.at(merge_id));
+  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id));
   return SPV_SUCCESS;
 }
 
@@ -488,7 +486,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   bool success = false;
   tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
   if (is_definition) {  // new block definition
-    assert(in_block() == false &&
+    assert(get_current_block() == nullptr &&
            "Register Block can only be called when parsing a binary outside of "
            "a BasicBlock");
 
@@ -509,7 +507,7 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
          "RegisterBlockEnd can only be called when parsing a binary in a "
          "function");
   assert(
-      in_block() == true &&
+      get_current_block() &&
       "RegisterBlockEnd can only be called when parsing a binary in a block");
 
   vector<BasicBlock*> next_blocks;
@@ -542,10 +540,8 @@ const vector<BasicBlock*>& Function::get_blocks() const {
 }
 vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 
-const BasicBlock& Function::get_current_block() const {
-  return *current_block_;
-}
-BasicBlock& Function::get_current_block() { return *current_block_; }
+const BasicBlock* Function::get_current_block() const { return current_block_; }
+BasicBlock* Function::get_current_block() { return current_block_; }
 
 const list<CFConstruct>& Function::get_constructs() const {
   return cfg_constructs_;

@@ -190,7 +190,7 @@ spv_result_t FirstBlockAssert(ValidationState_t& _, uint32_t target) {
            << _.getIdName(_.get_current_function().get_id())
            << " is targeted by block "
            << _.getIdName(
-                  _.get_current_function().get_current_block().get_id());
+                  _.get_current_function().get_current_block()->get_id());
   }
   return SPV_SUCCESS;
 }
