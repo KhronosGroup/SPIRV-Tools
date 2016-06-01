@@ -340,15 +340,11 @@ class Function {
     return undefined_blocks_;
   }
 
-  /// Returns true if called after a label instruction but before a branch
-  /// instruction
-  bool in_block() const;
+  /// Returns the block that is currently being parsed in the binary
+  BasicBlock* get_current_block();
 
   /// Returns the block that is currently being parsed in the binary
-  BasicBlock& get_current_block();
-
-  /// Returns the block that is currently being parsed in the binary
-  const BasicBlock& get_current_block() const;
+  const BasicBlock* get_current_block() const;
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void printDotGraph() const;
