@@ -29,11 +29,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "diagnostic.h"
-#include "instruction.h"
-#include "opcode.h"
-#include "spirv-tools/libspirv.h"
-#include "validate.h"
+#include <diagnostic.h>
+#include <instruction.h>
+#include <opcode.h>
+#include <spirv-tools/libspirv.h>
+#include <validate.h>
+#include <val/ValidationState.h>
 
 #define spvCheck(condition, action) \
   if (condition) {                  \

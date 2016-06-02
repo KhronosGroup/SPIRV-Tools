@@ -30,10 +30,12 @@
 #include <sstream>
 #include <string>
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "spirv_definition.h"
-#include "validate_passes.h"
+#include <diagnostic.h>
+#include <opcode.h>
+#include <spirv_definition.h>
+#include <validate.h>
+#include <val/ValidationState.h>
+#include <val/Function.h>
 
 using libspirv::AssemblyGrammar;
 using libspirv::DiagnosticStream;

@@ -24,9 +24,12 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <validate.h>
+
 #include <functional>
-#include "opcode.h"
-#include "validate_passes.h"
+
+#include <opcode.h>
+#include <val/ValidationState.h>
 
 using std::function;
 using libspirv::ValidationState_t;
