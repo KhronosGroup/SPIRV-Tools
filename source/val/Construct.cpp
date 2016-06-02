@@ -24,32 +24,21 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_VALIDATE_PASSES_H_
-#define LIBSPIRV_VALIDATE_PASSES_H_
+#include "val/Construct.h"
 
-#include "binary.h"
-#include "validate.h"
+namespace libspirv {
 
-namespace libspirv
-{
-// TODO(umar): Better docs
+Construct::Construct(BasicBlock* header_block, BasicBlock* merge_block,
+                     BasicBlock* continue_block)
+    : header_block_(header_block),
+      merge_block_(merge_block),
+      continue_block_(continue_block) {}
 
-// Performs logical layout validation as described in section 2.4 of the SPIR-V spec
-spv_result_t ModuleLayoutPass(ValidationState_t& _,
-                              const spv_parsed_instruction_t* inst);
+const BasicBlock* Construct::get_header() const { return header_block_; }
+const BasicBlock* Construct::get_merge() const { return merge_block_; }
+const BasicBlock* Construct::get_continue() const { return continue_block_; }
 
-// Performs Control Flow Graph validation of a module
-spv_result_t CfgPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst);
-
-// Performs SSA validation of a module
-spv_result_t SsaPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst);
-
-// Performs instruction validation.
-spv_result_t InstructionPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst);
-
+BasicBlock* Construct::get_header() { return header_block_; }
+BasicBlock* Construct::get_merge() { return merge_block_; }
+BasicBlock* Construct::get_continue() { return continue_block_; }
 }
-
-#endif

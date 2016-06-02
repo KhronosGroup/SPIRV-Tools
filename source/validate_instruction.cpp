@@ -26,14 +26,18 @@
 
 // Performs validation on instructions that appear inside of a SPIR-V block.
 
+#include "validate.h"
+
 #include <cassert>
+
 #include <sstream>
 #include <string>
 
 #include "diagnostic.h"
 #include "opcode.h"
 #include "spirv_definition.h"
-#include "validate_passes.h"
+#include "val/Function.h"
+#include "val/ValidationState.h"
 
 using libspirv::AssemblyGrammar;
 using libspirv::DiagnosticStream;

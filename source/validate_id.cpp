@@ -24,7 +24,10 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "validate.h"
+
 #include <cassert>
+
 #include <iostream>
 #include <unordered_map>
 #include <vector>
@@ -33,7 +36,7 @@
 #include "instruction.h"
 #include "opcode.h"
 #include "spirv-tools/libspirv.h"
-#include "validate.h"
+#include "val/ValidationState.h"
 
 #define spvCheck(condition, action) \
   if (condition) {                  \

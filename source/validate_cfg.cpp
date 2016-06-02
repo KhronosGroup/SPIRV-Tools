@@ -25,14 +25,19 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "validate.h"
-#include "validate_passes.h"
+
+#include <cassert>
 
 #include <algorithm>
-#include <cassert>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "val/BasicBlock.h"
+#include "val/Construct.h"
+#include "val/Function.h"
+#include "val/ValidationState.h"
 
 using std::find;
 using std::get;
@@ -242,7 +247,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     }
 
     // Check all headers dominate their merge blocks
-    for (CFConstruct& construct : function.get_constructs()) {
+    for (Construct& construct : function.get_constructs()) {
       auto header = construct.get_header();
       auto merge = construct.get_merge();
       // auto cont = construct.get_continue();

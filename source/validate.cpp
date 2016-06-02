@@ -24,6 +24,8 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include "validate.h"
+
 #include <cassert>
 #include <cstdio>
 
@@ -34,9 +36,6 @@
 #include <string>
 #include <vector>
 
-#include "validate.h"
-#include "validate_passes.h"
-
 #include "binary.h"
 #include "diagnostic.h"
 #include "instruction.h"
@@ -45,6 +44,9 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "val/Construct.h"
+#include "val/Function.h"
+#include "val/ValidationState.h"
 
 using std::function;
 using std::ostream_iterator;
@@ -123,6 +125,7 @@ void DebugInstructionPass(ValidationState_t& _,
     default:
       break;
   }
+
 }
 
 // Collects use-def info about an instruction's IDs.
