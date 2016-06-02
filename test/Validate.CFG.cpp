@@ -462,10 +462,9 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
 
 TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   Block entry("entry");
-  Block merge("merge");
   Block head("head", SpvOpBranchConditional);
   Block f("f");
-  Block exit("exit", SpvOpReturn);
+  Block merge("merge", SpvOpReturn);
 
   entry.setBody("%cond = OpSLessThan %intt %one %two\n");
 
@@ -477,8 +476,7 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   str += entry >> merge;
   str += head >> vector<Block>({merge, f});
   str += f >> merge;
-  str += merge >> exit;
-  str += exit;
+  str += merge;
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
@@ -493,8 +491,7 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   Block branch("branch", SpvOpBranchConditional);
   Block t("t", SpvOpReturn);
   Block f("f", SpvOpReturn);
-  Block merge("merge");
-  Block end("end", SpvOpReturn);
+  Block merge("merge", SpvOpReturn);
 
   branch.setBody(
       " %cond    = OpSLessThan %intt %one %two\n"
@@ -507,8 +504,7 @@ TEST_F(ValidateCFG, UnreachableMerge) {
   str += branch >> vector<Block>({t, f});
   str += t;
   str += f;
-  str += merge >> end;
-  str += end;
+  str += merge;
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
@@ -619,11 +615,11 @@ TEST_F(ValidateCFG, NestedLoops) {
   Block loop1("loop1", SpvOpBranchConditional);
   Block loop2("loop2", SpvOpBranchConditional);
   Block loop2_merge("loop2_merge");
-  Block exit("exit", SpvOpReturn);
+  Block loop1_merge("loop1_merge", SpvOpReturn);
 
   loop1.setBody(
       "%cond    = OpSLessThan %intt %one %two\n"
-      "OpLoopMerge %exit %loop2 None\n");
+      "OpLoopMerge %loop1_merge %loop2 None\n");
 
   loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
 
@@ -631,10 +627,10 @@ TEST_F(ValidateCFG, NestedLoops) {
       header + types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
-  str += loop1 >> vector<Block>({loop2, exit});
+  str += loop1 >> vector<Block>({loop2, loop1_merge});
   str += loop2 >> vector<Block>({loop2, loop2_merge});
-  str += loop2_merge >> exit;
-  str += exit;
+  str += loop2_merge >> loop1_merge;
+  str += loop1_merge;
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
