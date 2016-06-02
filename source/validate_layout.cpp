@@ -26,12 +26,14 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include "spirv-tools/libspirv.h"
-#include "validate_passes.h"
+#include <spirv-tools/libspirv.h>
+#include <validate.h>
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "operand.h"
+#include <diagnostic.h>
+#include <opcode.h>
+#include <operand.h>
+#include <val/Function.h>
+#include <val/ValidationState.h>
 
 #include <cassert>
 
@@ -42,7 +44,6 @@ using libspirv::kLayoutFunctionDefinitions;
 using libspirv::FunctionDecl;
 
 namespace {
-
 // Module scoped instructions are processed by determining if the opcode
 // is part of the current layout section. If it is not then the next sections is
 // checked.
@@ -86,11 +87,11 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Cannot declare a function in a function body";
         }
-        auto control_mask = static_cast<SpvFunctionControlMask>(inst->words[inst->operands[2].offset]);
-        spvCheckReturn(_.RegisterFunction(
-            inst->result_id, inst->type_id,
-            control_mask,
-            inst->words[inst->operands[3].offset]));
+        auto control_mask = static_cast<SpvFunctionControlMask>(
+            inst->words[inst->operands[2].offset]);
+        spvCheckReturn(
+            _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
+                               inst->words[inst->operands[3].offset]));
         if (_.getLayoutSection() == kLayoutFunctionDefinitions)
           spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDefinition));
@@ -104,7 +105,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         if (_.get_current_function().get_block_count() != 0) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
-                 << "Function parameters must only appear immediately after the "
+                 << "Function parameters must only appear immediately after "
+                    "the "
                     "function definition";
         }
         spvCheckReturn(_.get_current_function().RegisterFunctionParameter(
@@ -128,7 +130,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
           spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
-                                                    FunctionDecl::kFunctionDeclDeclaration));
+              FunctionDecl::kFunctionDeclDeclaration));
         }
         spvCheckReturn(_.RegisterFunctionEnd());
         break;
@@ -174,7 +176,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}
+}  /// namespace
 
 namespace libspirv {
 // TODO(umar): Check linkage capabilities for function declarations
@@ -205,4 +207,4 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
   }  // switch(getLayoutSection())
   return SPV_SUCCESS;
 }
-}
+}  /// namespace libspirv
