@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2016.0-dev 2016-04-22
+v2016.0 2016-07-04
 
  - Adds v<year>.<index> versioning, with "-dev" indicating
    work in progress.  The intent is to more easly report
@@ -16,6 +16,12 @@ v2016.0-dev 2016-04-22
      - Supports floating point widths of 16, 32, 64 bits
      - Supports integer widths up to 64 bits
    - Validator is incomplete
+     - Checks capability requirements in most cases
+     - Checks module layout constraints
+     - Checks ID use-definition ordering constraints,
+       ignoring control flow
+     - Checks some control flow graph rules
+   - Optimizer is introduced, with few available transforms.
    - Supported on Linux, OSX, Android, Windows
 
  - Fixes bugs:

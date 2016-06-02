@@ -198,6 +198,16 @@ Use option `-h` to print help.
 The output includes syntax colouring when printing to the standard output stream,
 on Linux, Windows, and OS X.
 
+### Optimizer tool
+
+The optimizer processes a SPIR-V binary module, applying transformations
+in the specified order.
+
+This is a work in progress, with initially only few available transformations.
+
+* `spirv-opt` - the standalone optimizer
+  * `<spirv-dir>/spirv-opt`
+
 ### Validator tool
 
 *Warning:* This functionality is under development, and is incomplete.
