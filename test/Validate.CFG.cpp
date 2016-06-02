@@ -132,7 +132,7 @@ class Block {
         out << "OpBranch %" + successors_.front().label_;
         break;
       default:
-        assert(1 != 0 && "Unhandled");
+        assert(1 == 0 && "Unhandled");
     }
     out << "\n";
 
@@ -615,7 +615,8 @@ TEST_F(ValidateCFG, NestedLoops) {
   Block loop1("loop1", SpvOpBranchConditional);
   Block loop2("loop2", SpvOpBranchConditional);
   Block loop2_merge("loop2_merge");
-  Block loop1_merge("loop1_merge", SpvOpReturn);
+  Block loop1_merge("loop1_merge", SpvOpBranchConditional);
+  Block exit("exit", SpvOpReturn);
 
   loop1.setBody(
       "%cond    = OpSLessThan %intt %one %two\n"
@@ -630,7 +631,8 @@ TEST_F(ValidateCFG, NestedLoops) {
   str += loop1 >> vector<Block>({loop2, loop1_merge});
   str += loop2 >> vector<Block>({loop2, loop2_merge});
   str += loop2_merge >> loop1_merge;
-  str += loop1_merge;
+  str += loop1_merge >> vector<Block>({loop1, exit});
+  str += exit;
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
