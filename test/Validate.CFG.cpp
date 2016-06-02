@@ -258,8 +258,8 @@ TEST_F(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("Block [0-9]\\[cont\\] appears in the binary "
-                           "before its dominator [0-9]\\[branch\\]"));
+              MatchesRegex("Block .\\[cont\\] appears in the binary "
+                           "before its dominator .\\[branch\\]"));
 }
 
 TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
@@ -269,11 +269,10 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   Block merge("merge", SpvOpReturn);
 
   loop.setBody(
-    " %cond   = OpSLessThan %intt %one %two\n"
-    " OpLoopMerge %merge %loop None\n");
+      " %cond   = OpSLessThan %intt %one %two\n"
+      " OpLoopMerge %merge %loop None\n");
   // cannot share the same merge
-  selection.setBody(
-      "OpSelectionMerge %merge None\n");
+  selection.setBody("OpSelectionMerge %merge None\n");
 
   string str = header + nameOps("merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
@@ -287,7 +286,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("Block [0-9]\\[merge\\] is already a merge block "
+              MatchesRegex("Block .\\[merge\\] is already a merge block "
                            "for another header"));
 }
 
@@ -303,7 +302,6 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   // cannot share the same merge
   loop.setBody(" OpLoopMerge %merge %loop None\n");
 
-
   string str = header + nameOps("merge", make_pair("func", "Main")) +
                types_consts + "%func    = OpFunction %voidt None %funct\n";
 
@@ -316,7 +314,7 @@ TEST_F(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("Block [0-9]\\[merge\\] is already a merge block "
+              MatchesRegex("Block .\\[merge\\] is already a merge block "
                            "for another header"));
 }
 
@@ -334,10 +332,9 @@ TEST_F(ValidateCFG, BranchTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block [0-9]\\[entry\\] of funciton [0-9]\\[Main\\] "
-                   "is targeted by block [0-9]\\[bad\\]"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
@@ -359,10 +356,9 @@ TEST_F(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block [0-9]\\[entry\\] of funciton [0-9]\\[Main\\] "
-                   "is targeted by block [0-9]\\[bad\\]"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]"));
 }
 
 TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
@@ -387,10 +383,9 @@ TEST_F(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block [0-9]\\[entry\\] of funciton [0-9]\\[Main\\] "
-                   "is targeted by block [0-9]\\[bad\\]"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]"));
 }
 
 TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
@@ -422,10 +417,9 @@ TEST_F(ValidateCFG, SwitchTargetFirstBlockBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("First block [0-9]\\[entry\\] of funciton [0-9]\\[Main\\] "
-                   "is targeted by block [0-9]\\[bad\\]"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+                           "is targeted by block .\\[bad\\]"));
 }
 
 TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
@@ -459,9 +453,8 @@ TEST_F(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex(
-          "Block\\(s\\) \\{[0-9]\\[middle2\\] .\\} are referenced but not "
-          "defined in function [0-9]\\[Main\\]"));
+      MatchesRegex("Block\\(s\\) \\{.\\[middle2\\] .\\} are referenced but not "
+                   "defined in function .\\[Main\\]"));
 }
 
 TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
@@ -488,9 +481,8 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex(
-          "Header block [0-9]\\[head\\] doesn't dominate its merge block "
-          "[0-9]\\[merge\\]"));
+      MatchesRegex("Header block .\\[head\\] doesn't dominate its merge block "
+                   ".\\[merge\\]"));
 }
 
 TEST_F(ValidateCFG, UnreachableMerge) {
