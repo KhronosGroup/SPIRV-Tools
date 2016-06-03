@@ -24,8 +24,11 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "validate.h"
-#include "validate_passes.h"
+#include <validate.h>
+#include <val/BasicBlock.h>
+#include <val/Construct.h>
+#include <val/Function.h>
+#include <val/ValidationState.h>
 
 #include <algorithm>
 #include <cassert>
@@ -190,7 +193,7 @@ spv_result_t FirstBlockAssert(ValidationState_t& _, uint32_t target) {
            << _.getIdName(_.get_current_function().get_id())
            << " is targeted by block "
            << _.getIdName(
-                  _.get_current_function().get_current_block().get_id());
+                  _.get_current_function().get_current_block()->get_id());
   }
   return SPV_SUCCESS;
 }
@@ -242,7 +245,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     }
 
     // Check all headers dominate their merge blocks
-    for (CFConstruct& construct : function.get_constructs()) {
+    for (Construct& construct : function.get_constructs()) {
       auto header = construct.get_header();
       auto merge = construct.get_merge();
       // auto cont = construct.get_continue();

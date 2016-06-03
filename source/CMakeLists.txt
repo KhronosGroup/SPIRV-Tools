@@ -167,7 +167,9 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_ssa.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_types.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/BasicBlock.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/Function.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/ValidationState.cpp)
 
 # The software_version.cpp file includes build-version.inc.
 # Rebuild the software_version.cpp object file if it is older than
@@ -183,7 +185,6 @@ set(SPIRV_SOURCES
 set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
-
 
 add_library(${SPIRV_TOOLS} ${SPIRV_SOURCES})
 spvtools_default_compile_options(${SPIRV_TOOLS})

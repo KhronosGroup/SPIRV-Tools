@@ -24,32 +24,38 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_VALIDATE_PASSES_H_
-#define LIBSPIRV_VALIDATE_PASSES_H_
+#ifndef LIBSPIRV_VAL_CONSTRUCT_H_
+#define LIBSPIRV_VAL_CONSTRUCT_H_
 
-#include "binary.h"
-#include "validate.h"
+#include <cstdint>
 
-namespace libspirv
-{
-// TODO(umar): Better docs
+namespace libspirv {
 
-// Performs logical layout validation as described in section 2.4 of the SPIR-V spec
-spv_result_t ModuleLayoutPass(ValidationState_t& _,
-                              const spv_parsed_instruction_t* inst);
+class BasicBlock;
 
-// Performs Control Flow Graph validation of a module
-spv_result_t CfgPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst);
+/// @brief This class tracks the CFG constructs as defined in the SPIR-V spec
+class Construct {
+ public:
+  Construct(BasicBlock* header_block, BasicBlock* merge_block,
+              BasicBlock* continue_block = nullptr)
+      : header_block_(header_block),
+        merge_block_(merge_block),
+        continue_block_(continue_block) {}
 
-// Performs SSA validation of a module
-spv_result_t SsaPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst);
+  const BasicBlock* get_header() const { return header_block_; }
+  const BasicBlock* get_merge() const { return merge_block_; }
+  const BasicBlock* get_continue() const { return continue_block_; }
 
-// Performs instruction validation.
-spv_result_t InstructionPass(ValidationState_t& _,
-                             const spv_parsed_instruction_t* inst);
+  BasicBlock* get_header() { return header_block_; }
+  BasicBlock* get_merge() { return merge_block_; }
+  BasicBlock* get_continue() { return continue_block_; }
 
-}
+ private:
+  BasicBlock* header_block_;    ///< The header block of a loop or selection
+  BasicBlock* merge_block_;     ///< The merge block of a loop or selection
+  BasicBlock* continue_block_;  ///< The continue block of a loop block
+};
 
-#endif
+}  /// namespace libspirv
+
+#endif  /// LIBSPIRV_VAL_CONSTRUCT_H_

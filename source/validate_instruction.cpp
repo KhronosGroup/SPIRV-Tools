@@ -30,10 +30,12 @@
 #include <sstream>
 #include <string>
 
-#include "diagnostic.h"
-#include "opcode.h"
-#include "spirv_definition.h"
-#include "validate_passes.h"
+#include <diagnostic.h>
+#include <opcode.h>
+#include <spirv_definition.h>
+#include <validate.h>
+#include <val/ValidationState.h>
+#include <val/Function.h>
 
 using libspirv::AssemblyGrammar;
 using libspirv::DiagnosticStream;
@@ -140,7 +142,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
                << "Variables must have a function[7] storage class inside"
                   " of a function";
       }
-      if(_.get_current_function().IsFirstBlock(_.get_current_function().get_current_block().get_id()) == false) {
+      if(_.get_current_function().IsFirstBlock(_.get_current_function().get_current_block()->get_id()) == false) {
         return _.diag(SPV_ERROR_INVALID_CFG)
           << "Variables can only be defined in the first block of a function";
       }

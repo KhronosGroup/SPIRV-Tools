@@ -79,6 +79,8 @@ elseif(MSVC)
   endif()
 endif()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/source)
+
 option(SPIRV_COLOR_TERMINAL "Enable color terminal output" ON)
 if(${SPIRV_COLOR_TERMINAL})
   add_definitions(-DSPIRV_COLOR_TERMINAL)
