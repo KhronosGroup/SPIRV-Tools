@@ -613,9 +613,11 @@ TEST_F(ValidateCFG, SingleBlockLoop) {
 TEST_F(ValidateCFG, NestedLoops) {
   Block entry("entry");
   Block loop1("loop1");
+  Block loop1_cont_break_block("loop1_cont_break_block",
+                               SpvOpBranchConditional);
   Block loop2("loop2", SpvOpBranchConditional);
   Block loop2_merge("loop2_merge");
-  Block loop1_merge("loop1_merge", SpvOpBranchConditional);
+  Block loop1_merge("loop1_merge");
   Block exit("exit", SpvOpReturn);
 
   loop1.setBody(
@@ -628,12 +630,12 @@ TEST_F(ValidateCFG, NestedLoops) {
       header + types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
-  str += loop1 >> loop2;
+  str += loop1 >> loop1_cont_break_block;
+  str += loop1_cont_break_block >> vector<Block>({loop1_merge, loop2});
   str += loop2 >> vector<Block>({loop2, loop2_merge});
-  str += loop2_merge >> loop1_merge;
-  str += loop1_merge >> vector<Block>({loop1, exit});
+  str += loop2_merge >> loop1;
+  str += loop1_merge >> exit;
   str += exit;
-  str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -687,8 +689,8 @@ TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
   Block exit("exit", SpvOpReturn);
 
   loop1.setBody(
-    "%cond    = OpSLessThan %intt %one %two\n"
-    "OpLoopMerge %loop1_merge %loop2 None\n");
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %loop1_merge %loop2 None\n");
 
   loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
 
