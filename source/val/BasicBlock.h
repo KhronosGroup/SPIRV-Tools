@@ -29,6 +29,7 @@
 
 #include "spirv/spirv.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace libspirv {

@@ -27,13 +27,14 @@
 #ifndef LIBSPIRV_VAL_FUNCTION_H_
 #define LIBSPIRV_VAL_FUNCTION_H_
 
-#include <spirv/spirv.h>
-#include <spirv-tools/libspirv.h>
-
 #include <list>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+
+#include <spirv/spirv.h>
+#include <spirv-tools/libspirv.h>
+#include <val/BasicBlock.h>
 
 namespace libspirv {
 
@@ -43,7 +44,6 @@ enum class FunctionDecl {
   kFunctionDeclDefinition    /// < Function definition
 };
 
-class BasicBlock;
 class Construct;
 class ValidationState_t;
 

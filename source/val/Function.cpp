@@ -24,9 +24,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+#include <val/Function.h>
+
+#include <cassert>
+
+#include <algorithm>
+
 #include <val/BasicBlock.h>
 #include <val/Construct.h>
-#include <val/Function.h>
 #include <val/ValidationState.h>
 
 using std::list;
@@ -48,7 +53,7 @@ void printDot(const BasicBlock& other, const ValidationState_t& module) {
   printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(),
          block_string.c_str());
 }
-}
+}  /// namespace
 
 Function::Function(uint32_t id, uint32_t result_type_id,
                    SpvFunctionControlMask function_control,
@@ -74,7 +79,7 @@ spv_result_t Function::RegisterFunctionParameter(uint32_t id,
   assert(module_.in_function_body() == true &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "outside of another function");
-  assert(get_current_block() == nullptr &&
+  assert(current_block_ == nullptr &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "ouside of a block");
   // TODO(umar): Validate function parameter type order and count
@@ -140,7 +145,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
   bool success = false;
   tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
   if (is_definition) {  // new block definition
-    assert(get_current_block() == nullptr &&
+    assert(current_block_ == nullptr &&
            "Register Block can only be called when parsing a binary outside of "
            "a BasicBlock");
 
@@ -161,7 +166,7 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
          "RegisterBlockEnd can only be called when parsing a binary in a "
          "function");
   assert(
-      get_current_block() &&
+      current_block_ &&
       "RegisterBlockEnd can only be called when parsing a binary in a block");
 
   vector<BasicBlock*> next_blocks;
