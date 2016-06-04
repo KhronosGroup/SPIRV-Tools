@@ -28,29 +28,109 @@
 #define LIBSPIRV_VAL_CONSTRUCT_H_
 
 #include <cstdint>
+#include <vector>
 
 namespace libspirv {
+
+enum class ConstructType {
+  kNone,
+  /// The set of blocks dominated by a selection header, minus the set of blocks
+  /// dominated by the header's merge block
+  kSelection,
+  /// The set of blocks dominated by an OpLoopMerge's Continue Target and post
+  /// dominated by the corresponding back
+  kContinue,
+  ///  The set of blocks dominated by a loop header, minus the set of blocks
+  ///  dominated by the loop's merge block, minus the loop's corresponding
+  ///  continue construct
+  kLoop,
+  ///  The set of blocks dominated by an OpSwitch's Target or Default, minus the
+  ///  set of blocks dominated by the OpSwitch's merge block (this construct is
+  ///  only defined for those OpSwitch Target or Default that are not equal to
+  ///  the OpSwitch's corresponding merge block)
+  kCase
+};
 
 class BasicBlock;
 
 /// @brief This class tracks the CFG constructs as defined in the SPIR-V spec
 class Construct {
  public:
-  Construct(BasicBlock* header_block, BasicBlock* merge_block,
-            BasicBlock* continue_block = nullptr);
+  Construct(ConstructType type, BasicBlock* dominator,
+            BasicBlock* exit = nullptr,
+            std::vector<Construct*> constructs = {});
 
-  const BasicBlock* get_header() const;
-  const BasicBlock* get_merge() const;
-  const BasicBlock* get_continue() const;
+  /// Returns the type of the construct
+  ConstructType get_type() const;
 
-  BasicBlock* get_header();
-  BasicBlock* get_merge();
-  BasicBlock* get_continue();
+  const std::vector<Construct*>& get_corresponding_constructs() const;
+  std::vector<Construct*>& get_corresponding_constructs();
+  void set_corresponding_constructs(std::vector<Construct*> constructs);
+
+  /// Returns the dominator block of the construct.
+  ///
+  /// This is usually the header block or the first block of the construct.
+  const BasicBlock* get_entry() const;
+
+  /// Returns the dominator block of the construct.
+  ///
+  /// This is usually the header block or the first block of the construct.
+  BasicBlock* get_entry();
+
+  /// Returns the exit block of the construct.
+  ///
+  /// For a continue construct it is  the backedge block of the corresponding
+  /// loop construct. For the case  construct it is the block that branches to
+  /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
+  /// block of the corresponding  header block
+  const BasicBlock* get_exit() const;
+
+  /// Returns the exit block of the construct.
+  ///
+  /// For a continue construct it is  the backedge block of the corresponding
+  /// loop construct. For the case  construct it is the block that branches to
+  /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
+  /// block of the corresponding  header block
+  BasicBlock* get_exit();
+
+  /// Sets the exit block for this construct. This is useful for continue
+  /// constructs which do not know the back-edge block during construction
+  void set_exit(BasicBlock* exit_block);
 
  private:
-  BasicBlock* header_block_;    ///< The header block of a loop or selection
-  BasicBlock* merge_block_;     ///< The merge block of a loop or selection
-  BasicBlock* continue_block_;  ///< The continue block of a loop block
+  /// The type of the construct
+  ConstructType type_;
+
+  /// These are the constructs that are related to this construct. These
+  /// constructs can be the continue construct, for the corresponding loop
+  /// construct, the case construct that are part of the same OpSwitch
+  /// instruction
+  ///
+  /// Here is a table that describes what constructs are included in
+  /// @p corresponding_constructs_
+  /// | this construct | corresponding construct          |
+  /// |----------------|----------------------------------|
+  /// | loop           | continue                         |
+  /// | continue       | loop                             |
+  /// | case           | other cases in the same OpSwitch |
+  ///
+  /// kContinue and kLoop constructs will always have corresponding
+  /// constructs even if they are represented by the same block
+  std::vector<Construct*> corresponding_constructs_;
+
+  /// @brief Dominator block for the construct
+  ///
+  /// The dominator block for the construct. Depending on the construct this may
+  /// be a selection header, a continue target of a loop, a loop header or a
+  /// Target or Default block of a switch
+  BasicBlock* entry_block_;
+
+  /// @brief Exiting block for the construct
+  ///
+  /// The exit block for the construct. This can be a merge block for the loop
+  /// and selection constructs, a back-edge block for a continue construct, or
+  /// the branching block for the case construct
+  BasicBlock* exit_block_;
 };
 
 }  /// namespace libspirv

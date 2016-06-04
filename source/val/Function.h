@@ -28,9 +28,9 @@
 #define LIBSPIRV_VAL_FUNCTION_H_
 
 #include <list>
-#include <vector>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include "spirv/1.1/spirv.h"
 #include "spirv-tools/libspirv.h"
@@ -100,11 +100,18 @@ class Function {
   void RegisterBlockEnd(std::vector<uint32_t> successors_list,
                         SpvOp branch_instruction);
 
-  /// Returns true if the \p merge_block_id is a merge block
-  bool IsMergeBlock(uint32_t merge_block_id) const;
-
-  /// Returns true if the \p id is the first block of this function
+  /// Returns true if the \p id block is the first block of this function
   bool IsFirstBlock(uint32_t id) const;
+
+  /// Returns true if the \p merge_block_id is a BlockType of \p type
+  bool IsBlockType(uint32_t merge_block_id, BlockType type) const;
+
+  /// Returns a pair consisting of the BasicBlock with \p id and a bool
+  /// which is true if the block has been defined, and false if it is
+  /// declared but not defined. This function will return nullptr if the
+  /// \p id was not declared and not defined at the current point in the binary
+  std::pair<const BasicBlock*, bool> GetBlock(uint32_t id) const;
+  std::pair<BasicBlock*, bool> GetBlock(uint32_t id);
 
   /// Returns the first block of the current function
   const BasicBlock* get_first_block() const;
@@ -141,6 +148,12 @@ class Function {
 
   /// Returns the block that is currently being parsed in the binary
   const BasicBlock* get_current_block() const;
+
+  /// Returns the psudo exit block
+  BasicBlock* get_pseudo_exit_block();
+
+  /// Returns the psudo exit block
+  const BasicBlock* get_pseudo_exit_block() const;
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void printDotGraph() const;
@@ -179,6 +192,9 @@ class Function {
   /// The block that is currently being parsed
   BasicBlock* current_block_;
 
+  /// A pseudo exit block that is the successor to all return blocks
+  BasicBlock pseudo_exit_block_;
+
   /// The constructs that are available in this function
   std::list<Construct> cfg_constructs_;
 
@@ -190,6 +206,5 @@ class Function {
 };
 
 }  /// namespace libspirv
-
 
 #endif  /// LIBSPIRV_VAL_FUNCTION_H_

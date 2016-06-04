@@ -29,13 +29,18 @@
 #include <cassert>
 
 #include <algorithm>
+#include <utility>
 
 #include "val/BasicBlock.h"
 #include "val/Construct.h"
 #include "val/ValidationState.h"
 
+using std::ignore;
 using std::list;
+using std::make_pair;
+using std::pair;
 using std::string;
+using std::tie;
 using std::vector;
 
 namespace libspirv {
@@ -66,6 +71,7 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       declaration_type_(FunctionDecl::kFunctionDeclUnknown),
       blocks_(),
       current_block_(nullptr),
+      pseudo_exit_block_(kInvalidId),
       cfg_constructs_(),
       variable_ids_(),
       parameter_ids_() {}
@@ -93,15 +99,33 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
                                          uint32_t continue_id) {
   RegisterBlock(merge_id, false);
   RegisterBlock(continue_id, false);
-  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id),
-                               &blocks_.at(continue_id));
+  BasicBlock& merge_block = blocks_.at(merge_id);
+  BasicBlock& continue_block = blocks_.at(continue_id);
+  assert(current_block_ &&
+         "RegisterLoopMerge must be called when called within a block");
+
+  current_block_->set_type(kBlockTypeLoop);
+  merge_block.set_type(kBlockTypeMerge);
+  continue_block.set_type(kBlockTypeContinue);
+  cfg_constructs_.emplace_back(ConstructType::kLoop, current_block_,
+                               &merge_block);
+  Construct& loop_construct = cfg_constructs_.back();
+  cfg_constructs_.emplace_back(ConstructType::kContinue, &continue_block);
+  Construct& continue_construct = cfg_constructs_.back();
+  continue_construct.set_corresponding_constructs({&loop_construct});
+  loop_construct.set_corresponding_constructs({&continue_construct});
 
   return SPV_SUCCESS;
 }
 
 spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   RegisterBlock(merge_id, false);
-  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id));
+  BasicBlock& merge_block = blocks_.at(merge_id);
+  current_block_->set_type(kBlockTypeHeader);
+  merge_block.set_type(kBlockTypeMerge);
+
+  cfg_constructs_.emplace_back(ConstructType::kSelection, get_current_block(),
+                               &merge_block);
   return SPV_SUCCESS;
 }
 
@@ -152,7 +176,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
     undefined_blocks_.erase(id);
     current_block_ = &inserted_block->second;
     ordered_blocks_.push_back(current_block_);
-    if (IsFirstBlock(id)) current_block_->set_reachability(true);
+    if (IsFirstBlock(id)) current_block_->set_reachable(true);
   } else if (success) {  // Block doesn't exsist but this is not a definition
     undefined_blocks_.insert(id);
   }
@@ -182,6 +206,11 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
     next_blocks.push_back(&inserted_block->second);
   }
 
+  if (branch_instruction == SpvOpReturn ||
+      branch_instruction == SpvOpReturnValue) {
+    assert(next_blocks.empty());
+    next_blocks.push_back(&pseudo_exit_block_);
+  }
   current_block_->RegisterBranchInstruction(branch_instruction);
   current_block_->RegisterSuccessors(next_blocks);
   current_block_ = nullptr;
@@ -202,6 +231,11 @@ vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 const BasicBlock* Function::get_current_block() const { return current_block_; }
 BasicBlock* Function::get_current_block() { return current_block_; }
 
+BasicBlock* Function::get_pseudo_exit_block() { return &pseudo_exit_block_; }
+const BasicBlock* Function::get_pseudo_exit_block() const {
+  return &pseudo_exit_block_;
+}
+
 const list<Construct>& Function::get_constructs() const {
   return cfg_constructs_;
 }
@@ -216,17 +250,32 @@ BasicBlock* Function::get_first_block() {
   return ordered_blocks_[0];
 }
 
-bool Function::IsMergeBlock(uint32_t merge_block_id) const {
-  const auto b = blocks_.find(merge_block_id);
+bool Function::IsBlockType(uint32_t merge_block_id, BlockType type) const {
+  bool ret = false;
+  const BasicBlock* block;
+  tie(block, ignore) = GetBlock(merge_block_id);
+  if (block) {
+    ret = block->is_type(type);
+  }
+  return ret;
+}
+
+pair<const BasicBlock*, bool> Function::GetBlock(uint32_t id) const {
+  const auto b = blocks_.find(id);
   if (b != end(blocks_)) {
-    return cfg_constructs_.end() !=
-           find_if(begin(cfg_constructs_), end(cfg_constructs_),
-                   [&](const Construct& construct) {
-                     return construct.get_merge() == &b->second;
-                   });
+    const BasicBlock* block = &(b->second);
+    bool defined =
+        undefined_blocks_.find(block->get_id()) == end(undefined_blocks_);
+    return make_pair(block, defined);
   } else {
-    return false;
+    return make_pair(nullptr, false);
   }
 }
 
+pair<BasicBlock*, bool> Function::GetBlock(uint32_t id) {
+  const BasicBlock* out;
+  bool defined;
+  tie(out, defined) = const_cast<const Function*>(this)->GetBlock(id);
+  return make_pair(const_cast<BasicBlock*>(out), defined);
+}
 }  /// namespace libspirv

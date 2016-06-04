@@ -30,9 +30,23 @@
 #include "spirv/1.1/spirv.h"
 
 #include <cstdint>
+
+#include <bitset>
+#include <functional>
 #include <vector>
 
 namespace libspirv {
+
+enum BlockType : uint32_t {
+  kBlockTypeUndefined,
+  kBlockTypeHeader,
+  kBlockTypeLoop,
+  kBlockTypeMerge,
+  kBlockTypeBreak,
+  kBlockTypeContinue,
+  kBlockTypeReturn,
+  kBlockTypeCOUNT  ///< Total number of block types. (must be the last element)
+};
 
 // This class represents a basic block in a SPIR-V module
 class BasicBlock {
@@ -61,15 +75,35 @@ class BasicBlock {
   /// Returns the successors of the BasicBlock
   std::vector<BasicBlock*>* get_successors() { return &successors_; }
 
-  /// Returns true if the  block should be reachable in the CFG
+  /// Returns true if the block is reachable in the CFG
   bool is_reachable() const { return reachable_; }
 
-  void set_reachability(bool reachability) { reachable_ = reachability; }
+  /// Returns true if BasicBlock is of the given type
+  bool is_type(BlockType type) const {
+    if (type == kBlockTypeUndefined) return type_.none();
+    return type_.test(type);
+  }
+
+  /// Sets the reachability of the basic block in the CFG
+  void set_reachable(bool reachability) { reachable_ = reachability; }
+
+  /// Sets the type of the BasicBlock
+  void set_type(BlockType type) {
+    if (type == kBlockTypeUndefined)
+      type_.reset();
+    else
+      type_.set(type);
+  }
 
   /// Sets the immedate dominator of this basic block
   ///
   /// @param[in] dom_block The dominator block
   void SetImmediateDominator(BasicBlock* dom_block);
+
+  /// Sets the immedate post dominator of this basic block
+  ///
+  /// @param[in] pdom_block The post dominator block
+  void SetImmediatePostDominator(BasicBlock* pdom_block);
 
   /// Returns the immedate dominator of this basic block
   BasicBlock* GetImmediateDominator();
@@ -77,11 +111,17 @@ class BasicBlock {
   /// Returns the immedate dominator of this basic block
   const BasicBlock* GetImmediateDominator() const;
 
+  /// Returns the immedate post dominator of this basic block
+  BasicBlock* GetImmediatePostDominator();
+
+  /// Returns the immedate post dominator of this basic block
+  const BasicBlock* GetImmediatePostDominator() const;
+
   /// Ends the block without a successor
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
-  void RegisterSuccessors(std::vector<BasicBlock*> next = {});
+  void RegisterSuccessors(const std::vector<BasicBlock*>& next = {});
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
@@ -91,7 +131,7 @@ class BasicBlock {
 
   /// @brief A BasicBlock dominator iterator class
   ///
-  /// This iterator will iterate over the dominators of the block
+  /// This iterator will iterate over the (post)dominators of the block
   class DominatorIterator
       : public std::iterator<std::forward_iterator_tag, BasicBlock*> {
    public:
@@ -104,8 +144,12 @@ class BasicBlock {
     /// @brief Constructs an iterator for the given block which points to
     ///        @p block
     ///
-    /// @param block The block which is referenced by the iterator
-    explicit DominatorIterator(const BasicBlock* block);
+    /// @param block          The block which is referenced by the iterator
+    /// @param dominator_func This function will be called to get the immediate
+    ///                       (post)dominator of the current block
+    DominatorIterator(
+        const BasicBlock* block,
+        std::function<const BasicBlock*(const BasicBlock*)> dominator_func);
 
     /// @brief Advances the iterator
     DominatorIterator& operator++();
@@ -118,15 +162,35 @@ class BasicBlock {
 
    private:
     const BasicBlock* current_;
+    std::function<const BasicBlock*(const BasicBlock*)> dom_func_;
   };
 
-  /// Returns an iterator which points to the current block
+  /// Returns a dominator iterator which points to the current block
   const DominatorIterator dom_begin() const;
+
+  /// Returns a dominator iterator which points to the current block
   DominatorIterator dom_begin();
 
-  /// Returns an iterator which points to one element past the first block
+  /// Returns a dominator iterator which points to one element past the first
+  /// block
   const DominatorIterator dom_end() const;
+
+  /// Returns a dominator iterator which points to one element past the first
+  /// block
   DominatorIterator dom_end();
+
+  /// Returns a post dominator iterator which points to the current block
+  const DominatorIterator pdom_begin() const;
+  /// Returns a post dominator iterator which points to the current block
+  DominatorIterator pdom_begin();
+
+  /// Returns a post dominator iterator which points to one element past the
+  /// last block
+  const DominatorIterator pdom_end() const;
+
+  /// Returns a post dominator iterator which points to one element past the
+  /// last block
+  DominatorIterator pdom_end();
 
  private:
   /// Id of the BasicBlock
@@ -135,12 +199,19 @@ class BasicBlock {
   /// Pointer to the immediate dominator of the BasicBlock
   BasicBlock* immediate_dominator_;
 
+  /// Pointer to the immediate dominator of the BasicBlock
+  BasicBlock* immediate_post_dominator_;
+
   /// The set of predecessors of the BasicBlock
   std::vector<BasicBlock*> predecessors_;
 
   /// The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
 
+  /// The type of the block
+  std::bitset<kBlockTypeCOUNT - 1> type_;
+
+  /// True if the block is reachable in the CFG
   bool reachable_;
 };
 

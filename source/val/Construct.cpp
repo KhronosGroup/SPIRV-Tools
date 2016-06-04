@@ -26,19 +26,51 @@
 
 #include "val/Construct.h"
 
+#include <cassert>
+#include <cstddef>
+
 namespace libspirv {
 
-Construct::Construct(BasicBlock* header_block, BasicBlock* merge_block,
-                     BasicBlock* continue_block)
-    : header_block_(header_block),
-      merge_block_(merge_block),
-      continue_block_(continue_block) {}
+Construct::Construct(ConstructType type, BasicBlock* entry,
+                     BasicBlock* exit, std::vector<Construct*> constructs)
+    : type_(type),
+      corresponding_constructs_(constructs),
+      entry_block_(entry),
+      exit_block_(exit) {}
 
-const BasicBlock* Construct::get_header() const { return header_block_; }
-const BasicBlock* Construct::get_merge() const { return merge_block_; }
-const BasicBlock* Construct::get_continue() const { return continue_block_; }
+ConstructType Construct::get_type() const { return type_; }
 
-BasicBlock* Construct::get_header() { return header_block_; }
-BasicBlock* Construct::get_merge() { return merge_block_; }
-BasicBlock* Construct::get_continue() { return continue_block_; }
+const std::vector<Construct*>& Construct::get_corresponding_constructs() const {
+  return corresponding_constructs_;
 }
+std::vector<Construct*>& Construct::get_corresponding_constructs() {
+  return corresponding_constructs_;
+}
+
+bool ValidateConstructSize(ConstructType type, size_t size) {
+  switch (type) {
+    case ConstructType::kSelection: return size == 0;
+    case ConstructType::kContinue:  return size == 1;
+    case ConstructType::kLoop:      return size == 1;
+    case ConstructType::kCase:      return size >= 1;
+    default: assert(1 == 0 && "Type not defined");
+  }
+  return false;
+}
+
+void Construct::set_corresponding_constructs(
+    std::vector<Construct*> constructs) {
+  assert(ValidateConstructSize(type_, constructs.size()));
+  corresponding_constructs_ = constructs;
+}
+
+const BasicBlock* Construct::get_entry() const { return entry_block_; }
+BasicBlock* Construct::get_entry() { return entry_block_; }
+
+const BasicBlock* Construct::get_exit() const { return exit_block_; }
+BasicBlock* Construct::get_exit() { return exit_block_; }
+
+void Construct::set_exit(BasicBlock* exit_block) {
+  exit_block_ = exit_block;
+}
+}  /// namespace libspirv
