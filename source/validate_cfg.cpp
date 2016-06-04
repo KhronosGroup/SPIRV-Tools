@@ -85,11 +85,11 @@ vector<const BasicBlock*> PostOrderSort(const BasicBlock& entry, size_t size) {
       staged.pop_back();
     } else {
       BasicBlock* child = *top.iter;
+      top.iter++;
       if (processed.find(child->get_id()) == end(processed)) {
         staged.emplace_back(block_info{child, begin(child->get_successors())});
         processed.insert(child->get_id());
       }
-      top.iter++;
     }
   }
   return out;
