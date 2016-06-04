@@ -37,6 +37,7 @@ BasicBlock::BasicBlock(uint32_t id)
       immediate_dominator_(nullptr),
       predecessors_(),
       successors_(),
+      type_(1),
       reachable_(false) {}
 
 void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {

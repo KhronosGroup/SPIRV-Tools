@@ -29,13 +29,18 @@
 #include <cassert>
 
 #include <algorithm>
+#include <utility>
 
 #include "val/BasicBlock.h"
 #include "val/Construct.h"
 #include "val/ValidationState.h"
 
+using std::ignore;
 using std::list;
+using std::make_pair;
+using std::pair;
 using std::string;
+using std::tie;
 using std::vector;
 
 namespace libspirv {
@@ -93,6 +98,14 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
                                          uint32_t continue_id) {
   RegisterBlock(merge_id, false);
   RegisterBlock(continue_id, false);
+  BasicBlock& merge_block = blocks_.at(merge_id);
+  BasicBlock& continue_block = blocks_.at(continue_id);
+  assert(merge_block.is_type(kBlockTypeUndefined));
+  assert(continue_block.is_type(kBlockTypeUndefined));
+  current_block_->set_type(kBlockTypeLoop);
+  merge_block.set_type(kBlockTypeMerge);
+  continue_block.set_type(kBlockTypeContinue);
+
   cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id),
                                &blocks_.at(continue_id));
 
@@ -101,6 +114,10 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
 
 spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   RegisterBlock(merge_id, false);
+  BasicBlock& merge_block = blocks_.at(merge_id);
+  current_block_->set_type(kBlockTypeHeader);
+  merge_block.set_type(kBlockTypeMerge);
+
   cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id));
   return SPV_SUCCESS;
 }
@@ -216,17 +233,32 @@ BasicBlock* Function::get_first_block() {
   return ordered_blocks_[0];
 }
 
-bool Function::IsMergeBlock(uint32_t merge_block_id) const {
-  const auto b = blocks_.find(merge_block_id);
+bool Function::IsBlockType(uint32_t merge_block_id, BlockType type) const {
+  bool ret = false;
+  const BasicBlock* block;
+  tie(block, ignore) = GetBlock(merge_block_id);
+  if (block) {
+    ret = block->is_type(type);
+  }
+  return ret;
+}
+
+pair<const BasicBlock*, bool> Function::GetBlock(uint32_t id) const {
+  const auto b = blocks_.find(id);
   if (b != end(blocks_)) {
-    return cfg_constructs_.end() !=
-           find_if(begin(cfg_constructs_), end(cfg_constructs_),
-                   [&](const Construct& construct) {
-                     return construct.get_merge() == &b->second;
-                   });
+    const BasicBlock* block = &(b->second);
+    bool defined =
+        undefined_blocks_.find(block->get_id()) == end(undefined_blocks_);
+    return make_pair(block, defined);
   } else {
-    return false;
+    return make_pair(nullptr, false);
   }
 }
 
+pair<BasicBlock*, bool> Function::GetBlock(uint32_t id) {
+  const BasicBlock* out;
+  bool defined;
+  tie(out, defined) = const_cast<const Function*>(this)->GetBlock(id);
+  return make_pair(const_cast<BasicBlock*>(out), defined);
+}
 }  /// namespace libspirv

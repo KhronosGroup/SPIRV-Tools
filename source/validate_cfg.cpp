@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -43,9 +44,12 @@
 using std::find;
 using std::function;
 using std::get;
+using std::ignore;
 using std::make_pair;
 using std::numeric_limits;
 using std::pair;
+using std::set;
+using std::tie;
 using std::transform;
 using std::unordered_map;
 using std::unordered_set;
@@ -244,7 +248,7 @@ spv_result_t FirstBlockAssert(ValidationState_t& _, uint32_t target) {
 }
 
 spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
-  if (_.get_current_function().IsMergeBlock(merge_block)) {
+  if (_.get_current_function().IsBlockType(merge_block, kBlockTypeMerge)) {
     return _.diag(SPV_ERROR_INVALID_CFG)
            << "Block " << _.getIdName(merge_block)
            << " is already a merge block for another header";
@@ -254,6 +258,19 @@ spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
 
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
   for (auto& function : _.get_functions()) {
+    // Check all referenced blocks are defined within a function
+    if (function.get_undefined_block_count() != 0) {
+      std::stringstream ss;
+      ss << "{";
+      for (auto undefined_block : function.get_undefined_blocks()) {
+        ss << _.getIdName(undefined_block) << " ";
+      }
+      return _.diag(SPV_ERROR_INVALID_CFG)
+             << "Block(s) " << ss.str() << "\b}"
+             << " are referenced but not defined in function "
+             << _.getIdName(function.get_id());
+    }
+
     // Updates each blocks immediate dominators
     vector<const BasicBlock*> postorder;
     vector<pair<uint32_t, uint32_t>> back_edges;
@@ -284,19 +301,6 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
     }
 
-    // Check all referenced blocks are defined within a function
-    if (function.get_undefined_block_count() != 0) {
-      std::stringstream ss;
-      ss << "{";
-      for (auto undefined_block : function.get_undefined_blocks()) {
-        ss << _.getIdName(undefined_block) << " ";
-      }
-      return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Block(s) " << ss.str() << "\b}"
-             << " are referenced but not defined in function "
-             << _.getIdName(function.get_id());
-    }
-
     // Check all headers dominate their merge blocks
     for (Construct& construct : function.get_constructs()) {
       auto header = construct.get_header();
@@ -313,8 +317,29 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
     }
 
-    // TODO(umar): All CFG back edges must branch to a loop header, with each
-    // loop header having exactly one back edge branching to it
+    /// Check all backedges target only loop headers and have exactly one
+    /// back-edge branching to it
+    set<uint32_t> loop_headers;
+    for (auto back_edge : back_edges) {
+      uint32_t back_edge_block;
+      uint32_t header_block;
+      tie(back_edge_block, header_block) = back_edge;
+      if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
+               << _.getIdName(header_block)
+               << ") can only be formed between a block and a loop header.";
+      }
+      bool success;
+      tie(std::ignore, success) = loop_headers.insert(header_block);
+      if (!success) {
+        // TODO(umar): List the back-edge blocks that are branching to loop
+        // header
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Loop header " << _.getIdName(header_block)
+               << " targeted by multiple back-edges";
+      }
+    }
 
     // TODO(umar): For a given loop, its back-edge block must post dominate the
     // OpLoopMerge's Continue Target, and that Continue Target must dominate the

@@ -30,9 +30,22 @@
 #include "spirv/1.1/spirv.h"
 
 #include <cstdint>
+
+#include <bitset>
 #include <vector>
 
 namespace libspirv {
+
+enum BlockType : uint32_t {
+  kBlockTypeUndefined,
+  kBlockTypeHeader,
+  kBlockTypeLoop,
+  kBlockTypeMerge,
+  kBlockTypeBreak,
+  kBlockTypeContinue,
+  kBlockTypeReturn,
+  kBlockTypeCOUNT  ///< Total number of block types. (must be the last element)
+};
 
 // This class represents a basic block in a SPIR-V module
 class BasicBlock {
@@ -61,10 +74,17 @@ class BasicBlock {
   /// Returns the successors of the BasicBlock
   std::vector<BasicBlock*>* get_successors() { return &successors_; }
 
-  /// Returns true if the  block should be reachable in the CFG
+  /// Returns true if the block is reachable in the CFG
   bool is_reachable() const { return reachable_; }
 
+  /// Returns the type of the BasicBlock
+  bool is_type(BlockType type) const { return type_.test(type); }
+
+  /// Sets the reacability of the basic block in the CFG
   void set_reachability(bool reachability) { reachable_ = reachability; }
+
+  /// Sets the type of the BasicBlock
+  void set_type(BlockType type) { type_.set(static_cast<int>(type)); }
 
   /// Sets the immedate dominator of this basic block
   ///
@@ -140,6 +160,9 @@ class BasicBlock {
 
   /// The set of successors of the BasicBlock
   std::vector<BasicBlock*> successors_;
+
+  /// The type of the block
+  std::bitset<kBlockTypeCOUNT> type_;
 
   bool reachable_;
 };

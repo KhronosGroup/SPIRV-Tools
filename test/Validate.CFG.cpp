@@ -709,7 +709,83 @@ TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
+  Block entry("entry");
+  Block split("split", SpvOpBranchConditional);
+  Block t("t");
+  Block f("f");
+  Block exit("exit", SpvOpReturn);
+
+  split.setBody(
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %exit None\n");
+
+  string str = header + nameOps("split", "f") + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> split;
+  str += split >> vector<Block>({t, f});
+  str += t >> exit;
+  str += f >> split;
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("Back-edges \\(.\\[f\\] -> .\\[split\\]\\) can only "
+                           "be formed between a block and a loop header."));
+}
+
+TEST_F(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
+  Block entry("entry");
+  Block split("split", SpvOpBranchConditional);
+  Block exit("exit", SpvOpReturn);
+
+  split.setBody(
+    "%cond    = OpSLessThan %intt %one %two\n"
+    "OpSelectionMerge %exit None\n");
+
+  string str = header + nameOps("split") + types_consts +
+      "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> split;
+  str += split >> vector<Block>({split, exit});
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+    getDiagnosticString(),
+    MatchesRegex("Back-edges \\(.\\[split\\] -> .\\[split\\]\\) can only be "
+                 "formed between a block and a loop header."));
+}
+
+TEST_F(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block cont("cont", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
+
+  loop.setBody(
+    "%cond    = OpSLessThan %intt %one %two\n"
+    "OpLoopMerge %merge %loop None\n");
+
+  string str = header + nameOps("cont", "loop") + types_consts +
+      "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({cont, merge});
+  str += cont >> vector<Block>({loop, loop});
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): CFG branching outside of CFG construct
 /// TODO(umar): Nested CFG constructs
-}
+}  /// namespace
