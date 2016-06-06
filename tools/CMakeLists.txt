@@ -44,6 +44,12 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   target_include_directories(spirv-val
     PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
 
+  add_executable(spirv-opt ${CMAKE_CURRENT_SOURCE_DIR}/opt/opt.cpp)
+  spvtools_default_compile_options(spirv-opt)
+  target_link_libraries(spirv-opt PRIVATE ${SPIRV_TOOLS} SpvToolsOpt)
+  target_include_directories(spirv-opt PRIVATE
+    ${spirv-tools_SOURCE_DIR}/source ${spirv-tools_BINARY_DIR})
+
   install(TARGETS ${SPIRV_INSTALL_TARGETS}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
