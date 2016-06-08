@@ -37,14 +37,14 @@
 #include <utility>
 #include <vector>
 
-#include <assembly_grammar.h>
-#include <binary.h>
-#include <diagnostic.h>
-#include <instruction.h>
-#include <spirv-tools/libspirv.h>
-#include <spirv_definition.h>
-#include <table.h>
-#include <val/BasicBlock.h>
+#include "assembly_grammar.h"
+#include "binary.h"
+#include "diagnostic.h"
+#include "instruction.h"
+#include "spirv-tools/libspirv.h"
+#include "spirv_definition.h"
+#include "table.h"
+#include "val/BasicBlock.h"
 
 // Structures
 

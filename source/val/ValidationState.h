@@ -27,18 +27,18 @@
 #ifndef LIBSPIRV_VAL_VALIDATIONSTATE_H_
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
-#include <assembly_grammar.h>
-#include <diagnostic.h>
-#include <spirv-tools/libspirv.h>
-#include <spirv/spirv.h>
-#include <spirv_definition.h>
-
 #include <list>
 #include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "assembly_grammar.h"
+#include "diagnostic.h"
+#include "spirv-tools/libspirv.h"
+#include "spirv/spirv.h"
+#include "spirv_definition.h"
 
 namespace libspirv {
 

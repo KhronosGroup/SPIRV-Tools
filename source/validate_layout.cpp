@@ -26,16 +26,16 @@
 
 // Source code for logical layout validation as described in section 2.4
 
-#include <validate.h>
+#include "validate.h"
 
 #include <cassert>
 
-#include <diagnostic.h>
-#include <opcode.h>
-#include <operand.h>
-#include <spirv-tools/libspirv.h>
-#include <val/Function.h>
-#include <val/ValidationState.h>
+#include "diagnostic.h"
+#include "opcode.h"
+#include "operand.h"
+#include "spirv-tools/libspirv.h"
+#include "val/Function.h"
+#include "val/ValidationState.h"
 
 using libspirv::ValidationState_t;
 using libspirv::kLayoutMemoryModel;

@@ -27,15 +27,15 @@
 
 // Unit tests for ValidationState_t.
 
-#include <gtest/gtest.h>
+#include "val/ValidationState.h"
+
 #include <vector>
 
-#include <spirv/spirv.h>
-#include <val/Construct.h>
-#include <val/Function.h>
-#include <val/ValidationState.h>
-
-#include <validate.h>
+#include "gtest/gtest.h"
+#include "spirv/spirv.h"
+#include "val/Construct.h"
+#include "val/Function.h"
+#include "validate.h"
 
 namespace {
 using libspirv::ValidationState_t;
