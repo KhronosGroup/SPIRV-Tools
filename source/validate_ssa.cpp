@@ -28,8 +28,8 @@
 
 #include <functional>
 
-#include <opcode.h>
-#include <val/ValidationState.h>
+#include "opcode.h"
+#include "val/ValidationState.h"
 
 using std::function;
 using libspirv::ValidationState_t;

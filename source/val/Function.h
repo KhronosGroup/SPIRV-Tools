@@ -32,9 +32,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include <spirv/spirv.h>
-#include <spirv-tools/libspirv.h>
-#include <val/BasicBlock.h>
+#include "spirv/spirv.h"
+#include "spirv-tools/libspirv.h"
+#include "val/BasicBlock.h"
 
 namespace libspirv {
 

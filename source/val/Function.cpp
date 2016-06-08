@@ -24,15 +24,15 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include <val/Function.h>
+#include "val/Function.h"
 
 #include <cassert>
 
 #include <algorithm>
 
-#include <val/BasicBlock.h>
-#include <val/Construct.h>
-#include <val/ValidationState.h>
+#include "val/BasicBlock.h"
+#include "val/Construct.h"
+#include "val/ValidationState.h"
 
 using std::list;
 using std::string;

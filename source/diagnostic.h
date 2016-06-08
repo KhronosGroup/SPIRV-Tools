@@ -31,7 +31,7 @@
 #include <sstream>
 #include <utility>
 
-#include <spirv-tools/libspirv.h>
+#include "spirv-tools/libspirv.h"
 
 /// For debugging purposes only
 /// Prints the string to stdout
