@@ -63,10 +63,17 @@ using bb_iter = vector<BasicBlock*>::const_iterator;
 using get_blocks_func = function<const vector<BasicBlock*>*(const BasicBlock*)>;
 
 struct block_info {
-  cbb_ptr block;
-  bb_iter iter;
+  cbb_ptr block;  ///< pointer to the block
+  bb_iter iter;   ///< Iterator to the current child node being processed
 };
 
+/// Returns true if the edge from last element of the staged vector to \p id
+/// creates a back-edge
+///
+/// @param[in] staged Set of blocks visited in the the depth first traversal
+///                   of the CFG
+/// @param[in] id The ID of the block being checked
+/// @return true if the edge staged.back().block->get_id() => id is a back-edge
 bool IsBackEdge(vector<block_info> staged, uint32_t id) {
   for (auto b : staged) {
     if (b.block->get_id() == id) return true;
@@ -113,6 +120,9 @@ void DepthFirstTraversal(const BasicBlock& entry,
   }
 }
 
+/// Returns the successor of a basic block.
+/// NOTE: This will be passed as a function pointer to when calculating
+/// the dominator and post dominator
 const vector<BasicBlock*>* successor(const BasicBlock* b) {
   return b->get_successors();
 }
@@ -234,8 +244,9 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     if (auto* first_block = function.get_first_block()) {
       DepthFirstTraversal(*first_block, successor, [](cbb_ptr) {},
                           [&](cbb_ptr b) { postorder.push_back(b); },
-                          [&](cbb_ptr f, cbb_ptr t) {
-                            back_edges.emplace_back(f->get_id(), t->get_id());
+                          [&](cbb_ptr from, cbb_ptr to) {
+                            back_edges.emplace_back(from->get_id(),
+                                                    to->get_id());
                           });
       auto edges = libspirv::CalculateDominators(postorder);
       libspirv::UpdateImmediateDominators(edges);
