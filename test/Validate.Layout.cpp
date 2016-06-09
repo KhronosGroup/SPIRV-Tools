@@ -47,7 +47,7 @@ using std::tie;
 using std::tuple;
 using std::vector;
 
-using ::testing::HasSubstr;
+using ::testing::StrEq;
 
 using libspirv::spvResultToString;
 
@@ -311,6 +311,25 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+}
+
+TEST_F(ValidateLayout, InstructionAppearBeforeFunctionDefinition) {
+  string str = R"(
+         OpCapability Kernel
+         OpMemoryModel Logical OpenCL
+%voidt = OpTypeVoid
+%uintt = OpTypeInt 32 0
+%funct = OpTypeFunction %voidt
+%udef  = OpUndef %uintt
+%func  = OpFunction %voidt None %funct
+%entry = OpLabel
+         OpReturn
+         OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), StrEq("Undef must appear in a block"));
 }
 
 using ValidateOpFunctionParameter = spvtest::ValidateBase<int>;

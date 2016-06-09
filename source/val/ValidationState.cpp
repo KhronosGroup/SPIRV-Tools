@@ -288,7 +288,8 @@ Function& ValidationState_t::get_current_function() {
 bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
-  return module_functions_.back().get_current_block() != nullptr;
+  return module_functions_.empty() == false &&
+         module_functions_.back().get_current_block() != nullptr;
 }
 
 void ValidationState_t::RegisterCapability(SpvCapability cap) {

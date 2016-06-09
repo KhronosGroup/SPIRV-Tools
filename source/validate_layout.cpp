@@ -158,7 +158,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         break;
 
       default:
-        if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
+        if (_.getLayoutSection() == kLayoutFunctionDeclarations &&
+            _.in_function_body()) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "A function must begin with a label";
         } else {
