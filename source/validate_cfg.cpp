@@ -67,15 +67,15 @@ struct block_info {
   bb_iter iter;   ///< Iterator to the current child node being processed
 };
 
-/// Returns true if the edge from last element of the staged vector to \p id
-/// creates a back-edge
+/// Returns true if a block with @p id is found in the @p work_list vector
 ///
-/// @param[in] staged Set of blocks visited in the the depth first traversal
+/// @param[in] work_list Set of blocks visited in the the depth first traversal
 ///                   of the CFG
 /// @param[in] id The ID of the block being checked
-/// @return true if the edge staged.back().block->get_id() => id is a back-edge
-bool IsBackEdge(vector<block_info> staged, uint32_t id) {
-  for (auto b : staged) {
+/// @return true if the edge work_list.back().block->get_id() => id is a
+/// back-edge
+bool FindInWorkList(vector<block_info> work_list, uint32_t id) {
+  for (auto b : work_list) {
     if (b.block->get_id() == id) return true;
   }
   return false;
@@ -87,33 +87,48 @@ bool IsBackEdge(vector<block_info> staged, uint32_t id) {
 /// BasicBlock and calls the pre/postorder functions when it needs to process
 /// the node in pre order, post order. It also calls the backedge function
 /// when a back edge is encountered
+///
+/// @param[in] entry The root BasicBlock of a CFG tree
+/// @param[in] successor_func  A function which will return a pointer to the
+///                            successor nodes
+/// @param[in] preorder   A function that will be called for every block in a CFG
+///                       following preorder traversal semantics
+/// @param[in] postorder  A function that will be called for every block in a
+///                       CFG following postorder traversal semantics
+/// @param[in] backedge   A function that will be called when a backedge is
+///                       encountered during a traversal
+/// NOTE: The @p successor_func return a pointer to a collection such that
+/// iterators to that collection remain valid for the lifetime of the algorithm
 void DepthFirstTraversal(const BasicBlock& entry,
                          get_blocks_func successor_func,
                          function<void(cbb_ptr)> preorder,
                          function<void(cbb_ptr)> postorder,
                          function<void(cbb_ptr, cbb_ptr)> backedge) {
   vector<cbb_ptr> out;
-  vector<block_info> staged;
   unordered_set<uint32_t> processed;
+  /// NOTE: work_list is the sequence of nodes from the entry node to the node
+  /// being processed in the traversal
+  vector<block_info> work_list;
 
-  staged.reserve(10);
-  staged.push_back({&entry, begin(*successor_func(&entry))});
+  work_list.reserve(10);
+  work_list.push_back({&entry, begin(*successor_func(&entry))});
   preorder(&entry);
 
-  while (!staged.empty()) {
-    block_info& top = staged.back();
+  while (!work_list.empty()) {
+    block_info& top = work_list.back();
     if (top.iter == end(*successor_func(top.block))) {
       postorder(top.block);
-      staged.pop_back();
+      work_list.pop_back();
     } else {
       BasicBlock* child = *top.iter;
       top.iter++;
-      if (IsBackEdge(staged, child->get_id())) {
+      if (FindInWorkList(work_list, child->get_id())) {
         backedge(top.block, child);
       }
       if (processed.count(child->get_id()) == 0) {
         preorder(child);
-        staged.push_back({child, begin(*successor_func(child))});
+        work_list.emplace_back(
+            block_info{child, begin(*successor_func(child))});
         processed.insert(child->get_id());
       }
     }
