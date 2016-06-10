@@ -74,8 +74,8 @@ struct block_info {
 /// @param[in] id The ID of the block being checked
 /// @return true if the edge work_list.back().block->get_id() => id is a
 /// back-edge
-bool FindInWorkList(vector<block_info> work_list, uint32_t id) {
-  for (auto b : work_list) {
+bool FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
+  for (const auto b : work_list) {
     if (b.block->get_id() == id) return true;
   }
   return false;
