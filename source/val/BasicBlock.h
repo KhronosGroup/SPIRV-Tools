@@ -46,18 +46,20 @@ class BasicBlock {
   uint32_t get_id() const { return id_; }
 
   /// Returns the predecessors of the BasicBlock
-  const std::vector<BasicBlock*>& get_predecessors() const {
-    return predecessors_;
+  const std::vector<BasicBlock*>* get_predecessors() const {
+    return &predecessors_;
   }
 
   /// Returns the predecessors of the BasicBlock
-  std::vector<BasicBlock*>& get_predecessors() { return predecessors_; }
+  std::vector<BasicBlock*>* get_predecessors() { return &predecessors_; }
 
   /// Returns the successors of the BasicBlock
-  const std::vector<BasicBlock*>& get_successors() const { return successors_; }
+  const std::vector<BasicBlock*>* get_successors() const {
+    return &successors_;
+  }
 
   /// Returns the successors of the BasicBlock
-  std::vector<BasicBlock*>& get_successors() { return successors_; }
+  std::vector<BasicBlock*>* get_successors() { return &successors_; }
 
   /// Returns true if the  block should be reachable in the CFG
   bool is_reachable() const { return reachable_; }

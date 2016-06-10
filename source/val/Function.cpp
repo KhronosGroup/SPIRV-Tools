@@ -43,10 +43,10 @@ namespace {
 
 void printDot(const BasicBlock& other, const ValidationState_t& module) {
   string block_string;
-  if (other.get_successors().empty()) {
+  if (other.get_successors()->empty()) {
     block_string += "end ";
   } else {
-    for (auto& block : other.get_successors()) {
+    for (auto block : *other.get_successors()) {
       block_string += module.getIdOrName(block->get_id()) + " ";
     }
   }
