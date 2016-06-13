@@ -1564,8 +1564,26 @@ TEST_F(ValidateID, OpReturnValueIsVoid) {
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 
-TEST_F(ValidateID, OpReturnValueIsVariable) {
+TEST_F(ValidateID, OpReturnValueIsVariableInPhysical) {
+  // It's valid to return a pointer in a physical addressing model.
   const char* spirv = R"(
+     OpMemoryModel Physical32 OpenCL
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer Private %2
+%4 = OpTypeFunction %3
+%5 = OpFunction %3 None %4
+%6 = OpLabel
+%7 = OpVariable %3 Function
+     OpReturnValue %7
+     OpFunctionEnd)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+TEST_F(ValidateID, OpReturnValueIsVariableInLogical) {
+  // It's invalid to return a pointer in a physical addressing model.
+  const char* spirv = R"(
+     OpMemoryModel Logical GLSL450
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Private %2

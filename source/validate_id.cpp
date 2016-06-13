@@ -1710,12 +1710,11 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
                      << value.second.type_id << "' is missing or void.";
     return false;
   }
-  if (SpvOpTypePointer == valueType.second.opcode) {
-    DIAG(valueIndex) << "OpReturnValue value's type <id> '"
-                     << value.second.type_id
-                     << "' is a pointer, but a pointer can only be an operand "
-                        "to OpLoad, OpStore, OpAccessChain, or "
-                        "OpInBoundsAccessChain.";
+  if (addressingModel == SpvAddressingModelLogical &&
+      SpvOpTypePointer == valueType.second.opcode) {
+    DIAG(valueIndex)
+        << "OpReturnValue value's type <id> '" << value.second.type_id
+        << "' is a pointer, which is invalid in the Logical addressing model.";
     return false;
   }
   // NOTE: Find OpFunction
