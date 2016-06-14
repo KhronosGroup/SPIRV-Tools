@@ -71,6 +71,7 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       declaration_type_(FunctionDecl::kFunctionDeclUnknown),
       blocks_(),
       current_block_(nullptr),
+      exit_block_(kInvalidId),
       cfg_constructs_(),
       variable_ids_(),
       parameter_ids_() {}
@@ -102,12 +103,20 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
   BasicBlock& continue_block = blocks_.at(continue_id);
   assert(merge_block.is_type(kBlockTypeUndefined));
   assert(continue_block.is_type(kBlockTypeUndefined));
+
   current_block_->set_type(kBlockTypeLoop);
   merge_block.set_type(kBlockTypeMerge);
   continue_block.set_type(kBlockTypeContinue);
-
-  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id),
-                               &blocks_.at(continue_id));
+  assert(current_block_ &&
+         "RegisterLoopMerge must be called when called within a block");
+  cfg_constructs_.emplace_back(ConstructType::kLoop, get_current_block(),
+                               &merge_block);
+  Construct& loop_construct = cfg_constructs_.back();
+  cfg_constructs_.emplace_back(ConstructType::kContinue, &continue_block,
+                               nullptr);
+  Construct& continue_construct = cfg_constructs_.back();
+  continue_construct.set_corresponding_constructs({&loop_construct});
+  loop_construct.set_corresponding_constructs({&continue_construct});
 
   return SPV_SUCCESS;
 }
@@ -118,7 +127,8 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   current_block_->set_type(kBlockTypeHeader);
   merge_block.set_type(kBlockTypeMerge);
 
-  cfg_constructs_.emplace_back(get_current_block(), &blocks_.at(merge_id));
+  cfg_constructs_.emplace_back(ConstructType::kSelection, get_current_block(),
+                               &blocks_.at(merge_id));
   return SPV_SUCCESS;
 }
 
@@ -199,6 +209,11 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
     next_blocks.push_back(&inserted_block->second);
   }
 
+  if (branch_instruction == SpvOpReturn ||
+      branch_instruction == SpvOpReturnValue) {
+    assert(next_blocks.empty());
+    next_blocks.push_back(&exit_block_);
+  }
   current_block_->RegisterBranchInstruction(branch_instruction);
   current_block_->RegisterSuccessors(next_blocks);
   current_block_ = nullptr;
@@ -218,6 +233,11 @@ vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 
 const BasicBlock* Function::get_current_block() const { return current_block_; }
 BasicBlock* Function::get_current_block() { return current_block_; }
+
+BasicBlock* Function::get_psudo_exit_block() { return &exit_block_; }
+const BasicBlock* Function::get_psudo_exit_block() const {
+  return &exit_block_;
+}
 
 const list<Construct>& Function::get_constructs() const {
   return cfg_constructs_;

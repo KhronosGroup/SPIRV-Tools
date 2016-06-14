@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <functional>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -49,6 +50,7 @@ using std::make_pair;
 using std::numeric_limits;
 using std::pair;
 using std::set;
+using std::string;
 using std::tie;
 using std::transform;
 using std::unordered_map;
@@ -96,8 +98,8 @@ bool FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
 /// @param[in] entry The root BasicBlock of a CFG tree
 /// @param[in] successor_func  A function which will return a pointer to the
 ///                            successor nodes
-/// @param[in] preorder   A function that will be called for every block in a CFG
-///                       following preorder traversal semantics
+/// @param[in] preorder   A function that will be called for every block in a
+///                       CFG following preorder traversal semantics
 /// @param[in] postorder  A function that will be called for every block in a
 ///                       CFG following postorder traversal semantics
 /// @param[in] backedge   A function that will be called when a backedge is
@@ -147,10 +149,14 @@ const vector<BasicBlock*>* successor(const BasicBlock* b) {
   return b->get_successors();
 }
 
+const vector<BasicBlock*>* predecessor(const BasicBlock* b) {
+  return b->get_predecessors();
+}
+
 }  // namespace
 
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
-    vector<cbb_ptr>& postorder) {
+    vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
   struct block_detail {
     size_t dominator;  ///< The index of blocks's dominator in post order array
     size_t postorder_index;  ///< The index of the block in the post order array
@@ -170,7 +176,7 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     changed = false;
     for (auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
       size_t& b_dom = idoms[*b].dominator;
-      const vector<BasicBlock*>* predecessors = (*b)->get_predecessors();
+      const vector<BasicBlock*>* predecessors = predecessor_func(*b);
 
       // first processed predecessor
       auto res = find_if(begin(*predecessors), end(*predecessors),
@@ -217,9 +223,11 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
   return out;
 }
 
-void UpdateImmediateDominators(vector<pair<bb_ptr, bb_ptr>>& dom_edges) {
+void UpdateImmediateDominators(
+    vector<pair<bb_ptr, bb_ptr>>& dom_edges,
+    function<void(BasicBlock*, BasicBlock*)> set_func) {
   for (auto& edge : dom_edges) {
-    get<0>(edge)->SetImmediateDominator(get<1>(edge));
+    set_func(get<0>(edge), get<1>(edge));
   }
 }
 
@@ -256,34 +264,143 @@ spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
   return SPV_SUCCESS;
 }
 
+void UpdateContinueConstructExitBlocks(
+    Function& function, const vector<pair<uint32_t, uint32_t>>& back_edges) {
+  auto& constructs = function.get_constructs();
+  // TODO(umar): Think of a faster way to do this
+  for (auto& edge : back_edges) {
+    uint32_t back_edge_block_id;
+    uint32_t loop_header_block_id;
+    tie(back_edge_block_id, loop_header_block_id) = edge;
+
+    auto is_this_header = [=](Construct& c) {
+      return c.get_type() == ConstructType::kLoop &&
+             c.get_dominator()->get_id() == loop_header_block_id;
+    };
+
+    for (auto construct : constructs) {
+      if (is_this_header(construct)) {
+        Construct* continue_construct =
+            construct.get_corresponding_constructs().back();
+        assert(continue_construct->get_type() == ConstructType::kContinue);
+
+        BasicBlock* back_edge_block;
+        tie(back_edge_block, ignore) = function.GetBlock(back_edge_block_id);
+        continue_construct->set_exit(back_edge_block);
+      }
+    }
+  }
+}
+
+/// Constructs an error message for construct validation errors
+string ConstructErrorString(Construct construct, string header_string,
+                            string exit_string, bool post_dominate = false) {
+  string construct_name;
+  string header_name;
+  string exit_name;
+  string dominate_text = "dominate";
+  if (post_dominate) {
+    dominate_text = "post " + dominate_text;
+  }
+  switch (construct.get_type()) {
+    case ConstructType::kSelection:
+      construct_name = "selection";
+      header_name = "selection header";
+      exit_name = "merge block";
+      break;
+    case ConstructType::kLoop:
+      construct_name = "loop";
+      header_name = "loop header";
+      exit_name = "merge block";
+      break;
+    case ConstructType::kContinue:
+      construct_name = "continue";
+      header_name = "continue target";
+      exit_name = "back-edge block";
+      break;
+    case ConstructType::kCase:
+      construct_name = "case";
+      header_name = "case block";
+      exit_name = "exit block";  // TODO(umar): there has to be a better name
+      break;
+    default:
+      assert(1 == 0 && "Not defined type");
+  }
+  // TODO(umar): Add header block for continue constructs to error message
+  return "The " + construct_name + " construct with the " + header_name + " " +
+         header_string + " does not " + dominate_text + " the " + exit_name +
+         " " + exit_string;
+}
+
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
   for (auto& function : _.get_functions()) {
     // Check all referenced blocks are defined within a function
     if (function.get_undefined_block_count() != 0) {
-      std::stringstream ss;
-      ss << "{";
+      string undef_blocks("{");
       for (auto undefined_block : function.get_undefined_blocks()) {
-        ss << _.getIdName(undefined_block) << " ";
+        undef_blocks += _.getIdName(undefined_block) + " ";
       }
       return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Block(s) " << ss.str() << "\b}"
+             << "Block(s) " << undef_blocks << "\b}"
              << " are referenced but not defined in function "
              << _.getIdName(function.get_id());
     }
 
     // Updates each blocks immediate dominators
     vector<const BasicBlock*> postorder;
+    vector<const BasicBlock*> postdom_postorder;
     vector<pair<uint32_t, uint32_t>> back_edges;
     if (auto* first_block = function.get_first_block()) {
+      /// calculate dominators
       DepthFirstTraversal(*first_block, successor, [](cbb_ptr) {},
                           [&](cbb_ptr b) { postorder.push_back(b); },
                           [&](cbb_ptr from, cbb_ptr to) {
                             back_edges.emplace_back(from->get_id(),
                                                     to->get_id());
                           });
-      auto edges = libspirv::CalculateDominators(postorder);
-      libspirv::UpdateImmediateDominators(edges);
+      auto edges = libspirv::CalculateDominators(postorder, predecessor);
+      libspirv::UpdateImmediateDominators(
+          edges, [](bb_ptr block, bb_ptr dominator) {
+            block->SetImmediateDominator(dominator);
+          });
+
+      /// calculate post dominators
+      auto exit_block = function.get_psudo_exit_block();
+      DepthFirstTraversal(*exit_block, predecessor, [](cbb_ptr) {},
+                          [&](cbb_ptr b) { postdom_postorder.push_back(b); },
+                          [&](cbb_ptr, cbb_ptr) {});
+      auto postdom_edges =
+          libspirv::CalculateDominators(postdom_postorder, successor);
+      libspirv::UpdateImmediateDominators(
+          postdom_edges, [](bb_ptr block, bb_ptr dominator) {
+            block->SetImmediatePostDominator(dominator);
+          });
     }
+
+    /// Check all backedges target only loop headers and have exactly one
+    /// back-edge branching to it
+    set<uint32_t> loop_headers;
+    for (auto back_edge : back_edges) {
+      uint32_t back_edge_block;
+      uint32_t header_block;
+      tie(back_edge_block, header_block) = back_edge;
+      if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
+               << _.getIdName(header_block)
+               << ") can only be formed between a block and a loop header.";
+      }
+      bool success;
+      tie(ignore, success) = loop_headers.insert(header_block);
+      if (!success) {
+        // TODO(umar): List the back-edge blocks that are branching to loop
+        // header
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Loop header " << _.getIdName(header_block)
+               << " targeted by multiple back-edges";
+      }
+    }
+    UpdateContinueConstructExitBlocks(function, back_edges);
 
     // Check if the order of blocks in the binary appear before the blocks they
     // dominate
@@ -301,49 +418,39 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
     }
 
-    // Check all headers dominate their merge blocks
+    // Check construct rules
     for (Construct& construct : function.get_constructs()) {
-      auto header = construct.get_header();
-      auto merge = construct.get_merge();
-      // auto cont = construct.get_continue();
+      auto header = construct.get_dominator();
+      auto merge = construct.get_exit();
 
+      //  for a given loop, its back-edge block must post dominate the
+      //  OpLoopMerge's Continue Target , and that Continue Target must dominate
+      //  that back edge block
       if (merge->is_reachable() &&
           find(merge->dom_begin(), merge->dom_end(), header) ==
               merge->dom_end()) {
         return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Header block " << _.getIdName(header->get_id())
-               << " doesn't dominate its merge block "
-               << _.getIdName(merge->get_id());
+               << ConstructErrorString(construct, _.getIdName(header->get_id()),
+                                       _.getIdName(merge->get_id()));
       }
+      if (construct.get_type() == ConstructType::kContinue) {
+        if (find(header->pdom_begin(), header->pdom_end(), merge) ==
+            merge->pdom_end()) {
+          return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
+                     construct, _.getIdName(header->get_id()),
+                     _.getIdName(merge->get_id()), true);
+        }
+      }
+      // TODO(umar):  an OpSwitch block dominates all its defined case
+      // constructs
+      // TODO(umar):  each case construct has at most one branch to another
+      // case construct
+      // TODO(umar):  each case construct is branched to by at most one other
+      // case construct
+      // TODO(umar):  if Target T1 branches to Target T2, or if Target T1
+      // branches to the Default and the Default branches to Target T2, then T1
+      // must immediately precede T2 in the list of the OpSwitch Target operands
     }
-
-    /// Check all backedges target only loop headers and have exactly one
-    /// back-edge branching to it
-    set<uint32_t> loop_headers;
-    for (auto back_edge : back_edges) {
-      uint32_t back_edge_block;
-      uint32_t header_block;
-      tie(back_edge_block, header_block) = back_edge;
-      if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
-               << _.getIdName(header_block)
-               << ") can only be formed between a block and a loop header.";
-      }
-      bool success;
-      tie(std::ignore, success) = loop_headers.insert(header_block);
-      if (!success) {
-        // TODO(umar): List the back-edge blocks that are branching to loop
-        // header
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Loop header " << _.getIdName(header_block)
-               << " targeted by multiple back-edges";
-      }
-    }
-
-    // TODO(umar): For a given loop, its back-edge block must post dominate the
-    // OpLoopMerge's Continue Target, and that Continue Target must dominate the
-    // back-edge block
   }
   return SPV_SUCCESS;
 }
@@ -356,7 +463,6 @@ spv_result_t CfgPass(ValidationState_t& _,
       spvCheckReturn(_.get_current_function().RegisterBlock(inst->result_id));
       break;
     case SpvOpLoopMerge: {
-      // TODO(umar): mark current block as a loop header
       uint32_t merge_block = inst->words[inst->operands[0].offset];
       uint32_t continue_block = inst->words[inst->operands[1].offset];
       CFG_ASSERT(MergeBlockAssert, merge_block);

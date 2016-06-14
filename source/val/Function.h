@@ -149,6 +149,12 @@ class Function {
   /// Returns the block that is currently being parsed in the binary
   const BasicBlock* get_current_block() const;
 
+  /// Returns the psudo exit block
+  BasicBlock* get_psudo_exit_block();
+
+  /// Returns the psudo exit block
+  const BasicBlock* get_psudo_exit_block() const;
+
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void printDotGraph() const;
 
@@ -185,6 +191,9 @@ class Function {
 
   /// The block that is currently being parsed
   BasicBlock* current_block_;
+
+  /// A psudo exit block that is the successor to all return blocks
+  BasicBlock exit_block_;
 
   /// The constructs that are available in this function
   std::list<Construct> cfg_constructs_;

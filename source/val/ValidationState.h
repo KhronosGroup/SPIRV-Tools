@@ -42,6 +42,9 @@
 
 namespace libspirv {
 
+// Universal Limit of ResultID + 1
+static const uint32_t kInvalidId = 0x400000;
+
 // Info about a result ID.
 typedef struct spv_id_info_t {
   /// Id value.

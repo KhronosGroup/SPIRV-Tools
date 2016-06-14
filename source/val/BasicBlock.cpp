@@ -44,11 +44,22 @@ void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
   immediate_dominator_ = dom_block;
 }
 
+void BasicBlock::SetImmediatePostDominator(BasicBlock* pdom_block) {
+  immediate_post_dominator_ = pdom_block;
+}
+
 const BasicBlock* BasicBlock::GetImmediateDominator() const {
   return immediate_dominator_;
 }
 
+const BasicBlock* BasicBlock::GetImmediatePostDominator() const {
+  return immediate_post_dominator_;
+}
+
 BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
+BasicBlock* BasicBlock::GetImmediatePostDominator() {
+  return immediate_post_dominator_;
+}
 
 void BasicBlock::RegisterSuccessors(vector<BasicBlock*> next_blocks) {
   for (auto& block : next_blocks) {
@@ -64,24 +75,29 @@ void BasicBlock::RegisterBranchInstruction(SpvOp branch_instruction) {
 }
 
 BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
-BasicBlock::DominatorIterator::DominatorIterator(const BasicBlock* block)
-    : current_(block) {}
+
+BasicBlock::DominatorIterator::DominatorIterator(
+    const BasicBlock* block,
+    std::function<const BasicBlock*(const BasicBlock*)> dominator_func)
+    : current_(block), dom_func_(dominator_func) {}
 
 BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
-  if (current_ == current_->GetImmediateDominator()) {
+  if (current_ == dom_func_(current_)) {
     current_ = nullptr;
   } else {
-    current_ = current_->GetImmediateDominator();
+    current_ = dom_func_(current_);
   }
   return *this;
 }
 
 const BasicBlock::DominatorIterator BasicBlock::dom_begin() const {
-  return DominatorIterator(this);
+  return DominatorIterator(
+      this, [](const BasicBlock* b) { return b->GetImmediateDominator(); });
 }
 
 BasicBlock::DominatorIterator BasicBlock::dom_begin() {
-  return DominatorIterator(this);
+  return DominatorIterator(
+      this, [](const BasicBlock* b) { return b->GetImmediateDominator(); });
 }
 
 const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
@@ -89,6 +105,24 @@ const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
 }
 
 BasicBlock::DominatorIterator BasicBlock::dom_end() {
+  return DominatorIterator();
+}
+
+const BasicBlock::DominatorIterator BasicBlock::pdom_begin() const {
+  return DominatorIterator(
+      this, [](const BasicBlock* b) { return b->GetImmediatePostDominator(); });
+}
+
+BasicBlock::DominatorIterator BasicBlock::pdom_begin() {
+  return DominatorIterator(
+    this, [](const BasicBlock* b) { return b->GetImmediatePostDominator(); });
+}
+
+const BasicBlock::DominatorIterator BasicBlock::pdom_end() const {
+  return DominatorIterator();
+}
+
+BasicBlock::DominatorIterator BasicBlock::pdom_end() {
   return DominatorIterator();
 }
 

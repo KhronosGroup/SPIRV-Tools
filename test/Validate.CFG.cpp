@@ -480,10 +480,10 @@ TEST_F(ValidateCFG, HeaderDoesntDominatesMergeBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRegex("Header block .\\[head\\] doesn't dominate its merge block "
-                   ".\\[merge\\]"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("The selection construct with the selection header "
+                           ".\\[head\\] does not dominate the merge block "
+                           ".\\[merge\\]"));
 }
 
 TEST_F(ValidateCFG, UnreachableMerge) {
@@ -626,8 +626,8 @@ TEST_F(ValidateCFG, NestedLoops) {
 
   loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
 
-  string str =
-      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+  string str = header + nameOps("loop2", "loop2_merge") + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
   str += loop1 >> loop1_cont_break_block;
@@ -679,8 +679,7 @@ TEST_F(ValidateCFG, NestedSelection) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// TODO(umar): enable this test
-TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
+TEST_F(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
   Block entry("entry");
   Block loop1("loop1", SpvOpBranchConditional);
   Block loop2("loop2", SpvOpBranchConditional);
@@ -694,8 +693,9 @@ TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
 
   loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
 
-  string str =
-      header + types_consts + "%func    = OpFunction %voidt None %funct\n";
+  string str = header +
+               nameOps("loop1", "loop2", "loop1_merge", "loop2_merge") +
+               types_consts + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
   str += loop1 >> vector<Block>({loop2, loop1_merge});
@@ -707,6 +707,10 @@ TEST_F(ValidateCFG, DISABLED_BackEdgeBlockDoesntPostDominateContinueTargetBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("The continue construct with the continue target "
+                           ".\\[loop2\\] does not dominate the back-edge block "
+                           ".\\[loop1_merge\\]"));
 }
 
 TEST_F(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
@@ -743,11 +747,11 @@ TEST_F(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   Block exit("exit", SpvOpReturn);
 
   split.setBody(
-    "%cond    = OpSLessThan %intt %one %two\n"
-    "OpSelectionMerge %exit None\n");
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpSelectionMerge %exit None\n");
 
   string str = header + nameOps("split") + types_consts +
-      "%func    = OpFunction %voidt None %funct\n";
+               "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> split;
   str += split >> vector<Block>({split, exit});
@@ -757,9 +761,9 @@ TEST_F(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(
-    getDiagnosticString(),
-    MatchesRegex("Back-edges \\(.\\[split\\] -> .\\[split\\]\\) can only be "
-                 "formed between a block and a loop header."));
+      getDiagnosticString(),
+      MatchesRegex("Back-edges \\(.\\[split\\] -> .\\[split\\]\\) can only be "
+                   "formed between a block and a loop header."));
 }
 
 TEST_F(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
@@ -769,11 +773,11 @@ TEST_F(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
   Block merge("merge", SpvOpReturn);
 
   loop.setBody(
-    "%cond    = OpSLessThan %intt %one %two\n"
-    "OpLoopMerge %merge %loop None\n");
+      "%cond    = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %merge %loop None\n");
 
   string str = header + nameOps("cont", "loop") + types_consts +
-      "%func    = OpFunction %voidt None %funct\n";
+               "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
   str += loop >> vector<Block>({cont, merge});
@@ -783,9 +787,98 @@ TEST_F(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("Loop header .\\[loop\\] targeted by multiple back-edges"));
+}
+
+TEST_F(ValidateCFG, BranchOutWithReturnBad) {
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block cheader("cheader", SpvOpBranchConditional);
+  Block be_block("be_block");
+  Block merge("merge", SpvOpReturn);
+  Block exit("exit", SpvOpReturn);
+
+  loop.setBody(
+      "%cond = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %merge %cheader None\n");
+
+  string str = header + nameOps("cheader", "be_block") + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({cheader, merge});
+  str += cheader >> vector<Block>({exit, be_block});
+  str += exit;  //  Branches out of a continue construct
+  str += be_block >> loop;
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("The continue construct with the continue target "
+                           ".\\[cheader\\] does not post dominate the "
+                           "back-edge block .\\[be_block\\]"));
+}
+
+TEST_F(ValidateCFG, BranchOutOfConstructToMergeBad) {
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block cont("cont", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
+
+  loop.setBody(
+      "%cond = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %merge %loop None\n");
+
+  string str = header + nameOps("cont", "loop") + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({cont, merge});
+  str += cont >> vector<Block>({loop, merge});
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("The continue construct with the continue target "
+                           ".\\[loop\\] does not post dominate the "
+                           "back-edge block .\\[cont\\]"));
+}
+
+TEST_F(ValidateCFG, BranchOutOfConstructBad) {
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block cont("cont", SpvOpBranchConditional);
+  Block merge("merge");
+  Block exit("exit", SpvOpReturn);
+
+  loop.setBody(
+      "%cond = OpSLessThan %intt %one %two\n"
+      "OpLoopMerge %merge %loop None\n");
+
+  string str = header + nameOps("cont", "loop") + types_consts +
+               "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({cont, merge});
+  str += cont >> vector<Block>({loop, exit});
+  str += merge >> exit;
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("The continue construct with the continue target "
+                           ".\\[loop\\] does not post dominate the "
+                           "back-edge block .\\[cont\\]"));
 }
 
 /// TODO(umar): Switch instructions
-/// TODO(umar): CFG branching outside of CFG construct
 /// TODO(umar): Nested CFG constructs
 }  /// namespace
