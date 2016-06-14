@@ -386,7 +386,6 @@
       "opcode" : 48,
       "operands" : [
         { "kind" : "IdRef" },
-        { "kind" : "IdRef" },
         { "kind" : "IdRef" }
       ]
     },
@@ -394,6 +393,7 @@
       "opname" : "pown",
       "opcode" : 49,
       "operands" : [
+        { "kind" : "IdRef" },
         { "kind" : "IdRef" }
       ]
     },

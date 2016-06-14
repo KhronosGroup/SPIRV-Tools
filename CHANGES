@@ -17,3 +17,6 @@ v2016.0-dev 2016-04-22
      - Supports integer widths up to 64 bits
    - Validator is incomplete
    - Supported on Linux, OSX, Android, Windows
+
+ - Fixes bugs:
+   - #143: OpenCL pow and pown arguments
