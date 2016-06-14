@@ -663,6 +663,13 @@ INSTANTIATE_TEST_CASE_P(
                       MakeInstruction(SpvOpExtInst, {2, 3, 100, 4, 5})}),
          "OpExtInst set Id 100 does not reference an OpExtInstImport result "
          "Id"},
+        {Concatenate({ExpectedHeaderForBound(101),
+                      MakeInstruction(SpvOpExtInstImport, {100},
+                                      MakeVector("OpenCL.std")),
+                      // OpenCL cos is #14
+                      MakeInstruction(SpvOpExtInst, {2, 3, 100, 14, 5, 999})}),
+         "Invalid instruction OpExtInst starting at word 10: expected no "
+         "more operands after 6 words, but stated word count is 7."},
         // In this case, the OpSwitch selector refers to an invalid ID.
         {Concatenate({ExpectedHeaderForBound(3),
                       MakeInstruction(SpvOpSwitch, {1, 2, 42, 3})}),

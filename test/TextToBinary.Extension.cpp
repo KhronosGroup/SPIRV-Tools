@@ -68,6 +68,12 @@ TEST_F(TextToBinaryTest, MultiImport) {
               Eq("Import Id is being defined a second time"));
 }
 
+TEST_F(TextToBinaryTest, TooManyArguments) {
+  const std::string input = R"(%opencl = OpExtInstImport "OpenCL.std"
+                               %2 = OpExtInst %float %opencl cos %x %oops")";
+  EXPECT_THAT(CompileFailure(input), Eq("Expected '=', found end of stream."));
+}
+
 TEST_F(TextToBinaryTest, ExtInstFromTwoDifferentImports) {
   const std::string input = R"(%1 = OpExtInstImport "OpenCL.std"
 %2 = OpExtInstImport "GLSL.std.450"

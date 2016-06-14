@@ -141,9 +141,25 @@ class InstInitializer(object):
         self.caps_mask = compose_capability_mask(caps)
         self.operands = [convert_operand_kind(o) for o in operands]
 
+        self.fix_syntax()
+
         operands = [o[0] for o in operands]
         self.ref_type_id = 'IdResultType' in operands
         self.def_result_id = 'IdResult' in operands
+
+
+    def fix_syntax(self):
+        """Fix an instruction's syntax, adjusting for differences between
+        the officially released grammar and how SPIRV-Tools uses the grammar.
+
+        Fixes:
+            - ExtInst should not end with SPV_OPERAND_VARIABLE_ID.
+            https://github.com/KhronosGroup/SPIRV-Tools/issues/233
+        """
+        if (self.opname == 'ExtInst'
+            and self.operands[-1] == 'SPV_OPERAND_TYPE_VARIABLE_ID'):
+           self.operands.pop()
+
 
     def __str__(self):
         template = ['{{"{opname}"', 'SpvOp{opname}', '{caps_mask}',
