@@ -26,6 +26,9 @@
 
 #include "val/Construct.h"
 
+#include <cassert>
+#include <cstddef>
+
 namespace libspirv {
 
 Construct::Construct(ConstructType type, BasicBlock* dominator,
@@ -52,6 +55,7 @@ bool ValidateConstructSize(ConstructType type, size_t size) {
     case ConstructType::kCase:      return size > 1;
     default: assert(1 == 0 && "Type not defined");
   }
+  return false;
 }
 
 void Construct::set_corresponding_constructs(
