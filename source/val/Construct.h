@@ -69,11 +69,11 @@ class Construct {
 
   /// Returns the dominator block of the construct. This is usually the header
   /// block or the first block of the construct.
-  const BasicBlock* get_dominator() const;
+  const BasicBlock* get_entry() const;
 
   /// Returns the dominator block of the construct. This is usually the header
   /// block or the first block of the construct.
-  BasicBlock* get_dominator();
+  BasicBlock* get_entry();
 
   /// Returns the exit block of the construct. This is usually the merge block
   /// or the last block of the construct
@@ -93,8 +93,9 @@ class Construct {
   ConstructType type_;
 
   /// These are the constructs that are related to this construct. These
-  /// constructs can be the loop construct, the corresponding loop construct,
-  /// the case construct that are part of the same OpSwitch instruction
+  /// constructs can be the continue construct, for the corresponding loop
+  /// construct, the case construct that are part of the same OpSwitch
+  /// instruction
   std::vector<Construct*> corresponding_constructs_;
 
   /// @brief Dominator block for the construct
@@ -102,7 +103,7 @@ class Construct {
   /// The dominator block for the construct. Depending on the construct this may
   /// be a selection header, a continue target of a loop, a loop header or a
   /// Target or Default block of a switch
-  BasicBlock* base_dominator_;
+  BasicBlock* entry_block_;
 
   /// @brief Exiting block for the construct
   ///

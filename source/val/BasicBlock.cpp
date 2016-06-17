@@ -35,9 +35,10 @@ namespace libspirv {
 BasicBlock::BasicBlock(uint32_t id)
     : id_(id),
       immediate_dominator_(nullptr),
+      immediate_post_dominator_(nullptr),
       predecessors_(),
       successors_(),
-      type_(1),
+      type_(0),
       reachable_(false) {}
 
 void BasicBlock::SetImmediateDominator(BasicBlock* dom_block) {
@@ -65,7 +66,7 @@ void BasicBlock::RegisterSuccessors(vector<BasicBlock*> next_blocks) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);
-    if (block->reachable_ == false) block->set_reachability(reachable_);
+    if (block->reachable_ == false) block->set_reachable(reachable_);
   }
 }
 

@@ -275,7 +275,7 @@ void UpdateContinueConstructExitBlocks(
 
     auto is_this_header = [=](Construct& c) {
       return c.get_type() == ConstructType::kLoop &&
-             c.get_dominator()->get_id() == loop_header_block_id;
+             c.get_entry()->get_id() == loop_header_block_id;
     };
 
     for (auto construct : constructs) {
@@ -420,7 +420,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     // Check construct rules
     for (Construct& construct : function.get_constructs()) {
-      auto header = construct.get_dominator();
+      auto header = construct.get_entry();
       auto merge = construct.get_exit();
 
       //  for a given loop, its back-edge block must post dominate the

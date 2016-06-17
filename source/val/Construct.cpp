@@ -31,11 +31,11 @@
 
 namespace libspirv {
 
-Construct::Construct(ConstructType type, BasicBlock* dominator,
+Construct::Construct(ConstructType type, BasicBlock* entry,
                      BasicBlock* exit, std::vector<Construct*> constructs)
     : type_(type),
       corresponding_constructs_(constructs),
-      base_dominator_(dominator),
+      entry_block_(entry),
       exit_block_(exit) {}
 
 ConstructType Construct::get_type() const { return type_; }
@@ -52,7 +52,7 @@ bool ValidateConstructSize(ConstructType type, size_t size) {
     case ConstructType::kSelection: return size == 0;
     case ConstructType::kContinue:  return size == 1;
     case ConstructType::kLoop:      return size == 1;
-    case ConstructType::kCase:      return size > 1;
+    case ConstructType::kCase:      return size >= 1;
     default: assert(1 == 0 && "Type not defined");
   }
   return false;
@@ -64,8 +64,8 @@ void Construct::set_corresponding_constructs(
   corresponding_constructs_ = constructs;
 }
 
-const BasicBlock* Construct::get_dominator() const { return base_dominator_; }
-BasicBlock* Construct::get_dominator() { return base_dominator_; }
+const BasicBlock* Construct::get_entry() const { return entry_block_; }
+BasicBlock* Construct::get_entry() { return entry_block_; }
 
 const BasicBlock* Construct::get_exit() const { return exit_block_; }
 BasicBlock* Construct::get_exit() { return exit_block_; }

@@ -102,7 +102,6 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
   BasicBlock& merge_block = blocks_.at(merge_id);
   BasicBlock& continue_block = blocks_.at(continue_id);
   assert(merge_block.is_type(kBlockTypeUndefined));
-  assert(continue_block.is_type(kBlockTypeUndefined));
 
   current_block_->set_type(kBlockTypeLoop);
   merge_block.set_type(kBlockTypeMerge);
@@ -179,7 +178,7 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
     undefined_blocks_.erase(id);
     current_block_ = &inserted_block->second;
     ordered_blocks_.push_back(current_block_);
-    if (IsFirstBlock(id)) current_block_->set_reachability(true);
+    if (IsFirstBlock(id)) current_block_->set_reachable(true);
   } else if (success) {  // Block doesn't exsist but this is not a definition
     undefined_blocks_.insert(id);
   }

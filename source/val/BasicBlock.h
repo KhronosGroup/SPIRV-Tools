@@ -78,21 +78,26 @@ class BasicBlock {
   /// Returns true if the block is reachable in the CFG
   bool is_reachable() const { return reachable_; }
 
-  /// Returns the type of the BasicBlock
-  bool is_type(BlockType type) const { return type_.test(type); }
+  /// Returns true if BasicBlock is of the given type
+  bool is_type(BlockType type) const {
+    if (type == kBlockTypeUndefined) return type_.none();
+    return type_.test(type);
+  }
 
-  /// Sets the reacability of the basic block in the CFG
-  void set_reachability(bool reachability) { reachable_ = reachability; }
+  /// Sets the reachability of the basic block in the CFG
+  void set_reachable(bool reachability) { reachable_ = reachability; }
 
   /// Sets the type of the BasicBlock
-  void set_type(BlockType type) { type_.set(static_cast<int>(type)); }
+  void set_type(BlockType type) {
+    type_.set(type);
+  }
 
   /// Sets the immedate dominator of this basic block
   ///
   /// @param[in] dom_block The dominator block
   void SetImmediateDominator(BasicBlock* dom_block);
 
-  /// Sets the immedate dominator of this basic block
+  /// Sets the immedate post dominator of this basic block
   ///
   /// @param[in] pdom_block The post dominator block
   void SetImmediatePostDominator(BasicBlock* pdom_block);
@@ -137,8 +142,8 @@ class BasicBlock {
     ///        @p block
     ///
     /// @param block          The block which is referenced by the iterator
-    /// @param dominator_func This function will be called to get the dominator
-    ///                       of the current block
+    /// @param dominator_func This function will be called to get the immediate
+    ///                       (post)dominator of the current block
     DominatorIterator(
         const BasicBlock* block,
         std::function<const BasicBlock*(const BasicBlock*)> dominator_func);
@@ -157,17 +162,17 @@ class BasicBlock {
     std::function<const BasicBlock*(const BasicBlock*)> dom_func_;
   };
 
-  /// Returns an dominator iterator which points to the current block
+  /// Returns a dominator iterator which points to the current block
   const DominatorIterator dom_begin() const;
 
-  /// Returns an dominator iterator which points to the current block
+  /// Returns a dominator iterator which points to the current block
   DominatorIterator dom_begin();
 
-  /// Returns an dominator iterator which points to one element past the first
+  /// Returns a dominator iterator which points to one element past the first
   /// block
   const DominatorIterator dom_end() const;
 
-  /// Returns an dominator iterator which points to one element past the first
+  /// Returns a dominator iterator which points to one element past the first
   /// block
   DominatorIterator dom_end();
 
@@ -201,7 +206,7 @@ class BasicBlock {
   std::vector<BasicBlock*> successors_;
 
   /// The type of the block
-  std::bitset<kBlockTypeCOUNT> type_;
+  std::bitset<kBlockTypeCOUNT - 1> type_;
 
   /// True if the block is reachable in the CFG
   bool reachable_;
