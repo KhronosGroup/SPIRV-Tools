@@ -125,7 +125,7 @@ class ValidationState_t {
   std::list<Function>& get_functions();
 
   /// Returns the function states
-  Function& get_current_function();
+  Function* get_current_function();
 
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
