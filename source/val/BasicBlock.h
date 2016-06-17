@@ -89,8 +89,10 @@ class BasicBlock {
 
   /// Sets the type of the BasicBlock
   void set_type(BlockType type) {
-    if (type == kBlockTypeUndefined) type_.reset();
-    type_.set(type);
+    if (type == kBlockTypeUndefined)
+      type_.reset();
+    else
+      type_.set(type);
   }
 
   /// Sets the immedate dominator of this basic block
