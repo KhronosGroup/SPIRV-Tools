@@ -28,11 +28,19 @@
 
 #include <cassert>
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include "val/BasicBlock.h"
 #include "val/Construct.h"
 #include "val/Function.h"
 
+using std::copy;
 using std::list;
+using std::pair;
+using std::set_difference;
+using std::sort;
 using std::string;
 using std::vector;
 
@@ -199,6 +207,7 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       current_layout_section_(kLayoutCapabilities),
       module_functions_(),
       module_capabilities_(0u),
+      usedefs_(this),
       grammar_(context),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
@@ -354,6 +363,93 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
          "ouside of a block");
   in_function_ = false;
   return SPV_SUCCESS;
+}
+
+ValidationState_t::UseDefTracker::UseDefTracker(ValidationState_t* state)
+    : module_(state) {}
+
+void ValidationState_t::UseDefTracker::AddDef(const spv_id_info_t& def) {
+  all_defs_[def.id] = def;
+  if (module_->in_block()) {
+    auto block = module_->get_current_function()->get_current_block();
+    block_defs_[block->get_id()].push_back(def.id);
+  } else {
+    module_defs_.insert(def.id);
+  }
+}
+
+void ValidationState_t::UseDefTracker::AddUse(uint32_t id, bool is_phi) {
+  all_uses_.insert(id);
+  if (module_->in_block()) {
+    auto block = module_->get_current_function()->get_current_block();
+    block_uses_[block->get_id()].insert({id, is_phi});
+  }
+}
+
+std::pair<bool, spv_id_info_t> ValidationState_t::UseDefTracker::FindDef(
+    uint32_t id) const {
+  if (all_defs_.count(id) == 0) {
+    return std::make_pair(false, spv_id_info_t{});
+  } else {
+    /// We are in a const function, so we cannot use defs.operator[]().
+    /// Luckily we know the key exists, so defs_.at() won't throw an
+    /// exception.
+    return std::make_pair(true, all_defs_.at(id));
+  }
+}
+
+std::unordered_set<uint32_t>
+ValidationState_t::UseDefTracker::FindUsesWithoutDefs() const {
+  auto diff = all_uses_;
+  for (const auto d : all_defs_) diff.erase(d.first);
+  return diff;
+}
+
+void ValidationState_t::UseDefTracker::UpdateDefs(Function* func) {
+  auto& ordered_blocks = func->get_blocks();
+
+  // Because dominators must appear before the blocks they dominate in the
+  // binary , we only need to visit the immidiate dominators to propagate the
+  // ids throughout the CFG
+  for (auto block : ordered_blocks) {
+    auto& block_defs = block_defs_[block->get_id()];
+    auto idom = block->GetImmediateDominator();
+    if (block->is_reachable() && block != idom) {
+      assert(idom);
+      auto& idom_defs = block_defs_[idom->get_id()];
+      block_defs.reserve(block_defs.size() + idom_defs.size());
+      copy(begin(idom_defs), end(idom_defs), back_inserter(block_defs));
+    } else {
+      // This is the first block or it is unreachable in the CFG
+      block_defs.reserve(block_defs.size() + module_defs_.size());
+      copy(begin(module_defs_), end(module_defs_), back_inserter(block_defs));
+    }
+    sort(begin(block_defs), end(block_defs));
+  }
+}
+
+std::map<uint32_t, vector<uint32_t>>
+ValidationState_t::UseDefTracker::CheckDefs(Function* func) {
+  std::map<uint32_t, vector<uint32_t>> undef_ids;
+
+  for (auto block : func->get_blocks()) {
+    auto& block_defs = block_defs_[block->get_id()];
+    auto& block_uses = block_uses_[block->get_id()];
+    vector<uint32_t> uses_vec;
+    uses_vec.reserve(block_uses.size());
+    for (auto& use : block_uses) {
+      if (use.second == false) {
+        uses_vec.push_back(use.first);
+      }
+    }
+    set_difference(begin(uses_vec), end(uses_vec), begin(block_defs),
+                   end(block_defs), back_inserter(undef_ids[block->get_id()]));
+    if (undef_ids[block->get_id()].empty()) {
+      undef_ids.erase(block->get_id());
+    }
+  }
+
+  return undef_ids;
 }
 
 }  /// namespace libspirv

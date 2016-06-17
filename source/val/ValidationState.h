@@ -29,6 +29,7 @@
 
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -42,17 +43,24 @@
 
 namespace libspirv {
 
+class Function;
+class BasicBlock;
+
+static const uint32_t kInvalidId = 0x400000;
+
 // Info about a result ID.
-typedef struct spv_id_info_t {
+struct spv_id_info_t {
   /// Id value.
   uint32_t id;
   /// Type id, or 0 if no type.
   uint32_t type_id;
   /// Opcode of the instruction defining the id.
   SpvOp opcode;
+  /// The block where the id was defined. kInvalidId if module scoped
+  uint32_t def_block_id;
   /// Binary words of the instruction defining the id.
   std::vector<uint32_t> words;
-} spv_id_info_t;
+};
 
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
@@ -71,8 +79,6 @@ enum ModuleLayoutSection {
   kLayoutFunctionDeclarations,  /// < Section 2.4 #10
   kLayoutFunctionDefinitions    /// < Section 2.4 #11
 };
-
-class Function;
 
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
@@ -138,36 +144,58 @@ class ValidationState_t {
   /// Keeps track of ID definitions and uses.
   class UseDefTracker {
    public:
-    void AddDef(const spv_id_info_t& def) { defs_[def.id] = def; }
+    explicit UseDefTracker(ValidationState_t* state);
 
-    void AddUse(uint32_t id) { uses_.insert(id); }
+    /// Adds the defintion of an ID
+    void AddDef(const spv_id_info_t& def);
+
+    /// Adds the use of an ID
+    /// @param[in] id      The id of the operand
+    /// @param[in] is_phi  True if the use of the id was part of a phi
+    ///                    instruction
+    void AddUse(uint32_t id, bool is_phi);
 
     /// Finds id's def, if it exists.  If found, returns <true, def>. Otherwise,
     /// returns <false, something>.
-    std::pair<bool, spv_id_info_t> FindDef(uint32_t id) const {
-      if (defs_.count(id) == 0) {
-        return std::make_pair(false, spv_id_info_t{});
-      } else {
-        /// We are in a const function, so we cannot use defs.operator[]().
-        /// Luckily we know the key exists, so defs_.at() won't throw an
-        /// exception.
-        return std::make_pair(true, defs_.at(id));
-      }
-    }
+    std::pair<bool, spv_id_info_t> FindDef(uint32_t id) const;
+
+    /// Propagates the definitions of IDs from the dominators to the blocks they
+    /// dominate for a given function
+    ///
+    /// NOTE: This function requires that the CFG dominators are correctly set
+    /// for each block in the function
+    void UpdateDefs(Function* func);
+
+    /// Returns a map of block IDs that incorrectly used an operand that was not
+    /// first defined by its dominator blocks.
+    std::map<uint32_t, std::vector<uint32_t>> CheckDefs(Function* func);
 
     /// Returns uses of IDs lacking defs.
-    std::unordered_set<uint32_t> FindUsesWithoutDefs() const {
-      auto diff = uses_;
-      for (const auto d : defs_) diff.erase(d.first);
-      return diff;
-    }
+    std::unordered_set<uint32_t> FindUsesWithoutDefs() const;
 
    private:
-    std::unordered_set<uint32_t> uses_;
-    std::unordered_map<uint32_t, spv_id_info_t> defs_;
+    ValidationState_t* module_;
+    /// Definitions defined at the module scope(Constants, Types, etc.)
+    std::unordered_set<uint32_t> module_defs_;
+
+    /// Map of blocks and the ids they define
+    std::unordered_map<uint32_t, std::vector<uint32_t>> block_defs_;
+
+    /// Map of blocks to pair of id use and a if those use were phi instruction
+    std::unordered_map<uint32_t, std::set<std::pair<uint32_t, bool>>>
+        block_uses_;
+
+    /// Set of all uses in the module
+    std::unordered_set<uint32_t> all_uses_;
+
+    /// Set of all defintions in the module
+    std::unordered_map<uint32_t, spv_id_info_t> all_defs_;
   };
 
+  /// Returns the use and definition tracker for the module
   UseDefTracker& usedefs() { return usedefs_; }
+
+  /// Returns the use and definition tracker for the module
   const UseDefTracker& usedefs() const { return usedefs_; }
 
   /// Returns a list of entry point function ids

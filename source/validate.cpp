@@ -125,18 +125,24 @@ void DebugInstructionPass(ValidationState_t& _,
     default:
       break;
   }
-
 }
 
 // Collects use-def info about an instruction's IDs.
 void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
+    uint32_t curr_block = libspirv::kInvalidId;
+    if (_.get_current_function() &&
+        _.get_current_function()->get_current_block()) {
+      curr_block = _.get_current_function()->get_current_block()->get_id();
+    }
     _.usedefs().AddDef(
         {inst.result_id, inst.type_id, static_cast<SpvOp>(inst.opcode),
+         curr_block,
          std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
   }
   for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {
-    if (spvIsIdType(op->type)) _.usedefs().AddUse(inst.words[op->offset]);
+    if (spvIsIdType(op->type))
+      _.usedefs().AddUse(inst.words[op->offset], inst.opcode == SpvOpPhi);
   }
 }
 
@@ -204,6 +210,8 @@ spv_result_t spvValidate(const spv_const_context context,
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
   spvCheckReturn(PerformCfgChecks(vstate));
+
+  spvCheckReturn(CheckIdUse(vstate));
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;

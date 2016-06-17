@@ -70,6 +70,14 @@ std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
 spv_result_t PerformCfgChecks(ValidationState_t& _);
 
+/// @brief Checks the definitions of ids appear in the dominators of the blocks
+/// of where they are used
+///
+/// @param[in] _ the validation state of the module
+/// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_ID otherwise
+/// NOTE: This function can only be called after PerformCfgChecks
+spv_result_t CheckIdUse(ValidationState_t& _);
+
 /// @brief Updates the immediate dominator for each of the block edges
 ///
 /// Updates the immediate dominator of the blocks for each of the edges
@@ -84,8 +92,9 @@ void UpdateImmediateDominators(
 /// @param[in] block The dominators of this block will be printed
 void printDominatorList(BasicBlock& block);
 
-/// Performs logical layout validation as described in section 2.4 of the SPIR-V
-/// spec.
+
+/// Performs logical layout validation as described in section 2.4 of the
+/// SPIR-V spec.
 spv_result_t ModuleLayoutPass(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst);
 
