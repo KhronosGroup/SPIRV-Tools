@@ -280,9 +280,8 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
 
 list<Function>& ValidationState_t::get_functions() { return module_functions_; }
 
-Function& ValidationState_t::get_current_function() {
-  assert(in_function_body());
-  return module_functions_.back();
+Function* ValidationState_t::get_current_function() {
+  return (in_function_) ? &module_functions_.back() : nullptr;
 }
 
 bool ValidationState_t::in_function_body() const { return in_function_; }
