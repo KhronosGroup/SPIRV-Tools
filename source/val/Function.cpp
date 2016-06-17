@@ -71,7 +71,7 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       declaration_type_(FunctionDecl::kFunctionDeclUnknown),
       blocks_(),
       current_block_(nullptr),
-      exit_block_(kInvalidId),
+      pseudo_exit_block_(kInvalidId),
       cfg_constructs_(),
       variable_ids_(),
       parameter_ids_() {}
@@ -211,7 +211,7 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
   if (branch_instruction == SpvOpReturn ||
       branch_instruction == SpvOpReturnValue) {
     assert(next_blocks.empty());
-    next_blocks.push_back(&exit_block_);
+    next_blocks.push_back(&pseudo_exit_block_);
   }
   current_block_->RegisterBranchInstruction(branch_instruction);
   current_block_->RegisterSuccessors(next_blocks);
@@ -233,9 +233,9 @@ vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 const BasicBlock* Function::get_current_block() const { return current_block_; }
 BasicBlock* Function::get_current_block() { return current_block_; }
 
-BasicBlock* Function::get_psudo_exit_block() { return &exit_block_; }
-const BasicBlock* Function::get_psudo_exit_block() const {
-  return &exit_block_;
+BasicBlock* Function::get_pseudo_exit_block() { return &pseudo_exit_block_; }
+const BasicBlock* Function::get_pseudo_exit_block() const {
+  return &pseudo_exit_block_;
 }
 
 const list<Construct>& Function::get_constructs() const {

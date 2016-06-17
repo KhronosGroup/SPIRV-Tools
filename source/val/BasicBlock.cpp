@@ -62,7 +62,7 @@ BasicBlock* BasicBlock::GetImmediatePostDominator() {
   return immediate_post_dominator_;
 }
 
-void BasicBlock::RegisterSuccessors(vector<BasicBlock*> next_blocks) {
+void BasicBlock::RegisterSuccessors(const vector<BasicBlock*>& next_blocks) {
   for (auto& block : next_blocks) {
     block->predecessors_.push_back(this);
     successors_.push_back(block);

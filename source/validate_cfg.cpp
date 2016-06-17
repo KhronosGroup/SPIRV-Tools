@@ -365,7 +365,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           });
 
       /// calculate post dominators
-      auto exit_block = function.get_psudo_exit_block();
+      auto exit_block = function.get_pseudo_exit_block();
       DepthFirstTraversal(*exit_block, predecessor, [](cbb_ptr) {},
                           [&](cbb_ptr b) { postdom_postorder.push_back(b); },
                           [&](cbb_ptr, cbb_ptr) {});
