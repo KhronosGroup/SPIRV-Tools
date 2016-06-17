@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <list>
 #include <map>
 #include <string>
@@ -52,16 +53,25 @@ namespace libspirv {
 
 class ValidationState_t;
 
-/// @brief Calculates dominator edges of a root basic block
+/// A function that returns a vector of BasicBlocks given a BasicBlock. Used to
+/// get the successor and predecessor nodes of a CFG block
+using get_blocks_func =
+    std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
+
+/// @brief Calculates dominator edges for a set of blocks
 ///
-/// This function calculates the dominator edges form a root BasicBlock. Uses
-/// the dominator algorithm by Cooper et al.
+/// This function calculates the dominator edges for a set of blocks in the CFG.
+/// Uses the dominator algorithm by Cooper et al.
 ///
-/// @param[in] first_block the root or entry BasicBlock of a function
+/// @param[in] postorder        A vector of blocks in post order traversal order
+///                             in a CFG
+/// @param[in] predecessor_func Function used to get the predecessor nodes of a
+///                             block
 ///
 /// @return a set of dominator edges represented as a pair of blocks
 std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
-    const BasicBlock& first_block);
+    std::vector<const BasicBlock*>& postorder,
+    get_blocks_func predecessor_func);
 
 /// @brief Performs the Control Flow Graph checks
 ///
@@ -76,8 +86,11 @@ spv_result_t PerformCfgChecks(ValidationState_t& _);
 /// provided by the @p dom_edges parameter
 ///
 /// @param[in,out] dom_edges The edges of the dominator tree
+/// @param[in] set_func This function will be called to updated the Immediate
+///                     dominator
 void UpdateImmediateDominators(
-    std::vector<std::pair<BasicBlock*, BasicBlock*>>& dom_edges);
+    std::vector<std::pair<BasicBlock*, BasicBlock*>>& dom_edges,
+    std::function<void(BasicBlock*, BasicBlock*)> set_func);
 
 /// @brief Prints all of the dominators of a BasicBlock
 ///

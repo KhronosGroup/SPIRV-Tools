@@ -67,8 +67,6 @@ using bb_ptr = BasicBlock*;
 using cbb_ptr = const BasicBlock*;
 using bb_iter = vector<BasicBlock*>::const_iterator;
 
-using get_blocks_func = function<const vector<BasicBlock*>*(const BasicBlock*)>;
-
 struct block_info {
   cbb_ptr block;  ///< pointer to the block
   bb_iter iter;   ///< Iterator to the current child node being processed
@@ -264,6 +262,8 @@ spv_result_t MergeBlockAssert(ValidationState_t& _, uint32_t merge_block) {
   return SPV_SUCCESS;
 }
 
+/// Update the continue construct's exit blocks once the backedge blocks are
+/// identified in the CFG.
 void UpdateContinueConstructExitBlocks(
     Function& function, const vector<pair<uint32_t, uint32_t>>& back_edges) {
   auto& constructs = function.get_constructs();
