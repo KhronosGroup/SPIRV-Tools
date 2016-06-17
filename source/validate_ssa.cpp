@@ -27,12 +27,16 @@
 #include "validate.h"
 
 #include <functional>
+#include <sstream>
 
 #include "opcode.h"
+#include "val/Function.h"
 #include "val/ValidationState.h"
 
 using std::function;
+using std::stringstream;
 using libspirv::ValidationState_t;
+using libspirv::Function;
 
 namespace {
 // This function takes the opcode of an instruction and returns
@@ -88,9 +92,35 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   }
   return out;
 }
-}
+}  /// namespace
 
 namespace libspirv {
+
+spv_result_t CheckIdUse(ValidationState_t& _) {
+  for (auto& function : _.get_functions()) {
+    _.usedefs().UpdateDefs(&function);
+    auto bad_uses = _.usedefs().CheckDefs(&function);
+    if (bad_uses.empty() == false) {
+      stringstream msg;
+      for (auto use : bad_uses) {
+        for (auto id : use.second) {
+          bool found;
+          libspirv::spv_id_info_t info;
+          std::tie(found, info) = _.usedefs().FindDef(id);
+          if (found) {
+            _.diag(SPV_ERROR_INVALID_ID)
+                << "ID " + _.getIdName(id) + " defined in block " +
+                _.getIdName(info.def_block_id) +
+                " does not dominate its use in block " +
+                _.getIdName(use.first);
+          }
+        }
+      }
+      return SPV_ERROR_INVALID_ID;
+    }
+  }
+  return SPV_SUCCESS;
+}
 
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
@@ -139,4 +169,4 @@ spv_result_t SsaPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}
+}  /// namespace libspirv

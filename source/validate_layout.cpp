@@ -93,7 +93,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
             _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
                                inst->words[inst->operands[3].offset]));
         if (_.getLayoutSection() == kLayoutFunctionDefinitions)
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+          spvCheckReturn(_.get_current_function()->RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDefinition));
       } break;
 
@@ -103,13 +103,13 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                                                      "instructions must be in "
                                                      "a function body";
         }
-        if (_.get_current_function().get_block_count() != 0) {
+        if (_.get_current_function()->get_block_count() != 0) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Function parameters must only appear immediately after "
                     "the "
                     "function definition";
         }
-        spvCheckReturn(_.get_current_function().RegisterFunctionParameter(
+        spvCheckReturn(_.get_current_function()->RegisterFunctionParameter(
             inst->result_id, inst->type_id));
         break;
 
@@ -122,14 +122,14 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Function end cannot be called in blocks";
         }
-        if (_.get_current_function().get_block_count() == 0 &&
+        if (_.get_current_function()->get_block_count() == 0 &&
             _.getLayoutSection() == kLayoutFunctionDefinitions) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function declarations "
                                                      "must appear before "
                                                      "function definitions.";
         }
         if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+          spvCheckReturn(_.get_current_function()->RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDeclaration));
         }
         spvCheckReturn(_.RegisterFunctionEnd());
@@ -152,7 +152,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
           _.progressToNextLayoutSectionOrder();
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+          spvCheckReturn(_.get_current_function()->RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDefinition));
         }
         break;
