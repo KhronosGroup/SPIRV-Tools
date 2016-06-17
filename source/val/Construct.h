@@ -67,25 +67,34 @@ class Construct {
   std::vector<Construct*>& get_corresponding_constructs();
   void set_corresponding_constructs(std::vector<Construct*> constructs);
 
-  /// Returns the dominator block of the construct. This is usually the header
-  /// block or the first block of the construct.
+  /// Returns the dominator block of the construct.
+  ///
+  /// This is usually the header block or the first block of the construct.
   const BasicBlock* get_entry() const;
 
-  /// Returns the dominator block of the construct. This is usually the header
-  /// block or the first block of the construct.
+  /// Returns the dominator block of the construct.
+  ///
+  /// This is usually the header block or the first block of the construct.
   BasicBlock* get_entry();
 
-  /// Returns the exit block of the construct. This is usually the merge block
-  /// or the last block of the construct
+  /// Returns the exit block of the construct.
+  ///
+  /// For a continue construct it is  the backedge block of the corresponding
+  /// loop construct. For the case  construct it is the block that branches to
+  /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
+  /// block of the corresponding  header block
   const BasicBlock* get_exit() const;
 
-  /// Returns the exit block of the construct. This is usually the merge block
-  /// or the last block of the construct
+  /// Returns the exit block of the construct.
+  ///
+  /// For a continue construct it is  the backedge block of the corresponding
+  /// loop construct. For the case  construct it is the block that branches to
+  /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
+  /// block of the corresponding  header block
   BasicBlock* get_exit();
 
   /// Sets the exit block for this construct. This is useful for continue
-  /// constructs which do not know the back-edge block before during
-  /// construction
+  /// constructs which do not know the back-edge block during construction
   void set_exit(BasicBlock* exit_block);
 
  private:

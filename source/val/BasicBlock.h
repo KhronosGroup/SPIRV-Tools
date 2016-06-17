@@ -89,6 +89,7 @@ class BasicBlock {
 
   /// Sets the type of the BasicBlock
   void set_type(BlockType type) {
+    if (type == kBlockTypeUndefined) type_.reset();
     type_.set(type);
   }
 
