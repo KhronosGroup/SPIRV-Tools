@@ -105,6 +105,17 @@ class Construct {
   /// constructs can be the continue construct, for the corresponding loop
   /// construct, the case construct that are part of the same OpSwitch
   /// instruction
+  ///
+  /// Here is a table that describes what constructs are included in
+  /// @p corresponding_constructs_
+  /// | this construct | corresponding construct          |
+  /// |----------------|----------------------------------|
+  /// | loop           | continue                         |
+  /// | continue       | loop                             |
+  /// | case           | other cases in the same OpSwitch |
+  ///
+  /// kContinue and kLoop constructs will always have corresponding
+  /// constructs even if they are represented by the same block
   std::vector<Construct*> corresponding_constructs_;
 
   /// @brief Dominator block for the construct

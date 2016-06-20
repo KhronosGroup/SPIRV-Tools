@@ -101,7 +101,6 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
   RegisterBlock(continue_id, false);
   BasicBlock& merge_block = blocks_.at(merge_id);
   BasicBlock& continue_block = blocks_.at(continue_id);
-  assert(merge_block.is_type(kBlockTypeUndefined));
   assert(current_block_ &&
          "RegisterLoopMerge must be called when called within a block");
 

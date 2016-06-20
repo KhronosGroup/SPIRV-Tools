@@ -298,10 +298,13 @@ string ConstructErrorString(Construct construct, string header_string,
   string construct_name;
   string header_name;
   string exit_name;
-  string dominate_text = "dominate";
+  string dominate_text;
   if (post_dominate) {
-    dominate_text = "post " + dominate_text;
+    dominate_text = "is not post dominated by";
+  } else {
+    dominate_text = "does not dominate";
   }
+
   switch (construct.get_type()) {
     case ConstructType::kSelection:
       construct_name = "selection";
@@ -328,8 +331,70 @@ string ConstructErrorString(Construct construct, string header_string,
   }
   // TODO(umar): Add header block for continue constructs to error message
   return "The " + construct_name + " construct with the " + header_name + " " +
-         header_string + " does not " + dominate_text + " the " + exit_name +
-         " " + exit_string;
+         header_string + " " + dominate_text + " the " + exit_name + " " +
+         exit_string;
+}
+
+spv_result_t StructuredControlFlowChecks(
+    ValidationState_t& _, Function function,
+    vector<pair<uint32_t, uint32_t>> back_edges) {
+  /// Check all backedges target only loop headers and have exactly one
+  /// back-edge branching to it
+  set<uint32_t> loop_headers;
+  for (auto back_edge : back_edges) {
+    uint32_t back_edge_block;
+    uint32_t header_block;
+    tie(back_edge_block, header_block) = back_edge;
+    if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
+      return _.diag(SPV_ERROR_INVALID_CFG)
+             << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
+             << _.getIdName(header_block)
+             << ") can only be formed between a block and a loop header.";
+    }
+    bool success;
+    tie(ignore, success) = loop_headers.insert(header_block);
+    if (!success) {
+      // TODO(umar): List the back-edge blocks that are branching to loop
+      // header
+      return _.diag(SPV_ERROR_INVALID_CFG)
+             << "Loop header " << _.getIdName(header_block)
+             << " targeted by multiple back-edges";
+    }
+  }
+
+  // Check construct rules
+  for (Construct& construct : function.get_constructs()) {
+    auto header = construct.get_entry();
+    auto merge = construct.get_exit();
+
+    // if the merge block is reachable then it's dominated by the header
+    if (merge->is_reachable() &&
+        find(merge->dom_begin(), merge->dom_end(), header) ==
+            merge->dom_end()) {
+      return _.diag(SPV_ERROR_INVALID_CFG)
+             << ConstructErrorString(construct, _.getIdName(header->get_id()),
+                                     _.getIdName(merge->get_id()));
+    }
+    if (construct.get_type() == ConstructType::kContinue) {
+      if (find(header->pdom_begin(), header->pdom_end(), merge) ==
+          merge->pdom_end()) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << ConstructErrorString(construct, _.getIdName(header->get_id()),
+                                       _.getIdName(merge->get_id()), true);
+      }
+    }
+    // TODO(umar):  an OpSwitch block dominates all its defined case
+    // constructs
+    // TODO(umar):  each case construct has at most one branch to another
+    // case construct
+    // TODO(umar):  each case construct is branched to by at most one other
+    // case construct
+    // TODO(umar):  if Target T1 branches to Target T2, or if Target T1
+    // branches to the Default and the Default branches to Target T2, then
+    // T1 must immediately precede T2 in the list of the OpSwitch Target
+    // operands
+  }
+  return SPV_SUCCESS;
 }
 
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
@@ -376,30 +441,6 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
             block->SetImmediatePostDominator(dominator);
           });
     }
-
-    /// Check all backedges target only loop headers and have exactly one
-    /// back-edge branching to it
-    set<uint32_t> loop_headers;
-    for (auto back_edge : back_edges) {
-      uint32_t back_edge_block;
-      uint32_t header_block;
-      tie(back_edge_block, header_block) = back_edge;
-      if (!function.IsBlockType(header_block, kBlockTypeLoop)) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Back-edges (" << _.getIdName(back_edge_block) << " -> "
-               << _.getIdName(header_block)
-               << ") can only be formed between a block and a loop header.";
-      }
-      bool success;
-      tie(ignore, success) = loop_headers.insert(header_block);
-      if (!success) {
-        // TODO(umar): List the back-edge blocks that are branching to loop
-        // header
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << "Loop header " << _.getIdName(header_block)
-               << " targeted by multiple back-edges";
-      }
-    }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
     // Check if the order of blocks in the binary appear before the blocks they
@@ -418,38 +459,9 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
     }
 
-    // Check construct rules
-    for (Construct& construct : function.get_constructs()) {
-      auto header = construct.get_entry();
-      auto merge = construct.get_exit();
-
-      //  for a given loop, its back-edge block must post dominate the
-      //  OpLoopMerge's Continue Target , and that Continue Target must dominate
-      //  that back edge block
-      if (merge->is_reachable() &&
-          find(merge->dom_begin(), merge->dom_end(), header) ==
-              merge->dom_end()) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << ConstructErrorString(construct, _.getIdName(header->get_id()),
-                                       _.getIdName(merge->get_id()));
-      }
-      if (construct.get_type() == ConstructType::kContinue) {
-        if (find(header->pdom_begin(), header->pdom_end(), merge) ==
-            merge->pdom_end()) {
-          return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
-                     construct, _.getIdName(header->get_id()),
-                     _.getIdName(merge->get_id()), true);
-        }
-      }
-      // TODO(umar):  an OpSwitch block dominates all its defined case
-      // constructs
-      // TODO(umar):  each case construct has at most one branch to another
-      // case construct
-      // TODO(umar):  each case construct is branched to by at most one other
-      // case construct
-      // TODO(umar):  if Target T1 branches to Target T2, or if Target T1
-      // branches to the Default and the Default branches to Target T2, then T1
-      // must immediately precede T2 in the list of the OpSwitch Target operands
+    /// Structured control flow checks are only required for shader capabilities
+    if (_.hasCapability(SpvCapabilityShader)) {
+      spvCheckReturn(StructuredControlFlowChecks(_, function, back_edges));
     }
   }
   return SPV_SUCCESS;
