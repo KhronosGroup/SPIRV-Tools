@@ -160,26 +160,30 @@ Block& operator>>(Block& lhs, Block& successor) {
   return lhs;
 }
 
-string header(SpvCapability cap) {
-  static string *shader_header = new string(
+const char* header(SpvCapability cap) {
+  static const char* shader_header =
       "OpCapability Shader\n"
-      "OpMemoryModel Logical GLSL450\n");
+      "OpMemoryModel Logical GLSL450\n";
 
-  static string *kernel_header = new string(
+  static const char* kernel_header =
       "OpCapability Kernel\n"
-      "OpMemoryModel Logical OpenCL\n");
+      "OpMemoryModel Logical OpenCL\n";
 
-  return (cap == SpvCapabilityShader) ? *shader_header : *kernel_header;
+  return (cap == SpvCapabilityShader) ? shader_header : kernel_header;
 }
 
-string types_consts =
-    "%voidt   = OpTypeVoid\n"
-    "%boolt   = OpTypeBool\n"
-    "%intt    = OpTypeInt 32 1\n"
-    "%one     = OpConstant %intt 1\n"
-    "%two     = OpConstant %intt 2\n"
-    "%ptrt    = OpTypePointer Function %intt\n"
-    "%funct   = OpTypeFunction %voidt\n";
+const char* types_consts() {
+  static const char* types =
+      "%voidt   = OpTypeVoid\n"
+      "%boolt   = OpTypeBool\n"
+      "%intt    = OpTypeInt 32 1\n"
+      "%one     = OpConstant %intt 1\n"
+      "%two     = OpConstant %intt 2\n"
+      "%ptrt    = OpTypePointer Function %intt\n"
+      "%funct   = OpTypeFunction %voidt\n";
+
+  return types;
+}
 
 INSTANTIATE_TEST_CASE_P(StructuredControlFlow, ValidateCFG,
                         ::testing::Values(SpvCapabilityShader,
@@ -199,7 +203,7 @@ TEST_P(ValidateCFG, Simple) {
 
   string str = header(GetParam()) + nameOps("loop", "entry", "cont", "merge",
                                             make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
   str += loop >> vector<Block>({cont, merge});
@@ -219,7 +223,7 @@ TEST_P(ValidateCFG, Variable) {
   entry.setBody("%var = OpVariable %ptrt Function\n");
 
   string str = header(GetParam()) + nameOps(make_pair("func", "Main")) +
-               types_consts + " %func    = OpFunction %voidt None %funct\n";
+               types_consts() + " %func    = OpFunction %voidt None %funct\n";
   str += entry >> cont;
   str += cont >> exit;
   str += exit;
@@ -238,7 +242,7 @@ TEST_P(ValidateCFG, VariableNotInFirstBlockBad) {
   cont.setBody("%var = OpVariable %ptrt Function\n");
 
   string str = header(GetParam()) + nameOps(make_pair("func", "Main")) +
-               types_consts + " %func    = OpFunction %voidt None %funct\n";
+               types_consts() + " %func    = OpFunction %voidt None %funct\n";
 
   str += entry >> cont;
   str += cont >> exit;
@@ -265,7 +269,7 @@ TEST_P(ValidateCFG, BlockAppearsBeforeDominatorBad) {
 
   string str = header(GetParam()) +
                nameOps("cont", "branch", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> branch;
   str += cont >> merge;  // cont appears before its dominator
@@ -294,7 +298,7 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   if (is_shader) selection.setBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
-               nameOps("merge", make_pair("func", "Main")) + types_consts +
+               nameOps("merge", make_pair("func", "Main")) + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
@@ -328,7 +332,7 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   if (is_shader) loop.setBody(" OpLoopMerge %merge %loop None\n");
 
   string str = header(GetParam()) +
-               nameOps("merge", make_pair("func", "Main")) + types_consts +
+               nameOps("merge", make_pair("func", "Main")) + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> selection;
@@ -354,7 +358,7 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBad) {
   Block end("end", SpvOpReturn);
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
   str += bad >> entry;  // Cannot target entry block
@@ -378,7 +382,7 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
   str += bad >> vector<Block>({entry, exit});  // cannot target entry block
@@ -404,7 +408,7 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
   str += bad >> vector<Block>({t, entry});
@@ -434,7 +438,7 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> bad;
   str += bad >> vector<Block>({def, block1, block2, block3, entry});
@@ -466,7 +470,7 @@ TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   Block end2("end2", SpvOpReturn);
 
   string str = header(GetParam()) +
-               nameOps("middle2", make_pair("func", "Main")) + types_consts +
+               nameOps("middle2", make_pair("func", "Main")) + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> middle;
@@ -501,7 +505,7 @@ TEST_P(ValidateCFG, HeaderDoesntDominatesMergeBad) {
 
   string str = header(GetParam()) +
                nameOps("head", "merge", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> merge;
   str += head >> vector<Block>({merge, f});
@@ -535,7 +539,7 @@ TEST_P(ValidateCFG, UnreachableMerge) {
 
   string str = header(GetParam()) +
                nameOps("branch", "merge", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> branch;
   str += branch >> vector<Block>({t, f});
@@ -561,7 +565,7 @@ TEST_P(ValidateCFG, UnreachableMergeDefinedByOpUnreachable) {
 
   string str = header(GetParam()) +
                nameOps("branch", "merge", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> branch;
   str += branch >> vector<Block>({t, f});
@@ -581,7 +585,7 @@ TEST_P(ValidateCFG, UnreachableBlock) {
 
   string str = header(GetParam()) +
                nameOps("unreachable", "exit", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> exit;
   str += unreachable >> exit;
@@ -605,7 +609,7 @@ TEST_P(ValidateCFG, UnreachableBranch) {
   if (is_shader) unreachable.setBody("OpSelectionMerge %merge None\n");
   string str = header(GetParam()) +
                nameOps("unreachable", "exit", make_pair("func", "Main")) +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> exit;
   str += unreachable >> vector<Block>({unreachablechildt, unreachablechildf});
@@ -620,7 +624,7 @@ TEST_P(ValidateCFG, UnreachableBranch) {
 }
 
 TEST_P(ValidateCFG, EmptyFunction) {
-  string str = header(GetParam()) + types_consts +
+  string str = header(GetParam()) + string(types_consts()) +
                "%func    = OpFunction %voidt None %funct\n" + "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
@@ -636,7 +640,7 @@ TEST_P(ValidateCFG, SingleBlockLoop) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) loop.setBody("OpLoopMerge %exit %loop None\n");
 
-  string str = header(GetParam()) + types_consts +
+  string str = header(GetParam()) + string(types_consts()) +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
@@ -666,7 +670,7 @@ TEST_P(ValidateCFG, NestedLoops) {
   }
 
   string str = header(GetParam()) + nameOps("loop2", "loop2_merge") +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
   str += loop1 >> loop1_cont_break_block;
@@ -703,7 +707,7 @@ TEST_P(ValidateCFG, NestedSelection) {
       if_blocks[i].setBody("OpSelectionMerge %if_merge" + ss.str() + " None\n");
     merge_blocks.emplace_back("if_merge" + ss.str(), SpvOpBranch);
   }
-  string str = header(GetParam()) + types_consts +
+  string str = header(GetParam()) + string(types_consts()) +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> if_blocks[0];
@@ -739,7 +743,7 @@ TEST_P(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
 
   string str = header(GetParam()) +
                nameOps("loop1", "loop2", "be_block", "loop2_merge") +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop1;
   str += loop1 >> vector<Block>({loop2, exit});
@@ -772,7 +776,7 @@ TEST_P(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) split.setBody("OpSelectionMerge %exit None\n");
 
-  string str = header(GetParam()) + nameOps("split", "f") + types_consts +
+  string str = header(GetParam()) + nameOps("split", "f") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> split;
@@ -803,7 +807,7 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) split.setBody("OpSelectionMerge %exit None\n");
 
-  string str = header(GetParam()) + nameOps("split") + types_consts +
+  string str = header(GetParam()) + nameOps("split") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> split;
@@ -833,7 +837,7 @@ TEST_P(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
 
-  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts +
+  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
@@ -866,7 +870,7 @@ TEST_P(ValidateCFG, ContinueTargetMustBePostDominatedByBackEdge) {
   if (is_shader) loop.setBody("OpLoopMerge %merge %cheader None\n");
 
   string str = header(GetParam()) + nameOps("cheader", "be_block") +
-               types_consts + "%func    = OpFunction %voidt None %funct\n";
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
   str += loop >> vector<Block>({cheader, merge});
@@ -898,7 +902,7 @@ TEST_P(ValidateCFG, BranchOutOfConstructToMergeBad) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
 
-  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts +
+  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
@@ -930,7 +934,7 @@ TEST_P(ValidateCFG, BranchOutOfConstructBad) {
   entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
 
-  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts +
+  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;

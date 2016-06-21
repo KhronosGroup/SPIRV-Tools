@@ -337,7 +337,7 @@ string ConstructErrorString(Construct construct, string header_string,
 
 spv_result_t StructuredControlFlowChecks(
     ValidationState_t& _, Function function,
-    vector<pair<uint32_t, uint32_t>> back_edges) {
+    const vector<pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
   set<uint32_t> loop_headers;
