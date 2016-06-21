@@ -154,7 +154,7 @@ const vector<BasicBlock*>* predecessor(const BasicBlock* b) {
 }  // namespace
 
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
-    vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
+    const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
   struct block_detail {
     size_t dominator;  ///< The index of blocks's dominator in post order array
     size_t postorder_index;  ///< The index of the block in the post order array
@@ -222,14 +222,14 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
 }
 
 void UpdateImmediateDominators(
-    vector<pair<bb_ptr, bb_ptr>>& dom_edges,
+    const vector<pair<bb_ptr, bb_ptr>>& dom_edges,
     function<void(BasicBlock*, BasicBlock*)> set_func) {
   for (auto& edge : dom_edges) {
     set_func(get<0>(edge), get<1>(edge));
   }
 }
 
-void printDominatorList(BasicBlock& b) {
+void printDominatorList(const BasicBlock& b) {
   std::cout << b.get_id() << " is dominated by: ";
   const BasicBlock* bb = &b;
   while (bb->GetImmediateDominator() != bb) {
@@ -293,8 +293,10 @@ void UpdateContinueConstructExitBlocks(
 }
 
 /// Constructs an error message for construct validation errors
-string ConstructErrorString(Construct construct, string header_string,
-                            string exit_string, bool post_dominate = false) {
+string ConstructErrorString(const Construct& construct,
+                            const string& header_string,
+                            const string& exit_string,
+                            bool post_dominate = false) {
   string construct_name;
   string header_name;
   string exit_name;
@@ -336,7 +338,7 @@ string ConstructErrorString(Construct construct, string header_string,
 }
 
 spv_result_t StructuredControlFlowChecks(
-    ValidationState_t& _, Function function,
+    const ValidationState_t& _, const Function& function,
     const vector<pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
@@ -363,7 +365,7 @@ spv_result_t StructuredControlFlowChecks(
   }
 
   // Check construct rules
-  for (Construct& construct : function.get_constructs()) {
+  for (const Construct& construct : function.get_constructs()) {
     auto header = construct.get_entry();
     auto merge = construct.get_exit();
 

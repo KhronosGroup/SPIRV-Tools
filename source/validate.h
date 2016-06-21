@@ -70,7 +70,7 @@ using get_blocks_func =
 ///
 /// @return a set of dominator edges represented as a pair of blocks
 std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
-    std::vector<const BasicBlock*>& postorder,
+    const std::vector<const BasicBlock*>& postorder,
     get_blocks_func predecessor_func);
 
 /// @brief Performs the Control Flow Graph checks
@@ -89,7 +89,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _);
 /// @param[in] set_func This function will be called to updated the Immediate
 ///                     dominator
 void UpdateImmediateDominators(
-    std::vector<std::pair<BasicBlock*, BasicBlock*>>& dom_edges,
+    const std::vector<std::pair<BasicBlock*, BasicBlock*>>& dom_edges,
     std::function<void(BasicBlock*, BasicBlock*)> set_func);
 
 /// @brief Prints all of the dominators of a BasicBlock
