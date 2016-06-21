@@ -24,28 +24,38 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-function(add_spvtools_unittest target srcs libs)
-  add_executable(${target} ${srcs})
-  spvtools_default_compile_options(${target})
+# Add a SPIR-V Tools unit test. Signature:
+#   add_spvtools_unittest(
+#     TARGET target_name
+#     SRCS   src_file.h src_file.cpp
+#     LIBS   lib1 lib2
+#   )
+function(add_spvtools_unittest)
+  set(one_value_args TARGET)
+  set(multi_value_args SRCS LIBS)
+  cmake_parse_arguments(
+    ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+  add_executable(${ARG_TARGET} ${ARG_SRCS})
+  spvtools_default_compile_options(${ARG_TARGET})
   if(${COMPILER_IS_LIKE_GNU})
-    target_compile_options(${target} PRIVATE -Wno-undef)
+    target_compile_options(${ARG_TARGET} PRIVATE -Wno-undef)
   endif()
   if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
     # Disable C4503 "decorated name length exceeded" warning,
     # triggered by some heavily templated types.
     # We don't care much about that in test code.
     # Important to do since we have warnings-as-errors.
-    target_compile_options(${target} PRIVATE /wd4503)
+    target_compile_options(${ARG_TARGET} PRIVATE /wd4503)
   endif()
-  target_include_directories(${target} PRIVATE
+  target_include_directories(${ARG_TARGET} PRIVATE
     ${spirv-tools_SOURCE_DIR}
     ${SPIRV_HEADER_INCLUDE_DIR}
     ${gtest_SOURCE_DIR}/include
     ${gmock_SOURCE_DIR}/include
   )
-  target_link_libraries(${target} PRIVATE ${libs})
-  target_link_libraries(${target} PRIVATE gmock_main)
-  add_test(NAME spirv-tools-${target} COMMAND ${target})
+  target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
+  target_link_libraries(${ARG_TARGET} PRIVATE gmock_main)
+  add_test(NAME spirv-tools-${ARG_TARGET} COMMAND ${ARG_TARGET})
 endfunction()
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
@@ -117,7 +127,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidateID.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
     )
-    add_spvtools_unittest(UnitSPIRV "${TEST_SOURCES}" ${SPIRV_TOOLS})
+    add_spvtools_unittest(
+      TARGET UnitSPIRV
+      SRCS ${TEST_SOURCES}
+      LIBS ${SPIRV_TOOLS})
   else()
     message(STATUS "Did not find googletest, tests will not be built."
       "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
