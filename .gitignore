@@ -5,3 +5,7 @@ compile_commands.json
 /external/spirv-headers/
 /TAGS
 /.clang_complete
+
+# Vim
+[._]*.s[a-w][a-z]
+*~
