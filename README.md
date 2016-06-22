@@ -1,7 +1,7 @@
 # SPIR-V Tools
 
 [![Build Status](https://travis-ci.org/KhronosGroup/SPIRV-Tools.svg?branch=master)](https://travis-ci.org/KhronosGroup/SPIRV-Tools)
-[![Build status](https://ci.appveyor.com/api/projects/status/p5d60n0mhfimm6i5/branch/master?svg=true)](https://ci.appveyor.com/project/antiagainst/spirv-tools/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/gpue87cesrx3pi0d/branch/master?svg=true)](https://ci.appveyor.com/project/Khronoswebmaster/spirv-tools/branch/master)
 
 ## Overview
 
