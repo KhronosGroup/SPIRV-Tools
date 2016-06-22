@@ -956,6 +956,52 @@ TEST_P(ValidateCFG, BranchOutOfConstructBad) {
   }
 }
 
+TEST_F(ValidateCFG, OpSwitchToUnreachableBlock) {
+  Block entry("entry", SpvOpSwitch);
+  Block case0("case0");
+  Block case1("case1");
+  Block case2("case2");
+  Block def("default", SpvOpUnreachable);
+  Block phi("phi", SpvOpReturn);
+
+  string str = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %id
+OpExecutionMode %main LocalSize 1 1 1
+OpSource GLSL 430
+OpName %main "main"
+OpDecorate %id BuiltIn GlobalInvocationId
+%void      = OpTypeVoid
+%voidf     = OpTypeFunction %void
+%u32       = OpTypeInt 32 0
+%f32       = OpTypeFloat 32
+%uvec3     = OpTypeVector %u32 3
+%fvec3     = OpTypeVector %f32 3
+%uvec3ptr  = OpTypePointer Input %uvec3
+%id        = OpVariable %uvec3ptr Input
+%one       = OpConstant %u32 1
+%three     = OpConstant %u32 3
+%main      = OpFunction %void None %voidf
+)";
+
+  entry.setBody(
+    "%idval    = OpLoad %uvec3 %id\n"
+    "%x        = OpCompositeExtract %u32 %idval 0\n"
+    "%selector = OpUMod %u32 %x %three\n"
+    "OpSelectionMerge %phi None\n");
+  str += entry >> vector<Block>({def, case0, case1, case2});
+  str += case1 >> phi;
+  str += def;
+  str += phi;
+  str += case0 >> phi;
+  str += case2 >> phi;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  /// namespace

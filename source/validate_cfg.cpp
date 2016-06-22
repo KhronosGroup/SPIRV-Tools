@@ -159,37 +159,32 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     size_t dominator;  ///< The index of blocks's dominator in post order array
     size_t postorder_index;  ///< The index of the block in the post order array
   };
-
-  const size_t undefined_dom = static_cast<size_t>(postorder.size());
+  const size_t undefined_dom = postorder.size();
 
   unordered_map<cbb_ptr, block_detail> idoms;
   for (size_t i = 0; i < postorder.size(); i++) {
     idoms[postorder[i]] = {undefined_dom, i};
   }
-
   idoms[postorder.back()].dominator = idoms[postorder.back()].postorder_index;
 
   bool changed = true;
   while (changed) {
     changed = false;
     for (auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
-      size_t& b_dom = idoms[*b].dominator;
       const vector<BasicBlock*>* predecessors = predecessor_func(*b);
-
-      // first processed predecessor
+      // first processed/reachable predecessor
       auto res = find_if(begin(*predecessors), end(*predecessors),
                          [&idoms, undefined_dom](BasicBlock* pred) {
-                           return idoms[pred].dominator != undefined_dom;
+                           return idoms[pred].dominator != undefined_dom &&
+                                  pred->is_reachable();
                          });
-      assert(res != end(*predecessors));
+      if (res == end(*predecessors)) continue;
       BasicBlock* idom = *res;
       size_t idom_idx = idoms[idom].postorder_index;
 
       // all other predecessors
       for (auto p : *predecessors) {
-        if (idom == p || p->is_reachable() == false) {
-          continue;
-        }
+        if (idom == p || p->is_reachable() == false) continue;
         if (idoms[p].dominator != undefined_dom) {
           size_t finger1 = idoms[p].postorder_index;
           size_t finger2 = idom_idx;
@@ -204,8 +199,8 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
           idom_idx = finger1;
         }
       }
-      if (b_dom != idom_idx) {
-        b_dom = idom_idx;
+      if (idoms[*b].dominator != idom_idx) {
+        idoms[*b].dominator = idom_idx;
         changed = true;
       }
     }
