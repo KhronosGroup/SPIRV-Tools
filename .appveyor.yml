@@ -37,4 +37,4 @@ build_script:
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
-  - ctest -C %CONFIGURATION% --output-on-failure
+  - ctest -C %CONFIGURATION% -VV
