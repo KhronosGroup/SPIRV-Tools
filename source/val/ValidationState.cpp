@@ -353,6 +353,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   assert(in_block() == false &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "ouside of a block");
+  get_current_function().RegisterFunctionEnd();
   in_function_ = false;
   return SPV_SUCCESS;
 }

@@ -332,6 +332,38 @@ TEST_F(ValidateLayout, InstructionAppearBeforeFunctionDefinition) {
   EXPECT_THAT(getDiagnosticString(), StrEq("Undef must appear in a block"));
 }
 
+TEST_F(ValidateLayout, MissingFunctionEndForFunctionWithBody) {
+  const auto s = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%tf = OpTypeFunction %void
+%f = OpFunction %void None %tf
+%l = OpLabel
+OpReturn
+)";
+
+  CompileSuccessfully(s);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              StrEq("Missing OpFunctionEnd at end of module."));
+}
+
+TEST_F(ValidateLayout, MissingFunctionEndForFunctionPrototype) {
+  const auto s = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%tf = OpTypeFunction %void
+%f = OpFunction %void None %tf
+)";
+
+  CompileSuccessfully(s);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              StrEq("Missing OpFunctionEnd at end of module."));
+}
+
 using ValidateOpFunctionParameter = spvtest::ValidateBase<int>;
 
 TEST_F(ValidateOpFunctionParameter, OpLineBetweenParameters) {

@@ -95,10 +95,13 @@ class Function {
 
   /// Registers the end of the block
   ///
-  /// @param[in] successors_list A list of ids to the blocks successors
+  /// @param[in] successors_list A list of ids to the block's successors
   /// @param[in] branch_instruction the branch instruction that ended the block
   void RegisterBlockEnd(std::vector<uint32_t> successors_list,
                         SpvOp branch_instruction);
+
+  /// Registers the end of the function.  This is idempotent.
+  void RegisterFunctionEnd();
 
   /// Returns true if the \p id block is the first block of this function
   bool IsFirstBlock(uint32_t id) const;
@@ -149,11 +152,31 @@ class Function {
   /// Returns the block that is currently being parsed in the binary
   const BasicBlock* get_current_block() const;
 
-  /// Returns the psudo exit block
+  /// Returns the pseudo exit block
+  BasicBlock* get_pseudo_entry_block();
+
+  /// Returns the pseudo exit block
+  const BasicBlock* get_pseudo_entry_block() const;
+
+  /// Returns the pseudo exit block
   BasicBlock* get_pseudo_exit_block();
 
-  /// Returns the psudo exit block
+  /// Returns the pseudo exit block
   const BasicBlock* get_pseudo_exit_block() const;
+
+  /// Returns a vector with just the pseudo entry block.
+  /// This serves as the predecessors of each source node in the CFG when computing
+  /// dominators.
+  const std::vector<BasicBlock*>* get_pseudo_entry_blocks() const {
+    return &pseudo_entry_blocks_;
+  }
+
+  /// Returns a vector with just the pseudo exit block.
+  /// This serves as the successors of each sink node in the CFG when computing
+  /// dominators.
+  const std::vector<BasicBlock*>* get_pseudo_exit_blocks() const {
+    return &pseudo_exit_blocks_;
+  }
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void printDotGraph() const;
@@ -180,6 +203,9 @@ class Function {
   /// The type of declaration of each function
   FunctionDecl declaration_type_;
 
+  // Have we finished parsing this function?
+  bool end_has_been_registered_;
+
   /// The blocks in the function mapped by block ID
   std::unordered_map<uint32_t, BasicBlock> blocks_;
 
@@ -192,8 +218,28 @@ class Function {
   /// The block that is currently being parsed
   BasicBlock* current_block_;
 
-  /// A pseudo exit block that is the successor to all return blocks
+  /// A pseudo entry block that, for the purposes of dominance analysis,
+  /// is considered the predecessor to any ordinary block without predecessors.
+  /// After the function end has been registered, its successor list consists
+  /// of all ordinary blocks without predecessors.  It has no predecessors.
+  /// It does not appear in the predecessor or successor list of any
+  /// ordinary block.
+  /// It has Id 0.
+  BasicBlock pseudo_entry_block_;
+
+  /// A pseudo exit block that, for the purposes of dominance analysis,
+  /// is considered the successor to any ordinary block without successors.
+  /// After the function end has been registered, its predecessor list consists
+  /// of all ordinary blocks without successors.  It has no successors.
+  /// It does not appear in the predecessor or successor list of any
+  /// ordinary block.
   BasicBlock pseudo_exit_block_;
+
+  // A vector containing pseudo_entry_block_.
+  const std::vector<BasicBlock*> pseudo_entry_blocks_;
+
+  // A vector containing pseudo_exit_block_.
+  const std::vector<BasicBlock*> pseudo_exit_blocks_;
 
   /// The constructs that are available in this function
   std::list<Construct> cfg_constructs_;

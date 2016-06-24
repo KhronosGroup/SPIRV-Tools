@@ -60,6 +60,12 @@ using get_blocks_func =
 
 /// @brief Calculates dominator edges for a set of blocks
 ///
+/// Computes dominators using the algorithm of Cooper, Harvey, and Kennedy
+/// "A Simple, Fast Dominance Algorithm", 2001.
+///
+/// The algorithm assumes there is a unique root node (a node without predecessors),
+/// and it is therefore at the end of the postorder vector.
+///
 /// This function calculates the dominator edges for a set of blocks in the CFG.
 /// Uses the dominator algorithm by Cooper et al.
 ///
@@ -68,7 +74,10 @@ using get_blocks_func =
 /// @param[in] predecessor_func Function used to get the predecessor nodes of a
 ///                             block
 ///
-/// @return a set of dominator edges represented as a pair of blocks
+/// @return the dominator tree of the graph, as a vector of pairs of nodes.
+/// The first node in the pair is a node in the graph. The second node in the pair
+/// is its immediate dominator in the sense of Cooper et.al., where a block without
+/// predecessors (such as the root node) is its own immediate dominator.
 std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     const std::vector<const BasicBlock*>& postorder,
     get_blocks_func predecessor_func);

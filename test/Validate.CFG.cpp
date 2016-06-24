@@ -511,6 +511,7 @@ TEST_P(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   str += head >> vector<Block>({merge, f});
   str += f >> merge;
   str += merge;
+  str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
 
@@ -679,6 +680,7 @@ TEST_P(ValidateCFG, NestedLoops) {
   str += loop2_merge >> loop1;
   str += loop1_merge >> exit;
   str += exit;
+  str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());

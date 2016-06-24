@@ -69,9 +69,13 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       result_type_id_(result_type_id),
       function_control_(function_control),
       declaration_type_(FunctionDecl::kFunctionDeclUnknown),
+      end_has_been_registered_(false),
       blocks_(),
       current_block_(nullptr),
+      pseudo_entry_block_(0),
       pseudo_exit_block_(kInvalidId),
+      pseudo_entry_blocks_({&pseudo_entry_block_}),
+      pseudo_exit_blocks_({&pseudo_exit_block_}),
       cfg_constructs_(),
       variable_ids_(),
       parameter_ids_() {}
@@ -206,15 +210,27 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
     next_blocks.push_back(&inserted_block->second);
   }
 
-  if (branch_instruction == SpvOpReturn ||
-      branch_instruction == SpvOpReturnValue) {
-    assert(next_blocks.empty());
-    next_blocks.push_back(&pseudo_exit_block_);
-  }
   current_block_->RegisterBranchInstruction(branch_instruction);
   current_block_->RegisterSuccessors(next_blocks);
   current_block_ = nullptr;
   return;
+}
+
+void Function::RegisterFunctionEnd() {
+  if (!end_has_been_registered_) {
+    end_has_been_registered_ = true;
+
+    // Compute the successors of the pseudo-entry block, and
+    // the predecessors of the pseudo exit block.
+    vector<BasicBlock*> sources;
+    vector<BasicBlock*> sinks;
+    for (const auto b : ordered_blocks_) {
+      if (b->get_predecessors()->empty()) sources.push_back(b);
+      if (b->get_successors()->empty()) sinks.push_back(b);
+    }
+    pseudo_entry_block_.SetSuccessorsUnsafe(std::move(sources));
+    pseudo_exit_block_.SetPredecessorsUnsafe(std::move(sinks));
+  }
 }
 
 size_t Function::get_block_count() const { return blocks_.size(); }
@@ -230,6 +246,11 @@ vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
 
 const BasicBlock* Function::get_current_block() const { return current_block_; }
 BasicBlock* Function::get_current_block() { return current_block_; }
+
+BasicBlock* Function::get_pseudo_entry_block() { return &pseudo_entry_block_; }
+const BasicBlock* Function::get_pseudo_entry_block() const {
+  return &pseudo_entry_block_;
+}
 
 BasicBlock* Function::get_pseudo_exit_block() { return &pseudo_exit_block_; }
 const BasicBlock* Function::get_pseudo_exit_block() const {

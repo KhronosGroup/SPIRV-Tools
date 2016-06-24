@@ -185,6 +185,10 @@ spv_result_t spvValidate(const spv_const_context context,
                                 binary->wordCount, setHeader,
                                 ProcessInstruction, pDiagnostic));
 
+  if (vstate.in_function_body())
+    return vstate.diag(SPV_ERROR_INVALID_LAYOUT)
+           << "Missing OpFunctionEnd at end of module.";
+
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.

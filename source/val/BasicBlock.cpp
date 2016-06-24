@@ -26,6 +26,7 @@
 
 #include "BasicBlock.h"
 
+#include <utility>
 #include <vector>
 
 using std::vector;
@@ -73,6 +74,14 @@ void BasicBlock::RegisterSuccessors(const vector<BasicBlock*>& next_blocks) {
 void BasicBlock::RegisterBranchInstruction(SpvOp branch_instruction) {
   if (branch_instruction == SpvOpUnreachable) reachable_ = false;
   return;
+}
+
+void BasicBlock::SetSuccessorsUnsafe(std::vector<BasicBlock*>&& others) {
+  successors_ = std::move(others);
+}
+
+void BasicBlock::SetPredecessorsUnsafe(std::vector<BasicBlock*>&& others) {
+  predecessors_ = std::move(others);
 }
 
 BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}

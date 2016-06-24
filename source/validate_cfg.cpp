@@ -86,14 +86,15 @@ bool FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
   return false;
 }
 
+
 /// @brief Depth first traversal starting from the \p entry BasicBlock
 ///
 /// This function performs a depth first traversal from the \p entry
 /// BasicBlock and calls the pre/postorder functions when it needs to process
 /// the node in pre order, post order. It also calls the backedge function
-/// when a back edge is encountered
+/// when a back edge is encountered.
 ///
-/// @param[in] entry The root BasicBlock of a CFG tree
+/// @param[in] entry      The root BasicBlock of a CFG
 /// @param[in] successor_func  A function which will return a pointer to the
 ///                            successor nodes
 /// @param[in] preorder   A function that will be called for every block in a
@@ -102,22 +103,24 @@ bool FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
 ///                       CFG following postorder traversal semantics
 /// @param[in] backedge   A function that will be called when a backedge is
 ///                       encountered during a traversal
-/// NOTE: The @p successor_func return a pointer to a collection such that
-/// iterators to that collection remain valid for the lifetime of the algorithm
-void DepthFirstTraversal(const BasicBlock& entry,
+/// NOTE: The @p successor_func and predecessor_func each return a pointer to a
+/// collection such that iterators to that collection remain valid for the lifetime
+/// of the algorithm
+void DepthFirstTraversal(const BasicBlock* entry,
                          get_blocks_func successor_func,
                          function<void(cbb_ptr)> preorder,
                          function<void(cbb_ptr)> postorder,
                          function<void(cbb_ptr, cbb_ptr)> backedge) {
-  vector<cbb_ptr> out;
   unordered_set<uint32_t> processed;
-  /// NOTE: work_list is the sequence of nodes from the entry node to the node
+
+  /// NOTE: work_list is the sequence of nodes from the root node to the node
   /// being processed in the traversal
   vector<block_info> work_list;
-
   work_list.reserve(10);
-  work_list.push_back({&entry, begin(*successor_func(&entry))});
-  preorder(&entry);
+
+  work_list.push_back({entry, begin(*successor_func(entry))});
+  preorder(entry);
+  processed.insert(entry->get_id());
 
   while (!work_list.empty()) {
     block_info& top = work_list.back();
@@ -140,18 +143,8 @@ void DepthFirstTraversal(const BasicBlock& entry,
   }
 }
 
-/// Returns the successor of a basic block.
-/// NOTE: This will be passed as a function pointer to when calculating
-/// the dominator and post dominator
-const vector<BasicBlock*>* successor(const BasicBlock* b) {
-  return b->get_successors();
-}
-
-const vector<BasicBlock*>* predecessor(const BasicBlock* b) {
-  return b->get_predecessors();
-}
-
 }  // namespace
+
 
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
@@ -170,21 +163,20 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
   bool changed = true;
   while (changed) {
     changed = false;
-    for (auto b = postorder.rbegin() + 1; b != postorder.rend(); b++) {
-      const vector<BasicBlock*>* predecessors = predecessor_func(*b);
+    for (auto b = postorder.rbegin() + 1; b != postorder.rend(); ++b) {
+      const vector<BasicBlock*>& predecessors = *predecessor_func(*b);
       // first processed/reachable predecessor
-      auto res = find_if(begin(*predecessors), end(*predecessors),
+      auto res = find_if(begin(predecessors), end(predecessors),
                          [&idoms, undefined_dom](BasicBlock* pred) {
-                           return idoms[pred].dominator != undefined_dom &&
-                                  pred->is_reachable();
+                           return idoms[pred].dominator != undefined_dom;
                          });
-      if (res == end(*predecessors)) continue;
-      BasicBlock* idom = *res;
+      if (res == end(predecessors)) continue;
+      const BasicBlock* idom = *res;
       size_t idom_idx = idoms[idom].postorder_index;
 
       // all other predecessors
-      for (auto p : *predecessors) {
-        if (idom == p || p->is_reachable() == false) continue;
+      for (const auto* p : predecessors) {
+        if (idom == p) continue;
         if (idoms[p].dominator != undefined_dom) {
           size_t finger1 = idoms[p].postorder_index;
           size_t finger2 = idom_idx;
@@ -214,14 +206,6 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
                    const_cast<BasicBlock*>(postorder[get<1>(idom).dominator])});
   }
   return out;
-}
-
-void UpdateImmediateDominators(
-    const vector<pair<bb_ptr, bb_ptr>>& dom_edges,
-    function<void(BasicBlock*, BasicBlock*)> set_func) {
-  for (auto& edge : dom_edges) {
-    set_func(get<0>(edge), get<1>(edge));
-  }
 }
 
 void printDominatorList(const BasicBlock& b) {
@@ -408,35 +392,71 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
              << _.getIdName(function.get_id());
     }
 
-    // Updates each blocks immediate dominators
+    // Prepare for dominance calculations.  We want to analyze all the
+    // blocks in the function, even in degenerate control flow cases
+    // including unreachable blocks.  For this calculation, we create an
+    // agumented CFG by adding a pseudo-entry node that is considered the
+    // predecessor of each source in the original CFG, and a pseudo-exit
+    // node that is considered the successor to each sink in the original
+    // CFG.  The augmented CFG is guaranteed to have a single source node
+    // (i.e. not having predecessors) and a single exit node (i.e. not
+    // having successors).  However, there might be isolated strongly
+    // connected components that are not reachable by following successors
+    // from the pseudo entry node, and not reachable by following
+    // predecessors from the pseudo exit node.
+
+    auto* pseudo_entry = function.get_pseudo_entry_block();
+    auto* pseudo_exit = function.get_pseudo_exit_block();
+    // We need vectors to use as the predecessors (in the augmented CFG)
+    // for the source nodes of the original CFG.  It must have a stable
+    // address for the duration of the calculation.
+    auto* pseudo_entry_vec = function.get_pseudo_entry_blocks();
+    // Similarly, we need a vector to be used as the successors (in the
+    // augmented CFG) for sinks in the original CFG.
+    auto* pseudo_exit_vec = function.get_pseudo_exit_blocks();
+    // Returns the predecessors of a block in the augmented CFG.
+    auto augmented_predecessor_fn = [pseudo_entry, pseudo_entry_vec](
+        const BasicBlock* block) {
+      auto predecessors = block->get_predecessors();
+      return (block != pseudo_entry && predecessors->empty()) ? pseudo_entry_vec
+                                                              : predecessors;
+    };
+    // Returns the successors of a block in the augmented CFG.
+    auto augmented_successor_fn = [pseudo_exit,
+                                   pseudo_exit_vec](const BasicBlock* block) {
+      auto successors = block->get_successors();
+      return (block != pseudo_exit && successors->empty()) ? pseudo_exit_vec
+                                                           : successors;
+    };
+
+    // Set each block's immediate dominator and immediate postdominator,
+    // and find all back-edges.
     vector<const BasicBlock*> postorder;
     vector<const BasicBlock*> postdom_postorder;
     vector<pair<uint32_t, uint32_t>> back_edges;
-    if (auto* first_block = function.get_first_block()) {
+    if (!function.get_blocks().empty()) {
       /// calculate dominators
-      DepthFirstTraversal(*first_block, successor, [](cbb_ptr) {},
+      DepthFirstTraversal(pseudo_entry, augmented_successor_fn, [](cbb_ptr) {},
                           [&](cbb_ptr b) { postorder.push_back(b); },
                           [&](cbb_ptr from, cbb_ptr to) {
                             back_edges.emplace_back(from->get_id(),
                                                     to->get_id());
                           });
-      auto edges = libspirv::CalculateDominators(postorder, predecessor);
-      libspirv::UpdateImmediateDominators(
-          edges, [](bb_ptr block, bb_ptr dominator) {
-            block->SetImmediateDominator(dominator);
-          });
+      auto edges =
+          libspirv::CalculateDominators(postorder, augmented_predecessor_fn);
+      for (auto edge : edges) {
+        edge.first->SetImmediateDominator(edge.second);
+      }
 
       /// calculate post dominators
-      auto exit_block = function.get_pseudo_exit_block();
-      DepthFirstTraversal(*exit_block, predecessor, [](cbb_ptr) {},
+      DepthFirstTraversal(pseudo_exit, augmented_predecessor_fn, [](cbb_ptr) {},
                           [&](cbb_ptr b) { postdom_postorder.push_back(b); },
                           [&](cbb_ptr, cbb_ptr) {});
-      auto postdom_edges =
-          libspirv::CalculateDominators(postdom_postorder, successor);
-      libspirv::UpdateImmediateDominators(
-          postdom_edges, [](bb_ptr block, bb_ptr dominator) {
-            block->SetImmediatePostDominator(dominator);
-          });
+      auto postdom_edges = libspirv::CalculateDominators(
+          postdom_postorder, augmented_successor_fn);
+      for (auto edge : postdom_edges) {
+        edge.first->SetImmediatePostDominator(edge.second);
+      }
     }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
@@ -444,9 +464,10 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // dominate
     auto& blocks = function.get_blocks();
     if (blocks.empty() == false) {
-      for (auto block = begin(blocks) + 1; block != end(blocks); block++) {
+      for (auto block = begin(blocks) + 1; block != end(blocks); ++block) {
         if (auto idom = (*block)->GetImmediateDominator()) {
-          if (block == std::find(begin(blocks), block, idom)) {
+          if (idom != pseudo_entry &&
+              block == std::find(begin(blocks), block, idom)) {
             return _.diag(SPV_ERROR_INVALID_CFG)
                    << "Block " << _.getIdName((*block)->get_id())
                    << " appears in the binary before its dominator "
