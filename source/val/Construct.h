@@ -61,21 +61,21 @@ class Construct {
             std::vector<Construct*> constructs = {});
 
   /// Returns the type of the construct
-  ConstructType get_type() const;
+  ConstructType type() const;
 
-  const std::vector<Construct*>& get_corresponding_constructs() const;
-  std::vector<Construct*>& get_corresponding_constructs();
+  const std::vector<Construct*>& corresponding_constructs() const;
+  std::vector<Construct*>& corresponding_constructs();
   void set_corresponding_constructs(std::vector<Construct*> constructs);
 
   /// Returns the dominator block of the construct.
   ///
   /// This is usually the header block or the first block of the construct.
-  const BasicBlock* get_entry() const;
+  const BasicBlock* entry_block() const;
 
   /// Returns the dominator block of the construct.
   ///
   /// This is usually the header block or the first block of the construct.
-  BasicBlock* get_entry();
+  BasicBlock* entry_block();
 
   /// Returns the exit block of the construct.
   ///
@@ -83,7 +83,7 @@ class Construct {
   /// loop construct. For the case  construct it is the block that branches to
   /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
   /// block of the corresponding  header block
-  const BasicBlock* get_exit() const;
+  const BasicBlock* exit_block() const;
 
   /// Returns the exit block of the construct.
   ///
@@ -91,7 +91,7 @@ class Construct {
   /// loop construct. For the case  construct it is the block that branches to
   /// the OpSwitch merge block or  other case blocks. Otherwise it is the merge
   /// block of the corresponding  header block
-  BasicBlock* get_exit();
+  BasicBlock* exit_block();
 
   /// Sets the exit block for this construct. This is useful for continue
   /// constructs which do not know the back-edge block during construction

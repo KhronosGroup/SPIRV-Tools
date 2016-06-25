@@ -84,13 +84,13 @@ class ValidationState_t {
                     const spv_const_context context);
 
   /// Forward declares the id in the module
-  spv_result_t forwardDeclareId(uint32_t id);
+  spv_result_t ForwardDeclareId(uint32_t id);
 
   /// Removes a forward declared ID if it has been defined
-  spv_result_t removeIfForwardDeclared(uint32_t id);
+  spv_result_t RemoveIfForwardDeclared(uint32_t id);
 
   /// Assigns a name to an ID
-  void assignNameToId(uint32_t id, std::string name);
+  void AssignNameToId(uint32_t id, std::string name);
 
   /// Returns a string representation of the ID in the format <id>[Name] where
   /// the <id> is the numeric valid of the id and the Name is a name assigned by
@@ -102,33 +102,33 @@ class ValidationState_t {
 
   /// Returns the number of ID which have been forward referenced but not
   /// defined
-  size_t unresolvedForwardIdCount() const;
+  size_t unresolved_forward_id_count() const;
 
   /// Returns a list of unresolved forward ids.
-  std::vector<uint32_t> unresolvedForwardIds() const;
+  std::vector<uint32_t> UnresolvedForwardIds() const;
 
   /// Returns true if the id has been defined
-  bool isDefinedId(uint32_t id) const;
+  bool IsDefinedId(uint32_t id) const;
 
   /// Increments the instruction count. Used for diagnostic
-  int incrementInstructionCount();
+  int increment_instruction_count();
 
   /// Returns the current layout section which is being processed
-  ModuleLayoutSection getLayoutSection() const;
+  ModuleLayoutSection current_layout_section() const;
 
   /// Increments the module_layout_order_section_
-  void progressToNextLayoutSectionOrder();
+  void ProgressToNextLayoutSectionOrder();
 
   /// Determines if the op instruction is part of the current section
-  bool isOpcodeInCurrentLayoutSection(SpvOp op);
+  bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
   /// Returns the function states
-  std::list<Function>& get_functions();
+  std::list<Function>& functions();
 
   /// Returns the function states
-  Function& get_current_function();
+  Function& current_function();
 
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
@@ -190,23 +190,23 @@ class ValidationState_t {
   spv_result_t RegisterFunctionEnd();
 
   /// Returns true if the capability is enabled in the module.
-  bool hasCapability(SpvCapability cap) const;
+  bool has_capability(SpvCapability cap) const;
 
   /// Returns true if any of the capabilities are enabled.  Always true for
   /// capabilities==0.
   bool HasAnyOf(spv_capability_mask_t capabilities) const;
 
   /// Sets the addressing model of this module (logical/physical).
-  void setAddressingModel(SpvAddressingModel am);
+  void set_addressing_model(SpvAddressingModel am);
 
   /// Returns the addressing model of this module, or Logical if uninitialized.
-  SpvAddressingModel getAddressingModel() const;
+  SpvAddressingModel addressing_model() const;
 
   /// Sets the memory model of this module.
-  void setMemoryModel(SpvMemoryModel mm);
+  void set_memory_model(SpvMemoryModel mm);
 
   /// Returns the memory model of this module, or Simple if uninitialized.
-  SpvMemoryModel getMemoryModel() const;
+  SpvMemoryModel memory_model() const;
 
   AssemblyGrammar& grammar() { return grammar_; }
 

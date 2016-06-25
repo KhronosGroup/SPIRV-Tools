@@ -2349,7 +2349,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        spv_position position,
                                        spv_diagnostic* pDiag) {
   idUsage idUsage(opcodeTable, operandTable, extInstTable, pInsts, instCount,
-                  state.getMemoryModel(), state.getAddressingModel(),
+                  state.memory_model(), state.addressing_model(),
                   state.usedefs(), state.entry_points(), position, pDiag);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     spvCheck(!idUsage.isValid(&pInsts[instIndex]), return SPV_ERROR_INVALID_ID);

@@ -88,7 +88,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
   }
   return out;
 }
-}
+}  // namespace
 
 namespace libspirv {
 
@@ -112,17 +112,17 @@ spv_result_t SsaPass(ValidationState_t& _,
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
-        _.removeIfForwardDeclared(*operand_ptr);
+        _.RemoveIfForwardDeclared(*operand_ptr);
         ret = SPV_SUCCESS;
         break;
       case SPV_OPERAND_TYPE_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID:
-        if (_.isDefinedId(*operand_ptr)) {
+        if (_.IsDefinedId(*operand_ptr)) {
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
-          ret = _.forwardDeclareId(*operand_ptr);
+          ret = _.ForwardDeclareId(*operand_ptr);
         } else {
           ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
                                              << _.getIdName(*operand_ptr)
@@ -139,4 +139,4 @@ spv_result_t SsaPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}
+}  // namespace libspirv

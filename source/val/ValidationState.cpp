@@ -204,17 +204,17 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       memory_model_(SpvMemoryModelSimple),
       in_function_(false) {}
 
-spv_result_t ValidationState_t::forwardDeclareId(uint32_t id) {
+spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidationState_t::removeIfForwardDeclared(uint32_t id) {
+spv_result_t ValidationState_t::RemoveIfForwardDeclared(uint32_t id) {
   unresolved_forward_ids_.erase(id);
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::assignNameToId(uint32_t id, string name) {
+void ValidationState_t::AssignNameToId(uint32_t id, string name) {
   operand_names_[id] = name;
 }
 
@@ -237,30 +237,30 @@ string ValidationState_t::getIdOrName(uint32_t id) const {
   return out.str();
 }
 
-size_t ValidationState_t::unresolvedForwardIdCount() const {
+size_t ValidationState_t::unresolved_forward_id_count() const {
   return unresolved_forward_ids_.size();
 }
 
-vector<uint32_t> ValidationState_t::unresolvedForwardIds() const {
+vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
   vector<uint32_t> out(begin(unresolved_forward_ids_),
                        end(unresolved_forward_ids_));
   return out;
 }
 
-bool ValidationState_t::isDefinedId(uint32_t id) const {
+bool ValidationState_t::IsDefinedId(uint32_t id) const {
   return usedefs_.FindDef(id).first;
 }
 
 // Increments the instruction count. Used for diagnostic
-int ValidationState_t::incrementInstructionCount() {
+int ValidationState_t::increment_instruction_count() {
   return instruction_counter_++;
 }
 
-ModuleLayoutSection ValidationState_t::getLayoutSection() const {
+ModuleLayoutSection ValidationState_t::current_layout_section() const {
   return current_layout_section_;
 }
 
-void ValidationState_t::progressToNextLayoutSectionOrder() {
+void ValidationState_t::ProgressToNextLayoutSectionOrder() {
   // Guard against going past the last element(kLayoutFunctionDefinitions)
   if (current_layout_section_ <= kLayoutFunctionDefinitions) {
     current_layout_section_ =
@@ -268,7 +268,7 @@ void ValidationState_t::progressToNextLayoutSectionOrder() {
   }
 }
 
-bool ValidationState_t::isOpcodeInCurrentLayoutSection(SpvOp op) {
+bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
   return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
@@ -278,9 +278,9 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-list<Function>& ValidationState_t::get_functions() { return module_functions_; }
+list<Function>& ValidationState_t::functions() { return module_functions_; }
 
-Function& ValidationState_t::get_current_function() {
+Function& ValidationState_t::current_function() {
   assert(in_function_body());
   return module_functions_.back();
 }
@@ -289,7 +289,7 @@ bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
   return module_functions_.empty() == false &&
-         module_functions_.back().get_current_block() != nullptr;
+         module_functions_.back().current_block() != nullptr;
 }
 
 void ValidationState_t::RegisterCapability(SpvCapability cap) {
@@ -301,7 +301,7 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
                       [this](SpvCapability c) { RegisterCapability(c); });
 }
 
-bool ValidationState_t::hasCapability(SpvCapability cap) const {
+bool ValidationState_t::has_capability(SpvCapability cap) const {
   return (module_capabilities_ & SPV_CAPABILITY_AS_MASK(cap)) != 0;
 }
 
@@ -310,24 +310,24 @@ bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
     return true;  // No capabilities requested: trivially satisfied.
   bool found = false;
   libspirv::ForEach(capabilities, [&found, this](SpvCapability c) {
-    found |= hasCapability(c);
+    found |= has_capability(c);
   });
   return found;
 }
 
-void ValidationState_t::setAddressingModel(SpvAddressingModel am) {
+void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
   addressing_model_ = am;
 }
 
-SpvAddressingModel ValidationState_t::getAddressingModel() const {
+SpvAddressingModel ValidationState_t::addressing_model() const {
   return addressing_model_;
 }
 
-void ValidationState_t::setMemoryModel(SpvMemoryModel mm) {
+void ValidationState_t::set_memory_model(SpvMemoryModel mm) {
   memory_model_ = mm;
 }
 
-SpvMemoryModel ValidationState_t::getMemoryModel() const {
+SpvMemoryModel ValidationState_t::memory_model() const {
   return memory_model_;
 }
 
@@ -353,7 +353,7 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   assert(in_block() == false &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "ouside of a block");
-  get_current_function().RegisterFunctionEnd();
+  current_function().RegisterFunctionEnd();
   in_function_ = false;
   return SPV_SUCCESS;
 }

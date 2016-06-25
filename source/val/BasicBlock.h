@@ -57,26 +57,24 @@ class BasicBlock {
   explicit BasicBlock(uint32_t id);
 
   /// Returns the id of the BasicBlock
-  uint32_t get_id() const { return id_; }
+  uint32_t id() const { return id_; }
 
   /// Returns the predecessors of the BasicBlock
-  const std::vector<BasicBlock*>* get_predecessors() const {
+  const std::vector<BasicBlock*>* predecessors() const {
     return &predecessors_;
   }
 
   /// Returns the predecessors of the BasicBlock
-  std::vector<BasicBlock*>* get_predecessors() { return &predecessors_; }
+  std::vector<BasicBlock*>* predecessors() { return &predecessors_; }
 
   /// Returns the successors of the BasicBlock
-  const std::vector<BasicBlock*>* get_successors() const {
-    return &successors_;
-  }
+  const std::vector<BasicBlock*>* successors() const { return &successors_; }
 
   /// Returns the successors of the BasicBlock
-  std::vector<BasicBlock*>* get_successors() { return &successors_; }
+  std::vector<BasicBlock*>* successors() { return &successors_; }
 
   /// Returns true if the block is reachable in the CFG
-  bool is_reachable() const { return reachable_; }
+  bool reachable() const { return reachable_; }
 
   /// Returns true if BasicBlock is of the given type
   bool is_type(BlockType type) const {
@@ -106,16 +104,16 @@ class BasicBlock {
   void SetImmediatePostDominator(BasicBlock* pdom_block);
 
   /// Returns the immedate dominator of this basic block
-  BasicBlock* GetImmediateDominator();
+  BasicBlock* immediate_dominator();
 
   /// Returns the immedate dominator of this basic block
-  const BasicBlock* GetImmediateDominator() const;
+  const BasicBlock* immediate_dominator() const;
 
   /// Returns the immedate post dominator of this basic block
-  BasicBlock* GetImmediatePostDominator();
+  BasicBlock* immediate_post_dominator();
 
   /// Returns the immedate post dominator of this basic block
-  const BasicBlock* GetImmediatePostDominator() const;
+  const BasicBlock* immediate_post_dominator() const;
 
   /// Ends the block without a successor
   void RegisterBranchInstruction(SpvOp branch_instruction);
@@ -135,7 +133,7 @@ class BasicBlock {
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
 
   /// Returns true if the id of the BasicBlock matches
-  bool operator==(const uint32_t& id) const { return id == id_; }
+  bool operator==(const uint32_t& other_id) const { return other_id == id_; }
 
   /// @brief A BasicBlock dominator iterator class
   ///
