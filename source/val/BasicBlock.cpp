@@ -33,8 +33,8 @@ using std::vector;
 
 namespace libspirv {
 
-BasicBlock::BasicBlock(uint32_t id)
-    : id_(id),
+BasicBlock::BasicBlock(uint32_t label_id)
+    : id_(label_id),
       immediate_dominator_(nullptr),
       immediate_post_dominator_(nullptr),
       predecessors_(),
@@ -50,16 +50,16 @@ void BasicBlock::SetImmediatePostDominator(BasicBlock* pdom_block) {
   immediate_post_dominator_ = pdom_block;
 }
 
-const BasicBlock* BasicBlock::GetImmediateDominator() const {
+const BasicBlock* BasicBlock::immediate_dominator() const {
   return immediate_dominator_;
 }
 
-const BasicBlock* BasicBlock::GetImmediatePostDominator() const {
+const BasicBlock* BasicBlock::immediate_post_dominator() const {
   return immediate_post_dominator_;
 }
 
-BasicBlock* BasicBlock::GetImmediateDominator() { return immediate_dominator_; }
-BasicBlock* BasicBlock::GetImmediatePostDominator() {
+BasicBlock* BasicBlock::immediate_dominator() { return immediate_dominator_; }
+BasicBlock* BasicBlock::immediate_post_dominator() {
   return immediate_post_dominator_;
 }
 
@@ -102,12 +102,12 @@ BasicBlock::DominatorIterator& BasicBlock::DominatorIterator::operator++() {
 
 const BasicBlock::DominatorIterator BasicBlock::dom_begin() const {
   return DominatorIterator(
-      this, [](const BasicBlock* b) { return b->GetImmediateDominator(); });
+      this, [](const BasicBlock* b) { return b->immediate_dominator(); });
 }
 
 BasicBlock::DominatorIterator BasicBlock::dom_begin() {
   return DominatorIterator(
-      this, [](const BasicBlock* b) { return b->GetImmediateDominator(); });
+      this, [](const BasicBlock* b) { return b->immediate_dominator(); });
 }
 
 const BasicBlock::DominatorIterator BasicBlock::dom_end() const {
@@ -120,12 +120,12 @@ BasicBlock::DominatorIterator BasicBlock::dom_end() {
 
 const BasicBlock::DominatorIterator BasicBlock::pdom_begin() const {
   return DominatorIterator(
-      this, [](const BasicBlock* b) { return b->GetImmediatePostDominator(); });
+      this, [](const BasicBlock* b) { return b->immediate_post_dominator(); });
 }
 
 BasicBlock::DominatorIterator BasicBlock::pdom_begin() {
   return DominatorIterator(
-    this, [](const BasicBlock* b) { return b->GetImmediatePostDominator(); });
+    this, [](const BasicBlock* b) { return b->immediate_post_dominator(); });
 }
 
 const BasicBlock::DominatorIterator BasicBlock::pdom_end() const {

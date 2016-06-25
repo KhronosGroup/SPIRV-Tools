@@ -80,7 +80,7 @@ spv_capability_mask_t RequiredCapabilities(const AssemblyGrammar& grammar,
     return 0;
 }
 
-}  // namespace anonymous
+}  // namespace
 
 namespace libspirv {
 
@@ -127,9 +127,9 @@ spv_result_t InstructionPass(ValidationState_t& _,
     _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
   if (opcode == SpvOpMemoryModel) {
-    _.setAddressingModel(
+    _.set_addressing_model(
         static_cast<SpvAddressingModel>(inst->words[inst->operands[0].offset]));
-    _.setMemoryModel(
+    _.set_memory_model(
         static_cast<SpvMemoryModel>(inst->words[inst->operands[1].offset]));
   }
   if (opcode == SpvOpVariable) {
@@ -138,15 +138,17 @@ spv_result_t InstructionPass(ValidationState_t& _,
     if (storage_class == SpvStorageClassGeneric)
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "OpVariable storage class cannot be Generic";
-    if (_.getLayoutSection() == kLayoutFunctionDefinitions) {
+    if (_.current_layout_section() == kLayoutFunctionDefinitions) {
       if (storage_class != SpvStorageClassFunction) {
         return _.diag(SPV_ERROR_INVALID_LAYOUT)
                << "Variables must have a function[7] storage class inside"
                   " of a function";
       }
-      if(_.get_current_function().IsFirstBlock(_.get_current_function().get_current_block()->get_id()) == false) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-          << "Variables can only be defined in the first block of a function";
+      if (_.current_function().IsFirstBlock(
+              _.current_function().current_block()->id()) == false) {
+        return _.diag(SPV_ERROR_INVALID_CFG) << "Variables can only be defined "
+                                                "in the first block of a "
+                                                "function";
       }
     } else {
       if (storage_class == SpvStorageClassFunction) {

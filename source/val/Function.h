@@ -32,8 +32,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "spirv/1.1/spirv.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/1.1/spirv.h"
 #include "val/BasicBlock.h"
 
 namespace libspirv {
@@ -117,72 +117,72 @@ class Function {
   std::pair<BasicBlock*, bool> GetBlock(uint32_t id);
 
   /// Returns the first block of the current function
-  const BasicBlock* get_first_block() const;
+  const BasicBlock* first_block() const;
 
   /// Returns the first block of the current function
-  BasicBlock* get_first_block();
+  BasicBlock* first_block();
 
   /// Returns a vector of all the blocks in the function
-  const std::vector<BasicBlock*>& get_blocks() const;
+  const std::vector<BasicBlock*>& ordered_blocks() const;
 
   /// Returns a vector of all the blocks in the function
-  std::vector<BasicBlock*>& get_blocks();
+  std::vector<BasicBlock*>& ordered_blocks();
 
   /// Returns a list of all the cfg constructs in the function
-  const std::list<Construct>& get_constructs() const;
+  const std::list<Construct>& constructs() const;
 
   /// Returns a list of all the cfg constructs in the function
-  std::list<Construct>& get_constructs();
+  std::list<Construct>& constructs();
 
   /// Returns the number of blocks in the current function being parsed
-  size_t get_block_count() const;
+  size_t block_count() const;
 
   /// Returns the id of the funciton
-  uint32_t get_id() const { return id_; }
+  uint32_t id() const { return id_; }
 
   /// Returns the number of blocks in the current function being parsed
-  size_t get_undefined_block_count() const;
-  const std::unordered_set<uint32_t>& get_undefined_blocks() const {
+  size_t undefined_block_count() const;
+  const std::unordered_set<uint32_t>& undefined_blocks() const {
     return undefined_blocks_;
   }
 
   /// Returns the block that is currently being parsed in the binary
-  BasicBlock* get_current_block();
+  BasicBlock* current_block();
 
   /// Returns the block that is currently being parsed in the binary
-  const BasicBlock* get_current_block() const;
+  const BasicBlock* current_block() const;
 
   /// Returns the pseudo exit block
-  BasicBlock* get_pseudo_entry_block();
+  BasicBlock* pseudo_entry_block();
 
   /// Returns the pseudo exit block
-  const BasicBlock* get_pseudo_entry_block() const;
+  const BasicBlock* pseudo_entry_block() const;
 
   /// Returns the pseudo exit block
-  BasicBlock* get_pseudo_exit_block();
+  BasicBlock* pseudo_exit_block();
 
   /// Returns the pseudo exit block
-  const BasicBlock* get_pseudo_exit_block() const;
+  const BasicBlock* pseudo_exit_block() const;
 
   /// Returns a vector with just the pseudo entry block.
-  /// This serves as the predecessors of each source node in the CFG when computing
-  /// dominators.
-  const std::vector<BasicBlock*>* get_pseudo_entry_blocks() const {
+  /// This serves as the predecessors of each source node in the CFG when
+  /// computing dominators.
+  const std::vector<BasicBlock*>* pseudo_entry_blocks() const {
     return &pseudo_entry_blocks_;
   }
 
   /// Returns a vector with just the pseudo exit block.
   /// This serves as the successors of each sink node in the CFG when computing
   /// dominators.
-  const std::vector<BasicBlock*>* get_pseudo_exit_blocks() const {
+  const std::vector<BasicBlock*>* pseudo_exit_blocks() const {
     return &pseudo_exit_blocks_;
   }
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
-  void printDotGraph() const;
+  void PrintDotGraph() const;
 
   /// Prints a directed graph of the CFG of the current funciton
-  void printBlocks() const;
+  void PrintBlocks() const;
 
  private:
   /// Parent module

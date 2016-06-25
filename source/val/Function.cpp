@@ -48,23 +48,23 @@ namespace {
 
 void printDot(const BasicBlock& other, const ValidationState_t& module) {
   string block_string;
-  if (other.get_successors()->empty()) {
+  if (other.successors()->empty()) {
     block_string += "end ";
   } else {
-    for (auto block : *other.get_successors()) {
-      block_string += module.getIdOrName(block->get_id()) + " ";
+    for (auto block : *other.successors()) {
+      block_string += module.getIdOrName(block->id()) + " ";
     }
   }
-  printf("%10s -> {%s\b}\n", module.getIdOrName(other.get_id()).c_str(),
+  printf("%10s -> {%s\b}\n", module.getIdOrName(other.id()).c_str(),
          block_string.c_str());
 }
 }  /// namespace
 
-Function::Function(uint32_t id, uint32_t result_type_id,
+Function::Function(uint32_t function_id, uint32_t result_type_id,
                    SpvFunctionControlMask function_control,
                    uint32_t function_type_id, ValidationState_t& module)
     : module_(module),
-      id_(id),
+      id_(function_id),
       function_type_id_(function_type_id),
       result_type_id_(result_type_id),
       function_control_(function_control),
@@ -80,11 +80,11 @@ Function::Function(uint32_t id, uint32_t result_type_id,
       variable_ids_(),
       parameter_ids_() {}
 
-bool Function::IsFirstBlock(uint32_t id) const {
-  return !ordered_blocks_.empty() && *get_first_block() == id;
+bool Function::IsFirstBlock(uint32_t block_id) const {
+  return !ordered_blocks_.empty() && *first_block() == block_id;
 }
 
-spv_result_t Function::RegisterFunctionParameter(uint32_t id,
+spv_result_t Function::RegisterFunctionParameter(uint32_t parameter_id,
                                                  uint32_t type_id) {
   assert(module_.in_function_body() == true &&
          "RegisterFunctionParameter can only be called when parsing the binary "
@@ -94,7 +94,7 @@ spv_result_t Function::RegisterFunctionParameter(uint32_t id,
          "ouside of a block");
   // TODO(umar): Validate function parameter type order and count
   // TODO(umar): Use these variables to validate parameter type
-  (void)id;
+  (void)parameter_id;
   (void)type_id;
   return SPV_SUCCESS;
 }
@@ -128,24 +128,24 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   current_block_->set_type(kBlockTypeHeader);
   merge_block.set_type(kBlockTypeMerge);
 
-  cfg_constructs_.emplace_back(ConstructType::kSelection, get_current_block(),
+  cfg_constructs_.emplace_back(ConstructType::kSelection, current_block(),
                                &merge_block);
   return SPV_SUCCESS;
 }
 
-void Function::printDotGraph() const {
-  if (get_first_block()) {
+void Function::PrintDotGraph() const {
+  if (first_block()) {
     string func_name(module_.getIdOrName(id_));
     printf("digraph %s {\n", func_name.c_str());
-    printBlocks();
+    PrintBlocks();
     printf("}\n");
   }
 }
 
-void Function::printBlocks() const {
-  if (get_first_block()) {
+void Function::PrintBlocks() const {
+  if (first_block()) {
     printf("%10s -> %s\n", module_.getIdOrName(id_).c_str(),
-           module_.getIdOrName(get_first_block()->get_id()).c_str());
+           module_.getIdOrName(first_block()->id()).c_str());
     for (const auto& block : blocks_) {
       printDot(block.second, module_);
     }
@@ -158,11 +158,11 @@ spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
   return SPV_SUCCESS;
 }
 
-spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
+spv_result_t Function::RegisterBlock(uint32_t block_id, bool is_definition) {
   assert(module_.in_function_body() == true &&
          "RegisterBlocks can only be called when parsing a binary inside of a "
          "function");
-  assert(module_.getLayoutSection() !=
+  assert(module_.current_layout_section() !=
              ModuleLayoutSection::kLayoutFunctionDeclarations &&
          "RegisterBlocks cannot be called within a function declaration");
   assert(
@@ -171,18 +171,19 @@ spv_result_t Function::RegisterBlock(uint32_t id, bool is_definition) {
 
   std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
   bool success = false;
-  tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
+  tie(inserted_block, success) =
+      blocks_.insert({block_id, BasicBlock(block_id)});
   if (is_definition) {  // new block definition
     assert(current_block_ == nullptr &&
            "Register Block can only be called when parsing a binary outside of "
            "a BasicBlock");
 
-    undefined_blocks_.erase(id);
+    undefined_blocks_.erase(block_id);
     current_block_ = &inserted_block->second;
     ordered_blocks_.push_back(current_block_);
-    if (IsFirstBlock(id)) current_block_->set_reachable(true);
+    if (IsFirstBlock(block_id)) current_block_->set_reachable(true);
   } else if (success) {  // Block doesn't exsist but this is not a definition
-    undefined_blocks_.insert(id);
+    undefined_blocks_.insert(block_id);
   }
 
   return SPV_SUCCESS;
@@ -202,10 +203,11 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
 
   std::unordered_map<uint32_t, BasicBlock>::iterator inserted_block;
   bool success;
-  for (uint32_t id : next_list) {
-    tie(inserted_block, success) = blocks_.insert({id, BasicBlock(id)});
+  for (uint32_t successor_id : next_list) {
+    tie(inserted_block, success) =
+        blocks_.insert({successor_id, BasicBlock(successor_id)});
     if (success) {
-      undefined_blocks_.insert(id);
+      undefined_blocks_.insert(successor_id);
     }
     next_blocks.push_back(&inserted_block->second);
   }
@@ -225,48 +227,46 @@ void Function::RegisterFunctionEnd() {
     vector<BasicBlock*> sources;
     vector<BasicBlock*> sinks;
     for (const auto b : ordered_blocks_) {
-      if (b->get_predecessors()->empty()) sources.push_back(b);
-      if (b->get_successors()->empty()) sinks.push_back(b);
+      if (b->predecessors()->empty()) sources.push_back(b);
+      if (b->successors()->empty()) sinks.push_back(b);
     }
     pseudo_entry_block_.SetSuccessorsUnsafe(std::move(sources));
     pseudo_exit_block_.SetPredecessorsUnsafe(std::move(sinks));
   }
 }
 
-size_t Function::get_block_count() const { return blocks_.size(); }
+size_t Function::block_count() const { return blocks_.size(); }
 
-size_t Function::get_undefined_block_count() const {
+size_t Function::undefined_block_count() const {
   return undefined_blocks_.size();
 }
 
-const vector<BasicBlock*>& Function::get_blocks() const {
+const vector<BasicBlock*>& Function::ordered_blocks() const {
   return ordered_blocks_;
 }
-vector<BasicBlock*>& Function::get_blocks() { return ordered_blocks_; }
+vector<BasicBlock*>& Function::ordered_blocks() { return ordered_blocks_; }
 
-const BasicBlock* Function::get_current_block() const { return current_block_; }
-BasicBlock* Function::get_current_block() { return current_block_; }
+const BasicBlock* Function::current_block() const { return current_block_; }
+BasicBlock* Function::current_block() { return current_block_; }
 
-BasicBlock* Function::get_pseudo_entry_block() { return &pseudo_entry_block_; }
-const BasicBlock* Function::get_pseudo_entry_block() const {
+BasicBlock* Function::pseudo_entry_block() { return &pseudo_entry_block_; }
+const BasicBlock* Function::pseudo_entry_block() const {
   return &pseudo_entry_block_;
 }
 
-BasicBlock* Function::get_pseudo_exit_block() { return &pseudo_exit_block_; }
-const BasicBlock* Function::get_pseudo_exit_block() const {
+BasicBlock* Function::pseudo_exit_block() { return &pseudo_exit_block_; }
+const BasicBlock* Function::pseudo_exit_block() const {
   return &pseudo_exit_block_;
 }
 
-const list<Construct>& Function::get_constructs() const {
-  return cfg_constructs_;
-}
-list<Construct>& Function::get_constructs() { return cfg_constructs_; }
+const list<Construct>& Function::constructs() const { return cfg_constructs_; }
+list<Construct>& Function::constructs() { return cfg_constructs_; }
 
-const BasicBlock* Function::get_first_block() const {
+const BasicBlock* Function::first_block() const {
   if (ordered_blocks_.empty()) return nullptr;
   return ordered_blocks_[0];
 }
-BasicBlock* Function::get_first_block() {
+BasicBlock* Function::first_block() {
   if (ordered_blocks_.empty()) return nullptr;
   return ordered_blocks_[0];
 }
@@ -281,22 +281,22 @@ bool Function::IsBlockType(uint32_t merge_block_id, BlockType type) const {
   return ret;
 }
 
-pair<const BasicBlock*, bool> Function::GetBlock(uint32_t id) const {
-  const auto b = blocks_.find(id);
+pair<const BasicBlock*, bool> Function::GetBlock(uint32_t block_id) const {
+  const auto b = blocks_.find(block_id);
   if (b != end(blocks_)) {
     const BasicBlock* block = &(b->second);
     bool defined =
-        undefined_blocks_.find(block->get_id()) == end(undefined_blocks_);
+        undefined_blocks_.find(block->id()) == end(undefined_blocks_);
     return make_pair(block, defined);
   } else {
     return make_pair(nullptr, false);
   }
 }
 
-pair<BasicBlock*, bool> Function::GetBlock(uint32_t id) {
+pair<BasicBlock*, bool> Function::GetBlock(uint32_t block_id) {
   const BasicBlock* out;
   bool defined;
-  tie(out, defined) = const_cast<const Function*>(this)->GetBlock(id);
+  tie(out, defined) = const_cast<const Function*>(this)->GetBlock(block_id);
   return make_pair(const_cast<BasicBlock*>(out), defined);
 }
 }  /// namespace libspirv

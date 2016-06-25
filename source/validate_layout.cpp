@@ -50,10 +50,10 @@ namespace {
 spv_result_t ModuleScopedInstructions(ValidationState_t& _,
                                       const spv_parsed_instruction_t* inst,
                                       SpvOp opcode) {
-  while (_.isOpcodeInCurrentLayoutSection(opcode) == false) {
-    _.progressToNextLayoutSectionOrder();
+  while (_.IsOpcodeInCurrentLayoutSection(opcode) == false) {
+    _.ProgressToNextLayoutSectionOrder();
 
-    switch (_.getLayoutSection()) {
+    switch (_.current_layout_section()) {
       case kLayoutMemoryModel:
         if (opcode != SpvOpMemoryModel) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
@@ -80,7 +80,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
 spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                                         const spv_parsed_instruction_t* inst,
                                         SpvOp opcode) {
-  if (_.isOpcodeInCurrentLayoutSection(opcode)) {
+  if (_.IsOpcodeInCurrentLayoutSection(opcode)) {
     switch (opcode) {
       case SpvOpFunction: {
         if (_.in_function_body()) {
@@ -92,8 +92,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         spvCheckReturn(
             _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
                                inst->words[inst->operands[3].offset]));
-        if (_.getLayoutSection() == kLayoutFunctionDefinitions)
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+        if (_.current_layout_section() == kLayoutFunctionDefinitions)
+          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDefinition));
       } break;
 
@@ -103,13 +103,12 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                                                      "instructions must be in "
                                                      "a function body";
         }
-        if (_.get_current_function().get_block_count() != 0) {
+        if (_.current_function().block_count() != 0) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Function parameters must only appear immediately after "
-                    "the "
-                    "function definition";
+                    "the function definition";
         }
-        spvCheckReturn(_.get_current_function().RegisterFunctionParameter(
+        spvCheckReturn(_.current_function().RegisterFunctionParameter(
             inst->result_id, inst->type_id));
         break;
 
@@ -122,14 +121,14 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "Function end cannot be called in blocks";
         }
-        if (_.get_current_function().get_block_count() == 0 &&
-            _.getLayoutSection() == kLayoutFunctionDefinitions) {
+        if (_.current_function().block_count() == 0 &&
+            _.current_layout_section() == kLayoutFunctionDefinitions) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT) << "Function declarations "
                                                      "must appear before "
                                                      "function definitions.";
         }
-        if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+        if (_.current_layout_section() == kLayoutFunctionDeclarations) {
+          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDeclaration));
         }
         spvCheckReturn(_.RegisterFunctionEnd());
@@ -150,15 +149,15 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "A block must end with a branch instruction.";
         }
-        if (_.getLayoutSection() == kLayoutFunctionDeclarations) {
-          _.progressToNextLayoutSectionOrder();
-          spvCheckReturn(_.get_current_function().RegisterSetFunctionDeclType(
+        if (_.current_layout_section() == kLayoutFunctionDeclarations) {
+          _.ProgressToNextLayoutSectionOrder();
+          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
               FunctionDecl::kFunctionDeclDefinition));
         }
         break;
 
       default:
-        if (_.getLayoutSection() == kLayoutFunctionDeclarations &&
+        if (_.current_layout_section() == kLayoutFunctionDeclarations &&
             _.in_function_body()) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT)
                  << "A function must begin with a label";
@@ -188,7 +187,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
 
-  switch (_.getLayoutSection()) {
+  switch (_.current_layout_section()) {
     case kLayoutCapabilities:
     case kLayoutExtensions:
     case kLayoutExtInstImport:

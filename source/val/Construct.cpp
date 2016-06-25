@@ -31,19 +31,20 @@
 
 namespace libspirv {
 
-Construct::Construct(ConstructType type, BasicBlock* entry,
-                     BasicBlock* exit, std::vector<Construct*> constructs)
-    : type_(type),
+Construct::Construct(ConstructType construct_type,
+                     BasicBlock* entry, BasicBlock* exit,
+                     std::vector<Construct*> constructs)
+    : type_(construct_type),
       corresponding_constructs_(constructs),
       entry_block_(entry),
       exit_block_(exit) {}
 
-ConstructType Construct::get_type() const { return type_; }
+ConstructType Construct::type() const { return type_; }
 
-const std::vector<Construct*>& Construct::get_corresponding_constructs() const {
+const std::vector<Construct*>& Construct::corresponding_constructs() const {
   return corresponding_constructs_;
 }
-std::vector<Construct*>& Construct::get_corresponding_constructs() {
+std::vector<Construct*>& Construct::corresponding_constructs() {
   return corresponding_constructs_;
 }
 
@@ -64,13 +65,11 @@ void Construct::set_corresponding_constructs(
   corresponding_constructs_ = constructs;
 }
 
-const BasicBlock* Construct::get_entry() const { return entry_block_; }
-BasicBlock* Construct::get_entry() { return entry_block_; }
+const BasicBlock* Construct::entry_block() const { return entry_block_; }
+BasicBlock* Construct::entry_block() { return entry_block_; }
 
-const BasicBlock* Construct::get_exit() const { return exit_block_; }
-BasicBlock* Construct::get_exit() { return exit_block_; }
+const BasicBlock* Construct::exit_block() const { return exit_block_; }
+BasicBlock* Construct::exit_block() { return exit_block_; }
 
-void Construct::set_exit(BasicBlock* exit_block) {
-  exit_block_ = exit_block;
-}
+void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
 }  /// namespace libspirv

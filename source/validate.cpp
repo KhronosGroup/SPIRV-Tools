@@ -107,13 +107,13 @@ void DebugInstructionPass(ValidationState_t& _,
       const uint32_t target = *(inst->words + inst->operands[0].offset);
       const char* str =
           reinterpret_cast<const char*>(inst->words + inst->operands[1].offset);
-      _.assignNameToId(target, str);
+      _.AssignNameToId(target, str);
     } break;
     case SpvOpMemberName: {
       const uint32_t target = *(inst->words + inst->operands[0].offset);
       const char* str =
           reinterpret_cast<const char*>(inst->words + inst->operands[2].offset);
-      _.assignNameToId(target, str);
+      _.AssignNameToId(target, str);
     } break;
     case SpvOpSourceContinued:
     case SpvOpSource:
@@ -125,7 +125,6 @@ void DebugInstructionPass(ValidationState_t& _,
     default:
       break;
   }
-
 }
 
 // Collects use-def info about an instruction's IDs.
@@ -143,7 +142,7 @@ void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
 spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
-  _.incrementInstructionCount();
+  _.increment_instruction_count();
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint)
     _.entry_points().push_back(inst->words[2]);
 
@@ -192,9 +191,9 @@ spv_result_t spvValidate(const spv_const_context context,
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
   // checks.
-  if (vstate.unresolvedForwardIdCount() > 0) {
+  if (vstate.unresolved_forward_id_count() > 0) {
     stringstream ss;
-    vector<uint32_t> ids = vstate.unresolvedForwardIds();
+    vector<uint32_t> ids = vstate.UnresolvedForwardIds();
 
     transform(begin(ids), end(ids), ostream_iterator<string>(ss, " "),
               bind(&ValidationState_t::getIdName, vstate, _1));
