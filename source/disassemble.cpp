@@ -60,6 +60,7 @@ class Disassembler {
         text_(),
         out_(print_ ? out_stream() : out_stream(text_)),
         stream_(out_.get()),
+        header_(!spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, options)),
         show_byte_offset_(spvIsInBitfield(
             SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET, options)),
         byte_offset_(0) {}
@@ -123,8 +124,9 @@ class Disassembler {
   std::stringstream text_;   // Captures the text, if not printing.
   out_stream out_;  // The Output stream.  Either to text_ or standard output.
   std::ostream& stream_;  // The output std::stream.
+  const bool header_;     // Should we output header as the leading comment?
   const bool show_byte_offset_;  // Should we print byte offset, in hex?
-  size_t byte_offset_; // The number of bytes processed so far.
+  size_t byte_offset_;           // The number of bytes processed so far.
 };
 
 spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
@@ -132,23 +134,25 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
                                         uint32_t id_bound, uint32_t schema) {
   endian_ = endian;
 
-  SetGrey();
-  const char* generator_tool =
-      spvGeneratorStr(SPV_GENERATOR_TOOL_PART(generator));
-  stream_ << "; SPIR-V\n"
-          << "; Version: " << SPV_SPIRV_VERSION_MAJOR_PART(version) << "."
-          << SPV_SPIRV_VERSION_MINOR_PART(version) << "\n"
-          << "; Generator: " << generator_tool;
-  // For unknown tools, print the numeric tool value.
-  if (0 == strcmp("Unknown", generator_tool)) {
-    stream_ << "(" << SPV_GENERATOR_TOOL_PART(generator) << ")";
+  if (header_) {
+    SetGrey();
+    const char* generator_tool =
+        spvGeneratorStr(SPV_GENERATOR_TOOL_PART(generator));
+    stream_ << "; SPIR-V\n"
+            << "; Version: " << SPV_SPIRV_VERSION_MAJOR_PART(version) << "."
+            << SPV_SPIRV_VERSION_MINOR_PART(version) << "\n"
+            << "; Generator: " << generator_tool;
+    // For unknown tools, print the numeric tool value.
+    if (0 == strcmp("Unknown", generator_tool)) {
+      stream_ << "(" << SPV_GENERATOR_TOOL_PART(generator) << ")";
+    }
+    // Print the miscellaneous part of the generator word on the same
+    // line as the tool name.
+    stream_ << "; " << SPV_GENERATOR_MISC_PART(generator) << "\n"
+            << "; Bound: " << id_bound << "\n"
+            << "; Schema: " << schema << "\n";
+    ResetColor();
   }
-  // Print the miscellaneous part of the generator word on the same
-  // line as the tool name.
-  stream_ << "; " << SPV_GENERATOR_MISC_PART(generator) << "\n"
-          << "; Bound: " << id_bound << "\n"
-          << "; Schema: " << schema << "\n";
-  ResetColor();
 
   byte_offset_ = SPV_INDEX_INSTRUCTION * sizeof(uint32_t);
 
@@ -254,7 +258,8 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
             break;
           case SPV_NUMBER_FLOATING:
             if (operand.number_bit_width == 16) {
-              stream_ << spvutils::FloatProxy<spvutils::Float16>(uint16_t(word & 0xFFFF));
+              stream_ << spvutils::FloatProxy<spvutils::Float16>(
+                  uint16_t(word & 0xFFFF));
             } else {
               // Assume 32-bit floats.
               stream_ << spvutils::FloatProxy<float>(word);

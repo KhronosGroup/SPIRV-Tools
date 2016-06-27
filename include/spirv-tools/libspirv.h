@@ -244,6 +244,8 @@ typedef enum spv_binary_to_text_options_t {
   SPV_BINARY_TO_TEXT_OPTION_COLOR = SPV_BIT(2),
   SPV_BINARY_TO_TEXT_OPTION_INDENT = SPV_BIT(3),
   SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET = SPV_BIT(4),
+  // Do not output the module header as leading comments in the assembly.
+  SPV_BINARY_TO_TEXT_OPTION_NO_HEADER = SPV_BIT(5),
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
 

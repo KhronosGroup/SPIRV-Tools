@@ -54,6 +54,8 @@ Options:
 
   --no-indent     Don't indent instructions.
 
+  --no-header     Don't output the header as leading comments.
+
   --offsets       Show byte offsets for each instruction.
 )",
       argv0, argv0);
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
 #endif
   bool allow_indent = true;
   bool show_byte_offsets = false;
+  bool no_header = false;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -92,6 +95,8 @@ int main(int argc, char** argv) {
             allow_indent = false;
           } else if (0 == strcmp(argv[argi], "--offsets")) {
             show_byte_offsets = true;
+          } else if (0 == strcmp(argv[argi], "--no-header")) {
+            no_header = true;
           } else if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
@@ -133,6 +138,8 @@ int main(int argc, char** argv) {
   if (allow_indent) options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
   if (show_byte_offsets) options |= SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
+
+  if (no_header) options |= SPV_BINARY_TO_TEXT_OPTION_NO_HEADER;
 
   if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.
