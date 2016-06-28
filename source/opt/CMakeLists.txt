@@ -6,12 +6,15 @@ add_library(SPIRV-Tools-opt
   libspirv.hpp
   module.h
   reflect.h
+  passes.h
+  pass_manager.h
 
   function.cpp
   instruction.cpp
   ir_loader.cpp
   libspirv.cpp
   module.cpp
+  passes.cpp
 )
 
 spvtools_default_compile_options(SPIRV-Tools-opt)

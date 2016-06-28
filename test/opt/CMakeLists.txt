@@ -28,3 +28,18 @@ add_spvtools_unittest(TARGET ir_loader
   SRCS test_ir_loader.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET pass_manager
+  SRCS test_pass_manager.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
+
+add_spvtools_unittest(TARGET pass_strip_debug_info
+  SRCS test_strip_debug_info.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
+
+add_spvtools_unittest(TARGET pass_utils
+  SRCS test_utils.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
