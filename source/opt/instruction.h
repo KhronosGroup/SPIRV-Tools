@@ -36,7 +36,6 @@
 #include "spirv/1.1/spirv.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 class Function;
@@ -185,7 +184,6 @@ inline void Instruction::ForEachInst(
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_INSTRUCTION_H_

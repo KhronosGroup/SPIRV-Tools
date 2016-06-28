@@ -35,7 +35,6 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 // Loader class for constructing SPIR-V in-memory IR representation. Methods in
@@ -77,7 +76,6 @@ class IrLoader {
 };
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_IR_LOADER_H_

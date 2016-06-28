@@ -24,15 +24,11 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "opt_test_common.h"
+#include "libspirv.hpp"
 
-#include <gtest/gtest.h>
-
-#include "source/opt/ir_loader.h"
-#include "spirv-tools/libspirv.h"
+#include "ir_loader.h"
 
 namespace spvtools {
-namespace opt {
 
 namespace {
 
@@ -54,63 +50,64 @@ spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
 
 }  // annoymous namespace
 
-// Assembles the given assembly |text| and returns the binary.
-std::vector<uint32_t> Assemble(const std::string& text) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
-  spv_binary binary = nullptr;
+spv_result_t SpvTools::Assemble(const std::string& text,
+                                std::vector<uint32_t>* binary) {
+  spv_binary spvbinary = nullptr;
   spv_diagnostic diagnostic = nullptr;
 
-  spv_result_t status =
-      spvTextToBinary(context, text.data(), text.size(), &binary, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, status) << "assemble text to binary failed";
-  std::vector<uint32_t> result(binary->code, binary->code + binary->wordCount);
+  spv_result_t status = spvTextToBinary(context_, text.data(), text.size(),
+                                        &spvbinary, &diagnostic);
+  if (status == SPV_SUCCESS) {
+    binary->assign(spvbinary->code, spvbinary->code + spvbinary->wordCount);
+  }
 
   spvDiagnosticDestroy(diagnostic);
-  spvBinaryDestroy(binary);
-  spvContextDestroy(context);
+  spvBinaryDestroy(spvbinary);
 
-  return result;
+  return status;
 }
 
-// Disassembles the given SPIR-V |binary| and returns the assembly.
-std::string Disassemble(const std::vector<uint32_t>& binary) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
-  spv_text text = nullptr;
+spv_result_t SpvTools::Disassemble(const std::vector<uint32_t>& binary,
+                                   std::string* text) {
+  spv_text spvtext = nullptr;
   spv_diagnostic diagnostic = nullptr;
 
-  spv_result_t status =
-      spvBinaryToText(context, binary.data(), binary.size(),
-                      SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, &text, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, status) << "disassemble binary to text failed";
-  std::string result(text->str, text->str + text->length);
+  spv_result_t status = spvBinaryToText(context_, binary.data(), binary.size(),
+                                        SPV_BINARY_TO_TEXT_OPTION_NO_HEADER,
+                                        &spvtext, &diagnostic);
+  if (status == SPV_SUCCESS) {
+    text->assign(spvtext->str, spvtext->str + spvtext->length);
+  }
 
   spvDiagnosticDestroy(diagnostic);
-  spvTextDestroy(text);
-  spvContextDestroy(context);
+  spvTextDestroy(spvtext);
 
-  return result;
+  return status;
 }
 
-// Builds and returns a Module for the given SPIR-V |binary|.
-std::unique_ptr<ir::Module> BuildModule(const std::vector<uint32_t>& binary) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+std::unique_ptr<ir::Module> SpvTools::BuildModule(
+    const std::vector<uint32_t>& binary) {
   spv_diagnostic diagnostic = nullptr;
 
   std::unique_ptr<ir::Module> module(new ir::Module);
-  ir::IrLoader builder(module.get());
+  ir::IrLoader loader(module.get());
 
   spv_result_t status =
-      spvBinaryParse(context, &builder, binary.data(), binary.size(),
+      spvBinaryParse(context_, &loader, binary.data(), binary.size(),
                      SetSpvHeader, SetSpvInst, &diagnostic);
-  EXPECT_EQ(SPV_SUCCESS, status) << "build ir::Module from binary failed";
 
   spvDiagnosticDestroy(diagnostic);
-  spvContextDestroy(context);
 
-  builder.EndModule();
+  loader.EndModule();
 
-  return module;
+  if (status == SPV_SUCCESS) return module;
+  return nullptr;
 }
 
-}  // namespace opt
+std::unique_ptr<ir::Module> SpvTools::BuildModule(const std::string& text) {
+  std::vector<uint32_t> binary;
+  if (Assemble(text, &binary) != SPV_SUCCESS) return nullptr;
+  return BuildModule(binary);
+}
+
 }  // namespace spvtools

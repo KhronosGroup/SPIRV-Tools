@@ -35,7 +35,6 @@
 #include "instruction.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 // A struct for containing the module header information.
@@ -125,7 +124,6 @@ class Module {
 };
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_MODULE_H_

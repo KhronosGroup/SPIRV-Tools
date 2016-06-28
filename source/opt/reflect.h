@@ -30,7 +30,6 @@
 #include "spirv/1.1/spirv.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 // Note that as SPIR-V evolves over time, new opcodes may appear. So the
@@ -59,7 +58,6 @@ inline bool IsTerminatorInst(SpvOp opcode) {
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_REFLECT_H_

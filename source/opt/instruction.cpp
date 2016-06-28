@@ -31,7 +31,6 @@
 #include "reflect.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 Instruction::Instruction(const spv_parsed_instruction_t& inst,
@@ -78,5 +77,4 @@ void Instruction::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools

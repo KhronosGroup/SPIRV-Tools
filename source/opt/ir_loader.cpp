@@ -31,7 +31,6 @@
 #include "reflect.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
@@ -119,5 +118,4 @@ void IrLoader::EndModule() {
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools

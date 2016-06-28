@@ -25,6 +25,6 @@
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 add_spvtools_unittest(TARGET ir_loader
-  SRCS test_ir_loader.cpp opt_test_common.cpp
+  SRCS test_ir_loader.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )

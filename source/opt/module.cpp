@@ -28,7 +28,6 @@
 #include "reflect.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 std::vector<Instruction*> Module::types() {
@@ -75,5 +74,4 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools

@@ -37,7 +37,6 @@
 #include "instruction.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 class Function;
@@ -81,7 +80,6 @@ inline void BasicBlock::ToBinary(std::vector<uint32_t>* binary,
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_BASIC_BLOCK_H_

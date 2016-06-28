@@ -27,7 +27,6 @@
 #include "function.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f) {
@@ -45,5 +44,4 @@ void Function::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 }
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools

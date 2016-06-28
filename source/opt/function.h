@@ -35,7 +35,6 @@
 #include "instruction.h"
 
 namespace spvtools {
-namespace opt {
 namespace ir {
 
 class Module;
@@ -74,7 +73,6 @@ class Function {
 };
 
 }  // namespace ir
-}  // namespace opt
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_CONSTRUCTS_H_

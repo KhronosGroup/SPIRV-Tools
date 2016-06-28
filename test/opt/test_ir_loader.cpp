@@ -26,11 +26,11 @@
 
 #include <gtest/gtest.h>
 
-#include "opt_test_common.h"
+#include "opt/libspirv.hpp"
 
 namespace {
 
-using namespace spvtools::opt;
+using namespace spvtools;
 
 TEST(IrBuilder, RoundTrip) {
   // #version 310 es
@@ -76,11 +76,16 @@ TEST(IrBuilder, RoundTrip) {
       "OpReturnValue %20\n"
       "OpFunctionEnd\n";
 
-  std::unique_ptr<ir::Module> module = BuildModule(Assemble(text));
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::unique_ptr<ir::Module> module = t.BuildModule(text);
+  ASSERT_NE(nullptr, module);
+
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
 
-  EXPECT_EQ(text, Disassemble(binary));
+  std::string disassembled_text;
+  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_EQ(text, disassembled_text);
 }
 
 TEST(IrBuilder, KeepLineDebugInfo) {
@@ -109,11 +114,16 @@ TEST(IrBuilder, KeepLineDebugInfo) {
       "OpReturn\n"
       "OpFunctionEnd\n";
 
-  std::unique_ptr<ir::Module> module = BuildModule(Assemble(text));
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::unique_ptr<ir::Module> module = t.BuildModule(text);
+  ASSERT_NE(nullptr, module);
+
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
 
-  EXPECT_EQ(text, Disassemble(binary));
+  std::string disassembled_text;
+  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_EQ(text, disassembled_text);
 }
 
 TEST(IrBuilder, LocalGlobalVariables) {
@@ -183,11 +193,16 @@ TEST(IrBuilder, LocalGlobalVariables) {
       "OpReturnValue %30\n"
       "OpFunctionEnd\n";
 
-  std::unique_ptr<ir::Module> module = BuildModule(Assemble(text));
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::unique_ptr<ir::Module> module = t.BuildModule(text);
+  ASSERT_NE(nullptr, module);
+
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
 
-  EXPECT_EQ(text, Disassemble(binary));
+  std::string disassembled_text;
+  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_EQ(text, disassembled_text);
 }
 
 }  // anonymous namespace

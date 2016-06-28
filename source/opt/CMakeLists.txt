@@ -3,12 +3,14 @@ add_library(SPIRV-Tools-opt
   function.h
   instruction.h
   ir_loader.h
+  libspirv.hpp
   module.h
   reflect.h
 
   function.cpp
   instruction.cpp
   ir_loader.cpp
+  libspirv.cpp
   module.cpp
 )
 
