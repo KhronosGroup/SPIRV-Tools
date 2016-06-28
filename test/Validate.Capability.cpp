@@ -1153,4 +1153,39 @@ TEST_P(ValidateCapabilityV11, Capability) {
       << test_code;
 }
 
+TEST_F(ValidateCapability, SemanticsIdIsAnIdNotALiteral) {
+  // From https://github.com/KhronosGroup/SPIRV-Tools/issues/248
+  // The validator was interpreting the memory semantics ID number
+  // as the value to be checked rather than an ID that references
+  // another value to be checked.
+  // In this case a raw ID of 64 was mistaken to mean a literal
+  // semantic value of UniformMemory, which would require the Shader
+  // capability.
+  const char str[] = R"(
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
+
+;  %i32 has ID 1
+%i32    = OpTypeInt 32 1
+%tf     = OpTypeFunction %i32
+%pi32   = OpTypePointer CrossWorkgroup %i32
+%var    = OpVariable %pi32 CrossWorkgroup
+%c      = OpConstant %i32 100
+%scope  = OpConstant %i32 1 ; Device scope
+
+; Fake an instruction with 64 as the result id.
+; !64 = OpConstantNull %i32
+!0x3002e !1 !64
+
+%f = OpFunction %i32 None %tf
+%l = OpLabel
+%result = OpAtomicIAdd %i32 %var %scope !64 %c
+OpReturnValue %result
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace anonymous

@@ -35,6 +35,7 @@
 
 #include "diagnostic.h"
 #include "opcode.h"
+#include "operand.h"
 #include "spirv_definition.h"
 #include "val/Function.h"
 #include "val/ValidationState.h"
@@ -109,6 +110,10 @@ spv_result_t CapCheck(ValidationState_t& _,
           }
         }
       }
+    } else if (spvIsIdType(operand.type)) {
+      // TODO(dneto): Check the value referenced by this Id, if we can compute
+      // it.  For now, just punt, to fix issue 248:
+      // https://github.com/KhronosGroup/SPIRV-Tools/issues/248
     } else {
       // Check the operand word as a whole.
       const auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
