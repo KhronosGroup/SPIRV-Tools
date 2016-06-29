@@ -25,7 +25,7 @@
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
-  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val)
+  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt)
 
   add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/as/as.cpp)
   spvtools_default_compile_options(spirv-as)
@@ -43,6 +43,12 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
   target_include_directories(spirv-val
     PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
+
+  add_executable(spirv-opt ${CMAKE_CURRENT_SOURCE_DIR}/opt/opt.cpp)
+  spvtools_default_compile_options(spirv-opt)
+  target_link_libraries(spirv-opt PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
+  target_include_directories(spirv-opt PRIVATE
+    ${spirv-tools_SOURCE_DIR}/source ${spirv-tools_BINARY_DIR})
 
   install(TARGETS ${SPIRV_INSTALL_TARGETS}
     RUNTIME DESTINATION bin
