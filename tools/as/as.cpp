@@ -28,8 +28,9 @@
 #include <cstring>
 #include <vector>
 
+#include "source/spirv_target_env.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv_target_env.h"
+#include "tools/io.h"
 
 void print_usage(char* argv0) {
   printf(
@@ -127,16 +128,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<char> contents;
-  const bool use_file = inFile && strcmp("-", inFile);
-  if (FILE* fp = (use_file ? fopen(inFile, "r") : stdin)) {
-    char buf[1024];
-    while (size_t len = fread(buf, 1, sizeof(buf), fp))
-      contents.insert(contents.end(), buf, buf + len);
-    if (use_file) fclose(fp);
-  } else {
-    fprintf(stderr, "error: file does not exist '%s'\n", inFile);
-    return 1;
-  }
+  if (!ReadFile<char>(inFile, "r", &contents)) return 1;
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;

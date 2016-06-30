@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
+#include "tools/io.h"
 
 static void print_usage(char* argv0) {
   printf(
@@ -151,24 +152,7 @@ int main(int argc, char** argv) {
 
   // Read the input binary.
   std::vector<uint32_t> contents;
-  {
-    FILE* input = stdin;
-    const bool use_file = inFile && strcmp("-", inFile);
-    if (use_file) {
-      input = fopen(inFile, "rb");
-      if (!input) {
-        auto msg =
-            std::string("error: Can't open file ") + inFile + " for reading";
-        perror(msg.c_str());
-        return 1;
-      }
-    }
-    uint32_t buf[1024];
-    while (size_t len = fread(buf, sizeof(uint32_t), 1024, input)) {
-      contents.insert(contents.end(), buf, buf + len);
-    }
-    if (use_file) fclose(input);
-  }
+  if (!ReadFile<uint32_t>(inFile, "rb", &contents)) return 1;
 
   // If printing to standard output, then spvBinaryToText should
   // do the printing.  In particular, colour printing on Windows is

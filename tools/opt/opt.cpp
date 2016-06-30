@@ -28,9 +28,10 @@
 #include <iostream>
 #include <vector>
 
-#include "opt/ir_loader.h"
-#include "opt/libspirv.hpp"
-#include "opt/pass_manager.h"
+#include "source/opt/ir_loader.h"
+#include "source/opt/libspirv.hpp"
+#include "source/opt/pass_manager.h"
+#include "tools/io.h"
 
 using namespace spvtools;
 
@@ -110,29 +111,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<uint32_t> source;
-  const bool use_file = in_file && strcmp("-", in_file);
-  if (FILE* fp = (use_file ? fopen(in_file, "rb") : stdin)) {
-    uint32_t buf[1024];
-    while (size_t len = fread(buf, sizeof(uint32_t),
-                              sizeof(buf) / sizeof(uint32_t), fp)) {
-      source.insert(source.end(), buf, buf + len);
-    }
-    if (ftell(fp) == -1L) {
-      if (ferror(fp)) {
-        fprintf(stderr, "error: error reading file '%s'\n", in_file);
-        return 1;
-      }
-    } else {
-      if (ftell(fp) % sizeof(uint32_t)) {
-        fprintf(stderr, "error: corrupted word found in file '%s'\n", in_file);
-        return 1;
-      }
-    }
-    if (use_file) fclose(fp);
-  } else {
-    fprintf(stderr, "error: file does not exist '%s'\n", in_file);
-    return 1;
-  }
+  if (!ReadFile<uint32_t>(in_file, "rb", &source)) return 1;
 
   // Let's do validation first.
   spv_context context = spvContextCreate(target_env);
