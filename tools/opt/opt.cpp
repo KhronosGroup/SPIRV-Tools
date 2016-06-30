@@ -133,16 +133,7 @@ int main(int argc, char** argv) {
   std::vector<uint32_t> target;
   module->ToBinary(&target, /* skip_nop = */ true);
 
-  const bool use_stdout = out_file[0] == '-' && out_file[1] == 0;
-  if (FILE* fp = (use_stdout ? stdout : fopen(out_file, "wb"))) {
-    size_t written = fwrite(target.data(), sizeof(uint32_t), target.size(), fp);
-    if (target.size() != written) {
-      fprintf(stderr, "error: could not write to file '%s'\n", out_file);
-      return 1;
-    }
-    if (!use_stdout) fclose(fp);
-  } else {
-    fprintf(stderr, "error: could not open file '%s'\n", out_file);
+  if (!WriteFile<uint32_t>(out_file, "wb", target.data(), target.size())) {
     return 1;
   }
 

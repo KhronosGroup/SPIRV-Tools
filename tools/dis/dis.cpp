@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
   // If the printing option is off, then save the text in memory, so
   // it can be emitted later in this function.
   const bool print_to_stdout = SPV_BINARY_TO_TEXT_OPTION_PRINT & options;
-  spv_text text;
+  spv_text text = nullptr;
   spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
@@ -176,22 +176,13 @@ int main(int argc, char** argv) {
     return error;
   }
 
-  // Output the result.
   if (!print_to_stdout) {
-    if (FILE* fp = fopen(outFile, "w")) {
-      size_t written =
-          fwrite(text->str, sizeof(char), (size_t)text->length, fp);
-      if (text->length != written) {
-        spvTextDestroy(text);
-        fprintf(stderr, "error: Could not write to file '%s'\n", outFile);
-        return 1;
-      }
-    } else {
+    if (!WriteFile<char>(outFile, "w", text->str, text->length)) {
       spvTextDestroy(text);
-      fprintf(stderr, "error: Could not open file '%s'\n", outFile);
       return 1;
     }
   }
+  spvTextDestroy(text);
 
   return 0;
 }

@@ -142,17 +142,8 @@ int main(int argc, char** argv) {
     return error;
   }
 
-  const bool use_stdout = outFile[0] == '-' && outFile[1] == 0;
-  if (FILE* fp = (use_stdout ? stdout : fopen(outFile, "wb"))) {
-    size_t written =
-        fwrite(binary->code, sizeof(uint32_t), (size_t)binary->wordCount, fp);
-    if (binary->wordCount != written) {
-      fprintf(stderr, "error: could not write to file '%s'\n", outFile);
-      return 1;
-    }
-    if (!use_stdout) fclose(fp);
-  } else {
-    fprintf(stderr, "error: could not open file '%s'\n", outFile);
+  if (!WriteFile<uint32_t>(outFile, "wb", binary->code, binary->wordCount)) {
+    spvBinaryDestroy(binary);
     return 1;
   }
 

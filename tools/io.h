@@ -63,4 +63,27 @@ bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
   return true;
 }
 
+// Writes the given |data| into the file named as |filename| using the given
+// |mode|, assuming |data| is an array of |count| elements of type |T|. If
+// |filename| is nullptr or "-", writes to standard output. If any error occurs,
+// returns false and outputs error message to standard error.
+template <typename T>
+bool WriteFile(const char* filename, const char* mode, const T* data,
+               size_t count) {
+  const bool use_stdout =
+      !filename || (filename[0] == '-' && filename[1] == '\0');
+  if (FILE* fp = (use_stdout ? stdout : fopen(filename, mode))) {
+    size_t written = fwrite(data, sizeof(T), count, fp);
+    if (count != written) {
+      fprintf(stderr, "error: could not write to file '%s'\n", filename);
+      return false;
+    }
+    if (!use_stdout) fclose(fp);
+  } else {
+    fprintf(stderr, "error: could not open file '%s'\n", filename);
+    return false;
+  }
+  return true;
+}
+
 #endif  // LIBSPIRV_TOOLS_IO_H_
