@@ -24,32 +24,31 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+# Add a SPIR-V Tools command line tool. Signature:
+#   add_spvtools_tool(
+#     TARGET target_name
+#     SRCS   src_file1.cpp src_file2.cpp
+#     LIBS   lib_target1 lib_target2
+#   )
+function(add_spvtools_tool)
+  set(one_value_args TARGET)
+  set(multi_value_args SRCS LIBS)
+  cmake_parse_arguments(
+    ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+  add_executable(${ARG_TARGET} ${ARG_SRCS})
+  spvtools_default_compile_options(${ARG_TARGET})
+  target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
+  target_include_directories(${ARG_TARGET} PRIVATE ${spirv-tools_SOURCE_DIR})
+endfunction()
+
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
+  add_spvtools_tool(TARGET spirv-as SRCS as/as.cpp LIBS ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-dis SRCS dis/dis.cpp LIBS ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-val SRCS val/val.cpp LIBS ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-opt SRCS opt/opt.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
+
   set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt)
-
-  add_executable(spirv-as ${CMAKE_CURRENT_SOURCE_DIR}/as/as.cpp)
-  spvtools_default_compile_options(spirv-as)
-  target_link_libraries(spirv-as PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-as
-    PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
-
-  add_executable(spirv-dis ${CMAKE_CURRENT_SOURCE_DIR}/dis/dis.cpp)
-  spvtools_default_compile_options(spirv-dis)
-  target_link_libraries(spirv-dis PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-dis PRIVATE ${spirv-tools_BINARY_DIR})
-
-  add_executable(spirv-val ${CMAKE_CURRENT_SOURCE_DIR}/val/val.cpp)
-  spvtools_default_compile_options(spirv-val)
-  target_link_libraries(spirv-val PRIVATE ${SPIRV_TOOLS})
-  target_include_directories(spirv-val
-    PRIVATE ${spirv-tools_BINARY_DIR} ${spirv-tools_SOURCE_DIR}/source)
-
-  add_executable(spirv-opt ${CMAKE_CURRENT_SOURCE_DIR}/opt/opt.cpp)
-  spvtools_default_compile_options(spirv-opt)
-  target_link_libraries(spirv-opt PRIVATE SPIRV-Tools-opt ${SPIRV_TOOLS})
-  target_include_directories(spirv-opt PRIVATE
-    ${spirv-tools_SOURCE_DIR}/source ${spirv-tools_BINARY_DIR})
-
   install(TARGETS ${SPIRV_INSTALL_TARGETS}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
