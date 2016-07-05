@@ -546,6 +546,14 @@ INSTANTIATE_TEST_CASE_P(
                 CASE0(LOOP_CONTROL, LoopControlDontUnrollMask),
             })), );
 
+INSTANTIATE_TEST_CASE_P(
+    LoopControlV11, EnumCapabilityTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCapabilityCase>{
+                CASE0(LOOP_CONTROL, LoopControlDependencyInfiniteMask),
+                CASE0(LOOP_CONTROL, LoopControlDependencyLengthMask),
+            })), );
+
 // See SPIR-V Section 3.24 Function Control
 INSTANTIATE_TEST_CASE_P(
     FunctionControl, EnumCapabilityTest,
