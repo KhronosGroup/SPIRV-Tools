@@ -102,12 +102,15 @@ In particular, googletest must be newer than version 1.7.0.
 ## Build
 
 The project uses [CMake][cmake] to generate platform-specific build
-configurations. After checking out [SPIR-V headers][spirv-headers] and
-[googletest][googletest] into `external/`. issue the following commands:
+configurations. Assume that `<spirv-dir>` is the root directory of the checked
+out code:
 
 ```
-mkdir <spirv-dir>/build
-cd <spirv-dir>/build
+cd <spirv-dir>
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
+git clone https://github.com/google/googletest.git external/googletest # optional
+
+mkdir build && cd build
 cmake [-G <platform-generator>] <spirv-dir>
 ```
 
