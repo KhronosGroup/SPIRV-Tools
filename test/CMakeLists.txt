@@ -87,6 +87,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       ${CMAKE_CURRENT_SOURCE_DIR}/ImmediateInt.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/LibspirvMacros.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/NamedId.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/NameMapper.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeMake.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeRequiresCapabilities.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeSplit.cpp

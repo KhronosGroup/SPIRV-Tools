@@ -27,15 +27,18 @@
 // This file contains a disassembler:  It converts a SPIR-V binary
 // to text.
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <iomanip>
+#include <memory>
 #include <unordered_map>
 
 #include "assembly_grammar.h"
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include "name_mapper.h"
 #include "opcode.h"
 #include "print.h"
 #include "spirv-tools/libspirv.h"
@@ -49,7 +52,8 @@ namespace {
 // representation.
 class Disassembler {
  public:
-  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t options)
+  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t options,
+               libspirv::NameMapper name_mapper)
       : grammar_(grammar),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
@@ -63,7 +67,8 @@ class Disassembler {
         header_(!spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, options)),
         show_byte_offset_(spvIsInBitfield(
             SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET, options)),
-        byte_offset_(0) {}
+        byte_offset_(0),
+        name_mapper_(std::move(name_mapper)) {}
 
   // Emits the assembly header for the module, and sets up internal state
   // so subsequent callbacks can handle the cases where the entire module
@@ -127,6 +132,7 @@ class Disassembler {
   const bool header_;     // Should we output header as the leading comment?
   const bool show_byte_offset_;  // Should we print byte offset, in hex?
   size_t byte_offset_;           // The number of bytes processed so far.
+  libspirv::NameMapper name_mapper_;
 };
 
 spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
@@ -159,27 +165,14 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
   return SPV_SUCCESS;
 }
 
-// Returns the number of digits in n.
-int NumDigits(uint32_t n) {
-  if (n < 10) return 0;
-  if (n < 100) return 1;
-  if (n < 1000) return 2;
-  if (n < 10000) return 3;
-  if (n < 100000) return 4;
-  if (n < 1000000) return 5;
-  if (n < 10000000) return 6;
-  if (n < 100000000) return 7;
-  if (n < 1000000000) return 8;
-  return 9;
-}
-
 spv_result_t Disassembler::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
     SetBlue();
-    // Indent if needed, but account for the 4 characters in "%" and " = "
-    if (indent_) stream_ << std::setw(indent_ - 4 - NumDigits(inst.result_id));
-    stream_ << "%" << inst.result_id;
+    const std::string id_name = name_mapper_(inst.result_id);
+    if (indent_)
+      stream_ << std::setw(std::max(0, indent_ - 3 - int(id_name.size())));
+    stream_ << "%" << id_name;
     ResetColor();
     stream_ << " = ";
   } else {
@@ -222,14 +215,14 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_RESULT_ID:
       assert(false && "<result-id> is not supposed to be handled here");
       SetBlue();
-      stream_ << "%" << word;
+      stream_ << "%" << name_mapper_(word);
       break;
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_TYPE_ID:
     case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       SetYellow();
-      stream_ << "%" << word;
+      stream_ << "%" << name_mapper_(word);
       break;
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       spv_ext_inst_desc ext_inst;
@@ -418,7 +411,17 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  Disassembler disassembler(grammar, options);
+  // Generate friendly names for Ids if requested.
+  std::unique_ptr<libspirv::FriendlyNameMapper> friendly_mapper;
+  libspirv::NameMapper name_mapper = libspirv::GetTrivialNameMapper();
+  if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
+    friendly_mapper.reset(
+        new libspirv::FriendlyNameMapper(context, code, wordCount));
+    name_mapper = friendly_mapper->GetNameMapper();
+  }
+
+  // Now disassemble!
+  Disassembler disassembler(grammar, options, name_mapper);
   if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
                                   DisassembleHeader, DisassembleInstruction,
                                   pDiagnostic)) {

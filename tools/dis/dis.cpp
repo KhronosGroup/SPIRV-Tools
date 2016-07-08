@@ -57,6 +57,8 @@ Options:
 
   --no-header     Don't output the header as leading comments.
 
+  --raw-id        Show raw Id values instead of friendly names.
+
   --offsets       Show byte offsets for each instruction.
 )",
       argv0, argv0);
@@ -73,6 +75,7 @@ int main(int argc, char** argv) {
   bool allow_indent = true;
   bool show_byte_offsets = false;
   bool no_header = false;
+  bool friendly_names = true;
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -98,6 +101,8 @@ int main(int argc, char** argv) {
             show_byte_offsets = true;
           } else if (0 == strcmp(argv[argi], "--no-header")) {
             no_header = true;
+          } else if (0 == strcmp(argv[argi], "--raw-id")) {
+            friendly_names = false;
           } else if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
@@ -141,6 +146,8 @@ int main(int argc, char** argv) {
   if (show_byte_offsets) options |= SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
 
   if (no_header) options |= SPV_BINARY_TO_TEXT_OPTION_NO_HEADER;
+
+  if (friendly_names) options |= SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
 
   if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.
