@@ -69,12 +69,96 @@ TEST_P(FriendlyNameTest, SingleMapping) {
 INSTANTIATE_TEST_CASE_P(ScalarType, FriendlyNameTest,
                         ::testing::ValuesIn(std::vector<NameIdCase>{
                             {"%1 = OpTypeVoid", 1, "void"},
-                            // Verify uniqueness heuristics
-                            {"%1 = OpTypeVoid %2 = OpTypeVoid", 1, "void"},
-                            {"%1 = OpTypeVoid %2 = OpTypeVoid", 2, "void_0"},
-                            {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid",
-                             3, "void_1"},
-                            // TODO(dneto): Fill out others
+                            {"%1 = OpTypeBool", 1, "bool"},
+                            {"%1 = OpTypeInt 8 0", 1, "uchar"},
+                            {"%1 = OpTypeInt 8 1", 1, "char"},
+                            {"%1 = OpTypeInt 16 0", 1, "ushort"},
+                            {"%1 = OpTypeInt 16 1", 1, "short"},
+                            {"%1 = OpTypeInt 32 0", 1, "uint"},
+                            {"%1 = OpTypeInt 32 1", 1, "int"},
+                            {"%1 = OpTypeInt 64 0", 1, "ulong"},
+                            {"%1 = OpTypeInt 64 1", 1, "long"},
+                            {"%1 = OpTypeInt 1 0", 1, "u1"},
+                            {"%1 = OpTypeInt 1 1", 1, "i1"},
+                            {"%1 = OpTypeInt 33 0", 1, "u33"},
+                            {"%1 = OpTypeInt 33 1", 1, "i33"},
+
+                            {"%1 = OpTypeFloat 16", 1, "half"},
+                            {"%1 = OpTypeFloat 32", 1, "float"},
+                            {"%1 = OpTypeFloat 64", 1, "double"},
+                            {"%1 = OpTypeFloat 10", 1, "fp10"},
+                            {"%1 = OpTypeFloat 55", 1, "fp55"},
                         }), );
+
+INSTANTIATE_TEST_CASE_P(
+    VectorType, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeBool %2 = OpTypeVector %1 1", 2, "v1bool"},
+        {"%1 = OpTypeBool %2 = OpTypeVector %1 2", 2, "v2bool"},
+        {"%1 = OpTypeBool %2 = OpTypeVector %1 3", 2, "v3bool"},
+        {"%1 = OpTypeBool %2 = OpTypeVector %1 4", 2, "v4bool"},
+
+        {"%1 = OpTypeInt 8 0 %2 = OpTypeVector %1 2", 2, "v2uchar"},
+        {"%1 = OpTypeInt 16 1 %2 = OpTypeVector %1 3", 2, "v3short"},
+        {"%1 = OpTypeInt 32 0 %2 = OpTypeVector %1 4", 2, "v4uint"},
+        {"%1 = OpTypeInt 64 1 %2 = OpTypeVector %1 3", 2, "v3long"},
+        {"%1 = OpTypeInt 20 0 %2 = OpTypeVector %1 4", 2, "v4u20"},
+        {"%1 = OpTypeInt 21 1 %2 = OpTypeVector %1 3", 2, "v3i21"},
+
+        {"%1 = OpTypeFloat 32 %2 = OpTypeVector %1 2", 2, "v2float"},
+        // OpName overrides the element name.
+        {"OpName %1 \"time\" %1 = OpTypeFloat 32 %2 = OpTypeVector %1 2", 2,
+         "v2time"},
+    }), );
+
+INSTANTIATE_TEST_CASE_P(
+    MatrixType, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeBool %2 = OpTypeVector %1 2 %3 = OpTypeMatrix %2 2", 3,
+         "mat2v2bool"},
+        {"%1 = OpTypeFloat 32 %2 = OpTypeVector %1 2 %3 = OpTypeMatrix %2 3", 3,
+         "mat3v2float"},
+        {"%1 = OpTypeFloat 32 %2 = OpTypeVector %1 2 %3 = OpTypeMatrix %2 4", 3,
+         "mat4v2float"},
+        {"OpName %1 \"time\" %1 = OpTypeFloat 32 %2 = OpTypeVector %1 2 %3 = "
+         "OpTypeMatrix %2 4",
+         3, "mat4v2time"},
+        {"OpName %2 \"lat_long\" %1 = OpTypeFloat 32 %2 = OpTypeVector %1 2 %3 "
+         "= OpTypeMatrix %2 4",
+         3, "mat4lat_long"},
+    }), );
+
+INSTANTIATE_TEST_CASE_P(
+    OpName, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"OpName %1 \"abcdefg\"", 1, "abcdefg"},
+        {"OpName %1 \"Hello world!\"", 1, "Hello_world_"},
+        {"OpName %1 \"0123456789\"", 1, "0123456789"},
+        // Test uniqueness of names that are forced to be
+        // numbers.
+        {"OpName %1 \"2\" OpName %2 \"2\"", 1, "2"},
+        {"OpName %1 \"2\" OpName %2 \"2\"", 2, "2_0"},
+        // Test uniqueness in the face of forward references
+        // for Ids that don't already have friendly names.
+        // In particular, the first OpDecorate assigns the name, and
+        // the second one can't override it.
+        {"OpDecorate %1 Volatile OpDecorate %1 Restrict", 1, "1"},
+        // But a forced name can override the name that
+        // would have been assigned via the OpDecorate
+        // forward reference.
+        {"OpName %1 \"mememe\" OpDecorate %1 Volatile OpDecorate %1 Restrict",
+         1, "mememe"},
+        // OpName can override other inferences.  We assume valid instruction
+        // ordering, where OpName precedes type definitions.
+        {"OpName %1 \"myfloat\" %1 = OpTypeFloat 32", 1, "myfloat"},
+    }), );
+
+INSTANTIATE_TEST_CASE_P(
+    UniquenessHeuristic, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid", 1, "void"},
+        {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid", 2, "void_0"},
+        {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid", 3, "void_1"},
+    }), );
 
 }  // anonymous namespace

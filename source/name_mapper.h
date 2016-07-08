@@ -50,10 +50,16 @@ NameMapper GetTrivialNameMapper();
 // The mapping is friendly in the following sense:
 //  - If an Id has a debug name (via OpName), then that will be used when
 //    possible.
-//  - Well known types map to their usual names, for example the result of
-//  OpTypeVoid should be %void.  Also, GLSL type names are used when parsing a
-//  module with Shader capability, and OpenCL C type names are used when parsing
-//  a module with Kernel capability.
+//  - Well known scalar types map to friendly names.  For example,
+//  OpTypeVoid should be %void.  Scalar types map to their names in OpenCL when
+//  there is a correspondence, and otherwise as follows:
+//     - unsigned integer type of n bits map to "u" followed by n
+//     - signed integer type of n bits map to "i" followed by n
+//     - floating point type of n bits map to "fp" followed by n
+//  - Vector type names map to "v" followed by the number of components,
+//  followed by the friendly name for the base type.
+//  - Matrix type names map to "mat" followed by the number of columns,
+//  followed by the friendly name for the base vector type.
 class FriendlyNameMapper {
  public:
   // Construct a friendly name mapper, and determine friendly names for each
@@ -74,16 +80,17 @@ class FriendlyNameMapper {
   std::string NameForId(uint32_t id);
 
  private:
+  // Transforms the given string so that it is acceptable as an Id name in
+  // assembly language.  Two distinct inputs can map to the same output.
+  std::string Sanitize(const std::string& suggested_name);
+
   // Records a name for the given id.  Use the given suggested_name if it
-  // hasn't
-  // already been taken, and otherwise generate a new (unused) name based on
-  // the
-  // suggested name.
+  // hasn't already been taken, and otherwise generate a new (unused) name
+  // based on the suggested name.
   void SaveName(uint32_t id, const std::string& suggested_name);
 
   // Collects information from the given parsed instruction to populate
   // name_for_id_.  Returns SPV_SUCCESS;
-  // TODO(dneto): This is very incomplete.
   spv_result_t ParseInstruction(const spv_parsed_instruction_t& inst);
 
   // Forwards a parsed-instruction callback from the binary parser into the

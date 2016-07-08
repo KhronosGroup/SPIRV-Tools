@@ -26,6 +26,7 @@
 
 #include "name_mapper.h"
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -74,12 +75,32 @@ std::string FriendlyNameMapper::NameForId(uint32_t id) {
   return result;
 }
 
+std::string FriendlyNameMapper::Sanitize(const std::string& suggested_name) {
+  // Just replace invalid characters by '_'.
+  std::string result;
+  std::string valid =
+      "abcdefghijklmnopqrstuvwxyz"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "_0123456789";
+  std::transform(suggested_name.begin(), suggested_name.end(),
+                 std::back_inserter(result), [&valid](const char c) {
+                   char newchar = (std::string::npos == valid.find(c)) ? '_' : c;
+                   return newchar;
+                 });
+  return result;
+}
+
 void FriendlyNameMapper::SaveName(uint32_t id,
                                   const std::string& suggested_name) {
-  std::string name = suggested_name;
+  auto found_in_mapping = name_for_id_.find(id);
+  if (found_in_mapping != name_for_id_.end())
+    return;
+
+  const std::string sanitized_suggested_name = Sanitize(suggested_name);
+  std::string name = sanitized_suggested_name;
   auto inserted = used_names_.insert(name);
   if (!inserted.second) {
-    const std::string base_name = suggested_name + "_";
+    const std::string base_name = sanitized_suggested_name + "_";
     for (uint32_t index = 0; !inserted.second; index++) {
       name = base_name + to_string(index);
       inserted = used_names_.insert(name);
@@ -90,14 +111,76 @@ void FriendlyNameMapper::SaveName(uint32_t id,
 
 spv_result_t FriendlyNameMapper::ParseInstruction(
     const spv_parsed_instruction_t& inst) {
-  if (inst.result_id) {
-    switch (inst.opcode) {
-      case SpvOpTypeVoid:
-        SaveName(inst.result_id, "void");
-        break;
-      default:
-        break;
-    }
+  const auto result_id = inst.result_id;
+  switch (inst.opcode) {
+    case SpvOpName:
+      SaveName(inst.words[1], reinterpret_cast<const char*>(inst.words + 2));
+      break;
+    case SpvOpTypeVoid:
+      SaveName(result_id, "void");
+      break;
+    case SpvOpTypeBool:
+      SaveName(result_id, "bool");
+      break;
+    case SpvOpTypeInt: {
+      std::string signedness;
+      std::string root;
+      const auto bit_width = inst.words[2];
+      switch (bit_width) {
+        case 8:
+          root = "char";
+          break;
+        case 16:
+          root = "short";
+          break;
+        case 32:
+          root = "int";
+          break;
+        case 64:
+          root = "long";
+          break;
+        default:
+          root = to_string(bit_width);
+          signedness = "i";
+          break;
+      }
+      if (0 == inst.words[3]) signedness = "u";
+      SaveName(result_id, signedness + root);
+    } break;
+    case SpvOpTypeFloat: {
+      const auto bit_width = inst.words[2];
+      switch (bit_width) {
+        case 16:
+          SaveName(result_id, "half");
+          break;
+        case 32:
+          SaveName(result_id, "float");
+          break;
+        case 64:
+          SaveName(result_id, "double");
+          break;
+        default:
+          SaveName(result_id, std::string("fp") + to_string(bit_width));
+          break;
+      }
+    } break;
+    case SpvOpTypeVector:
+      SaveName(result_id, std::string("v") + to_string(inst.words[3]) +
+                              NameForId(inst.words[2]));
+      break;
+    case SpvOpTypeMatrix:
+      SaveName(result_id, std::string("mat") + to_string(inst.words[3]) +
+                              NameForId(inst.words[2]));
+      break;
+    default:
+      // If this instruction otherwise defines an Id, then save a mapping for
+      // it.  This is needed to ensure uniqueness in there is an OpName with
+      // string something like "1" that might collide with this result_id.
+      // We should only do this if a name hasn't already been registered by some
+      // previous forward reference.
+      if (result_id && name_for_id_.find(result_id) == name_for_id_.end())
+          SaveName(result_id, to_string(result_id));
+      break;
   }
   return SPV_SUCCESS;
 }

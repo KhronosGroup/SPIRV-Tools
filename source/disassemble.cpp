@@ -27,6 +27,7 @@
 // This file contains a disassembler:  It converts a SPIR-V binary
 // to text.
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <iomanip>
