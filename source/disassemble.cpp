@@ -36,6 +36,7 @@
 #include "binary.h"
 #include "diagnostic.h"
 #include "ext_inst.h"
+#include "name_mapper.h"
 #include "opcode.h"
 #include "print.h"
 #include "spirv-tools/libspirv.h"
@@ -49,7 +50,8 @@ namespace {
 // representation.
 class Disassembler {
  public:
-  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t options)
+  Disassembler(const libspirv::AssemblyGrammar& grammar, uint32_t options,
+               libspirv::NameMapper name_mapper)
       : grammar_(grammar),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         color_(print_ &&
@@ -63,7 +65,8 @@ class Disassembler {
         header_(!spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, options)),
         show_byte_offset_(spvIsInBitfield(
             SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET, options)),
-        byte_offset_(0) {}
+        byte_offset_(0),
+        name_mapper_(name_mapper) {}
 
   // Emits the assembly header for the module, and sets up internal state
   // so subsequent callbacks can handle the cases where the entire module
@@ -127,6 +130,7 @@ class Disassembler {
   const bool header_;     // Should we output header as the leading comment?
   const bool show_byte_offset_;  // Should we print byte offset, in hex?
   size_t byte_offset_;           // The number of bytes processed so far.
+  libspirv::NameMapper name_mapper_;
 };
 
 spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
@@ -179,7 +183,7 @@ spv_result_t Disassembler::HandleInstruction(
     SetBlue();
     // Indent if needed, but account for the 4 characters in "%" and " = "
     if (indent_) stream_ << std::setw(indent_ - 4 - NumDigits(inst.result_id));
-    stream_ << "%" << inst.result_id;
+    stream_ << "%" << name_mapper_(inst.result_id);
     ResetColor();
     stream_ << " = ";
   } else {
@@ -222,14 +226,14 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_RESULT_ID:
       assert(false && "<result-id> is not supposed to be handled here");
       SetBlue();
-      stream_ << "%" << word;
+      stream_ << "%" << name_mapper_(word);
       break;
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_TYPE_ID:
     case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       SetYellow();
-      stream_ << "%" << word;
+      stream_ << "%" << name_mapper_(word);
       break;
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       spv_ext_inst_desc ext_inst;
@@ -418,7 +422,7 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  Disassembler disassembler(grammar, options);
+  Disassembler disassembler(grammar, options, libspirv::GetTrivialNameMapper());
   if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
                                   DisassembleHeader, DisassembleInstruction,
                                   pDiagnostic)) {
