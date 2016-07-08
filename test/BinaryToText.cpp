@@ -406,6 +406,28 @@ OpStore %2 %3 Aligned|Volatile 4 ; bogus, but not indented
       expected);
 }
 
+using FriendlyNameDisassemblyTest = spvtest::TextToBinaryTest;
+
+TEST_F(FriendlyNameDisassemblyTest, Sample) {
+  const std::string input = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1 %3 %4 %5 %6 %7 %8 %9 %10 ; force IDs into double digits
+%11 = OpConstant %1 42
+)";
+  const std::string expected =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%_struct_2 = OpTypeStruct %uint %3 %4 %5 %6 %7 %8 %9 %10
+%11 = OpConstant %uint 42
+)";
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input, SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES),
+              expected);
+}
+
 TEST_F(TextToBinaryTest, ShowByteOffsetsWhenRequested) {
   const std::string input = R"(
 OpCapability Shader

@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstring>
 #include <iomanip>
+#include <memory>
 #include <unordered_map>
 
 #include "assembly_grammar.h"
@@ -164,27 +165,15 @@ spv_result_t Disassembler::HandleHeader(spv_endianness_t endian,
   return SPV_SUCCESS;
 }
 
-// Returns the number of digits in n.
-int NumDigits(uint32_t n) {
-  if (n < 10) return 0;
-  if (n < 100) return 1;
-  if (n < 1000) return 2;
-  if (n < 10000) return 3;
-  if (n < 100000) return 4;
-  if (n < 1000000) return 5;
-  if (n < 10000000) return 6;
-  if (n < 100000000) return 7;
-  if (n < 1000000000) return 8;
-  return 9;
-}
-
 spv_result_t Disassembler::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
   if (inst.result_id) {
     SetBlue();
+    const std::string id_name = name_mapper_(inst.result_id);
     // Indent if needed, but account for the 4 characters in "%" and " = "
-    if (indent_) stream_ << std::setw(indent_ - 4 - NumDigits(inst.result_id));
-    stream_ << "%" << name_mapper_(inst.result_id);
+    if (indent_)
+      stream_ << std::setw(std::max(0, indent_ - 3 - int(id_name.size())));
+    stream_ << "%" << id_name;
     ResetColor();
     stream_ << " = ";
   } else {
@@ -423,7 +412,17 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  Disassembler disassembler(grammar, options, libspirv::GetTrivialNameMapper());
+  // Generate friendly names for Ids if requested.
+  std::unique_ptr<libspirv::FriendlyNameMapper> friendly_mapper;
+  libspirv::NameMapper name_mapper = libspirv::GetTrivialNameMapper();
+  if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
+    friendly_mapper.reset(
+        new libspirv::FriendlyNameMapper(context, code, wordCount));
+    name_mapper = friendly_mapper.get()->GetNameMapper();
+  }
+
+  // Now disassemble!
+  Disassembler disassembler(grammar, options, name_mapper);
   if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
                                   DisassembleHeader, DisassembleInstruction,
                                   pDiagnostic)) {

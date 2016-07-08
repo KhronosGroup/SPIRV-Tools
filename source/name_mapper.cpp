@@ -27,6 +27,7 @@
 #include "name_mapper.h"
 
 #include <algorithm>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <unordered_map>
