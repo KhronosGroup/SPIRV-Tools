@@ -28,9 +28,15 @@
 
 #include <sstream>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+
+#include "spirv-tools/libspirv.h"
+#include "spirv/1.1/spirv.h"
 
 namespace {
 
+// Converts a uint32_t to its string decimal representation.
 std::string to_string(uint32_t id) {
   // Use stringstream, since some versions of Android compilers lack
   // std::to_string.
@@ -44,5 +50,56 @@ std::string to_string(uint32_t id) {
 namespace libspirv {
 
 NameMapper GetTrivialNameMapper() { return to_string; }
+
+FriendlyNameMapper::FriendlyNameMapper(const spv_const_context context,
+                                       const uint32_t* code,
+                                       const size_t wordCount) {
+  spv_diagnostic diag = nullptr;
+  // We don't care if the parse fails.
+  spvBinaryParse(context, this, code, wordCount, nullptr,
+                 ParseInstructionForwarder, &diag);
+  spvDiagnosticDestroy(diag);
+}
+
+std::string FriendlyNameMapper::NameForId(uint32_t id) {
+  std::string result;
+  auto iter = name_for_id_.find(id);
+  if (iter == name_for_id_.end()) {
+    // It must have been an invalid module, so just return a trivial mapping.
+    // We don't care about uniqueness.
+    result = to_string(id);
+  } else {
+    result = (*iter).second;
+  }
+  return result;
+}
+
+void FriendlyNameMapper::SaveName(uint32_t id,
+                                  const std::string& suggested_name) {
+  std::string name = suggested_name;
+  auto inserted = used_names_.insert(name);
+  if (!inserted.second) {
+    const std::string base_name = suggested_name + "_";
+    for (uint32_t index = 0; !inserted.second; index++) {
+      name = base_name + to_string(index);
+      inserted = used_names_.insert(name);
+    }
+  }
+  name_for_id_[id] = name;
+}
+
+spv_result_t FriendlyNameMapper::ParseInstruction(
+    const spv_parsed_instruction_t& inst) {
+  if (inst.result_id) {
+    switch (inst.opcode) {
+      case SpvOpTypeVoid:
+        SaveName(inst.result_id, "void");
+        break;
+      default:
+        break;
+    }
+  }
+  return SPV_SUCCESS;
+}
 
 }  // namespace libspirv

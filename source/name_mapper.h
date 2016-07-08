@@ -29,6 +29,8 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "spirv-tools/libspirv.h"
 
@@ -41,6 +43,63 @@ using NameMapper = std::function<std::string(uint32_t)>;
 
 // Returns a NameMapper which always maps an Id to its decimal representation.
 NameMapper GetTrivialNameMapper();
+
+// A FriendlyNameMapper parses a module upon construction.  If the parse is
+// successful, then the NameForId method maps an Id to a friendly name
+// while also satisfying the constraints on a NameMapper.
+// The mapping is friendly in the following sense:
+//  - If an Id has a debug name (via OpName), then that will be used when
+//    possible.
+//  - Well known types map to their usual names, for example the result of
+//  OpTypeVoid should be %void.  Also, GLSL type names are used when parsing a
+//  module with Shader capability, and OpenCL C type names are used when parsing
+//  a module with Kernel capability.
+class FriendlyNameMapper {
+ public:
+  // Construct a friendly name mapper, and determine friendly names for each
+  // defined Id in the specified module.  The module is specified by the code
+  // wordCount, and should be parseable in the specified context.
+  FriendlyNameMapper(const spv_const_context context, const uint32_t* code,
+                     const size_t wordCount);
+
+  // Returns a NameMapper which maps ids to the friendly names parsed from the
+  // module provided to the constructor.
+  NameMapper GetNameMapper() {
+    return [this](uint32_t id) { return this->NameForId(id); };
+  }
+
+  // Returns the friendly name for the given id.  If the module parsed during
+  // construction is valid, then the mapping satisfies the rules for a
+  // NameMapper.
+  std::string NameForId(uint32_t id);
+
+ private:
+  // Records a name for the given id.  Use the given suggested_name if it
+  // hasn't
+  // already been taken, and otherwise generate a new (unused) name based on
+  // the
+  // suggested name.
+  void SaveName(uint32_t id, const std::string& suggested_name);
+
+  // Collects information from the given parsed instruction to populate
+  // name_for_id_.  Returns SPV_SUCCESS;
+  // TODO(dneto): This is very incomplete.
+  spv_result_t ParseInstruction(const spv_parsed_instruction_t& inst);
+
+  // Forwards a parsed-instruction callback from the binary parser into the
+  // FriendlyNameMapper hidden inside the user_data parameter.
+  static spv_result_t ParseInstructionForwarder(
+      void* user_data, const spv_parsed_instruction_t* parsed_instruction) {
+    return reinterpret_cast<FriendlyNameMapper*>(user_data)->ParseInstruction(
+        *parsed_instruction);
+  }
+
+  // Maps an id to its friendly name.  This will have an entry for each Id
+  // defined in the module.
+  std::unordered_map<uint32_t, std::string> name_for_id_;
+  // The set of names that have a mapping in name_for_id_;
+  std::unordered_set<std::string> used_names_;
+};
 
 }  // namespace libspirv
 

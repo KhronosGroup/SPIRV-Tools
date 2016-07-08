@@ -31,6 +31,8 @@
 
 #include "source/name_mapper.h"
 
+using libspirv::NameMapper;
+using libspirv::FriendlyNameMapper;
 using spvtest::ScopedContext;
 using ::testing::Eq;
 
@@ -42,5 +44,37 @@ TEST(TrivialNameTest, Samples) {
   EXPECT_THAT(mapper(1999), "1999");
   EXPECT_THAT(mapper(1024), "1024");
 }
+
+// A test case for the name mappers that actually look at an assembled module.
+struct NameIdCase {
+  std::string assembly;  // Input assembly text
+  uint32_t id;
+  std::string expected_name;
+};
+
+using FriendlyNameTest =
+    spvtest::TextToBinaryTestBase<::testing::TestWithParam<NameIdCase>>;
+
+TEST_P(FriendlyNameTest, SingleMapping) {
+  ScopedContext context;
+  auto words = CompileSuccessfully(GetParam().assembly);
+  auto friendly_mapper =
+      FriendlyNameMapper(context.context, words.data(), words.size());
+  NameMapper mapper = friendly_mapper.GetNameMapper();
+  EXPECT_THAT(mapper(GetParam().id), Eq(GetParam().expected_name))
+      << GetParam().assembly << std::endl
+      << " for id " << GetParam().id;
+}
+
+INSTANTIATE_TEST_CASE_P(ScalarType, FriendlyNameTest,
+                        ::testing::ValuesIn(std::vector<NameIdCase>{
+                            {"%1 = OpTypeVoid", 1, "void"},
+                            // Verify uniqueness heuristics
+                            {"%1 = OpTypeVoid %2 = OpTypeVoid", 1, "void"},
+                            {"%1 = OpTypeVoid %2 = OpTypeVoid", 2, "void_0"},
+                            {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid",
+                             3, "void_1"},
+                            // TODO(dneto): Fill out others
+                        }), );
 
 }  // anonymous namespace
