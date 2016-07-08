@@ -30,7 +30,6 @@
 #include <algorithm>
 #include <array>
 #include <functional>
-#include <list>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -115,9 +114,8 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
 spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst);
 
-/// Performs SSA validation of a module
-spv_result_t SsaPass(ValidationState_t& _,
-                     const spv_parsed_instruction_t* inst);
+/// Performs Id and SSA validation of a module
+spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
 
 /// Performs instruction validation.
 spv_result_t InstructionPass(ValidationState_t& _,

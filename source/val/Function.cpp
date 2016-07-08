@@ -33,38 +33,23 @@
 
 #include "val/BasicBlock.h"
 #include "val/Construct.h"
-#include "val/ValidationState.h"
 
 using std::ignore;
 using std::list;
 using std::make_pair;
 using std::pair;
-using std::string;
 using std::tie;
 using std::vector;
 
 namespace libspirv {
-namespace {
 
-void printDot(const BasicBlock& other, const ValidationState_t& module) {
-  string block_string;
-  if (other.successors()->empty()) {
-    block_string += "end ";
-  } else {
-    for (auto block : *other.successors()) {
-      block_string += module.getIdOrName(block->id()) + " ";
-    }
-  }
-  printf("%10s -> {%s\b}\n", module.getIdOrName(other.id()).c_str(),
-         block_string.c_str());
-}
-}  /// namespace
+// Universal Limit of ResultID + 1
+static const uint32_t kInvalidId = 0x400000;
 
 Function::Function(uint32_t function_id, uint32_t result_type_id,
                    SpvFunctionControlMask function_control,
-                   uint32_t function_type_id, ValidationState_t& module)
-    : module_(module),
-      id_(function_id),
+                   uint32_t function_type_id)
+    : id_(function_id),
       function_type_id_(function_type_id),
       result_type_id_(result_type_id),
       function_control_(function_control),
@@ -86,9 +71,6 @@ bool Function::IsFirstBlock(uint32_t block_id) const {
 
 spv_result_t Function::RegisterFunctionParameter(uint32_t parameter_id,
                                                  uint32_t type_id) {
-  assert(module_.in_function_body() == true &&
-         "RegisterFunctionParameter can only be called when parsing the binary "
-         "outside of another function");
   assert(current_block_ == nullptr &&
          "RegisterFunctionParameter can only be called when parsing the binary "
          "ouside of a block");
@@ -133,25 +115,6 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   return SPV_SUCCESS;
 }
 
-void Function::PrintDotGraph() const {
-  if (first_block()) {
-    string func_name(module_.getIdOrName(id_));
-    printf("digraph %s {\n", func_name.c_str());
-    PrintBlocks();
-    printf("}\n");
-  }
-}
-
-void Function::PrintBlocks() const {
-  if (first_block()) {
-    printf("%10s -> %s\n", module_.getIdOrName(id_).c_str(),
-           module_.getIdOrName(first_block()->id()).c_str());
-    for (const auto& block : blocks_) {
-      printDot(block.second, module_);
-    }
-  }
-}
-
 spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
   assert(declaration_type_ == FunctionDecl::kFunctionDeclUnknown);
   declaration_type_ = type;
@@ -159,12 +122,6 @@ spv_result_t Function::RegisterSetFunctionDeclType(FunctionDecl type) {
 }
 
 spv_result_t Function::RegisterBlock(uint32_t block_id, bool is_definition) {
-  assert(module_.in_function_body() == true &&
-         "RegisterBlocks can only be called when parsing a binary inside of a "
-         "function");
-  assert(module_.current_layout_section() !=
-             ModuleLayoutSection::kLayoutFunctionDeclarations &&
-         "RegisterBlocks cannot be called within a function declaration");
   assert(
       declaration_type_ == FunctionDecl::kFunctionDeclDefinition &&
       "RegisterBlocks can only be called after declaration_type_ is defined");
@@ -191,9 +148,6 @@ spv_result_t Function::RegisterBlock(uint32_t block_id, bool is_definition) {
 
 void Function::RegisterBlockEnd(vector<uint32_t> next_list,
                                 SpvOp branch_instruction) {
-  assert(module_.in_function_body() == true &&
-         "RegisterBlockEnd can only be called when parsing a binary in a "
-         "function");
   assert(
       current_block_ &&
       "RegisterBlockEnd can only be called when parsing a binary in a block");

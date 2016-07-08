@@ -35,6 +35,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 #include "val/BasicBlock.h"
+#include "val/Construct.h"
 
 namespace libspirv {
 
@@ -44,17 +45,13 @@ enum class FunctionDecl {
   kFunctionDeclDefinition    /// < Function definition
 };
 
-class Construct;
-class ValidationState_t;
-
 /// This class manages all function declaration and definitions in a module. It
 /// handles the state and id information while parsing a function in the SPIR-V
 /// binary.
 class Function {
  public:
   Function(uint32_t id, uint32_t result_type_id,
-           SpvFunctionControlMask function_control, uint32_t function_type_id,
-           ValidationState_t& module);
+           SpvFunctionControlMask function_control, uint32_t function_type_id);
 
   /// Registers a function parameter in the current function
   /// @return Returns SPV_SUCCESS if the call was successful
@@ -185,9 +182,6 @@ class Function {
   void PrintBlocks() const;
 
  private:
-  /// Parent module
-  ValidationState_t& module_;
-
   /// The result id of the OpLabel that defined this block
   uint32_t id_;
 

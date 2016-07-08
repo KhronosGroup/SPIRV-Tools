@@ -59,7 +59,7 @@ using std::vector;
 using libspirv::CfgPass;
 using libspirv::InstructionPass;
 using libspirv::ModuleLayoutPass;
-using libspirv::SsaPass;
+using libspirv::IdPass;
 using libspirv::ValidationState_t;
 
 spv_result_t spvValidateIDs(
@@ -67,15 +67,11 @@ spv_result_t spvValidateIDs(
     const spv_opcode_table opcodeTable, const spv_operand_table operandTable,
     const spv_ext_inst_table extInstTable, const ValidationState_t& state,
     spv_position position, spv_diagnostic* pDiagnostic) {
-  auto undefd = state.usedefs().FindUsesWithoutDefs();
-  for (auto id : undefd) {
-    DIAGNOSTIC << "Undefined ID: " << id;
-  }
   position->index = SPV_INDEX_INSTRUCTION;
   spvCheckReturn(spvValidateInstructionIDs(pInsts, count, opcodeTable,
                                            operandTable, extInstTable, state,
                                            position, pDiagnostic));
-  return undefd.empty() ? SPV_SUCCESS : SPV_ERROR_INVALID_ID;
+  return SPV_SUCCESS;
 }
 
 namespace {
@@ -127,18 +123,6 @@ void DebugInstructionPass(ValidationState_t& _,
   }
 }
 
-// Collects use-def info about an instruction's IDs.
-void ProcessIds(ValidationState_t& _, const spv_parsed_instruction_t& inst) {
-  if (inst.result_id) {
-    _.usedefs().AddDef(
-        {inst.result_id, inst.type_id, static_cast<SpvOp>(inst.opcode),
-         std::vector<uint32_t>(inst.words, inst.words + inst.num_words)});
-  }
-  for (auto op = inst.operands; op != inst.operands + inst.num_operands; ++op) {
-    if (spvIsIdType(op->type)) _.usedefs().AddUse(inst.words[op->offset]);
-  }
-}
-
 spv_result_t ProcessInstruction(void* user_data,
                                 const spv_parsed_instruction_t* inst) {
   ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
@@ -148,15 +132,53 @@ spv_result_t ProcessInstruction(void* user_data,
 
   DebugInstructionPass(_, inst);
   // TODO(umar): Perform data rules pass
-  ProcessIds(_, *inst);
+  spvCheckReturn(IdPass(_, inst));
   spvCheckReturn(ModuleLayoutPass(_, inst));
   spvCheckReturn(CfgPass(_, inst));
-  spvCheckReturn(SsaPass(_, inst));
   spvCheckReturn(InstructionPass(_, inst));
 
   return SPV_SUCCESS;
 }
 
+void printDot(const ValidationState_t& _, const libspirv::BasicBlock& other) {
+  string block_string;
+  if (other.successors()->empty()) {
+    block_string += "end ";
+  } else {
+    for (auto block : *other.successors()) {
+      block_string += _.getIdOrName(block->id()) + " ";
+    }
+  }
+  printf("%10s -> {%s\b}\n", _.getIdOrName(other.id()).c_str(),
+         block_string.c_str());
+}
+
+void PrintBlocks(ValidationState_t _, libspirv::Function func) {
+  assert(func.first_block());
+
+  printf("%10s -> %s\n", _.getIdOrName(func.id()).c_str(),
+         _.getIdOrName(func.first_block()->id()).c_str());
+  for (const auto& block : func.ordered_blocks()) {
+    printDot(_, *block);
+  }
+}
+
+#ifdef __clang__
+#define UNUSED(func) [[gnu::unused]] func
+#elif defined(__GNUC__)
+#define UNUSED(func) func __attribute__((unused)); func
+#elif defined(_MSC_VER)
+#define UNUSED(func) func
+#endif
+
+UNUSED(void PrintDotGraph(ValidationState_t _, libspirv::Function func)) {
+  if (func.first_block()) {
+    string func_name(_.getIdOrName(func.id()));
+    printf("digraph %s {\n", func_name.c_str());
+    PrintBlocks(_, func);
+    printf("}\n");
+  }
+}
 }  // anonymous namespace
 
 spv_result_t spvValidate(const spv_const_context context,
