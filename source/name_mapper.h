@@ -61,9 +61,12 @@ NameMapper GetTrivialNameMapper();
 //  followed by the friendly name for the base type.
 //  - Matrix type names map to "mat" followed by the number of columns,
 //  followed by the friendly name for the base vector type.
-//  - Pointer types map to the name of the storage class, then "_ptr_", then the
+//  - Pointer types map to "_ptr_", then the name of the storage class, then the
 //  name for the pointee type.
-//  followed by the friendly name for the base vector type.
+//  - Exotic types like event, pipe, opaque, queue, reserve-id map to their own
+//  human readable names.
+//  - A struct type maps to "_struct_" followed by the raw Id number.  That's
+//  pretty simplistic, but workable.
 class FriendlyNameMapper {
  public:
   // Construct a friendly name mapper, and determine friendly names for each

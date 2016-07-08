@@ -173,10 +173,52 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       SaveName(result_id, std::string("mat") + to_string(inst.words[3]) +
                               NameForId(inst.words[2]));
       break;
+    case SpvOpTypeArray:
+      SaveName(result_id, std::string("_arr_") + NameForId(inst.words[2]) +
+                              "_" + NameForId(inst.words[3]));
+      break;
+    case SpvOpTypeRuntimeArray:
+      SaveName(result_id, std::string("_runtimearr_") + NameForId(inst.words[2]));
+      break;
     case SpvOpTypePointer:
-      SaveName(result_id, NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
-                                             inst.words[2]) +
-                              "_ptr_" + NameForId(inst.words[3]));
+      SaveName(result_id, std::string("_ptr_") +
+                              NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
+                                                 inst.words[2]) +
+                              "_" + NameForId(inst.words[3]));
+      break;
+    case SpvOpTypePipe:
+      SaveName(result_id,
+               std::string("Pipe") +
+                   NameForEnumOperand(SPV_OPERAND_TYPE_ACCESS_QUALIFIER,
+                                      inst.words[2]));
+      break;
+    case SpvOpTypeEvent:
+      SaveName(result_id, "Event");
+      break;
+    case SpvOpTypeDeviceEvent:
+      SaveName(result_id, "DeviceEvent");
+      break;
+    case SpvOpTypeReserveId:
+      SaveName(result_id, "ReserveId");
+      break;
+    case SpvOpTypeQueue:
+      SaveName(result_id, "Queue");
+      break;
+    case SpvOpTypeOpaque:
+      SaveName(result_id,
+               std::string("Opaque_") +
+                   Sanitize(reinterpret_cast<const char*>(inst.words + 2)));
+      break;
+    case SpvOpTypePipeStorage:
+      SaveName(result_id, "PipeStorage");
+      break;
+    case SpvOpTypeNamedBarrier:
+      SaveName(result_id, "NamedBarrierType");
+      break;
+    case SpvOpTypeStruct:
+      // Structs are mapped rather simplisitically. Just indicate that they
+      // are a struct and then give the raw Id number.
+      SaveName(result_id, std::string("_struct_") + to_string(result_id));
       break;
     default:
       // If this instruction otherwise defines an Id, then save a mapping for

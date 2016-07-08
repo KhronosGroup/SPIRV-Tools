@@ -56,8 +56,8 @@ using FriendlyNameTest =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<NameIdCase>>;
 
 TEST_P(FriendlyNameTest, SingleMapping) {
-  ScopedContext context;
-  auto words = CompileSuccessfully(GetParam().assembly);
+  ScopedContext context(SPV_ENV_UNIVERSAL_1_1);
+  auto words = CompileSuccessfully(GetParam().assembly, SPV_ENV_UNIVERSAL_1_1);
   auto friendly_mapper =
       FriendlyNameMapper(context.context, words.data(), words.size());
   NameMapper mapper = friendly_mapper.GetNameMapper();
@@ -161,18 +161,53 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid", 3, "void_1"},
     }), );
 
+INSTANTIATE_TEST_CASE_P(Arrays, FriendlyNameTest,
+                        ::testing::ValuesIn(std::vector<NameIdCase>{
+                            {"OpName %2 \"FortyTwo\" %1 = OpTypeFloat 32 "
+                             "%2 = OpConstant %1 42 %3 = OpTypeArray %1 %2",
+                             3, "_arr_float_FortyTwo"},
+                            {"%1 = OpTypeInt 32 0 "
+                             "%2 = OpTypeRuntimeArray %1",
+                             2, "_runtimearr_uint"},
+                        }), );
+
+INSTANTIATE_TEST_CASE_P(Structs, FriendlyNameTest,
+                        ::testing::ValuesIn(std::vector<NameIdCase>{
+                            {"%1 = OpTypeBool "
+                             "%2 = OpTypeStruct %1 %1 %1",
+                             2, "_struct_2"},
+                            {"%1 = OpTypeBool "
+                             "%2 = OpTypeStruct %1 %1 %1 "
+                             "%3 = OpTypeStruct %2 %2",
+                             3, "_struct_3"},
+                        }), );
+
 INSTANTIATE_TEST_CASE_P(
     Pointer, FriendlyNameTest,
     ::testing::ValuesIn(std::vector<NameIdCase>{
         {"%1 = OpTypeFloat 32 %2 = OpTypePointer Workgroup %1", 2,
-         "Workgroup_ptr_float"},
+         "_ptr_Workgroup_float"},
         {"%1 = OpTypeBool %2 = OpTypePointer Private %1", 2,
-         "Private_ptr_bool"},
+         "_ptr_Private_bool"},
         // OpTypeForwardPointer doesn't force generation of the name for its
         // target type.
         {"%1 = OpTypeBool OpTypeForwardPointer %2 Private %2 = OpTypePointer "
          "Private %1",
-         2, "Private_ptr_bool"},
+         2, "_ptr_Private_bool"},
     }), );
+
+INSTANTIATE_TEST_CASE_P(ExoticTypes, FriendlyNameTest,
+                        ::testing::ValuesIn(std::vector<NameIdCase>{
+                            {"%1 = OpTypeEvent", 1, "Event"},
+                            {"%1 = OpTypeDeviceEvent", 1, "DeviceEvent"},
+                            {"%1 = OpTypeReserveId", 1, "ReserveId"},
+                            {"%1 = OpTypeQueue", 1, "Queue"},
+                            {"%1 = OpTypeOpaque \"hello world!\"", 1, "Opaque_hello_world_"},
+                            {"%1 = OpTypePipe ReadOnly", 1, "PipeReadOnly"},
+                            {"%1 = OpTypePipe WriteOnly", 1, "PipeWriteOnly"},
+                            {"%1 = OpTypePipe ReadWrite", 1, "PipeReadWrite"},
+                            {"%1 = OpTypePipeStorage", 1, "PipeStorage"},
+                            {"%1 = OpTypeNamedBarrier", 1, "NamedBarrierType"},
+                        }), );
 
 }  // anonymous namespace
