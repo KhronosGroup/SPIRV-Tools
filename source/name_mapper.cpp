@@ -54,7 +54,8 @@ NameMapper GetTrivialNameMapper() { return to_string; }
 
 FriendlyNameMapper::FriendlyNameMapper(const spv_const_context context,
                                        const uint32_t* code,
-                                       const size_t wordCount) {
+                                       const size_t wordCount)
+    : grammar_(libspirv::AssemblyGrammar(context)) {
   spv_diagnostic diag = nullptr;
   // We don't care if the parse fails.
   spvBinaryParse(context, this, code, wordCount, nullptr,
@@ -172,6 +173,11 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       SaveName(result_id, std::string("mat") + to_string(inst.words[3]) +
                               NameForId(inst.words[2]));
       break;
+    case SpvOpTypePointer:
+      SaveName(result_id, NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
+                                             inst.words[2]) +
+                              "_ptr_" + NameForId(inst.words[3]));
+      break;
     default:
       // If this instruction otherwise defines an Id, then save a mapping for
       // it.  This is needed to ensure uniqueness in there is an OpName with
@@ -183,6 +189,19 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       break;
   }
   return SPV_SUCCESS;
+}
+
+std::string FriendlyNameMapper::NameForEnumOperand(spv_operand_type_t type,
+                                                 uint32_t word) {
+  std::string result;
+  spv_operand_desc desc = nullptr;
+  if (SPV_SUCCESS == grammar_.lookupOperand(type, word, &desc)) {
+    result = std::string(desc->name);
+  } else {
+    // Invalid input.  Just give something sane.
+    result = std::string("StorageClass") + to_string(word);
+  }
+  return result;
 }
 
 }  // namespace libspirv

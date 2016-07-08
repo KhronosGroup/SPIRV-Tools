@@ -33,6 +33,7 @@
 #include <unordered_set>
 
 #include "spirv-tools/libspirv.h"
+#include "assembly_grammar.h"
 
 namespace libspirv {
 
@@ -59,6 +60,9 @@ NameMapper GetTrivialNameMapper();
 //  - Vector type names map to "v" followed by the number of components,
 //  followed by the friendly name for the base type.
 //  - Matrix type names map to "mat" followed by the number of columns,
+//  followed by the friendly name for the base vector type.
+//  - Pointer types map to the name of the storage class, then "_ptr_", then the
+//  name for the pointee type.
 //  followed by the friendly name for the base vector type.
 class FriendlyNameMapper {
  public:
@@ -101,11 +105,16 @@ class FriendlyNameMapper {
         *parsed_instruction);
   }
 
+  // Returns the friendly name for an enumerant.
+  std::string NameForEnumOperand(spv_operand_type_t type, uint32_t word);
+
   // Maps an id to its friendly name.  This will have an entry for each Id
   // defined in the module.
   std::unordered_map<uint32_t, std::string> name_for_id_;
   // The set of names that have a mapping in name_for_id_;
   std::unordered_set<std::string> used_names_;
+  // The assembly grammar for the current context.
+  const libspirv::AssemblyGrammar grammar_;
 };
 
 }  // namespace libspirv

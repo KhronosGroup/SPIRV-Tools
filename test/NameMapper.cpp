@@ -161,4 +161,18 @@ INSTANTIATE_TEST_CASE_P(
         {"%1 = OpTypeVoid %2 = OpTypeVoid %3 = OpTypeVoid", 3, "void_1"},
     }), );
 
+INSTANTIATE_TEST_CASE_P(
+    Pointer, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeFloat 32 %2 = OpTypePointer Workgroup %1", 2,
+         "Workgroup_ptr_float"},
+        {"%1 = OpTypeBool %2 = OpTypePointer Private %1", 2,
+         "Private_ptr_bool"},
+        // OpTypeForwardPointer doesn't force generation of the name for its
+        // target type.
+        {"%1 = OpTypeBool OpTypeForwardPointer %2 Private %2 = OpTypePointer "
+         "Private %1",
+         2, "Private_ptr_bool"},
+    }), );
+
 }  // anonymous namespace
