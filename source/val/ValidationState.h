@@ -39,23 +39,9 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 #include "spirv_definition.h"
+#include "val/Id.h"
 
 namespace libspirv {
-
-// Universal Limit of ResultID + 1
-static const uint32_t kInvalidId = 0x400000;
-
-// Info about a result ID.
-typedef struct spv_id_info_t {
-  /// Id value.
-  uint32_t id;
-  /// Type id, or 0 if no type.
-  uint32_t type_id;
-  /// Opcode of the instruction defining the id.
-  SpvOp opcode;
-  /// Binary words of the instruction defining the id.
-  std::vector<uint32_t> words;
-} spv_id_info_t;
 
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
@@ -138,41 +124,6 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
-  /// Keeps track of ID definitions and uses.
-  class UseDefTracker {
-   public:
-    void AddDef(const spv_id_info_t& def) { defs_[def.id] = def; }
-
-    void AddUse(uint32_t id) { uses_.insert(id); }
-
-    /// Finds id's def, if it exists.  If found, returns <true, def>. Otherwise,
-    /// returns <false, something>.
-    std::pair<bool, spv_id_info_t> FindDef(uint32_t id) const {
-      if (defs_.count(id) == 0) {
-        return std::make_pair(false, spv_id_info_t{});
-      } else {
-        /// We are in a const function, so we cannot use defs.operator[]().
-        /// Luckily we know the key exists, so defs_.at() won't throw an
-        /// exception.
-        return std::make_pair(true, defs_.at(id));
-      }
-    }
-
-    /// Returns uses of IDs lacking defs.
-    std::unordered_set<uint32_t> FindUsesWithoutDefs() const {
-      auto diff = uses_;
-      for (const auto d : defs_) diff.erase(d.first);
-      return diff;
-    }
-
-   private:
-    std::unordered_set<uint32_t> uses_;
-    std::unordered_map<uint32_t, spv_id_info_t> defs_;
-  };
-
-  UseDefTracker& usedefs() { return usedefs_; }
-  const UseDefTracker& usedefs() const { return usedefs_; }
-
   /// Returns a list of entry point function ids
   std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
@@ -210,6 +161,20 @@ class ValidationState_t {
 
   AssemblyGrammar& grammar() { return grammar_; }
 
+  /// Adds an id to the module
+  void AddId(const spv_parsed_instruction_t& inst);
+
+  /// Register Id use
+  void RegisterUseId(uint32_t used_id);
+
+  /// Finds id's def, if it exists.  If found, returns the definition otherwise
+  /// nullptr
+  const Id* FindDef(uint32_t id) const;
+
+  const std::unordered_map<uint32_t, Id>& all_definitions() const {
+    return all_definitions_;
+  }
+
  private:
   spv_diagnostic* diagnostic_;
   /// Tracks the number of instructions evaluated by the validator
@@ -231,8 +196,7 @@ class ValidationState_t {
   spv_capability_mask_t
       module_capabilities_;  /// Module's declared capabilities.
 
-  /// Definitions and uses of all the IDs in the module.
-  UseDefTracker usedefs_;
+  std::unordered_map<uint32_t, Id> all_definitions_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;

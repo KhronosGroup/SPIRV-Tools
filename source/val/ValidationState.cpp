@@ -33,7 +33,10 @@
 #include "val/Function.h"
 
 using std::list;
+using std::make_pair;
+using std::pair;
 using std::string;
+using std::unordered_map;
 using std::vector;
 
 namespace libspirv {
@@ -248,7 +251,18 @@ vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return usedefs_.FindDef(id).first;
+  return all_definitions_.find(Id{id}) != end(all_definitions_);
+}
+
+const Id* ValidationState_t::FindDef(uint32_t id) const {
+  if (all_definitions_.count(Id{id}) == 0) {
+    return nullptr;
+  } else {
+    /// We are in a const function, so we cannot use defs.operator[]().
+    /// Luckily we know the key exists, so defs_.at() won't throw an
+    /// exception.
+    return &all_definitions_.at(id);
+  }
 }
 
 // Increments the instruction count. Used for diagnostic
@@ -327,9 +341,7 @@ void ValidationState_t::set_memory_model(SpvMemoryModel mm) {
   memory_model_ = mm;
 }
 
-SpvMemoryModel ValidationState_t::memory_model() const {
-  return memory_model_;
-}
+SpvMemoryModel ValidationState_t::memory_model() const { return memory_model_; }
 
 spv_result_t ValidationState_t::RegisterFunction(
     uint32_t id, uint32_t ret_type_id, SpvFunctionControlMask function_control,
@@ -339,7 +351,7 @@ spv_result_t ValidationState_t::RegisterFunction(
          "of another function");
   in_function_ = true;
   module_functions_.emplace_back(id, ret_type_id, function_control,
-                                 function_type_id, *this);
+                                 function_type_id);
 
   // TODO(umar): validate function type and type_id
 
@@ -358,4 +370,26 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
+void ValidationState_t::AddId(const spv_parsed_instruction_t& inst) {
+  if (in_function_body()) {
+    if (in_block()) {
+      all_definitions_[inst.result_id] =
+          Id{&inst, &current_function(), current_function().current_block()};
+    } else {
+      all_definitions_[inst.result_id] = Id{&inst, &current_function()};
+    }
+  } else {
+    all_definitions_[inst.result_id] = Id{&inst};
+  }
+}
+
+void ValidationState_t::RegisterUseId(uint32_t used_id) {
+  auto used = all_definitions_.find(used_id);
+  if (used != end(all_definitions_)) {
+    if (in_function_body())
+      used->second.RegisterUse(current_function().current_block());
+    else
+      used->second.RegisterUse(nullptr);
+  }
+}
 }  /// namespace libspirv
