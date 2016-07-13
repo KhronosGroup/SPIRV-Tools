@@ -1014,5 +1014,148 @@ TEST_F(ValidateSSA, PhiMissingLabelBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
-// TODO(umar): OpGroupMemberDecorate
+TEST_F(ValidateSSA, IdDominatesItsUseGood) {
+  string str = kHeader + kBasicTypes +
+               R"(
+%func      = OpFunction %voidt None %vfunct
+%entry     = OpLabel
+%cond      = OpSLessThan %intt %one %ten
+%eleven    = OpIAdd %intt %one %ten
+             OpSelectionMerge %merge None
+             OpBranchConditional %cond %t %f
+%t         = OpLabel
+%twelve    = OpIAdd %intt %eleven %one
+             OpBranch %merge
+%f         = OpLabel
+%twentytwo = OpIAdd %intt %eleven %ten
+             OpBranch %merge
+%merge     = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
+  string str = kHeader +
+               "OpName %eleven \"eleven\"\n"
+               "OpName %true_block \"true_block\"\n"
+               "OpName %false_block \"false_block\"" +
+               kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+%cond        = OpSLessThan %intt %one %ten
+               OpSelectionMerge %merge None
+               OpBranchConditional %cond %true_block %false_block
+%true_block  = OpLabel
+%eleven      = OpIAdd %intt %one %ten
+%twelve      = OpIAdd %intt %eleven %one
+               OpBranch %merge
+%false_block = OpLabel
+%twentytwo   = OpIAdd %intt %eleven %ten
+               OpBranch %merge
+%merge       = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("ID .\\[eleven\\] defined in block .\\[true_block\\] does "
+                   "not dominate its use in block .\\[false_block\\]"));
+}
+
+TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
+  string str = kHeader + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+%var_one     = OpVariable %intptrt Function %one
+%one_val     = OpLoad %intt %var_one
+               OpBranch %loop
+%loop        = OpLabel
+%i           = OpPhi %intt %one_val %entry %inew %cont
+%cond        = OpSLessThan %intt %one %ten
+               OpLoopMerge %merge %cont None
+               OpBranchConditional %cond %body %merge
+%body        = OpLabel
+               OpBranch %cont
+%cont        = OpLabel
+%inew        = OpIAdd %intt %i %one
+               OpBranch %loop
+%merge       = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSSA, PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) {
+  string str = kHeader
+      + "OpName %inew \"inew\""
+      + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+%var_one     = OpVariable %intptrt Function %one
+%one_val     = OpLoad %intt %var_one
+               OpBranch %loop
+%loop        = OpLabel
+%i           = OpPhi %intt %one_val %entry %inew %cont
+%bad         = OpIAdd %intt %inew %one
+%cond        = OpSLessThan %intt %one %ten
+               OpLoopMerge %merge %cont None
+               OpBranchConditional %cond %body %merge
+%body        = OpLabel
+               OpBranch %cont
+%cont        = OpLabel
+%inew        = OpIAdd %intt %i %one
+               OpBranch %loop
+%merge       = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+    getDiagnosticString(),
+    MatchesRegex("ID .\\[inew\\] has not been defined"));
+}
+
+TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
+  string str = kHeader +
+               "OpName %first \"first\"\n"
+               "OpName %entry2 \"entry2\"\n"
+               "OpName %func \"func\"\n" +
+               kBasicTypes +
+               R"(
+%viifunct  = OpTypeFunction %voidt %intt %intt
+%func      = OpFunction %voidt None %viifunct
+%first     = OpFunctionParameter %intt
+%second    = OpFunctionParameter %intt
+             OpFunctionEnd
+%func2     = OpFunction %voidt None %viifunct
+%first2    = OpFunctionParameter %intt
+%second2   = OpFunctionParameter %intt
+%entry2    = OpLabel
+%baduse    = OpIAdd %intt %first %first2
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("ID .\\[first\\] used in block .\\[entry2\\] is used "
+                   "outside of it's defining function .\\[func\\]"));
+}
+// TODO(umar): OpGroupMemberDecorate
+}  // namespace
