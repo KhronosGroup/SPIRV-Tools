@@ -88,6 +88,18 @@ std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
 spv_result_t PerformCfgChecks(ValidationState_t& _);
 
+/// @brief This function checks all ID definitions dominate their use in the
+/// CFG.
+///
+/// This function will iterate over all ID definitions that are defined in the
+/// functions of a module and make sure that the definitions appear in a
+/// block that dominates their use.
+///
+/// @param[in] _ the validation state of the module
+///
+/// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_ID otherwise
+spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
+
 /// @brief Updates the immediate dominator for each of the block edges
 ///
 /// Updates the immediate dominator of the blocks for each of the edges

@@ -2376,13 +2376,56 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
 
 namespace libspirv {
 
+/// This function checks all ID definitions dominate their use in the CFG.
+///
+/// This function will iterate over all ID definitions that are defined in the
+/// functions of a module and make sure that the definitions appear in a
+/// block that dominates their use.
+///
+/// NOTE: This function does NOT check module scoped functions which are
+/// checked during the initial binary parse in the IdPass below
+spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
+  for (const auto& definition : _.all_definitions()) {
+    // Check only those blocks defined in a function
+    if (const Function* func = definition.second.defining_function()) {
+      if (const BasicBlock* block = definition.second.defining_block()) {
+        // If the Id is defined within a block then make sure all references to
+        // that Id appear in a blocks that are dominated by the defining block
+        for (auto use : definition.second.uses()) {
+          if (use->dom_end() == find(use->dom_begin(), use->dom_end(), block)) {
+            return _.diag(SPV_ERROR_INVALID_ID)
+                   << "ID " << _.getIdName(definition.first)
+                   << " defined in block " << _.getIdName(block->id())
+                   << " does not dominate its use in block "
+                   << _.getIdName(use->id());
+          }
+        }
+      } else {
+        // If the Ids defined within a function but not in a block(i.e. function
+        // parameters, block ids), then make sure all references to that Id
+        // appear within the same function
+        bool found = false;
+        for (auto use : definition.second.uses()) {
+          tie(ignore, found) = func->GetBlock(use->id());
+          if (!found) {
+            return _.diag(SPV_ERROR_INVALID_ID)
+                   << "ID " << _.getIdName(definition.first)
+                   << " used in block " << _.getIdName(use->id())
+                   << " is used outside of it's defining function "
+                   << _.getIdName(func->id());
+          }
+        }
+      }
+    }
+    // NOTE: Ids defined outside of functions must appear before they are used
+    // This check is being performed in the IdPass function
+  }
+  return SPV_SUCCESS;
+}
+
 // Performs SSA validation on the IDs of an instruction. The
 // can_have_forward_declared_ids  functor should return true if the
 // instruction operand's ID can be forward referenced.
-//
-// TODO(umar): Use dominators to correctly validate SSA. For example, the result
-// id from a 'then' block cannot dominate its usage in the 'else' block. This
-// is not yet performed by this function.
 spv_result_t IdPass(ValidationState_t& _,
                     const spv_parsed_instruction_t* inst) {
   auto can_have_forward_declared_ids =
@@ -2396,8 +2439,10 @@ spv_result_t IdPass(ValidationState_t& _,
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
+        // NOTE: Multiple Id definitions are being checked by the binary parser
+        // NOTE: result Id is added *after* all of the other Ids have been
+        // checked to avoid premature use in the same instruction
         _.RemoveIfForwardDeclared(*operand_ptr);
-        _.AddId(*inst);
         ret = SPV_SUCCESS;
         break;
       case SPV_OPERAND_TYPE_ID:
@@ -2422,6 +2467,9 @@ spv_result_t IdPass(ValidationState_t& _,
     if (SPV_SUCCESS != ret) {
       return ret;
     }
+  }
+  if (inst->result_id) {
+    _.AddId(*inst);
   }
   return SPV_SUCCESS;
 }

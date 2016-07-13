@@ -91,8 +91,13 @@ class Block {
       : label_(label), body_(), type_(type), successors_() {}
 
   /// Sets the instructions which will appear in the body of the block
-  Block& setBody(std::string body) {
-    body_ = body;
+  Block& SetBody(std::string body) {
+      body_ = body;
+    return *this;
+  }
+
+  Block& AppendBody(std::string body) {
+      body_ += body;
     return *this;
   }
 
@@ -196,9 +201,9 @@ TEST_P(ValidateCFG, Simple) {
   Block cont("cont");
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) {
-    loop.setBody("OpLoopMerge %merge %cont None\n");
+    loop.SetBody("OpLoopMerge %merge %cont None\n");
   }
 
   string str = header(GetParam()) + nameOps("loop", "entry", "cont", "merge",
@@ -220,7 +225,7 @@ TEST_P(ValidateCFG, Variable) {
   Block cont("cont");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%var = OpVariable %ptrt Function\n");
+  entry.SetBody("%var = OpVariable %ptrt Function\n");
 
   string str = header(GetParam()) + nameOps(make_pair("func", "Main")) +
                types_consts() + " %func    = OpFunction %voidt None %funct\n";
@@ -239,7 +244,7 @@ TEST_P(ValidateCFG, VariableNotInFirstBlockBad) {
   Block exit("exit", SpvOpReturn);
 
   // This operation should only be performed in the entry block
-  cont.setBody("%var = OpVariable %ptrt Function\n");
+  cont.SetBody("%var = OpVariable %ptrt Function\n");
 
   string str = header(GetParam()) + nameOps(make_pair("func", "Main")) +
                types_consts() + " %func    = OpFunction %voidt None %funct\n";
@@ -264,8 +269,8 @@ TEST_P(ValidateCFG, BlockAppearsBeforeDominatorBad) {
   Block branch("branch", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) branch.setBody("OpSelectionMerge %merge None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) branch.SetBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("cont", "branch", make_pair("func", "Main")) +
@@ -291,11 +296,11 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksBad) {
   Block selection("selection", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody(" OpLoopMerge %merge %loop None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody(" OpLoopMerge %merge %loop None\n");
 
   // cannot share the same merge
-  if (is_shader) selection.setBody("OpSelectionMerge %merge None\n");
+  if (is_shader) selection.SetBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("merge", make_pair("func", "Main")) + types_consts() +
@@ -325,11 +330,11 @@ TEST_P(ValidateCFG, MergeBlockTargetedByMultipleHeaderBlocksSelectionBad) {
   Block selection("selection", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) selection.setBody(" OpSelectionMerge %merge None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) selection.SetBody(" OpSelectionMerge %merge None\n");
 
   // cannot share the same merge
-  if (is_shader) loop.setBody(" OpLoopMerge %merge %loop None\n");
+  if (is_shader) loop.SetBody(" OpLoopMerge %merge %loop None\n");
 
   string str = header(GetParam()) +
                nameOps("merge", make_pair("func", "Main")) + types_consts() +
@@ -377,8 +382,8 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   Block bad("bad", SpvOpBranchConditional);
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  bad.setBody(" OpLoopMerge %entry %exit None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  bad.SetBody(" OpLoopMerge %entry %exit None\n");
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
@@ -403,8 +408,8 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   Block merge("merge");
   Block end("end", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  bad.setBody("OpLoopMerge %merge %cont None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  bad.SetBody("OpLoopMerge %merge %cont None\n");
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
@@ -433,8 +438,8 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
   Block merge("merge");
   Block end("end", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  bad.setBody("OpSelectionMerge %merge None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  bad.SetBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("entry", "bad", make_pair("func", "Main")) +
@@ -462,8 +467,8 @@ TEST_P(ValidateCFG, BranchToBlockInOtherFunctionBad) {
   Block middle("middle", SpvOpBranchConditional);
   Block end("end", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  middle.setBody("OpSelectionMerge %end None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  middle.SetBody("OpSelectionMerge %end None\n");
 
   Block entry2("entry2");
   Block middle2("middle2");
@@ -499,9 +504,9 @@ TEST_P(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   Block f("f");
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond = OpSLessThan %intt %one %two\n");
+  head.SetBody("%cond = OpSLessThan %intt %one %two\n");
 
-  if (is_shader) head.setBody("OpSelectionMerge %merge None\n");
+  if (is_shader) head.AppendBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("head", "merge", make_pair("func", "Main")) +
@@ -514,7 +519,6 @@ TEST_P(ValidateCFG, HeaderDoesntDominatesMergeBad) {
   str += "OpFunctionEnd\n";
 
   CompileSuccessfully(str);
-
   if (is_shader) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(
@@ -535,8 +539,8 @@ TEST_P(ValidateCFG, UnreachableMerge) {
   Block f("f", SpvOpReturn);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) branch.setBody("OpSelectionMerge %merge None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) branch.AppendBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("branch", "merge", make_pair("func", "Main")) +
@@ -561,8 +565,8 @@ TEST_P(ValidateCFG, UnreachableMergeDefinedByOpUnreachable) {
   Block f("f", SpvOpReturn);
   Block merge("merge", SpvOpUnreachable);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) branch.setBody("OpSelectionMerge %merge None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) branch.AppendBody("OpSelectionMerge %merge None\n");
 
   string str = header(GetParam()) +
                nameOps("branch", "merge", make_pair("func", "Main")) +
@@ -606,8 +610,8 @@ TEST_P(ValidateCFG, UnreachableBranch) {
   Block merge("merge");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) unreachable.setBody("OpSelectionMerge %merge None\n");
+  unreachable.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) unreachable.AppendBody("OpSelectionMerge %merge None\n");
   string str = header(GetParam()) +
                nameOps("unreachable", "exit", make_pair("func", "Main")) +
                types_consts() + "%func    = OpFunction %voidt None %funct\n";
@@ -638,8 +642,8 @@ TEST_P(ValidateCFG, SingleBlockLoop) {
   Block loop("loop", SpvOpBranchConditional);
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody("OpLoopMerge %exit %loop None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.AppendBody("OpLoopMerge %exit %loop None\n");
 
   string str = header(GetParam()) + string(types_consts()) +
                "%func    = OpFunction %voidt None %funct\n";
@@ -664,10 +668,10 @@ TEST_P(ValidateCFG, NestedLoops) {
   Block loop1_merge("loop1_merge");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) {
-    loop1.setBody("OpLoopMerge %loop1_merge %loop2 None\n");
-    loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
+    loop1.SetBody("OpLoopMerge %loop1_merge %loop2 None\n");
+    loop2.SetBody("OpLoopMerge %loop2_merge %loop2 None\n");
   }
 
   string str = header(GetParam()) + nameOps("loop2", "loop2_merge") +
@@ -694,11 +698,11 @@ TEST_P(ValidateCFG, NestedSelection) {
   vector<Block> merge_blocks;
   Block inner("inner");
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
 
   if_blocks.emplace_back("if0", SpvOpBranchConditional);
 
-  if (is_shader) if_blocks[0].setBody("OpSelectionMerge %if_merge0 None\n");
+  if (is_shader) if_blocks[0].SetBody("OpSelectionMerge %if_merge0 None\n");
   merge_blocks.emplace_back("if_merge0", SpvOpReturn);
 
   for (int i = 1; i < N; i++) {
@@ -706,7 +710,7 @@ TEST_P(ValidateCFG, NestedSelection) {
     ss << i;
     if_blocks.emplace_back("if" + ss.str(), SpvOpBranchConditional);
     if (is_shader)
-      if_blocks[i].setBody("OpSelectionMerge %if_merge" + ss.str() + " None\n");
+      if_blocks[i].SetBody("OpSelectionMerge %if_merge" + ss.str() + " None\n");
     merge_blocks.emplace_back("if_merge" + ss.str(), SpvOpBranch);
   }
   string str = header(GetParam()) + string(types_consts()) +
@@ -737,10 +741,10 @@ TEST_P(ValidateCFG, BackEdgeBlockDoesntPostDominateContinueTargetBad) {
   Block be_block("be_block");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
   if (is_shader) {
-    loop1.setBody("OpLoopMerge %exit %loop2_merge None\n");
-    loop2.setBody("OpLoopMerge %loop2_merge %loop2 None\n");
+    loop1.SetBody("OpLoopMerge %exit %loop2_merge None\n");
+    loop2.SetBody("OpLoopMerge %loop2_merge %loop2 None\n");
   }
 
   string str = header(GetParam()) +
@@ -775,8 +779,8 @@ TEST_P(ValidateCFG, BranchingToNonLoopHeaderBlockBad) {
   Block f("f");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) split.setBody("OpSelectionMerge %exit None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) split.SetBody("OpSelectionMerge %exit None\n");
 
   string str = header(GetParam()) + nameOps("split", "f") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
@@ -806,8 +810,8 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   Block split("split", SpvOpBranchConditional);
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) split.setBody("OpSelectionMerge %exit None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) split.SetBody("OpSelectionMerge %exit None\n");
 
   string str = header(GetParam()) + nameOps("split") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
@@ -836,8 +840,8 @@ TEST_P(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
   Block cont("cont", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %loop None\n");
 
   string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
@@ -868,8 +872,8 @@ TEST_P(ValidateCFG, ContinueTargetMustBePostDominatedByBackEdge) {
   Block merge("merge", SpvOpReturn);
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody("OpLoopMerge %merge %cheader None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %cheader None\n");
 
   string str = header(GetParam()) + nameOps("cheader", "be_block") +
                types_consts() + "%func    = OpFunction %voidt None %funct\n";
@@ -901,8 +905,8 @@ TEST_P(ValidateCFG, BranchOutOfConstructToMergeBad) {
   Block cont("cont", SpvOpBranchConditional);
   Block merge("merge", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %loop None\n");
 
   string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
@@ -933,8 +937,8 @@ TEST_P(ValidateCFG, BranchOutOfConstructBad) {
   Block merge("merge");
   Block exit("exit", SpvOpReturn);
 
-  entry.setBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.setBody("OpLoopMerge %merge %loop None\n");
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %loop None\n");
 
   string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
                "%func    = OpFunction %voidt None %funct\n";
@@ -987,11 +991,11 @@ OpDecorate %id BuiltIn GlobalInvocationId
 %main      = OpFunction %void None %voidf
 )";
 
-  entry.setBody(
-    "%idval    = OpLoad %uvec3 %id\n"
-    "%x        = OpCompositeExtract %u32 %idval 0\n"
-    "%selector = OpUMod %u32 %x %three\n"
-    "OpSelectionMerge %phi None\n");
+  entry.SetBody(
+      "%idval    = OpLoad %uvec3 %id\n"
+      "%x        = OpCompositeExtract %u32 %idval 0\n"
+      "%selector = OpUMod %u32 %x %three\n"
+      "OpSelectionMerge %phi None\n");
   str += entry >> vector<Block>({def, case0, case1, case2});
   str += case1 >> phi;
   str += def;
