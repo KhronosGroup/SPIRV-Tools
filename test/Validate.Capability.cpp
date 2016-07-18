@@ -284,12 +284,8 @@ const vector<string>& MatrixDependencies() {
   "InputAttachment",
   "SparseResidency",
   "MinLod",
-  "Sampled1D",
-  "Image1D",
   "SampledCubeArray",
-  "SampledBuffer",
   "ImageMSArray",
-  "ImageBuffer",
   "StorageImageExtendedFormats",
   "ImageQuery",
   "DerivativeControl",
@@ -325,12 +321,8 @@ const vector<string>& ShaderDependencies() {
   "InputAttachment",
   "SparseResidency",
   "MinLod",
-  "Sampled1D",
-  "Image1D",
   "SampledCubeArray",
-  "SampledBuffer",
   "ImageMSArray",
-  "ImageBuffer",
   "StorageImageExtendedFormats",
   "ImageQuery",
   "DerivativeControl",
@@ -651,7 +643,7 @@ make_pair(string(kGLSL450MemoryModel) +
 make_pair(string(kOpenCLMemoryModel) +
           " %intt = OpTypeInt 32 0\n"
           " %ptrt = OpTypePointer Input %intt"
-          " %var = OpVariable %ptrt Input\n", ShaderDependencies()),
+          " %var = OpVariable %ptrt Input\n", AllCapabilities()),
 make_pair(string(kOpenCLMemoryModel) +
           " %intt = OpTypeInt 32 0\n"
           " %ptrt = OpTypePointer Uniform %intt\n"
@@ -1154,8 +1146,6 @@ bool Exists(const std::string& capability, spv_target_env env) {
              .lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability.c_str(),
                             capability.size(), &dummy);
 }
-
-
 
 TEST_P(ValidateCapability, Capability) {
   const string capability = Capability(GetParam());
