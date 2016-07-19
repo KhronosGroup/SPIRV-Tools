@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2016.2-dev 2016-07-19
+ - Start v2016.2
+
 v2016.1 2016-07-19
  - Fix https://github.com/KhronosGroup/SPIRV-Tools/issues/261
    Turn off ClipDistance and CullDistance capability checks for Vulkan.
