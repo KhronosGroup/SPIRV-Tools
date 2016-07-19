@@ -1,12 +1,14 @@
 Revision history for SPIRV-Tools
 
-v2016.1-dev 2016-07-04
- - Start v2016.1
+v2016.1 2016-07-19
  - Fix https://github.com/KhronosGroup/SPIRV-Tools/issues/261
    Turn off ClipDistance and CullDistance capability checks for Vulkan.
  - The disassembler can emit friendly names based on debug info (OpName
    instructions), and will infer somewhat friendly names for most types.
    This is turned on by default for the spirv-dis command line tool.
+ - Updated to support SPIR-V 1.1 rev 2
+   - Input StorageClass, Sampled1D capability, and SampledBuffer capability
+     do not require Shader capability anymore.
 
 v2016.0 2016-07-04
 
