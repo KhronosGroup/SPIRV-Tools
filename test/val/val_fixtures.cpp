@@ -79,4 +79,5 @@ template class spvtest::ValidateBase<
     std::tuple<int, std::tuple<std::string, std::function<spv_result_t(int)>,
                                std::function<spv_result_t(int)>>>>;
 template class spvtest::ValidateBase<SpvCapability>;
+template class spvtest::ValidateBase<std::tuple<std::string, std::string, std::string>>;
 }
