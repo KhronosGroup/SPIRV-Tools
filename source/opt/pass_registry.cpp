@@ -24,32 +24,27 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
-
-#include <memory>
-
-#include "module.h"
-#include "pass.h"
+#include "pass_registry_impl.h"
 
 namespace spvtools {
 namespace opt {
 
-// A null pass that does nothing.
-class NullPass : public Pass {
-  const char* name() const override { return "Null"; }
-  bool Process(ir::Module*) override { return false; }
-};
+PassRegistryImpl* PassRegistryImpl::GetPassRegistryImpl() {
+  // TODO(qining): thread safe?
+  static PassRegistryImpl registry_impl;
+  return &registry_impl;
+}
 
-// The optimization pass for removing debug instructions (as documented in
-// Section 3.32.2 of the SPIR-V spec).
-class StripDebugInfoPass : public Pass {
- public:
-  const char* name() const override { return "StripDebugInfo"; }
-  bool Process(ir::Module* module) override;
-};
+PassRegistry* PassRegistry::GetPassRegistry() {
+  // TODO(qining): thread safe? And need to control the scope.
+  static PassRegistry registry(PassRegistryImpl::GetPassRegistryImpl());
+  return &registry;
+}
+
+bool PassRegistry::Register(const char* cmd_arg, MakePassPfn make_pass,
+                            DeletePassPfn delete_pass) {
+  return impl_->Register(cmd_arg, make_pass, delete_pass);
+}
 
 }  // namespace opt
 }  // namespace spvtools
-
-#endif  // LIBSPIRV_OPT_PASSES_H_

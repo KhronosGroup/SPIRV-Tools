@@ -48,6 +48,13 @@ TEST(PassManager, Interface) {
   EXPECT_STREQ("StripDebugInfo", manager.GetPass(0)->name());
   EXPECT_STREQ("Null", manager.GetPass(1)->name());
   EXPECT_STREQ("StripDebugInfo", manager.GetPass(2)->name());
+
+  // manager.AddPass(&opt::MakePass<opt::NullPass>);
+  // EXPECT_EQ(4u, manager.NumPasses());
+  // EXPECT_STREQ("StripDebugInfo", manager.GetPass(0)->name());
+  // EXPECT_STREQ("Null", manager.GetPass(1)->name());
+  // EXPECT_STREQ("StripDebugInfo", manager.GetPass(2)->name());
+  // EXPECT_STREQ("Null", manager.GetPass(3)->name());
 }
 
 // A pass that appends an OpNop instruction to the debug section.

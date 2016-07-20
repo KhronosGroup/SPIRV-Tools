@@ -24,32 +24,28 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
-
-#include <memory>
+#ifndef LIBSPIRV_OPT_PASS_H
+#define LIBSPIRV_OPT_PASS_H
 
 #include "module.h"
-#include "pass.h"
+#include "pass_registry.h"
 
 namespace spvtools {
 namespace opt {
 
-// A null pass that does nothing.
-class NullPass : public Pass {
-  const char* name() const override { return "Null"; }
-  bool Process(ir::Module*) override { return false; }
-};
-
-// The optimization pass for removing debug instructions (as documented in
-// Section 3.32.2 of the SPIR-V spec).
-class StripDebugInfoPass : public Pass {
+// A pass. All analysis and transformation is done via the Process() method.
+class Pass {
  public:
-  const char* name() const override { return "StripDebugInfo"; }
-  bool Process(ir::Module* module) override;
+  Pass() {}
+  virtual ~Pass() {};
+  // Returns a descriptive name for this pass.
+  virtual const char* name() const = 0;
+  // Processes the given |module| and returns true if the given |module| is
+  // modified for optimization.
+  virtual bool Process(ir::Module* module) = 0;
 };
 
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+#endif  // LIBSPIRV_OPT_PASS_H
