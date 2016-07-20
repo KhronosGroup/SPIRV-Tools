@@ -386,4 +386,21 @@ void ValidationState_t::RegisterInstruction(
     all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
   }
 }
+
+const Type* ValidationState_t::GetTypeAlias(
+    const spv_parsed_instruction_t& inst) const {
+  for (const auto& type_pair : types_) {
+    auto& type = type_pair.second;
+    if (type.IsAlias(inst)) {
+      return &type;
+    }
+  }
+  return nullptr;
+}
+
+bool ValidationState_t::AddType(const spv_parsed_instruction_t& inst) {
+  assert(GetTypeAlias(inst) == nullptr);
+  types_.emplace(make_pair(inst.result_id, Type{inst}));
+  return true;
+}
 }  /// namespace libspirv
