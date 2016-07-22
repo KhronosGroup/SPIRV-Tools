@@ -1004,6 +1004,43 @@ OpDecorate %id BuiltIn GlobalInvocationId
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, LoopWithoutBackEdgesBad) {
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %main "main"
+           OpName %loop "loop"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%floatt  = OpTypeFloat 32
+%boolt   = OpTypeBool
+%one     = OpConstant %floatt 1
+%two     = OpConstant %floatt 2
+%main    = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpBranch %loop
+%loop    = OpLabel
+           OpLoopMerge %exit %cont None
+           OpBranch %16
+%16      = OpLabel
+%cond    = OpFOrdLessThan %boolt %one %two
+           OpBranchConditional %cond %body %exit
+%body    = OpLabel
+           OpReturn
+%cont    = OpLabel
+           OpBranch %loop
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("Loop with header .\\[loop\\] is targeted by 0 "
+                           "back-edges but the standard requires exactly one"));
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  /// namespace

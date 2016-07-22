@@ -32,6 +32,7 @@
 #include <functional>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -47,12 +48,14 @@ using std::function;
 using std::get;
 using std::ignore;
 using std::make_pair;
+using std::make_tuple;
 using std::numeric_limits;
 using std::pair;
 using std::set;
 using std::string;
 using std::tie;
 using std::transform;
+using std::tuple;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -268,22 +271,10 @@ void UpdateContinueConstructExitBlocks(
   }
 }
 
-/// Constructs an error message for construct validation errors
-string ConstructErrorString(const Construct& construct,
-                            const string& header_string,
-                            const string& exit_string,
-                            bool post_dominate = false) {
-  string construct_name;
-  string header_name;
-  string exit_name;
-  string dominate_text;
-  if (post_dominate) {
-    dominate_text = "is not post dominated by";
-  } else {
-    dominate_text = "does not dominate";
-  }
+tuple<string, string, string> ConstructNames(ConstructType type) {
+  string construct_name, header_name, exit_name;
 
-  switch (construct.type()) {
+  switch (type) {
     case ConstructType::kSelection:
       construct_name = "selection";
       header_name = "selection header";
@@ -301,12 +292,31 @@ string ConstructErrorString(const Construct& construct,
       break;
     case ConstructType::kCase:
       construct_name = "case";
-      header_name = "case block";
-      exit_name = "exit block";  // TODO(umar): there has to be a better name
+      header_name = "case entry block";
+      exit_name = "case exit block";
       break;
     default:
       assert(1 == 0 && "Not defined type");
   }
+
+  return make_tuple(construct_name, header_name, exit_name);
+}
+
+/// Constructs an error message for construct validation errors
+string ConstructErrorString(const Construct& construct,
+                            const string& header_string,
+                            const string& exit_string,
+                            bool post_dominate = false) {
+  string construct_name, header_name, exit_name, dominate_text;
+  if (post_dominate) {
+    dominate_text = "is not post dominated by";
+  } else {
+    dominate_text = "does not dominate";
+  }
+
+  tie(construct_name, header_name, exit_name) =
+      ConstructNames(construct.type());
+
   // TODO(umar): Add header block for continue constructs to error message
   return "The " + construct_name + " construct with the " + header_name + " " +
          header_string + " " + dominate_text + " the " + exit_name + " " +
@@ -340,10 +350,32 @@ spv_result_t StructuredControlFlowChecks(
     }
   }
 
+  // Check the loop headers have exactly one back-edge branching to it
+  for (BasicBlock* block : function.ordered_blocks()) {
+    if (block->is_type(kBlockTypeLoop) &&
+        loop_headers.count(block->id()) != 1) {
+      return _.diag(SPV_ERROR_INVALID_CFG)
+             << "Loop with header " + _.getIdName(block->id()) +
+                    " is targeted by "
+             << loop_headers.count(block->id())
+             << " back-edges but the standard requires exactly one";
+    }
+  }
+
   // Check construct rules
   for (const Construct& construct : function.constructs()) {
     auto header = construct.entry_block();
     auto merge = construct.exit_block();
+
+    if (!merge) {
+      string construct_name, header_name, exit_name;
+      tie(construct_name, header_name, exit_name) =
+          ConstructNames(construct.type());
+      return _.diag(SPV_ERROR_INTERNAL)
+             << "Construct " + construct_name + " with " + header_name + " " +
+                    _.getIdName(header->id()) + " does not have a " +
+                    exit_name + ". This may be a bug in the validator.";
+    }
 
     // if the merge block is reachable then it's dominated by the header
     if (merge->reachable() &&
