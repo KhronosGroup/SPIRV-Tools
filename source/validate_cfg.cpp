@@ -292,8 +292,8 @@ tuple<string, string, string> ConstructNames(ConstructType type) {
       break;
     case ConstructType::kCase:
       construct_name = "case";
-      header_name = "case block";
-      exit_name = "exit block";  // TODO(umar): there has to be a better name
+      header_name = "case entry block";
+      exit_name = "case exit block";
       break;
     default:
       assert(1 == 0 && "Not defined type");
@@ -317,30 +317,6 @@ string ConstructErrorString(const Construct& construct,
   tie(construct_name, header_name, exit_name) =
       ConstructNames(construct.type());
 
-  switch (construct.type()) {
-    case ConstructType::kSelection:
-      construct_name = "selection";
-      header_name = "selection header";
-      exit_name = "merge block";
-      break;
-    case ConstructType::kLoop:
-      construct_name = "loop";
-      header_name = "loop header";
-      exit_name = "merge block";
-      break;
-    case ConstructType::kContinue:
-      construct_name = "continue";
-      header_name = "continue target";
-      exit_name = "back-edge block";
-      break;
-    case ConstructType::kCase:
-      construct_name = "case";
-      header_name = "case block";
-      exit_name = "exit block";  // TODO(umar): there has to be a better name
-      break;
-    default:
-      assert(1 == 0 && "Not defined type");
-  }
   // TODO(umar): Add header block for continue constructs to error message
   return "The " + construct_name + " construct with the " + header_name + " " +
          header_string + " " + dominate_text + " the " + exit_name + " " +
