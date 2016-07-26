@@ -90,7 +90,7 @@ class Instruction {
   // make the instruction to be invalid.
   // TODO(qining): Remove this function when instruction building and insertion
   // is well implemented.
-  void SetOpcode(SpvOp opcode) { opcode_ = opcode; }
+  void SetOpcode(SpvOp op) { opcode_ = op; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
   // Returns the vector of line-related debug instructions attached to this
