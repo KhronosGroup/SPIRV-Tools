@@ -46,7 +46,7 @@ class Pass {
 
 // A null pass that does nothing.
 class NullPass : public Pass {
-  const char* name() const override { return "Null"; }
+  const char* name() const override { return "null"; }
   bool Process(ir::Module*) override { return false; }
 };
 
@@ -54,8 +54,14 @@ class NullPass : public Pass {
 // Section 3.32.2 of the SPIR-V spec).
 class StripDebugInfoPass : public Pass {
  public:
-  const char* name() const override { return "StripDebugInfo"; }
+  const char* name() const override { return "strip-debug"; }
   bool Process(ir::Module* module) override;
+};
+
+class FreezeSpecConstantValuePass : public Pass {
+ public:
+  const char* name() const override { return "freeze-spec-const"; }
+  bool Process(ir::Module*) override;
 };
 
 }  // namespace opt

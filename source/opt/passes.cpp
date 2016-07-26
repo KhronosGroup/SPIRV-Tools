@@ -41,5 +41,35 @@ bool StripDebugInfoPass::Process(ir::Module* module) {
   return modified;
 }
 
+bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
+  bool modified = false;
+  module->ForEachInst([&modified](ir::Instruction* inst) {
+    switch (inst->opcode()) {
+      case SpvOp::SpvOpSpecConstant:
+        inst->SetOpcode(SpvOp::SpvOpConstant);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantTrue:
+        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantFalse:
+        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
+        modified = true;
+        break;
+      case SpvOp::SpvOpDecorate:
+        if (inst->GetSingleWordInOperand(1) ==
+            SpvDecoration::SpvDecorationSpecId) {
+          inst->ToNop();
+          modified = true;
+        }
+        break;
+      default:
+        break;
+    }
+  });
+  return modified;
+}
+
 }  // namespace opt
 }  // namespace spvtools

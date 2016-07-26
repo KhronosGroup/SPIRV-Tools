@@ -29,6 +29,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -52,26 +53,50 @@ class PassTest : public TestT {
   PassTest()
       : tools_(SPV_ENV_UNIVERSAL_1_1), manager_(new opt::PassManager()) {}
 
+  // Runs the given |pass| on the binary assembled from the |assembly|, and
+  // disassebles the optimized binary. Returns a tuple of disassembly string
+  // and the boolean value returned from pass Process() function.
+  std::tuple<std::string, bool> OptimizeAndDisassemble(
+      opt::Pass* pass, const std::string& original, bool skip_nop = false) {
+    std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
+    EXPECT_NE(nullptr, module);
+    if (!module) {
+      return std::make_tuple(std::string(), false);
+    }
+
+    const bool modified = pass->Process(module.get());
+
+    std::vector<uint32_t> binary;
+    module->ToBinary(&binary, skip_nop);
+    std::string optimized;
+    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized));
+    return std::make_tuple(optimized, modified);
+  }
+
+  // Runs a single pass of class |PassT| on the binary assembled from the
+  // |assembly|, disassembles the optimized binary. Returns a tuple of
+  // disassembly string and the boolean value from the pass Process() function.
+  template <typename PassT>
+  std::tuple<std::string, bool> SinglePassRunAndDisassemble(
+      const std::string& assembly, bool skip_nop = false) {
+    auto pass = std::unique_ptr<PassT>(new PassT);
+    return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
+  }
+
   // Runs a single pass of class |PassT| on the binary assembled from the
   // |original| assembly, and checks whether the optimized binary can be
   // disassembled to the |expected| assembly. This does *not* involve pass
   // manager. Callers are suggested to use SCOPED_TRACE() for better messages.
   template <typename PassT>
   void SinglePassRunAndCheck(const std::string& original,
-                             const std::string& expected) {
-    std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
-    ASSERT_NE(nullptr, module);
-
-    const bool modified =
-        std::unique_ptr<PassT>(new PassT)->Process(module.get());
+                             const std::string& expected,
+                             bool skip_nop = false) {
+    std::string optimized;
+    bool modified = false;
+    std::tie(optimized, modified) =
+        SinglePassRunAndDisassemble<PassT>(original, skip_nop);
     // Check whether the pass returns the correct modification indication.
     EXPECT_EQ(original != expected, modified);
-
-    std::vector<uint32_t> binary;
-    module->ToBinary(&binary, /* skip_nop = */ false);
-
-    std::string optimized;
-    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized));
     EXPECT_EQ(expected, optimized);
   }
 
