@@ -58,6 +58,14 @@ class StripDebugInfoPass : public Pass {
   bool Process(ir::Module* module) override;
 };
 
+class FreezeSpecConstantValuePass : public Pass {
+ public:
+  const char* name() const override {
+    return "Freeze spec constants to their default value";
+  }
+  bool Process(ir::Module*) override;
+};
+
 }  // namespace opt
 }  // namespace spvtools
 

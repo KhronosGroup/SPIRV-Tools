@@ -86,6 +86,7 @@ class Instruction {
               std::vector<Instruction>&& dbg_line = {});
 
   SpvOp opcode() const { return opcode_; }
+  void SetOpcode(SpvOp opcode) { opcode_ = opcode; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
   // Returns the vector of line-related debug instructions attached to this
