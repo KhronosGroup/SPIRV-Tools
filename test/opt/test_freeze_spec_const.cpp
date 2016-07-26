@@ -121,7 +121,7 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
                   [&optimized](const char* keyword) {
                     return optimized.find(keyword) != std::string::npos;
                   });
-  EXPECT_EQ(false, contain_removed_keywords);
+  EXPECT_FALSE(contain_removed_keywords);
 }
 
 }  // anonymous namespace
