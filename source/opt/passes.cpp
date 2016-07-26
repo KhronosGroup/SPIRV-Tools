@@ -53,6 +53,11 @@ bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
     } else if (inst->opcode() == SpvOp::SpvOpSpecConstantFalse) {
       inst->SetOpcode(SpvOp::SpvOpConstantFalse);
       modified = true;
+    } else if (inst->opcode() == SpvOp::SpvOpDecorate &&
+        inst->GetInOperand(1).words[0] == SpvDecoration::SpvDecorationSpecId) {
+      // If this is a decoration instrution and the decoration is Spec ID, we
+      // should remove the instrution.
+      inst->ToNop();
     }
   });
   return modified;

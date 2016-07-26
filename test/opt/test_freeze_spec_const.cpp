@@ -27,16 +27,17 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
+#include <algorithm>
 #include <tuple>
 
 namespace {
 
 using namespace spvtools;
 
-using FreezeSpecConstantValueTest = PassTest<::testing::TestWithParam<
+using FreezeSpecConstantValueTypeTest = PassTest<::testing::TestWithParam<
     std::tuple<const char*, const char*, const char*>>>;
 
-TEST_P(FreezeSpecConstantValueTest, PrimaryType) {
+TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
   auto& test_case = GetParam();
   std::vector<const char*> text = {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450",
@@ -50,7 +51,7 @@ TEST_P(FreezeSpecConstantValueTest, PrimaryType) {
 
 // Test each primary type.
 INSTANTIATE_TEST_CASE_P(
-    PrimaryTypeSpecConst, FreezeSpecConstantValueTest,
+    PrimaryTypeSpecConst, FreezeSpecConstantValueTypeTest,
     ::testing::ValuesIn(
         std::vector<std::tuple<const char*, const char*, const char*>>({
             // Type, original spec constant definition, expected frozen spec
@@ -67,6 +68,60 @@ INSTANTIATE_TEST_CASE_P(
                             "%2 = OpConstant %1 3.1415926"),
             std::make_tuple("%1 = OpTypeBool", "%2 = OpSpecConstantTrue %1",
                             "%2 = OpConstantTrue %1"),
+            std::make_tuple("%1 = OpTypeBool", "%2 = OpSpecConstantFalse %1",
+                            "%2 = OpConstantFalse %1"),
         })));
+
+using FreezeSpecConstantValueRemoveDecorationTest = PassTest<::testing::Test>;
+
+TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
+       RemoveDecorationInstWithSpecId) {
+  std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpCapability Float64",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Vertex %4 \"main\"",
+               "OpSource GLSL 450",
+               "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"",
+               "OpSourceExtension \"GL_GOOGLE_include_directive\"",
+               "OpName %4 \"main\"",
+               "OpDecorate %7 SpecId 200",
+               "OpDecorate %9 SpecId 201",
+               "OpDecorate %11 SpecId 202",
+               "OpDecorate %13 SpecId 203",
+          "%2 = OpTypeVoid",
+          "%3 = OpTypeFunction %2",
+          "%6 = OpTypeInt 32 1",
+          "%7 = OpSpecConstant %6 3",
+          "%8 = OpTypeFloat 32",
+          "%9 = OpSpecConstant %8 3.14",
+         "%10 = OpTypeFloat 64",
+         "%11 = OpSpecConstant %10 3.14159265358979",
+         "%12 = OpTypeBool",
+         "%13 = OpSpecConstantTrue %12",
+          "%4 = OpFunction %2 None %3",
+          "%5 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+  std::string optimized;
+  bool modified = false;
+  std::tie(optimized, modified) =
+      SinglePassRunAndGetDisassembly<opt::FreezeSpecConstantValuePass>(
+          JoinAllInsts(text));
+  EXPECT_EQ(JoinAllInsts(text) != optimized, modified);
+  const char* removed_keywords[] = {
+      "OpSpecConstant", "SpecId",
+  };
+  bool contain_removed_keywords =
+      std::any_of(std::begin(removed_keywords), std::end(removed_keywords),
+                  [&optimized](const char* keyword) {
+                    return optimized.find(keyword) != std::string::npos;
+                  });
+  EXPECT_EQ(false, contain_removed_keywords);
+}
 
 }  // anonymous namespace
