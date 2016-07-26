@@ -39,13 +39,13 @@ namespace libspirv {
 
 class BasicBlock;
 
-enum IdType {
-  kIdTypeUnknown,
-  kIdTypeLabel,
-  kIdTypeType,
-  kIdTypeObject,
-};
-
+/// Represents a definition of any ID
+///
+/// This class represents the a definition of an Id in a module. This object can
+/// be formed as a complete, or incomplete Id. A complete Id allows you to
+/// reference all of the properties of this class and forms a fully defined
+/// object in the module. The incomplete Id is defined only by its integer value
+/// in a module and can only be used to search in a data structure.
 class Id {
  public:
   /// This constructor creates an incomplete Id. This constructor can be used to
@@ -57,7 +57,7 @@ class Id {
               Function* function = nullptr, BasicBlock* block = nullptr);
 
   /// Registers a use of the Id
-  void RegisterUse(const Function* function = nullptr);
+  void RegisterUse(const BasicBlock* block = nullptr);
 
   /// returns the id of the Id
   operator uint32_t() const { return id_; }
@@ -74,6 +74,7 @@ class Id {
   /// outside of a BasicBlock
   const BasicBlock* defining_block() const { return defining_block_; }
 
+  /// Returns the set of blocks where this Id was used
   const std::set<const BasicBlock*>& uses() const { return uses_; }
 
   /// The words used to define the Id

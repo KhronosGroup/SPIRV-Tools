@@ -387,7 +387,7 @@ void ValidationState_t::RegisterUseId(uint32_t used_id) {
   auto used = all_definitions_.find(used_id);
   if (used != end(all_definitions_)) {
     if (in_function_body())
-      used->second.RegisterUse(&current_function());
+      used->second.RegisterUse(current_function().current_block());
     else
       used->second.RegisterUse(nullptr);
   }

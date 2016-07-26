@@ -56,9 +56,7 @@ Id::Id(const spv_parsed_instruction_t* inst, Function* function,
       uses_(),
       words_(inst->words, inst->words + inst->num_words) {}
 
-void Id::RegisterUse(const Function* function) {
-  if (function && function->current_block()) {
-    uses_.insert(function->current_block());
-  }
+void Id::RegisterUse(const BasicBlock* block) {
+  if (block) { uses_.insert(block); }
 }
 }  // namespace libspirv

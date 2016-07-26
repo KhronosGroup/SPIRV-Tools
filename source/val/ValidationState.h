@@ -43,18 +43,6 @@
 
 namespace libspirv {
 
-// Info about a result ID.
-typedef struct spv_id_info_t {
-  /// Id value.
-  uint32_t id;
-  /// Type id, or 0 if no type.
-  uint32_t type_id;
-  /// Opcode of the instruction defining the id.
-  SpvOp opcode;
-  /// Binary words of the instruction defining the id.
-  std::vector<uint32_t> words;
-} spv_id_info_t;
-
 /// This enum represents the sections of a SPIRV module. See section 2.4
 /// of the SPIRV spec for additional details of the order. The enumerant values
 /// are in the same order as the vector returned by GetModuleOrder
