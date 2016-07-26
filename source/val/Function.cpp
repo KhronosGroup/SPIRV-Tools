@@ -134,17 +134,18 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
   RegisterBlock(merge_id, false);
   RegisterBlock(continue_id, false);
   BasicBlock& merge_block = blocks_.at(merge_id);
-  BasicBlock& continue_block = blocks_.at(continue_id);
+  BasicBlock& continue_target_block = blocks_.at(continue_id);
   assert(current_block_ &&
          "RegisterLoopMerge must be called when called within a block");
 
   current_block_->set_type(kBlockTypeLoop);
   merge_block.set_type(kBlockTypeMerge);
-  continue_block.set_type(kBlockTypeContinue);
+  continue_target_block.set_type(kBlockTypeContinue);
   cfg_constructs_.emplace_back(ConstructType::kLoop, current_block_,
                                &merge_block);
   Construct& loop_construct = cfg_constructs_.back();
-  cfg_constructs_.emplace_back(ConstructType::kContinue, &continue_block);
+  cfg_constructs_.emplace_back(ConstructType::kContinue,
+                               &continue_target_block);
   Construct& continue_construct = cfg_constructs_.back();
   continue_construct.set_corresponding_constructs({&loop_construct});
   loop_construct.set_corresponding_constructs({&continue_construct});
