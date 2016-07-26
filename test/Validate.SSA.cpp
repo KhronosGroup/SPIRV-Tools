@@ -107,6 +107,49 @@ TEST_F(ValidateSSA, DominateUsageBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("not_dominant"));
 }
 
+TEST_F(ValidateSSA, DominateUsageWithinBlockBad) {
+  char str[] = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpName %bad "bad"
+%voidt = OpTypeVoid
+%funct = OpTypeFunction %voidt
+%uintt = OpTypeInt 32 0
+%one   = OpConstant %uintt 1
+%func  = OpFunction %voidt None %funct
+%entry = OpLabel
+%sum   = OpIAdd %uintt %one %bad
+%bad   = OpCopyObject %uintt %sum
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("ID .\\[bad\\] has not been defined"));
+}
+
+TEST_F(ValidateSSA, DominateUsageSameInstructionBad) {
+  char str[] = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpName %sum "sum"
+%voidt = OpTypeVoid
+%funct = OpTypeFunction %voidt
+%uintt = OpTypeInt 32 0
+%one   = OpConstant %uintt 1
+%func  = OpFunction %voidt None %funct
+%entry = OpLabel
+%sum   = OpIAdd %uintt %one %sum
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("ID .\\[sum\\] has not been defined"));
+}
+
 TEST_F(ValidateSSA, ForwardNameGood) {
   char str[] = R"(
      OpCapability Shader

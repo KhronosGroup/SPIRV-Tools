@@ -2401,8 +2401,9 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
           }
         }
       } else {
-        // If the Ids appear within a function but not in a block, then make
-        // sure all references to that Id appear within the same function
+        // If the Ids defined within a function but not in a block(i.e. function
+        // parameters, block ids), then make sure all references to that Id
+        // appear within the same function
         bool found = false;
         for (auto use : definition.second.uses()) {
           tie(ignore, found) = func->GetBlock(use->id());
@@ -2439,8 +2440,9 @@ spv_result_t IdPass(ValidationState_t& _,
     switch (type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
         // NOTE: Multiple Id definitions are being checked by the binary parser
+        // NOTE: result Id is added *after* all of the other Ids have been
+        // checked to avoid premature use in the same instruction
         _.RemoveIfForwardDeclared(*operand_ptr);
-        _.AddId(*inst);
         ret = SPV_SUCCESS;
         break;
       case SPV_OPERAND_TYPE_ID:
@@ -2465,6 +2467,9 @@ spv_result_t IdPass(ValidationState_t& _,
     if (SPV_SUCCESS != ret) {
       return ret;
     }
+  }
+  if (inst->result_id) {
+    _.AddId(*inst);
   }
   return SPV_SUCCESS;
 }
