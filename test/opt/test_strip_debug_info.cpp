@@ -35,6 +35,7 @@ using StripLineDebugInfoTest = PassTest<::testing::Test>;
 
 TEST_F(StripLineDebugInfoTest, LineNoLine) {
   std::vector<const char*> text = {
+      // clang-format off
                "OpCapability Shader",
           "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
@@ -57,6 +58,7 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
                "OpLine %3 4 4",
                "OpNoLine",
                "OpFunctionEnd",
+      // clang-format on
   };
   SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
                                                  JoinNonDebugInsts(text));
