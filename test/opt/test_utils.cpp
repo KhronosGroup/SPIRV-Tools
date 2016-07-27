@@ -56,47 +56,61 @@ TEST(JoinNonDebugInsts, Cases) {
 }
 
 namespace {
-typedef struct {
-  const char* orig_str_;
-  const char* find_substr_;
-  const char* replace_substr_;
-  const char* expected_str_;
-  bool replace_should_succeed_;
-} SubstringReplacementTestCase;
+struct SubstringReplacementTestCase {
+  const char* orig_str;
+  const char* find_substr;
+  const char* replace_substr;
+  const char* expected_str;
+  bool replace_should_succeed;
+};
 }
-using ReplaceSubstringInPlaceTest =
+using FindAndReplaceTest =
     ::testing::TestWithParam<SubstringReplacementTestCase>;
 
-TEST_P(ReplaceSubstringInPlaceTest, SubstringReplacement) {
-  auto process = std::string(GetParam().orig_str_);
-  ASSERT_STREQ(GetParam().orig_str_, process.c_str());
-  EXPECT_EQ(GetParam().replace_should_succeed_,
-            ReplaceSubstringInPlace(&process, GetParam().find_substr_,
-                                    GetParam().replace_substr_))
-      << "Original string: " << GetParam().orig_str_
-      << " replace: " << GetParam().find_substr_
-      << " to: " << GetParam().replace_substr_
-      << " should returns: " << GetParam().replace_should_succeed_;
-  EXPECT_STREQ(GetParam().expected_str_, process.c_str())
-      << "Original string: " << GetParam().orig_str_
-      << " replace: " << GetParam().find_substr_
-      << " to: " << GetParam().replace_substr_
-      << " expected string: " << GetParam().expected_str_;
+TEST_P(FindAndReplaceTest, SubstringReplacement) {
+  auto process = std::string(GetParam().orig_str);
+  EXPECT_EQ(GetParam().replace_should_succeed,
+            FindAndReplace(&process, GetParam().find_substr,
+                           GetParam().replace_substr))
+      << "Original string: " << GetParam().orig_str
+      << " replace: " << GetParam().find_substr
+      << " to: " << GetParam().replace_substr
+      << " should returns: " << GetParam().replace_should_succeed;
+  EXPECT_STREQ(GetParam().expected_str, process.c_str())
+      << "Original string: " << GetParam().orig_str
+      << " replace: " << GetParam().find_substr
+      << " to: " << GetParam().replace_substr
+      << " expected string: " << GetParam().expected_str;
 }
 
 INSTANTIATE_TEST_CASE_P(
-    SubstringReplacement, ReplaceSubstringInPlaceTest,
-    ::testing::ValuesIn(std::vector<SubstringReplacementTestCase>(
-        {// orig string, find substring, replace substring, expected string,
-         // replacement happened
-         {"", "", "", "", false},
-         {"", "", "b", "", false},
-         {"", "a", "b", "", false},
-         {"a", "a", "b", "b", true},
-         {"ab", "a", "b", "bb", true},
-         {"abc", "ab", "bc", "bcc", true},
-         {"abc", "ab", "", "c", true},
-         {"abc", "a", "123", "123bc", true},
-         {"abc", "ab", "a", "ac", true},
-         {"abc", "a", "aab", "aabbc", true}})));
+    SubstringReplacement, FindAndReplaceTest,
+    ::testing::ValuesIn(std::vector<SubstringReplacementTestCase>({
+        // orig string, find substring, replace substring, expected string,
+        // replacement happened
+        {"", "", "", "", false},
+        {"", "b", "", "", false},
+        {"", "", "c", "", false},
+        {"", "a", "b", "", false},
+
+        {"a", "", "c", "a", false},
+        {"a", "b", "c", "a", false},
+        {"a", "b", "", "a", false},
+        {"a", "a", "", "", true},
+        {"a", "a", "b", "b", true},
+
+        {"ab", "a", "b", "bb", true},
+        {"ab", "a", "", "b", true},
+        {"ab", "ab", "", "", true},
+        {"ab", "ab", "cd", "cd", true},
+        {"bc", "abc", "efg", "bc", false},
+
+        {"abc", "ab", "bc", "bcc", true},
+        {"abc", "ab", "", "c", true},
+        {"abc", "a", "123", "123bc", true},
+        {"abc", "ab", "a", "ac", true},
+        {"abc", "a", "aab", "aabbc", true},
+        {"abc", "abcd", "efg", "abc", false},
+
+    })));
 }  // anonymous namespace

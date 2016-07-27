@@ -47,20 +47,19 @@ const char* kDebugOpcodes[] = {
 
 namespace spvtools {
 
-bool ReplaceSubstringInPlace(std::string* process_str, const std::string find_str,
-                          const std::string replace_str) {
-  if (process_str->empty()) {
+bool FindAndReplace(std::string* process_str, const std::string find_str,
+                    const std::string replace_str) {
+  if (process_str->empty() || find_str.empty()) {
     return false;
   }
   bool replaced = false;
-  size_t pos = 0;
-  while(pos != std::string::npos) {
-    pos = process_str->find(find_str, pos);
-    if (pos != std::string::npos) {
-      process_str->replace(pos, find_str.length(), replace_str);
-      replaced = true;
-      pos += replace_str.length();
-    }
+  // Note this algorithm has quadratic time complexity. It is OK for test cases
+  // with short strings, but might not fit in other contexts.
+  for (size_t pos = process_str->find(find_str, 0); pos != std::string::npos;
+       pos = process_str->find(find_str, pos)) {
+    process_str->replace(pos, find_str.length(), replace_str);
+    pos += replace_str.length();
+    replaced = true;
   }
   return replaced;
 }
