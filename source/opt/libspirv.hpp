@@ -54,10 +54,14 @@ class SpvTools {
   // Returns SPV_SUCCESS on successful assembling.
   spv_result_t Assemble(const std::string& text, std::vector<uint32_t>* binary);
 
-  // Disassembles the given SPIR-V |binary| and returns the assembly. Returns
-  // SPV_SUCCESS on successful disassembling.
-  spv_result_t Disassemble(const std::vector<uint32_t>& binary,
-                           std::string* text);
+  // Disassembles the given SPIR-V |binary| with the given options and returns
+  // the assembly. By default the options are set to generate assembly with
+  // friendly variable names and no SPIR-V assembly header. Returns SPV_SUCCESS
+  // on successful disassembling.
+  spv_result_t Disassemble(
+      const std::vector<uint32_t>& binary, std::string* text,
+      uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
 
   // Builds and returns a Module from the given SPIR-V |binary|.
   std::unique_ptr<ir::Module> BuildModule(const std::vector<uint32_t>& binary);

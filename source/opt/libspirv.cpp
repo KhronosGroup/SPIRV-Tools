@@ -68,13 +68,12 @@ spv_result_t SpvTools::Assemble(const std::string& text,
 }
 
 spv_result_t SpvTools::Disassemble(const std::vector<uint32_t>& binary,
-                                   std::string* text) {
+                                   std::string* text, uint32_t options) {
   spv_text spvtext = nullptr;
   spv_diagnostic diagnostic = nullptr;
 
   spv_result_t status = spvBinaryToText(context_, binary.data(), binary.size(),
-                                        SPV_BINARY_TO_TEXT_OPTION_NO_HEADER,
-                                        &spvtext, &diagnostic);
+                                        options, &spvtext, &diagnostic);
   if (status == SPV_SUCCESS) {
     text->assign(spvtext->str, spvtext->str + spvtext->length);
   }
