@@ -87,7 +87,7 @@ class Instruction {
 
   SpvOp opcode() const { return opcode_; }
   // Sets the opcode of this instruction to a specific opcode. Note this may
-  // make the instruction to be invalid.
+  // invalidate the instruction.
   // TODO(qining): Remove this function when instruction building and insertion
   // is well implemented.
   void SetOpcode(SpvOp op) { opcode_ = op; }

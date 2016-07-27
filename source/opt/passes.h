@@ -54,15 +54,13 @@ class NullPass : public Pass {
 // Section 3.32.2 of the SPIR-V spec).
 class StripDebugInfoPass : public Pass {
  public:
-  const char* name() const override { return "StripDebugInfo"; }
+  const char* name() const override { return "strip-debug"; }
   bool Process(ir::Module* module) override;
 };
 
 class FreezeSpecConstantValuePass : public Pass {
  public:
-  const char* name() const override {
-    return "Freeze spec constants to their default value";
-  }
+  const char* name() const override { return "freeze-spec-const"; }
   bool Process(ir::Module*) override;
 };
 

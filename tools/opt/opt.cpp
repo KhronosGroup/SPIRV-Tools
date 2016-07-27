@@ -51,6 +51,9 @@ NOTE: The optimizer is a work in progress.
 Options:
   --strip-debug
                Remove all debug instructions.
+  --freeze-spec-const
+               Freeze the values of specialization constants to their default
+               values.
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",

@@ -56,7 +56,7 @@ class PassTest : public TestT {
   // Runs the given |pass| on the binary assembled from the |assembly|, and
   // disassebles the optimized binary. Returns a tuple of disassembly string
   // and the boolean value returned from pass Process() function.
-  std::tuple<std::string, bool> GetOptimizedDisassembly(
+  std::tuple<std::string, bool> OptimizeAndDisassemble(
       opt::Pass* pass, const std::string& original, bool skip_nop = false) {
     std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
     EXPECT_NE(nullptr, module);
@@ -74,13 +74,13 @@ class PassTest : public TestT {
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
-  // |assembly|, disassebles the optimized binary. Returns a tuple of
+  // |assembly|, disassembles the optimized binary. Returns a tuple of
   // disassembly string and the boolean value from the pass Process() function.
   template <typename PassT>
-  std::tuple<std::string, bool> SinglePassRunAndGetDisassembly(
+  std::tuple<std::string, bool> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop = false) {
     auto pass = std::unique_ptr<PassT>(new PassT);
-    return GetOptimizedDisassembly(pass.get(), assembly, skip_nop);
+    return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
@@ -94,7 +94,7 @@ class PassTest : public TestT {
     std::string optimized;
     bool modified = false;
     std::tie(optimized, modified) =
-        SinglePassRunAndGetDisassembly<PassT>(original, skip_nop);
+        SinglePassRunAndDisassemble<PassT>(original, skip_nop);
     // Check whether the pass returns the correct modification indication.
     EXPECT_EQ(original != expected, modified);
     EXPECT_EQ(expected, optimized);

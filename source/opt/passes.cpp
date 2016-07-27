@@ -44,20 +44,28 @@ bool StripDebugInfoPass::Process(ir::Module* module) {
 bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
   bool modified = false;
   module->ForEachInst([&modified](ir::Instruction* inst) {
-    if (inst->opcode() == SpvOp::SpvOpSpecConstant) {
-      inst->SetOpcode(SpvOp::SpvOpConstant);
-      modified = true;
-    } else if (inst->opcode() == SpvOp::SpvOpSpecConstantTrue) {
-      inst->SetOpcode(SpvOp::SpvOpConstantTrue);
-      modified = true;
-    } else if (inst->opcode() == SpvOp::SpvOpSpecConstantFalse) {
-      inst->SetOpcode(SpvOp::SpvOpConstantFalse);
-      modified = true;
-    } else if (inst->opcode() == SpvOp::SpvOpDecorate &&
-        inst->GetInOperand(1).words[0] == SpvDecoration::SpvDecorationSpecId) {
-      // If this is a decoration instrution and the decoration is Spec ID, we
-      // should remove the instrution.
-      inst->ToNop();
+    switch (inst->opcode()) {
+      case SpvOp::SpvOpSpecConstant:
+        inst->SetOpcode(SpvOp::SpvOpConstant);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantTrue:
+        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantFalse:
+        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
+        modified = true;
+        break;
+      case SpvOp::SpvOpDecorate:
+        if (inst->GetSingleWordInOperand(1) ==
+            SpvDecoration::SpvDecorationSpecId) {
+          inst->ToNop();
+          modified = true;
+        }
+        break;
+      default:
+        break;
     }
   });
   return modified;
