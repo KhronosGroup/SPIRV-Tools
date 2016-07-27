@@ -76,14 +76,6 @@ void BasicBlock::RegisterBranchInstruction(SpvOp branch_instruction) {
   return;
 }
 
-void BasicBlock::SetSuccessorsUnsafe(std::vector<BasicBlock*>&& others) {
-  successors_ = std::move(others);
-}
-
-void BasicBlock::SetPredecessorsUnsafe(std::vector<BasicBlock*>&& others) {
-  predecessors_ = std::move(others);
-}
-
 BasicBlock::DominatorIterator::DominatorIterator() : current_(nullptr) {}
 
 BasicBlock::DominatorIterator::DominatorIterator(

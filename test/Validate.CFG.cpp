@@ -194,6 +194,87 @@ INSTANTIATE_TEST_CASE_P(StructuredControlFlow, ValidateCFG,
                         ::testing::Values(SpvCapabilityShader,
                                           SpvCapabilityKernel));
 
+TEST_P(ValidateCFG, LoopReachableFromEntryButNeverLeadingToReturn) {
+  // In this case, the loop is reachable from a node without a predecessor,
+  // but never reaches a node with a return.
+  //
+  // This motivates the need for the pseudo-exit node to have a node
+  // from a cycle in its predecessors list.  Otherwise the validator's
+  // post-dominance calculation will go into an infinite loop.
+  //
+  // For more motivation, see
+  // https://github.com/KhronosGroup/SPIRV-Tools/issues/279
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+
+           OpName %entry "entry"
+           OpName %loop "loop"
+           OpName %exit "exit"
+
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+
+%main    = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpBranch %loop
+%loop    = OpLabel
+           OpLoopMerge %exit %loop None
+           OpBranch %loop
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+  )";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << str;
+}
+
+TEST_P(ValidateCFG, LoopUnreachableFromEntryButLeadingToReturn) {
+  // In this case, the loop is not reachable from a node without a
+  // predecessor, but eventually reaches a node with a return.
+  //
+  // This motivates the need for the pseudo-entry node to have a node
+  // from a cycle in its successors list.  Otherwise the validator's
+  // dominance calculation will go into an infinite loop.
+  //
+  // For more motivation, see
+  // https://github.com/KhronosGroup/SPIRV-Tools/issues/279
+  // Before that fix, we'd have an infinite loop when calculating
+  // post-dominators.
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+
+           OpName %entry "entry"
+           OpName %loop "loop"
+           OpName %cont "cont"
+           OpName %exit "exit"
+
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%boolt   = OpTypeBool
+%false   = OpConstantFalse %boolt
+
+%main    = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpReturn
+
+%loop    = OpLabel
+           OpLoopMerge %exit %cont None
+           OpBranch %cont
+
+%cont    = OpLabel
+           OpBranchConditional %false %loop %exit
+
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+  )";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
+                                                 << getDiagnosticString();
+}
+
 TEST_P(ValidateCFG, Simple) {
   bool is_shader = GetParam() == SpvCapabilityShader;
   Block entry("entry");
@@ -260,6 +341,29 @@ TEST_P(ValidateCFG, VariableNotInFirstBlockBad) {
       getDiagnosticString(),
       HasSubstr(
           "Variables can only be defined in the first block of a function"));
+}
+
+TEST_P(ValidateCFG, BlockSelfLoopIsOk) {
+  bool is_shader = GetParam() == SpvCapabilityShader;
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
+
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %loop None\n");
+
+  string str = header(GetParam()) +
+               nameOps("loop", "merge", make_pair("func", "Main")) +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  // loop branches to itself, but does not trigger an error.
+  str += loop >> vector<Block>({merge, loop});
+  str += merge;
+  str += "OpFunctionEnd\n";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
 TEST_P(ValidateCFG, BlockAppearsBeforeDominatorBad) {

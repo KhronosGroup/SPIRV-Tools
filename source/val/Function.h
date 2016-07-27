@@ -28,6 +28,7 @@
 #define LIBSPIRV_VAL_FUNCTION_H_
 
 #include <list>
+#include <functional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -149,31 +150,38 @@ class Function {
   /// Returns the block that is currently being parsed in the binary
   const BasicBlock* current_block() const;
 
-  /// Returns the pseudo exit block
-  BasicBlock* pseudo_entry_block();
+  // For dominance calculations, we want to analyze all the
+  // blocks in the function, even in degenerate control flow cases
+  // including unreachable blocks.  We therefore make an "augmented CFG"
+  // which is the same as the ordinary CFG but adds:
+  //  - A pseudo-entry node.
+  //  - A pseudo-exit node.
+  //  - A minimal set of edges so that a forward traversal from the
+  //    pseudo-entry node will visit all nodes.
+  //  - A minimal set of edges so that a backward traversal from the
+  //    pseudo-exit node will visit all nodes.
+  // In particular, the pseudo-entry node is the unique source of the
+  // augmented CFG, and the psueo-exit node is the unique sink of the
+  // augmented CFG.
 
   /// Returns the pseudo exit block
-  const BasicBlock* pseudo_entry_block() const;
+  BasicBlock* pseudo_entry_block() { return &pseudo_entry_block_; }
 
   /// Returns the pseudo exit block
-  BasicBlock* pseudo_exit_block();
+  const BasicBlock* pseudo_entry_block() const { return &pseudo_entry_block_; }
 
   /// Returns the pseudo exit block
-  const BasicBlock* pseudo_exit_block() const;
+  BasicBlock* pseudo_exit_block() { return &pseudo_exit_block_; }
 
-  /// Returns a vector with just the pseudo entry block.
-  /// This serves as the predecessors of each source node in the CFG when
-  /// computing dominators.
-  const std::vector<BasicBlock*>* pseudo_entry_blocks() const {
-    return &pseudo_entry_blocks_;
-  }
+  /// Returns the pseudo exit block
+  const BasicBlock* pseudo_exit_block() const { return &pseudo_exit_block_; }
 
-  /// Returns a vector with just the pseudo exit block.
-  /// This serves as the successors of each sink node in the CFG when computing
-  /// dominators.
-  const std::vector<BasicBlock*>* pseudo_exit_blocks() const {
-    return &pseudo_exit_blocks_;
-  }
+  using GetBlocksFunction =
+      std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
+  /// Returns the block successors function for the augmented CFG.
+  GetBlocksFunction AugmentedCFGSuccessorsFunction() const;
+  /// Returns the block predecessors function for the augmented CFG.
+  GetBlocksFunction AugmentedCFGPredecessorsFunction() const;
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void PrintDotGraph() const;
@@ -182,6 +190,10 @@ class Function {
   void PrintBlocks() const;
 
  private:
+  // Computes the representation of the augmented CFG.
+  // Populates augmented_successors_map_ and augmented_predecessors_map_.
+  void ComputeAugmentedCFG();
+
   /// The result id of the OpLabel that defined this block
   uint32_t id_;
 
@@ -212,28 +224,43 @@ class Function {
   /// The block that is currently being parsed
   BasicBlock* current_block_;
 
-  /// A pseudo entry block that, for the purposes of dominance analysis,
-  /// is considered the predecessor to any ordinary block without predecessors.
-  /// After the function end has been registered, its successor list consists
-  /// of all ordinary blocks without predecessors.  It has no predecessors.
-  /// It does not appear in the predecessor or successor list of any
-  /// ordinary block.
+  /// A pseudo entry node used in dominance analysis.
+  /// After the function end has been registered, the successor list of the
+  /// pseudo entry node is the minimal set of nodes such that all nodes in the
+  /// CFG can be reached by following successor lists.  That is, the successors
+  /// will be:
+  ///   - Any basic block without predecessors.  This includes the entry
+  ///     block to the function.
+  ///   - A single node from each otherwise unreachable cycle in the CFG, if
+  ///     such cycles exist.
+  /// The pseudo entry node does not appear in the predecessor or successor
+  /// list of any ordinary block.
+  /// It has no predecessors.
   /// It has Id 0.
   BasicBlock pseudo_entry_block_;
 
-  /// A pseudo exit block that, for the purposes of dominance analysis,
-  /// is considered the successor to any ordinary block without successors.
-  /// After the function end has been registered, its predecessor list consists
-  /// of all ordinary blocks without successors.  It has no successors.
-  /// It does not appear in the predecessor or successor list of any
-  /// ordinary block.
+  /// A pseudo exit block used in dominance analysis.
+  /// After the function end has been registered, the predecessor list of the
+  /// pseudo exit node is the minimal set of nodes such that all nodes in the
+  /// CFG can be reached by following predecessor lists.  That is, the
+  /// predecessors will be:
+  ///   - Any basic block without successors.  This includes any basic block
+  ///     ending with an OpReturn, OpReturnValue or similar instructions.
+  ///   - A single node from each otherwise unreachable cycle in the CFG, if
+  ///     such cycles exist.
+  /// The pseudo exit node does not appear in the predecessor or successor
+  /// list of any ordinary block.
+  /// It has no successors.
   BasicBlock pseudo_exit_block_;
 
-  // A vector containing pseudo_entry_block_.
-  const std::vector<BasicBlock*> pseudo_entry_blocks_;
-
-  // A vector containing pseudo_exit_block_.
-  const std::vector<BasicBlock*> pseudo_exit_blocks_;
+  // Maps a block to its successors in the augmented CFG, if that set is
+  // different from its successors in the ordinary CFG.
+  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+      augmented_successors_map_;
+  // Maps a block to its predecessors in the augmented CFG, if that set is
+  // different from its predecessors in the ordinary CFG.
+  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+      augmented_predecessors_map_;
 
   /// The constructs that are available in this function
   std::list<Construct> cfg_constructs_;

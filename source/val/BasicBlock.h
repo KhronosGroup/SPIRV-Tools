@@ -121,14 +121,6 @@ class BasicBlock {
   /// Adds @p next BasicBlocks as successors of this BasicBlock
   void RegisterSuccessors(const std::vector<BasicBlock*>& next = {});
 
-  /// Set the successors to this block, without updating other internal state,
-  /// and without updating the other blocks.
-  void SetSuccessorsUnsafe(std::vector<BasicBlock*>&& others);
-
-  /// Set the predecessors to this block, without updating other internal state,
-  /// and without updating the other blocks.
-  void SetPredecessorsUnsafe(std::vector<BasicBlock*>&& others);
-
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }
 

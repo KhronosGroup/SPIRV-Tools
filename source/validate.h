@@ -57,6 +57,31 @@ class ValidationState_t;
 using get_blocks_func =
     std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
 
+/// @brief Depth first traversal starting from the \p entry BasicBlock
+///
+/// This function performs a depth first traversal from the \p entry
+/// BasicBlock and calls the pre/postorder functions when it needs to process
+/// the node in pre order, post order. It also calls the backedge function
+/// when a back edge is encountered.
+///
+/// @param[in] entry      The root BasicBlock of a CFG
+/// @param[in] successor_func  A function which will return a pointer to the
+///                            successor nodes
+/// @param[in] preorder   A function that will be called for every block in a
+///                       CFG following preorder traversal semantics
+/// @param[in] postorder  A function that will be called for every block in a
+///                       CFG following postorder traversal semantics
+/// @param[in] backedge   A function that will be called when a backedge is
+///                       encountered during a traversal
+/// NOTE: The @p successor_func and predecessor_func each return a pointer to a
+/// collection such that iterators to that collection remain valid for the
+/// lifetime of the algorithm.
+void DepthFirstTraversal(
+    const BasicBlock* entry, get_blocks_func successor_func,
+    std::function<void(const BasicBlock*)> preorder,
+    std::function<void(const BasicBlock*)> postorder,
+    std::function<void(const BasicBlock*, const BasicBlock*)> backedge);
+
 /// @brief Calculates dominator edges for a set of blocks
 ///
 /// Computes dominators using the algorithm of Cooper, Harvey, and Kennedy

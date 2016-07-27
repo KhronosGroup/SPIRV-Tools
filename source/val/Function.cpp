@@ -29,10 +29,13 @@
 #include <cassert>
 
 #include <algorithm>
+#include <unordered_set>
+#include <unordered_map>
 #include <utility>
 
 #include "val/BasicBlock.h"
 #include "val/Construct.h"
+#include "validate.h"
 
 using std::ignore;
 using std::list;
@@ -40,6 +43,53 @@ using std::make_pair;
 using std::pair;
 using std::tie;
 using std::vector;
+
+namespace {
+
+using libspirv::BasicBlock;
+
+// Computes a minimal set of root nodes required to traverse, in the forward
+// direction, the CFG represented by the given vector of blocks, and successor
+// and predecessor functions.
+std::vector<BasicBlock*> TraversalRoots(const std::vector<BasicBlock*>& blocks,
+                                        libspirv::get_blocks_func succ_func,
+                                        libspirv::get_blocks_func pred_func) {
+  // The set of nodes which have been visited from any of the roots so far.
+  std::unordered_set<const BasicBlock*> visited;
+
+  auto mark_visited = [&visited](const BasicBlock* b) { visited.insert(b); };
+  auto ignore_block = [](const BasicBlock*) {};
+  auto ignore_blocks = [](const BasicBlock*, const BasicBlock*) {};
+
+  auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
+                             &ignore_blocks](const BasicBlock* entry) {
+    DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
+                        ignore_blocks);
+  };
+
+  std::vector<BasicBlock*> result;
+
+  // First collect nodes without predecessors.
+  for (auto block : blocks) {
+    if (pred_func(block)->empty()) {
+      assert(visited.count(block) == 0 && "Malformed graph!");
+      result.push_back(block);
+      traverse_from_root(block);
+    }
+  }
+
+  // Now collect other stranded nodes.  These must be in unreachable cycles.
+  for (auto block : blocks) {
+    if (visited.count(block) == 0) {
+      result.push_back(block);
+      traverse_from_root(block);
+    }
+  }
+
+  return result;
+}
+
+} // anonymous namespace
 
 namespace libspirv {
 
@@ -59,8 +109,6 @@ Function::Function(uint32_t function_id, uint32_t result_type_id,
       current_block_(nullptr),
       pseudo_entry_block_(0),
       pseudo_exit_block_(kInvalidId),
-      pseudo_entry_blocks_({&pseudo_entry_block_}),
-      pseudo_exit_blocks_({&pseudo_exit_block_}),
       cfg_constructs_(),
       variable_ids_(),
       parameter_ids_() {}
@@ -176,16 +224,7 @@ void Function::RegisterFunctionEnd() {
   if (!end_has_been_registered_) {
     end_has_been_registered_ = true;
 
-    // Compute the successors of the pseudo-entry block, and
-    // the predecessors of the pseudo exit block.
-    vector<BasicBlock*> sources;
-    vector<BasicBlock*> sinks;
-    for (const auto b : ordered_blocks_) {
-      if (b->predecessors()->empty()) sources.push_back(b);
-      if (b->successors()->empty()) sinks.push_back(b);
-    }
-    pseudo_entry_block_.SetSuccessorsUnsafe(std::move(sources));
-    pseudo_exit_block_.SetPredecessorsUnsafe(std::move(sinks));
+    ComputeAugmentedCFG();
   }
 }
 
@@ -202,16 +241,6 @@ vector<BasicBlock*>& Function::ordered_blocks() { return ordered_blocks_; }
 
 const BasicBlock* Function::current_block() const { return current_block_; }
 BasicBlock* Function::current_block() { return current_block_; }
-
-BasicBlock* Function::pseudo_entry_block() { return &pseudo_entry_block_; }
-const BasicBlock* Function::pseudo_entry_block() const {
-  return &pseudo_entry_block_;
-}
-
-BasicBlock* Function::pseudo_exit_block() { return &pseudo_exit_block_; }
-const BasicBlock* Function::pseudo_exit_block() const {
-  return &pseudo_exit_block_;
-}
 
 const list<Construct>& Function::constructs() const { return cfg_constructs_; }
 list<Construct>& Function::constructs() { return cfg_constructs_; }
@@ -253,4 +282,49 @@ pair<BasicBlock*, bool> Function::GetBlock(uint32_t block_id) {
   tie(out, defined) = const_cast<const Function*>(this)->GetBlock(block_id);
   return make_pair(const_cast<BasicBlock*>(out), defined);
 }
+
+Function::GetBlocksFunction Function::AugmentedCFGSuccessorsFunction() const {
+  return [this](const BasicBlock* block) {
+    auto where = augmented_successors_map_.find(block);
+    return where == augmented_successors_map_.end() ? block->successors()
+                                                    : &(*where).second;
+  };
+}
+
+Function::GetBlocksFunction Function::AugmentedCFGPredecessorsFunction() const {
+  return [this](const BasicBlock* block) {
+    auto where = augmented_predecessors_map_.find(block);
+    return where == augmented_predecessors_map_.end() ? block->predecessors()
+                                                      : &(*where).second;
+  };
+}
+
+void Function::ComputeAugmentedCFG() {
+  // Compute the successors of the pseudo-entry block, and
+  // the predecessors of the pseudo exit block.
+  auto succ_func = [](const BasicBlock* b) { return b->successors(); };
+  auto pred_func = [](const BasicBlock* b) { return b->predecessors(); };
+  auto sources = TraversalRoots(ordered_blocks_, succ_func, pred_func);
+  auto sinks = TraversalRoots(ordered_blocks_, pred_func, succ_func);
+
+  // Wire up the pseudo entry block.
+  augmented_successors_map_[&pseudo_entry_block_] = sources;
+  for (auto block : sources) {
+    auto& augmented_preds = augmented_predecessors_map_[block];
+    const auto& preds = *block->predecessors();
+    augmented_preds.reserve(1 + preds.size());
+    augmented_preds.push_back(&pseudo_entry_block_);
+    augmented_preds.insert(augmented_preds.end(), preds.begin(), preds.end());
+  }
+
+  // Wire up the pseudo exit block.
+  augmented_predecessors_map_[&pseudo_exit_block_] = sinks;
+  for (auto block : sinks) {
+    auto& augmented_succ = augmented_successors_map_[block];
+    const auto& succ = *block->successors();
+    augmented_succ.reserve(1 + succ.size());
+    augmented_succ.push_back(&pseudo_exit_block_);
+    augmented_succ.insert(augmented_succ.end(), succ.begin(), succ.end());
+  }
+};
 }  /// namespace libspirv
