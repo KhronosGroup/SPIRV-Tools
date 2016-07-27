@@ -43,17 +43,33 @@ const char* kDebugOpcodes[] = {
     // clang-format on
 };
 
-// Returns true if the given string contains any debug opcode substring.
+}  // anonymous namespace
+
+namespace spvtools {
+
+bool FindAndReplace(std::string* process_str, const std::string find_str,
+                    const std::string replace_str) {
+  if (process_str->empty() || find_str.empty()) {
+    return false;
+  }
+  bool replaced = false;
+  // Note this algorithm has quadratic time complexity. It is OK for test cases
+  // with short strings, but might not fit in other contexts.
+  for (size_t pos = process_str->find(find_str, 0); pos != std::string::npos;
+       pos = process_str->find(find_str, pos)) {
+    process_str->replace(pos, find_str.length(), replace_str);
+    pos += replace_str.length();
+    replaced = true;
+  }
+  return replaced;
+}
+
 bool ContainsDebugOpcode(const char* inst) {
   return std::any_of(std::begin(kDebugOpcodes), std::end(kDebugOpcodes),
                      [inst](const char* op) {
                        return std::string(inst).find(op) != std::string::npos;
                      });
 }
-
-}  // anonymous namespace
-
-namespace spvtools {
 
 std::string SelectiveJoin(const std::vector<const char*>& strings,
                           const std::function<bool(const char*)>& skip_dictator,

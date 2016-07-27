@@ -55,4 +55,64 @@ TEST(JoinNonDebugInsts, Cases) {
                  "the only remaining string"}));
 }
 
+namespace {
+struct SubstringReplacementTestCase {
+  const char* orig_str;
+  const char* find_substr;
+  const char* replace_substr;
+  const char* expected_str;
+  bool replace_should_succeed;
+};
+}
+using FindAndReplaceTest =
+    ::testing::TestWithParam<SubstringReplacementTestCase>;
+
+TEST_P(FindAndReplaceTest, SubstringReplacement) {
+  auto process = std::string(GetParam().orig_str);
+  EXPECT_EQ(GetParam().replace_should_succeed,
+            FindAndReplace(&process, GetParam().find_substr,
+                           GetParam().replace_substr))
+      << "Original string: " << GetParam().orig_str
+      << " replace: " << GetParam().find_substr
+      << " to: " << GetParam().replace_substr
+      << " should returns: " << GetParam().replace_should_succeed;
+  EXPECT_STREQ(GetParam().expected_str, process.c_str())
+      << "Original string: " << GetParam().orig_str
+      << " replace: " << GetParam().find_substr
+      << " to: " << GetParam().replace_substr
+      << " expected string: " << GetParam().expected_str;
+}
+
+INSTANTIATE_TEST_CASE_P(
+    SubstringReplacement, FindAndReplaceTest,
+    ::testing::ValuesIn(std::vector<SubstringReplacementTestCase>({
+        // orig string, find substring, replace substring, expected string,
+        // replacement happened
+        {"", "", "", "", false},
+        {"", "b", "", "", false},
+        {"", "", "c", "", false},
+        {"", "a", "b", "", false},
+
+        {"a", "", "c", "a", false},
+        {"a", "b", "c", "a", false},
+        {"a", "b", "", "a", false},
+        {"a", "a", "", "", true},
+        {"a", "a", "b", "b", true},
+
+        {"ab", "a", "b", "bb", true},
+        {"ab", "a", "", "b", true},
+        {"ab", "b", "", "a", true},
+        {"ab", "ab", "", "", true},
+        {"ab", "ab", "cd", "cd", true},
+        {"bc", "abc", "efg", "bc", false},
+
+        {"abc", "ab", "bc", "bcc", true},
+        {"abc", "ab", "", "c", true},
+        {"abc", "bc", "", "a", true},
+        {"abc", "bc", "d", "ad", true},
+        {"abc", "a", "123", "123bc", true},
+        {"abc", "ab", "a", "ac", true},
+        {"abc", "a", "aab", "aabbc", true},
+        {"abc", "abcd", "efg", "abc", false},
+    })));
 }  // anonymous namespace
