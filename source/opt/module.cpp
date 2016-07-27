@@ -43,7 +43,7 @@ void Module::ForEachInst(const std::function<void(Instruction*)>& f) {
   for (auto& i : capabilities_) f(&i);
   for (auto& i : extensions_) f(&i);
   for (auto& i : ext_inst_imports_) f(&i);
-  f(&memory_model_);
+  if (memory_model_) f(memory_model_.get());
   for (auto& i : entry_points_) f(&i);
   for (auto& i : execution_modes_) f(&i);
   for (auto& i : debugs_) f(&i);
@@ -64,7 +64,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   for (const auto& c : capabilities_) c.ToBinary(binary, skip_nop);
   for (const auto& e : extensions_) e.ToBinary(binary, skip_nop);
   for (const auto& e : ext_inst_imports_) e.ToBinary(binary, skip_nop);
-  memory_model_.ToBinary(binary, skip_nop);
+  if (memory_model_) memory_model_->ToBinary(binary, skip_nop);
   for (const auto& e : entry_points_) e.ToBinary(binary, skip_nop);
   for (const auto& e : execution_modes_) e.ToBinary(binary, skip_nop);
   for (const auto& d : debugs_) d.ToBinary(binary, skip_nop);
