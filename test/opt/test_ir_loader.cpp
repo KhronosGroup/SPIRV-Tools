@@ -36,45 +36,45 @@ TEST(IrBuilder, RoundTrip) {
   // #version 310 es
   // int add(int a, int b) { return a + b; }
   // void main() { add(1, 2); }
-  const std::string text =
-      "OpCapability Shader\n"
-      "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-      "OpMemoryModel Logical GLSL450\n"
-      "OpEntryPoint Vertex %2 \"main\"\n"
-      "OpSource ESSL 310\n"
-      "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"\n"
-      "OpSourceExtension \"GL_GOOGLE_include_directive\"\n"
-      "OpName %2 \"main\"\n"
-      "OpName %3 \"add(i1;i1;\"\n"
-      "OpName %4 \"a\"\n"
-      "OpName %5 \"b\"\n"
-      "OpName %6 \"param\"\n"
-      "OpName %7 \"param\"\n"
-      "%8 = OpTypeVoid\n"
-      "%9 = OpTypeFunction %8\n"
-      "%10 = OpTypeInt 32 1\n"
-      "%11 = OpTypePointer Function %10\n"
-      "%12 = OpTypeFunction %10 %11 %11\n"
-      "%13 = OpConstant %10 1\n"
-      "%14 = OpConstant %10 2\n"
-      "%2 = OpFunction %8 None %9\n"
-      "%15 = OpLabel\n"
-      "%6 = OpVariable %11 Function\n"
-      "%7 = OpVariable %11 Function\n"
-      "OpStore %6 %13\n"
-      "OpStore %7 %14\n"
-      "%16 = OpFunctionCall %10 %3 %6 %7\n"
-      "OpReturn\n"
-      "OpFunctionEnd\n"
-      "%3 = OpFunction %10 None %12\n"
-      "%4 = OpFunctionParameter %11\n"
-      "%5 = OpFunctionParameter %11\n"
-      "%17 = OpLabel\n"
-      "%18 = OpLoad %10 %4\n"
-      "%19 = OpLoad %10 %5\n"
-      "%20 = OpIAdd %10 %18 %19\n"
-      "OpReturnValue %20\n"
-      "OpFunctionEnd\n";
+  const std::string text = R"asm(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource ESSL 310
+OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+OpSourceExtension "GL_GOOGLE_include_directive"
+OpName %main "main"
+OpName %add_i1_i1_ "add(i1;i1;"
+OpName %a "a"
+OpName %b "b"
+OpName %param "param"
+OpName %param_0 "param"
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%12 = OpTypeFunction %int %_ptr_Function_int %_ptr_Function_int
+%13 = OpConstant %int 1
+%14 = OpConstant %int 2
+%main = OpFunction %void None %9
+%15 = OpLabel
+%param = OpVariable %_ptr_Function_int Function
+%param_0 = OpVariable %_ptr_Function_int Function
+OpStore %param %13
+OpStore %param_0 %14
+%16 = OpFunctionCall %int %add_i1_i1_ %param %param_0
+OpReturn
+OpFunctionEnd
+%add_i1_i1_ = OpFunction %int None %12
+%a = OpFunctionParameter %_ptr_Function_int
+%b = OpFunctionParameter %_ptr_Function_int
+%17 = OpLabel
+%18 = OpLoad %int %a
+%19 = OpLoad %int %b
+%20 = OpIAdd %int %18 %19
+OpReturnValue %20
+OpFunctionEnd
+)asm";
 
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
@@ -91,28 +91,28 @@ TEST(IrBuilder, RoundTrip) {
 TEST(IrBuilder, KeepLineDebugInfo) {
   // #version 310 es
   // void main() {}
-  const std::string text =
-      "OpCapability Shader\n"
-      "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-      "OpMemoryModel Logical GLSL450\n"
-      "OpEntryPoint Vertex %2 \"main\"\n"
-      "%3 = OpString \"minimal.vert\"\n"
-      "OpSource ESSL 310\n"
-      "OpName %2 \"main\"\n"
-      "OpLine %3 10 10\n"
-      "%4 = OpTypeVoid\n"
-      "OpLine %3 100 100\n"
-      "%5 = OpTypeFunction %4\n"
-      "%2 = OpFunction %4 None %5\n"
-      "OpLine %3 1 1\n"
-      "OpNoLine\n"
-      "OpLine %3 2 2\n"
-      "OpLine %3 3 3\n"
-      "%6 = OpLabel\n"
-      "OpLine %3 4 4\n"
-      "OpNoLine\n"
-      "OpReturn\n"
-      "OpFunctionEnd\n";
+  const std::string text = R"asm(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+%3 = OpString "minimal.vert"
+OpSource ESSL 310
+OpName %main "main"
+OpLine %3 10 10
+%void = OpTypeVoid
+OpLine %3 100 100
+%5 = OpTypeFunction %void
+%main = OpFunction %void None %5
+OpLine %3 1 1
+OpNoLine
+OpLine %3 2 2
+OpLine %3 3 3
+%6 = OpLabel
+OpLine %3 4 4
+OpNoLine
+OpReturn
+OpFunctionEnd
+)asm";
 
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
@@ -141,57 +141,57 @@ TEST(IrBuilder, LocalGlobalVariables) {
   // void main() {
   //   float lv1 = gv1 - gv2;
   // }
-  const std::string text =
-      "OpCapability Shader\n"
-      "%1 = OpExtInstImport \"GLSL.std.450\"\n"
-      "OpMemoryModel Logical GLSL450\n"
-      "OpEntryPoint Vertex %2 \"main\"\n"
-      "OpSource ESSL 310\n"
-      "OpName %2 \"main\"\n"
-      "OpName %3 \"f(\"\n"
-      "OpName %4 \"gv1\"\n"
-      "OpName %5 \"gv2\"\n"
-      "OpName %6 \"lv1\"\n"
-      "OpName %7 \"lv2\"\n"
-      "OpName %8 \"lv1\"\n"
-      "%9 = OpTypeVoid\n"
-      "%10 = OpTypeFunction %9\n"
-      "%11 = OpTypeFloat 32\n"
-      "%12 = OpTypeFunction %11\n"
-      "%13 = OpTypePointer Private %11\n"
-      "%4 = OpVariable %13 Private\n"
-      "%14 = OpConstant %11 10\n"
-      "%5 = OpVariable %13 Private\n"
-      "%15 = OpConstant %11 100\n"
-      "%16 = OpTypePointer Function %11\n"
-      "%2 = OpFunction %9 None %10\n"
-      "%17 = OpLabel\n"
-      "%8 = OpVariable %16 Function\n"
-      "OpStore %4 %14\n"
-      "OpStore %5 %15\n"
-      "%18 = OpLoad %11 %4\n"
-      "%19 = OpLoad %11 %5\n"
-      "%20 = OpFSub %11 %18 %19\n"
-      "OpStore %8 %20\n"
-      "OpReturn\n"
-      "OpFunctionEnd\n"
-      "%3 = OpFunction %11 None %12\n"
-      "%21 = OpLabel\n"
-      "%6 = OpVariable %16 Function\n"
-      "%7 = OpVariable %16 Function\n"
-      "%22 = OpLoad %11 %4\n"
-      "%23 = OpLoad %11 %5\n"
-      "%24 = OpFAdd %11 %22 %23\n"
-      "OpStore %6 %24\n"
-      "%25 = OpLoad %11 %4\n"
-      "%26 = OpLoad %11 %5\n"
-      "%27 = OpFMul %11 %25 %26\n"
-      "OpStore %7 %27\n"
-      "%28 = OpLoad %11 %6\n"
-      "%29 = OpLoad %11 %7\n"
-      "%30 = OpFDiv %11 %28 %29\n"
-      "OpReturnValue %30\n"
-      "OpFunctionEnd\n";
+  const std::string text = R"asm(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource ESSL 310
+OpName %main "main"
+OpName %f_ "f("
+OpName %gv1 "gv1"
+OpName %gv2 "gv2"
+OpName %lv1 "lv1"
+OpName %lv2 "lv2"
+OpName %lv1_0 "lv1"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%12 = OpTypeFunction %float
+%_ptr_Private_float = OpTypePointer Private %float
+%gv1 = OpVariable %_ptr_Private_float Private
+%14 = OpConstant %float 10
+%gv2 = OpVariable %_ptr_Private_float Private
+%15 = OpConstant %float 100
+%_ptr_Function_float = OpTypePointer Function %float
+%main = OpFunction %void None %10
+%17 = OpLabel
+%lv1_0 = OpVariable %_ptr_Function_float Function
+OpStore %gv1 %14
+OpStore %gv2 %15
+%18 = OpLoad %float %gv1
+%19 = OpLoad %float %gv2
+%20 = OpFSub %float %18 %19
+OpStore %lv1_0 %20
+OpReturn
+OpFunctionEnd
+%f_ = OpFunction %float None %12
+%21 = OpLabel
+%lv1 = OpVariable %_ptr_Function_float Function
+%lv2 = OpVariable %_ptr_Function_float Function
+%22 = OpLoad %float %gv1
+%23 = OpLoad %float %gv2
+%24 = OpFAdd %float %22 %23
+OpStore %lv1 %24
+%25 = OpLoad %float %gv1
+%26 = OpLoad %float %gv2
+%27 = OpFMul %float %25 %26
+OpStore %lv2 %27
+%28 = OpLoad %float %lv1
+%29 = OpLoad %float %lv2
+%30 = OpFDiv %float %28 %29
+OpReturnValue %30
+OpFunctionEnd
+)asm";
 
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
