@@ -33,6 +33,19 @@
 
 namespace spvtools {
 
+// Does in-place substring replacement. Finds the |find_str| in the
+// |process_str| and replaces the found substring with |replace_str|. Returns
+// true if at least one replacement is done successfully, returns false
+// otherwise or if |process_str| is empty. Replaced substring won't be
+// processed again, which means: If the |replace_str| has |find_str| as its
+// substring, that newly replaced part of |process_str| won't be processed
+// again.
+bool ReplaceSubstringInPlace(std::string* process_str, const std::string find_str,
+                          const std::string replace_str);
+
+// Returns true if the given string contains any debug opcode substring.
+bool ContainsDebugOpcode(const char* inst);
+
 // Returns the concatenated string from a vector of |strings|, with postfixing
 // each string with the given |delimiter|. if the |skip_dictator| returns true
 // for an original string, that string will be omitted.
