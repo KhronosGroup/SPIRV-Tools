@@ -35,26 +35,6 @@ namespace {
 
 using namespace spvtools;
 
-// A utility function for in-place string replacement. Find the |find_str| in
-// the |main_str| and replace the found substring with |replace_str|. Returns
-// true if replacement is done correctly, otherwise returns false.
-bool string_replace(std::string* main_str, const std::string find_str,
-                    const std::string replace_str) {
-  // The replace_string should not have the find_string inside.
-  if (replace_str.find(find_str) != std::string::npos) {
-    return false;
-  }
-  for (size_t i = 0; i < main_str->length(); i++) {
-    i = main_str->find(find_str);
-    if (i != std::string::npos) {
-      main_str->replace(i, find_str.length(), replace_str);
-    } else {
-      break;
-    }
-  }
-  return true;
-}
-
 using FreezeSpecConstantValueTypeTest = PassTest<::testing::TestWithParam<
     std::tuple<const char*, const char*, const char*>>>;
 
@@ -122,8 +102,9 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
           "%5 = OpSpecConstant %double 3.14159265358979",
        "%bool = OpTypeBool",
           "%6 = OpSpecConstantTrue %bool",
+          "%13 = OpSpecConstantFalse %bool",
        "%main = OpFunction %void None %8",
-         "%13 = OpLabel",
+         "%14 = OpLabel",
                "OpReturn",
                "OpFunctionEnd",
       // clang-format on
@@ -137,7 +118,10 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
       {" OpSpecConstantFalse ", " OpConstantFalse "},
   };
   for (auto& p : opcode_replacement_pairs) {
-    EXPECT_TRUE(string_replace(&expected_disassembly, p.first, p.second));
+    EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second)) <<
+      "text:\n" << expected_disassembly << "\n" <<
+      "find_str:\n" << p.first << "\n" <<
+      "replace_str:\n" << p.second << "\n";
   }
   SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
       JoinAllInsts(text), expected_disassembly,
