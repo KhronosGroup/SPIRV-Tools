@@ -30,8 +30,17 @@
 namespace spvtools {
 namespace ir {
 
-std::vector<Instruction*> Module::types() {
+std::vector<Instruction*> Module::GetTypes() {
   std::vector<Instruction*> insts;
+  for (uint32_t i = 0; i < types_values_.size(); ++i) {
+    if (IsTypeInst(types_values_[i]->opcode()))
+      insts.push_back(types_values_[i].get());
+  }
+  return insts;
+};
+
+std::vector<const Instruction*> Module::GetTypes() const {
+  std::vector<const Instruction*> insts;
   for (uint32_t i = 0; i < types_values_.size(); ++i) {
     if (IsTypeInst(types_values_[i]->opcode()))
       insts.push_back(types_values_[i].get());

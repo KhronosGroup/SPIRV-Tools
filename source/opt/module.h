@@ -83,7 +83,8 @@ class Module {
 
   // Returns a vector of pointers to type-declaration instructions in this
   // module.
-  std::vector<Instruction*> types();
+  std::vector<Instruction*> GetTypes();
+  std::vector<const Instruction*> GetTypes() const;
   // Returns the constant-defining instructions.
   std::vector<Instruction*> GetConstants();
   const std::vector<std::unique_ptr<Instruction>>& debugs() const {
