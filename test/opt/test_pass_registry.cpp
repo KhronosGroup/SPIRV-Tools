@@ -39,7 +39,7 @@ class SingleCharNamedSamplePass : public opt::Pass {
  public:
   SingleCharNamedSamplePass() : Pass(), c_(CHAR) {}
   const char* name() const override { return &c_; }
-  bool Process(ir::Module*) { return false; }
+  bool Process(ir::Module*) override { return false; }
 
  private:
   const char c_;
@@ -70,8 +70,9 @@ TEST(PassRegistry, RegisterSucceeded) {
   EXPECT_EQ(2u, registry.RegistrySize());
   // Valid to have same pass but registered with differnt command arguments.
   const char* cmd_arg_pass_a_prime = "cmd_arg_pass_a_prime";
-  EXPECT_EQ(true, registry.Register(cmd_arg_pass_a_prime, &opt::MakePass<SamplePassA>,
-                                    &opt::DeletePass<SamplePassA>));
+  EXPECT_EQ(true,
+            registry.Register(cmd_arg_pass_a_prime, &opt::MakePass<SamplePassA>,
+                              &opt::DeletePass<SamplePassA>));
   EXPECT_EQ(3u, registry.RegistrySize());
 }
 
@@ -85,23 +86,26 @@ TEST(PassRegistry, RegisterFailed) {
   // Invalid to register with same name more than once, even though the passes
   // to be registered are different.
   const char* cmd_arg_pass_b_same_as_a = "cmd_arg_pass_a";
-  EXPECT_EQ(false,
-            registry.Register(cmd_arg_pass_b_same_as_a, opt::MakePass<SamplePassB>,
-                              opt::DeletePass<SamplePassB>));
+  EXPECT_FALSE(registry.Register(cmd_arg_pass_b_same_as_a,
+                                 opt::MakePass<SamplePassB>,
+                                 opt::DeletePass<SamplePassB>));
   EXPECT_EQ(1u, registry.RegistrySize());
 }
 
 TEST(PassRegistry, GetPassSucceeded) {
   PassRegistryForTest registry;
-  registry.Register("pass_a", &opt::MakePass<SamplePassA>, &opt::DeletePass<SamplePassA>);
+  registry.Register("pass_a", &opt::MakePass<SamplePassA>,
+                    &opt::DeletePass<SamplePassA>);
+  registry.Register("pass_b", &opt::MakePass<SamplePassB>,
+                    &opt::DeletePass<SamplePassB>);
   auto pass_a = registry.GetPass("pass_a");
   auto pass_b = registry.GetPass("pass_b");
   // The register should be able to find the passes.
   EXPECT_NE(nullptr, pass_a);
-  EXPECT_EQ(nullptr, pass_b);
+  EXPECT_NE(nullptr, pass_b);
   // The created pass instances' names should match.
   EXPECT_EQ('a', *pass_a->name());
-  // EXPECT_EQ('b', *pass_b->name());
+  EXPECT_EQ('b', *pass_b->name());
 }
 
 TEST(PassRegistry, GetPassFailed) {
