@@ -46,7 +46,7 @@ class Pass {
 
 // A null pass that does nothing.
 class NullPass : public Pass {
-  const char* name() const override { return "Null"; }
+  const char* name() const override { return "null"; }
   bool Process(ir::Module*) override { return false; }
 };
 
