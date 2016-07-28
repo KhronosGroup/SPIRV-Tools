@@ -35,17 +35,23 @@ namespace {
 
 using namespace spvtools;
 
-using FreezeSpecConstantValueTypeTest = PassTest<::testing::TestWithParam<
-    std::tuple<const char*, const char*, const char*>>>;
+struct FreezeSpecConstantValueTypeTestCase {
+  const char* type_decl;
+  const char* spec_const;
+  const char* expected_frozen_const;
+};
+
+using FreezeSpecConstantValueTypeTest =
+    PassTest<::testing::TestWithParam<FreezeSpecConstantValueTypeTestCase>>;
 
 TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
   auto& test_case = GetParam();
-  std::vector<const char*> text = {
-      "OpCapability Shader", "OpMemoryModel Logical GLSL450",
-      std::get<0>(test_case), std::get<1>(test_case)};
+  std::vector<const char*> text = {"OpCapability Shader",
+                                   "OpMemoryModel Logical GLSL450",
+                                   test_case.type_decl, test_case.spec_const};
   std::vector<const char*> expected = {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450",
-      std::get<0>(test_case), std::get<2>(test_case)};
+      test_case.type_decl, test_case.expected_frozen_const};
   SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
       JoinAllInsts(text), JoinAllInsts(expected));
 }
@@ -53,24 +59,21 @@ TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
 // Test each primary type.
 INSTANTIATE_TEST_CASE_P(
     PrimaryTypeSpecConst, FreezeSpecConstantValueTypeTest,
-    ::testing::ValuesIn(std::vector<
-                        std::tuple<const char*, const char*, const char*>>({
+    ::testing::ValuesIn(std::vector<FreezeSpecConstantValueTypeTestCase>({
         // Type declaration, original spec constant definition, expected frozen
         // spec constants.
-        std::make_tuple("%int = OpTypeInt 32 1", "%2 = OpSpecConstant %int 1",
-                        "%2 = OpConstant %int 1"),
-        std::make_tuple("%uint = OpTypeInt 32 0", "%2 = OpSpecConstant %uint 1",
-                        "%2 = OpConstant %uint 1"),
-        std::make_tuple("%float = OpTypeFloat 32",
-                        "%2 = OpSpecConstant %float 3.14",
-                        "%2 = OpConstant %float 3.14"),
-        std::make_tuple("%double = OpTypeFloat 64",
-                        "%2 = OpSpecConstant %double 3.1415926",
-                        "%2 = OpConstant %double 3.1415926"),
-        std::make_tuple("%bool = OpTypeBool", "%2 = OpSpecConstantTrue %bool",
-                        "%2 = OpConstantTrue %bool"),
-        std::make_tuple("%bool = OpTypeBool", "%2 = OpSpecConstantFalse %bool",
-                        "%2 = OpConstantFalse %bool"),
+        {"%int = OpTypeInt 32 1", "%2 = OpSpecConstant %int 1",
+         "%2 = OpConstant %int 1"},
+        {"%uint = OpTypeInt 32 0", "%2 = OpSpecConstant %uint 1",
+         "%2 = OpConstant %uint 1"},
+        {"%float = OpTypeFloat 32", "%2 = OpSpecConstant %float 3.14",
+         "%2 = OpConstant %float 3.14"},
+        {"%double = OpTypeFloat 64", "%2 = OpSpecConstant %double 3.1415926",
+         "%2 = OpConstant %double 3.1415926"},
+        {"%bool = OpTypeBool", "%2 = OpSpecConstantTrue %bool",
+         "%2 = OpConstantTrue %bool"},
+        {"%bool = OpTypeBool", "%2 = OpSpecConstantFalse %bool",
+         "%2 = OpConstantFalse %bool"},
     })));
 
 using FreezeSpecConstantValueRemoveDecorationTest = PassTest<::testing::Test>;
@@ -118,10 +121,13 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
       {" OpSpecConstantFalse ", " OpConstantFalse "},
   };
   for (auto& p : opcode_replacement_pairs) {
-    EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second)) <<
-      "text:\n" << expected_disassembly << "\n" <<
-      "find_str:\n" << p.first << "\n" <<
-      "replace_str:\n" << p.second << "\n";
+    EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second))
+        << "text:\n"
+        << expected_disassembly << "\n"
+        << "find_str:\n"
+        << p.first << "\n"
+        << "replace_str:\n"
+        << p.second << "\n";
   }
   SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
       JoinAllInsts(text), expected_disassembly,
