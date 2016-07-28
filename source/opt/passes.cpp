@@ -41,5 +41,8 @@ bool StripDebugInfoPass::Process(ir::Module* module) {
   return modified;
 }
 
+RegisterPass<NullPass> X("null");
+RegisterPass<StripDebugInfoPass> Y("strip-debug-arg");
+
 }  // namespace opt
 }  // namespace spvtools

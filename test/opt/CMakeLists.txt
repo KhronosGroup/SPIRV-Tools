@@ -43,3 +43,9 @@ add_spvtools_unittest(TARGET pass_utils
   SRCS test_utils.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET pass_registry
+  SRCS test_pass_registry.cpp
+  # Do not link with SPIRV-Tools-opt to avoid static object.
+  LIBS ${SPIRV_TOOLS}
+)

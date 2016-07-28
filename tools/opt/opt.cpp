@@ -28,9 +28,11 @@
 #include <iostream>
 #include <vector>
 
+#include <dlfcn.h>
 #include "source/opt/ir_loader.h"
 #include "source/opt/libspirv.hpp"
 #include "source/opt/pass_manager.h"
+#include "source/opt/pass_registry_impl.h"
 #include "tools/io.h"
 
 using namespace spvtools;
@@ -51,6 +53,9 @@ NOTE: The optimizer is a work in progress.
 Options:
   --strip-debug
                Remove all debug instructions.
+  -load <lib>  Load the passes from a dynamically linked library.
+  -list        Print a list of command line arguments of all registered passes
+               and return.
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",
@@ -60,6 +65,7 @@ Options:
 int main(int argc, char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
+  bool list_passes = false;
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
 
@@ -81,8 +87,31 @@ int main(int argc, char** argv) {
           PrintUsage(argv[0]);
           return 1;
         }
+      } else if (0 == strcmp(cur_arg, "-list")) {
+        list_passes = true;
+      } else if (0 == strcmp(cur_arg, "-load")) {
+        if (argi + 1 < argc) {
+          const char* lib_path = argv[++argi];
+          if (!dlopen(lib_path, RTLD_LAZY)) {
+            fprintf(stderr, "Can not load library: %s", lib_path);
+            return 1;
+          }
+        } else {
+          PrintUsage(argv[0]);
+          return 1;
+        }
       } else if (0 == strcmp(cur_arg, "--strip-debug")) {
         pass_manager.AddPass<opt::StripDebugInfoPass>();
+      } else if (0 == strncmp(cur_arg, "--", 2)) {
+        auto pass =
+            opt::PassRegistryImpl::GetPassRegistryImpl()->GetPass(&cur_arg[2]);
+        if (!pass) {
+          fprintf(stderr,
+                  "error: No pass registered with command line argument: %s",
+                  cur_arg);
+          return 1;
+        }
+        pass_manager.AddPass(std::move(pass));
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {
@@ -103,6 +132,11 @@ int main(int argc, char** argv) {
         return 1;
       }
     }
+  }
+
+  if (list_passes) {
+    opt::PassRegistryImpl::GetPassRegistryImpl()->List();
+    return 0;
   }
 
   if (out_file == nullptr) {

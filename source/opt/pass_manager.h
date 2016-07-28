@@ -46,13 +46,17 @@ namespace opt {
 // sharing, etc.
 class PassManager {
  public:
-  // Adds a pass.
+  // Adds a pass
   void AddPass(std::unique_ptr<Pass> pass) {
+    Pass* raw_ptr = pass.release();
+    AddPass(raw_ptr);
+  }
+  void AddPass(std::unique_ptr<Pass, void (*)(Pass*)> pass) {
     passes_.push_back(std::move(pass));
   }
   template <typename PassT>
   void AddPass() {
-    passes_.emplace_back(new PassT);
+    AddPass(new PassT);
   }
 
   // Returns the number of passes added.
@@ -74,8 +78,15 @@ class PassManager {
   }
 
  private:
+  // Make a unique_ptr for a given pass pointer, then add the unqiue_ptr to the
+  // passes_ list.
+  void AddPass(Pass* pass) {
+    auto deleter = [](Pass* p) { delete p;};
+    auto pass_ptr = std::unique_ptr<Pass, void (*)(Pass*)>(pass, deleter);
+    passes_.push_back(std::move(pass_ptr));
+  }
   // A vector of passes. Order matters.
-  std::vector<std::unique_ptr<Pass>> passes_;
+  std::vector<std::unique_ptr<Pass, void (*)(Pass*)>> passes_;
 };
 
 }  // namespace opt
