@@ -63,3 +63,8 @@ add_spvtools_unittest(TARGET assembly_builder
   SRCS test_assembly_builder.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET types
+  SRCS test_types.cpp
+  LIBS SPIRV-Tools-opt
+)
