@@ -101,16 +101,18 @@ INSTANTIATE_TEST_CASE_P(
 
         {"ab", "a", "b", "bb", true},
         {"ab", "a", "", "b", true},
+        {"ab", "b", "", "a", true},
         {"ab", "ab", "", "", true},
         {"ab", "ab", "cd", "cd", true},
         {"bc", "abc", "efg", "bc", false},
 
         {"abc", "ab", "bc", "bcc", true},
         {"abc", "ab", "", "c", true},
+        {"abc", "bc", "", "a", true},
+        {"abc", "bc", "d", "ad", true},
         {"abc", "a", "123", "123bc", true},
         {"abc", "ab", "a", "ac", true},
         {"abc", "a", "aab", "aabbc", true},
         {"abc", "abcd", "efg", "abc", false},
-
     })));
 }  // anonymous namespace
