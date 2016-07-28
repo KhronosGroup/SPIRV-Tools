@@ -38,19 +38,19 @@ class PassRegistryImpl;
 
 // Define the pass maker and deleter function signatures. Confine the calling
 // convention to be C Calling Convention.
-using MakePassPfn = Pass* __attribute((cdecl))(*)();
-using DeletePassPfn = void __attribute((cdecl))(*)(Pass*);
+using MakePassPfn = Pass* /* __attribute((cdecl)) */(*)();
+using DeletePassPfn = void /* __attribute((cdecl)) */(*)(Pass*);
 
 // A pass maker function, which wraps the default constructor of a pass type.
 template <typename PassT>
-__attribute((cdecl))
+// __attribute((cdecl))
 static Pass* MakePass() {
   return new PassT;
 }
 
 // A pass deleter function, which wraps the default destructor of a pass type.
 template <typename PassT>
-__attribute((cdecl))
+// __attribute((cdecl))
 static void DeletePass(Pass* pass) {
   delete static_cast<PassT*>(pass);
 }
