@@ -2420,6 +2420,9 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
     // NOTE: Ids defined outside of functions must appear before they are used
     // This check is being performed in the IdPass function
   }
+  // TODO(dneto): We don't track check of IDs by phi nodes.  We should check
+  // that for each (variable, predecessor) pair in an OpPhi, that the variable
+  // is defined in a block that dominates that predecessor block.
   return SPV_SUCCESS;
 }
 
@@ -2450,7 +2453,17 @@ spv_result_t IdPass(ValidationState_t& _,
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID:
         if (_.IsDefinedId(*operand_ptr)) {
-          _.RegisterUseId(*operand_ptr);
+          if (inst->opcode == SpvOpPhi && i > 1) {
+            // For now, ignore uses of IDs as arguments to OpPhi, since
+            // the job of an OpPhi is to allow a block to use an ID from a
+            // block that doesn't dominate the use.
+            // We only track usage by a particular block, rather than
+            // which instruction and operand number is using the value, so
+            // we have to just bluntly avod tracking the use here.
+            // Fixes https://github.com/KhronosGroup/SPIRV-Tools/issues/286
+          } else {
+            _.RegisterUseId(*operand_ptr);
+          }
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
           ret = _.ForwardDeclareId(*operand_ptr);

@@ -545,6 +545,7 @@ const string kBasicTypes = R"(
 %zero      = OpConstant %intt 0
 %one       = OpConstant %intt 1
 %ten       = OpConstant %intt 10
+%false     = OpConstantFalse %boolt
 )";
 
 const string kKernelTypesAndConstants = R"(
@@ -1170,6 +1171,34 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) 
   EXPECT_THAT(
     getDiagnosticString(),
     MatchesRegex("ID .\\[inew\\] has not been defined"));
+}
+
+TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
+  string str = kHeader
+      + "OpName %if_true \"if_true\"\n"
+      + "OpName %exit \"exit\"\n"
+      + "OpName %copy \"copy\"\n"
+      + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+               OpBranchConditional %false %if_true %exit
+
+%if_true     = OpLabel
+%copy        = OpCopyObject %boolt %false
+               OpBranch %exit
+
+; The use of %copy here is ok, even though it was defined
+; in a block that does not dominate %exit.  That's the point
+; of an OpPhi.
+%exit        = OpLabel
+%value       = OpPhi %boolt %false %entry %copy %if_true
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
 TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
