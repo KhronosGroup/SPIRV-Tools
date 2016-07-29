@@ -31,6 +31,7 @@
 
 #include <cstdint>
 
+#include <algorithm>
 #include <bitset>
 #include <functional>
 #include <vector>
@@ -126,6 +127,22 @@ class BasicBlock {
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const uint32_t& other_id) const { return other_id == id_; }
+
+  /// Returns true if this block dominates the other block.
+  /// Assumes dominators have been computed.
+  bool dominates(const BasicBlock& other) const {
+    return (this == &other) ||
+           !(other.dom_end() ==
+             std::find(other.dom_begin(), other.dom_end(), this));
+  }
+
+  /// Returns true if this block postdominates the other block.
+  /// Assumes dominators have been computed.
+  bool postdominates(const BasicBlock& other) const {
+    return (this == &other) ||
+           !(other.pdom_end() ==
+             std::find(other.pdom_begin(), other.pdom_end(), this));
+  }
 
   /// @brief A BasicBlock dominator iterator class
   ///
