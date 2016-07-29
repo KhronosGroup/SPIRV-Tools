@@ -72,6 +72,17 @@ class FreezeSpecConstantValuePass : public Pass {
   bool Process(ir::Module*) override;
 };
 
+// The optimization pass to remove dead constants, including front-end
+// contants: defined by OpConstant, OpConstantComposite, OpConstantTrue and
+// OpConstantFalse; and spec constants: defined by OpSpecConstant,
+// OpSpecConstantComposite, OpSpecConstantTrue, OpSpecConstantFalse and
+// OpSpecConstantOp.
+class EliminateDeadConstantPass : public Pass {
+  public:
+    const char* name() const override { return "eliminate-dead-const"; }
+    bool Process(ir::Module*) override;
+};
+
 }  // namespace opt
 }  // namespace spvtools
 

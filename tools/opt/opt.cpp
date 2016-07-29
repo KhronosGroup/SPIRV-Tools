@@ -88,6 +88,8 @@ int main(int argc, char** argv) {
         pass_manager.AddPass<opt::StripDebugInfoPass>();
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
         pass_manager.AddPass<opt::FreezeSpecConstantValuePass>();
+      } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
+        pass_manager.AddPass<opt::EliminateDeadConstantPass>();
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {

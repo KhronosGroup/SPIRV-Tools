@@ -44,6 +44,11 @@ add_spvtools_unittest(TARGET pass_freeze_spec_const
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET pass_eliminate_dead_const
+  SRCS test_eliminate_dead_const.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET pass_utils
   SRCS test_utils.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
