@@ -1201,6 +1201,39 @@ TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
+TEST_F(ValidateSSA, DISABLED_PhiVariableDefMustComeFromBlockDominatingThePredecessorBad) {
+  string str = kHeader
+      + "OpName %if_true \"if_true\"\n"
+      + "OpName %if_false \"if_false\"\n"
+      + "OpName %exit \"exit\"\n"
+      + "OpName %true_copy \"true_copy\"\n"
+      + "OpName %false_copy \"false_copy\"\n"
+      + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+               OpBranchConditional %false %if_true %if_false
+
+%if_true     = OpLabel
+%true_copy   = OpCopyObject %boolt %false
+               OpBranch %exit
+
+%if_false    = OpLabel
+%false_copy  = OpCopyObject %boolt %false
+               OpBranch %exit
+
+; The (variable,Id) pairs are swapped.
+%exit        = OpLabel
+%value       = OpPhi %boolt %true_copy %if_false %false_copy %if_true
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // TODO(dneto): Check for a good error message
+}
+
 TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
   string str = kHeader +
                "OpName %first \"first\"\n"
