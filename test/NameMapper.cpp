@@ -134,6 +134,13 @@ INSTANTIATE_TEST_CASE_P(
         {"OpName %1 \"abcdefg\"", 1, "abcdefg"},
         {"OpName %1 \"Hello world!\"", 1, "Hello_world_"},
         {"OpName %1 \"0123456789\"", 1, "0123456789"},
+        {"OpName %1 \"_\"", 1, "_"},
+        // An empty string is not valid for SPIR-V assembly IDs.
+        {"OpName %1 \"\"", 1, "_"},
+        // Test uniqueness when presented with things mapping to "_"
+        {"OpName %1 \"\" OpName %2 \"\"", 1, "_"},
+        {"OpName %1 \"\" OpName %2 \"\"", 2, "__0"},
+        {"OpName %1 \"\" OpName %2 \"\" OpName %3 \"_\"", 3, "__1"},
         // Test uniqueness of names that are forced to be
         // numbers.
         {"OpName %1 \"2\" OpName %2 \"2\"", 1, "2"},

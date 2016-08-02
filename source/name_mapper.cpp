@@ -76,7 +76,8 @@ std::string FriendlyNameMapper::NameForId(uint32_t id) {
 }
 
 std::string FriendlyNameMapper::Sanitize(const std::string& suggested_name) {
-  // Just replace invalid characters by '_'.
+  if (suggested_name.empty()) return "_";
+  // Otherwise, replace invalid characters by '_'.
   std::string result;
   std::string valid =
       "abcdefghijklmnopqrstuvwxyz"
