@@ -7,6 +7,7 @@ v2016.2-dev 2016-07-19
  - Add optimization passes (in API and spirv-opt command)
    - Strip debug info instructions
    - Freeze spec constant to their default values
+ - Allow INotEqual as opertion for OpSpecConstantOp
  - Fixes bugs:
    #270: validator: crash when continue construct is unreachable
    #279: validator: infinite loop when analyzing some degenerate control
