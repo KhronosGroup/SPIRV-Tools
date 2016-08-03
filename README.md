@@ -224,6 +224,16 @@ The validator operates on the binary form.
 * `spirv-val` - the standalone validator
   * `<spirv-dir>/tools/val`
 
+### Control flow dumper tool
+
+The control flow dumper prints the control flow graph for a SPIR-V module as a
+[GraphViz](http://www.graphviz.org/) graph.
+
+This is experimental.
+
+* `spirv-cfg` - the control flow graph dumper
+  * `<spirv-dir>/tools/cfg`
+
 ### Tests
 
 Tests are only built when googletest is found.

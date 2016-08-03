@@ -1,12 +1,14 @@
 Revision history for SPIRV-Tools
 
-v2016.3-dev 2016-08-05
+v2016.3-dev 2016-08-11
  - Start v2016.3
  - Add target environment enums for OpenCL 2.1, OpenCL 2.2,
    OpenGL 4.0, OpenGL 4.1, OpenGL 4.2, OpenGL 4.3, OpenGL 4.5.
+ - Add spirv-cfg, an experimental tool to dump the control flow graph
+   as a GraphiViz "dot" graph
+ - Add optimization pass: Eliminate dead constants.
  - Fixes issues:
    #288: Check def-use dominance rules for OpPhi (variable,parent) operands
- - Add optimization pass: Eliminate dead constants.
 
 v2016.2 2016-08-05
  - Validator is incomplete
