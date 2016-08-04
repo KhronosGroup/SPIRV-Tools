@@ -25,7 +25,8 @@
 #  - A longer string with the project name, the software version number, and
 #    git commit information for the directory.  The commit information
 #    is the output of "git describe" if that succeeds, or "git rev-parse HEAD"
-#    if that succeeds, or otherwise a message containing the phrase "unknown hash".
+#    if that succeeds, or otherwise a message containing the phrase
+#    "unknown hash".
 # The string contents are escaped as necessary.
 
 from __future__ import print_function
@@ -37,7 +38,7 @@ import subprocess
 import sys
 
 
-def command_output(cmd, dir):
+def command_output(cmd, directory):
     """Runs a command in a directory and returns its standard output stream.
 
     Captures the standard error stream.
@@ -45,24 +46,24 @@ def command_output(cmd, dir):
     Raises a RuntimeError if the command fails to launch or otherwise fails.
     """
     p = subprocess.Popen(cmd,
-                         cwd=dir,
+                         cwd=directory,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     (stdout, _) = p.communicate()
     if p.returncode != 0:
-        raise RuntimeError('Failed to run %s in %s' % (cmd, dir))
+        raise RuntimeError('Failed to run %s in %s' % (cmd, directory))
     return stdout
 
 
-def deduce_software_version(dir):
+def deduce_software_version(directory):
     """Returns a software version number parsed from the CHANGES file
-    in the given dir.
+    in the given directory.
 
     The CHANGES file describes most recent versions first.
     """
 
-    pattern = re.compile('(v\d+\.\d+(-dev)?) \d\d\d\d-\d\d-\d\d$')
-    changes_file = os.path.join(dir, 'CHANGES')
+    pattern = re.compile(r'(v\d+\.\d+(-dev)?) \d\d\d\d-\d\d-\d\d$')
+    changes_file = os.path.join(directory, 'CHANGES')
     with open(changes_file) as f:
         for line in f.readlines():
             match = pattern.match(line)
@@ -71,11 +72,11 @@ def deduce_software_version(dir):
     raise Exception('No version number found in {}'.format(changes_file))
 
 
-def describe(dir):
+def describe(directory):
     """Returns a string describing the current Git HEAD version as descriptively
     as possible.
 
-    Runs 'git describe', or alternately 'git rev-parse HEAD', in dir.  If
+    Runs 'git describe', or alternately 'git rev-parse HEAD', in directory.  If
     successful, returns the output; otherwise returns 'unknown hash, <date>'."""
     try:
         # decode() is needed here for Python3 compatibility. In Python2,
@@ -83,18 +84,18 @@ def describe(dir):
         # Popen.communicate() returns a bytes instance, which needs to be
         # decoded into text data first in Python3. And this decode() won't
         # hurt Python2.
-        return command_output(['git', 'describe'], dir).rstrip().decode()
+        return command_output(['git', 'describe'], directory).rstrip().decode()
     except:
         try:
             return command_output(
-                ['git', 'rev-parse', 'HEAD'], dir).rstrip().decode()
+                ['git', 'rev-parse', 'HEAD'], directory).rstrip().decode()
         except:
             return 'unknown hash, {}'.format(datetime.date.today().isoformat())
 
 
 def main():
     if len(sys.argv) != 3:
-        print('usage: {0} <spirv-tools_dir> <output-file>'.format(sys.argv[0]))
+        print('usage: {} <spirv-tools-dir> <output-file>'.format(sys.argv[0]))
         sys.exit(1)
 
     output_file = sys.argv[2]
