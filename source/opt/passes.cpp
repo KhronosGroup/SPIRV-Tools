@@ -31,7 +31,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "def_use_manager.h"
 #include "reflect.h"
 
 namespace spvtools {

@@ -1,5 +1,6 @@
 add_library(SPIRV-Tools-opt
   basic_block.h
+  constants.h
   def_use_manager.h
   function.h
   instruction.h
@@ -15,6 +16,7 @@ add_library(SPIRV-Tools-opt
 
   def_use_manager.cpp
   function.cpp
+  fold_spec_const_op_composite.cpp
   instruction.cpp
   ir_loader.cpp
   libspirv.cpp
