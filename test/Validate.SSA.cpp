@@ -1234,6 +1234,44 @@ TEST_F(ValidateSSA, DISABLED_PhiVariableDefMustComeFromBlockDominatingThePredece
   // TODO(dneto): Check for a good error message
 }
 
+TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefInBlockGood) {
+  string str = kHeader
+      + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+%def         = OpCopyObject %boolt %false
+               OpReturn
+
+%unreach     = OpLabel
+%use         = OpCopyObject %boolt %def
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) {
+  string str = kHeader + kBasicTypes +
+               R"(
+%void_fn_int = OpTypeFunction %voidt %intt
+%func        = OpFunction %voidt None %void_fn_int
+%int_param   = OpFunctionParameter %intt
+%entry       = OpLabel
+               OpReturn
+
+%unreach     = OpLabel
+%use         = OpCopyObject %intt %int_param
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
 TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
   string str = kHeader +
                "OpName %first \"first\"\n"

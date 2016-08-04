@@ -13,6 +13,7 @@ v2016.2-dev 2016-07-19
    #279: validator: infinite loop when analyzing some degenerate control
      flow graphs
    #290: disassembler: never generate bare % for an identifier
+   #295: validator: def-use dominance check should ignore unreachable uses
 
 v2016.1 2016-07-19
  - Fix https://github.com/KhronosGroup/SPIRV-Tools/issues/261

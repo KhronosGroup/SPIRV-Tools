@@ -2392,6 +2392,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
         // If the Id is defined within a block then make sure all references to
         // that Id appear in a blocks that are dominated by the defining block
         for (auto use : definition.second.uses()) {
+          if (!use->reachable()) continue;
           if (use->dom_end() == find(use->dom_begin(), use->dom_end(), block)) {
             return _.diag(SPV_ERROR_INVALID_ID)
                    << "ID " << _.getIdName(definition.first)
