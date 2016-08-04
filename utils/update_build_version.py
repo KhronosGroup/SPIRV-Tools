@@ -99,14 +99,22 @@ def main():
         sys.exit(1)
 
     output_file = sys.argv[2]
+    output_dir = os.path.dirname(output_file)
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
 
     software_version = deduce_software_version(sys.argv[1])
     new_content = '"{}", "SPIRV-Tools {} {}"\n'.format(
         software_version, software_version,
         describe(sys.argv[1]).replace('"', '\\"'))
-    if os.path.isfile(output_file) and new_content == open(output_file, 'r').read():
-        sys.exit(0)
-    open(output_file, 'w').write(new_content)
+
+    if os.path.isfile(output_file):
+        with open(output_file, 'r') as f:
+            if new_content == f.read():
+                return
+
+    with open(output_file, 'w') as f:
+        f.write(new_content)
 
 if __name__ == '__main__':
     main()
