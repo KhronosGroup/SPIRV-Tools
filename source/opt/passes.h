@@ -58,6 +58,14 @@ class StripDebugInfoPass : public Pass {
   bool Process(ir::Module* module) override;
 };
 
+// The transformation pass that specializes the value of spec constants to
+// their default values. This pass only processes the spec constants that have
+// Spec ID decorations (defined by OpSpecConstant, OpSpecConstantTrue and
+// OpSpecConstantFalse instructions) and replaces them with their front-end
+// version counterparts (OpConstant, OpConstantTrue and OpConstantFalse). The
+// corresponding Spec ID annotation instructions will also be removed. This
+// pass does not fold the newly added front-end constants and does not process
+// other spec constants defined by OpSpecConstantComposite or OpSpecConstantOp.
 class FreezeSpecConstantValuePass : public Pass {
  public:
   const char* name() const override { return "freeze-spec-const"; }
