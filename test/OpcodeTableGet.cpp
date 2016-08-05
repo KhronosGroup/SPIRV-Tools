@@ -30,24 +30,21 @@
 
 namespace {
 
-using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
+using GetTargetOpcodeTableGetTest = ::testing::TestWithParam<spv_target_env>;
 using ::testing::ValuesIn;
-using std::vector;
 
-TEST_P(GetTargetTest, SanityCheck) {
+TEST_P(GetTargetOpcodeTableGetTest, SanityCheck) {
   spv_opcode_table table;
   ASSERT_EQ(SPV_SUCCESS, spvOpcodeTableGet(&table, GetParam()));
   ASSERT_NE(0u, table->count);
   ASSERT_NE(nullptr, table->entries);
 }
 
-TEST_P(GetTargetTest, InvalidPointerTable) {
+TEST_P(GetTargetOpcodeTableGetTest, InvalidPointerTable) {
   ASSERT_EQ(SPV_ERROR_INVALID_POINTER, spvOpcodeTableGet(nullptr, GetParam()));
 }
 
-INSTANTIATE_TEST_CASE_P(OpcodeTableGet, GetTargetTest,
-                        ValuesIn(vector<spv_target_env>{SPV_ENV_UNIVERSAL_1_0,
-                                                        SPV_ENV_UNIVERSAL_1_1,
-                                                        SPV_ENV_VULKAN_1_0}), );
+INSTANTIATE_TEST_CASE_P(OpcodeTableGet, GetTargetOpcodeTableGetTest,
+                        ValuesIn(spvtest::AllTargetEnvironments()));
 
 }  // anonymous namespace

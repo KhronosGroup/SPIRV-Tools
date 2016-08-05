@@ -216,5 +216,13 @@ inline std::string MakeLongUTF8String(size_t num_4_byte_chars) {
   return result;
 }
 
+// Returns a vector of all valid target environment enums.
+inline std::vector<spv_target_env> AllTargetEnvironments() {
+  return {SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1, SPV_ENV_OPENCL_2_1,
+          SPV_ENV_OPENCL_2_2,    SPV_ENV_VULKAN_1_0,    SPV_ENV_OPENGL_4_0,
+          SPV_ENV_OPENGL_4_1,    SPV_ENV_OPENGL_4_2,    SPV_ENV_OPENGL_4_3,
+          SPV_ENV_OPENGL_4_5};
+}
+
 }  // namespace spvtest
 #endif  // LIBSPIRV_TEST_UNITSPIRV_H_
