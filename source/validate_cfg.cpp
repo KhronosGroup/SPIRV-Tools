@@ -147,10 +147,12 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     changed = false;
     for (auto b = postorder.rbegin() + 1; b != postorder.rend(); ++b) {
       const vector<BasicBlock*>& predecessors = *predecessor_func(*b);
-      // first processed/reachable predecessor
+      // Find the first processed/reachable predecessor that is reachable
+      // in the forward traversal.
       auto res = find_if(begin(predecessors), end(predecessors),
                          [&idoms, undefined_dom](BasicBlock* pred) {
-                           return idoms[pred].dominator != undefined_dom;
+                           return idoms.count(pred) &&
+                                  idoms[pred].dominator != undefined_dom;
                          });
       if (res == end(predecessors)) continue;
       const BasicBlock* idom = *res;
@@ -159,6 +161,10 @@ vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
       // all other predecessors
       for (const auto* p : predecessors) {
         if (idom == p) continue;
+        // Only consider nodes reachable in the forward traversal.
+        // Otherwise the intersection doesn't make sense and will never
+        // terminate.
+        if (!idoms.count(p)) continue;
         if (idoms[p].dominator != undefined_dom) {
           size_t finger1 = idoms[p].postorder_index;
           size_t finger2 = idom_idx;
@@ -332,7 +338,7 @@ spv_result_t StructuredControlFlowChecks(
 
   // Check the loop headers have exactly one back-edge branching to it
   for (BasicBlock* block : function.ordered_blocks()) {
-    if (block->is_type(kBlockTypeLoop) &&
+    if (block->reachable() && block->is_type(kBlockTypeLoop) &&
         loop_headers.count(block->id()) != 1) {
       return _.diag(SPV_ERROR_INVALID_CFG)
              << "Loop with header " + _.getIdName(block->id()) +
@@ -347,7 +353,7 @@ spv_result_t StructuredControlFlowChecks(
     auto header = construct.entry_block();
     auto merge = construct.exit_block();
 
-    if (!merge) {
+    if (header->reachable() && !merge) {
       string construct_name, header_name, exit_name;
       tie(construct_name, header_name, exit_name) =
           ConstructNames(construct.type());
@@ -357,15 +363,17 @@ spv_result_t StructuredControlFlowChecks(
                     exit_name + ". This may be a bug in the validator.";
     }
 
-    // if the merge block is reachable then it's dominated by the header
-    if (merge->reachable() &&
+    // If the merge block is reachable then it's dominated by the header.
+    if (merge && merge->reachable() &&
         find(merge->dom_begin(), merge->dom_end(), header) ==
             merge->dom_end()) {
       return _.diag(SPV_ERROR_INVALID_CFG)
              << ConstructErrorString(construct, _.getIdName(header->id()),
                                      _.getIdName(merge->id()));
     }
-    if (construct.type() == ConstructType::kContinue) {
+    // Check post-dominance for continue constructs.  But dominance and
+    // post-dominance only make sense when the construct is reachable.
+    if (header->reachable() && construct.type() == ConstructType::kContinue) {
       if (find(header->pdom_begin(), header->pdom_end(), merge) ==
           merge->pdom_end()) {
         return _.diag(SPV_ERROR_INVALID_CFG)
@@ -412,7 +420,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     vector<pair<uint32_t, uint32_t>> back_edges;
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      DepthFirstTraversal(function.pseudo_entry_block(),
+      DepthFirstTraversal(function.first_block(),
                           function.AugmentedCFGSuccessorsFunction(),
                           [](cbb_ptr) {},
                           [&](cbb_ptr b) { postorder.push_back(b); },

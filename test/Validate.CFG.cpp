@@ -1149,6 +1149,41 @@ TEST_F(ValidateCFG, LoopWithoutBackEdgesBad) {
                            "back-edges but the standard requires exactly one"));
 }
 
+TEST_P(ValidateCFG,
+       NestedConstructWithUnreachableMergeBlockBranchingToOuterMergeBlock) {
+  // Test for https://github.com/KhronosGroup/SPIRV-Tools/issues/297
+  // The nested construct has an unreachable merge block.  In the
+  // augmented CFG that merge block
+  // we still determine that the
+  bool is_shader = GetParam() == SpvCapabilityShader;
+  Block entry("entry", SpvOpBranchConditional);
+  Block inner_head("inner_head", SpvOpBranchConditional);
+  Block inner_true("inner_true", SpvOpReturn);
+  Block inner_false("inner_false", SpvOpReturn);
+  Block inner_merge("inner_merge");
+  Block exit("exit", SpvOpReturn);
+
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) {
+    entry.AppendBody("OpSelectionMerge %exit None\n");
+    inner_head.SetBody("OpSelectionMerge %inner_merge None\n");
+  }
+
+  string str = header(GetParam()) + nameOps("entry", "inner_merge", "exit") +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> vector<Block>({inner_head, exit});
+  str += inner_head >> vector<Block>({inner_true, inner_false});
+  str += inner_true;
+  str += inner_false;
+  str += inner_merge >> exit;
+  str += exit;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  /// namespace
