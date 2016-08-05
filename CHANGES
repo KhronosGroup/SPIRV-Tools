@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2016.3-dev 2016-08-05
+ - Start v2016.3
+
 v2016.2 2016-08-05
  - Validator is incomplete
    - Checks ID use block is dominated by definition block
