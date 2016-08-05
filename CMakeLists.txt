@@ -116,8 +116,8 @@ function(spvtools_default_compile_options TARGET)
   # But it still depends on MSVCRT.dll.
   if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-      set_target_properties(${TARGET} PROPERTIES LINK_FLAGS
-	                    -static -static-libgcc -static-libstdc++)
+      set_target_properties(${TARGET} PROPERTIES
+        LINK_FLAGS -static -static-libgcc -static-libstdc++)
     endif()
   endif()
 endfunction()
@@ -138,8 +138,13 @@ find_host_package(PythonInterp)
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
-       "Skip building the executable and tests along with the library"
-       ${SPIRV_SKIP_EXECUTABLES})
+  "Skip building the executable and tests along with the library"
+  ${SPIRV_SKIP_EXECUTABLES})
+option(SPIRV_SKIP_TESTS
+  "Skip building tests along with the library" ${SPIRV_SKIP_TESTS})
+if ("${SPIRV_SKIP_EXECUTABLES}")
+  set(SPIRV_SKIP_TESTS ON)
+endif()
 
 add_subdirectory(external)
 
