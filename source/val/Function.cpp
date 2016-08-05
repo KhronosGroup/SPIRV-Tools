@@ -50,7 +50,9 @@ using libspirv::BasicBlock;
 
 // Computes a minimal set of root nodes required to traverse, in the forward
 // direction, the CFG represented by the given vector of blocks, and successor
-// and predecessor functions.
+// and predecessor functions.  When considering adding two nodes, each having
+// predecessors, favour using the one that appears earlier on the input blocks
+// list.
 std::vector<BasicBlock*> TraversalRoots(const std::vector<BasicBlock*>& blocks,
                                         libspirv::get_blocks_func succ_func,
                                         libspirv::get_blocks_func pred_func) {
@@ -200,7 +202,6 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
   assert(
       current_block_ &&
       "RegisterBlockEnd can only be called when parsing a binary in a block");
-
   vector<BasicBlock*> next_blocks;
   next_blocks.reserve(next_list.size());
 
@@ -213,6 +214,21 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
       undefined_blocks_.insert(successor_id);
     }
     next_blocks.push_back(&inserted_block->second);
+  }
+
+  if (current_block_->is_type(kBlockTypeLoop)) {
+    // For each loop header, record the set of its successors, and include
+    // its continue target if the continue target is not the loop header
+    // itself.
+    std::vector<BasicBlock*>& next_blocks_plus_continue_target =
+        loop_header_successors_plus_continue_target_map_[current_block_];
+    next_blocks_plus_continue_target = next_blocks;
+    // If this block is marked as Loop-type,  then the continue construct is
+    // the most recently created CFG construct.
+    auto continue_target = cfg_constructs_.back().entry_block();
+    if (continue_target != current_block_) {
+      next_blocks_plus_continue_target.push_back(continue_target);
+    }
   }
 
   current_block_->RegisterBranchInstruction(branch_instruction);
@@ -292,6 +308,16 @@ Function::GetBlocksFunction Function::AugmentedCFGSuccessorsFunction() const {
   };
 }
 
+Function::GetBlocksFunction
+Function::AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge() const {
+  return [this](const BasicBlock* block) {
+    auto where = loop_header_successors_plus_continue_target_map_.find(block);
+    return where == loop_header_successors_plus_continue_target_map_.end()
+               ? AugmentedCFGSuccessorsFunction()(block)
+               : &(*where).second;
+  };
+}
+
 Function::GetBlocksFunction Function::AugmentedCFGPredecessorsFunction() const {
   return [this](const BasicBlock* block) {
     auto where = augmented_predecessors_map_.find(block);
@@ -306,7 +332,21 @@ void Function::ComputeAugmentedCFG() {
   auto succ_func = [](const BasicBlock* b) { return b->successors(); };
   auto pred_func = [](const BasicBlock* b) { return b->predecessors(); };
   auto sources = TraversalRoots(ordered_blocks_, succ_func, pred_func);
-  auto sinks = TraversalRoots(ordered_blocks_, pred_func, succ_func);
+
+  // For the predecessor traversals, reverse the order of blocks.  This
+  // will affect the post-dominance calculation as follows:
+  //  - Suppose you have blocks A and B, with A appearing before B in
+  //    the list of blocks.
+  //  - Also, A branches only to B, and B branches only to A.
+  //  - We want to compute A as dominating B, and B as post-dominating B.
+  // By using reversed blocks for predecessor traversal roots discovery,
+  // we'll add an edge from B to the pseudo-exit node, rather than from A.
+  // All this is needed to correctly process the dominance/post-dominance
+  // constraint when A is a loop header that points to itself as its
+  // own continue target, and B is the latch block for the loop.
+  std::vector<BasicBlock*> reversed_blocks(ordered_blocks_.rbegin(),
+                                           ordered_blocks_.rend());
+  auto sinks = TraversalRoots(reversed_blocks, pred_func, succ_func);
 
   // Wire up the pseudo entry block.
   augmented_successors_map_[&pseudo_entry_block_] = sources;

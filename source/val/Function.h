@@ -180,6 +180,9 @@ class Function {
       std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
   /// Returns the block successors function for the augmented CFG.
   GetBlocksFunction AugmentedCFGSuccessorsFunction() const;
+  /// Like AugmentedCFGSuccessorsFunction, but also includes a forward edge from
+  /// a loop header block to its continue target, if they are different blocks.
+  GetBlocksFunction AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge() const;
   /// Returns the block predecessors function for the augmented CFG.
   GetBlocksFunction AugmentedCFGPredecessorsFunction() const;
 
@@ -261,6 +264,12 @@ class Function {
   // different from its predecessors in the ordinary CFG.
   std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
       augmented_predecessors_map_;
+
+  // Maps a structured loop header to its CFG successors and also its
+  // continue target if that continue target is not the loop header
+  // itself. This might have duplicates.
+  std::unordered_map<const BasicBlock*, std::vector<BasicBlock*>>
+      loop_header_successors_plus_continue_target_map_;
 
   /// The constructs that are available in this function
   std::list<Construct> cfg_constructs_;

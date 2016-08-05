@@ -937,22 +937,24 @@ TEST_P(ValidateCFG, BranchingToSameNonLoopHeaderBlockBad) {
   }
 }
 
-TEST_P(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
+TEST_P(ValidateCFG, MultipleBackEdgeBlocksToLoopHeaderBad) {
   bool is_shader = GetParam() == SpvCapabilityShader;
   Block entry("entry");
   Block loop("loop", SpvOpBranchConditional);
-  Block cont("cont", SpvOpBranchConditional);
+  Block back0("back0");
+  Block back1("back1");
   Block merge("merge", SpvOpReturn);
 
   entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
-  if (is_shader) loop.SetBody("OpLoopMerge %merge %loop None\n");
+  if (is_shader) loop.SetBody("OpLoopMerge %merge %back0 None\n");
 
-  string str = header(GetParam()) + nameOps("cont", "loop") + types_consts() +
-               "%func    = OpFunction %voidt None %funct\n";
+  string str = header(GetParam()) + nameOps("loop", "back0", "back1") +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
-  str += loop >> vector<Block>({cont, merge});
-  str += cont >> vector<Block>({loop, loop});
+  str += loop >> vector<Block>({back0, back1});
+  str += back0 >> loop;
+  str += back1 >> loop;
   str += merge;
   str += "OpFunctionEnd";
 
@@ -961,7 +963,9 @@ TEST_P(ValidateCFG, MultipleBackEdgesToLoopHeaderBad) {
     ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex(
-                    "Loop header .\\[loop\\] targeted by multiple back-edges"));
+                    "Loop header .\\[loop\\] is targeted by 2 back-edge blocks "
+                    "but the standard requires exactly one"))
+        << str;
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -1027,7 +1031,7 @@ TEST_P(ValidateCFG, BranchOutOfConstructToMergeBad) {
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
                              ".\\[loop\\] is not post dominated by the "
-                             "back-edge block .\\[cont\\]"));
+                             "back-edge block .\\[cont\\]")) << str;
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -1109,10 +1113,35 @@ OpDecorate %id BuiltIn GlobalInvocationId
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, LoopWithoutBackEdgesBad) {
+TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %main "main"
+           OpName %loop "loop"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%main    = OpFunction %voidt None %funct
+%loop    = OpLabel
+           OpLoopMerge %exit %exit None
+           OpBranch %exit
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+)";
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("Loop header .\\[loop\\] is targeted by "
+                   "0 back-edge blocks but the standard requires exactly "
+                   "one"));
+}
+
+TEST_F(ValidateCFG, LoopWithBackEdgeFromUnreachableContinueConstructGood) {
   string str = R"(
            OpCapability Shader
            OpMemoryModel Logical GLSL450
@@ -1135,18 +1164,15 @@ TEST_F(ValidateCFG, LoopWithoutBackEdgesBad) {
            OpBranchConditional %cond %body %exit
 %body    = OpLabel
            OpReturn
-%cont    = OpLabel
-           OpBranch %loop
+%cont    = OpLabel   ; Reachable only from OpLoopMerge ContinueTarget parameter
+           OpBranch %loop ; Should be considered a back-edge
 %exit    = OpLabel
            OpReturn
            OpFunctionEnd
 )";
 
   CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("Loop with header .\\[loop\\] is targeted by 0 "
-                           "back-edges but the standard requires exactly one"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
 TEST_P(ValidateCFG,
@@ -1182,6 +1208,103 @@ TEST_P(ValidateCFG,
 
   CompileSuccessfully(str);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructureGood) {
+  // This example is valid.  It shows that the validator can't just add
+  // an edge from the loop head to the continue target.  If that edge
+  // is added, then the "if_merge" block is both the continue target
+  // for the loop and also the merge block for the nested selection, but
+  // then it wouldn't be dominated by "if_head", the header block for the
+  // nested selection.
+  bool is_shader = GetParam() == SpvCapabilityShader;
+  Block entry("entry");
+  Block loop("loop");
+  Block if_head("if_head", SpvOpBranchConditional);
+  Block if_true("if_true");
+  Block if_merge("if_merge", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
+
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) {
+    loop.SetBody("OpLoopMerge %merge %if_merge None\n");
+    if_head.SetBody("OpSelectionMerge %if_merge None\n");
+  }
+
+  string str = header(GetParam()) + nameOps("entry", "loop", "if_head",
+                                            "if_true", "if_merge", "merge") +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> if_head;
+  str += if_head >> vector<Block>({if_true, if_merge});
+  str += if_true >> if_merge;
+  str += if_merge >> vector<Block>({loop, merge});
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_P(ValidateCFG, SingleLatchBlockMultipleBranchesToLoopHeader) {
+  // This test case ensures we allow both branches of a loop latch block
+  // to go back to the loop header.  It still counts as a single back edge.
+  bool is_shader = GetParam() == SpvCapabilityShader;
+  Block entry("entry");
+  Block loop("loop", SpvOpBranchConditional);
+  Block latch("latch", SpvOpBranchConditional);
+  Block merge("merge", SpvOpReturn);
+
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) {
+    loop.SetBody("OpLoopMerge %merge %latch None\n");
+  }
+
+  string str = header(GetParam()) + nameOps("entry", "loop", "latch", "merge") +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> vector<Block>({latch, merge});
+  str += latch >> vector<Block>({loop, loop}); // This is the key
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
+                                                 << getDiagnosticString();
+}
+
+TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
+  // This test case ensures we don't count a Continue Target from a loop
+  // header to itself as a self-loop when computing back edges.
+  // Also, it detects that there is an edge from %latch to the pseudo-exit
+  // node, rather than from %loop.  In particular, it detects that we
+  // have used the *reverse* textual order of blocks when computing
+  // predecessor traversal roots.
+  bool is_shader = GetParam() == SpvCapabilityShader;
+  Block entry("entry");
+  Block loop("loop");
+  Block latch("latch");
+  Block merge("merge", SpvOpReturn);
+
+  entry.SetBody("%cond    = OpSLessThan %intt %one %two\n");
+  if (is_shader) {
+    loop.SetBody("OpLoopMerge %merge %loop None\n");
+  }
+
+  string str = header(GetParam()) + nameOps("entry", "loop", "latch", "merge") +
+               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+
+  str += entry >> loop;
+  str += loop >> latch;
+  str += latch >> loop;
+  str += merge;
+  str += "OpFunctionEnd";
+
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
+                                                 << getDiagnosticString();
 }
 
 /// TODO(umar): Switch instructions

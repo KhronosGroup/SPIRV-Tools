@@ -30,7 +30,7 @@
 
 #include <algorithm>
 #include <functional>
-#include <set>
+#include <map>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -237,7 +237,6 @@ void UpdateContinueConstructExitBlocks(
     uint32_t back_edge_block_id;
     uint32_t loop_header_block_id;
     tie(back_edge_block_id, loop_header_block_id) = edge;
-
     auto is_this_header = [=](Construct& c) {
       return c.type() == ConstructType::kLoop &&
              c.entry_block()->id() == loop_header_block_id;
@@ -314,7 +313,9 @@ spv_result_t StructuredControlFlowChecks(
     const vector<pair<uint32_t, uint32_t>>& back_edges) {
   /// Check all backedges target only loop headers and have exactly one
   /// back-edge branching to it
-  set<uint32_t> loop_headers;
+
+  // Map a loop header to blocks with back-edges to the loop header.
+  std::map<uint32_t, std::unordered_set<uint32_t>> loop_latch_blocks;
   for (auto back_edge : back_edges) {
     uint32_t back_edge_block;
     uint32_t header_block;
@@ -325,26 +326,20 @@ spv_result_t StructuredControlFlowChecks(
              << _.getIdName(header_block)
              << ") can only be formed between a block and a loop header.";
     }
-    bool success;
-    tie(ignore, success) = loop_headers.insert(header_block);
-    if (!success) {
-      // TODO(umar): List the back-edge blocks that are branching to loop
-      // header
-      return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Loop header " << _.getIdName(header_block)
-             << " targeted by multiple back-edges";
-    }
+    loop_latch_blocks[header_block].insert(back_edge_block);
   }
 
   // Check the loop headers have exactly one back-edge branching to it
-  for (BasicBlock* block : function.ordered_blocks()) {
-    if (block->reachable() && block->is_type(kBlockTypeLoop) &&
-        loop_headers.count(block->id()) != 1) {
+  for (BasicBlock* loop_header : function.ordered_blocks()) {
+    if (!loop_header->reachable()) continue;
+    if (!loop_header->is_type(kBlockTypeLoop)) continue;
+    auto loop_header_id = loop_header->id();
+    auto num_latch_blocks = loop_latch_blocks[loop_header_id].size();
+    if (num_latch_blocks != 1) {
       return _.diag(SPV_ERROR_INVALID_CFG)
-             << "Loop with header " + _.getIdName(block->id()) +
-                    " is targeted by "
-             << loop_headers.count(block->id())
-             << " back-edges but the standard requires exactly one";
+             << "Loop header " << _.getIdName(loop_header_id)
+             << " is targeted by " << num_latch_blocks
+             << " back-edge blocks but the standard requires exactly one";
     }
   }
 
@@ -418,15 +413,15 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     vector<const BasicBlock*> postorder;
     vector<const BasicBlock*> postdom_postorder;
     vector<pair<uint32_t, uint32_t>> back_edges;
+    auto ignore_block = [](cbb_ptr) {};
+    auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
       DepthFirstTraversal(function.first_block(),
                           function.AugmentedCFGSuccessorsFunction(),
-                          [](cbb_ptr) {},
+                          ignore_block,
                           [&](cbb_ptr b) { postorder.push_back(b); },
-                          [&](cbb_ptr from, cbb_ptr to) {
-                            back_edges.emplace_back(from->id(), to->id());
-                          });
+                          ignore_edge);
       auto edges = libspirv::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
@@ -436,14 +431,22 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       /// calculate post dominators
       DepthFirstTraversal(function.pseudo_exit_block(),
                           function.AugmentedCFGPredecessorsFunction(),
-                          [](cbb_ptr) {},
+                          ignore_block,
                           [&](cbb_ptr b) { postdom_postorder.push_back(b); },
-                          [&](cbb_ptr, cbb_ptr) {});
+                          ignore_edge);
       auto postdom_edges = libspirv::CalculateDominators(
           postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
+      /// calculate back edges.
+      DepthFirstTraversal(
+          function.pseudo_entry_block(),
+          function
+              .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),
+          ignore_block, ignore_block, [&](cbb_ptr from, cbb_ptr to) {
+            back_edges.emplace_back(from->id(), to->id());
+          });
     }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
