@@ -197,6 +197,14 @@ class Function {
   // Populates augmented_successors_map_ and augmented_predecessors_map_.
   void ComputeAugmentedCFG();
 
+  // Adds a copy of the given Construct, and tracks it by its entry block.
+  // Returns a reference to the stored construct.
+  Construct& AddConstruct(const Construct& new_construct);
+
+  // Returns a reference to the construct corresponding to the given entry
+  // block.
+  Construct& FindConstructForEntryBlock(const BasicBlock* entry_block);
+
   /// The result id of the OpLabel that defined this block
   uint32_t id_;
 
@@ -279,6 +287,9 @@ class Function {
 
   /// The function parameter ids of the functions
   std::vector<uint32_t> parameter_ids_;
+
+  /// Maps a construct's entry block to the construct.
+  std::unordered_map<const BasicBlock*, Construct*> entry_block_to_construct_;
 };
 
 }  /// namespace libspirv
