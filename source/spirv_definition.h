@@ -29,7 +29,7 @@
 
 #include <cstdint>
 
-#include "spirv-tools/libspirv.h"
+#include "spirv/1.1/spirv.h"
 
 #define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 

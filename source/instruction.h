@@ -30,9 +30,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
-
-#include "table.h"
 
 // Describes an instruction.
 struct spv_instruction_t {
