@@ -87,7 +87,7 @@ class idUsage {
   const SpvAddressingModel addressingModel;
   spv_position position;
   spv_diagnostic* pDiagnostic;
-  ValidationState_t module_;
+  const ValidationState_t& module_;
   std::vector<uint32_t> entry_points_;
 };
 

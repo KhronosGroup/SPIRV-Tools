@@ -176,6 +176,8 @@ class ValidationState_t {
   }
 
  private:
+  ValidationState_t(const ValidationState_t&);
+
   spv_diagnostic* diagnostic_;
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;

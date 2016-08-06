@@ -153,7 +153,7 @@ void printDot(const ValidationState_t& _, const libspirv::BasicBlock& other) {
          block_string.c_str());
 }
 
-void PrintBlocks(ValidationState_t _, libspirv::Function func) {
+void PrintBlocks(ValidationState_t& _, libspirv::Function func) {
   assert(func.first_block());
 
   printf("%10s -> %s\n", _.getIdOrName(func.id()).c_str(),
@@ -171,7 +171,7 @@ void PrintBlocks(ValidationState_t _, libspirv::Function func) {
 #define UNUSED(func) func
 #endif
 
-UNUSED(void PrintDotGraph(ValidationState_t _, libspirv::Function func)) {
+UNUSED(void PrintDotGraph(ValidationState_t& _, libspirv::Function func)) {
   if (func.first_block()) {
     string func_name(_.getIdOrName(func.id()));
     printf("digraph %s {\n", func_name.c_str());
@@ -218,7 +218,7 @@ spv_result_t spvValidate(const spv_const_context context,
     vector<uint32_t> ids = vstate.UnresolvedForwardIds();
 
     transform(begin(ids), end(ids), ostream_iterator<string>(ss, " "),
-              bind(&ValidationState_t::getIdName, vstate, _1));
+              bind(&ValidationState_t::getIdName, std::ref(vstate), _1));
 
     auto id_str = ss.str();
     return vstate.diag(SPV_ERROR_INVALID_ID)
