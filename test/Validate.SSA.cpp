@@ -1140,10 +1140,9 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateSSA, PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) {
-  string str = kHeader
-      + "OpName %inew \"inew\""
-      + kBasicTypes +
+TEST_F(ValidateSSA,
+       PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) {
+  string str = kHeader + "OpName %inew \"inew\"" + kBasicTypes +
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
@@ -1168,17 +1167,14 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateUseOfPhiOperandUsedBeforeDefinitionBad) 
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-    getDiagnosticString(),
-    MatchesRegex("ID .\\[inew\\] has not been defined"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("ID .\\[inew\\] has not been defined"));
 }
 
 TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
-  string str = kHeader
-      + "OpName %if_true \"if_true\"\n"
-      + "OpName %exit \"exit\"\n"
-      + "OpName %copy \"copy\"\n"
-      + kBasicTypes +
+  string str = kHeader + "OpName %if_true \"if_true\"\n" +
+               "OpName %exit \"exit\"\n" + "OpName %copy \"copy\"\n" +
+               kBasicTypes +
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
@@ -1201,14 +1197,11 @@ TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
-TEST_F(ValidateSSA, DISABLED_PhiVariableDefMustComeFromBlockDominatingThePredecessorBad) {
-  string str = kHeader
-      + "OpName %if_true \"if_true\"\n"
-      + "OpName %if_false \"if_false\"\n"
-      + "OpName %exit \"exit\"\n"
-      + "OpName %true_copy \"true_copy\"\n"
-      + "OpName %false_copy \"false_copy\"\n"
-      + kBasicTypes +
+TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
+  string str = kHeader + "OpName %if_true \"if_true\"\n" +
+               "OpName %if_false \"if_false\"\n" + "OpName %exit \"exit\"\n" +
+               "OpName %value \"phi\"\n" + "OpName %true_copy \"true_copy\"\n" +
+               "OpName %false_copy \"false_copy\"\n" + kBasicTypes +
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
@@ -1231,7 +1224,41 @@ TEST_F(ValidateSSA, DISABLED_PhiVariableDefMustComeFromBlockDominatingThePredece
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  // TODO(dneto): Check for a good error message
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("In OpPhi instruction .\\[phi\\], ID .\\[true_copy\\] "
+                   "definition does not dominate its parent .\\[if_false\\]"));
+}
+
+TEST_F(ValidateSSA,
+       PhiVariableDefDominatesButNotDefinedInParentBlock) {
+  string str = kHeader + "OpName %if_true \"if_true\"\n" +
+               kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+               OpBranchConditional %false %if_true %if_false
+
+%if_true     = OpLabel
+%true_copy   = OpCopyObject %boolt %false
+               OpBranch %if_tnext
+%if_tnext    = OpLabel
+               OpBranch %exit
+
+%if_false    = OpLabel
+%false_copy  = OpCopyObject %boolt %false
+               OpBranch %if_fnext
+%if_fnext    = OpLabel
+               OpBranch %exit
+
+%exit        = OpLabel
+%value       = OpPhi %boolt %true_copy %if_tnext %false_copy %if_fnext
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateSSA,
