@@ -2405,6 +2405,7 @@ spv_result_t UpdateIdUse(ValidationState_t& _) {
 /// NOTE: This function does NOT check module scoped functions which are
 /// checked during the initial binary parse in the IdPass below
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
+  unordered_set<const Instruction*> phi_instructions;
   for (const auto& definition : _.all_definitions()) {
     // Check only those definitions defined in a function
     if (const Function* func = definition.second->function()) {
@@ -2415,10 +2416,10 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
         for (auto& use_index_pair : definition.second->uses()) {
           const Instruction* use = use_index_pair.first;
           if (const BasicBlock* use_block = use->block()) {
-            if (!use_block->reachable()) continue;
-            if (use->opcode() != SpvOpPhi &&
-                use_block->dom_end() ==
-                    find(use_block->dom_begin(), use_block->dom_end(), block)) {
+            if (use_block->reachable() == false) continue;
+            if (use->opcode() == SpvOpPhi) {
+              phi_instructions.insert(use);
+            } else if (!block->dominates(*use->block())) {
               return _.diag(SPV_ERROR_INVALID_ID)
                      << "ID " << _.getIdName(definition.first)
                      << " defined in block " << _.getIdName(block->id())
@@ -2447,9 +2448,25 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
     // NOTE: Ids defined outside of functions must appear before they are used
     // This check is being performed in the IdPass function
   }
-  // TODO(dneto): We don't track check of IDs by phi nodes.  We should check
-  // that for each (variable, predecessor) pair in an OpPhi, that the variable
-  // is defined in a block that dominates that predecessor block.
+
+  // Check all OpPhi parent blocks are dominated by the variable's defining
+  // blocks
+  for (const Instruction* phi : phi_instructions) {
+    if (phi->block()->reachable() == false) continue;
+    for (size_t i = 3; i < phi->operands().size(); i += 2) {
+      const Instruction* variable = _.FindDef(phi->words(i));
+      const BasicBlock* parent =
+          phi->function()->GetBlock(phi->words(i + 1)).first;
+      if (variable->block() && !variable->block()->dominates(*parent)) {
+        return _.diag(SPV_ERROR_INVALID_ID)
+               << "In OpPhi instruction " << _.getIdName(phi->id()) << ", ID "
+               << _.getIdName(variable->id())
+               << " definition does not dominate its parent "
+               << _.getIdName(parent->id());
+      }
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
