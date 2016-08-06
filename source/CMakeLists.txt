@@ -170,7 +170,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/BasicBlock.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/Construct.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/Function.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/val/Id.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/Instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/ValidationState.cpp)
 
 # The software_version.cpp file includes build-version.inc.

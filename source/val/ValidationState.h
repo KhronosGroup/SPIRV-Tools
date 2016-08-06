@@ -28,7 +28,6 @@
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
 #include <list>
-#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -40,7 +39,7 @@
 #include "spirv/1.1/spirv.h"
 #include "spirv_definition.h"
 #include "val/Function.h"
-#include "val/Id.h"
+#include "val/Instruction.h"
 
 namespace libspirv {
 
@@ -160,17 +159,24 @@ class ValidationState_t {
 
   AssemblyGrammar& grammar() { return grammar_; }
 
-  /// Adds an id to the module
-  void AddId(const spv_parsed_instruction_t& inst);
-
-  /// Register Id use
-  void RegisterUseId(uint32_t used_id);
+  /// Registers the instruction
+  void RegisterInstruction(const spv_parsed_instruction_t& inst);
 
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
   /// nullptr
-  const Id* FindDef(uint32_t id) const;
+  const Instruction* FindDef(uint32_t id) const;
 
-  const std::unordered_map<uint32_t, Id>& all_definitions() const {
+  /// Finds id's def, if it exists.  If found, returns the definition otherwise
+  /// nullptr
+  Instruction* FindDef(uint32_t id);
+
+  /// Returns a vector of instructions in the order they appear in the binary
+  const std::list<Instruction>& ordered_instructions() {
+    return ordered_instructions_;
+  }
+
+  /// Returns a map of instructions mapped by their result id
+  const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
     return all_definitions_;
   }
 
@@ -185,7 +191,7 @@ class ValidationState_t {
   std::unordered_set<uint32_t> unresolved_forward_ids_;
 
   /// A map of operand IDs and their names defined by the OpName instruction
-  std::map<uint32_t, std::string> operand_names_;
+  std::unordered_map<uint32_t, std::string> operand_names_;
 
   /// The section of the code being processed
   ModuleLayoutSection current_layout_section_;
@@ -197,7 +203,11 @@ class ValidationState_t {
   spv_capability_mask_t
       module_capabilities_;  /// Module's declared capabilities.
 
-  std::unordered_map<uint32_t, Id> all_definitions_;
+  /// List of all instructions in the order they appear in the binary
+  std::list<Instruction> ordered_instructions_;
+
+  /// Instructions that can be referenced by Ids
+  std::unordered_map<uint32_t, Instruction*> all_definitions_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;

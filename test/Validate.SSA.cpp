@@ -1234,9 +1234,9 @@ TEST_F(ValidateSSA, DISABLED_PhiVariableDefMustComeFromBlockDominatingThePredece
   // TODO(dneto): Check for a good error message
 }
 
-TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefInBlockGood) {
-  string str = kHeader
-      + kBasicTypes +
+TEST_F(ValidateSSA,
+       DominanceCheckIgnoresUsesInUnreachableBlocksDefInBlockGood) {
+  string str = kHeader + kBasicTypes +
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
@@ -1253,7 +1253,8 @@ TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefInBlockGood) 
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
-TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) {
+TEST_F(ValidateSSA,
+       DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) {
   string str = kHeader + kBasicTypes +
                R"(
 %void_fn_int = OpTypeFunction %voidt %intt
@@ -1275,9 +1276,8 @@ TEST_F(ValidateSSA, DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) 
 TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
   string str = kHeader +
                "OpName %first \"first\"\n"
-               "OpName %entry2 \"entry2\"\n"
                "OpName %func \"func\"\n" +
-               kBasicTypes +
+               "OpName %func2 \"func2\"\n" + kBasicTypes +
                R"(
 %viifunct  = OpTypeFunction %voidt %intt %intt
 %func      = OpFunction %voidt None %viifunct
@@ -1297,7 +1297,7 @@ TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("ID .\\[first\\] used in block .\\[entry2\\] is used "
+      MatchesRegex("ID .\\[first\\] used in function .\\[func2\\] is used "
                    "outside of it's defining function .\\[func\\]"));
 }
 // TODO(umar): OpGroupMemberDecorate
