@@ -101,6 +101,16 @@ std::vector<std::pair<BasicBlock*, BasicBlock*>> CalculateDominators(
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
 spv_result_t PerformCfgChecks(ValidationState_t& _);
 
+/// @brief Updates the use vectors of all instructions that can be referenced
+///
+/// This function will update the vector which define where an instruction was
+/// referenced in the binary.
+///
+/// @param[in] _ the validation state of the module
+///
+/// @return SPV_SUCCESS if no errors are found.
+spv_result_t UpdateIdUse(ValidationState_t& _);
+
 /// @brief This function checks all ID definitions dominate their use in the
 /// CFG.
 ///

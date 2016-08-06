@@ -30,13 +30,15 @@
 
 #include <algorithm>
 #include <iostream>
-#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "diagnostic.h"
 #include "instruction.h"
 #include "opcode.h"
 #include "spirv-tools/libspirv.h"
+#include "val/Function.h"
 #include "val/ValidationState.h"
 
 #define spvCheck(condition, action) \
@@ -47,6 +49,10 @@
 using libspirv::ValidationState_t;
 using std::function;
 using std::ignore;
+using std::make_pair;
+using std::pair;
+using std::unordered_set;
+using std::vector;
 
 namespace {
 
@@ -58,9 +64,8 @@ class idUsage {
           const spv_instruction_t* pInsts, const uint64_t instCountArg,
           const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
-          const ValidationState_t& module,
-          const std::vector<uint32_t>& entry_points, spv_position positionArg,
-          spv_diagnostic* pDiagnosticArg)
+          const ValidationState_t& module, const vector<uint32_t>& entry_points,
+          spv_position positionArg, spv_diagnostic* pDiagnosticArg)
       : opcodeTable(opcodeTableArg),
         operandTable(operandTableArg),
         extInstTable(extInstTableArg),
@@ -89,7 +94,7 @@ class idUsage {
   spv_position position;
   spv_diagnostic* pDiagnostic;
   const ValidationState_t& module_;
-  std::vector<uint32_t> entry_points_;
+  vector<uint32_t> entry_points_;
 };
 
 #define DIAG(INDEX)         \
@@ -278,8 +283,8 @@ bool idUsage::isValid<SpvOpTypeSampler>(const spv_instruction_t*,
 // constant-defining instruction (either OpConstant or
 // OpSpecConstant). typeWords are the words of the constant's-type-defining
 // OpTypeInt.
-bool aboveZero(const std::vector<uint32_t>& constWords,
-               const std::vector<uint32_t>& typeWords) {
+bool aboveZero(const vector<uint32_t>& constWords,
+               const vector<uint32_t>& typeWords) {
   const uint32_t width = typeWords[2];
   const bool is_signed = typeWords[3] > 0;
   const uint32_t loWord = constWords[3];
@@ -630,7 +635,7 @@ bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
 // True if instruction defines a type that can have a null value, as defined by
 // the SPIR-V spec.  Tracks composite-type components through module to check
 // nullability transitively.
-bool IsTypeNullable(const std::vector<uint32_t>& instruction,
+bool IsTypeNullable(const vector<uint32_t>& instruction,
                     const ValidationState_t& module) {
   uint16_t opcode;
   uint16_t word_count;
@@ -2377,6 +2382,29 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
 
 namespace libspirv {
 
+spv_result_t UpdateIdUse(ValidationState_t& _) {
+  for (const auto& inst : _.ordered_instructions()) {
+    for (auto& operand : inst.operands()) {
+      const spv_operand_type_t& type = operand.type;
+      const uint32_t operand_id = inst.words()[operand.offset];
+
+      switch (type) {
+        case SPV_OPERAND_TYPE_VARIABLE_ID:
+        case SPV_OPERAND_TYPE_ID:
+        case SPV_OPERAND_TYPE_TYPE_ID:
+        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+        case SPV_OPERAND_TYPE_SCOPE_ID:
+          if (auto def = _.FindDef(operand_id))
+            def->RegisterUse(&inst, operand.offset);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 /// This function checks all ID definitions dominate their use in the CFG.
 ///
 /// This function will iterate over all ID definitions that are defined in the
@@ -2387,32 +2415,38 @@ namespace libspirv {
 /// checked during the initial binary parse in the IdPass below
 spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
   for (const auto& definition : _.all_definitions()) {
-    // Check only those blocks defined in a function
-    if (const Function* func = definition.second.defining_function()) {
-      if (const BasicBlock* block = definition.second.defining_block()) {
+    // Check only those definitions defined in a function
+    if (const Function* func = definition.second->function()) {
+      if (const BasicBlock* block = definition.second->block()) {
+        if (!block->reachable()) continue;
         // If the Id is defined within a block then make sure all references to
         // that Id appear in a blocks that are dominated by the defining block
-        for (auto use : definition.second.uses()) {
-          if (!use->reachable()) continue;
-          if (use->dom_end() == find(use->dom_begin(), use->dom_end(), block)) {
-            return _.diag(SPV_ERROR_INVALID_ID)
-                   << "ID " << _.getIdName(definition.first)
-                   << " defined in block " << _.getIdName(block->id())
-                   << " does not dominate its use in block "
-                   << _.getIdName(use->id());
+        for (auto& use_index_pair : definition.second->uses()) {
+          const Instruction* use = use_index_pair.first;
+          if (const BasicBlock* use_block = use->block()) {
+            if (!use_block->reachable()) continue;
+            if (use->opcode() != SpvOpPhi &&
+                use_block->dom_end() ==
+                    find(use_block->dom_begin(), use_block->dom_end(), block)) {
+              return _.diag(SPV_ERROR_INVALID_ID)
+                     << "ID " << _.getIdName(definition.first)
+                     << " defined in block " << _.getIdName(block->id())
+                     << " does not dominate its use in block "
+                     << _.getIdName(use_block->id());
+            }
           }
         }
       } else {
         // If the Ids defined within a function but not in a block(i.e. function
         // parameters, block ids), then make sure all references to that Id
         // appear within the same function
-        bool found = false;
-        for (auto use : definition.second.uses()) {
-          tie(ignore, found) = func->GetBlock(use->id());
-          if (!found) {
+        for (auto use : definition.second->uses()) {
+          const Instruction* inst = use.first;
+          if (inst->function() && inst->function() != func) {
             return _.diag(SPV_ERROR_INVALID_ID)
                    << "ID " << _.getIdName(definition.first)
-                   << " used in block " << _.getIdName(use->id())
+                   << " used in function "
+                   << _.getIdName(inst->function()->id())
                    << " is used outside of it's defining function "
                    << _.getIdName(func->id());
           }
@@ -2455,17 +2489,6 @@ spv_result_t IdPass(ValidationState_t& _,
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID:
         if (_.IsDefinedId(*operand_ptr)) {
-          if (inst->opcode == SpvOpPhi && i > 1) {
-            // For now, ignore uses of IDs as arguments to OpPhi, since
-            // the job of an OpPhi is to allow a block to use an ID from a
-            // block that doesn't dominate the use.
-            // We only track usage by a particular block, rather than
-            // which instruction and operand number is using the value, so
-            // we have to just bluntly avod tracking the use here.
-            // Fixes https://github.com/KhronosGroup/SPIRV-Tools/issues/286
-          } else {
-            _.RegisterUseId(*operand_ptr);
-          }
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
           ret = _.ForwardDeclareId(*operand_ptr);
@@ -2483,9 +2506,7 @@ spv_result_t IdPass(ValidationState_t& _,
       return ret;
     }
   }
-  if (inst->result_id) {
-    _.AddId(*inst);
-  }
+  _.RegisterInstruction(*inst);
   return SPV_SUCCESS;
 }
 }  // namespace libspirv
