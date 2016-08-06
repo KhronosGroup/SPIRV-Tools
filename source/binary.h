@@ -28,7 +28,8 @@
 #define LIBSPIRV_BINARY_H_
 
 #include "spirv-tools/libspirv.h"
-#include "table.h"
+#include "spirv/1.1/spirv.h"
+#include "spirv_definition.h"
 
 // Functions
 

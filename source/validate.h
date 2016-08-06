@@ -27,30 +27,18 @@
 #ifndef LIBSPIRV_VALIDATE_H_
 #define LIBSPIRV_VALIDATE_H_
 
-#include <algorithm>
-#include <array>
 #include <functional>
-#include <map>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "assembly_grammar.h"
-#include "binary.h"
-#include "diagnostic.h"
 #include "instruction.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv_definition.h"
 #include "table.h"
-#include "val/BasicBlock.h"
-
-// Structures
 
 namespace libspirv {
 
 class ValidationState_t;
+class BasicBlock;
 
 /// A function that returns a vector of BasicBlocks given a BasicBlock. Used to
 /// get the successor and predecessor nodes of a CFG block

@@ -39,6 +39,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 #include "spirv_definition.h"
+#include "val/Function.h"
 #include "val/Id.h"
 
 namespace libspirv {
@@ -60,8 +61,6 @@ enum ModuleLayoutSection {
   kLayoutFunctionDeclarations,  /// < Section 2.4 #10
   kLayoutFunctionDefinitions    /// < Section 2.4 #11
 };
-
-class Function;
 
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
