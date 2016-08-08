@@ -25,6 +25,13 @@
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 cmake_minimum_required(VERSION 2.8.12)
+if (POLICY CMP0054)
+  # Avoid dereferencing variables or interpret keywords that have been
+  # quoted or bracketed.
+  # https://cmake.org/cmake/help/v3.1/policy/CMP0054.html
+  cmake_policy(SET CMP0054 NEW)
+endif()
+
 project(spirv-tools)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
@@ -49,7 +56,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 option(SPIRV_WERROR "Enable error on warning" ON)
-if((${CMAKE_CXX_COMPILER_ID} MATCHES "GNU") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"))
+if(("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
   set(COMPILER_IS_LIKE_GNU TRUE)
 endif()
 if(${COMPILER_IS_LIKE_GNU})
