@@ -59,7 +59,8 @@ class PassTest : public TestT {
   std::tuple<std::string, bool> OptimizeAndDisassemble(
       opt::Pass* pass, const std::string& original, bool skip_nop = false) {
     std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
-    EXPECT_NE(nullptr, module);
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << original << std::endl;
     if (!module) {
       return std::make_tuple(std::string(), false);
     }
@@ -69,7 +70,9 @@ class PassTest : public TestT {
     std::vector<uint32_t> binary;
     module->ToBinary(&binary, skip_nop);
     std::string optimized;
-    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized));
+    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized))
+        << "Disassembling failed for shader:\n"
+        << original << std::endl;
     return std::make_tuple(optimized, modified);
   }
 
