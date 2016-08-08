@@ -51,7 +51,7 @@ function(add_spvtools_unittest)
     if(${COMPILER_IS_LIKE_GNU})
       target_compile_options(${ARG_TARGET} PRIVATE -Wno-undef)
     endif()
-    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
       # Disable C4503 "decorated name length exceeded" warning,
       # triggered by some heavily templated types.
       # We don't care much about that in test code.
