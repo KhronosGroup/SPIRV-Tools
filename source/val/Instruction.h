@@ -73,15 +73,10 @@ class Instruction {
   }
 
   /// The word used to define the Instruction
-  uint32_t words(size_t index) const { return words_[index]; }
+  uint32_t word(size_t index) const { return words_[index]; }
 
   /// The words used to define the Instruction
   const std::vector<uint32_t>& words() const { return words_; }
-
-  /// The operand of the Instruction at \p index
-  const spv_parsed_operand_t& operands(size_t index) const {
-    return operands_[index];
-  }
 
   /// The operands of the Instruction
   const std::vector<spv_parsed_operand_t>& operands() const {

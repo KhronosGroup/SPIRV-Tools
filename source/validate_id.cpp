@@ -2386,19 +2386,10 @@ spv_result_t UpdateIdUse(ValidationState_t& _) {
   for (const auto& inst : _.ordered_instructions()) {
     for (auto& operand : inst.operands()) {
       const spv_operand_type_t& type = operand.type;
-      const uint32_t operand_id = inst.words()[operand.offset];
-
-      switch (type) {
-        case SPV_OPERAND_TYPE_VARIABLE_ID:
-        case SPV_OPERAND_TYPE_ID:
-        case SPV_OPERAND_TYPE_TYPE_ID:
-        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-        case SPV_OPERAND_TYPE_SCOPE_ID:
-          if (auto def = _.FindDef(operand_id))
-            def->RegisterUse(&inst, operand.offset);
-          break;
-        default:
-          break;
+      const uint32_t operand_id = inst.word(operand.offset);
+      if (spvIsIdType(type) && type != SPV_OPERAND_TYPE_RESULT_ID) {
+        if (auto def = _.FindDef(operand_id))
+          def->RegisterUse(&inst, operand.offset);
       }
     }
   }

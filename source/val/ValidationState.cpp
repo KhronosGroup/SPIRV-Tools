@@ -32,7 +32,7 @@
 #include "val/Construct.h"
 #include "val/Function.h"
 
-using std::list;
+using std::deque;
 using std::make_pair;
 using std::pair;
 using std::string;
@@ -268,8 +268,14 @@ const Instruction* ValidationState_t::FindDef(uint32_t id) const {
 }
 
 Instruction* ValidationState_t::FindDef(uint32_t id) {
-  return const_cast<Instruction*>(
-      const_cast<const ValidationState_t*>(this)->FindDef(id));
+  if (all_definitions_.count(id) == 0) {
+    return nullptr;
+  } else {
+    /// We are in a const function, so we cannot use defs.operator[]().
+    /// Luckily we know the key exists, so defs_.at() won't throw an
+    /// exception.
+    return all_definitions_.at(id);
+  }
 }
 
 // Increments the instruction count. Used for diagnostic
@@ -299,7 +305,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-list<Function>& ValidationState_t::functions() { return module_functions_; }
+deque<Function>& ValidationState_t::functions() { return module_functions_; }
 
 Function& ValidationState_t::current_function() {
   assert(in_function_body());
