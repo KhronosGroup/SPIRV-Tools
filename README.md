@@ -144,13 +144,13 @@ The library provides a C API, but the internals use C++11.
 
 In order to use the library from an application, the include path should point
 to `<spirv-dir>/include`, which will enable the application to include the
-header `<spirv-dir>/include/libspirv/libspirv.h` then linking against the
-static library in `<spirv-build-dir>/libSPIRV-Tools.a` or
-`<spirv-build-dir>/SPIRV-Tools.lib`.
+header `<spirv-dir>/include/spirv-tools/libspirv.h` then linking against the
+static library in `<spirv-build-dir>/source/libSPIRV-Tools.a` or
+`<spirv-build-dir>/source/SPIRV-Tools.lib`.
 
 * `SPIRV-Tools` CMake target: Creates the static library:
-  * `<spirv-build-dir>/libSPIRV-Tools.a` on Linux and OS X.
-  * `<spirv-build-dir>/libSPIRV-Tools.lib` on Windows.
+  * `<spirv-build-dir>/source/libSPIRV-Tools.a` on Linux and OS X.
+  * `<spirv-build-dir>/source/libSPIRV-Tools.lib` on Windows.
 
 #### Entry points
 
@@ -177,11 +177,11 @@ assembly and binary files with suffix `.spvasm` and `.spv`, respectively.
 The assembler reads the assembly language text, and emits the binary form.
 
 The standalone assembler is the exectuable called `spirv-as`, and is located in
-`<spirv-build-dir>/spirv-as`.  The functionality of the assembler is implemented
+`<spirv-build-dir>/tools/spirv-as`.  The functionality of the assembler is implemented
 by the `spvTextToBinary` library function.
 
 * `spirv-as` - the standalone assembler
-  * `<spirv-dir>/spirv-as`
+  * `<spirv-dir>/tools/as`
 
 Use option `-h` to print help.
 
@@ -190,11 +190,11 @@ Use option `-h` to print help.
 The disassembler reads the binary form, and emits assembly language text.
 
 The standalone disassembler is the executable called `spirv-dis`, and is located in
-`<spirv-build-dir>/spirv-dis`. The functionality of the disassembler is implemented
+`<spirv-build-dir>/tools/spirv-dis`. The functionality of the disassembler is implemented
 by the `spvBinaryToText` library function.
 
 * `spirv-dis` - the standalone disassembler
-  * `<spirv-dir>/spirv-dis`
+  * `<spirv-dir>/tools/dis`
 
 Use option `-h` to print help.
 
@@ -209,26 +209,26 @@ in the specified order.
 This is a work in progress, with initially only few available transformations.
 
 * `spirv-opt` - the standalone optimizer
-  * `<spirv-dir>/spirv-opt`
+  * `<spirv-dir>/tools/opt`
 
 ### Validator tool
 
 *Warning:* This functionality is under development, and is incomplete.
 
 The standalone validator is the executable called `spirv-val`, and is located in
-`<spirv-build-dir>/spirv-val`. The functionality of the validator is implemented
+`<spirv-build-dir>/tools/spirv-val`. The functionality of the validator is implemented
 by the `spvValidate` library function.
 
 The validator operates on the binary form.
 
 * `spirv-val` - the standalone validator
-  * `<spirv-dir>/spirv-val`
+  * `<spirv-dir>/tools/val`
 
 ### Tests
 
 Tests are only built when googletest is found.
 
-The `<spirv-build-dir>/UnitSPIRV` executable runs the project tests.
+The `<spirv-build-dir>/test/UnitSPIRV` executable runs the project tests.
 It supports the standard `googletest` command line options.
 
 The project also adds a CMake test `spirv-tools-testsuite`, which executes
