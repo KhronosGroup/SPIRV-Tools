@@ -27,7 +27,7 @@
 #ifndef LIBSPIRV_VAL_VALIDATIONSTATE_H_
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
-#include <list>
+#include <deque>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -88,7 +88,7 @@ class ValidationState_t {
   /// defined
   size_t unresolved_forward_id_count() const;
 
-  /// Returns a list of unresolved forward ids.
+  /// Returns a vector of unresolved forward ids.
   std::vector<uint32_t> UnresolvedForwardIds() const;
 
   /// Returns true if the id has been defined
@@ -109,7 +109,7 @@ class ValidationState_t {
   libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
   /// Returns the function states
-  std::list<Function>& functions();
+  std::deque<Function>& functions();
 
   /// Returns the function states
   Function& current_function();
@@ -170,8 +170,8 @@ class ValidationState_t {
   /// nullptr
   Instruction* FindDef(uint32_t id);
 
-  /// Returns a vector of instructions in the order they appear in the binary
-  const std::list<Instruction>& ordered_instructions() {
+  /// Returns a deque of instructions in the order they appear in the binary
+  const std::deque<Instruction>& ordered_instructions() {
     return ordered_instructions_;
   }
 
@@ -197,14 +197,14 @@ class ValidationState_t {
   ModuleLayoutSection current_layout_section_;
 
   /// A list of functions in the module
-  std::list<Function> module_functions_;
+  std::deque<Function> module_functions_;
 
   /// Mask of the capabilities available in the module
   spv_capability_mask_t
       module_capabilities_;  /// Module's declared capabilities.
 
   /// List of all instructions in the order they appear in the binary
-  std::list<Instruction> ordered_instructions_;
+  std::deque<Instruction> ordered_instructions_;
 
   /// Instructions that can be referenced by Ids
   std::unordered_map<uint32_t, Instruction*> all_definitions_;
