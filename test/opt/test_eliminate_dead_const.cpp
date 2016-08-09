@@ -716,7 +716,7 @@ INSTANTIATE_TEST_CASE_P(
                 "%xor_a_b_vec = OpSpecConstantOp %v2int BitwiseXor %dead_spec_int_a_vec %dead_spec_int_b_vec",
 
                 // Scalar Comparison
-                "%less_a_b = OpSpecConstantOp %int SLessThan %dead_spec_int_a %dead_spec_int_b",
+                "%less_a_b = OpSpecConstantOp %bool SLessThan %dead_spec_int_a %dead_spec_int_b",
             },
         },
 
@@ -746,8 +746,8 @@ INSTANTIATE_TEST_CASE_P(
                 "%b_x = OpSpecConstantOp %int CompositeExtract %vec_b 0",
 
                 // Extract vector
-                "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 1 0",
-                "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 1 0",
+                "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 0 1",
+                "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 0 1",
             },
         },
         // Vectors with used swizzles should not be removed.
@@ -761,8 +761,8 @@ INSTANTIATE_TEST_CASE_P(
                 "%vec_a = OpSpecConstantComposite %v4int %used_spec_int_a %used_spec_int_a %used_int %used_int",
                 "%vec_b = OpSpecConstantComposite %v4int %used_spec_int_b %used_spec_int_b %used_int %used_int",
                 // Extract vector
-                "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 1 0",
-                "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 1 0",
+                "%a_xy = OpSpecConstantOp %v2int VectorShuffle %vec_a %vec_a 0 1",
+                "%b_xy = OpSpecConstantOp %v2int VectorShuffle %vec_b %vec_b 0 1",
             },
             /* .main_insts = */
             {
@@ -809,7 +809,7 @@ INSTANTIATE_TEST_CASE_P(
               "%used_int_20 = OpSpecConstantOp %int ISub %used_int_0 %used_int_19",
               "%used_vec_a = OpSpecConstantComposite %v2int %used_int_18 %used_int_19",
               "%used_vec_b = OpSpecConstantOp %v2int IMul %used_vec_a %used_vec_a",
-              "%used_int_21 = OpSpecConstantOp %int VectorShuffle %used_vec_b %used_vec_b 0",
+              "%used_int_21 = OpSpecConstantOp %int CompositeExtract %used_vec_b 0",
               "%used_array = OpConstantComposite %type_arr_int_4 %used_int_20 %used_int_20 %used_int_21 %used_int_21",
             },
             /* .main_insts = */
@@ -842,7 +842,7 @@ INSTANTIATE_TEST_CASE_P(
               "%dead_int_20 = OpSpecConstantOp %int ISub %used_int_0 %dead_int_19",
               "%dead_vec_a = OpSpecConstantComposite %v2int %dead_int_18 %dead_int_19",
               "%dead_vec_b = OpSpecConstantOp %v2int IMul %dead_vec_a %dead_vec_a",
-              "%dead_int_21 = OpSpecConstantOp %int VectorShuffle %dead_vec_b %dead_vec_b 0",
+              "%dead_int_21 = OpSpecConstantOp %int CompositeExtract %dead_vec_b 0",
               "%dead_array = OpConstantComposite %type_arr_int_4 %dead_int_20 %used_int_20 %dead_int_19 %used_int_19",
             },
         },
