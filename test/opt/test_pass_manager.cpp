@@ -54,7 +54,8 @@ TEST(PassManager, Interface) {
 class AppendOpNopPass : public opt::Pass {
   const char* name() const override { return "AppendOpNop"; }
   bool Process(ir::Module* module) override {
-    module->AddDebugInst(ir::Instruction());
+    std::unique_ptr<ir::Instruction> inst(new ir::Instruction());
+    module->AddDebugInst(std::move(inst));
     return true;
   }
 };
@@ -63,7 +64,8 @@ class AppendOpNopPass : public opt::Pass {
 class DuplicateInstPass : public opt::Pass {
   const char* name() const override { return "DuplicateInst"; }
   bool Process(ir::Module* module) override {
-    ir::Instruction inst = module->debugs().back();
+    std::unique_ptr<ir::Instruction> inst(
+        new ir::Instruction(*module->debugs().back()));
     module->AddDebugInst(std::move(inst));
     return true;
   }

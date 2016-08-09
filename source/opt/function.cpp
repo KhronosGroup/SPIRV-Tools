@@ -30,16 +30,16 @@ namespace spvtools {
 namespace ir {
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f) {
-  def_inst_.ForEachInst(f);
-  for (auto& param : params_) param.ForEachInst(f);
-  for (auto& bb : blocks_) bb.ForEachInst(f);
+  def_inst_->ForEachInst(f);
+  for (auto& param : params_) param->ForEachInst(f);
+  for (auto& bb : blocks_) bb->ForEachInst(f);
   end_inst_.ForEachInst(f);
 }
 
 void Function::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
-  def_inst_.ToBinary(binary, skip_nop);
-  for (const auto& param : params_) param.ToBinary(binary, skip_nop);
-  for (const auto& bb : blocks_) bb.ToBinary(binary, skip_nop);
+  def_inst_->ToBinary(binary, skip_nop);
+  for (const auto& param : params_) param->ToBinary(binary, skip_nop);
+  for (const auto& bb : blocks_) bb->ToBinary(binary, skip_nop);
   end_inst_.ToBinary(binary, skip_nop);
 }
 

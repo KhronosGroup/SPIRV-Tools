@@ -28,8 +28,9 @@
 #define LIBSPIRV_OPT_CONSTRUCTS_H_
 
 #include <functional>
-#include <vector>
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "basic_block.h"
 #include "instruction.h"
@@ -42,7 +43,8 @@ class Module;
 // A SPIR-V function.
 class Function {
  public:
-  Function(Instruction&& def_inst)
+  // Creates a function instance declared by the given instruction |def_inst|.
+  Function(std::unique_ptr<Instruction> def_inst)
       : module_(nullptr),
         def_inst_(std::move(def_inst)),
         end_inst_(SpvOpFunctionEnd) {}
@@ -50,12 +52,14 @@ class Function {
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }
   // Appends a parameter to this function.
-  void AddParameter(Instruction&& p) { params_.push_back(std::move(p)); }
+  inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
-  void AddBasicBlock(BasicBlock&& b) { blocks_.push_back(std::move(b)); }
+  inline void AddBasicBlock(std::unique_ptr<BasicBlock> b);
 
-  const std::vector<BasicBlock>& basic_blocks() const { return blocks_; }
-  std::vector<BasicBlock>& basic_blocks() { return blocks_; }
+  const std::vector<std::unique_ptr<BasicBlock>>& basic_blocks() const {
+    return blocks_;
+  }
+  std::vector<std::unique_ptr<BasicBlock>>& basic_blocks() { return blocks_; }
 
   // Runs the given function |f| on each instruction in this basic block.
   void ForEachInst(const std::function<void(Instruction*)>& f);
@@ -65,12 +69,25 @@ class Function {
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
 
  private:
-  Module* module_;        // The enclosing module.
-  Instruction def_inst_;  // The instruction definining this function.
-  std::vector<Instruction> params_;  // All parameters to this function.
-  std::vector<BasicBlock> blocks_;   // All basic blocks inside this function.
-  Instruction end_inst_;             // The OpFunctionEnd instruction.
+  // The enclosing module.
+  Module* module_;
+  // The OpFunction instruction that begins the definition of this function.
+  std::unique_ptr<Instruction> def_inst_;
+  // All parameters to this function.
+  std::vector<std::unique_ptr<Instruction>> params_;
+  // All basic blocks inside this function.
+  std::vector<std::unique_ptr<BasicBlock>> blocks_;
+  // The OpFunctionEnd instruction.
+  Instruction end_inst_;
 };
+
+inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
+  params_.emplace_back(std::move(p));
+}
+
+inline void Function::AddBasicBlock(std::unique_ptr<BasicBlock> b) {
+  blocks_.emplace_back(std::move(b));
+}
 
 }  // namespace ir
 }  // namespace spvtools

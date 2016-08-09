@@ -33,8 +33,8 @@ namespace ir {
 std::vector<Instruction*> Module::types() {
   std::vector<Instruction*> insts;
   for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsTypeInst(types_values_[i].opcode()))
-      insts.push_back(&types_values_[i]);
+    if (IsTypeInst(types_values_[i]->opcode()))
+      insts.push_back(types_values_[i].get());
   }
   return insts;
 };
@@ -42,23 +42,23 @@ std::vector<Instruction*> Module::types() {
 std::vector<Instruction*> Module::GetConstants() {
   std::vector<Instruction*> insts;
   for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsConstantInst(types_values_[i].opcode()))
-      insts.push_back(&types_values_[i]);
+    if (IsConstantInst(types_values_[i]->opcode()))
+      insts.push_back(types_values_[i].get());
   }
   return insts;
 };
 
 void Module::ForEachInst(const std::function<void(Instruction*)>& f) {
-  for (auto& i : capabilities_) f(&i);
-  for (auto& i : extensions_) f(&i);
-  for (auto& i : ext_inst_imports_) f(&i);
+  for (auto& i : capabilities_) f(i.get());
+  for (auto& i : extensions_) f(i.get());
+  for (auto& i : ext_inst_imports_) f(i.get());
   if (memory_model_) f(memory_model_.get());
-  for (auto& i : entry_points_) f(&i);
-  for (auto& i : execution_modes_) f(&i);
-  for (auto& i : debugs_) f(&i);
-  for (auto& i : annotations_) f(&i);
-  for (auto& i : types_values_) f(&i);
-  for (auto& i : functions_) i.ForEachInst(f);
+  for (auto& i : entry_points_) f(i.get());
+  for (auto& i : execution_modes_) f(i.get());
+  for (auto& i : debugs_) f(i.get());
+  for (auto& i : annotations_) f(i.get());
+  for (auto& i : types_values_) f(i.get());
+  for (auto& i : functions_) i->ForEachInst(f);
 }
 
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
@@ -70,16 +70,16 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.reserved);
 
   // TODO(antiagainst): wow, looks like a duplication of the above.
-  for (const auto& c : capabilities_) c.ToBinary(binary, skip_nop);
-  for (const auto& e : extensions_) e.ToBinary(binary, skip_nop);
-  for (const auto& e : ext_inst_imports_) e.ToBinary(binary, skip_nop);
+  for (const auto& c : capabilities_) c->ToBinary(binary, skip_nop);
+  for (const auto& e : extensions_) e->ToBinary(binary, skip_nop);
+  for (const auto& e : ext_inst_imports_) e->ToBinary(binary, skip_nop);
   if (memory_model_) memory_model_->ToBinary(binary, skip_nop);
-  for (const auto& e : entry_points_) e.ToBinary(binary, skip_nop);
-  for (const auto& e : execution_modes_) e.ToBinary(binary, skip_nop);
-  for (const auto& d : debugs_) d.ToBinary(binary, skip_nop);
-  for (const auto& a : annotations_) a.ToBinary(binary, skip_nop);
-  for (const auto& t : types_values_) t.ToBinary(binary, skip_nop);
-  for (const auto& f : functions_) f.ToBinary(binary, skip_nop);
+  for (const auto& e : entry_points_) e->ToBinary(binary, skip_nop);
+  for (const auto& e : execution_modes_) e->ToBinary(binary, skip_nop);
+  for (const auto& d : debugs_) d->ToBinary(binary, skip_nop);
+  for (const auto& a : annotations_) a->ToBinary(binary, skip_nop);
+  for (const auto& t : types_values_) t->ToBinary(binary, skip_nop);
+  for (const auto& f : functions_) f->ToBinary(binary, skip_nop);
 }
 
 }  // namespace ir

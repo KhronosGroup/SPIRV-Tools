@@ -33,6 +33,7 @@
 
 #include <bitset>
 #include <functional>
+#include <memory>
 #include <vector>
 
 namespace libspirv {
