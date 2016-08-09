@@ -50,6 +50,22 @@ Instruction::Instruction(const spv_parsed_instruction_t& inst,
   }
 }
 
+Instruction::Instruction(Instruction&& that)
+    : opcode_(that.opcode_),
+      type_id_(that.type_id_),
+      result_id_(that.result_id_),
+      operands_(std::move(that.operands_)),
+      dbg_line_insts_(std::move(that.dbg_line_insts_)) {}
+
+Instruction& Instruction::operator=(Instruction&& that) {
+  opcode_ = that.opcode_;
+  type_id_ = that.type_id_;
+  result_id_ = that.result_id_;
+  operands_ = std::move(that.operands_);
+  dbg_line_insts_ = std::move(that.dbg_line_insts_);
+  return *this;
+}
+
 uint32_t Instruction::GetSingleWordOperand(uint32_t index) const {
   const auto& words = GetOperand(index).words;
   assert(words.size() == 1 && "expected the operand only taking one word");

@@ -88,8 +88,8 @@ class Instruction {
   Instruction(const Instruction&) = default;
   Instruction& operator=(const Instruction&) = default;
 
-  Instruction(Instruction&&) = default;
-  Instruction& operator=(Instruction&&) = default;
+  Instruction(Instruction&&);
+  Instruction& operator=(Instruction&&);
 
   SpvOp opcode() const { return opcode_; }
   // Sets the opcode of this instruction to a specific opcode. Note this may
