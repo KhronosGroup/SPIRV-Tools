@@ -2454,9 +2454,9 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
   for (const Instruction* phi : phi_instructions) {
     if (phi->block()->reachable() == false) continue;
     for (size_t i = 3; i < phi->operands().size(); i += 2) {
-      const Instruction* variable = _.FindDef(phi->words(i));
+      const Instruction* variable = _.FindDef(phi->word(i));
       const BasicBlock* parent =
-          phi->function()->GetBlock(phi->words(i + 1)).first;
+          phi->function()->GetBlock(phi->word(i + 1)).first;
       if (variable->block() && !variable->block()->dominates(*parent)) {
         return _.diag(SPV_ERROR_INVALID_ID)
                << "In OpPhi instruction " << _.getIdName(phi->id()) << ", ID "
