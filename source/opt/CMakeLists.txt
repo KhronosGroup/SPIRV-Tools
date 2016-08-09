@@ -7,6 +7,7 @@ add_library(SPIRV-Tools-opt
   libspirv.hpp
   module.h
   reflect.h
+  pass.h
   passes.h
   pass_manager.h
 
