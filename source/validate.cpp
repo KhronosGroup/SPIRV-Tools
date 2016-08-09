@@ -229,6 +229,7 @@ spv_result_t spvValidate(const spv_const_context context,
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
   spvCheckReturn(PerformCfgChecks(vstate));
+  spvCheckReturn(UpdateIdUse(vstate));
   spvCheckReturn(CheckIdDefinitionDominateUse(vstate));
 
   // NOTE: Copy each instruction for easier processing

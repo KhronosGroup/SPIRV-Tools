@@ -32,7 +32,7 @@
 #include "val/Construct.h"
 #include "val/Function.h"
 
-using std::list;
+using std::deque;
 using std::make_pair;
 using std::pair;
 using std::string;
@@ -202,6 +202,8 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       current_layout_section_(kLayoutCapabilities),
       module_functions_(),
       module_capabilities_(0u),
+      ordered_instructions_(),
+      all_definitions_(),
       grammar_(context),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
@@ -251,17 +253,28 @@ vector<uint32_t> ValidationState_t::UnresolvedForwardIds() const {
 }
 
 bool ValidationState_t::IsDefinedId(uint32_t id) const {
-  return all_definitions_.find(Id{id}) != end(all_definitions_);
+  return all_definitions_.find(id) != end(all_definitions_);
 }
 
-const Id* ValidationState_t::FindDef(uint32_t id) const {
-  if (all_definitions_.count(Id{id}) == 0) {
+const Instruction* ValidationState_t::FindDef(uint32_t id) const {
+  if (all_definitions_.count(id) == 0) {
     return nullptr;
   } else {
     /// We are in a const function, so we cannot use defs.operator[]().
     /// Luckily we know the key exists, so defs_.at() won't throw an
     /// exception.
-    return &all_definitions_.at(id);
+    return all_definitions_.at(id);
+  }
+}
+
+Instruction* ValidationState_t::FindDef(uint32_t id) {
+  if (all_definitions_.count(id) == 0) {
+    return nullptr;
+  } else {
+    /// We are in a const function, so we cannot use defs.operator[]().
+    /// Luckily we know the key exists, so defs_.at() won't throw an
+    /// exception.
+    return all_definitions_.at(id);
   }
 }
 
@@ -292,7 +305,7 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
       error_code);
 }
 
-list<Function>& ValidationState_t::functions() { return module_functions_; }
+deque<Function>& ValidationState_t::functions() { return module_functions_; }
 
 Function& ValidationState_t::current_function() {
   assert(in_function_body());
@@ -370,26 +383,17 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::AddId(const spv_parsed_instruction_t& inst) {
+void ValidationState_t::RegisterInstruction(
+    const spv_parsed_instruction_t& inst) {
   if (in_function_body()) {
-    if (in_block()) {
-      all_definitions_[inst.result_id] =
-          Id{&inst, &current_function(), current_function().current_block()};
-    } else {
-      all_definitions_[inst.result_id] = Id{&inst, &current_function()};
-    }
+    ordered_instructions_.emplace_back(
+        &inst, &current_function(), current_function().current_block());
   } else {
-    all_definitions_[inst.result_id] = Id{&inst};
+    ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
   }
-}
-
-void ValidationState_t::RegisterUseId(uint32_t used_id) {
-  auto used = all_definitions_.find(used_id);
-  if (used != end(all_definitions_)) {
-    if (in_function_body())
-      used->second.RegisterUse(current_function().current_block());
-    else
-      used->second.RegisterUse(nullptr);
+  uint32_t id = ordered_instructions_.back().id();
+  if (id) {
+    all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
   }
 }
 }  /// namespace libspirv

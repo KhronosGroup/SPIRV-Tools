@@ -24,39 +24,38 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "val/Id.h"
+#include "val/Instruction.h"
+
+#include <utility>
+
+using std::make_pair;
 
 namespace libspirv {
-#define OPERATOR(OP)                               \
-  bool operator OP(const Id& lhs, const Id& rhs) { \
-    return lhs.id_ OP rhs.id_;                     \
-  }                                                \
-  bool operator OP(const Id& lhs, uint32_t rhs) { return lhs.id_ OP rhs; }
+#define OPERATOR(OP)                                                 \
+  bool operator OP(const Instruction& lhs, const Instruction& rhs) { \
+    return lhs.id() OP rhs.id();                                     \
+  }                                                                  \
+  bool operator OP(const Instruction& lhs, uint32_t rhs) {           \
+    return lhs.id() OP rhs;                                          \
+  }
 
 OPERATOR(<)
 OPERATOR(==)
 #undef OPERATOR
 
-Id::Id(const uint32_t result_id)
-    : id_(result_id),
-      type_id_(0),
-      opcode_(SpvOpNop),
-      defining_function_(nullptr),
-      defining_block_(nullptr),
-      uses_(),
-      words_(0) {}
+Instruction::Instruction(const spv_parsed_instruction_t* inst,
+                         Function* defining_function,
+                         BasicBlock* defining_block)
+    : words_(inst->words, inst->words + inst->num_words),
+      operands_(inst->operands, inst->operands + inst->num_operands),
+      inst_({words_.data(), inst->num_words, inst->opcode, inst->ext_inst_type,
+             inst->type_id, inst->result_id, operands_.data(),
+             inst->num_operands}),
+      function_(defining_function),
+      block_(defining_block),
+      uses_() {}
 
-Id::Id(const spv_parsed_instruction_t* inst, Function* function,
-       BasicBlock* block)
-    : id_(inst->result_id),
-      type_id_(inst->type_id),
-      opcode_(static_cast<SpvOp>(inst->opcode)),
-      defining_function_(function),
-      defining_block_(block),
-      uses_(),
-      words_(inst->words, inst->words + inst->num_words) {}
-
-void Id::RegisterUse(const BasicBlock* block) {
-  if (block) { uses_.insert(block); }
+void Instruction::RegisterUse(const Instruction* inst, uint32_t index) {
+  uses_.push_back(make_pair(inst, index));
 }
 }  // namespace libspirv

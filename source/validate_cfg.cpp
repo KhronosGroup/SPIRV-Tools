@@ -51,7 +51,6 @@ using std::make_pair;
 using std::make_tuple;
 using std::numeric_limits;
 using std::pair;
-using std::set;
 using std::string;
 using std::tie;
 using std::transform;
