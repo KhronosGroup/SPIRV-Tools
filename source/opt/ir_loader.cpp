@@ -106,11 +106,9 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
 // Resolves internal references among the module, functions, basic blocks, etc.
 // This function should be called after adding all instructions.
 void IrLoader::EndModule() {
-  for (auto& function : module_->functions()) {
-    for (auto& bb : function->basic_blocks()) {
-      bb->SetParent(function.get());
-    }
-    function->SetParent(module_);
+  for (auto& function : *module_) {
+    for (auto& bb : function) bb.SetParent(&function);
+    function.SetParent(module_);
   }
 }
 

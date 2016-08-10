@@ -39,7 +39,7 @@ namespace opt {
 
 bool StripDebugInfoPass::Process(ir::Module* module) {
   bool modified = !module->debugs().empty();
-  module->debugs().clear();
+  module->debug_clear();
 
   module->ForEachInst([&modified](ir::Instruction* inst) {
     modified |= !inst->dbg_line_insts().empty();

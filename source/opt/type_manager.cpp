@@ -53,10 +53,11 @@ ForwardPointer* TypeManager::GetForwardPointer(uint32_t index) const {
 
 void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
   for (const auto* inst : module.GetTypes()) RecordIfTypeDefinition(*inst);
-  for (const auto& inst : module.annotations()) AttachIfTypeDecoration(*inst);
+  for (const auto& inst : module.annotations()) AttachIfTypeDecoration(inst);
 }
 
-Type* TypeManager::RecordIfTypeDefinition(const spvtools::ir::Instruction& inst) {
+Type* TypeManager::RecordIfTypeDefinition(
+    const spvtools::ir::Instruction& inst) {
   if (!spvtools::ir::IsTypeInst(inst.opcode())) return nullptr;
 
   Type* type = nullptr;

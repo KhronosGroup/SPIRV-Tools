@@ -34,6 +34,7 @@
 
 #include "basic_block.h"
 #include "instruction.h"
+#include "iterator.h"
 
 namespace spvtools {
 namespace ir {
@@ -43,6 +44,9 @@ class Module;
 // A SPIR-V function.
 class Function {
  public:
+  using iterator = UptrVectorIterator<BasicBlock>;
+  using const_iterator = UptrVectorIterator<BasicBlock, true>;
+
   // Creates a function instance declared by the given instruction |def_inst|.
   Function(std::unique_ptr<Instruction> def_inst)
       : module_(nullptr),
@@ -55,11 +59,10 @@ class Function {
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
   inline void AddBasicBlock(std::unique_ptr<BasicBlock> b);
-
-  const std::vector<std::unique_ptr<BasicBlock>>& basic_blocks() const {
-    return blocks_;
-  }
-  std::vector<std::unique_ptr<BasicBlock>>& basic_blocks() { return blocks_; }
+  iterator begin() { return iterator(&blocks_, blocks_.begin()); }
+  iterator end() { return iterator(&blocks_, blocks_.end()); }
+  const_iterator cbegin() { return const_iterator(&blocks_, blocks_.cbegin()); }
+  const_iterator cend() { return const_iterator(&blocks_, blocks_.cend()); }
 
   // Runs the given function |f| on each instruction in this basic block.
   void ForEachInst(const std::function<void(Instruction*)>& f);

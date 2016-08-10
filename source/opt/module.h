@@ -34,6 +34,7 @@
 
 #include "function.h"
 #include "instruction.h"
+#include "iterator.h"
 
 namespace spvtools {
 namespace ir {
@@ -51,6 +52,11 @@ struct ModuleHeader {
 // serves as the backbone of optimization transformations.
 class Module {
  public:
+  using iterator = UptrVectorIterator<Function>;
+  using const_iterator = UptrVectorIterator<Function, true>;
+  using inst_iterator = UptrVectorIterator<Instruction>;
+  using const_inst_iterator = UptrVectorIterator<Instruction, true>;
+
   // Creates an empty module with zero'd header.
   Module() : header_({}) {}
 
@@ -85,22 +91,29 @@ class Module {
   // module.
   std::vector<Instruction*> GetTypes();
   std::vector<const Instruction*> GetTypes() const;
-  // Returns the constant-defining instructions.
+  // Returns a vector of pointers to constant-creation instructions in this
+  // module.
   std::vector<Instruction*> GetConstants();
-  const std::vector<std::unique_ptr<Instruction>>& debugs() const {
-    return debugs_;
-  }
-  std::vector<std::unique_ptr<Instruction>>& debugs() { return debugs_; }
-  const std::vector<std::unique_ptr<Instruction>>& annotations() const {
-    return annotations_;
-  }
-  std::vector<std::unique_ptr<Instruction>>& annotations() {
-    return annotations_;
-  }
-  const std::vector<std::unique_ptr<Function>>& functions() const {
-    return functions_;
-  }
-  std::vector<std::unique_ptr<Function>>& functions() { return functions_; }
+
+  // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
+  // this module.
+  inline inst_iterator debug_begin();
+  inline inst_iterator debug_end();
+  inline IteratorRange<inst_iterator> debugs();
+  inline IteratorRange<const_inst_iterator> debugs() const;
+
+  // Clears all debug instructions (excluding OpLine & OpNoLine).
+  void debug_clear() { debugs_.clear(); }
+
+  // Iterators for annotation instructions contained in this module.
+  IteratorRange<inst_iterator> annotations();
+  IteratorRange<const_inst_iterator> annotations() const;
+
+  // Iterators for functions contained in this module.
+  iterator begin() { return iterator(&functions_, functions_.begin()); }
+  iterator end() { return iterator(&functions_, functions_.end()); }
+  inline const_iterator cbegin() const;
+  inline const_iterator cend() const;
 
   // Invokes function |f| on all instructions in this module.
   void ForEachInst(const std::function<void(Instruction*)>& f);
@@ -174,6 +187,44 @@ inline void Module::AddGlobalVariable(std::unique_ptr<Instruction> v) {
 
 inline void Module::AddFunction(std::unique_ptr<Function> f) {
   functions_.emplace_back(std::move(f));
+}
+
+inline Module::inst_iterator Module::debug_begin() {
+  return inst_iterator(&debugs_, debugs_.begin());
+}
+inline Module::inst_iterator Module::debug_end() {
+  return inst_iterator(&debugs_, debugs_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::debugs() {
+  return IteratorRange<inst_iterator>(inst_iterator(&debugs_, debugs_.begin()),
+                                      inst_iterator(&debugs_, debugs_.end()));
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::debugs() const {
+  return IteratorRange<const_inst_iterator>(
+      const_inst_iterator(&debugs_, debugs_.cbegin()),
+      const_inst_iterator(&debugs_, debugs_.cend()));
+}
+
+inline IteratorRange<Module::inst_iterator> Module::annotations() {
+  return IteratorRange<inst_iterator>(
+      inst_iterator(&annotations_, annotations_.begin()),
+      inst_iterator(&annotations_, annotations_.end()));
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::annotations() const {
+  return IteratorRange<const_inst_iterator>(
+      const_inst_iterator(&annotations_, annotations_.cbegin()),
+      const_inst_iterator(&annotations_, annotations_.cend()));
+}
+
+inline Module::const_iterator Module::cbegin() const {
+  return const_iterator(&functions_, functions_.cbegin());
+}
+
+inline Module::const_iterator Module::cend() const {
+  return const_iterator(&functions_, functions_.cend());
 }
 
 }  // namespace ir

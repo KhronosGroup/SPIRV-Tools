@@ -73,3 +73,8 @@ add_spvtools_unittest(TARGET type_manager
   SRCS test_type_manager.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET iterator
+  SRCS test_iterator.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)

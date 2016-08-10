@@ -65,7 +65,7 @@ class DuplicateInstPass : public opt::Pass {
   const char* name() const override { return "DuplicateInst"; }
   bool Process(ir::Module* module) override {
     std::unique_ptr<ir::Instruction> inst(
-        new ir::Instruction(*module->debugs().back()));
+        new ir::Instruction(*(--module->debug_end())));
     module->AddDebugInst(std::move(inst));
     return true;
   }
