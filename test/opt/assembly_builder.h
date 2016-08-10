@@ -28,6 +28,7 @@
 #define LIBSPIRV_TEST_OPT_ASSEMBLY_BUILDER
 
 #include <algorithm>
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <unordered_set>
