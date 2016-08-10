@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "def_use_manager.h"
 #include "function.h"
 #include "instruction.h"
 
@@ -110,8 +111,32 @@ class Module {
   // If |skip_nop| is true and this is a OpNop, do nothing.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
 
+  // Re-initialize the def-use manager for this module.
+  void RefreshDefUseMgr() { def_use_mgr_.AnalyzeDefUse(this); }
+
+  // Returns the use instructions for the given |id|. If there is no uses of
+  // |id|, return nullptr.
+  opt::analysis::UseList* GetUses(uint32_t id) {
+    return def_use_mgr_.GetUses(id);
+  }
+
+  // Returns the def instruction for the given |id|. If there is no instruction
+  // defining |id|, returns nullptr.
+  ir::Instruction* GetDef(uint32_t id) const {
+    return def_use_mgr_.GetDef(id);
+  };
+
+  // Turns the given instruction to nop, return true on success. Updates the
+  // def-use info so that: the corresponding use info for the IDs used in the
+  // instruction to be killed will be erased; if the instruction is defining an
+  // ID, all the use info of the ID will be erased.
+  bool KillInst(ir::Instruction* inst) {
+    return def_use_mgr_.KillInst(inst);
+  }
+
  private:
-  ModuleHeader header_;  // Module header
+  ModuleHeader header_;                       // Module header
+  opt::analysis::DefUseManager def_use_mgr_;  // Def-use chain info
 
   // The following fields respect the "Logical Layout of a Module" in
   // Section 2.4 of the SPIR-V specification.

@@ -99,7 +99,10 @@ std::unique_ptr<ir::Module> SpvTools::BuildModule(
 
   loader.EndModule();
 
-  if (status == SPV_SUCCESS) return module;
+  if (status == SPV_SUCCESS) {
+    module->RefreshDefUseMgr();
+    return module;
+  }
   return nullptr;
 }
 
