@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "assembly_grammar.h"
+#include "name_mapper.h"
 
 namespace {
 
@@ -41,7 +42,8 @@ const char* kContinueStyle = "style=dotted";
 // a SPIR-V module.
 class DotConverter {
  public:
-  DotConverter(std::iostream* out) : out_(*out) {}
+  DotConverter(libspirv::NameMapper name_mapper, std::iostream* out)
+      : name_mapper_(name_mapper), out_(*out) {}
 
   // Emits the graph preamble.
   void Begin() const {
@@ -80,6 +82,9 @@ class DotConverter {
   // The Id of the continue target block for this block if it exists, or 0
   // otherwise.
   uint32_t continue_target_ = 0;
+
+  // An object for mapping Ids to names.
+  libspirv::NameMapper name_mapper_;
 
   // The output stream.
   std::ostream& out_;
@@ -137,10 +142,11 @@ spv_result_t DotConverter::HandleInstruction(
 void DotConverter::FlushBlock(const std::vector<uint32_t>& successors) {
   out_ << current_block_id_;
   if (!seen_function_entry_block_) {
-    out_ << " [label=\"" << current_block_id_ << "\nFn " << current_function_id_
-         << " entry\", shape=box]";
+    out_ << " [label=\"" << name_mapper_(current_block_id_) << "\nFn "
+         << name_mapper_(current_function_id_) << " entry\", shape=box];\n";
+  } else {
+    out_ << " [label=\"" << name_mapper_(current_block_id_) << "\"];\n";
   }
-  out_ << ";\n";
 
   for (auto successor : successors) {
     out_ << current_block_id_ << " -> " << successor << ";\n";
@@ -179,7 +185,8 @@ spv_result_t BinaryToDot(const spv_const_context context, const uint32_t* words,
   const libspirv::AssemblyGrammar grammar(context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
-  DotConverter converter(out);
+  libspirv::FriendlyNameMapper friendly_mapper(context, words, num_words);
+  DotConverter converter(friendly_mapper.GetNameMapper(), out);
   converter.Begin();
   if (auto error = spvBinaryParse(context, &converter, words, num_words,
                                   nullptr, HandleInstruction, diagnostic)) {
