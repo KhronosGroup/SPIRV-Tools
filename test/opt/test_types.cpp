@@ -80,7 +80,8 @@ TestMultipleInstancesOfTheSameType(Sampler);
 TestMultipleInstancesOfTheSameType(SampledImage, image_t_.get());
 TestMultipleInstancesOfTheSameType(Array, u32_t_.get(), 10);
 TestMultipleInstancesOfTheSameType(RuntimeArray, u32_t_.get());
-TestMultipleInstancesOfTheSameType(Struct, {u32_t_.get(), f64_t_.get()});
+TestMultipleInstancesOfTheSameType(Struct, std::vector<Type*>{u32_t_.get(),
+                                                              f64_t_.get()});
 TestMultipleInstancesOfTheSameType(Opaque, "testing rocks");
 TestMultipleInstancesOfTheSameType(Pointer, u32_t_.get(), SpvStorageClassInput);
 TestMultipleInstancesOfTheSameType(Function, u32_t_.get(),
@@ -166,10 +167,10 @@ TEST(Types, AllTypes) {
   auto* rav3s32 = types.back().get();
 
   // Struct
-  types.emplace_back(new Struct({s32}));
-  types.emplace_back(new Struct({s32, f32}));
+  types.emplace_back(new Struct(std::vector<Type*>{s32}));
+  types.emplace_back(new Struct(std::vector<Type*>{s32, f32}));
   auto* sts32f32 = types.back().get();
-  types.emplace_back(new Struct({u64, a42f32, rav3s32}));
+  types.emplace_back(new Struct(std::vector<Type*>{u64, a42f32, rav3s32}));
 
   // Opaque
   types.emplace_back(new Opaque(""));
