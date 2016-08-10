@@ -4,6 +4,8 @@ v2016.3-dev 2016-08-05
  - Start v2016.3
  - Add target environment enums for OpenCL 2.1, OpenCL 2.2,
    OpenGL 4.0, OpenGL 4.1, OpenGL 4.2, OpenGL 4.3, OpenGL 4.5.
+- Fixes issues:
+   #288: Check def-use dominance rules for OpPhi (variable,parent) operands
 
 v2016.2 2016-08-05
  - Validator is incomplete
