@@ -44,7 +44,7 @@ class TypeManager {
   using IdToTypeMap = std::unordered_map<uint32_t, std::unique_ptr<Type>>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
-  TypeManager() = default;
+  TypeManager(const spvtools::ir::Module& module) { AnalyzeTypes(module); }
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;
   TypeManager& operator=(const TypeManager&) = delete;
@@ -61,10 +61,10 @@ class TypeManager {
   // Returns the number of forward pointer types hold in this manager.
   size_t NumForwardPointers() const { return forward_pointers_.size(); }
 
-  // Analyzes the types and decorations on types in the given |module|.
-  void AnalyzeType(const spvtools::ir::Module& module);
-
  private:
+  // Analyzes the types and decorations on types in the given |module|.
+  void AnalyzeTypes(const spvtools::ir::Module& module);
+
   // Creates and returns a type from the given SPIR-V |inst|. Returns nullptr if
   // the given instruction is not for defining a type.
   Type* RecordIfTypeDefinition(const spvtools::ir::Instruction& inst);

@@ -44,7 +44,7 @@ ForwardPointer* TypeManager::GetForwardPointer(uint32_t index) const {
   return forward_pointers_.at(index).get();
 }
 
-void TypeManager::AnalyzeType(const spvtools::ir::Module& module) {
+void TypeManager::AnalyzeTypes(const spvtools::ir::Module& module) {
   for (const auto* inst : module.GetTypes()) RecordIfTypeDefinition(*inst);
   for (const auto& inst : module.annotations()) AttachIfTypeDecoration(*inst);
 }

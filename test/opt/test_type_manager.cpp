@@ -100,10 +100,9 @@ TEST(TypeManager, TypeStrings) {
       {28, "named_barrier"},
   };
 
-  opt::analysis::TypeManager manager;
   std::unique_ptr<ir::Module> module =
       SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
-  manager.AnalyzeType(*module);
+  opt::analysis::TypeManager manager(*module);
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
   EXPECT_EQ(2u, manager.NumForwardPointers());
@@ -130,10 +129,9 @@ TEST(Struct, DecorationOnStruct) {
     %struct4 = OpTypeStruct %u32 %f32 ; the same
     %struct7 = OpTypeStruct %f32      ; no decoration
   )";
-  opt::analysis::TypeManager manager;
   std::unique_ptr<ir::Module> module =
       SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
-  manager.AnalyzeType(*module);
+  opt::analysis::TypeManager manager(*module);
 
   ASSERT_EQ(7u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -181,10 +179,9 @@ TEST(Struct, DecorationOnMember) {
     %struct7  = OpTypeStruct %u32 %f32 ; extra decoration on the struct
     %struct10 = OpTypeStruct %u32 %f32 ; no member decoration
   )";
-  opt::analysis::TypeManager manager;
   std::unique_ptr<ir::Module> module =
       SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
-  manager.AnalyzeType(*module);
+  opt::analysis::TypeManager manager(*module);
 
   ASSERT_EQ(10u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
