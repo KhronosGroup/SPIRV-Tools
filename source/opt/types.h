@@ -87,7 +87,8 @@ class Type {
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
 #define DeclareCastMethod(target) \
-  virtual target* As##target() { return nullptr; }
+  virtual target* As##target() { return nullptr; } \
+  virtual const target* As##target() const { return nullptr; }
   DeclareCastMethod(Void);
   DeclareCastMethod(Bool);
   DeclareCastMethod(Integer);
@@ -129,6 +130,7 @@ class Integer : public Type {
   std::string str() const override;
 
   Integer* AsInteger() override { return this; }
+  const Integer* AsInteger() const override { return this; }
 
  private:
   uint32_t width_;  // bit width
@@ -144,6 +146,7 @@ class Float : public Type {
   std::string str() const override;
 
   Float* AsFloat() override { return this; }
+  const Float* AsFloat() const override { return this; }
 
  private:
   uint32_t width_;  // bit width
@@ -158,6 +161,7 @@ class Vector : public Type {
   std::string str() const override;
 
   Vector* AsVector() override { return this; }
+  const Vector* AsVector() const override { return this; }
 
  private:
   Type* element_type_;
@@ -173,6 +177,7 @@ class Matrix : public Type {
   std::string str() const override;
 
   Matrix* AsMatrix() override { return this; }
+  const Matrix* AsMatrix() const override { return this; }
 
  private:
   Type* element_type_;
@@ -190,6 +195,7 @@ class Image : public Type {
   std::string str() const override;
 
   Image* AsImage() override { return this; }
+  const Image* AsImage() const override { return this; }
 
  private:
   Type* sampled_type_;
@@ -211,6 +217,7 @@ class SampledImage : public Type {
   std::string str() const override;
 
   SampledImage* AsSampledImage() override { return this; }
+  const SampledImage* AsSampledImage() const override { return this; }
 
  private:
   Type* image_type_;
@@ -225,6 +232,7 @@ class Array : public Type {
   std::string str() const override;
 
   Array* AsArray() override { return this; }
+  const Array* AsArray() const override { return this; }
 
  private:
   Type* element_type_;
@@ -240,6 +248,7 @@ class RuntimeArray : public Type {
   std::string str() const override;
 
   RuntimeArray* AsRuntimeArray() override { return this; }
+  const RuntimeArray* AsRuntimeArray() const override { return this; }
 
  private:
   Type* element_type_;
@@ -256,6 +265,7 @@ class Struct : public Type {
   std::string str() const override;
 
   Struct* AsStruct() override { return this; }
+  const Struct* AsStruct() const override { return this; }
 
  private:
   std::vector<Type*> element_types_;
@@ -275,6 +285,7 @@ class Opaque : public Type {
   std::string str() const override;
 
   Opaque* AsOpaque() override { return this; }
+  const Opaque* AsOpaque() const override { return this; }
 
  private:
   std::string name_;
@@ -289,6 +300,7 @@ class Pointer : public Type {
   std::string str() const override;
 
   Pointer* AsPointer() override { return this; }
+  const Pointer* AsPointer() const override { return this; }
 
  private:
   Type* pointee_type_;
@@ -304,6 +316,7 @@ class Function : public Type {
   std::string str() const override;
 
   Function* AsFunction() override { return this; }
+  const Function* AsFunction() const override { return this; }
 
  private:
   Type* return_type_;
@@ -320,6 +333,7 @@ class Pipe : public Type {
   std::string str() const override;
 
   Pipe* AsPipe() override { return this; }
+  const Pipe* AsPipe() const override { return this; }
 
  private:
   SpvAccessQualifier access_qualifier_;
@@ -338,6 +352,7 @@ class ForwardPointer : public Type {
   std::string str() const override;
 
   ForwardPointer* AsForwardPointer() override { return this; }
+  const ForwardPointer* AsForwardPointer() const override { return this; }
 
  private:
   uint32_t target_id_;
@@ -357,6 +372,7 @@ class ForwardPointer : public Type {
     std::string str() const override { return #name; }     \
                                                            \
     type* As##type() override { return this; }             \
+    const type* As##type() const override { return this; } \
   };
 DefineParameterlessType(Void, void);
 DefineParameterlessType(Bool, bool);
