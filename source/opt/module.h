@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "def_use_manager.h"
 #include "function.h"
 #include "instruction.h"
 
@@ -109,8 +110,16 @@ class Module {
   // If |skip_nop| is true and this is a OpNop, do nothing.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
 
+  // Re-initialize the def-use manager for this module.
+  void RefreshDefUseMgr() { def_use_mgr_.AnalyzeDefUse(this); }
+
+  // Returns the reference to the def-use manager so that user can access the
+  // def-use information.
+  opt::analysis::DefUseManager& GetDefUseInfo() { return def_use_mgr_;}
+
  private:
-  ModuleHeader header_;  // Module header
+  ModuleHeader header_;                       // Module header
+  opt::analysis::DefUseManager def_use_mgr_;  // Def-use chain info
 
   // The following fields respect the "Logical Layout of a Module" in
   // Section 2.4 of the SPIR-V specification.

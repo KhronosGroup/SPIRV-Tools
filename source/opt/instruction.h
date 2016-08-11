@@ -38,9 +38,6 @@
 namespace spvtools {
 namespace ir {
 
-class Function;
-class Module;
-
 // About operand:
 //
 // In the SPIR-V specification, the term "operand" is used to mean any single

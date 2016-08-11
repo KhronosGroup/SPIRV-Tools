@@ -37,11 +37,13 @@ namespace opt {
 namespace analysis {
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
+  id_to_def_.clear();
+  id_to_uses_.clear();
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
                                 std::placeholders::_1));
 }
 
-ir::Instruction* DefUseManager::GetDef(uint32_t id) {
+ir::Instruction* DefUseManager::GetDef(uint32_t id) const {
   if (id_to_def_.count(id) == 0) return nullptr;
   return id_to_def_.at(id);
 }
@@ -53,28 +55,31 @@ UseList* DefUseManager::GetUses(uint32_t id) {
 
 bool DefUseManager::KillDef(uint32_t id) {
   if (id_to_def_.count(id) == 0) return false;
+  return KillInst(id_to_def_[id]);
+}
 
-  // Go through all ids usd by this instruction, remove this instruction's uses
-  // of them.
-  for (const auto use_id : result_id_to_used_ids_[id]) {
-    if (id_to_uses_.count(use_id) == 0) continue;
-    auto& uses = id_to_uses_[use_id];
-    for (auto it = uses.begin(); it != uses.end();) {
-      if (it->inst->result_id() == id) {
-        it = uses.erase(it);
-      } else {
-        ++it;
-      }
+bool DefUseManager::KillInst(ir::Instruction* inst) {
+  // Iterate through all the operand IDs, and update the use information of
+  // those IDs. The |inst| use record of those IDs should be removed.
+  for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
+    if (inst->GetInOperand(i).type != SPV_OPERAND_TYPE_ID) {
+      continue;
     }
-    if (uses.empty()) id_to_uses_.erase(use_id);
+    uint32_t operand_id = inst->GetSingleWordInOperand(i);
+    erase_inst_use_of_id(inst, operand_id);
   }
-  result_id_to_used_ids_.erase(id);
-
-  id_to_uses_.erase(id);  // Remove all uses of this id.
-  // This must happen at the last since we use information inside the instuction
-  // in the above.
-  id_to_def_[id]->ToNop();
-  id_to_def_.erase(id);
+  // Erase the use of type id.
+  uint32_t type_id = inst->type_id();
+  erase_inst_use_of_id(inst, type_id);
+  // If |inst| is defining a result ID, we should remove all the use
+  // information for that ID.
+  if (uint32_t id = inst->result_id()) {
+    id_to_uses_.erase(id);  // Remove all uses of this id.
+    id_to_def_.erase(id);
+  }
+  // This must happen at the last since we use information inside the
+  // instuction in the above.
+  inst->ToNop();
   return true;
 }
 
@@ -108,12 +113,23 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
         uint32_t use_id = inst->GetSingleWordOperand(i);
         // use_id is used by the instruction generating def_id.
         id_to_uses_[use_id].push_back({inst, i});
-        if (def_id != 0) result_id_to_used_ids_[def_id].push_back(use_id);
       } break;
       default:
         break;
     }
   }
+}
+
+void DefUseManager::erase_inst_use_of_id(ir::Instruction* inst, uint32_t refered_id) {
+    auto& uses = id_to_uses_[refered_id];
+    for (auto it = uses.begin(); it != uses.end();) {
+      if (it->inst == inst) {
+        it = uses.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    if (uses.empty()) id_to_uses_.erase(refered_id);
 }
 
 }  // namespace analysis

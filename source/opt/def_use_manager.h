@@ -33,9 +33,11 @@
 #include <vector>
 
 #include "instruction.h"
-#include "module.h"
 
 namespace spvtools {
+namespace ir {
+class Module;
+}
 namespace opt {
 namespace analysis {
 
@@ -65,7 +67,7 @@ class DefUseManager {
 
   // Returns the def instruction for the given |id|. If there is no instruction
   // defining |id|, returns nullptr.
-  ir::Instruction* GetDef(uint32_t id);
+  ir::Instruction* GetDef(uint32_t id) const;
   // Returns the use instructions for the given |id|. If there is no uses of
   // |id|, returns nullptr.
   UseList* GetUses(uint32_t id);
@@ -81,6 +83,10 @@ class DefUseManager {
   // information kept in this manager, but not the operands in the original
   // instructions.
   bool KillDef(uint32_t id);
+  // Turns the given instruction to nop. This method also erases both the uses
+  // of the result id of the given instruction (if any), and the corresponding
+  // use information of the ids involved in the given instruction.
+  bool KillInst(ir::Instruction* inst);
   // Replaces all uses of |before| id with |after| id. Returns true if any
   // replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and returns
@@ -88,17 +94,15 @@ class DefUseManager {
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
-  using ResultIdToUsedIdsMap =
-      std::unordered_map<uint32_t, std::vector<uint32_t>>;
+  // Erases the record: |inst| uses |refered_id| from |refered_id|'s use
+  // information.
+  void erase_inst_use_of_id(ir::Instruction* inst, uint32_t refered_id);
 
   // Analyzes the defs and uses in the given |inst|.
   void AnalyzeInstDefUse(ir::Instruction* inst);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
-  // Mapping from result ids to the ids used in the instructions generating the
-  // result ids.
-  ResultIdToUsedIdsMap result_id_to_used_ids_;
 };
 
 }  // namespace analysis
