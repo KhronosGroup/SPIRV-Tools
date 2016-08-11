@@ -114,25 +114,9 @@ class Module {
   // Re-initialize the def-use manager for this module.
   void RefreshDefUseMgr() { def_use_mgr_.AnalyzeDefUse(this); }
 
-  // Returns the use instructions for the given |id|. If there is no uses of
-  // |id|, return nullptr.
-  opt::analysis::UseList* GetUses(uint32_t id) {
-    return def_use_mgr_.GetUses(id);
-  }
-
-  // Returns the def instruction for the given |id|. If there is no instruction
-  // defining |id|, returns nullptr.
-  ir::Instruction* GetDef(uint32_t id) const {
-    return def_use_mgr_.GetDef(id);
-  };
-
-  // Turns the given instruction to nop, return true on success. Updates the
-  // def-use info so that: the corresponding use info for the IDs used in the
-  // instruction to be killed will be erased; if the instruction is defining an
-  // ID, all the use info of the ID will be erased.
-  bool KillInst(ir::Instruction* inst) {
-    return def_use_mgr_.KillInst(inst);
-  }
+  // Returns the reference to the def-use manager so that user can access the
+  // def-use information.
+  opt::analysis::DefUseManager& GetDefUseInfo() { return def_use_mgr_;}
 
  private:
   ModuleHeader header_;                       // Module header

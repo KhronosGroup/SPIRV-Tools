@@ -88,7 +88,8 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
-    if (const analysis::UseList* uses = module->GetUses(const_id)) {
+    if (const analysis::UseList* uses =
+            module->GetDefUseInfo().GetUses(const_id)) {
       count =
           std::count_if(uses->begin(), uses->end(), [](const analysis::Use& u) {
             return !(ir::IsAnnotationInst(u.inst->opcode()) ||
@@ -118,7 +119,8 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
             continue;
           }
           uint32_t operand_id = inst->GetSingleWordInOperand(i);
-          ir::Instruction* def_inst = module->GetDef(operand_id);
+          ir::Instruction* def_inst =
+              module->GetDefUseInfo().GetDef(operand_id);
           // If the use_count does not have any count for the def_inst,
           // def_inst must not be a constant, and should be ignored here.
           if (!use_counts.count(def_inst)) {
@@ -144,7 +146,8 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
   // constants.
   std::unordered_set<ir::Instruction*> dead_others;
   for (auto* dc : dead_consts) {
-    if (const analysis::UseList* uses = module->GetUses(dc->result_id())) {
+    if (const analysis::UseList* uses =
+            module->GetDefUseInfo().GetUses(dc->result_id())) {
       for (const auto& u : *uses) {
         if (ir::IsAnnotationInst(u.inst->opcode()) ||
             ir::IsDebugInst(u.inst->opcode())) {
@@ -157,7 +160,7 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
   // Turn all dead instructions and uses of them to nop
   for (auto* dc : dead_consts) {
     // module->KillDef(dc->result_id());
-    module->KillInst(dc);
+    module->GetDefUseInfo().KillInst(dc);
   }
   for (auto* da : dead_others) {
     da->ToNop();
