@@ -35,12 +35,14 @@ namespace opt {
 namespace analysis {
 
 Type* TypeManager::GetType(uint32_t id) const {
-  if (id_to_type_.count(id) != 0) return id_to_type_.at(id).get();
+  auto iter = id_to_type_.find(id);
+  if (iter != id_to_type_.end()) return (*iter).second.get();
   return nullptr;
 }
 
 uint32_t TypeManager::GetId(Type* type) const {
-  if (type_to_id_.count(type) != 0) return type_to_id_.at(type);
+  auto iter = type_to_id_.find(type);
+  if (iter != type_to_id_.end()) return (*iter).second;
   return 0;
 }
 
