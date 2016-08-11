@@ -81,7 +81,9 @@ class UptrVectorIterator {
   // If the underlying vector changes capacity, all previous iterators will be
   // invalidated. Otherwise, those previous iterators pointing to after the
   // insertion point will be invalidated.
-  inline UptrVectorIterator InsertBefore(Uptr value);
+  template <bool IsConstForMethod = IsConst>
+  inline typename std::enable_if<!IsConstForMethod, UptrVectorIterator>::type
+  InsertBefore(Uptr value);
 
  private:
   UptrVector* container_;        // The container we are manipulating.
@@ -176,8 +178,10 @@ inline bool UptrVectorIterator<VT, IC>::operator<(
 }
 
 template <typename VT, bool IC>
-inline UptrVectorIterator<VT, IC> UptrVectorIterator<VT, IC>::InsertBefore(
-    Uptr value) {
+template <bool IsConstForMethod>
+inline
+    typename std::enable_if<!IsConstForMethod, UptrVectorIterator<VT, IC>>::type
+    UptrVectorIterator<VT, IC>::InsertBefore(Uptr value) {
   auto index = iterator_ - container_->begin();
   container_->insert(iterator_, std::move(value));
   return UptrVectorIterator(container_, container_->begin() + index);
