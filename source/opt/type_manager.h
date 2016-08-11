@@ -42,7 +42,7 @@ namespace analysis {
 class TypeManager {
  public:
   using IdToTypeMap = std::unordered_map<uint32_t, std::unique_ptr<Type>>;
-  using TypeToIdMap = std::unordered_map<Type*, uint32_t>;
+  using TypeToIdMap = std::unordered_map<const Type*, uint32_t>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
   TypeManager(const spvtools::ir::Module& module) { AnalyzeTypes(module); }
@@ -56,7 +56,7 @@ class TypeManager {
   Type* GetType(uint32_t id) const;
   // Returns the id for the given |type|. Returns 0 if can not find the given
   // |type|.
-  uint32_t GetId(Type* type) const;
+  uint32_t GetId(const Type* type) const;
   // Returns the number of types hold in this manager.
   size_t NumTypes() const { return id_to_type_.size(); }
 

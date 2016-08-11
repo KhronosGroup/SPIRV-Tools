@@ -40,7 +40,7 @@ Type* TypeManager::GetType(uint32_t id) const {
   return nullptr;
 }
 
-uint32_t TypeManager::GetId(Type* type) const {
+uint32_t TypeManager::GetId(const Type* type) const {
   auto iter = type_to_id_.find(type);
   if (iter != type_to_id_.end()) return (*iter).second;
   return 0;
