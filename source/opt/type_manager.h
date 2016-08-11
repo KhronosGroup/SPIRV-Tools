@@ -42,6 +42,7 @@ namespace analysis {
 class TypeManager {
  public:
   using IdToTypeMap = std::unordered_map<uint32_t, std::unique_ptr<Type>>;
+  using TypeToIdMap = std::unordered_map<Type*, uint32_t>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
   TypeManager(const spvtools::ir::Module& module) { AnalyzeTypes(module); }
@@ -53,6 +54,9 @@ class TypeManager {
   // Returns the type for the given type |id|. Returns nullptr if the given |id|
   // does not define a type.
   Type* GetType(uint32_t id) const;
+  // Returns the id for the given |type|. Returns 0 if can not find the given
+  // |type|.
+  uint32_t GetId(Type* type) const;
   // Returns the number of types hold in this manager.
   size_t NumTypes() const { return id_to_type_.size(); }
 
@@ -73,6 +77,7 @@ class TypeManager {
   void AttachIfTypeDecoration(const spvtools::ir::Instruction& inst);
 
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
+  TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
   ForwardPointerVector forward_pointers_;  // All forward pointer declarations.
   // All unresolved forward pointer declarations.
   // Refers the contents in the above vector.

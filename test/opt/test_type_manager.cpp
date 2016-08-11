@@ -109,6 +109,7 @@ TEST(TypeManager, TypeStrings) {
 
   for (const auto& p : type_id_strs) {
     EXPECT_EQ(p.second, manager.GetType(p.first)->str());
+    EXPECT_EQ(p.first, manager.GetId(manager.GetType(p.first)));
   }
   EXPECT_EQ("forward_pointer({uint32}*)", manager.GetForwardPointer(0)->str());
   EXPECT_EQ("forward_pointer(10000)", manager.GetForwardPointer(1)->str());

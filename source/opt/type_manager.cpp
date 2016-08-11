@@ -39,6 +39,11 @@ Type* TypeManager::GetType(uint32_t id) const {
   return nullptr;
 }
 
+uint32_t TypeManager::GetId(Type* type) const {
+  if (type_to_id_.count(type) != 0) return type_to_id_.at(type);
+  return 0;
+}
+
 ForwardPointer* TypeManager::GetForwardPointer(uint32_t index) const {
   if (index >= forward_pointers_.size()) return nullptr;
   return forward_pointers_.at(index).get();
@@ -176,6 +181,7 @@ Type* TypeManager::RecordIfTypeDefinition(const spvtools::ir::Instruction& inst)
   } else {
     assert(type != nullptr && "type should not be nullptr at this point");
     id_to_type_[id].reset(type);
+    type_to_id_[type] = id;
   }
   return type;
 }
