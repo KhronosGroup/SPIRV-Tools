@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 #include "assembly_grammar.h"
@@ -43,7 +44,7 @@ const char* kContinueStyle = "style=dotted";
 class DotConverter {
  public:
   DotConverter(libspirv::NameMapper name_mapper, std::iostream* out)
-      : name_mapper_(name_mapper), out_(*out) {}
+      : name_mapper_(std::move(name_mapper)), out_(*out) {}
 
   // Emits the graph preamble.
   void Begin() const {
