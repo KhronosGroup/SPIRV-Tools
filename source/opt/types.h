@@ -86,7 +86,7 @@ class Type {
 
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
-#define DeclareCastMethod(target) \
+#define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
   DeclareCastMethod(Void);
@@ -159,6 +159,7 @@ class Vector : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const Type* element_type() const { return element_type_; }
 
   Vector* AsVector() override { return this; }
   const Vector* AsVector() const override { return this; }
@@ -175,6 +176,7 @@ class Matrix : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const Type* element_type() const { return element_type_; }
 
   Matrix* AsMatrix() override { return this; }
   const Matrix* AsMatrix() const override { return this; }
@@ -230,6 +232,7 @@ class Array : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const Type* element_type() const { return element_type_; }
 
   Array* AsArray() override { return this; }
   const Array* AsArray() const override { return this; }
@@ -246,6 +249,7 @@ class RuntimeArray : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const Type* element_type() const { return element_type_; }
 
   RuntimeArray* AsRuntimeArray() override { return this; }
   const RuntimeArray* AsRuntimeArray() const override { return this; }
@@ -298,6 +302,7 @@ class Pointer : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const Type* pointee_type() const { return pointee_type_; }
 
   Pointer* AsPointer() override { return this; }
   const Pointer* AsPointer() const override { return this; }
