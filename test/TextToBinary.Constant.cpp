@@ -722,6 +722,7 @@ INSTANTIATE_TEST_CASE_P(
         CASE3(Select),
         // Comparison
         CASE2(IEqual),
+        CASE2(INotEqual), // Allowed in 1.0 Rev 7
         CASE2(ULessThan),
         CASE2(SLessThan),
         CASE2(UGreaterThan),
