@@ -29,6 +29,7 @@
 
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -57,13 +58,15 @@ class DefUseManager {
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
   using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
 
-  // Analyzes the defs and uses in the given |module| and populates data
-  // structures in this class.
+  // Reset this manager and analyzes the defs and uses in the given |module|
+  // and populates data structures in this class.
   // TODO(antiagainst): This method should not modify the given module. Create
   // const overload for ForEachInst().
   void AnalyzeDefUse(ir::Module* module);
 
-  // Analyzes the defs and uses in the given |inst|.
+  // Analyzes the defs and uses in the given |inst|. If |inst| has been
+  // analyzed by this manager before, the existing records will be overwritten
+  // by the latest analysis result.
   void AnalyzeInstDefUse(ir::Instruction* inst);
 
   // Returns the def instruction for the given |id|. If there is no instruction
@@ -84,6 +87,10 @@ class DefUseManager {
   // information kept in this manager, but not the operands in the original
   // instructions.
   bool KillDef(uint32_t id);
+  // Turns the given instruction |inst| to a Nop, also erases both the use
+  // records of the result id of |inst| (if any) and the corresponding use
+  // records of: |inst| using |inst|'s operand ids.
+  void KillInst(ir::Instruction* inst);
   // Replaces all uses of |before| id with |after| id. Returns true if any
   // replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and returns
@@ -91,20 +98,39 @@ class DefUseManager {
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
-  // Clear the internal def-use record of a defined id if the given |def_id| is
-  // recorded by this manager. This method will erase both the uses of |def_id|
-  // and the |def_id|-generating instruction's use information kept in this
-  // manager, but not the operands in the original instructions.
+  // Clears the internal def-use records of a defined id if the given |def_id|
+  // is recorded by this manager. Does nothing if |def_id| has not been
+  // recorded yet. This method will erase both the uses of |def_id| and the
+  // |def_id|-generating instruction's use information kept in this manager,
+  // but not the operands in the original instructions.
   void ClearDef(uint32_t def_id);
 
-  using ResultIdToUsedIdsMap =
-      std::unordered_map<uint32_t, std::vector<uint32_t>>;
+  // Clears the internal def-use records of the given instruction |inst| if it
+  // has been analyzed by this manager. The use information of its operand ids
+  // will be updated: "the record: |inst| uses |operand id| will be removed".
+  // If the instruction is defining a result id, the uses of the result id will
+  // also be removed. Note that if |inst| has not been analyzed before, this
+  // function does nothing even though |inst| may define an existing result id.
+  void ClearInst(ir::Instruction* inst);
 
+  // Returns true if the operand's id should be recorded, otherwise returns
+  // false;
+  bool ShouldRecord(const ir::Operand& operand) const;
+
+  // Erases the record that: instruction |user| uses id |used_id|.
+  void EraseInstUseIdRecord(const ir::Instruction& user, uint32_t used_id);
+
+  // Resets the internal records
+  void Reset() {
+    analyzed_insts_.clear();
+    id_to_def_.clear();
+    id_to_uses_.clear();
+  }
+
+  std::unordered_set<ir::Instruction*>
+      analyzed_insts_;      // Analyzed instructions
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
-  // Mapping from result ids to the ids used in the instructions generating the
-  // result ids.
-  ResultIdToUsedIdsMap result_id_to_used_ids_;
 };
 
 }  // namespace analysis

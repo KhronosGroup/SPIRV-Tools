@@ -37,33 +37,32 @@ namespace opt {
 namespace analysis {
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
+  Reset();
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
                                 std::placeholders::_1));
 }
 
 void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
-  const uint32_t def_id = inst->result_id();
-  // Clear the records of def_id first if it has been recorded before.
-  ClearDef(def_id);
+  // Clear the records of the given instruction if it has been analyzed before.
+  ClearInst(inst);
 
-  if (def_id != 0) id_to_def_[def_id] = inst;
+  const uint32_t def_id = inst->result_id();
+  if (def_id != 0) {
+    // If the new instruction defines an existing result id, clear the records
+    // of the existing id first.
+    ClearDef(def_id);
+    id_to_def_[def_id] = inst;
+  }
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
-    switch (inst->GetOperand(i).type) {
-      // For any id type but result id type
-      case SPV_OPERAND_TYPE_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      case SPV_OPERAND_TYPE_SCOPE_ID: {
-        uint32_t use_id = inst->GetSingleWordOperand(i);
-        // use_id is used by the instruction generating def_id.
-        id_to_uses_[use_id].push_back({inst, i});
-        if (def_id != 0) result_id_to_used_ids_[def_id].push_back(use_id);
-      } break;
-      default:
-        break;
+    if (ShouldRecord(inst->GetOperand(i))) {
+      uint32_t use_id = inst->GetSingleWordOperand(i);
+      // use_id is used by this instruction.
+      id_to_uses_[use_id].push_back({inst, i});
     }
   }
+
+  analyzed_insts_.insert(inst);
 }
 
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {
@@ -78,11 +77,14 @@ UseList* DefUseManager::GetUses(uint32_t id) {
 
 bool DefUseManager::KillDef(uint32_t id) {
   if (id_to_def_.count(id) == 0) return false;
-
-  ir::Instruction* defining_inst = id_to_def_.at(id);
-  ClearDef(id);
-  defining_inst->ToNop();
+  KillInst(id_to_def_[id]);
   return true;
+}
+
+void DefUseManager::KillInst(ir::Instruction* inst) {
+  if (!inst) return;
+  ClearInst(inst);
+  inst->ToNop();
 }
 
 bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
@@ -112,24 +114,59 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
 
 void DefUseManager::ClearDef(uint32_t def_id) {
   if (id_to_def_.count(def_id) == 0) return;
+  ClearInst(id_to_def_.at(def_id));
+}
 
-  // Go through all ids used by this instruction, remove this instruction's
-  // uses of them.
-  for (const auto use_id : result_id_to_used_ids_[def_id]) {
-    if (id_to_uses_.count(use_id) == 0) continue;
-    auto& uses = id_to_uses_[use_id];
-    for (auto it = uses.begin(); it != uses.end();) {
-      if (it->inst->result_id() == def_id) {
-        it = uses.erase(it);
-      } else {
-        ++it;
+void DefUseManager::ClearInst(ir::Instruction* inst) {
+  // Do nothing if the instruction is a nullptr or it has not been analyzed
+  // before.
+  if (!inst || analyzed_insts_.count(inst) == 0) return;
+
+  // Go through all ids, except the result id, used by this instruction, remove
+  // this instruction's uses of those ids.
+  for (uint32_t i = 0; i < inst->NumOperands(); i++) {
+    if (ShouldRecord(inst->GetOperand(i))) {
+      uint32_t operand_id = inst->GetSingleWordOperand(i);
+      // Skip if the operand id is not recorded.
+      if (id_to_uses_.count(operand_id) == 0) {
+        continue;
       }
+      EraseInstUseIdRecord(*inst, operand_id);
     }
-    if (uses.empty()) id_to_uses_.erase(use_id);
   }
-  result_id_to_used_ids_.erase(def_id);
-  id_to_uses_.erase(def_id);  // Remove all uses of this id.
-  id_to_def_.erase(def_id);
+  // If a result id is defined by this instruction, remove the use records of
+  // the id.
+  if (inst->result_id() != 0) {
+    assert(id_to_def_[inst->result_id()] == inst);
+    id_to_uses_.erase(inst->result_id());  // Remove all uses of this id.
+    id_to_def_.erase(inst->result_id());
+  }
+}
+
+bool DefUseManager::ShouldRecord(const ir::Operand& operand) const {
+  switch (operand.type) {
+    // For any id type but result id type
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_TYPE_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+    case SPV_OPERAND_TYPE_SCOPE_ID:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void DefUseManager::EraseInstUseIdRecord(const ir::Instruction& user,
+                                         uint32_t used_id) {
+  auto& uses = id_to_uses_[used_id];
+  for (auto it = uses.begin(); it != uses.end();) {
+    if (it->inst == &user) {
+      it = uses.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  if (uses.empty()) id_to_uses_.erase(used_id);
 }
 
 }  // namespace analysis
