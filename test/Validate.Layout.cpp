@@ -313,7 +313,7 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
 }
 
-TEST_F(ValidateLayout, InstructionAppearBeforeFunctionDefinition) {
+TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
   string str = R"(
          OpCapability Kernel
          OpMemoryModel Logical OpenCL
@@ -328,8 +328,25 @@ TEST_F(ValidateLayout, InstructionAppearBeforeFunctionDefinition) {
 )";
 
   CompileSuccessfully(str);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), StrEq("Undef must appear in a block"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLayout, OpUndefCanAppearInBlock) {
+  string str = R"(
+         OpCapability Kernel
+         OpMemoryModel Logical OpenCL
+%voidt = OpTypeVoid
+%uintt = OpTypeInt 32 0
+%funct = OpTypeFunction %voidt
+%func  = OpFunction %voidt None %funct
+%entry = OpLabel
+%udef  = OpUndef %uintt
+         OpReturn
+         OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionWithBody) {

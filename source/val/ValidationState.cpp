@@ -122,6 +122,7 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
         case SpvOpVariable:
         case SpvOpLine:
         case SpvOpNoLine:
+        case SpvOpUndef:
           out = true;
           break;
         default: break;
