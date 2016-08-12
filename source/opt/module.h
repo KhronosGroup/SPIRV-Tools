@@ -198,26 +198,19 @@ inline Module::inst_iterator Module::debug_end() {
 }
 
 inline IteratorRange<Module::inst_iterator> Module::debugs() {
-  return IteratorRange<inst_iterator>(inst_iterator(&debugs_, debugs_.begin()),
-                                      inst_iterator(&debugs_, debugs_.end()));
+  return make_range(debugs_);
 }
 
 inline IteratorRange<Module::const_inst_iterator> Module::debugs() const {
-  return IteratorRange<const_inst_iterator>(
-      const_inst_iterator(&debugs_, debugs_.cbegin()),
-      const_inst_iterator(&debugs_, debugs_.cend()));
+  return make_const_range(debugs_);
 }
 
 inline IteratorRange<Module::inst_iterator> Module::annotations() {
-  return IteratorRange<inst_iterator>(
-      inst_iterator(&annotations_, annotations_.begin()),
-      inst_iterator(&annotations_, annotations_.end()));
+  return make_range(annotations_);
 }
 
 inline IteratorRange<Module::const_inst_iterator> Module::annotations() const {
-  return IteratorRange<const_inst_iterator>(
-      const_inst_iterator(&annotations_, annotations_.cbegin()),
-      const_inst_iterator(&annotations_, annotations_.cend()));
+  return make_const_range(annotations_);
 }
 
 inline Module::const_iterator Module::cbegin() const {

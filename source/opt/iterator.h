@@ -105,6 +105,24 @@ class IteratorRange {
   IteratorType end_;
 };
 
+// Returns a (begin, end) iterator pair for the given container.
+template <typename ValueType,
+          class IteratorType = UptrVectorIterator<ValueType>>
+inline IteratorRange<IteratorType> make_range(
+    std::vector<std::unique_ptr<ValueType>>& container) {
+  return {IteratorType(&container, container.begin()),
+          IteratorType(&container, container.end())};
+}
+
+// Returns a const (begin, end) iterator pair for the given container.
+template <typename ValueType,
+          class IteratorType = UptrVectorIterator<ValueType, true>>
+inline IteratorRange<IteratorType> make_const_range(
+    const std::vector<std::unique_ptr<ValueType>>& container) {
+  return {IteratorType(&container, container.cbegin()),
+          IteratorType(&container, container.cend())};
+}
+
 template <typename VT, bool IC>
 inline UptrVectorIterator<VT, IC>& UptrVectorIterator<VT, IC>::operator++() {
   ++iterator_;
