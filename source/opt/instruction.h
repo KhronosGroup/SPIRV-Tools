@@ -62,6 +62,9 @@ struct Operand {
   Operand(spv_operand_type_t t, std::vector<uint32_t>&& w)
       : type(t), words(std::move(w)) {}
 
+  Operand(spv_operand_type_t t, const std::vector<uint32_t>& w)
+      : type(t), words(w) {}
+
   spv_operand_type_t type;      // Type of this logical operand.
   std::vector<uint32_t> words;  // Binary segments of this logical operand.
 
@@ -84,6 +87,11 @@ class Instruction {
   // instruction, if any.
   Instruction(const spv_parsed_instruction_t& inst,
               std::vector<Instruction>&& dbg_line = {});
+
+  // Creates an instruction with the given opcode |op|, type id: |ty_id|,
+  // result id: |res_id| and input operands: |in_operands|.
+  Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
+              const std::vector<Operand>& in_operands);
 
   Instruction(const Instruction&) = default;
   Instruction& operator=(const Instruction&) = default;
