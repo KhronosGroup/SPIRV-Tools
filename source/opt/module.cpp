@@ -57,6 +57,15 @@ std::vector<Instruction*> Module::GetConstants() {
   return insts;
 };
 
+std::vector<const Instruction*> Module::GetConstants() const {
+  std::vector<const Instruction*> insts;
+  for (uint32_t i = 0; i < types_values_.size(); ++i) {
+    if (IsConstantInst(types_values_[i]->opcode()))
+      insts.push_back(types_values_[i].get());
+  }
+  return insts;
+};
+
 void Module::ForEachInst(const std::function<void(Instruction*)>& f) {
   for (auto& i : capabilities_) f(i.get());
   for (auto& i : extensions_) f(i.get());

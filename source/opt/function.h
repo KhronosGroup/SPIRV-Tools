@@ -47,11 +47,9 @@ class Function {
   using iterator = UptrVectorIterator<BasicBlock>;
   using const_iterator = UptrVectorIterator<BasicBlock, true>;
 
-  // Creates a function instance declared by the given instruction |def_inst|.
-  Function(std::unique_ptr<Instruction> def_inst)
-      : module_(nullptr),
-        def_inst_(std::move(def_inst)),
-        end_inst_(SpvOpFunctionEnd) {}
+  // Creates a function instance declared by the given OpFunction instruction
+  // |def_inst|.
+  inline explicit Function(std::unique_ptr<Instruction> def_inst);
 
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }
@@ -59,6 +57,7 @@ class Function {
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
   inline void AddBasicBlock(std::unique_ptr<BasicBlock> b);
+
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
   const_iterator cbegin() { return const_iterator(&blocks_, blocks_.cbegin()); }
@@ -83,6 +82,11 @@ class Function {
   // The OpFunctionEnd instruction.
   Instruction end_inst_;
 };
+
+inline Function::Function(std::unique_ptr<Instruction> def_inst)
+    : module_(nullptr),
+      def_inst_(std::move(def_inst)),
+      end_inst_(SpvOpFunctionEnd) {}
 
 inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
   params_.emplace_back(std::move(p));

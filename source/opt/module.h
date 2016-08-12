@@ -94,6 +94,7 @@ class Module {
   // Returns a vector of pointers to constant-creation instructions in this
   // module.
   std::vector<Instruction*> GetConstants();
+  std::vector<const Instruction*> GetConstants() const;
 
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
   // this module.
