@@ -85,10 +85,9 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddAnnotationInst(std::move(spv_inst));
       } else if (IsTypeInst(opcode)) {
         module_->AddType(std::move(spv_inst));
-      } else if (IsConstantInst(opcode)) {
-        module_->AddConstant(std::move(spv_inst));
-      } else if (opcode == SpvOpVariable) {
-        module_->AddGlobalVariable(std::move(spv_inst));
+      } else if (IsConstantInst(opcode) || opcode == SpvOpVariable ||
+                 opcode == SpvOpUndef) {
+        module_->AddGlobalValue(std::move(spv_inst));
       } else {
         assert(0 && "unhandled inst type outside function defintion");
       }

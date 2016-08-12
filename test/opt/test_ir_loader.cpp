@@ -32,11 +32,24 @@ namespace {
 
 using namespace spvtools;
 
+void DoRoundTripCheck(const std::string& text) {
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::unique_ptr<ir::Module> module = t.BuildModule(text);
+  ASSERT_NE(nullptr, module);
+
+  std::vector<uint32_t> binary;
+  module->ToBinary(&binary, /* skip_nop = */ false);
+
+  std::string disassembled_text;
+  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_EQ(text, disassembled_text);
+}
+
 TEST(IrBuilder, RoundTrip) {
   // #version 310 es
   // int add(int a, int b) { return a + b; }
   // void main() { add(1, 2); }
-  const std::string text =
+  DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
           "%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -75,25 +88,14 @@ TEST(IrBuilder, RoundTrip) {
          "%19 = OpLoad %int %b\n"
          "%20 = OpIAdd %int %18 %19\n"
                "OpReturnValue %20\n"
-               "OpFunctionEnd\n";
+               "OpFunctionEnd\n");
   // clang-format on
-
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module = t.BuildModule(text);
-  ASSERT_NE(nullptr, module);
-
-  std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
-
-  std::string disassembled_text;
-  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
-  EXPECT_EQ(text, disassembled_text);
 }
 
 TEST(IrBuilder, KeepLineDebugInfo) {
   // #version 310 es
   // void main() {}
-  const std::string text =
+  DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
           "%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -115,19 +117,8 @@ TEST(IrBuilder, KeepLineDebugInfo) {
                "OpLine %3 4 4\n"
                "OpNoLine\n"
                "OpReturn\n"
-               "OpFunctionEnd\n";
+               "OpFunctionEnd\n");
   // clang-format on
-
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module = t.BuildModule(text);
-  ASSERT_NE(nullptr, module);
-
-  std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
-
-  std::string disassembled_text;
-  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
-  EXPECT_EQ(text, disassembled_text);
 }
 
 TEST(IrBuilder, LocalGlobalVariables) {
@@ -145,7 +136,7 @@ TEST(IrBuilder, LocalGlobalVariables) {
   // void main() {
   //   float lv1 = gv1 - gv2;
   // }
-  const std::string text =
+  DoRoundTripCheck(
       // clang-format off
                "OpCapability Shader\n"
           "%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -196,12 +187,36 @@ TEST(IrBuilder, LocalGlobalVariables) {
          "%29 = OpLoad %float %lv2\n"
          "%30 = OpFDiv %float %28 %29\n"
                "OpReturnValue %30\n"
-               "OpFunctionEnd\n";
+               "OpFunctionEnd\n");
+  // clang-format on
+}
+
+TEST(IrBuilder, OpUndefOutsideFunction) {
+  // #version 310 es
+  // void main() {}
+  const std::string text =
+      // clang-format off
+               "OpMemoryModel Logical GLSL450\n"
+        "%int = OpTypeInt 32 1\n"
+       "%uint = OpTypeInt 32 0\n"
+      "%float = OpTypeFloat 32\n"
+          "%4 = OpUndef %int\n"
+          "%5 = OpConstant %int 10\n"
+          "%6 = OpUndef %uint\n"
+       "%bool = OpTypeBool\n"
+          "%8 = OpUndef %float\n"
+     "%double = OpTypeFloat 64\n";
   // clang-format on
 
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
   ASSERT_NE(nullptr, module);
+
+  int opundef_count = 0;
+  for (const auto& inst : module->types_values()) {
+    if (inst.opcode() == SpvOpUndef) ++opundef_count;
+  }
+  EXPECT_EQ(3, opundef_count);
 
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
@@ -209,6 +224,24 @@ TEST(IrBuilder, LocalGlobalVariables) {
   std::string disassembled_text;
   EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
   EXPECT_EQ(text, disassembled_text);
+}
+
+TEST(IrBuilder, OpUndefInBasicBlock) {
+  DoRoundTripCheck(
+      // clang-format off
+               "OpMemoryModel Logical GLSL450\n"
+               "OpName %main \"main\"\n"
+       "%void = OpTypeVoid\n"
+       "%uint = OpTypeInt 32 0\n"
+     "%double = OpTypeFloat 64\n"
+          "%5 = OpTypeFunction %void\n"
+       "%main = OpFunction %void None %5\n"
+          "%6 = OpLabel\n"
+          "%7 = OpUndef %uint\n"
+          "%8 = OpUndef %double\n"
+               "OpReturn\n"
+               "OpFunctionEnd\n");
+  // clang-format on
 }
 
 }  // anonymous namespace

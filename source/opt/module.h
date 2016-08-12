@@ -80,10 +80,8 @@ class Module {
   inline void AddAnnotationInst(std::unique_ptr<Instruction> a);
   // Appends a type-declaration instruction to this module.
   inline void AddType(std::unique_ptr<Instruction> t);
-  // Appends a constant-creation instruction to this module.
-  inline void AddConstant(std::unique_ptr<Instruction> c);
-  // Appends a global variable-declaration instruction to this module.
-  inline void AddGlobalVariable(std::unique_ptr<Instruction> v);
+  // Appends a constant, global variable, or OpUndef instruction to this module.
+  inline void AddGlobalValue(std::unique_ptr<Instruction> v);
   // Appends a function to this module.
   inline void AddFunction(std::unique_ptr<Function> f);
 
@@ -184,11 +182,7 @@ inline void Module::AddType(std::unique_ptr<Instruction> t) {
   types_values_.emplace_back(std::move(t));
 }
 
-inline void Module::AddConstant(std::unique_ptr<Instruction> c) {
-  types_values_.emplace_back(std::move(c));
-}
-
-inline void Module::AddGlobalVariable(std::unique_ptr<Instruction> v) {
+inline void Module::AddGlobalValue(std::unique_ptr<Instruction> v) {
   types_values_.emplace_back(std::move(v));
 }
 
