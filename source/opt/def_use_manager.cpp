@@ -41,6 +41,28 @@ void DefUseManager::AnalyzeDefUse(ir::Module* module) {
                                 std::placeholders::_1));
 }
 
+void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
+  const uint32_t def_id = inst->result_id();
+  if (def_id != 0) id_to_def_[def_id] = inst;
+
+  for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
+    switch (inst->GetOperand(i).type) {
+      // For any id type but result id type
+      case SPV_OPERAND_TYPE_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+      case SPV_OPERAND_TYPE_SCOPE_ID: {
+        uint32_t use_id = inst->GetSingleWordOperand(i);
+        // use_id is used by the instruction generating def_id.
+        id_to_uses_[use_id].push_back({inst, i});
+        if (def_id != 0) result_id_to_used_ids_[def_id].push_back(use_id);
+      } break;
+      default:
+        break;
+    }
+  }
+}
+
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {
   if (id_to_def_.count(id) == 0) return nullptr;
   return id_to_def_.at(id);
@@ -92,28 +114,6 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   }
   id_to_uses_.erase(before);
   return true;
-}
-
-void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
-  const uint32_t def_id = inst->result_id();
-  if (def_id != 0) id_to_def_[def_id] = inst;
-
-  for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
-    switch (inst->GetOperand(i).type) {
-      // For any id type but result id type
-      case SPV_OPERAND_TYPE_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      case SPV_OPERAND_TYPE_SCOPE_ID: {
-        uint32_t use_id = inst->GetSingleWordOperand(i);
-        // use_id is used by the instruction generating def_id.
-        id_to_uses_[use_id].push_back({inst, i});
-        if (def_id != 0) result_id_to_used_ids_[def_id].push_back(use_id);
-      } break;
-      default:
-        break;
-    }
-  }
 }
 
 }  // namespace analysis

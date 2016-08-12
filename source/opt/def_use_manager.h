@@ -63,6 +63,9 @@ class DefUseManager {
   // const overload for ForEachInst().
   void AnalyzeDefUse(ir::Module* module);
 
+  // Analyzes the defs and uses in the given |inst|.
+  void AnalyzeInstDefUse(ir::Instruction* inst);
+
   // Returns the def instruction for the given |id|. If there is no instruction
   // defining |id|, returns nullptr.
   ir::Instruction* GetDef(uint32_t id);
@@ -90,9 +93,6 @@ class DefUseManager {
  private:
   using ResultIdToUsedIdsMap =
       std::unordered_map<uint32_t, std::vector<uint32_t>>;
-
-  // Analyzes the defs and uses in the given |inst|.
-  void AnalyzeInstDefUse(ir::Instruction* inst);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
