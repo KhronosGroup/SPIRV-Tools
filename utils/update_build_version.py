@@ -32,10 +32,24 @@
 from __future__ import print_function
 
 import datetime
+import errno
 import os.path
 import re
 import subprocess
 import sys
+
+
+def mkdir_p(directory):
+    """Make the directory, and all its ancestors as required.  Any of the
+    directories are allowed to already exist."""
+
+    try:
+        os.makedirs(directory)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(directory):
+            pass
+        else:
+            raise
 
 
 def command_output(cmd, directory):
@@ -99,9 +113,7 @@ def main():
         sys.exit(1)
 
     output_file = sys.argv[2]
-    output_dir = os.path.dirname(output_file)
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
+    mkdir_p(os.path.dirname(output_file))
 
     software_version = deduce_software_version(sys.argv[1])
     new_content = '"{}", "SPIRV-Tools {} {}"\n'.format(

@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+import errno
 import functools
 import json
 import os.path
@@ -24,8 +25,11 @@ def make_path_to_file(f):
     dir = os.path.dirname(os.path.abspath(f))
     try:
         os.makedirs(dir)
-    except:
-        pass
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(dir):
+            pass
+        else:
+            raise
 
 
 def populate_capability_bit_mapping_dict(cap_dict):
