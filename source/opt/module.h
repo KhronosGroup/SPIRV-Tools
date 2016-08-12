@@ -110,6 +110,12 @@ class Module {
   IteratorRange<inst_iterator> annotations();
   IteratorRange<const_inst_iterator> annotations() const;
 
+  // Iterators for types, constants and global variables instructions.
+  inline inst_iterator types_values_begin();
+  inline inst_iterator types_values_end();
+  inline IteratorRange<inst_iterator> types_values();
+  inline IteratorRange<const_inst_iterator> types_values() const;
+
   // Iterators for functions contained in this module.
   iterator begin() { return iterator(&functions_, functions_.begin()); }
   iterator end() { return iterator(&functions_, functions_.end()); }
@@ -211,6 +217,22 @@ inline IteratorRange<Module::inst_iterator> Module::annotations() {
 
 inline IteratorRange<Module::const_inst_iterator> Module::annotations() const {
   return make_const_range(annotations_);
+}
+
+inline Module::inst_iterator Module::types_values_begin() {
+  return inst_iterator(&types_values_, types_values_.begin());
+}
+
+inline Module::inst_iterator Module::types_values_end() {
+  return inst_iterator(&types_values_, types_values_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::types_values() {
+  return make_range(types_values_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::types_values() const {
+  return make_const_range(types_values_);
 }
 
 inline Module::const_iterator Module::cbegin() const {
