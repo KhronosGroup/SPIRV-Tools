@@ -80,8 +80,7 @@ bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
 }
 
 bool EliminateDeadConstantPass::Process(ir::Module* module) {
-  analysis::DefUseManager def_use;
-  def_use.AnalyzeDefUse(module);
+  analysis::DefUseManager def_use(module);
   std::unordered_set<ir::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in

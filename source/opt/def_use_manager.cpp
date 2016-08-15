@@ -36,11 +36,6 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-void DefUseManager::AnalyzeDefUse(ir::Module* module) {
-  module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
-                                std::placeholders::_1));
-}
-
 void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   const uint32_t def_id = inst->result_id();
   // Clear the records of def_id first if it has been recorded before.
@@ -99,6 +94,11 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   }
   id_to_uses_.erase(before);
   return true;
+}
+
+void DefUseManager::AnalyzeDefUse(ir::Module* module) {
+  module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
+                                std::placeholders::_1));
 }
 
 void DefUseManager::ClearDef(uint32_t def_id) {

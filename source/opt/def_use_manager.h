@@ -39,8 +39,8 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-// Class for representing a use of id. Note that result:
-// * Type id is a use.
+// Class for representing a use of id. Note that:
+// * Result type id is a use.
 // * Ids referenced in OpSectionMerge & OpLoopMerge are considered as use.
 // * Ids referenced in OpPhi's in operands are considered as use.
 struct Use {
@@ -57,11 +57,11 @@ class DefUseManager {
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
   using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
 
-  // Analyzes the defs and uses in the given |module| and populates data
-  // structures in this class.
-  // TODO(antiagainst): This method should not modify the given module. Create
-  // const overload for ForEachInst().
-  void AnalyzeDefUse(ir::Module* module);
+  inline explicit DefUseManager(ir::Module* module) { AnalyzeDefUse(module); }
+  DefUseManager(const DefUseManager&) = delete;
+  DefUseManager(DefUseManager&&) = delete;
+  DefUseManager& operator=(const DefUseManager&) = delete;
+  DefUseManager& operator=(DefUseManager&&) = delete;
 
   // Analyzes the defs and uses in the given |inst|.
   void AnalyzeInstDefUse(ir::Instruction* inst);
@@ -91,6 +91,10 @@ class DefUseManager {
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
+  // Analyzes the defs and uses in the given |module| and populates data
+  // structures in this class.
+  void AnalyzeDefUse(ir::Module* module);
+
   // Clear the internal def-use record of a defined id if the given |def_id| is
   // recorded by this manager. This method will erase both the uses of |def_id|
   // and the |def_id|-generating instruction's use information kept in this

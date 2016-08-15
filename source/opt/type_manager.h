@@ -45,7 +45,7 @@ class TypeManager {
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
-  TypeManager(const spvtools::ir::Module& module) { AnalyzeTypes(module); }
+  inline explicit TypeManager(const spvtools::ir::Module& module);
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;
   TypeManager& operator=(const TypeManager&) = delete;
@@ -83,6 +83,10 @@ class TypeManager {
   // Refers the contents in the above vector.
   std::unordered_set<ForwardPointer*> unresolved_forward_pointers_;
 };
+
+inline TypeManager::TypeManager(const spvtools::ir::Module& module) {
+  AnalyzeTypes(module);
+}
 
 }  // namespace analysis
 }  // namespace opt

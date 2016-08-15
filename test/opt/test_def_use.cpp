@@ -143,8 +143,7 @@ TEST_P(ParseDefUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager;
-  manager.AnalyzeDefUse(module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   CheckDef(tc.du, manager.id_to_defs());
   CheckUse(tc.du, manager.id_to_uses());
@@ -525,8 +524,7 @@ TEST_P(ReplaceUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager;
-  manager.AnalyzeDefUse(module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   // Do the substitution.
   for (const auto& candiate : tc.candidates) {
@@ -828,8 +826,7 @@ TEST_P(KillDefTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager;
-  manager.AnalyzeDefUse(module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   // Do the substitution.
   for (const auto id : tc.ids_to_kill) manager.KillDef(id);
@@ -1079,8 +1076,7 @@ TEST(DefUseTest, OpSwitch) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager;
-  manager.AnalyzeDefUse(module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   // Do a bunch replacements.
   manager.ReplaceAllUsesWith(9, 900);    // to unused id
