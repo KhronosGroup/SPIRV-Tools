@@ -50,7 +50,7 @@ bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
         return false;
       }
     } else {
-      if (ftell(fp) % sizeof(T)) {
+      if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
         fprintf(stderr, "error: corrupted word found in file '%s'\n", filename);
         return false;
       }
