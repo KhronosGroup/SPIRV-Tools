@@ -50,7 +50,7 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   if (def_id != 0) {
     // If the new instruction defines an existing result id, clear the records
     // of the existing id first.
-    ClearDef(def_id);
+    // ClearDef(def_id);
     id_to_def_[def_id] = inst;
   }
 
@@ -125,13 +125,13 @@ void DefUseManager::ClearDef(uint32_t def_id) {
 void DefUseManager::ClearInst(ir::Instruction* inst) {
   // Do nothing if the instruction is a nullptr or it has not been analyzed
   // before.
-  if (!inst || analyzed_insts_.count(inst) == 0) return;
+  if (!inst) return;
 
   EraseInstUsesOfOperands(*inst);
   // If a result id is defined by this instruction, remove the use records of
   // the id.
   if (inst->result_id() != 0) {
-    assert(id_to_def_[inst->result_id()] == inst);
+    // assert(id_to_def_[inst->result_id()] == inst);
     id_to_uses_.erase(inst->result_id());  // Remove all uses of this id.
     id_to_def_.erase(inst->result_id());
   }
