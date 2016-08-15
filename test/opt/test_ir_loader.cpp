@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <gtest/gtest.h>
+#include <algorithm>
 
 #include "opt/libspirv.hpp"
 
@@ -212,11 +213,10 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
   ASSERT_NE(nullptr, module);
 
-  int opundef_count = 0;
-  for (const auto& inst : module->types_values()) {
-    if (inst.opcode() == SpvOpUndef) ++opundef_count;
-  }
-  EXPECT_EQ(3, opundef_count);
+  const auto opundef_count = std::count_if(
+      module->types_values_begin(), module->types_values_end(),
+      [](const ir::Instruction& inst) { return inst.opcode() == SpvOpUndef; });
+  EXPECT_EQ(3u, opundef_count);
 
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);

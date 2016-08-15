@@ -27,6 +27,7 @@
 #ifndef LIBSPIRV_OPT_ITERATOR_H_
 #define LIBSPIRV_OPT_ITERATOR_H_
 
+#include <iterator>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -39,12 +40,17 @@ namespace ir {
 // std::unique_ptr managed elements in the vector, behaving like we are using
 // std::vector<|ValueType|>.
 template <typename ValueType, bool IsConst = false>
-class UptrVectorIterator {
+class UptrVectorIterator
+    : public std::iterator<std::random_access_iterator_tag,
+                           typename std::conditional<IsConst, const ValueType,
+                                                     ValueType>::type> {
  public:
-  using pointer =
-      typename std::conditional<IsConst, const ValueType*, ValueType*>::type;
-  using reference =
-      typename std::conditional<IsConst, const ValueType&, ValueType&>::type;
+  using super = std::iterator<
+      std::random_access_iterator_tag,
+      typename std::conditional<IsConst, const ValueType, ValueType>::type>;
+
+  using pointer = typename super::pointer;
+  using reference = typename super::reference;
 
   // Type aliases. We need to apply constness properly if |IsConst| is true.
   using Uptr = std::unique_ptr<ValueType>;
