@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include <memory>
+#include <unordered_set>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -52,6 +53,7 @@ std::string DisassembleInst(ir::Instruction* inst) {
   std::string text;
   // We'll need to check the underlying id numbers.
   // So turn off friendly names for ids.
+
   tools.Disassemble(binary, &text, SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
   while (!text.empty() && text.back() == '\n') text.pop_back();
   return text;
@@ -1153,6 +1155,273 @@ TEST(DefUseTest, OpSwitch) {
     EXPECT_EQ(1u, use_list->size());
     EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
   }
+}
+
+// Creates an |result_id| = OpTypeInt 32 1 instruction.
+ir::Instruction OpTypeIntInstruction(uint32_t result_id) {
+  return ir::Instruction(SpvOp::SpvOpTypeInt, 0, result_id,
+                         {ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {32}),
+                          ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {1})});
+}
+
+// Creates an |result_id| = OpConstantTrue/Flase |type_id| instruction.
+ir::Instruction ConstantBoolInstruction(bool value, uint32_t type_id,
+                                        uint32_t result_id) {
+  return ir::Instruction(
+      value ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse, type_id,
+      result_id, {});
+}
+
+// Creates an |result_id| = OpLabel instruction.
+ir::Instruction LabelInstruction(uint32_t result_id) {
+  return ir::Instruction(SpvOp::SpvOpLabel, 0, result_id, {});
+}
+
+// Creates an OpBranch |target_id| instruction.
+ir::Instruction BranchInstruction(uint32_t target_id) {
+  return ir::Instruction(SpvOp::SpvOpBranch, 0, 0,
+                         {
+                             ir::Operand(SPV_OPERAND_TYPE_ID, {target_id}),
+                         });
+}
+
+struct AnalyzeInstDefUseTestCase {
+  std::vector<ir::Instruction> insts; // instrutions to be analyzed in order.
+  InstDefUse expected_define_use; // expected analysis result.
+};
+
+using AnalyzeInstDefUseTest =
+    ::testing::TestWithParam<AnalyzeInstDefUseTestCase>;
+
+// Test the analyzing result for individual instructions.
+TEST_P(AnalyzeInstDefUseTest, Case) {
+  auto tc = GetParam();
+
+  // Analyze the instructions.
+  opt::analysis::DefUseManager manager;
+  for (ir::Instruction& inst : tc.insts) {
+    manager.AnalyzeInstDefUse(&inst);
+  }
+
+  CheckDef(tc.expected_define_use, manager.id_to_defs());
+  CheckUse(tc.expected_define_use, manager.id_to_uses());
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TestCase, AnalyzeInstDefUseTest,
+    ::testing::ValuesIn(std::vector<AnalyzeInstDefUseTestCase>{
+      { // A type declaring instruction.
+        {OpTypeIntInstruction(1)},
+        {
+          // defs
+          {{1, "%1 = OpTypeInt 32 1"}},
+          {}, // no uses
+        },
+      },
+      { // A type declaring instruction and a constant value.
+        {
+          OpTypeIntInstruction(1),
+          ConstantBoolInstruction(true, 1, 2),
+        },
+        {
+          { // defs
+            {1, "%1 = OpTypeInt 32 1"},
+            {2, "%2 = OpConstantTrue %1"},
+          },
+          { // uses
+            {1,{"%2 = OpConstantTrue %1"}},
+          },
+        },
+      },
+      { // Analyze two instrutions that have same result id.
+        {
+          ConstantBoolInstruction(true, 1, 2),
+          // The def-use info of the following instruction should overwrite the
+          // records of the above one.
+          ConstantBoolInstruction(false, 3, 2),
+        },
+        {
+          // defs
+          {{2, "%2 = OpConstantFalse %3"}},
+          // uses
+          {{3, {"%2 = OpConstantFalse %3"}}}
+        }
+      },
+      { // Analyze forward reference instruction, also instruction that does
+        // not have result id.
+        {
+          BranchInstruction(2),
+          LabelInstruction(2),
+        },
+        {
+          // defs
+          {{2, "%2 = OpLabel"}},
+          // uses
+          {{2, {"OpBranch %2"}}},
+        }
+      }
+      }));
+// clang-format on
+
+struct KillInstTestCase {
+  const char* before;
+  std::unordered_set<uint32_t> indices_inst_to_kill;
+  const char* after;
+  InstDefUse expected_define_use;
+};
+
+using KillInstTest = ::testing::TestWithParam<KillInstTestCase>;
+
+TEST_P(KillInstTest, Case) {
+  auto tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::Module> module =
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.before);
+  ASSERT_NE(nullptr, module);
+
+  // KillInst
+  uint32_t index = 0;
+  opt::analysis::DefUseManager manager;
+  manager.AnalyzeDefUse(module.get());
+  module->ForEachInst([&index, &tc, &manager](ir::Instruction* inst) {
+    if (tc.indices_inst_to_kill.count(index) != 0) {
+      manager.KillInst(inst);
+    }
+    index++;
+  });
+
+  EXPECT_EQ(tc.after, DisassembleModule(module.get()));
+  CheckDef(tc.expected_define_use, manager.id_to_defs());
+  CheckUse(tc.expected_define_use, manager.id_to_uses());
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TestCase, KillInstTest,
+    ::testing::ValuesIn(std::vector<KillInstTestCase>{
+      // Kill id defining instructions.
+      {
+        "%2 = OpFunction %1 None %3 "
+        "%4 = OpLabel "
+        "     OpBranch %5 "
+        "%5 = OpLabel "
+        "     OpBranch %6 "
+        "%6 = OpLabel "
+        "     OpBranch %4 "
+        "%7 = OpLabel "
+        "     OpReturn "
+        "     OpFunctionEnd",
+        {0, 1, 3, 5, 7},
+        "OpNop\n"
+        "OpNop\n"
+        "OpBranch %5\n"
+        "OpNop\n"
+        "OpBranch %6\n"
+        "OpNop\n"
+        "OpBranch %4\n"
+        "OpNop\n"
+        "OpReturn\n"
+        "OpFunctionEnd",
+        {
+          // no defs
+          {},
+          // no uses
+          {}
+        }
+      },
+      // Kill instructions that do not have result ids.
+      {
+        "%2 = OpFunction %1 None %3 "
+        "%4 = OpLabel "
+        "     OpBranch %5 "
+        "%5 = OpLabel "
+        "     OpBranch %6 "
+        "%6 = OpLabel "
+        "     OpBranch %4 "
+        "%7 = OpLabel "
+        "     OpReturn "
+        "     OpFunctionEnd",
+        {2, 4, 6},
+        "%2 = OpFunction %1 None %3\n"
+        "%4 = OpLabel\n"
+             "OpNop\n"
+        "%5 = OpLabel\n"
+             "OpNop\n"
+        "%6 = OpLabel\n"
+             "OpNop\n"
+        "%7 = OpLabel\n"
+             "OpReturn\n"
+             "OpFunctionEnd",
+        {
+          // defs
+          {
+            {2, "%2 = OpFunction %1 None %3"},
+            {4, "%4 = OpLabel"},
+            {5, "%5 = OpLabel"},
+            {6, "%6 = OpLabel"},
+            {7, "%7 = OpLabel"},
+          },
+          // uses
+          {
+            {1, {"%2 = OpFunction %1 None %3"}},
+            {3, {"%2 = OpFunction %1 None %3"}},
+          }
+        }
+      },
+      }));
+// clang-format on
+
+// DefUseManager should only contains the def-use info of the latest analyzed
+// module.
+TEST(AnalyzeDefUseTest, OnlyContainInfoOfLastAnalyzedModule) {
+  const std::vector<const char*> t1 = {
+      "%1 = OpTypeBool", "%2 = OpConstantTrue %1",
+  };
+  // clang-format off
+  InstDefUse du1 = {
+    {
+      {1, "%1 = OpTypeBool"},
+      {2, "%2 = OpConstantTrue %1"},
+    },
+    {
+      {1,{"%2 = OpConstantTrue %1"}},
+    }
+  };
+  // clang-format on
+  const std::vector<const char*> t2 = {
+      "%1 = OpTypeInt 32 1", "%2 = OpTypeBool", "%3 = OpConstantFalse %2",
+  };
+  // clang-format off
+  InstDefUse du2 = {
+    {
+      {1, "%1 = OpTypeInt 32 1"},
+      {2, "%2 = OpTypeBool"},
+      {3, "%3 = OpConstantFalse %2"},
+    },
+    {
+      {2,{"%3 = OpConstantFalse %2"}},
+    }
+  };
+  // clang-format on
+
+  // Build module.
+  std::unique_ptr<ir::Module> m1 =
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(t1));
+  ASSERT_NE(nullptr, m1);
+  std::unique_ptr<ir::Module> m2 =
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(t2));
+  ASSERT_NE(nullptr, m2);
+
+  // Analyze
+  opt::analysis::DefUseManager manager;
+  manager.AnalyzeDefUse(m1.get());
+  CheckDef(du1, manager.id_to_defs());
+  CheckUse(du1, manager.id_to_uses());
+  manager.AnalyzeDefUse(m2.get());
+  CheckDef(du2, manager.id_to_defs());
+  CheckUse(du2, manager.id_to_uses());
 }
 
 }  // anonymous namespace
