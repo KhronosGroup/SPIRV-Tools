@@ -25,6 +25,15 @@ compiler:
   - gcc
 
 matrix:
+  include:
+    # Check building using the latest GCC on Ubuntu.
+    - os: linux
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-6']
+      compiler: gcc
+      env: C_COMPILER=gcc-6.1 CXX_COMPILER=g++-6.1
   exclude:
     # Skip GCC builds on Mac OS X.
     - os: osx
@@ -52,7 +61,9 @@ before_script:
 
 script:
   - mkdir build && cd build
-  - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
+  - cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+          -DCMAKE_C_COMPILER=${C_COMPILER-$CC}
+          -DCMAKE_CXX_COMPILER=${CXX_COMPILER-$CXX} ..
   - ninja
   - ctest -j`nproc` --output_on_failure
 
