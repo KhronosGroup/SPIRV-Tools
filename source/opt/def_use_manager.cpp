@@ -55,7 +55,7 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   }
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
-    if (ShouldRecord(inst->GetOperand(i))) {
+    if (IsIdUse(inst->GetOperand(i))) {
       uint32_t use_id = inst->GetSingleWordOperand(i);
       // use_id is used by this instruction.
       id_to_uses_[use_id].push_back({inst, i});
@@ -104,8 +104,13 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
 }
 
 void DefUseManager::ClearDef(uint32_t def_id) {
-  if (id_to_def_.count(def_id) == 0) return;
-  ClearInst(id_to_def_.at(def_id));
+  const auto& iter = id_to_def_.find(def_id);
+  if (iter == id_to_def_.end()) return;
+  EraseInstUsesOfOperands(*iter->second);
+  // If a result id is defined by this instruction, remove the use records of
+  // the id.
+  id_to_uses_.erase(def_id);  // Remove all uses of this id.
+  id_to_def_.erase(def_id);
 }
 
 void DefUseManager::ClearInst(ir::Instruction* inst) {
@@ -113,18 +118,7 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
   // before.
   if (!inst || analyzed_insts_.count(inst) == 0) return;
 
-  // Go through all ids, except the result id, used by this instruction, remove
-  // this instruction's uses of those ids.
-  for (uint32_t i = 0; i < inst->NumOperands(); i++) {
-    if (ShouldRecord(inst->GetOperand(i))) {
-      uint32_t operand_id = inst->GetSingleWordOperand(i);
-      // Skip if the operand id is not recorded.
-      if (id_to_uses_.count(operand_id) == 0) {
-        continue;
-      }
-      EraseInstUseIdRecord(*inst, operand_id);
-    }
-  }
+  EraseInstUsesOfOperands(*inst);
   // If a result id is defined by this instruction, remove the use records of
   // the id.
   if (inst->result_id() != 0) {
@@ -134,7 +128,7 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
   }
 }
 
-bool DefUseManager::ShouldRecord(const ir::Operand& operand) const {
+bool DefUseManager::IsIdUse(const ir::Operand& operand) const {
   switch (operand.type) {
     // For any id type but result id type
     case SPV_OPERAND_TYPE_ID:
@@ -147,17 +141,26 @@ bool DefUseManager::ShouldRecord(const ir::Operand& operand) const {
   }
 }
 
-void DefUseManager::EraseInstUseIdRecord(const ir::Instruction& user,
-                                         uint32_t used_id) {
-  auto& uses = id_to_uses_[used_id];
-  for (auto it = uses.begin(); it != uses.end();) {
-    if (it->inst == &user) {
-      it = uses.erase(it);
-    } else {
-      ++it;
+void DefUseManager::EraseInstUsesOfOperands(const ir::Instruction& inst) {
+  // Go through all ids, except the result id, used by this instruction, remove
+  // this instruction's uses of those ids.
+  for (uint32_t i = 0; i < inst.NumOperands(); i++) {
+    if (IsIdUse(inst.GetOperand(i))) {
+      uint32_t operand_id = inst.GetSingleWordOperand(i);
+      auto iter = id_to_uses_.find(operand_id);
+      if (iter != id_to_uses_.end()) {
+        auto& uses = iter->second;
+        for (auto it = uses.begin(); it != uses.end();) {
+          if (it->inst == &inst) {
+            it = uses.erase(it);
+          } else {
+            ++it;
+          }
+        }
+        if (uses.empty()) id_to_uses_.erase(operand_id);
+      }
     }
   }
-  if (uses.empty()) id_to_uses_.erase(used_id);
 }
 
 }  // namespace analysis
