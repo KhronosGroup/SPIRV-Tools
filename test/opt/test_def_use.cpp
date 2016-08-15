@@ -1186,13 +1186,14 @@ ir::Instruction BranchInstruction(uint32_t target_id) {
 }
 
 struct AnalyzeInstDefUseTestCase {
-  std::vector<ir::Instruction> insts;
-  InstDefUse du;
+  std::vector<ir::Instruction> insts; // instrutions to be analyzed in order.
+  InstDefUse expected_define_use; // expected analysis result.
 };
 
 using AnalyzeInstDefUseTest =
     ::testing::TestWithParam<AnalyzeInstDefUseTestCase>;
 
+// Test the analyzing result for individual instructions.
 TEST_P(AnalyzeInstDefUseTest, Case) {
   auto tc = GetParam();
 
@@ -1202,8 +1203,8 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
     manager.AnalyzeInstDefUse(&inst);
   }
 
-  CheckDef(tc.du, manager.id_to_defs());
-  CheckUse(tc.du, manager.id_to_uses());
+  CheckDef(tc.expected_define_use, manager.id_to_defs());
+  CheckUse(tc.expected_define_use, manager.id_to_uses());
 }
 
 // clang-format off
@@ -1211,10 +1212,10 @@ INSTANTIATE_TEST_CASE_P(
     TestCase, AnalyzeInstDefUseTest,
     ::testing::ValuesIn(std::vector<AnalyzeInstDefUseTestCase>{
       { // A type declaring instruction.
-        {OpTypeIntInstruction(1),},
+        {OpTypeIntInstruction(1)},
         {
           // defs
-          {{1, "%1 = OpTypeInt 32 1"},},
+          {{1, "%1 = OpTypeInt 32 1"}},
           {}, // no uses
         },
       },
@@ -1229,7 +1230,7 @@ INSTANTIATE_TEST_CASE_P(
             {2, "%2 = OpConstantTrue %1"},
           },
           { // uses
-            {1,{"%2 = OpConstantTrue %1",}},
+            {1,{"%2 = OpConstantTrue %1"}},
           },
         },
       },
@@ -1242,9 +1243,9 @@ INSTANTIATE_TEST_CASE_P(
         },
         {
           // defs
-          {{2, "%2 = OpConstantFalse %3"},},
+          {{2, "%2 = OpConstantFalse %3"}},
           // uses
-          {{3, {"%2 = OpConstantFalse %3",}},}
+          {{3, {"%2 = OpConstantFalse %3"}}}
         }
       },
       { // Analyze forward reference instruction, also instruction that does
@@ -1255,9 +1256,9 @@ INSTANTIATE_TEST_CASE_P(
         },
         {
           // defs
-          {{2, "%2 = OpLabel"},},
+          {{2, "%2 = OpLabel"}},
           // uses
-          {{2, {"OpBranch %2",}},},
+          {{2, {"OpBranch %2"}}},
         }
       }
       }));
@@ -1267,7 +1268,7 @@ struct KillInstTestCase {
   const char* before;
   std::unordered_set<uint32_t> indices_inst_to_kill;
   const char* after;
-  InstDefUse du;
+  InstDefUse expected_define_use;
 };
 
 using KillInstTest = ::testing::TestWithParam<KillInstTestCase>;
@@ -1276,9 +1277,8 @@ TEST_P(KillInstTest, Case) {
   auto tc = GetParam();
 
   // Build module.
-  const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(text));
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.before);
   ASSERT_NE(nullptr, module);
 
   // KillInst
@@ -1293,15 +1293,15 @@ TEST_P(KillInstTest, Case) {
   });
 
   EXPECT_EQ(tc.after, DisassembleModule(module.get()));
-  CheckDef(tc.du, manager.id_to_defs());
-  CheckUse(tc.du, manager.id_to_uses());
+  CheckDef(tc.expected_define_use, manager.id_to_defs());
+  CheckUse(tc.expected_define_use, manager.id_to_uses());
 }
 
 // clang-format off
 INSTANTIATE_TEST_CASE_P(
     TestCase, KillInstTest,
     ::testing::ValuesIn(std::vector<KillInstTestCase>{
-      // Kill id defining instrutions.
+      // Kill id defining instructions.
       {
         "%2 = OpFunction %1 None %3 "
         "%4 = OpLabel "
@@ -1365,8 +1365,8 @@ INSTANTIATE_TEST_CASE_P(
           },
           // uses
           {
-            {1, {"%2 = OpFunction %1 None %3",}},
-            {3, {"%2 = OpFunction %1 None %3",}},
+            {1, {"%2 = OpFunction %1 None %3"}},
+            {3, {"%2 = OpFunction %1 None %3"}},
           }
         }
       },
@@ -1386,7 +1386,7 @@ TEST(AnalyzeDefUseTest, OnlyContainInfoOfLastAnalyzedModule) {
       {2, "%2 = OpConstantTrue %1"},
     },
     {
-      {1,{"%2 = OpConstantTrue %1",}},
+      {1,{"%2 = OpConstantTrue %1"}},
     }
   };
   // clang-format on
@@ -1401,7 +1401,7 @@ TEST(AnalyzeDefUseTest, OnlyContainInfoOfLastAnalyzedModule) {
       {3, "%3 = OpConstantFalse %2"},
     },
     {
-      {2,{"%3 = OpConstantFalse %2",}},
+      {2,{"%3 = OpConstantFalse %2"}},
     }
   };
   // clang-format on

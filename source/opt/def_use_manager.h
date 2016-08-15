@@ -113,12 +113,13 @@ class DefUseManager {
   // function does nothing even though |inst| may define an existing result id.
   void ClearInst(ir::Instruction* inst);
 
-  // Returns true if the operand's id should be recorded, otherwise returns
-  // false;
-  bool ShouldRecord(const ir::Operand& operand) const;
+  // Returns true if the operand's id is an use.
+  bool IsIdUse(const ir::Operand& operand) const;
 
-  // Erases the record that: instruction |user| uses id |used_id|.
-  void EraseInstUseIdRecord(const ir::Instruction& user, uint32_t used_id);
+  // Erases the records that instruction |inst| uses the ids in its operands.
+  // Does nothing if all the operands are not ids or the instruction does not
+  // have operands.
+  void EraseInstUsesOfOperands(const ir::Instruction& inst);
 
   // Resets the internal records
   void Reset() {
