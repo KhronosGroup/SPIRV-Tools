@@ -80,10 +80,13 @@ class DefUseManager {
 
   // Turns the instruction defining the given |id| into a Nop. Returns true on
   // success, false if the given |id| is not defined at all. This method also
-  // erases both the uses of |id| and the |id|-generating instruction's use
-  // information kept in this manager, but not the operands in the original
-  // instructions.
+  // erases both the uses of |id| and the information of this |id|-generating
+  // instruction's uses of its operands.
   bool KillDef(uint32_t id);
+  // Turns the given instruction |inst| to a Nop. This method erases the
+  // information of the given instruction's uses of its operands. If |inst|
+  // defines an result id, the uses of the result id will also be erased.
+  void KillInst(ir::Instruction* inst);
   // Replaces all uses of |before| id with |after| id. Returns true if any
   // replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and returns
@@ -91,24 +94,28 @@ class DefUseManager {
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
+  using InstToUsedIdsMap =
+      std::unordered_map<const ir::Instruction*, std::vector<uint32_t>>;
+
   // Analyzes the defs and uses in the given |module| and populates data
-  // structures in this class.
+  // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDefUse(ir::Module* module);
 
-  // Clear the internal def-use record of a defined id if the given |def_id| is
-  // recorded by this manager. This method will erase both the uses of |def_id|
-  // and the |def_id|-generating instruction's use information kept in this
-  // manager, but not the operands in the original instructions.
-  void ClearDef(uint32_t def_id);
+  // Clear the internal def-use record of the given instruction |inst|. This
+  // method will update the use information of the operand ids of |inst|. The
+  // record: |inst| uses an |id|, will be removed from the use records of |id|.
+  // If |inst| defines an result id, the use record of this result id will also
+  // be removed. Does nothing if |inst| was not analyzed before.
+  void ClearInst(ir::Instruction* inst);
 
-  using ResultIdToUsedIdsMap =
-      std::unordered_map<uint32_t, std::vector<uint32_t>>;
+  // Erases the records that a given instruction uses its operand ids.
+  void EraseUseRecordsOfOperandIds(const ir::Instruction* inst);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
-  // Mapping from result ids to the ids used in the instructions generating the
-  // result ids.
-  ResultIdToUsedIdsMap result_id_to_used_ids_;
+  // Mapping from instructions to the ids used in the instructions generating
+  // the result ids.
+  InstToUsedIdsMap inst_to_used_ids_;
 };
 
 }  // namespace analysis

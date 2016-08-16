@@ -38,10 +38,22 @@ namespace analysis {
 
 void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   const uint32_t def_id = inst->result_id();
-  // Clear the records of def_id first if it has been recorded before.
-  ClearDef(def_id);
+  if (def_id != 0) {
+    auto iter = id_to_def_.find(def_id);
+    if (iter != id_to_def_.end()) {
+      // Clear the original instruction that defining the same result id of the
+      // new instruction.
+      ClearInst(iter->second);
+    }
+    id_to_def_[def_id] = inst;
+  } else {
+    ClearInst(inst);
+  }
 
-  if (def_id != 0) id_to_def_[def_id] = inst;
+  // Create entry for the given instruction. Note that the instruction may
+  // not have any in-operands. In such cases, we still need a entry for those
+  // instructions so this manager knows it has seen the instruction later.
+  inst_to_used_ids_[inst] = {};
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -53,7 +65,7 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
         uint32_t use_id = inst->GetSingleWordOperand(i);
         // use_id is used by the instruction generating def_id.
         id_to_uses_[use_id].push_back({inst, i});
-        if (def_id != 0) result_id_to_used_ids_[def_id].push_back(use_id);
+        inst_to_used_ids_[inst].push_back(use_id);
       } break;
       default:
         break;
@@ -62,22 +74,28 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
 }
 
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {
-  if (id_to_def_.count(id) == 0) return nullptr;
-  return id_to_def_.at(id);
+  auto iter = id_to_def_.find(id);
+  if (iter == id_to_def_.end()) return nullptr;
+  return iter->second;
 }
 
 UseList* DefUseManager::GetUses(uint32_t id) {
-  if (id_to_uses_.count(id) == 0) return nullptr;
-  return &id_to_uses_.at(id);
+  auto iter = id_to_uses_.find(id);
+  if (iter == id_to_uses_.end()) return nullptr;
+  return &iter->second;
 }
 
 bool DefUseManager::KillDef(uint32_t id) {
-  if (id_to_def_.count(id) == 0) return false;
-
-  ir::Instruction* defining_inst = id_to_def_.at(id);
-  ClearDef(id);
-  defining_inst->ToNop();
+  auto iter = id_to_def_.find(id);
+  if (iter == id_to_def_.end()) return false;
+  KillInst(iter->second);
   return true;
+}
+
+void DefUseManager::KillInst(ir::Instruction* inst) {
+  if (!inst) return;
+  ClearInst(inst);
+  inst->ToNop();
 }
 
 bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
@@ -88,14 +106,21 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
        ++it) {
     const uint32_t type_result_id_count =
         (it->inst->result_id() != 0) + (it->inst->type_id() != 0);
-    if (!it->operand_index) {
-      assert(it->inst->type_id() != 0 &&
-             "result type id considered as using while the instruction doesn't "
-             "have a result type id");
-      it->inst->SetResultType(after);
+
+    if (it->operand_index < type_result_id_count) {
+      // Update the type_id. Note that result id is immutable so it should
+      // never be updated.
+      if (it->inst->type_id() != 0 && it->operand_index == 0) {
+        it->inst->SetResultType(after);
+      } else if (it->inst->type_id() == 0) {
+        assert(false &&
+               "Result type id considered as using while the instruction "
+               "doesn't have a result type id.");
+      } else {
+        assert(false && "Trying Setting the result id which is immutable.");
+      }
     } else {
-      assert(it->operand_index >= type_result_id_count &&
-             "the operand to be set is not an in-operand.");
+      // Update an in-operand.
       uint32_t in_operand_pos = it->operand_index - type_result_id_count;
       // Make the modification in the instruction.
       it->inst->SetInOperand(in_operand_pos, {after});
@@ -109,30 +134,42 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
 }
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
+  if (!module) return;
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
                                 std::placeholders::_1));
 }
 
-void DefUseManager::ClearDef(uint32_t def_id) {
-  if (id_to_def_.count(def_id) == 0) return;
+void DefUseManager::ClearInst(ir::Instruction* inst) {
+  auto iter = inst_to_used_ids_.find(inst);
+  if (iter != inst_to_used_ids_.end()) {
+    EraseUseRecordsOfOperandIds(inst);
+    if (inst->result_id() != 0) {
+      id_to_uses_.erase(inst->result_id());  // Remove all uses of this id.
+      id_to_def_.erase(inst->result_id());
+    }
+  }
+}
 
+void DefUseManager::EraseUseRecordsOfOperandIds(const ir::Instruction* inst) {
   // Go through all ids used by this instruction, remove this instruction's
   // uses of them.
-  for (const auto use_id : result_id_to_used_ids_[def_id]) {
-    if (id_to_uses_.count(use_id) == 0) continue;
-    auto& uses = id_to_uses_[use_id];
-    for (auto it = uses.begin(); it != uses.end();) {
-      if (it->inst->result_id() == def_id) {
-        it = uses.erase(it);
-      } else {
-        ++it;
+  auto iter = inst_to_used_ids_.find(inst);
+  if (iter != inst_to_used_ids_.end()) {
+    for (const auto use_id : iter->second) {
+      auto uses_iter = id_to_uses_.find(use_id);
+      if (uses_iter == id_to_uses_.end()) continue;
+      auto& uses = uses_iter->second;
+      for (auto it = uses.begin(); it != uses.end();) {
+        if (it->inst == inst) {
+          it = uses.erase(it);
+        } else {
+          ++it;
+        }
       }
+      if (uses.empty()) id_to_uses_.erase(use_id);
     }
-    if (uses.empty()) id_to_uses_.erase(use_id);
+    inst_to_used_ids_.erase(inst);
   }
-  result_id_to_used_ids_.erase(def_id);
-  id_to_uses_.erase(def_id);  // Remove all uses of this id.
-  id_to_def_.erase(def_id);
 }
 
 }  // namespace analysis
