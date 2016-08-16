@@ -128,8 +128,10 @@ class Instruction {
   // not expected to be used with logical operands consisting of multiple SPIR-V
   // words.
   uint32_t GetSingleWordOperand(uint32_t index) const;
-  // Sets the |index|-th operand's data to the given |data|.
-  inline void SetOperand(uint32_t index, std::vector<uint32_t>&& data);
+  // Sets the |index|-th in-operand's data to the given |data|.
+  inline void SetInOperand(uint32_t index, std::vector<uint32_t>&& data);
+  // Sets the result type id.
+  inline void SetResultType(uint32_t ty_id);
 
   // The following methods are similar to the above, but are for in operands.
   uint32_t NumInOperands() const {
@@ -179,10 +181,18 @@ inline const Operand& Instruction::GetOperand(uint32_t index) const {
   return operands_[index];
 };
 
-inline void Instruction::SetOperand(uint32_t index,
-                                    std::vector<uint32_t>&& data) {
-  assert(index < operands_.size() && "operand index out of bound");
-  operands_[index].words = std::move(data);
+inline void Instruction::SetInOperand(uint32_t index,
+                                      std::vector<uint32_t>&& data) {
+  assert(index + TypeResultIdCount() < operands_.size() &&
+         "operand index out of bound");
+  operands_[index + TypeResultIdCount()].words = std::move(data);
+}
+
+inline void Instruction::SetResultType(uint32_t ty_id) {
+  if (type_id_ != 0) {
+    type_id_ = ty_id;
+    operands_[0] = {SPV_OPERAND_TYPE_TYPE_ID, {ty_id}};
+  }
 }
 
 inline bool Instruction::IsNop() const {

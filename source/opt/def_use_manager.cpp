@@ -91,8 +91,17 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
 
   for (auto it = id_to_uses_[before].cbegin(); it != id_to_uses_[before].cend();
        ++it) {
-    // Make the modification in the instruction.
-    it->inst->SetOperand(it->operand_index, {after});
+    uint32_t type_result_id_count =
+        (it->inst->result_id() != 0) + (it->inst->type_id() != 0);
+    if (it->inst->type_id() != 0 && it->operand_index == 0) {
+      it->inst->SetResultType(after);
+    } else {
+      assert(it->operand_index >= type_result_id_count &&
+             "the operand to be set is not an in-operand.");
+      uint32_t in_operand_pos = it->operand_index - type_result_id_count;
+      // Make the modification in the instruction.
+      it->inst->SetInOperand(in_operand_pos, {after});
+    }
     // Register the use of |after| id into id_to_uses_.
     // TODO(antiagainst): de-duplication.
     id_to_uses_[after].push_back({it->inst, it->operand_index});
