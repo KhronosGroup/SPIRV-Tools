@@ -41,9 +41,10 @@ namespace ir {
 // std::vector<|ValueType|>.
 template <typename ValueType, bool IsConst = false>
 class UptrVectorIterator
-    : public std::iterator<std::random_access_iterator_tag,
-                           typename std::conditional<IsConst, const ValueType,
-                                                     ValueType>::type> {
+    : public std::iterator<
+          std::random_access_iterator_tag,
+          typename std::conditional<IsConst, const ValueType, ValueType>::type,
+          ptrdiff_t> {
  public:
   using super = std::iterator<
       std::random_access_iterator_tag,
@@ -51,6 +52,7 @@ class UptrVectorIterator
 
   using pointer = typename super::pointer;
   using reference = typename super::reference;
+  using difference_type = typename super::difference_type;
 
   // Type aliases. We need to apply constness properly if |IsConst| is true.
   using Uptr = std::unique_ptr<ValueType>;

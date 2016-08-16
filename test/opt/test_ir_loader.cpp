@@ -216,7 +216,7 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   const auto opundef_count = std::count_if(
       module->types_values_begin(), module->types_values_end(),
       [](const ir::Instruction& inst) { return inst.opcode() == SpvOpUndef; });
-  EXPECT_EQ(3u, opundef_count);
+  EXPECT_EQ(3, opundef_count);
 
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
