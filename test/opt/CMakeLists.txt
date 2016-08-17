@@ -95,3 +95,8 @@ add_spvtools_unittest(TARGET pass_fold_spec_const_op_composite
   SRCS test_fold_spec_const_op_composite.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET pass_unify_const
+  SRCS test_unify_const.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)

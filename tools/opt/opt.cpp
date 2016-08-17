@@ -60,6 +60,8 @@ Options:
                Fold the spec constants defined by OpSpecConstantOp or
                OpSpecConstantComposite instructions to front-end constants
                when possible.
+  --unify-const
+               Remove the duplicated constants.
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",
@@ -98,6 +100,8 @@ int main(int argc, char** argv) {
         pass_manager.AddPass<opt::EliminateDeadConstantPass>();
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
         pass_manager.AddPass<opt::FoldSpecConstantOpAndCompositePass>();
+      } else if (0 == strcmp(cur_arg, "--unify-const")) {
+        pass_manager.AddPass<opt::UnifyConstantPass>();
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {

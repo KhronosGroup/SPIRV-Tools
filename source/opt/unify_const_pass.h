@@ -24,16 +24,35 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
+#define LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
 
-// A single header to include all passes.
+#include "module.h"
+#include "pass.h"
 
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "strip_debug_info_pass.h"
-#include "unify_const_pass.h"
+namespace spvtools {
+namespace opt {
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+// The optimization pass to de-duplicate the constants. Constants with exactly
+// same values and identical form will be unified and only one constant will be
+// kept for each unique pair of type and value.
+// There are several cases not handled by this pass:
+//  1) Constants defined by OpConstantNull instructions (null constants) and
+//  constants defined by OpConstantFalse, OpConstant or OpConstantComposite
+//  with value(s) 0 (zero-valued normal constants) are not considered
+//  equivalent. So null constants won't be used to replace zero-valued normal
+//  constants, and other constants won't replace the null constants either.
+//  2) Whenever there are decorations to the constant's result id or its type
+//  id, the constants won't be handled, which means, it won't be used to
+//  replace any other constants, neither can other constants replace it.
+//  3) NaN in float point format with different bit patterns are not unified.
+class UnifyConstantPass : public Pass {
+ public:
+  const char* name() const override { return "unify-const"; }
+  bool Process(ir::Module*) override;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif // LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
