@@ -218,4 +218,26 @@ TEST(Types, AllTypes) {
   }
 }
 
+TEST(Types, IntWidth) {
+  std::vector<uint32_t> widths = {1, 2, 4, 8, 16, 32, 48, 64, 128};
+  std::vector<std::unique_ptr<Integer>> types;
+  for (uint32_t w : widths) {
+    types.emplace_back(new Integer(w, true));
+  }
+  for (size_t i = 0; i < widths.size(); i++) {
+    EXPECT_EQ(widths[i], types[i]->width());
+  }
+}
+
+TEST(Types, FloatWidth) {
+  std::vector<uint32_t> widths = {1, 2, 4, 8, 16, 32, 48, 64, 128};
+  std::vector<std::unique_ptr<Float>> types;
+  for (uint32_t w : widths) {
+    types.emplace_back(new Float(w));
+  }
+  for (size_t i = 0; i < widths.size(); i++) {
+    EXPECT_EQ(widths[i], types[i]->width());
+  }
+}
+
 }  // anonymous namespace

@@ -123,7 +123,7 @@ class Type {
 
 class Integer : public Type {
  public:
-  Integer(uint32_t width, bool is_signed) : width_(width), signed_(is_signed) {}
+  Integer(uint32_t w, bool is_signed) : width_(w), signed_(is_signed) {}
   Integer(const Integer&) = default;
 
   bool IsSame(Type* that) const override;
@@ -131,6 +131,7 @@ class Integer : public Type {
 
   Integer* AsInteger() override { return this; }
   const Integer* AsInteger() const override { return this; }
+  uint32_t width() const { return width_; }
 
  private:
   uint32_t width_;  // bit width
@@ -139,7 +140,7 @@ class Integer : public Type {
 
 class Float : public Type {
  public:
-  Float(uint32_t width) : width_(width) {}
+  Float(uint32_t w) : width_(w) {}
   Float(const Float&) = default;
 
   bool IsSame(Type* that) const override;
@@ -147,6 +148,7 @@ class Float : public Type {
 
   Float* AsFloat() override { return this; }
   const Float* AsFloat() const override { return this; }
+  uint32_t width() const { return width_; }
 
  private:
   uint32_t width_;  // bit width
