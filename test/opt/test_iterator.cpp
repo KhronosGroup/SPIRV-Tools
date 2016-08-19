@@ -30,6 +30,7 @@
 #include "gmock/gmock.h"
 
 #include "opt/iterator.h"
+#include "opt/make_unique.h"
 
 namespace {
 
@@ -148,7 +149,7 @@ TEST(Iterator, InsertBeginEnd) {
   // Insert at the beginning
   expected.insert(expected.begin(), -100);
   ir::UptrVectorIterator<int> begin(&data, data.begin());
-  auto insert_point = begin.InsertBefore(std::unique_ptr<int>(new int(-100)));
+  auto insert_point = begin.InsertBefore(MakeUnique<int>(-100));
   for (int i = 0; i < count + 1; ++i) {
     actual.push_back(*(insert_point++));
   }
@@ -159,9 +160,9 @@ TEST(Iterator, InsertBeginEnd) {
   expected.push_back(-36);
   expected.push_back(-77);
   ir::UptrVectorIterator<int> end(&data, data.end());
-  end = end.InsertBefore(std::unique_ptr<int>(new int(-77)));
-  end = end.InsertBefore(std::unique_ptr<int>(new int(-36)));
-  end = end.InsertBefore(std::unique_ptr<int>(new int(-42)));
+  end = end.InsertBefore(MakeUnique<int>(-77));
+  end = end.InsertBefore(MakeUnique<int>(-36));
+  end = end.InsertBefore(MakeUnique<int>(-42));
 
   actual.clear();
   begin = ir::UptrVectorIterator<int>(&data, data.begin());
@@ -189,8 +190,8 @@ TEST(Iterator, InsertMiddle) {
 
   ir::UptrVectorIterator<int> it(&data, data.begin());
   for (int i = 0; i < insert_pos; ++i) ++it;
-  it = it.InsertBefore(std::unique_ptr<int>(new int(-100)));
-  it = it.InsertBefore(std::unique_ptr<int>(new int(-42)));
+  it = it.InsertBefore(MakeUnique<int>(-100));
+  it = it.InsertBefore(MakeUnique<int>(-42));
   auto begin = ir::UptrVectorIterator<int>(&data, data.begin());
   for (int i = 0; i < count + 2; ++i) {
     actual.push_back(*(begin++));

@@ -27,6 +27,7 @@
 #include "libspirv.hpp"
 
 #include "ir_loader.h"
+#include "make_unique.h"
 
 namespace spvtools {
 
@@ -36,8 +37,8 @@ namespace {
 spv_result_t SetSpvHeader(void* builder, spv_endianness_t, uint32_t magic,
                           uint32_t version, uint32_t generator,
                           uint32_t id_bound, uint32_t reserved) {
-  reinterpret_cast<ir::IrLoader*>(builder)->SetModuleHeader(
-      magic, version, generator, id_bound, reserved);
+  reinterpret_cast<ir::IrLoader*>(builder)
+      ->SetModuleHeader(magic, version, generator, id_bound, reserved);
   return SPV_SUCCESS;
 };
 
@@ -88,7 +89,7 @@ std::unique_ptr<ir::Module> SpvTools::BuildModule(
     const std::vector<uint32_t>& binary) {
   spv_diagnostic diagnostic = nullptr;
 
-  std::unique_ptr<ir::Module> module(new ir::Module);
+  auto module = MakeUnique<ir::Module>();
   ir::IrLoader loader(module.get());
 
   spv_result_t status =

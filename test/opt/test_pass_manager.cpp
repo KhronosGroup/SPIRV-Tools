@@ -25,6 +25,7 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "pass_fixture.h"
+#include "opt/make_unique.h"
 
 namespace {
 
@@ -38,7 +39,7 @@ TEST(PassManager, Interface) {
   EXPECT_EQ(1u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
 
-  manager.AddPass(std::unique_ptr<opt::NullPass>(new opt::NullPass));
+  manager.AddPass(MakeUnique<opt::NullPass>());
   EXPECT_EQ(2u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
   EXPECT_STREQ("null", manager.GetPass(1)->name());
@@ -54,7 +55,7 @@ TEST(PassManager, Interface) {
 class AppendOpNopPass : public opt::Pass {
   const char* name() const override { return "AppendOpNop"; }
   bool Process(ir::Module* module) override {
-    std::unique_ptr<ir::Instruction> inst(new ir::Instruction());
+    auto inst = MakeUnique<ir::Instruction>();
     module->AddDebugInst(std::move(inst));
     return true;
   }
@@ -64,8 +65,7 @@ class AppendOpNopPass : public opt::Pass {
 class DuplicateInstPass : public opt::Pass {
   const char* name() const override { return "DuplicateInst"; }
   bool Process(ir::Module* module) override {
-    std::unique_ptr<ir::Instruction> inst(
-        new ir::Instruction(*(--module->debug_end())));
+    auto inst = MakeUnique<ir::Instruction>(*(--module->debug_end()));
     module->AddDebugInst(std::move(inst));
     return true;
   }

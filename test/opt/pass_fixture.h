@@ -27,7 +27,6 @@
 #ifndef LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
 #define LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
 
-#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -37,6 +36,7 @@
 #include "opt/libspirv.hpp"
 #include "opt/pass_manager.h"
 #include "opt/passes.h"
+#include "opt/make_unique.h"
 
 namespace spvtools {
 
@@ -59,8 +59,8 @@ class PassTest : public TestT {
   std::tuple<std::string, bool> OptimizeAndDisassemble(
       opt::Pass* pass, const std::string& original, bool skip_nop = false) {
     std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
-    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                               << original << std::endl;
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n" << original
+                               << std::endl;
     if (!module) {
       return std::make_tuple(std::string(), false);
     }
@@ -71,8 +71,7 @@ class PassTest : public TestT {
     module->ToBinary(&binary, skip_nop);
     std::string optimized;
     EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized))
-        << "Disassembling failed for shader:\n"
-        << original << std::endl;
+        << "Disassembling failed for shader:\n" << original << std::endl;
     return std::make_tuple(optimized, modified);
   }
 
@@ -82,7 +81,7 @@ class PassTest : public TestT {
   template <typename PassT>
   std::tuple<std::string, bool> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop = false) {
-    auto pass = std::unique_ptr<PassT>(new PassT);
+    auto pass = MakeUnique<PassT>();
     return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
   }
 
