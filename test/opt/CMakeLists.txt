@@ -78,3 +78,8 @@ add_spvtools_unittest(TARGET iterator
   SRCS test_iterator.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET module
+  SRCS test_module.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
