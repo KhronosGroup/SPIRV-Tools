@@ -148,8 +148,4 @@ spvResultToString(spv_result_t res) {
   return out;
 }
 
-void message(std::string file, size_t line, std::string name) {
-  std::cout << file << ":" << line << ": " << name << std::endl;
-}
-
 }  // namespace libspirv

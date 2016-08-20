@@ -33,20 +33,6 @@
 
 #include "spirv-tools/libspirv.h"
 
-/// For debugging purposes only
-/// Prints the string to stdout
-#define MSG(msg)                                        \
-  do {                                                  \
-    libspirv::message(__FILE__, size_t(__LINE__), msg); \
-  } while (0)
-
-/// For debugging purposes only
-/// prints the variable value/location/and name to stdout
-#define SHOW(exp)                                               \
-  do {                                                          \
-    libspirv::message(__FILE__, size_t(__LINE__), #exp, (exp)); \
-  } while (0)
-
 namespace libspirv {
 class diagnostic_helper {
  public:
@@ -116,14 +102,6 @@ class DiagnosticStream {
   helper.stream()
 
 std::string spvResultToString(spv_result_t res);
-
-/// Helper functions for printing debugging information
-void message(std::string file, size_t line, std::string name);
-
-template <typename T>
-void message(std::string file, size_t line, std::string name, T val) {
-  std::cout << file << ":" << line << ": " << name << " " << val << std::endl;
-}
 
 }  // namespace libspirv
 
