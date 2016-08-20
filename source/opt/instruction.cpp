@@ -94,13 +94,8 @@ uint32_t Instruction::NumInOperandWords() const {
   return size;
 }
 
-void Instruction::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
-  for (const auto& dbg_line : dbg_line_insts_) {
-    dbg_line.ToBinary(binary, skip_nop);
-  }
-
-  if (skip_nop && IsNop()) return;
-
+void Instruction::ToBinaryWithoutAttachedDebugInsts(
+    std::vector<uint32_t>* binary) const {
   const uint32_t num_words = 1 + NumOperandWords();
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
   for (const auto& operand : operands_)

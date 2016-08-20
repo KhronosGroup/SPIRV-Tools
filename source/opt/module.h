@@ -122,8 +122,12 @@ class Module {
   inline const_iterator cbegin() const;
   inline const_iterator cend() const;
 
-  // Invokes function |f| on all instructions in this module.
-  void ForEachInst(const std::function<void(Instruction*)>& f);
+  // Invokes function |f| on all instructions in this module, and optionally on
+  // the debug line instructions that precede them.
+  void ForEachInst(const std::function<void(Instruction*)>& f,
+                   bool run_on_debug_line_insts = false);
+  void ForEachInst(const std::function<void(const Instruction*)>& f,
+                   bool run_on_debug_line_insts = false) const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   // If |skip_nop| is true and this is a OpNop, do nothing.

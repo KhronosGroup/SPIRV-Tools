@@ -48,7 +48,7 @@ std::string DisassembleInst(ir::Instruction* inst) {
   std::vector<uint32_t> binary;
   // We need this to generate the necessary header in the binary.
   tools.Assemble("", &binary);
-  inst->ToBinary(&binary, /* skip_nop = */ false);
+  inst->ToBinaryWithoutAttachedDebugInsts(&binary);
 
   std::string text;
   // We'll need to check the underlying id numbers.

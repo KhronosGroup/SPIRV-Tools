@@ -58,17 +58,20 @@ class Function {
   // Appends a basic block to this function.
   inline void AddBasicBlock(std::unique_ptr<BasicBlock> b);
 
+  // Saves the given function end instruction.
+  inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
+
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
   const_iterator cbegin() { return const_iterator(&blocks_, blocks_.cbegin()); }
   const_iterator cend() { return const_iterator(&blocks_, blocks_.cend()); }
 
-  // Runs the given function |f| on each instruction in this basic block.
-  void ForEachInst(const std::function<void(Instruction*)>& f);
-
-  // Pushes the binary segments for this instruction into the back of *|binary|.
-  // If |skip_nop| is true and this is a OpNop, do nothing.
-  void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
+  // Runs the given function |f| on each instruction in this function, and
+  // optionally on debug line instructions that might precede them.
+  void ForEachInst(const std::function<void(Instruction*)>& f,
+                   bool run_on_debug_line_insts = false);
+  void ForEachInst(const std::function<void(const Instruction*)>& f,
+                   bool run_on_debug_line_insts = false) const;
 
  private:
   // The enclosing module.
@@ -80,13 +83,11 @@ class Function {
   // All basic blocks inside this function.
   std::vector<std::unique_ptr<BasicBlock>> blocks_;
   // The OpFunctionEnd instruction.
-  Instruction end_inst_;
+  std::unique_ptr<Instruction> end_inst_;
 };
 
 inline Function::Function(std::unique_ptr<Instruction> def_inst)
-    : module_(nullptr),
-      def_inst_(std::move(def_inst)),
-      end_inst_(SpvOpFunctionEnd) {}
+    : module_(nullptr), def_inst_(std::move(def_inst)), end_inst_() {}
 
 inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
   params_.emplace_back(std::move(p));
@@ -94,6 +95,10 @@ inline void Function::AddParameter(std::unique_ptr<Instruction> p) {
 
 inline void Function::AddBasicBlock(std::unique_ptr<BasicBlock> b) {
   blocks_.emplace_back(std::move(b));
+}
+
+inline void Function::SetFunctionEnd(std::unique_ptr<Instruction> end_inst) {
+  end_inst_ = std::move(end_inst);
 }
 
 }  // namespace ir

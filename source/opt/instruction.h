@@ -154,13 +154,16 @@ class Instruction {
   // line-related debug instructions.
   inline void ToNop();
 
-  // Runs the given function |f| on this instruction and preceding debug
-  // instructions.
-  inline void ForEachInst(const std::function<void(Instruction*)>& f);
+  // Runs the given function |f| on this instruction and optionally on the
+  // preceding debug line instructions.  The function will always be run
+  // if this is itself a debug line instruction.
+  inline void ForEachInst(const std::function<void(Instruction*)>& f,
+                          bool run_on_debug_line_insts = false);
+  inline void ForEachInst(const std::function<void(const Instruction*)>& f,
+                          bool run_on_debug_line_insts = false) const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
-  // If |skip_nop| is true and this is a OpNop, do nothing.
-  void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
+  void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
 
  private:
   // Returns the toal count of result type id and result id.
@@ -210,9 +213,18 @@ inline void Instruction::ToNop() {
   operands_.clear();
 }
 
+inline void Instruction::ForEachInst(const std::function<void(Instruction*)>& f,
+                                     bool run_on_debug_line_insts) {
+  if (run_on_debug_line_insts)
+    for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
+  f(this);
+}
+
 inline void Instruction::ForEachInst(
-    const std::function<void(Instruction*)>& f) {
-  for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
+    const std::function<void(const Instruction*)>& f,
+    bool run_on_debug_line_insts) const {
+  if (run_on_debug_line_insts)
+    for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
   f(this);
 }
 

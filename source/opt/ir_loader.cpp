@@ -52,6 +52,7 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   } else if (opcode == SpvOpFunctionEnd) {
     assert(function_ != nullptr);
     assert(block_ == nullptr);
+    function_->SetFunctionEnd(std::move(spv_inst));
     module_->AddFunction(std::move(function_));
     function_ = nullptr;
   } else if (opcode == SpvOpLabel) {

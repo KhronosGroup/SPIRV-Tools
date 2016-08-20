@@ -36,7 +36,7 @@ using namespace spvtools;
 void DoRoundTripCheck(const std::string& text) {
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module = t.BuildModule(text);
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, module) << "Failed to assemble\n" << text;
 
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);
@@ -240,6 +240,57 @@ TEST(IrBuilder, OpUndefInBasicBlock) {
           "%7 = OpUndef %uint\n"
           "%8 = OpUndef %double\n"
                "OpReturn\n"
+               "OpFunctionEnd\n");
+  // clang-format on
+}
+
+TEST(IrBuilder, KeepLineDebugInfoBeforeType) {
+  DoRoundTripCheck(
+      // clang-format off
+               "OpCapability Shader\n"
+               "OpMemoryModel Logical GLSL450\n"
+          "%1 = OpString \"minimal.vert\"\n"
+               "OpLine %1 1 1\n"
+               "OpNoLine\n"
+       "%void = OpTypeVoid\n"
+               "OpLine %1 2 2\n"
+          "%3 = OpTypeFunction %void\n");
+  // clang-format on
+}
+
+TEST(IrBuilder, KeepLineDebugInfoBeforeLabel) {
+  DoRoundTripCheck(
+      // clang-format off
+               "OpCapability Shader\n"
+               "OpMemoryModel Logical GLSL450\n"
+          "%1 = OpString \"minimal.vert\"\n"
+       "%void = OpTypeVoid\n"
+          "%3 = OpTypeFunction %void\n"
+       "%4 = OpFunction %void None %3\n"
+          "%5 = OpLabel\n"
+   "OpBranch %6\n"
+               "OpLine %1 1 1\n"
+               "OpLine %1 2 2\n"
+          "%6 = OpLabel\n"
+               "OpBranch %7\n"
+               "OpLine %1 100 100\n"
+          "%7 = OpLabel\n"
+               "OpReturn\n"
+               "OpFunctionEnd\n");
+  // clang-format on
+}
+
+TEST(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
+  DoRoundTripCheck(
+      // clang-format off
+               "OpCapability Shader\n"
+               "OpMemoryModel Logical GLSL450\n"
+          "%1 = OpString \"minimal.vert\"\n"
+       "%void = OpTypeVoid\n"
+          "%3 = OpTypeFunction %void\n"
+       "%4 = OpFunction %void None %3\n"
+               "OpLine %1 1 1\n"
+               "OpLine %1 2 2\n"
                "OpFunctionEnd\n");
   // clang-format on
 }

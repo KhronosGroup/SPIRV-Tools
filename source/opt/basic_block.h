@@ -62,19 +62,19 @@ class BasicBlock {
   const_iterator cbegin() { return const_iterator(&insts_, insts_.cbegin()); }
   const_iterator cend() { return const_iterator(&insts_, insts_.cend()); }
 
-  // Runs the given function |f| on each instruction in this basic block.
-  inline void ForEachInst(const std::function<void(Instruction*)>& f);
-
-  // Pushes the binary segments for this instruction into the back of *|binary|.
-  // If |skip_nop| is true and this is a OpNop, do nothing.
-  inline void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
+  // Runs the given function |f| on each instruction in this basic block, and
+  // optionally on the debug line instructions that might precede them.
+  inline void ForEachInst(const std::function<void(Instruction*)>& f,
+                          bool run_on_debug_line_insts = false);
+  inline void ForEachInst(const std::function<void(const Instruction*)>& f,
+                          bool run_on_debug_line_insts = false) const;
 
  private:
   // The enclosing function.
   Function* function_;
   // The label starting this basic block.
   std::unique_ptr<Instruction> label_;
-  // Instructions inside this basic block.
+  // Instructions inside this basic block, but not the OpLabel.
   std::vector<std::unique_ptr<Instruction>> insts_;
 };
 
@@ -85,16 +85,20 @@ inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
   insts_.emplace_back(std::move(i));
 }
 
-inline void BasicBlock::ForEachInst(
-    const std::function<void(Instruction*)>& f) {
-  label_->ForEachInst(f);
-  for (auto& inst : insts_) f(inst.get());
+inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
+                                    bool run_on_debug_line_insts) {
+  label_->ForEachInst(f, run_on_debug_line_insts);
+  for (auto& inst : insts_) inst->ForEachInst(f, run_on_debug_line_insts);
 }
 
-inline void BasicBlock::ToBinary(std::vector<uint32_t>* binary,
-                                 bool skip_nop) const {
-  label_->ToBinary(binary, skip_nop);
-  for (const auto& inst : insts_) inst->ToBinary(binary, skip_nop);
+inline void BasicBlock::ForEachInst(
+    const std::function<void(const Instruction*)>& f,
+    bool run_on_debug_line_insts) const {
+  static_cast<const Instruction*>(label_.get())
+      ->ForEachInst(f, run_on_debug_line_insts);
+  for (const auto& inst : insts_)
+    static_cast<const Instruction*>(inst.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
 }
 
 }  // namespace ir

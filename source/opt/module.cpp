@@ -66,17 +66,41 @@ std::vector<const Instruction*> Module::GetConstants() const {
   return insts;
 };
 
-void Module::ForEachInst(const std::function<void(Instruction*)>& f) {
-  for (auto& i : capabilities_) f(i.get());
-  for (auto& i : extensions_) f(i.get());
-  for (auto& i : ext_inst_imports_) f(i.get());
-  if (memory_model_) f(memory_model_.get());
-  for (auto& i : entry_points_) f(i.get());
-  for (auto& i : execution_modes_) f(i.get());
-  for (auto& i : debugs_) f(i.get());
-  for (auto& i : annotations_) f(i.get());
-  for (auto& i : types_values_) f(i.get());
-  for (auto& i : functions_) i->ForEachInst(f);
+void Module::ForEachInst(const std::function<void(Instruction*)>& f,
+                         bool run_on_debug_line_insts) {
+#define DELEGATE(i) i->ForEachInst(f, run_on_debug_line_insts)
+  for (auto& i : capabilities_) DELEGATE(i);
+  for (auto& i : extensions_) DELEGATE(i);
+  for (auto& i : ext_inst_imports_) DELEGATE(i);
+  if (memory_model_) DELEGATE(memory_model_);
+  for (auto& i : entry_points_) DELEGATE(i);
+  for (auto& i : execution_modes_) DELEGATE(i);
+  for (auto& i : debugs_) DELEGATE(i);
+  for (auto& i : annotations_) DELEGATE(i);
+  for (auto& i : types_values_) DELEGATE(i);
+  for (auto& i : functions_) DELEGATE(i);
+#undef DELEGATE
+}
+
+void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
+                         bool run_on_debug_line_insts) const {
+#define DELEGATE(i)                                      \
+  static_cast<const Instruction*>(i.get())->ForEachInst( \
+      f, run_on_debug_line_insts)
+  for (auto& i : capabilities_) DELEGATE(i);
+  for (auto& i : extensions_) DELEGATE(i);
+  for (auto& i : ext_inst_imports_) DELEGATE(i);
+  if (memory_model_) DELEGATE(memory_model_);
+  for (auto& i : entry_points_) DELEGATE(i);
+  for (auto& i : execution_modes_) DELEGATE(i);
+  for (auto& i : debugs_) DELEGATE(i);
+  for (auto& i : annotations_) DELEGATE(i);
+  for (auto& i : types_values_) DELEGATE(i);
+  for (auto& i : functions_) {
+    static_cast<const Function*>(i.get())->ForEachInst(f,
+                                                       run_on_debug_line_insts);
+  }
+#undef DELEGATE
 }
 
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
@@ -87,17 +111,10 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.bound);
   binary->push_back(header_.reserved);
 
-  // TODO(antiagainst): wow, looks like a duplication of the above.
-  for (const auto& c : capabilities_) c->ToBinary(binary, skip_nop);
-  for (const auto& e : extensions_) e->ToBinary(binary, skip_nop);
-  for (const auto& e : ext_inst_imports_) e->ToBinary(binary, skip_nop);
-  if (memory_model_) memory_model_->ToBinary(binary, skip_nop);
-  for (const auto& e : entry_points_) e->ToBinary(binary, skip_nop);
-  for (const auto& e : execution_modes_) e->ToBinary(binary, skip_nop);
-  for (const auto& d : debugs_) d->ToBinary(binary, skip_nop);
-  for (const auto& a : annotations_) a->ToBinary(binary, skip_nop);
-  for (const auto& t : types_values_) t->ToBinary(binary, skip_nop);
-  for (const auto& f : functions_) f->ToBinary(binary, skip_nop);
+  auto write_inst = [this, binary, skip_nop](const Instruction* i) {
+    if (!skip_nop || !i->IsNop()) i->ToBinaryWithoutAttachedDebugInsts(binary);
+  };
+  ForEachInst(write_inst, true);
 }
 
 }  // namespace ir
