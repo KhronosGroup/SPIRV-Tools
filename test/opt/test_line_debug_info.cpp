@@ -22,6 +22,8 @@ using namespace spvtools;
 // A pass turning all none debug line instructions into Nop.
 class NopifyPass : public opt::Pass {
  public:
+  explicit NopifyPass(const MessageConsumer& c) : opt::Pass(c) {}
+
   const char* name() const override { return "NopifyPass"; }
   bool Process(ir::Module* module) override {
     module->ForEachInst([](ir::Instruction* inst) { inst->ToNop(); },

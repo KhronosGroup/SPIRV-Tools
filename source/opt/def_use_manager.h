@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "instruction.h"
+#include "message.h"
 #include "module.h"
 
 namespace spvtools {
@@ -45,7 +46,15 @@ class DefUseManager {
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
   using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
 
-  inline explicit DefUseManager(ir::Module* module) { AnalyzeDefUse(module); }
+  // Constructs a def-use manager from the given |module|. All internal messages
+  // will be communicated to the outside via the given message |consumer|. This
+  // instance only keeps a reference to the |consumer|, so the |consumer| should
+  // outlive this instance.
+  DefUseManager(const MessageConsumer& consumer, ir::Module* module)
+      : consumer_(consumer) {
+    AnalyzeDefUse(module);
+  }
+
   DefUseManager(const DefUseManager&) = delete;
   DefUseManager(DefUseManager&&) = delete;
   DefUseManager& operator=(const DefUseManager&) = delete;
@@ -106,8 +115,9 @@ class DefUseManager {
   // Erases the records that a given instruction uses its operand ids.
   void EraseUseRecordsOfOperandIds(const ir::Instruction* inst);
 
-  IdToDefMap id_to_def_;    // Mapping from ids to their definitions
-  IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
+  const MessageConsumer& consumer_;  // Message consumer.
+  IdToDefMap id_to_def_;             // Mapping from ids to their definitions
+  IdToUsesMap id_to_uses_;           // Mapping from ids to their uses
   // Mapping from instructions to the ids used in the instructions generating
   // the result ids.
   InstToUsedIdsMap inst_to_used_ids_;

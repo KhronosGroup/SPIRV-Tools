@@ -132,7 +132,7 @@ TEST_P(ParseDefUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
 
   CheckDef(tc.du, manager.id_to_defs());
   CheckUse(tc.du, manager.id_to_uses());
@@ -513,7 +513,7 @@ TEST_P(ReplaceUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
 
   // Do the substitution.
   for (const auto& candiate : tc.candidates) {
@@ -815,7 +815,7 @@ TEST_P(KillDefTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
 
   // Do the substitution.
   for (const auto id : tc.ids_to_kill) manager.KillDef(id);
@@ -1065,7 +1065,7 @@ TEST(DefUseTest, OpSwitch) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
 
   // Do a bunch replacements.
   manager.ReplaceAllUsesWith(9, 900);    // to unused id
@@ -1188,7 +1188,7 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze the instructions.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
   for (ir::Instruction& inst : tc.insts) {
     manager.AnalyzeInstDefUse(&inst);
   }
@@ -1312,7 +1312,7 @@ TEST_P(KillInstTest, Case) {
 
   // KillInst
   uint32_t index = 0;
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
   module->ForEachInst([&index, &tc, &manager](ir::Instruction* inst) {
     if (tc.indices_for_inst_to_kill.count(index) != 0) {
       manager.KillInst(inst);
@@ -1419,7 +1419,7 @@ TEST_P(GetAnnotationsTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Get annotations
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(IgnoreMessage, module.get());
   auto insts = manager.GetAnnotations(tc.id);
 
   // Check

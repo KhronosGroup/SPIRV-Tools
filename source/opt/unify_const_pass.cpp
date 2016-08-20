@@ -105,7 +105,7 @@ class ResultIdTrie {
 bool UnifyConstantPass::Process(ir::Module* module) {
   bool modified = false;
   ResultIdTrie defined_constants;
-  analysis::DefUseManager def_use_mgr(module);
+  analysis::DefUseManager def_use_mgr(consumer(), module);
 
   for (ir::Instruction& inst : module->types_values()) {
     // Do not handle the instruction when there are decorations upon the result

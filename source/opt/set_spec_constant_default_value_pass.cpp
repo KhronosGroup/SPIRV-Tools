@@ -14,8 +14,8 @@
 
 #include "set_spec_constant_default_value_pass.h"
 
-#include <cstring>
 #include <cctype>
+#include <cstring>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -164,8 +164,8 @@ bool SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
   const uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
 
   bool modified = false;
-  analysis::DefUseManager def_use_mgr(module);
-  analysis::TypeManager type_mgr(*module);
+  analysis::DefUseManager def_use_mgr(consumer(), module);
+  analysis::TypeManager type_mgr(consumer(), *module);
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'
   // instructions. Then extract the decoration target of those instructions.
   // The decoration targets should be spec constant defining instructions with

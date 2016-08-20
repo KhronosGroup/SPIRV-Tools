@@ -19,6 +19,7 @@
 
 #include "basic_block.h"
 #include "instruction.h"
+#include "message.h"
 #include "module.h"
 #include "spirv-tools/libspirv.h"
 
@@ -36,7 +37,11 @@ namespace ir {
 class IrLoader {
  public:
   // Instantiates a builder to construct the given |module| gradually.
-  IrLoader(Module* module) : module_(module) {}
+  // All internal messages will be communicated to the outside via the given
+  // message |consumer|. This instance only keeps a reference to the |consumer|,
+  // so the |consumer| should outlive this instance.
+  IrLoader(const MessageConsumer& consumer, Module* module)
+      : consumer_(consumer), module_(module) {}
 
   // Sets the fields in the module's header to the given parameters.
   void SetModuleHeader(uint32_t magic, uint32_t version, uint32_t generator,
@@ -54,6 +59,8 @@ class IrLoader {
   void EndModule();
 
  private:
+  // Consumer for communicating messages to outside.
+  const MessageConsumer& consumer_;
   // The module to be built.
   Module* module_;
   // The current Function under construction.

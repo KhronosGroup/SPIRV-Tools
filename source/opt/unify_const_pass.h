@@ -36,6 +36,8 @@ namespace opt {
 //  3) NaN in float point format with different bit patterns are not unified.
 class UnifyConstantPass : public Pass {
  public:
+  explicit UnifyConstantPass(const MessageConsumer& c) : Pass(c) {}
+
   const char* name() const override { return "unify-const"; }
   bool Process(ir::Module*) override;
 };
@@ -43,4 +45,4 @@ class UnifyConstantPass : public Pass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif // LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_
+#endif  // LIBSPIRV_OPT_UNIFY_CONSTANT_PASS_H_

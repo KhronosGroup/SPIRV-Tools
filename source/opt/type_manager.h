@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "message.h"
 #include "module.h"
 #include "types.h"
 
@@ -33,7 +34,13 @@ class TypeManager {
   using TypeToIdMap = std::unordered_map<const Type*, uint32_t>;
   using ForwardPointerVector = std::vector<std::unique_ptr<ForwardPointer>>;
 
-  inline explicit TypeManager(const spvtools::ir::Module& module);
+  // Constructs a type manager from the given |module|. All internal messages
+  // will be communicated to the outside via the given message |consumer|.
+  // This instance only keeps a reference to the |consumer|, so the |consumer|
+  // should outlive this instance.
+  TypeManager(const MessageConsumer& consumer,
+              const spvtools::ir::Module& module);
+
   TypeManager(const TypeManager&) = delete;
   TypeManager(TypeManager&&) = delete;
   TypeManager& operator=(const TypeManager&) = delete;
@@ -64,6 +71,7 @@ class TypeManager {
   // given instruction is not a decoration instruction or not decorating a type.
   void AttachIfTypeDecoration(const spvtools::ir::Instruction& inst);
 
+  const MessageConsumer& consumer_;  // Message consumer.
   IdToTypeMap id_to_type_;  // Mapping from ids to their type representations.
   TypeToIdMap type_to_id_;  // Mapping from types to their defining ids.
   ForwardPointerVector forward_pointers_;  // All forward pointer declarations.
@@ -72,7 +80,9 @@ class TypeManager {
   std::unordered_set<ForwardPointer*> unresolved_forward_pointers_;
 };
 
-inline TypeManager::TypeManager(const spvtools::ir::Module& module) {
+inline TypeManager::TypeManager(const spvtools::MessageConsumer& consumer,
+                                const spvtools::ir::Module& module)
+    : consumer_(consumer) {
   AnalyzeTypes(module);
 }
 

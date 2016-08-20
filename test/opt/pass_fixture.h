@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
 #define LIBSPIRV_TEST_OPT_PASS_FIXTURE_H_
 
+#include <iostream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -39,7 +40,9 @@ template <typename TestT>
 class PassTest : public TestT {
  public:
   PassTest()
-      : tools_(SPV_ENV_UNIVERSAL_1_1), manager_(new opt::PassManager()) {}
+      : consumer_(IgnoreMessage),
+        tools_(SPV_ENV_UNIVERSAL_1_1),
+        manager_(new opt::PassManager(consumer_)) {}
 
   // Runs the given |pass| on the binary assembled from the |assembly|, and
   // disassebles the optimized binary. Returns a tuple of disassembly string
@@ -70,7 +73,7 @@ class PassTest : public TestT {
   template <typename PassT, typename... Args>
   std::tuple<std::string, bool> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop, Args&&... args) {
-    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
+    auto pass = MakeUnique<PassT>(consumer_, std::forward<Args>(args)...);
     return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
   }
 
@@ -98,7 +101,7 @@ class PassTest : public TestT {
   }
 
   // Renews the pass manager, including clearing all previously added passes.
-  void RenewPassManger() { manager_.reset(new opt::PassManager()); }
+  void RenewPassManger() { manager_.reset(new opt::PassManager(consumer_)); }
 
   // Runs the passes added thus far using a pass manager on the binary assembled
   // from the |original| assembly, and checks whether the optimized binary can
@@ -121,6 +124,7 @@ class PassTest : public TestT {
   }
 
  private:
+  MessageConsumer consumer_;  // Message consumer.
   SpvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<opt::PassManager> manager_;  // The pass manager.
 };

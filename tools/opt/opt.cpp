@@ -16,6 +16,7 @@
 #include <iostream>
 #include <vector>
 
+#include "message.h"
 #include "source/opt/ir_loader.h"
 #include "source/opt/libspirv.hpp"
 #include "source/opt/pass_manager.h"
@@ -62,7 +63,11 @@ int main(int argc, char** argv) {
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
 
-  opt::PassManager pass_manager;
+  opt::PassManager pass_manager([](MessageLevel level, const char* source,
+                                   const spv_position_t& position,
+                                   const char* message) {
+    std::cerr << StringifyMessage(level, source, position, message);
+  });
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];

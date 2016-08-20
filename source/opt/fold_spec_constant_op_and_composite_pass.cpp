@@ -242,6 +242,15 @@ std::vector<uint32_t> OperateVectors(
 }
 }  // anonymous namespace
 
+FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass(
+    const MessageConsumer& c)
+    : Pass(c),
+      max_id_(0),
+      module_(nullptr),
+      def_use_mgr_(nullptr),
+      type_mgr_(nullptr),
+      id_to_const_val_() {}
+
 bool FoldSpecConstantOpAndCompositePass::ProcessImpl(ir::Module* module) {
   bool modified = false;
   // Traverse through all the constant defining instructions. For Normal

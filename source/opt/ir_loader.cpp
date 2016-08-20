@@ -14,8 +14,7 @@
 
 #include "ir_loader.h"
 
-#include <cassert>
-
+#include "log.h"
 #include "reflect.h"
 
 namespace spvtools {
@@ -34,28 +33,28 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   // Handle function and basic block boundaries first, then normal
   // instructions.
   if (opcode == SpvOpFunction) {
-    assert(function_ == nullptr);
-    assert(block_ == nullptr);
+    SPIRV_ASSERT(consumer_, function_ == nullptr);
+    SPIRV_ASSERT(consumer_, block_ == nullptr);
     function_.reset(new Function(std::move(spv_inst)));
   } else if (opcode == SpvOpFunctionEnd) {
-    assert(function_ != nullptr);
-    assert(block_ == nullptr);
+    SPIRV_ASSERT(consumer_, function_ != nullptr);
+    SPIRV_ASSERT(consumer_, block_ == nullptr);
     function_->SetFunctionEnd(std::move(spv_inst));
     module_->AddFunction(std::move(function_));
     function_ = nullptr;
   } else if (opcode == SpvOpLabel) {
-    assert(function_ != nullptr);
-    assert(block_ == nullptr);
+    SPIRV_ASSERT(consumer_, function_ != nullptr);
+    SPIRV_ASSERT(consumer_, block_ == nullptr);
     block_.reset(new BasicBlock(std::move(spv_inst)));
   } else if (IsTerminatorInst(opcode)) {
-    assert(function_ != nullptr);
-    assert(block_ != nullptr);
+    SPIRV_ASSERT(consumer_, function_ != nullptr);
+    SPIRV_ASSERT(consumer_, block_ != nullptr);
     block_->AddInstruction(std::move(spv_inst));
     function_->AddBasicBlock(std::move(block_));
     block_ = nullptr;
   } else {
     if (function_ == nullptr) {  // Outside function definition
-      assert(block_ == nullptr);
+      SPIRV_ASSERT(consumer_, block_ == nullptr);
       if (opcode == SpvOpCapability) {
         module_->AddCapability(std::move(spv_inst));
       } else if (opcode == SpvOpExtension) {
@@ -78,11 +77,12 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
                  opcode == SpvOpUndef) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else {
-        assert(0 && "unhandled inst type outside function defintion");
+        SPIRV_UNIMPLEMENTED(consumer_,
+                            "unhandled inst type outside function defintion");
       }
     } else {
       if (block_ == nullptr) {  // Inside function but outside blocks
-        assert(opcode == SpvOpFunctionParameter);
+        SPIRV_ASSERT(consumer_, opcode == SpvOpFunctionParameter);
         function_->AddParameter(std::move(spv_inst));
       } else {
         block_->AddInstruction(std::move(spv_inst));

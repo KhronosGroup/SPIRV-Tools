@@ -19,13 +19,14 @@
 #include <unordered_set>
 
 #include "def_use_manager.h"
+#include "log.h"
 #include "reflect.h"
 
 namespace spvtools {
 namespace opt {
 
 bool EliminateDeadConstantPass::Process(ir::Module* module) {
-  analysis::DefUseManager def_use(module);
+  analysis::DefUseManager def_use(consumer(), module);
   std::unordered_set<ir::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
@@ -73,7 +74,7 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
           }
           // The number of uses should never be less then 0, so it can not be
           // less than 1 before it decreases.
-          assert(use_counts[def_inst] > 0);
+          SPIRV_ASSERT(consumer(), use_counts[def_inst] > 0);
           --use_counts[def_inst];
           if (!use_counts[def_inst]) {
             working_list.insert(def_inst);

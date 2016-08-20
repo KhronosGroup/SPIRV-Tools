@@ -83,7 +83,7 @@ std::unique_ptr<ir::Module> SpvTools::BuildModule(
   spv_diagnostic diagnostic = nullptr;
 
   auto module = MakeUnique<ir::Module>();
-  ir::IrLoader loader(module.get());
+  ir::IrLoader loader(context_->consumer, module.get());
 
   spv_result_t status =
       spvBinaryParse(context_, &loader, binary.data(), binary.size(),

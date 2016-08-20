@@ -50,12 +50,8 @@ namespace opt {
 // TODO(qining): Add support for the operations listed above.
 class FoldSpecConstantOpAndCompositePass : public Pass {
  public:
-  FoldSpecConstantOpAndCompositePass()
-      : max_id_(0),
-        module_(nullptr),
-        def_use_mgr_(nullptr),
-        type_mgr_(nullptr),
-        id_to_const_val_() {}
+  explicit FoldSpecConstantOpAndCompositePass(const MessageConsumer& c);
+
   const char* name() const override { return "fold-spec-const-op-composite"; }
   bool Process(ir::Module* module) override {
     Initialize(module);
@@ -66,8 +62,8 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   // Initializes the type manager, def-use manager and get the maximal id used
   // in the module.
   void Initialize(ir::Module* module) {
-    type_mgr_.reset(new analysis::TypeManager(*module));
-    def_use_mgr_.reset(new analysis::DefUseManager(module));
+    type_mgr_.reset(new analysis::TypeManager(consumer(), *module));
+    def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
     for (const auto& id_def : def_use_mgr_->id_to_defs()) {
       max_id_ = std::max(max_id_, id_def.first);
     }

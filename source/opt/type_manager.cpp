@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #include <algorithm>
-#include <cassert>
 
+#include "log.h"
 #include "reflect.h"
 #include "type_manager.h"
 
@@ -161,16 +161,17 @@ Type* TypeManager::RecordIfTypeDefinition(
       type = new NamedBarrier();
       break;
     default:
-      assert(0 && "unhandled type found");
+      SPIRV_UNIMPLEMENTED(consumer_, "unhandled type");
       break;
   }
 
   uint32_t id = inst.result_id();
   if (id == 0) {
-    assert(inst.opcode() == SpvOpTypeForwardPointer &&
-           "instruction without result id found");
+    SPIRV_ASSERT(consumer_, inst.opcode() == SpvOpTypeForwardPointer,
+                 "instruction without result id found");
   } else {
-    assert(type != nullptr && "type should not be nullptr at this point");
+    SPIRV_ASSERT(consumer_, type != nullptr,
+                 "type should not be nullptr at this point");
     id_to_type_[id].reset(type);
     type_to_id_[type] = id;
   }
@@ -204,16 +205,16 @@ void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
       if (Struct* st = target_type->AsStruct()) {
         st->AddMemeberDecoration(index, std::move(data));
       } else {
-        assert(0 && "OpMemberDecorate on non-struct type");
+        SPIRV_UNIMPLEMENTED(consumer_, "OpMemberDecorate non-struct type");
       }
     } break;
     case SpvOpDecorationGroup:
     case SpvOpGroupDecorate:
     case SpvOpGroupMemberDecorate:
-      assert(0 && "unhandled decoration");
+      SPIRV_UNIMPLEMENTED(consumer_, "unhandled decoration");
       break;
     default:
-      assert(0 && "unreachable");
+      SPIRV_UNREACHABLE(consumer_);
       break;
   }
 }

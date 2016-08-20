@@ -14,10 +14,10 @@
 
 #include "def_use_manager.h"
 
-#include <cassert>
 #include <functional>
 
 #include "instruction.h"
+#include "log.h"
 #include "module.h"
 #include "reflect.h"
 
@@ -80,11 +80,10 @@ const UseList* DefUseManager::GetUses(uint32_t id) const {
   return &iter->second;
 }
 
-std::vector<ir::Instruction*> DefUseManager::GetAnnotations(
-    uint32_t id) const {
+std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   std::vector<ir::Instruction*> annos;
   const auto* uses = GetUses(id);
-  if (!uses)  return annos;
+  if (!uses) return annos;
   for (const auto& c : *uses) {
     if (ir::IsAnnotationInst(c.inst->opcode())) {
       annos.push_back(c.inst);
@@ -121,11 +120,13 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       if (it->inst->type_id() != 0 && it->operand_index == 0) {
         it->inst->SetResultType(after);
       } else if (it->inst->type_id() == 0) {
-        assert(false &&
-               "Result type id considered as using while the instruction "
-               "doesn't have a result type id.");
+        SPIRV_ASSERT(consumer_, false,
+                     "Result type id considered as use while the instruction "
+                     "doesn't have a result type id.");
+        (void)consumer_;  // Makes the compiler happy for release build.
       } else {
-        assert(false && "Trying Setting the result id which is immutable.");
+        SPIRV_ASSERT(consumer_, false,
+                     "Trying setting the immutable result id.");
       }
     } else {
       // Update an in-operand.

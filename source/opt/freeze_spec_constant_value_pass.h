@@ -31,6 +31,8 @@ namespace opt {
 // other spec constants defined by OpSpecConstantComposite or OpSpecConstantOp.
 class FreezeSpecConstantValuePass : public Pass {
  public:
+  explicit FreezeSpecConstantValuePass(const MessageConsumer& c) : Pass(c) {}
+
   const char* name() const override { return "freeze-spec-const"; }
   bool Process(ir::Module*) override;
 };

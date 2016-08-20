@@ -25,6 +25,8 @@ namespace opt {
 // Section 3.32.2 of the SPIR-V spec).
 class StripDebugInfoPass : public Pass {
  public:
+  explicit StripDebugInfoPass(const MessageConsumer& c) : Pass(c) {}
+
   const char* name() const override { return "strip-debug"; }
   bool Process(ir::Module* module) override;
 };

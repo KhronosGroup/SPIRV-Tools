@@ -15,10 +15,11 @@
 #ifndef LIBSPIRV_OPT_PASS_MANAGER_H_
 #define LIBSPIRV_OPT_PASS_MANAGER_H_
 
-#include <cassert>
 #include <memory>
 #include <vector>
 
+#include "log.h"
+#include "message.h"
 #include "module.h"
 #include "passes.h"
 
@@ -27,31 +28,34 @@ namespace opt {
 
 // The pass manager, responsible for tracking and running passes.
 // Clients should first call AddPass() to add passes and then call Run()
-// to run on a module. Passes are executed in the exact order of added.
-//
-// TODO(antiagainst): The pass manager is fairly simple right now. Eventually it
-// should support pass dependency, common functionality (like def-use analysis)
-// sharing, etc.
+// to run on a module. Passes are executed in the exact order of addition.
 class PassManager {
  public:
-  // Adds a pass.
+  // Constructs a pass manager with the given message consumer.
+  explicit PassManager(MessageConsumer c) : consumer_(std::move(c)) {}
+
+  // Adds an externally constructed pass.
   void AddPass(std::unique_ptr<Pass> pass) {
     passes_.push_back(std::move(pass));
   }
-  // Uses the argument to construct a pass instance of type PassT, and adds the
-  // pass instance to this pass manger.
-  template <typename PassT, typename... Args>
+  // Uses the argument |args| to construct a pass instance of type |T|, and adds
+  // the pass instance to this pass manger. The pass added will use this pass
+  // manager's message consumer.
+  template <typename T, typename... Args>
   void AddPass(Args&&... args) {
-    passes_.emplace_back(new PassT(std::forward<Args>(args)...));
+    passes_.emplace_back(new T(consumer_, std::forward<Args>(args)...));
   }
 
   // Returns the number of passes added.
   uint32_t NumPasses() const { return static_cast<uint32_t>(passes_.size()); }
   // Returns a pointer to the |index|th pass added.
   Pass* GetPass(uint32_t index) const {
-    assert(index < passes_.size() && "index out of bound");
+    SPIRV_ASSERT(consumer_, index < passes_.size(), "index out of bound");
     return passes_[index].get();
   }
+
+  // Returns the message consumer.
+  const MessageConsumer& consumer() const { return consumer_; }
 
   // Runs all passes on the given |module|.
   void Run(ir::Module* module) {
@@ -64,6 +68,8 @@ class PassManager {
   }
 
  private:
+  // Consumer for messages.
+  MessageConsumer consumer_;
   // A vector of passes. Order matters.
   std::vector<std::unique_ptr<Pass>> passes_;
 };
