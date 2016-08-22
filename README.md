@@ -234,6 +234,26 @@ This is experimental.
 * `spirv-cfg` - the control flow graph dumper
   * `<spirv-dir>/tools/cfg`
 
+### Utility filters
+
+* `spirv-lesspipe.sh` - Automatically disassembles `.spv` binary files for the
+  `less` program, on compatible systems.  For example, set the `LESSOPEN`
+  environment variable as follows, assuming both `spirv-lesspipe.sh` and
+  `spirv-dis` are on your executable search path:
+  ```
+   export LESSOPEN='| spirv-lesspipe.sh "%s"'
+  ```
+  Then you page through a disassembled module as follows:
+  ```
+  less foo.spv
+  ```
+  * The `spirv-lesspipe.sh` script will pass through any extra arguments to
+    `spirv-dis`.  So, for example, you can turn off colours and friendly ID
+    naming as follows:
+    ```
+    export LESSOPEN='| spirv-lesspipe.sh "%s" --no-color --raw-id'
+    ```
+
 ### Tests
 
 Tests are only built when googletest is found.

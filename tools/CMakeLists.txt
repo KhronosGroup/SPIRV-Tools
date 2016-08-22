@@ -24,6 +24,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+add_subdirectory(lesspipe)
+
 # Add a SPIR-V Tools command line tool. Signature:
 #   add_spvtools_tool(
 #     TARGET target_name

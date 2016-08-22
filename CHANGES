@@ -7,6 +7,7 @@ v2016.3-dev 2016-08-11
  - Add spirv-cfg, an experimental tool to dump the control flow graph
    as a GraphiViz "dot" graph
  - Add optimization pass: Eliminate dead constants.
+ - Add spirv-lesspipe.sh filter utility
  - Fixes issues:
    #288: Check def-use dominance rules for OpPhi (variable,parent) operands
    #340: Avoid race on mkdir during build
