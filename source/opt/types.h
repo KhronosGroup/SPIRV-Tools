@@ -162,6 +162,7 @@ class Vector : public Type {
   bool IsSame(Type* that) const override;
   std::string str() const override;
   const Type* element_type() const { return element_type_; }
+  uint32_t element_count() const { return count_; }
 
   Vector* AsVector() override { return this; }
   const Vector* AsVector() const override { return this; }
@@ -179,6 +180,7 @@ class Matrix : public Type {
   bool IsSame(Type* that) const override;
   std::string str() const override;
   const Type* element_type() const { return element_type_; }
+  uint32_t element_count() const { return count_; }
 
   Matrix* AsMatrix() override { return this; }
   const Matrix* AsMatrix() const override { return this; }

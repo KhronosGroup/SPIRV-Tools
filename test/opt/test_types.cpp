@@ -240,4 +240,21 @@ TEST(Types, FloatWidth) {
   }
 }
 
+TEST(Types, VectorElementCount) {
+  auto s32 = std::unique_ptr<Integer>(new Integer(32, true));
+  for (uint32_t c : {2, 3, 4}) {
+    auto s32v = std::unique_ptr<Vector>(new Vector(s32.get(), c));
+    EXPECT_EQ(c, s32v->element_count());
+  }
+}
+
+TEST(Types, MatrixElementCount) {
+  auto s32 = std::unique_ptr<Integer>(new Integer(32, true));
+  auto s32v4 = std::unique_ptr<Vector>(new Vector(s32.get(), 4));
+  for (uint32_t c : {1, 2, 3, 4, 10, 100}) {
+    auto s32m = std::unique_ptr<Matrix>(new Matrix(s32v4.get(), c));
+    EXPECT_EQ(c, s32m->element_count());
+  }
+}
+
 }  // anonymous namespace
