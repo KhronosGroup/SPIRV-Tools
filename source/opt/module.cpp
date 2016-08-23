@@ -25,6 +25,10 @@
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 #include "module.h"
+
+#include <algorithm>
+
+#include "operand.h"
 #include "reflect.h"
 
 namespace spvtools {
@@ -115,6 +119,23 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
     if (!skip_nop || !i->IsNop()) i->ToBinaryWithoutAttachedDebugInsts(binary);
   };
   ForEachInst(write_inst, true);
+}
+
+uint32_t Module::ComputeIdBound() const {
+  uint32_t highest = 0;
+
+  ForEachInst(
+      [&highest](const Instruction* inst) {
+        // Use a const-cast just to access begin() and end() for the range-for.
+        for (const auto& operand : *const_cast<Instruction*>(inst)) {
+          if (spvIsIdType(operand.type)) {
+            highest = std::max(highest, operand.words[0]);
+          }
+        }
+      },
+      true /* scan debug line insts as well */);
+
+  return highest + 1;
 }
 
 }  // namespace ir

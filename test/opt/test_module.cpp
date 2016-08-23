@@ -26,13 +26,16 @@
 
 #include <vector>
 
-#include "opt/module.h"
-
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+#include "opt/libspirv.hpp"
+#include "opt/module.h"
 
 namespace {
 
 using spvtools::ir::Module;
+using ::testing::Eq;
 
 uint32_t GetIdBound(const Module& m) {
   std::vector<uint32_t> binary;
@@ -55,4 +58,33 @@ TEST(ModuleTest, SetIdBound) {
   EXPECT_EQ(102u, GetIdBound(m));
 }
 
+// Returns a module formed by assembling the given text,
+// then loading the result.
+std::unique_ptr<Module> BuildModule(std::string text) {
+  spvtools::SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  return t.BuildModule(text);
+}
+
+TEST(ModuleTest, ComputeIdBound) {
+  // Emtpy module case.
+  EXPECT_EQ(1u, BuildModule("")->ComputeIdBound());
+  // Sensitive to result id
+  EXPECT_EQ(2u, BuildModule("%void = OpTypeVoid")->ComputeIdBound());
+  // Sensitive to type id
+  EXPECT_EQ(1000u, BuildModule("%a = OpTypeArray !999 3")->ComputeIdBound());
+  // Sensitive to a regular Id parameter
+  EXPECT_EQ(2000u, BuildModule("OpDecorate !1999 0")->ComputeIdBound());
+  // Sensitive to a scope Id parameter.
+  EXPECT_EQ(3000u,
+            BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
+                        "OpMemoryBarrier !2999 %b\n")
+                ->ComputeIdBound());
+  // Sensitive to a semantics Id parameter
+  EXPECT_EQ(4000u,
+            BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
+                        "OpMemoryBarrier %b !3999\n")
+                ->ComputeIdBound());
+}
+
 }  // anonymous namespace
+

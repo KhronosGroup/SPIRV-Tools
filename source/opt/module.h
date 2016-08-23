@@ -133,6 +133,9 @@ class Module {
   // If |skip_nop| is true and this is a OpNop, do nothing.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
 
+  // Returns 1 more than the maximum Id value mentioned in the module.
+  uint32_t ComputeIdBound() const;
+
  private:
   ModuleHeader header_;  // Module header
 
