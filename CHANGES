@@ -10,6 +10,8 @@ v2016.3-dev 2016-08-11
  - Fixes issues:
    #288: Check def-use dominance rules for OpPhi (variable,parent) operands
    #340: Avoid race on mkdir during build
+   #365: Relax ClipDistance, CullDistance capability check in all environments
+     not just Vulkan 1.0.
 
 v2016.2 2016-08-05
  - Validator is incomplete
