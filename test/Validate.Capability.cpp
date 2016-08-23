@@ -117,6 +117,8 @@ using ValidateCapabilityV11 = spvtest::ValidateBase<CapTestParameter>;
 // Always assembles using Vulkan 1.0.
 // TODO(dneto): Refactor all these tests to scale better across environments.
 using ValidateCapabilityVulkan10 = spvtest::ValidateBase<CapTestParameter>;
+// Always assembles using OpenGL 4.0.
+using ValidateCapabilityOpenGL40 = spvtest::ValidateBase<CapTestParameter>;
 
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
@@ -928,12 +930,15 @@ make_pair(string(kOpenCLMemoryModel) +
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn PointSize\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
+// Just mentioning ClipDistance or CullDistance as a BuiltIn does
+// not trigger the requirement for the associated capability.
+// See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn ClipDistance\n"
-          "%intt = OpTypeInt 32 1\n", vector<string>{"ClipDistance"}),
+          "%intt = OpTypeInt 32 1\n", AllCapabilities()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn CullDistance\n"
-          "%intt = OpTypeInt 32 1\n", vector<string>{"CullDistance"}),
+          "%intt = OpTypeInt 32 1\n", AllCapabilities()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn VertexId\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
@@ -1053,13 +1058,26 @@ make_pair(string(kOpenCLMemoryModel) +
           "%intt = OpTypeInt 32 1\n", ShaderDependencies())
 )),);
 
-// There's disagreement about whether mere mention of ClipDistance and
-// CullDistance implies a requirement to declare their associated capabilities.
-// Until the dust settles, turn off those checks.
-// See https://github.com/KhronosGroup/SPIRV-Tools/issues/261
+// Ensure that mere mention of ClipDistance and CullDistance as
+// BuiltIns does not trigger the requirement for the associated
+// capability.
+// See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityVulkan10,
                         Combine(
                             // Vulkan 1.0 is based on SPIR-V 1.0
+                            ValuesIn(AllV10Capabilities()),
+                            Values(
+make_pair(string(kGLSL450MemoryModel) +
+          "OpDecorate %intt BuiltIn ClipDistance\n"
+          "%intt = OpTypeInt 32 1\n", AllV10Capabilities()),
+make_pair(string(kGLSL450MemoryModel) +
+          "OpDecorate %intt BuiltIn CullDistance\n"
+          "%intt = OpTypeInt 32 1\n", AllV10Capabilities())
+)),);
+
+INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityOpenGL40,
+                        Combine(
+                            // OpenGL 4.0 is based on SPIR-V 1.0
                             ValuesIn(AllV10Capabilities()),
                             Values(
 make_pair(string(kGLSL450MemoryModel) +
@@ -1168,10 +1186,17 @@ TEST_P(ValidateCapabilityV11, Capability) {
 
 TEST_P(ValidateCapabilityVulkan10, Capability) {
   const string test_code = MakeAssembly(GetParam());
-  std::cout << test_code << std::endl;
   CompileSuccessfully(test_code, SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(ExpectedResult(GetParam()),
             ValidateInstructions(SPV_ENV_VULKAN_1_0))
+      << test_code;
+}
+
+TEST_P(ValidateCapabilityOpenGL40, Capability) {
+  const string test_code = MakeAssembly(GetParam());
+  CompileSuccessfully(test_code, SPV_ENV_OPENGL_4_0);
+  ASSERT_EQ(ExpectedResult(GetParam()),
+            ValidateInstructions(SPV_ENV_OPENGL_4_0))
       << test_code;
 }
 
