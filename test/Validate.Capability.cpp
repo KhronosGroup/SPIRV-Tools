@@ -927,12 +927,12 @@ INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapability,
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn Position\n"
           "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
-make_pair(string(kOpenCLMemoryModel) +
-          "OpDecorate %intt BuiltIn PointSize\n"
-          "%intt = OpTypeInt 32 1\n", ShaderDependencies()),
-// Just mentioning ClipDistance or CullDistance as a BuiltIn does
+// Just mentioning PointSize, ClipDistance, or CullDistance as a BuiltIn does
 // not trigger the requirement for the associated capability.
 // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
+make_pair(string(kOpenCLMemoryModel) +
+          "OpDecorate %intt BuiltIn PointSize\n"
+          "%intt = OpTypeInt 32 1\n", AllCapabilities()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpDecorate %intt BuiltIn ClipDistance\n"
           "%intt = OpTypeInt 32 1\n", AllCapabilities()),
@@ -1058,7 +1058,7 @@ make_pair(string(kOpenCLMemoryModel) +
           "%intt = OpTypeInt 32 1\n", ShaderDependencies())
 )),);
 
-// Ensure that mere mention of ClipDistance and CullDistance as
+// Ensure that mere mention of PointSize, ClipDistance, or CullDistance as
 // BuiltIns does not trigger the requirement for the associated
 // capability.
 // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
@@ -1067,6 +1067,9 @@ INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityVulkan10,
                             // Vulkan 1.0 is based on SPIR-V 1.0
                             ValuesIn(AllV10Capabilities()),
                             Values(
+make_pair(string(kGLSL450MemoryModel) +
+          "OpDecorate %intt BuiltIn PointSize\n"
+          "%intt = OpTypeInt 32 1\n", AllV10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpDecorate %intt BuiltIn ClipDistance\n"
           "%intt = OpTypeInt 32 1\n", AllV10Capabilities()),
@@ -1080,6 +1083,9 @@ INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityOpenGL40,
                             // OpenGL 4.0 is based on SPIR-V 1.0
                             ValuesIn(AllV10Capabilities()),
                             Values(
+make_pair(string(kGLSL450MemoryModel) +
+          "OpDecorate %intt BuiltIn PointSize\n"
+          "%intt = OpTypeInt 32 1\n", AllV10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpDecorate %intt BuiltIn ClipDistance\n"
           "%intt = OpTypeInt 32 1\n", AllV10Capabilities()),

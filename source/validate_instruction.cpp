@@ -80,14 +80,21 @@ spv_capability_mask_t RequiredCapabilities(const AssemblyGrammar& grammar,
   if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc)) {
     result = operand_desc->capabilities;
 
-    // Mere mention of ClipDistance and CullDistance in a Builtin decoration
-    // does not require the associated capability.  The use of such a variable
-    // value should trigger the capability requirement, but that's not
-    // implemented yet.  This rule is independent of target environment.
+    // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
+    // decoration does not require the associated capability.  The use of such
+    // a variable value should trigger the capability requirement, but that's
+    // not implemented yet.  This rule is independent of target environment.
     // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
     if (type == SPV_OPERAND_TYPE_BUILT_IN) {
-      result = result & (~(SPV_CAPABILITY_AS_MASK(SpvCapabilityClipDistance) |
-                           SPV_CAPABILITY_AS_MASK(SpvCapabilityCullDistance)));
+      switch (operand) {
+        case SpvBuiltInPointSize:
+        case SpvBuiltInClipDistance:
+        case SpvBuiltInCullDistance:
+          result = 0;
+          break;
+        default:
+          break;
+      }
     }
   }
 
