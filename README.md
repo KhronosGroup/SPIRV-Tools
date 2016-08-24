@@ -40,7 +40,7 @@ version.  An API call reports the software version as a C-style string.
 
 ### Assembler, binary parser, and disassembler
 
-* Based on SPIR-V version 1.1 Rev 2
+* Based on SPIR-V version 1.1 Rev 3
 * Support for extended instruction sets:
   * GLSL std450 version 1.0 Rev 3
   * OpenCL version 1.0 Rev 2
