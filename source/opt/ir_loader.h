@@ -60,8 +60,9 @@ class IrLoader {
   // returning.
   void AddInstruction(const spv_parsed_instruction_t* inst);
   // Finalizes the module construction. This must be called after the module
-  // header has been set and all instructions have been added.
-  // Resolves internal bookkeeping.
+  // header has been set and all instructions have been added.  This is
+  // forgiving in the case of a missing terminator instruction on a basic block,
+  // or a missing OpFunctionEnd.  Resolves internal bookkeeping.
   void EndModule();
 
  private:

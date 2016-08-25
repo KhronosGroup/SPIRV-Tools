@@ -31,16 +31,17 @@ namespace ir {
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f,
                            bool run_on_debug_line_insts) {
-  def_inst_->ForEachInst(f, run_on_debug_line_insts);
+  if (def_inst_) def_inst_->ForEachInst(f, run_on_debug_line_insts);
   for (auto& param : params_) param->ForEachInst(f, run_on_debug_line_insts);
   for (auto& bb : blocks_) bb->ForEachInst(f, run_on_debug_line_insts);
-  end_inst_->ForEachInst(f, run_on_debug_line_insts);
+  if (end_inst_) end_inst_->ForEachInst(f, run_on_debug_line_insts);
 }
 
 void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
                            bool run_on_debug_line_insts) const {
-  static_cast<const Instruction*>(def_inst_.get())
-      ->ForEachInst(f, run_on_debug_line_insts);
+  if (def_inst_)
+    static_cast<const Instruction*>(def_inst_.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
 
   for (const auto& param : params_)
     static_cast<const Instruction*>(param.get())
@@ -50,8 +51,9 @@ void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
     static_cast<const BasicBlock*>(bb.get())->ForEachInst(
         f, run_on_debug_line_insts);
 
-  static_cast<const Instruction*>(end_inst_.get())
-      ->ForEachInst(f, run_on_debug_line_insts);
+  if (end_inst_)
+    static_cast<const Instruction*>(end_inst_.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
 }
 
 }  // namespace ir

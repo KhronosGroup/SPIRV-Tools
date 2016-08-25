@@ -87,15 +87,16 @@ inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
 
 inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
                                     bool run_on_debug_line_insts) {
-  label_->ForEachInst(f, run_on_debug_line_insts);
+  if (label_) label_->ForEachInst(f, run_on_debug_line_insts);
   for (auto& inst : insts_) inst->ForEachInst(f, run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachInst(
     const std::function<void(const Instruction*)>& f,
     bool run_on_debug_line_insts) const {
-  static_cast<const Instruction*>(label_.get())
-      ->ForEachInst(f, run_on_debug_line_insts);
+  if (label_)
+    static_cast<const Instruction*>(label_.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
   for (const auto& inst : insts_)
     static_cast<const Instruction*>(inst.get())
         ->ForEachInst(f, run_on_debug_line_insts);

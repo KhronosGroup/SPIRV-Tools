@@ -106,6 +106,20 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
 // Resolves internal references among the module, functions, basic blocks, etc.
 // This function should be called after adding all instructions.
 void IrLoader::EndModule() {
+  if (block_ && function_) {
+    // We're in the middle of a basic block, but the terminator is missing.
+    // Register the block anyway.  This lets us write tests with less
+    // boilerplate.
+    function_->AddBasicBlock(std::move(block_));
+    block_ = nullptr;
+  }
+  if (function_) {
+    // We're in the middle of a function, but the OpFunctionEnd is missing.
+    // Register the function anyway.  This lets us write tests with less
+    // boilerplate.
+    module_->AddFunction(std::move(function_));
+    function_ = nullptr;
+  }
   for (auto& function : *module_) {
     for (auto& bb : function) bb.SetParent(&function);
     function.SetParent(module_);

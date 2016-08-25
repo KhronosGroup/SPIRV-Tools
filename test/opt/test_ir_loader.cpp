@@ -93,6 +93,17 @@ TEST(IrBuilder, RoundTrip) {
   // clang-format on
 }
 
+TEST(IrBuilder, RoundTripIncompleteBasicBlock) {
+  DoRoundTripCheck(
+      "%2 = OpFunction %1 None %3\n"
+      "%4 = OpLabel\n"
+      "OpNop\n");
+}
+
+TEST(IrBuilder, RoundTripIncompleteFunction) {
+  DoRoundTripCheck("%2 = OpFunction %1 None %3\n");
+}
+
 TEST(IrBuilder, KeepLineDebugInfo) {
   // #version 310 es
   // void main() {}
