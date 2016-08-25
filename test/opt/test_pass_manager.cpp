@@ -24,12 +24,17 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "pass_fixture.h"
+#include "gmock/gmock.h"
+
+#include "module_utils.h"
 #include "opt/make_unique.h"
+#include "pass_fixture.h"
 
 namespace {
 
 using namespace spvtools;
+using spvtest::GetIdBound;
+using ::testing::Eq;
 
 TEST(PassManager, Interface) {
   opt::PassManager manager;
@@ -89,6 +94,52 @@ TEST_F(PassManagerTest, Run) {
   AddPass<DuplicateInstPass>();
   AddPass<AppendOpNopPass>();
   RunAndCheck(text.c_str(), (text + "OpSource ESSL 310\nOpNop\n").c_str());
+}
+
+// A pass that appends an OpTypeVoid instruction that uses a given id.
+class AppendTypeVoidInstPass : public opt::Pass {
+ public:
+  AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
+  const char* name() const override { return "AppendTypeVoidInstPass"; }
+  bool Process(ir::Module* module) override {
+    auto inst = MakeUnique<ir::Instruction>(SpvOpTypeVoid, 0, result_id_,
+                                            std::vector<ir::Operand>{});
+    module->AddType(std::move(inst));
+    return true;
+  }
+
+ private:
+  uint32_t result_id_;
+};
+
+TEST(PassManager, RecomputeIdBoundAutomatically) {
+  ir::Module module;
+  EXPECT_THAT(GetIdBound(module), Eq(0u));
+
+  opt::PassManager manager;
+  manager.Run(&module);
+  manager.AddPass<AppendOpNopPass>();
+  // With no ID changes, the ID bound does not change.
+  EXPECT_THAT(GetIdBound(module), Eq(0u));
+
+  // Now we force an Id of 100 to be used.
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(100));
+  EXPECT_THAT(GetIdBound(module), Eq(0u));
+  manager.Run(&module);
+  // The Id has been updated automatically, even though the pass
+  // did not update it.
+  EXPECT_THAT(GetIdBound(module), Eq(101u));
+
+  // Try one more time!
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(200));
+  manager.Run(&module);
+  EXPECT_THAT(GetIdBound(module), Eq(201u));
+
+  // Add another pass, but which uses a lower Id.
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(10));
+  manager.Run(&module);
+  // The Id stays high.
+  EXPECT_THAT(GetIdBound(module), Eq(201u));
 }
 
 }  // anonymous namespace

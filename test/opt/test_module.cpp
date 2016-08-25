@@ -32,19 +32,13 @@
 #include "opt/libspirv.hpp"
 #include "opt/module.h"
 
+#include "module_utils.h"
+
 namespace {
 
 using spvtools::ir::Module;
+using spvtest::GetIdBound;
 using ::testing::Eq;
-
-uint32_t GetIdBound(const Module& m) {
-  std::vector<uint32_t> binary;
-  m.ToBinary(&binary, false);
-  // The 5-word header must always exist.
-  EXPECT_GE(5u, binary.size());
-  // The bound is the fourth word.
-  return binary[3];
-}
 
 TEST(ModuleTest, SetIdBound) {
   Module m;

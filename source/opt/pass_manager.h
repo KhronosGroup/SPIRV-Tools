@@ -65,12 +65,12 @@ class PassManager {
 
   // Runs all passes on the given |module|.
   void Run(ir::Module* module) {
+    bool modified = false;
     for (const auto& pass : passes_) {
-      // TODO(antiagainst): Currently we ignore the return value of the pass,
-      // which indicates whether the module has been modified, since there is
-      // nothing shared between passes right now.
-      pass->Process(module);
+      modified |= pass->Process(module);
     }
+    // Set the Id bound in the header in case a pass forgot to do so.
+    if (modified) module->SetIdBound(module->ComputeIdBound());
   }
 
  private:
