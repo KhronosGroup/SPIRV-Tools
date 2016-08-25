@@ -53,7 +53,7 @@ TEST_P(FreezeSpecConstantValueTypeTest, PrimaryType) {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450",
       test_case.type_decl, test_case.expected_frozen_const};
   SinglePassRunAndCheck<opt::FreezeSpecConstantValuePass>(
-      JoinAllInsts(text), JoinAllInsts(expected));
+      JoinAllInsts(text), JoinAllInsts(expected), /* skip_nop = */ true);
 }
 
 // Test each primary type.

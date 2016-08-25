@@ -49,33 +49,57 @@ bool StripDebugInfoPass::Process(ir::Module* module) {
   return modified;
 }
 
+namespace {
+// Creates and returns the corresponding front-end constant defining
+// instruction for the given instruction if it is a OpSpecConstant,
+// OpSpecConstantTrue or OpSpecConstantFalse instruction. Otherwise returns
+// nullptr.
+std::unique_ptr<ir::Instruction> CreateFrontEndConstantFromSpecConstant(
+    ir::Instruction* spec_inst) {
+  SpvOp opcode = SpvOp::SpvOpNop;
+  switch (spec_inst->opcode()) {
+    case SpvOp::SpvOpSpecConstant:
+      opcode = SpvOp::SpvOpConstant;
+      break;
+    case SpvOp::SpvOpSpecConstantTrue:
+      opcode = SpvOp::SpvOpConstantTrue;
+      break;
+    case SpvOp::SpvOpSpecConstantFalse:
+      opcode = SpvOp::SpvOpConstantFalse;
+      break;
+    default:
+      return nullptr;
+  }
+  std::vector<ir::Operand> in_operands;
+  in_operands.reserve(spec_inst->NumInOperands());
+  for (uint32_t i = 0; i < spec_inst->NumInOperands(); i++) {
+    in_operands.emplace_back(spec_inst->GetInOperand(i));
+  }
+  return std::unique_ptr<ir::Instruction>(
+      new ir::Instruction(opcode, spec_inst->type_id(), spec_inst->result_id(),
+                          std::move(in_operands)));
+}
+} // anonymous namespace
+
 bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
   bool modified = false;
-  module->ForEachInst([&modified](ir::Instruction* inst) {
-    switch (inst->opcode()) {
-      case SpvOp::SpvOpSpecConstant:
-        inst->SetOpcode(SpvOp::SpvOpConstant);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantTrue:
-        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantFalse:
-        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
-        modified = true;
-        break;
-      case SpvOp::SpvOpDecorate:
-        if (inst->GetSingleWordInOperand(1) ==
-            SpvDecoration::SpvDecorationSpecId) {
-          inst->ToNop();
-          modified = true;
-        }
-        break;
-      default:
-        break;
+  ir::Module::inst_iterator inst_iter = module->types_values_begin();
+  while (inst_iter != module->types_values_end()) {
+    ir::Instruction* inst = &*inst_iter;
+    if (auto new_inst = CreateFrontEndConstantFromSpecConstant(inst)) {
+      inst_iter = inst_iter.InsertBefore(std::move(new_inst));
+      inst->ToNop();
+      inst_iter++;
+      modified = true;
     }
-  });
+    inst_iter++;
+  }
+  for (auto& inst : module->annotations()) {
+    if (inst.GetSingleWordInOperand(1) == SpvDecoration::SpvDecorationSpecId) {
+      inst.ToNop();
+      modified = true;
+    }
+  }
   return modified;
 }
 
