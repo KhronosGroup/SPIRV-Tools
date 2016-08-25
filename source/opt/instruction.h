@@ -79,6 +79,7 @@ struct Operand {
 // needs to change, the user should create a new instruction instead.
 class Instruction {
  public:
+  using iterator = std::vector<Operand>::iterator;
   using const_iterator = std::vector<Operand>::const_iterator;
 
   // Creates a default OpNop instruction.
@@ -119,6 +120,9 @@ class Instruction {
     return dbg_line_insts_;
   }
 
+  // Begin and end iterators for operands.
+  iterator begin() { return operands_.begin(); }
+  iterator end() { return operands_.end(); }
   // Const begin and end iterators for operands.
   const_iterator cbegin() const { return operands_.cbegin(); }
   const_iterator cend() const { return operands_.cend(); }
