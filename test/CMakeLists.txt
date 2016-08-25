@@ -59,6 +59,7 @@ function(add_spvtools_unittest)
       target_compile_options(${ARG_TARGET} PRIVATE /wd4503)
     endif()
     target_include_directories(${ARG_TARGET} PRIVATE
+      ${spirv-tools_SOURCE_DIR}/test
       ${spirv-tools_SOURCE_DIR}
       ${spirv-tools_SOURCE_DIR}/include
       ${SPIRV_HEADER_INCLUDE_DIR}

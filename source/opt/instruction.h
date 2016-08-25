@@ -79,6 +79,8 @@ struct Operand {
 // needs to change, the user should create a new instruction instead.
 class Instruction {
  public:
+  using const_iterator = std::vector<Operand>::const_iterator;
+
   // Creates a default OpNop instruction.
   Instruction() : opcode_(SpvOpNop), type_id_(0), result_id_(0) {}
   // Creates an instruction with the given opcode |op| and no additional logical
@@ -116,6 +118,10 @@ class Instruction {
   const std::vector<Instruction>& dbg_line_insts() const {
     return dbg_line_insts_;
   }
+
+  // Const begin and end iterators for operands.
+  const_iterator cbegin() const { return operands_.cbegin(); }
+  const_iterator cend() const { return operands_.cend(); }
 
   // Gets the number of logical operands.
   uint32_t NumOperands() const {

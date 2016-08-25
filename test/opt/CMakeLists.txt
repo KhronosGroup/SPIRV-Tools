@@ -24,6 +24,11 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+add_spvtools_unittest(TARGET instruction
+  SRCS test_instruction.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET ir_loader
   SRCS test_ir_loader.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
