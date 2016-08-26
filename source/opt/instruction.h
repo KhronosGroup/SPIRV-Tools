@@ -123,6 +123,8 @@ class Instruction {
   // Begin and end iterators for operands.
   iterator begin() { return operands_.begin(); }
   iterator end() { return operands_.end(); }
+  const_iterator begin() const { return operands_.cbegin(); }
+  const_iterator end() const { return operands_.cend(); }
   // Const begin and end iterators for operands.
   const_iterator cbegin() const { return operands_.cbegin(); }
   const_iterator cend() const { return operands_.cend(); }

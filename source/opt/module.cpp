@@ -126,8 +126,7 @@ uint32_t Module::ComputeIdBound() const {
 
   ForEachInst(
       [&highest](const Instruction* inst) {
-        // Use a const-cast just to access begin() and end() for the range-for.
-        for (const auto& operand : *const_cast<Instruction*>(inst)) {
+        for (const auto& operand : *inst) {
           if (spvIsIdType(operand.type)) {
             highest = std::max(highest, operand.words[0]);
           }
