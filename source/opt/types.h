@@ -84,6 +84,11 @@ class Type {
   // Returns a human-readable string to represent this type.
   virtual std::string str() const = 0;
 
+  // Returns true if there is no decoration on this type. For struct types,
+  // returns true only when there is no decoration for both the struct type
+  // and the struct members.
+  virtual bool decoration_empty() const { return decorations_.empty(); }
+
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
 #define DeclareCastMethod(target)                  \
@@ -271,6 +276,9 @@ class Struct : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  bool decoration_empty() const override {
+    return decorations_.empty() && element_decorations_.empty();
+  }
 
   Struct* AsStruct() override { return this; }
   const Struct* AsStruct() const override { return this; }
