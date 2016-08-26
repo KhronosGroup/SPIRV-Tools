@@ -91,6 +91,19 @@ TEST(InstructionTest, CreateWithOpcodeAndOperands) {
   EXPECT_EQ(2u, inst.NumInOperandWords());
 }
 
+TEST(InstructionTest, GetOperand) {
+  Instruction inst(kSampleParsedInstruction);
+  EXPECT_THAT(inst.GetOperand(0).words, Eq(std::vector<uint32_t>{44}));
+  EXPECT_THAT(inst.GetOperand(1).words, Eq(std::vector<uint32_t>{32}));
+  EXPECT_THAT(inst.GetOperand(2).words, Eq(std::vector<uint32_t>{1}));
+}
+
+TEST(InstructionTest, GetInOperand) {
+  Instruction inst(kSampleParsedInstruction);
+  EXPECT_THAT(inst.GetInOperand(0).words, Eq(std::vector<uint32_t>{32}));
+  EXPECT_THAT(inst.GetInOperand(1).words, Eq(std::vector<uint32_t>{1}));
+}
+
 TEST(InstructionTest, OperandConstIterators) {
   Instruction inst(kSampleParsedInstruction);
   // Spot check iteration across operands.
