@@ -54,7 +54,7 @@ Options:
   --freeze-spec-const
                Freeze the values of specialization constants to their default
                values.
-  --eliminiate-dead-const
+  --eliminate-dead-const
                Eliminate dead constants.
   -h, --help   Print this help.
   --version    Display optimizer version information.
