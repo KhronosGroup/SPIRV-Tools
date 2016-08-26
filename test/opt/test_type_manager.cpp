@@ -207,4 +207,35 @@ TEST(Struct, DecorationOnMember) {
   }
 }
 
+TEST(Types, DecorationEmpty) {
+  const std::string text = R"(
+    OpDecorate %struct1 Block
+    OpMemberDecorate %struct2  0 Offset 0
+
+    %u32 = OpTypeInt 32 0 ; id: 3
+    %f32 = OpTypeFloat 32 ; id: 4
+    %struct1  = OpTypeStruct %u32 %f32
+    %struct2  = OpTypeStruct %f32 %u32
+    %struct5  = OpTypeStruct %f32
+  )";
+  std::unique_ptr<ir::Module> module =
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
+  opt::analysis::TypeManager manager(*module);
+
+  ASSERT_EQ(5u, manager.NumTypes());
+  ASSERT_EQ(0u, manager.NumForwardPointers());
+  // Make sure we get ids correct.
+  ASSERT_EQ("uint32", manager.GetType(3)->str());
+  ASSERT_EQ("float32", manager.GetType(4)->str());
+
+  // %struct1 with decoration on itself
+  EXPECT_FALSE(manager.GetType(1)->decoration_empty());
+  // %struct2 with decoration on its member
+  EXPECT_FALSE(manager.GetType(2)->decoration_empty());
+  EXPECT_TRUE(manager.GetType(3)->decoration_empty());
+  EXPECT_TRUE(manager.GetType(4)->decoration_empty());
+  // %struct5 has no decorations
+  EXPECT_TRUE(manager.GetType(5)->decoration_empty());
+}
+
 }  // anonymous namespace
