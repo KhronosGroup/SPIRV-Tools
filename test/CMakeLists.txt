@@ -84,6 +84,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/BinaryParse.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/BinaryToText.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/BinaryToText.Literal.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CapabilitySet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Comment.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/DiagnosticDestroy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/DiagnosticPrint.cpp

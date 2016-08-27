@@ -30,9 +30,11 @@
 #include <stdint.h>
 
 #include <iomanip>
+#include <vector>
 
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
+#include "source/capability_set.h"
 #include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/spirv_endian.h"
@@ -222,6 +224,14 @@ inline std::vector<spv_target_env> AllTargetEnvironments() {
           SPV_ENV_OPENCL_2_2,    SPV_ENV_VULKAN_1_0,    SPV_ENV_OPENGL_4_0,
           SPV_ENV_OPENGL_4_1,    SPV_ENV_OPENGL_4_2,    SPV_ENV_OPENGL_4_3,
           SPV_ENV_OPENGL_4_5};
+}
+
+// Returns the capabilities in a CapabilitySet as an ordered vector.
+inline std::vector<SpvCapability> ElementsIn(
+    const libspirv::CapabilitySet& capabilities) {
+  std::vector<SpvCapability> result;
+  capabilities.ForEach([&result](SpvCapability c) { result.push_back(c); });
+  return result;
 }
 
 }  // namespace spvtest
