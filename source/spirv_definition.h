@@ -33,27 +33,6 @@
 
 #define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 
-// A bit mask representing a set of capabilities.
-// Currently there are 60 distinct capabilities, so 64 bits
-// should be enough.
-typedef uint64_t spv_capability_mask_t;
-
-// Transforms spv::Capability into a mask for use in bitfields.  Should really
-// be a constexpr inline function, but some important versions of MSVC don't
-// support that yet.  Different from SPV_BIT, which doesn't guarantee 64-bit
-// values.
-#define SPV_CAPABILITY_AS_MASK(capability) \
-  (spv_capability_mask_t(1) << (capability))
-
-// Applies f to every capability present in a mask.
-namespace libspirv {
-template <typename Functor>
-inline void ForEach(spv_capability_mask_t capabilities, Functor f) {
-  for (int c = 0; capabilities; ++c, capabilities >>= 1)
-    if (capabilities & 1) f(static_cast<SpvCapability>(c));
-}
-}  // end namespace libspirv
-
 typedef struct spv_header_t {
   uint32_t magic;
   uint32_t version;

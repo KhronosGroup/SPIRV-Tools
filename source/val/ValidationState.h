@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "assembly_grammar.h"
+#include "capability_set.h"
 #include "diagnostic.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
@@ -139,11 +140,13 @@ class ValidationState_t {
   spv_result_t RegisterFunctionEnd();
 
   /// Returns true if the capability is enabled in the module.
-  bool has_capability(SpvCapability cap) const;
+  bool HasCapability(SpvCapability cap) const {
+    return module_capabilities_.Contains(cap);
+  }
 
-  /// Returns true if any of the capabilities are enabled.  Always true for
-  /// capabilities==0.
-  bool HasAnyOf(spv_capability_mask_t capabilities) const;
+  /// Returns true if any of the capabilities are enabled, or if the given
+  /// capabilities is the empty set.
+  bool HasAnyOf(const libspirv::CapabilitySet& capabilities) const;
 
   /// Sets the addressing model of this module (logical/physical).
   void set_addressing_model(SpvAddressingModel am);
@@ -199,9 +202,8 @@ class ValidationState_t {
   /// A list of functions in the module
   std::deque<Function> module_functions_;
 
-  /// Mask of the capabilities available in the module
-  spv_capability_mask_t
-      module_capabilities_;  /// Module's declared capabilities.
+  /// The capabilities available in the module
+  libspirv::CapabilitySet module_capabilities_;  /// Module's declared capabilities.
 
   /// List of all instructions in the order they appear in the binary
   std::deque<Instruction> ordered_instructions_;

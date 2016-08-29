@@ -28,22 +28,28 @@
 
 #include <tuple>
 
+#include "gmock/gmock.h"
+
+#include "capability_set.h"
 #include "UnitSPIRV.h"
 
 namespace {
 
+using libspirv::CapabilitySet;
+using spvtest::ElementsIn;
+using std::get;
+using std::tuple;
 using ::testing::Combine;
+using ::testing::Eq;
 using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
-using std::get;
-using std::tuple;
 
 // A test case for mapping an enum to a capability mask.
 struct EnumCapabilityCase {
   spv_operand_type_t type;
   uint32_t value;
-  uint64_t expected_mask;
+  CapabilitySet expected_capabilities;
 };
 
 // Test fixture for testing EnumCapabilityCases.
@@ -57,21 +63,25 @@ TEST_P(EnumCapabilityTest, Sample) {
   ASSERT_EQ(SPV_SUCCESS,
             spvOperandTableValueLookup(operandTable, get<1>(GetParam()).type,
                                        get<1>(GetParam()).value, &entry));
-  EXPECT_EQ(get<1>(GetParam()).expected_mask, entry->capabilities);
+  EXPECT_THAT(ElementsIn(entry->capabilities),
+              Eq(ElementsIn(get<1>(GetParam()).expected_capabilities)));
 }
 
-#define CASE0(TYPE, VALUE) \
-  { SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), 0 }
-#define CASE1(TYPE, VALUE, CAP)                    \
-  {                                                \
-    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), \
-        SPV_CAPABILITY_AS_MASK(SpvCapability##CAP) \
+#define CASE0(TYPE, VALUE)                            \
+  {                                                   \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), {} \
   }
-#define CASE2(TYPE, VALUE, CAP1, CAP2)                 \
-  {                                                    \
-    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE),     \
-        (SPV_CAPABILITY_AS_MASK(SpvCapability##CAP1) | \
-         SPV_CAPABILITY_AS_MASK(SpvCapability##CAP2))  \
+#define CASE1(TYPE, VALUE, CAP)                                    \
+  {                                                                \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), CapabilitySet { \
+      SpvCapability##CAP                                           \
+    }                                                              \
+  }
+#define CASE2(TYPE, VALUE, CAP1, CAP2)                             \
+  {                                                                \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), CapabilitySet { \
+      SpvCapability##CAP1, SpvCapability##CAP2                     \
+    }                                                              \
   }
 
 // See SPIR-V Section 3.3 Execution Model
@@ -456,13 +466,13 @@ INSTANTIATE_TEST_CASE_P(
                 CASE1(DECORATION, DecorationAlignment, Kernel),
             })), );
 
+#if 0
 // SpecId has different requirements in v1.0 and v1.1:
-INSTANTIATE_TEST_CASE_P(
-    DecorationSpecIdV10, EnumCapabilityTest,
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0),
-            Values(EnumCapabilityCase{
-                SPV_OPERAND_TYPE_DECORATION, uint32_t(SpvDecorationSpecId),
-                SPV_CAPABILITY_AS_MASK(SpvCapabilityShader)})));
+INSTANTIATE_TEST_CASE_P(DecorationSpecIdV10, EnumCapabilityTest,
+                        Combine(Values(SPV_ENV_UNIVERSAL_1_0),
+                                ValuesIn(std::vector<EnumCapabilityCase>{CASE1(
+                                    DECORATION, DecorationSpecId, Shader)})), );
+#endif
 
 INSTANTIATE_TEST_CASE_P(
     DecorationV11, EnumCapabilityTest,

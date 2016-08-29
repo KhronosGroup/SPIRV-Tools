@@ -321,26 +321,28 @@ bool ValidationState_t::in_block() const {
 }
 
 void ValidationState_t::RegisterCapability(SpvCapability cap) {
-  module_capabilities_ |= SPV_CAPABILITY_AS_MASK(cap);
+  // Avoid redundant work.  Otherwise the recursion could induce work
+  // quadrdatic in the capability dependency depth. (Ok, not much, but
+  // it's something.)
+  if (module_capabilities_.Contains(cap)) return;
+
+  module_capabilities_.Add(cap);
   spv_operand_desc desc;
   if (SPV_SUCCESS ==
-      grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
-    libspirv::ForEach(desc->capabilities,
-                      [this](SpvCapability c) { RegisterCapability(c); });
+      grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc)) {
+    desc->capabilities.ForEach(
+        [this](SpvCapability c) { RegisterCapability(c); });
+  }
 }
 
-bool ValidationState_t::has_capability(SpvCapability cap) const {
-  return (module_capabilities_ & SPV_CAPABILITY_AS_MASK(cap)) != 0;
-}
-
-bool ValidationState_t::HasAnyOf(spv_capability_mask_t capabilities) const {
-  if (!capabilities)
-    return true;  // No capabilities requested: trivially satisfied.
+bool ValidationState_t::HasAnyOf(const CapabilitySet& capabilities) const {
   bool found = false;
-  libspirv::ForEach(capabilities, [&found, this](SpvCapability c) {
-    found |= has_capability(c);
+  bool any_queried = false;
+  capabilities.ForEach([&found, &any_queried, this](SpvCapability c) {
+    any_queried = true;
+    found = found || this->module_capabilities_.Contains(c);
   });
-  return found;
+  return !any_queried || found;
 }
 
 void ValidationState_t::set_addressing_model(SpvAddressingModel am) {

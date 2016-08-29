@@ -58,10 +58,6 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                        const SpvOp opcode,
                                        spv_opcode_desc* entry);
 
-// Determines if the opcode has capability requirements. Returns zero if false,
-// non-zero otherwise. This function does not check if the given entry is valid.
-int32_t spvOpcodeRequiresCapabilities(spv_opcode_desc opcode);
-
 // Copies an instruction's word and fixes the endianness to host native. The
 // source instruction's stream/opcode/endianness is in the words/opcode/endian
 // parameter. The word_count parameter specifies the number of words to copy.

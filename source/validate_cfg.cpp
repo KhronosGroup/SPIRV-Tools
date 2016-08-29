@@ -467,7 +467,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     }
 
     /// Structured control flow checks are only required for shader capabilities
-    if (_.has_capability(SpvCapabilityShader)) {
+    if (_.HasCapability(SpvCapabilityShader)) {
       spvCheckReturn(StructuredControlFlowChecks(_, function, back_edges));
     }
   }

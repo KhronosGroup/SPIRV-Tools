@@ -33,11 +33,14 @@
 
 #include "gtest/gtest.h"
 #include "spirv/1.1/spirv.h"
+
+#include "capability_set.h"
 #include "val/Construct.h"
 #include "val/Function.h"
 #include "validate.h"
 
 namespace {
+using libspirv::CapabilitySet;
 using libspirv::ValidationState_t;
 using std::vector;
 
@@ -55,51 +58,45 @@ class ValidationStateTest : public testing::Test {
 };
 
 // A test of ValidationState_t::HasAnyOf().
-class ValidationState_HasAnyOfTest : public ValidationStateTest {
- protected:
-  spv_capability_mask_t mask(const vector<SpvCapability>& capabilities) {
-    spv_capability_mask_t m = 0;
-    for (auto c : capabilities) m |= SPV_CAPABILITY_AS_MASK(c);
-    return m;
-  }
-};
+using ValidationState_HasAnyOfTest = ValidationStateTest;
 
 TEST_F(ValidationState_HasAnyOfTest, EmptyMask) {
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityMatrix);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityImageMipmap);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityPipes);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityStorageImageArrayDynamicIndexing);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityClipDistance);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
   state_.RegisterCapability(SpvCapabilityStorageImageWriteWithoutFormat);
-  EXPECT_TRUE(state_.HasAnyOf(0));
+  EXPECT_TRUE(state_.HasAnyOf({}));
 }
 
 TEST_F(ValidationState_HasAnyOfTest, SingleCapMask) {
-  EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
-  EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
+  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityMatrix}));
+  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
   state_.RegisterCapability(SpvCapabilityMatrix);
-  EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
-  EXPECT_FALSE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
+  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityMatrix}));
+  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
   state_.RegisterCapability(SpvCapabilityImageMipmap);
-  EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityMatrix})));
-  EXPECT_TRUE(state_.HasAnyOf(mask({SpvCapabilityImageMipmap})));
+  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityMatrix}));
+  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
 }
 
 TEST_F(ValidationState_HasAnyOfTest, MultiCapMask) {
-  const auto mask1 = mask({SpvCapabilitySampledRect, SpvCapabilityImageBuffer});
-  const auto mask2 = mask({SpvCapabilityStorageImageWriteWithoutFormat,
-                           SpvCapabilityStorageImageReadWithoutFormat,
-                           SpvCapabilityGeometryStreams});
-  EXPECT_FALSE(state_.HasAnyOf(mask1));
-  EXPECT_FALSE(state_.HasAnyOf(mask2));
+  const auto set1 =
+      CapabilitySet{SpvCapabilitySampledRect, SpvCapabilityImageBuffer};
+  const auto set2 = CapabilitySet{SpvCapabilityStorageImageWriteWithoutFormat,
+                                  SpvCapabilityStorageImageReadWithoutFormat,
+                                  SpvCapabilityGeometryStreams};
+  EXPECT_FALSE(state_.HasAnyOf(set1));
+  EXPECT_FALSE(state_.HasAnyOf(set2));
   state_.RegisterCapability(SpvCapabilityImageBuffer);
-  EXPECT_TRUE(state_.HasAnyOf(mask1));
-  EXPECT_FALSE(state_.HasAnyOf(mask2));
+  EXPECT_TRUE(state_.HasAnyOf(set1));
+  EXPECT_FALSE(state_.HasAnyOf(set2));
 }
 }

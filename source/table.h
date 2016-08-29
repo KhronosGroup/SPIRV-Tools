@@ -27,15 +27,15 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
-#include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
-#include "spirv_definition.h"
+
+#include "capability_set.h"
+#include "spirv-tools/libspirv.h"
 
 typedef struct spv_opcode_desc_t {
   const char* name;
   const SpvOp opcode;
-  const spv_capability_mask_t
-      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  const libspirv::CapabilitySet capabilities;
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
   // The operand types include result id and result-type id, followed by
   // the types of arguments.
@@ -48,8 +48,7 @@ typedef struct spv_opcode_desc_t {
 typedef struct spv_operand_desc_t {
   const char* name;
   const uint32_t value;
-  const spv_capability_mask_t
-      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  const libspirv::CapabilitySet capabilities;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_operand_desc_t;
 
@@ -62,8 +61,7 @@ typedef struct spv_operand_desc_group_t {
 typedef struct spv_ext_inst_desc_t {
   const char* name;
   const uint32_t ext_inst;
-  const spv_capability_mask_t
-      capabilities;  // Bitfield of SPV_CAPABILITY_AS_MASK(spv::Capability)
+  const libspirv::CapabilitySet capabilities;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_ext_inst_desc_t;
 

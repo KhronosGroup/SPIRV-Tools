@@ -33,6 +33,7 @@
 #include <sstream>
 #include <string>
 
+#include "capability_set.h"
 #include "diagnostic.h"
 #include "opcode.h"
 #include "operand.h"
@@ -41,15 +42,16 @@
 #include "val/ValidationState.h"
 
 using libspirv::AssemblyGrammar;
+using libspirv::CapabilitySet;
 using libspirv::DiagnosticStream;
 using libspirv::ValidationState_t;
 
 namespace {
 
-std::string ToString(spv_capability_mask_t mask,
+std::string ToString(const CapabilitySet& capabilities,
                      const AssemblyGrammar& grammar) {
   std::stringstream ss;
-  libspirv::ForEach(mask, [&grammar, &ss](SpvCapability cap) {
+  capabilities.ForEach([&grammar, &ss](SpvCapability cap) {
     spv_operand_desc desc;
     if (SPV_SUCCESS ==
         grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc))
@@ -71,34 +73,30 @@ spv_result_t CapabilityError(ValidationState_t& _, int which_operand,
 }
 
 // Returns an operand's required capabilities.
-spv_capability_mask_t RequiredCapabilities(const AssemblyGrammar& grammar,
-                                           spv_operand_type_t type,
-                                           uint32_t operand) {
-  spv_capability_mask_t result = 0;
-  spv_operand_desc operand_desc;
-
-  if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc)) {
-    result = operand_desc->capabilities;
-
-    // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
-    // decoration does not require the associated capability.  The use of such
-    // a variable value should trigger the capability requirement, but that's
-    // not implemented yet.  This rule is independent of target environment.
-    // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
-    if (type == SPV_OPERAND_TYPE_BUILT_IN) {
-      switch (operand) {
-        case SpvBuiltInPointSize:
-        case SpvBuiltInClipDistance:
-        case SpvBuiltInCullDistance:
-          result = 0;
-          break;
-        default:
-          break;
-      }
+CapabilitySet RequiredCapabilities(const AssemblyGrammar& grammar,
+                                   spv_operand_type_t type, uint32_t operand) {
+  // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
+  // decoration does not require the associated capability.  The use of such
+  // a variable value should trigger the capability requirement, but that's
+  // not implemented yet.  This rule is independent of target environment.
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
+  if (type == SPV_OPERAND_TYPE_BUILT_IN) {
+    switch (operand) {
+      case SpvBuiltInPointSize:
+      case SpvBuiltInClipDistance:
+      case SpvBuiltInCullDistance:
+        return CapabilitySet();
+      default:
+        break;
     }
   }
 
-  return result;
+  spv_operand_desc operand_desc;
+  if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc)) {
+    return operand_desc->capabilities;
+  }
+
+  return CapabilitySet();
 }
 
 }  // namespace
