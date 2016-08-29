@@ -72,6 +72,13 @@ class DefUseManager {
   // Returns the use instructions for the given |id|. If there is no uses of
   // |id|, returns nullptr.
   UseList* GetUses(uint32_t id);
+  const UseList* GetUses(uint32_t id) const;
+  // Returns the annotation instrunctions which are a direct use of the given
+  // |id|. This means when the decorations are applied through decoration
+  // group(s), this function will just return the OpGroupDecorate
+  // instrcution(s) which refer to the given id as an operand. The OpDecorate
+  // instructions which decorate the decoration group will not be returned.
+  std::vector<ir::Instruction*> GetAnnotations(uint32_t id) const;
 
   // Returns the map from ids to their def instructions.
   const IdToDefMap& id_to_defs() const { return id_to_def_; }

@@ -1414,4 +1414,119 @@ INSTANTIATE_TEST_CASE_P(
       }));
 // clang-format on
 
+struct GetAnnotationsTestCase {
+  const char* code;
+  uint32_t id;
+  std::vector<std::string> annotations;
+};
+
+using GetAnnotationsTest = ::testing::TestWithParam<GetAnnotationsTestCase>;
+
+TEST_P(GetAnnotationsTest, Case) {
+  const GetAnnotationsTestCase& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<ir::Module> module =
+      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.code);
+  ASSERT_NE(nullptr, module);
+
+  // Get annotations
+  opt::analysis::DefUseManager manager(module.get());
+  auto insts = manager.GetAnnotations(tc.id);
+
+  // Check
+  ASSERT_EQ(tc.annotations.size(), insts.size())
+      << "wrong number of annotation instructions";
+  auto inst_iter = insts.begin();
+  for (const std::string& expected_anno_inst : tc.annotations) {
+    EXPECT_EQ(expected_anno_inst, DisassembleInst(*inst_iter))
+        << "annotation instruction mismatch";
+    inst_iter++;
+  }
+}
+
+// clang-format off
+INSTANTIATE_TEST_CASE_P(
+    TestCase, GetAnnotationsTest,
+    ::testing::ValuesIn(std::vector<GetAnnotationsTestCase>{
+      // empty
+      {"", 0, {}},
+      // basic
+      {
+        // code
+        "OpDecorate %1 Block "
+        "OpDecorate %1 RelaxedPrecision "
+        "%3 = OpTypeInt 32 0 "
+        "%1 = OpTypeStruct %3",
+        // id
+        1,
+        // annotations
+        {
+          "OpDecorate %1 Block",
+          "OpDecorate %1 RelaxedPrecision",
+        },
+      },
+      // with debug instructions
+      {
+        // code
+        "OpName %1 \"struct_type\" "
+        "OpName %3 \"int_type\" "
+        "OpDecorate %1 Block "
+        "OpDecorate %1 RelaxedPrecision "
+        "%3 = OpTypeInt 32 0 "
+        "%1 = OpTypeStruct %3",
+        // id
+        1,
+        // annotations
+        {
+          "OpDecorate %1 Block",
+          "OpDecorate %1 RelaxedPrecision",
+        },
+      },
+      // no annotations
+      {
+        // code
+        "OpName %1 \"struct_type\" "
+        "OpName %3 \"int_type\" "
+        "OpDecorate %1 Block "
+        "OpDecorate %1 RelaxedPrecision "
+        "%3 = OpTypeInt 32 0 "
+        "%1 = OpTypeStruct %3",
+        // id
+        3,
+        // annotations
+        {},
+      },
+      // decoration group
+      {
+        // code
+        "OpDecorate %1 Block "
+        "OpDecorate %1 RelaxedPrecision "
+        "%1 = OpDecorationGroup "
+        "OpGroupDecorate %1 %2 %3 "
+        "%4 = OpTypeInt 32 0 "
+        "%2 = OpTypeStruct %4 "
+        "%3 = OpTypeStruct %4 %4",
+        // id
+        3,
+        // annotations
+        {
+          "OpGroupDecorate %1 %2 %3",
+        },
+      },
+      // memeber decorate
+      {
+        // code
+        "OpMemberDecorate %1 0 RelaxedPrecision "
+        "%2 = OpTypeInt 32 0 "
+        "%1 = OpTypeStruct %2 %2",
+        // id
+        1,
+        // annotations
+        {
+          "OpMemberDecorate %1 0 RelaxedPrecision",
+        },
+      },
+      }));
+// clang-format on
 }  // anonymous namespace

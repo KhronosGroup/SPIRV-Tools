@@ -31,6 +31,7 @@
 
 #include "instruction.h"
 #include "module.h"
+#include "reflect.h"
 
 namespace spvtools {
 namespace opt {
@@ -83,6 +84,25 @@ UseList* DefUseManager::GetUses(uint32_t id) {
   auto iter = id_to_uses_.find(id);
   if (iter == id_to_uses_.end()) return nullptr;
   return &iter->second;
+}
+
+const UseList* DefUseManager::GetUses(uint32_t id) const {
+  const auto iter = id_to_uses_.find(id);
+  if (iter == id_to_uses_.end()) return nullptr;
+  return &iter->second;
+}
+
+std::vector<ir::Instruction*> DefUseManager::GetAnnotations(
+    uint32_t id) const {
+  std::vector<ir::Instruction*> annos;
+  const auto* uses = GetUses(id);
+  if (!uses)  return annos;
+  for (const auto& c : *uses) {
+    if (ir::IsAnnotationInst(c.inst->opcode())) {
+      annos.push_back(c.inst);
+    }
+  }
+  return annos;
 }
 
 bool DefUseManager::KillDef(uint32_t id) {
