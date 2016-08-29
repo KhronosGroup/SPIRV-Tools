@@ -2,26 +2,33 @@ add_library(SPIRV-Tools-opt
   basic_block.h
   constants.h
   def_use_manager.h
+  eliminate_dead_constant_pass.h
   function.h
+  fold_spec_constant_op_and_composite_pass.h
+  freeze_spec_constant_value_pass.h
   instruction.h
   ir_loader.h
   libspirv.hpp
   module.h
+  null_pass.h
   reflect.h
   pass.h
   passes.h
   pass_manager.h
+  strip_debug_info_pass.h
   types.h
   type_manager.h
 
   def_use_manager.cpp
+  eliminate_dead_constant_pass.cpp
   function.cpp
-  fold_spec_const_op_composite.cpp
+  fold_spec_constant_op_and_composite_pass.cpp
+  freeze_spec_constant_value_pass.cpp
   instruction.cpp
   ir_loader.cpp
   libspirv.cpp
   module.cpp
-  passes.cpp
+  strip_debug_info_pass.cpp
   types.cpp
   type_manager.cpp
 )

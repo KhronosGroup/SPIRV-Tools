@@ -24,15 +24,22 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
-
-// A single header to include all passes.
-
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
 #include "strip_debug_info_pass.h"
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+namespace spvtools {
+namespace opt {
+
+bool StripDebugInfoPass::Process(ir::Module* module) {
+  bool modified = !module->debugs().empty();
+  module->debug_clear();
+
+  module->ForEachInst([&modified](ir::Instruction* inst) {
+    modified |= !inst->dbg_line_insts().empty();
+    inst->dbg_line_insts().clear();
+  });
+
+  return modified;
+}
+
+}  // namespace opt
+}  // namespace spvtools

@@ -24,7 +24,7 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "passes.h"
+#include "fold_spec_constant_op_and_composite_pass.h"
 
 #include <initializer_list>
 #include <memory>

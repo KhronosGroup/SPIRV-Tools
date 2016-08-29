@@ -24,15 +24,40 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
-
-// A single header to include all passes.
-
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
 #include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "strip_debug_info_pass.h"
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+namespace spvtools {
+namespace opt {
+
+bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
+  bool modified = false;
+  module->ForEachInst([&modified](ir::Instruction* inst) {
+    switch (inst->opcode()) {
+      case SpvOp::SpvOpSpecConstant:
+        inst->SetOpcode(SpvOp::SpvOpConstant);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantTrue:
+        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
+        modified = true;
+        break;
+      case SpvOp::SpvOpSpecConstantFalse:
+        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
+        modified = true;
+        break;
+      case SpvOp::SpvOpDecorate:
+        if (inst->GetSingleWordInOperand(1) ==
+            SpvDecoration::SpvDecorationSpecId) {
+          inst->ToNop();
+          modified = true;
+        }
+        break;
+      default:
+        break;
+    }
+  });
+  return modified;
+}
+
+}  // namespace opt
+}  // namespace spvtools

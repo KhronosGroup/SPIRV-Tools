@@ -24,15 +24,30 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef LIBSPIRV_OPT_FREEZE_SPEC_CONSTANT_VALUE_PASS_H_
+#define LIBSPIRV_OPT_FREEZE_SPEC_CONSTANT_VALUE_PASS_H_
 
-// A single header to include all passes.
+#include "module.h"
+#include "pass.h"
 
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "strip_debug_info_pass.h"
+namespace spvtools {
+namespace opt {
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+// The transformation pass that specializes the value of spec constants to
+// their default values. This pass only processes the spec constants that have
+// Spec ID decorations (defined by OpSpecConstant, OpSpecConstantTrue and
+// OpSpecConstantFalse instructions) and replaces them with their front-end
+// version counterparts (OpConstant, OpConstantTrue and OpConstantFalse). The
+// corresponding Spec ID annotation instructions will also be removed. This
+// pass does not fold the newly added front-end constants and does not process
+// other spec constants defined by OpSpecConstantComposite or OpSpecConstantOp.
+class FreezeSpecConstantValuePass : public Pass {
+ public:
+  const char* name() const override { return "freeze-spec-const"; }
+  bool Process(ir::Module*) override;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_FREEZE_SPEC_CONSTANT_VALUE_PASS_H_

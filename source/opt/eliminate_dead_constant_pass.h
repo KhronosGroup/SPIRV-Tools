@@ -24,15 +24,27 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef LIBSPIRV_OPT_ELIMINATE_DEAD_CONSTANT_PASS_H_
+#define LIBSPIRV_OPT_ELIMINATE_DEAD_CONSTANT_PASS_H_
 
-// A single header to include all passes.
+#include "module.h"
+#include "pass.h"
 
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "strip_debug_info_pass.h"
+namespace spvtools {
+namespace opt {
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+// The optimization pass to remove dead constants, including front-end
+// contants: defined by OpConstant, OpConstantComposite, OpConstantTrue and
+// OpConstantFalse; and spec constants: defined by OpSpecConstant,
+// OpSpecConstantComposite, OpSpecConstantTrue, OpSpecConstantFalse and
+// OpSpecConstantOp.
+class EliminateDeadConstantPass : public Pass {
+ public:
+  const char* name() const override { return "eliminate-dead-const"; }
+  bool Process(ir::Module*) override;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_ELIMINATE_DEAD_CONSTANT_PASS_H_

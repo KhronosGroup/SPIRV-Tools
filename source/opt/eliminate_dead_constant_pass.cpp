@@ -24,59 +24,17 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "passes.h"
+#include "eliminate_dead_constant_pass.h"
 
 #include <algorithm>
-#include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "def_use_manager.h"
 #include "reflect.h"
 
 namespace spvtools {
 namespace opt {
-
-bool StripDebugInfoPass::Process(ir::Module* module) {
-  bool modified = !module->debugs().empty();
-  module->debug_clear();
-
-  module->ForEachInst([&modified](ir::Instruction* inst) {
-    modified |= !inst->dbg_line_insts().empty();
-    inst->dbg_line_insts().clear();
-  });
-
-  return modified;
-}
-
-bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
-  bool modified = false;
-  module->ForEachInst([&modified](ir::Instruction* inst) {
-    switch (inst->opcode()) {
-      case SpvOp::SpvOpSpecConstant:
-        inst->SetOpcode(SpvOp::SpvOpConstant);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantTrue:
-        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantFalse:
-        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
-        modified = true;
-        break;
-      case SpvOp::SpvOpDecorate:
-        if (inst->GetSingleWordInOperand(1) ==
-            SpvDecoration::SpvDecorationSpecId) {
-          inst->ToNop();
-          modified = true;
-        }
-        break;
-      default:
-        break;
-    }
-  });
-  return modified;
-}
 
 bool EliminateDeadConstantPass::Process(ir::Module* module) {
   analysis::DefUseManager def_use(module);

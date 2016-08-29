@@ -24,15 +24,24 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef LIBSPIRV_OPT_STRIP_DEBUG_INFO_PASS_H_
+#define LIBSPIRV_OPT_STRIP_DEBUG_INFO_PASS_H_
 
-// A single header to include all passes.
+#include "module.h"
+#include "pass.h"
 
-#include "eliminate_dead_constant_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "strip_debug_info_pass.h"
+namespace spvtools {
+namespace opt {
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+// The optimization pass for removing debug instructions (as documented in
+// Section 3.32.2 of the SPIR-V spec).
+class StripDebugInfoPass : public Pass {
+ public:
+  const char* name() const override { return "strip-debug"; }
+  bool Process(ir::Module* module) override;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_STRIP_DEBUG_INFO_PASS_H_
