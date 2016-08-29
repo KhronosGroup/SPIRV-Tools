@@ -253,4 +253,37 @@ TEST_F(AssemblyBuilderTest, SpecConstants) {
                                        JoinAllInsts(expected));
 }
 
+TEST_F(AssemblyBuilderTest, AppendNames) {
+  AssemblyBuilder builder;
+  builder.AppendNames({
+      "OpName %void \"another_name_for_void\"",
+      "I am an invalid OpName instruction and should not be added",
+      "OpName %main \"another name for main\"",
+  });
+  std::vector<const char*> expected = {
+      // clang-format off
+                    "OpCapability Shader",
+                    "OpCapability Float64",
+               "%1 = OpExtInstImport \"GLSL.std.450\"",
+                    "OpMemoryModel Logical GLSL450",
+                    "OpEntryPoint Vertex %main \"main\"",
+                    "OpName %void \"void\"",
+                    "OpName %main_func_type \"main_func_type\"",
+                    "OpName %main \"main\"",
+                    "OpName %main_func_entry_block \"main_func_entry_block\"",
+                    "OpName %void \"another_name_for_void\"",
+                    "OpName %main \"another name for main\"",
+            "%void = OpTypeVoid",
+  "%main_func_type = OpTypeFunction %void",
+            "%main = OpFunction %void None %main_func_type",
+"%main_func_entry_block = OpLabel",
+                    "OpReturn",
+                    "OpFunctionEnd",
+      // clang-format on
+  };
+
+  SinglePassRunAndCheck<opt::NullPass>(builder.GetCode(),
+                                       JoinAllInsts(expected));
+}
+
 }  // anonymous namespace

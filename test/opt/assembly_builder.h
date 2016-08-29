@@ -111,6 +111,18 @@ class AssemblyBuilder {
     });
   }
 
+  // Appends OpName instructions to this builder. Instrcution strings that do
+  // not start with 'OpName ' will be skipped. Returns the references of this
+  // assembly builder.
+  AssemblyBuilder& AppendNames(const std::vector<std::string>& vec_asm_code) {
+    for (auto& inst_str : vec_asm_code) {
+      if (inst_str.find("OpName ") == 0) {
+        names_.push_back(inst_str);
+      }
+    }
+    return *this;
+  }
+
   // Appends instructions to the types-constants-globals section and returns
   // the reference of this assembly builder. IDs defined in the given code will
   // be added to the Names section and then be registered with OpName
