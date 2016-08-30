@@ -89,6 +89,11 @@ add_spvtools_unittest(TARGET pass_unify_const
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET pass_set_spec_const_default_value
+  SRCS test_set_spec_const_default_value.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET line_debug_info
   SRCS test_line_debug_info.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
