@@ -116,7 +116,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.reserved);
 
   auto write_inst = [this, binary, skip_nop](const Instruction* i) {
-    if (!skip_nop || !i->IsNop()) i->ToBinaryWithoutAttachedDebugInsts(binary);
+    if (!(skip_nop && i->IsNop())) i->ToBinaryWithoutAttachedDebugInsts(binary);
   };
   ForEachInst(write_inst, true);
 }

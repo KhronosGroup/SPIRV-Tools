@@ -100,3 +100,8 @@ add_spvtools_unittest(TARGET pass_unify_const
   SRCS test_unify_const.cpp
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET line_debug_info
+  SRCS test_line_debug_info.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
