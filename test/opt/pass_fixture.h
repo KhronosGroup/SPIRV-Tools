@@ -34,9 +34,9 @@
 #include <gtest/gtest.h>
 
 #include "opt/libspirv.hpp"
+#include "opt/make_unique.h"
 #include "opt/pass_manager.h"
 #include "opt/passes.h"
-#include "opt/make_unique.h"
 
 namespace spvtools {
 
@@ -57,10 +57,10 @@ class PassTest : public TestT {
   // disassebles the optimized binary. Returns a tuple of disassembly string
   // and the boolean value returned from pass Process() function.
   std::tuple<std::string, bool> OptimizeAndDisassemble(
-      opt::Pass* pass, const std::string& original, bool skip_nop = false) {
+      opt::Pass* pass, const std::string& original, bool skip_nop) {
     std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
-    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n" << original
-                               << std::endl;
+    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
+                               << original << std::endl;
     if (!module) {
       return std::make_tuple(std::string(), false);
     }
@@ -71,17 +71,18 @@ class PassTest : public TestT {
     module->ToBinary(&binary, skip_nop);
     std::string optimized;
     EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized))
-        << "Disassembling failed for shader:\n" << original << std::endl;
+        << "Disassembling failed for shader:\n"
+        << original << std::endl;
     return std::make_tuple(optimized, modified);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
   // |assembly|, disassembles the optimized binary. Returns a tuple of
   // disassembly string and the boolean value from the pass Process() function.
-  template <typename PassT>
+  template <typename PassT, typename... Args>
   std::tuple<std::string, bool> SinglePassRunAndDisassemble(
-      const std::string& assembly, bool skip_nop = false) {
-    auto pass = MakeUnique<PassT>();
+      const std::string& assembly, bool skip_nop, Args&&... args) {
+    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
     return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
   }
 
@@ -89,23 +90,23 @@ class PassTest : public TestT {
   // |original| assembly, and checks whether the optimized binary can be
   // disassembled to the |expected| assembly. This does *not* involve pass
   // manager. Callers are suggested to use SCOPED_TRACE() for better messages.
-  template <typename PassT>
+  template <typename PassT, typename... Args>
   void SinglePassRunAndCheck(const std::string& original,
-                             const std::string& expected,
-                             bool skip_nop = false) {
+                             const std::string& expected, bool skip_nop,
+                             Args&&... args) {
     std::string optimized;
     bool modified = false;
-    std::tie(optimized, modified) =
-        SinglePassRunAndDisassemble<PassT>(original, skip_nop);
+    std::tie(optimized, modified) = SinglePassRunAndDisassemble<PassT>(
+        original, skip_nop, std::forward<Args>(args)...);
     // Check whether the pass returns the correct modification indication.
     EXPECT_EQ(original != expected, modified);
     EXPECT_EQ(expected, optimized);
   }
 
   // Adds a pass to be run.
-  template <typename PassT>
-  void AddPass() {
-    manager_->AddPass<PassT>();
+  template <typename PassT, typename... Args>
+  void AddPass(Args&&... args) {
+    manager_->AddPass<PassT>(std::forward<Args>(args)...);
   }
 
   // Renews the pass manager, including clearing all previously added passes.

@@ -26,6 +26,8 @@
 
 #include "gmock/gmock.h"
 
+#include <initializer_list>
+
 #include "module_utils.h"
 #include "opt/make_unique.h"
 #include "pass_fixture.h"
@@ -35,6 +37,17 @@ namespace {
 using namespace spvtools;
 using spvtest::GetIdBound;
 using ::testing::Eq;
+
+// A null pass whose construtors accept arguments
+class NullPassWithArgs : public opt::NullPass {
+ public:
+  NullPassWithArgs(uint32_t) : NullPass() {}
+  NullPassWithArgs(std::string) : NullPass() {}
+  NullPassWithArgs(const std::vector<int>&) : NullPass() {}
+  NullPassWithArgs(const std::vector<int>&, uint32_t) : NullPass() {}
+
+  const char* name() const override { return "null-with-args"; }
+};
 
 TEST(PassManager, Interface) {
   opt::PassManager manager;
@@ -54,6 +67,19 @@ TEST(PassManager, Interface) {
   EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
   EXPECT_STREQ("null", manager.GetPass(1)->name());
   EXPECT_STREQ("strip-debug", manager.GetPass(2)->name());
+
+  manager.AddPass<NullPassWithArgs>(1u);
+  manager.AddPass<NullPassWithArgs>("null pass args");
+  manager.AddPass<NullPassWithArgs>(std::initializer_list<int>{1, 2});
+  manager.AddPass<NullPassWithArgs>(std::initializer_list<int>{1, 2}, 3);
+  EXPECT_EQ(7u, manager.NumPasses());
+  EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
+  EXPECT_STREQ("null", manager.GetPass(1)->name());
+  EXPECT_STREQ("strip-debug", manager.GetPass(2)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPass(3)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPass(4)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPass(5)->name());
+  EXPECT_STREQ("null-with-args", manager.GetPass(6)->name());
 }
 
 // A pass that appends an OpNop instruction to the debug section.
@@ -64,6 +90,24 @@ class AppendOpNopPass : public opt::Pass {
     module->AddDebugInst(std::move(inst));
     return true;
   }
+};
+
+// A pass that appends specified number of OpNop instructions to the debug
+// section.
+class AppendMultipleOpNopPass : public opt::Pass {
+ public:
+  AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
+  const char* name() const override { return "AppendOpNop"; }
+  bool Process(ir::Module* module) override {
+    for (uint32_t i = 0; i < num_nop_; i++) {
+      auto inst = MakeUnique<ir::Instruction>();
+      module->AddDebugInst(std::move(inst));
+    }
+    return true;
+  }
+
+ private:
+  uint32_t num_nop_;
 };
 
 // A pass that duplicates the last instruction in the debug section.
@@ -94,6 +138,10 @@ TEST_F(PassManagerTest, Run) {
   AddPass<DuplicateInstPass>();
   AddPass<AppendOpNopPass>();
   RunAndCheck(text.c_str(), (text + "OpSource ESSL 310\nOpNop\n").c_str());
+
+  RenewPassManger();
+  AddPass<AppendMultipleOpNopPass>(3);
+  RunAndCheck(text.c_str(), (text + "OpNop\nOpNop\nOpNop\n").c_str());
 }
 
 // A pass that appends an OpTypeVoid instruction that uses a given id.

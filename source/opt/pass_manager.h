@@ -50,9 +50,11 @@ class PassManager {
   void AddPass(std::unique_ptr<Pass> pass) {
     passes_.push_back(std::move(pass));
   }
-  template <typename PassT>
-  void AddPass() {
-    passes_.emplace_back(new PassT);
+  // Uses the argument to construct a pass instance of type PassT, and adds the
+  // pass instance to this pass manger.
+  template <typename PassT, typename... Args>
+  void AddPass(Args&&... args) {
+    passes_.emplace_back(new PassT(std::forward<Args>(args)...));
   }
 
   // Returns the number of passes added.

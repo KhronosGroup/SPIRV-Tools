@@ -61,7 +61,8 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
-                                                 JoinNonDebugInsts(text));
+                                                 JoinNonDebugInsts(text),
+                                                 /* skip_nop = */ false);
 
   // Let's add more debug instruction before the "OpString" instruction.
   const std::vector<const char*> more_text = {
@@ -79,7 +80,8 @@ TEST_F(StripLineDebugInfoTest, LineNoLine) {
   };
   text.insert(text.begin() + 4, more_text.cbegin(), more_text.cend());
   SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
-                                                 JoinNonDebugInsts(text));
+                                                 JoinNonDebugInsts(text),
+                                                 /* skip_nop = */ false);
 }
 
 using StripDebugInfoTest = PassTest<::testing::TestWithParam<const char*>>;
@@ -89,7 +91,8 @@ TEST_P(StripDebugInfoTest, Kind) {
       "OpCapability Shader", "OpMemoryModel Logical GLSL450", GetParam(),
   };
   SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
-                                                 JoinNonDebugInsts(text));
+                                                 JoinNonDebugInsts(text),
+                                                 /* skip_nop = */ false);
 }
 
 // Test each possible non-line debug instruction.
