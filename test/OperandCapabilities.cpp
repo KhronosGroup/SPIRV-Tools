@@ -30,7 +30,7 @@
 
 #include "gmock/gmock.h"
 
-#include "capability_set.h"
+#include "enum_set.h"
 #include "UnitSPIRV.h"
 
 namespace {

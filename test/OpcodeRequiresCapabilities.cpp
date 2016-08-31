@@ -26,7 +26,7 @@
 
 #include "UnitSPIRV.h"
 
-#include "capability_set.h"
+#include "enum_set.h"
 
 namespace {
 

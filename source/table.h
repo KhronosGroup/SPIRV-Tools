@@ -29,7 +29,7 @@
 
 #include "spirv/1.1/spirv.h"
 
-#include "capability_set.h"
+#include "enum_set.h"
 #include "spirv-tools/libspirv.h"
 
 typedef struct spv_opcode_desc_t {

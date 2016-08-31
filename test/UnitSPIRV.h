@@ -34,7 +34,7 @@
 
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
-#include "source/capability_set.h"
+#include "source/enum_set.h"
 #include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/spirv_endian.h"

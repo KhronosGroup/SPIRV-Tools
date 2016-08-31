@@ -129,8 +129,8 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/capability_set.h
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/enum_set.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/macro.h
@@ -149,7 +149,6 @@ set(SPIRV_SOURCES
 
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/capability_set.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp

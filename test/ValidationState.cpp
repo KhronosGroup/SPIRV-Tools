@@ -34,7 +34,7 @@
 #include "gtest/gtest.h"
 #include "spirv/1.1/spirv.h"
 
-#include "capability_set.h"
+#include "enum_set.h"
 #include "val/Construct.h"
 #include "val/Function.h"
 #include "validate.h"

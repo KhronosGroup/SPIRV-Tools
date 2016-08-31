@@ -33,8 +33,8 @@
 #include <sstream>
 #include <string>
 
-#include "capability_set.h"
 #include "diagnostic.h"
+#include "enum_set.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
