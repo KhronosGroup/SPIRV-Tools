@@ -34,8 +34,8 @@
 #include <vector>
 
 #include "assembly_grammar.h"
-#include "capability_set.h"
 #include "diagnostic.h"
+#include "enum_set.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 #include "spirv_definition.h"

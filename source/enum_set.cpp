@@ -24,13 +24,13 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
-#include "capability_set.h"
+#include "enum_set.h"
 
 #include "spirv/1.1/spirv.hpp"
 
 namespace {
 
-// Determines whether the given capability can be represented
+// Determines whether the given enum value can be represented
 // as a bit in a uint64_t mask. If so, then returns that mask bit.
 // Otherwise, returns 0.
 uint64_t AsMask(uint32_t word) {
@@ -41,7 +41,8 @@ uint64_t AsMask(uint32_t word) {
 
 namespace libspirv {
 
-void CapabilitySet::Add(uint32_t word) {
+template<typename EnumType>
+void EnumSet<EnumType>::Add(uint32_t word) {
   if (auto new_bits = AsMask(word)) {
     mask_ |= new_bits;
   } else {
@@ -49,7 +50,8 @@ void CapabilitySet::Add(uint32_t word) {
   }
 }
 
-bool CapabilitySet::Contains(uint32_t word) const {
+template<typename EnumType>
+bool EnumSet<EnumType>::Contains(uint32_t word) const {
   // We shouldn't call Overflow() since this is a const method.
   if (auto bits = AsMask(word)) {
     return mask_ & bits;
