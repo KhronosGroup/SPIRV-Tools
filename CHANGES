@@ -1,5 +1,7 @@
 Revision history for SPIRV-Tools
 
+v2016.5-dev 2016-09-01
+
 v2016.4 2016-09-01
  - Relicensed under Apache 2.0
  - Add optimization passes (in API and spirv-opt command)
