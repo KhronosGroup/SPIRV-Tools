@@ -27,13 +27,9 @@
 #include "text.h"
 #include "util/bitutils.h"
 #include "util/hex_float.h"
+#include "util/parse_number.h"
 
 namespace {
-
-using spvutils::BitwiseCast;
-using spvutils::FloatProxy;
-using spvutils::HexFloat;
-
 // Advances |text| to the start of the next line and writes the new position to
 // |position|.
 spv_result_t advanceLine(spv_text text, spv_position position) {
@@ -217,37 +213,61 @@ spv_result_t AssemblyContext::binaryEncodeU32(const uint32_t value,
   return SPV_SUCCESS;
 }
 
-spv_result_t AssemblyContext::binaryEncodeU64(const uint64_t value,
-                                              spv_instruction_t* pInst) {
-  uint32_t low = uint32_t(0x00000000ffffffff & value);
-  uint32_t high = uint32_t((0xffffffff00000000 & value) >> 32);
-  binaryEncodeU32(low, pInst);
-  binaryEncodeU32(high, pInst);
-  return SPV_SUCCESS;
-}
-
 spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
     const char* val, spv_result_t error_code, const IdType& type,
     spv_instruction_t* pInst) {
-  const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
-  const bool is_floating = libspirv::isScalarFloating(type);
-  const bool is_integer = libspirv::isScalarIntegral(type);
-
-  if (!is_bottom && !is_floating && !is_integer) {
-    return diagnostic(SPV_ERROR_INTERNAL)
-           << "The expected type is not a scalar integer or float type";
+  using spvutils::EncodeNumberStatus;
+  // Populate the NumberType from the IdType for parsing.
+  spvutils::NumberType number_type;
+  switch (type.type_class) {
+    case IdTypeClass::kOtherType:
+      return diagnostic(SPV_ERROR_INTERNAL)
+             << "Unexpected numeric literal type";
+    case IdTypeClass::kScalarIntegerType:
+      if (type.isSigned) {
+        number_type = {type.bitwidth, SPV_NUMBER_SIGNED_INT};
+      } else {
+        number_type = {type.bitwidth, SPV_NUMBER_UNSIGNED_INT};
+      }
+      break;
+    case IdTypeClass::kScalarFloatType:
+      number_type = {type.bitwidth, SPV_NUMBER_FLOATING};
+      break;
+    case IdTypeClass::kBottom:
+      // kBottom means the type is unknown and we need to infer the type before
+      // parsing the number. The rule is: If there is a decimal point, treat
+      // the value as a floating point value, otherwise a integer value, then
+      // if the first char of the integer text is '-', treat the integer as a
+      // signed integer, otherwise an unsigned integer.
+      uint32_t bitwidth = static_cast<uint32_t>(assumedBitWidth(type));
+      if (strchr(val, '.')) {
+        number_type = {bitwidth, SPV_NUMBER_FLOATING};
+      } else if (type.isSigned || val[0] == '-') {
+        number_type = {bitwidth, SPV_NUMBER_SIGNED_INT};
+      } else {
+        number_type = {bitwidth, SPV_NUMBER_UNSIGNED_INT};
+      }
+      break;
   }
 
-  // If this is bottom, but looks like a float, we should treat it like a
-  // float.
-  const bool looks_like_float = is_bottom && strchr(val, '.');
-
-  // If we explicitly expect a floating-point number, we should handle that
-  // first.
-  if (is_floating || looks_like_float)
-    return binaryEncodeFloatingPointLiteral(val, error_code, type, pInst);
-
-  return binaryEncodeIntegerLiteral(val, error_code, type, pInst);
+  std::string error_msg;
+  EncodeNumberStatus parse_status = ParseAndEncodeNumber(
+      val, number_type,
+      [this, pInst](uint32_t d) { this->binaryEncodeU32(d, pInst); },
+      &error_msg);
+  switch (parse_status) {
+    case EncodeNumberStatus::kSuccess:
+      return SPV_SUCCESS;
+    case EncodeNumberStatus::kInvalidText:
+      return diagnostic(error_code) << error_msg;
+    case EncodeNumberStatus::kUnsupported:
+      return diagnostic(SPV_ERROR_INTERNAL) << error_msg;
+    case EncodeNumberStatus::kInvalidUsage:
+      return diagnostic(SPV_ERROR_INVALID_TEXT) << error_msg;
+  }
+  // This line is not reachable, only added to satisfy the compiler.
+  return diagnostic(SPV_ERROR_INTERNAL)
+         << "Unexpected result code from ParseAndEncodeNumber()";
 }
 
 spv_result_t AssemblyContext::binaryEncodeString(const char* value,
@@ -342,167 +362,4 @@ spv_ext_inst_type_t AssemblyContext::getExtInstTypeForId(uint32_t id) const {
   return std::get<1>(*type);
 }
 
-spv_result_t AssemblyContext::binaryEncodeFloatingPointLiteral(
-    const char* val, spv_result_t error_code, const IdType& type,
-    spv_instruction_t* pInst) {
-  const auto bit_width = assumedBitWidth(type);
-  switch (bit_width) {
-    case 16: {
-      spvutils::HexFloat<FloatProxy<spvutils::Float16>> hVal(0);
-      if (auto error = parseNumber(val, error_code, &hVal,
-                                   "Invalid 16-bit float literal: "))
-        return error;
-      // getAsFloat will return the spvutils::Float16 value, and get_value
-      // will return a uint16_t representing the bits of the float.
-      // The encoding is therefore correct from the perspective of the SPIR-V
-      // spec since the top 16 bits will be 0.
-      return binaryEncodeU32(
-          static_cast<uint32_t>(hVal.value().getAsFloat().get_value()), pInst);
-    } break;
-    case 32: {
-      spvutils::HexFloat<FloatProxy<float>> fVal(0.0f);
-      if (auto error = parseNumber(val, error_code, &fVal,
-                                   "Invalid 32-bit float literal: "))
-        return error;
-      return binaryEncodeU32(BitwiseCast<uint32_t>(fVal), pInst);
-    } break;
-    case 64: {
-      spvutils::HexFloat<FloatProxy<double>> dVal(0.0);
-      if (auto error = parseNumber(val, error_code, &dVal,
-                                   "Invalid 64-bit float literal: "))
-        return error;
-      return binaryEncodeU64(BitwiseCast<uint64_t>(dVal), pInst);
-    } break;
-    default:
-      break;
-  }
-  return diagnostic() << "Unsupported " << bit_width << "-bit float literals";
-}
-
-// Returns SPV_SUCCESS if the given value fits within the target scalar
-// integral type.  The target type may have an unusual bit width.
-// If the value was originally specified as a hexadecimal number, then
-// the overflow bits should be zero.  If it was hex and the target type is
-// signed, then return the sign-extended value through the
-// updated_value_for_hex pointer argument.
-// On failure, return the given error code and emit a diagnostic if that error
-// code is not SPV_FAILED_MATCH.
-template <typename T>
-spv_result_t checkRangeAndIfHexThenSignExtend(T value, spv_result_t error_code,
-                                              const IdType& type, bool is_hex,
-                                              T* updated_value_for_hex) {
-  // The encoded result has three regions of bits that are of interest, from
-  // least to most significant:
-  //   - magnitude bits, where the magnitude of the number would be stored if
-  //     we were using a signed-magnitude representation.
-  //   - an optional sign bit
-  //   - overflow bits, up to bit 63 of a 64-bit number
-  // For example:
-  //   Type                Overflow      Sign       Magnitude
-  //   ---------------     --------      ----       ---------
-  //   unsigned 8 bit      8-63          n/a        0-7
-  //   signed 8 bit        8-63          7          0-6
-  //   unsigned 16 bit     16-63         n/a        0-15
-  //   signed 16 bit       16-63         15         0-14
-
-  // We'll use masks to define the three regions.
-  // At first we'll assume the number is unsigned.
-  const uint32_t bit_width = assumedBitWidth(type);
-  uint64_t magnitude_mask =
-      (bit_width == 64) ? -1 : ((uint64_t(1) << bit_width) - 1);
-  uint64_t sign_mask = 0;
-  uint64_t overflow_mask = ~magnitude_mask;
-
-  if (value < 0 || type.isSigned) {
-    // Accommodate the sign bit.
-    magnitude_mask >>= 1;
-    sign_mask = magnitude_mask + 1;
-  }
-
-  bool failed = false;
-  if (value < 0) {
-    // The top bits must all be 1 for a negative signed value.
-    failed = ((value & overflow_mask) != overflow_mask) ||
-             ((value & sign_mask) != sign_mask);
-  } else {
-    if (is_hex) {
-      // Hex values are a bit special. They decode as unsigned values, but
-      // may represent a negative number.  In this case, the overflow bits
-      // should be zero.
-      failed = (value & overflow_mask) != 0;
-    } else {
-      const uint64_t value_as_u64 = static_cast<uint64_t>(value);
-      // Check overflow in the ordinary case.
-      failed = (value_as_u64 & magnitude_mask) != value_as_u64;
-    }
-  }
-
-  if (failed) {
-    return error_code;
-  }
-
-  // Sign extend hex the number.
-  if (is_hex && (value & sign_mask))
-    *updated_value_for_hex = (value | overflow_mask);
-
-  return SPV_SUCCESS;
-}
-
-spv_result_t AssemblyContext::binaryEncodeIntegerLiteral(
-    const char* val, spv_result_t error_code, const IdType& type,
-    spv_instruction_t* pInst) {
-  const bool is_bottom = type.type_class == libspirv::IdTypeClass::kBottom;
-  const uint32_t bit_width = assumedBitWidth(type);
-
-  if (bit_width > 64)
-    return diagnostic(SPV_ERROR_INTERNAL) << "Unsupported " << bit_width
-                                          << "-bit integer literals";
-
-  // Either we are expecting anything or integer.
-  bool is_negative = val[0] == '-';
-  bool can_be_signed = is_bottom || type.isSigned;
-
-  if (is_negative && !can_be_signed) {
-    return diagnostic()
-           << "Cannot put a negative number in an unsigned literal";
-  }
-
-  const bool is_hex = val[0] == '0' && (val[1] == 'x' || val[1] == 'X');
-
-  uint64_t decoded_bits;
-  if (is_negative) {
-    int64_t decoded_signed = 0;
-
-    if (auto error = parseNumber(val, error_code, &decoded_signed,
-                                 "Invalid signed integer literal: "))
-      return error;
-    if (auto error = checkRangeAndIfHexThenSignExtend(
-            decoded_signed, error_code, type, is_hex, &decoded_signed)) {
-      diagnostic(error_code)
-          << "Integer " << (is_hex ? std::hex : std::dec) << std::showbase
-          << decoded_signed << " does not fit in a " << std::dec << bit_width
-          << "-bit " << (type.isSigned ? "signed" : "unsigned") << " integer";
-      return error;
-    }
-    decoded_bits = decoded_signed;
-  } else {
-    // There's no leading minus sign, so parse it as an unsigned integer.
-    if (auto error = parseNumber(val, error_code, &decoded_bits,
-                                 "Invalid unsigned integer literal: "))
-      return error;
-    if (auto error = checkRangeAndIfHexThenSignExtend(
-            decoded_bits, error_code, type, is_hex, &decoded_bits)) {
-      diagnostic(error_code)
-          << "Integer " << (is_hex ? std::hex : std::dec) << std::showbase
-          << decoded_bits << " does not fit in a " << std::dec << bit_width
-          << "-bit " << (type.isSigned ? "signed" : "unsigned") << " integer";
-      return error;
-    }
-  }
-  if (bit_width > 32) {
-    return binaryEncodeU64(decoded_bits, pInst);
-  } else {
-    return binaryEncodeU32(uint32_t(decoded_bits), pInst);
-  }
-}
 }  // namespace libspirv

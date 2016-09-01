@@ -38,6 +38,7 @@
 #include "table.h"
 #include "text_handler.h"
 #include "util/bitutils.h"
+#include "util/parse_number.h"
 
 bool spvIsValidIDCharacter(const char value) {
   return value == '_' || 0 != ::isalnum(value);
@@ -159,10 +160,10 @@ spv_result_t encodeImmediate(libspirv::AssemblyContext* context,
                              const char* text, spv_instruction_t* pInst) {
   assert(*text == '!');
   uint32_t parse_result;
-  if (auto error =
-          context->parseNumber(text + 1, SPV_ERROR_INVALID_TEXT, &parse_result,
-                               "Invalid immediate integer: !"))
-    return error;
+  if (!spvutils::ParseNumber(text + 1, &parse_result)) {
+    return context->diagnostic(SPV_ERROR_INVALID_TEXT)
+           << "Invalid immediate integer: !" << text + 1;
+  }
   context->binaryEncodeU32(parse_result, pInst);
   context->seekForward(static_cast<uint32_t>(strlen(text)));
   return SPV_SUCCESS;

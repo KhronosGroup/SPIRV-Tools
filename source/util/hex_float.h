@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 #include "bitutils.h"
 

@@ -226,68 +226,8 @@ class AssemblyContext {
   // id is not the id for an extended instruction type.
   spv_ext_inst_type_t getExtInstTypeForId(uint32_t id) const;
 
-  // Parses a numeric value of a given type from the given text.  The number
-  // should take up the entire string, and should be within bounds for the
-  // target type.  On success, returns SPV_SUCCESS and populates the object
-  // referenced by value_pointer. On failure, returns the given error code,
-  // and emits a diagnostic if that error code is not SPV_FAILED_MATCH.
-  template <typename T>
-  spv_result_t parseNumber(const char* text, spv_result_t error_code,
-                           T* value_pointer,
-                           const char* error_message_fragment) {
-    // C++11 doesn't define std::istringstream(int8_t&), so calling this method
-    // with a single-byte type leads to implementation-defined behaviour.
-    // Similarly for uint8_t.
-    static_assert(sizeof(T) > 1,
-                  "Don't use a single-byte type this parse method");
-
-    std::istringstream text_stream(text);
-    // Allow both decimal and hex input for integers.
-    // It also allows octal input, but we don't care about that case.
-    text_stream >> std::setbase(0);
-    text_stream >> *value_pointer;
-
-    // We should have read something.
-    bool ok = (text[0] != 0) && !text_stream.bad();
-    // It should have been all the text.
-    ok = ok && text_stream.eof();
-    // It should have been in range.
-    ok = ok && !text_stream.fail();
-
-    // Work around a bug in the GNU C++11 library. It will happily parse
-    // "-1" for uint16_t as 65535.
-    if (ok && text[0] == '-')
-      ok = !ClampToZeroIfUnsignedType<T>::Clamp(value_pointer);
-
-    if (ok) return SPV_SUCCESS;
-    return diagnostic(error_code) << error_message_fragment << text;
-  }
-
  private:
 
-  // Appends the given floating point literal to the given instruction.
-  // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
-  // returns the given error code, and emits a diagnostic if that error
-  // code is not SPV_FAILED_MATCH.
-  // Only 32 and 64 bit floating point numbers are supported.
-  spv_result_t binaryEncodeFloatingPointLiteral(const char* numeric_literal,
-                                                spv_result_t error_code,
-                                                const IdType& type,
-                                                spv_instruction_t* pInst);
-
-  // Appends the given integer literal to the given instruction.
-  // Returns SPV_SUCCESS if the value was correctly parsed.  Otherwise
-  // returns the given error code, and emits a diagnostic if that error
-  // code is not SPV_FAILED_MATCH.
-  // Integers up to 64 bits are supported.
-  spv_result_t binaryEncodeIntegerLiteral(const char* numeric_literal,
-                                          spv_result_t error_code,
-                                          const IdType& type,
-                                          spv_instruction_t* pInst);
-
-  // Writes the given 64-bit literal value into the instruction.
-  // return SPV_SUCCESS if the value could be written in the instruction.
-  spv_result_t binaryEncodeU64(const uint64_t value, spv_instruction_t* pInst);
   // Maps ID names to their corresponding numerical ids.
   using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
   // Maps type-defining IDs to their IdType.
