@@ -34,33 +34,11 @@
 #include "spirv-tools/libspirv.h"
 
 namespace libspirv {
-class diagnostic_helper {
- public:
-  diagnostic_helper(spv_position_t& position, spv_diagnostic* diagnostic)
-      : position_(&position), diagnostic_(diagnostic) {}
-
-  diagnostic_helper(spv_position position, spv_diagnostic* diagnostic)
-      : position_(position), diagnostic_(diagnostic) {}
-
-  ~diagnostic_helper() {
-    *diagnostic_ = spvDiagnosticCreate(position_, stream().str().c_str());
-  }
-
-  std::stringstream& stream() { return stream_; }
-
- private:
-  std::stringstream stream_;
-  spv_position position_;
-  spv_diagnostic* diagnostic_;
-};
 
 // A DiagnosticStream remembers the current position of the input and an error
 // code, and captures diagnostic messages via the left-shift operator.
 // If the error code is not SPV_FAILED_MATCH, then captured messages are
 // emitted during the destructor.
-// TODO(awoloszyn): This is very similar to diagnostic_helper, and hides
-//                  the data more easily. Replace diagnostic_helper elsewhere
-//                  eventually.
 class DiagnosticStream {
  public:
   DiagnosticStream(spv_position_t position, spv_diagnostic* pDiagnostic,
@@ -96,10 +74,6 @@ class DiagnosticStream {
   spv_diagnostic* pDiagnostic_;
   spv_result_t error_;
 };
-
-#define DIAGNOSTIC                                           \
-  libspirv::diagnostic_helper helper(position, pDiagnostic); \
-  helper.stream()
 
 std::string spvResultToString(spv_result_t res);
 
