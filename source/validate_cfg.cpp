@@ -416,11 +416,10 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      DepthFirstTraversal(function.first_block(),
-                          function.AugmentedCFGSuccessorsFunction(),
-                          ignore_block,
-                          [&](cbb_ptr b) { postorder.push_back(b); },
-                          ignore_edge);
+      DepthFirstTraversal(
+          function.first_block(), function.AugmentedCFGSuccessorsFunction(),
+          ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
+          ignore_edge);
       auto edges = libspirv::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
@@ -428,11 +427,10 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
 
       /// calculate post dominators
-      DepthFirstTraversal(function.pseudo_exit_block(),
-                          function.AugmentedCFGPredecessorsFunction(),
-                          ignore_block,
-                          [&](cbb_ptr b) { postdom_postorder.push_back(b); },
-                          ignore_edge);
+      DepthFirstTraversal(
+          function.pseudo_exit_block(),
+          function.AugmentedCFGPredecessorsFunction(), ignore_block,
+          [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
       auto postdom_edges = libspirv::CalculateDominators(
           postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
@@ -468,7 +466,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     /// Structured control flow checks are only required for shader capabilities
     if (_.HasCapability(SpvCapabilityShader)) {
-      spvCheckReturn(StructuredControlFlowChecks(_, function, back_edges));
+      if (auto error = StructuredControlFlowChecks(_, function, back_edges))
+        return error;
     }
   }
   return SPV_SUCCESS;
@@ -479,21 +478,24 @@ spv_result_t CfgPass(ValidationState_t& _,
   SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   switch (opcode) {
     case SpvOpLabel:
-      spvCheckReturn(_.current_function().RegisterBlock(inst->result_id));
+      if (auto error = _.current_function().RegisterBlock(inst->result_id))
+        return error;
       break;
     case SpvOpLoopMerge: {
       uint32_t merge_block = inst->words[inst->operands[0].offset];
       uint32_t continue_block = inst->words[inst->operands[1].offset];
       CFG_ASSERT(MergeBlockAssert, merge_block);
 
-      spvCheckReturn(
-          _.current_function().RegisterLoopMerge(merge_block, continue_block));
+      if (auto error = _.current_function().RegisterLoopMerge(merge_block,
+                                                              continue_block))
+        return error;
     } break;
     case SpvOpSelectionMerge: {
       uint32_t merge_block = inst->words[inst->operands[0].offset];
       CFG_ASSERT(MergeBlockAssert, merge_block);
 
-      spvCheckReturn(_.current_function().RegisterSelectionMerge(merge_block));
+      if (auto error = _.current_function().RegisterSelectionMerge(merge_block))
+        return error;
     } break;
     case SpvOpBranch: {
       uint32_t target = inst->words[inst->operands[0].offset];

@@ -89,12 +89,15 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         auto control_mask = static_cast<SpvFunctionControlMask>(
             inst->words[inst->operands[2].offset]);
-        spvCheckReturn(
-            _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
-                               inst->words[inst->operands[3].offset]));
-        if (_.current_layout_section() == kLayoutFunctionDefinitions)
-          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
-              FunctionDecl::kFunctionDeclDefinition));
+        if (auto error =
+                _.RegisterFunction(inst->result_id, inst->type_id, control_mask,
+                                   inst->words[inst->operands[3].offset]))
+          return error;
+        if (_.current_layout_section() == kLayoutFunctionDefinitions) {
+          if (auto error = _.current_function().RegisterSetFunctionDeclType(
+                  FunctionDecl::kFunctionDeclDefinition))
+            return error;
+        }
       } break;
 
       case SpvOpFunctionParameter:
@@ -108,8 +111,9 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                  << "Function parameters must only appear immediately after "
                     "the function definition";
         }
-        spvCheckReturn(_.current_function().RegisterFunctionParameter(
-            inst->result_id, inst->type_id));
+        if (auto error = _.current_function().RegisterFunctionParameter(
+                inst->result_id, inst->type_id))
+          return error;
         break;
 
       case SpvOpFunctionEnd:
@@ -128,10 +132,11 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                                                      "function definitions.";
         }
         if (_.current_layout_section() == kLayoutFunctionDeclarations) {
-          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
-              FunctionDecl::kFunctionDeclDeclaration));
+          if (auto error = _.current_function().RegisterSetFunctionDeclType(
+                  FunctionDecl::kFunctionDeclDeclaration))
+            return error;
         }
-        spvCheckReturn(_.RegisterFunctionEnd());
+        if (auto error = _.RegisterFunctionEnd()) return error;
         break;
 
       case SpvOpLine:
@@ -151,8 +156,9 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         }
         if (_.current_layout_section() == kLayoutFunctionDeclarations) {
           _.ProgressToNextLayoutSectionOrder();
-          spvCheckReturn(_.current_function().RegisterSetFunctionDeclType(
-              FunctionDecl::kFunctionDeclDefinition));
+          if (auto error = _.current_function().RegisterSetFunctionDeclType(
+                  FunctionDecl::kFunctionDeclDefinition))
+            return error;
         }
         break;
 
@@ -198,13 +204,15 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
     case kLayoutDebug2:
     case kLayoutAnnotations:
     case kLayoutTypes:
-      spvCheckReturn(ModuleScopedInstructions(_, inst, opcode));
+      if (auto error = ModuleScopedInstructions(_, inst, opcode)) return error;
       break;
     case kLayoutFunctionDeclarations:
     case kLayoutFunctionDefinitions:
-      spvCheckReturn(FunctionScopedInstructions(_, inst, opcode));
+      if (auto error = FunctionScopedInstructions(_, inst, opcode)) {
+        return error;
+      }
       break;
-  }  // switch(getLayoutSection())
+  }
   return SPV_SUCCESS;
 }
 }  /// namespace libspirv
