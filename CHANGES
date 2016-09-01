@@ -1,9 +1,12 @@
 Revision history for SPIRV-Tools
 
-v2016.4-dev 2016-08-24
+v2016.4 2016-09-01
+ - Relicensed under Apache 2.0
  - Add optimization passes (in API and spirv-opt command)
    - Fold spec constants defined with OpSpecConstantOp and
        OpSpecConstantComposite to normal constants with fixed value(s).
+ - Fixes issues:
+   #318: Relicensed under Apache 2.0
 
 v2016.3 2016-08-24
  - Add target environment enums for OpenCL 2.1, OpenCL 2.2,
