@@ -62,6 +62,9 @@ at https://github.com/KhronosGroup/SPIRV-Tools.
 
 Contributions via merge request are welcome. Changes should:
 * Be provided under the [Apache 2.0](#license).
+  You'll be prompted with a one-time "click-through" Contributor's License
+  Agreement (CLA) dialog as part of submitting your pull request or
+  other contribution to GitHub.
 * Include tests to cover updated functionality.
 * C++ code should follow the [Google C++ Style Guide][cpp-style-guide].
 * Code should be formatted with `clang-format`.  Settings are defined by
