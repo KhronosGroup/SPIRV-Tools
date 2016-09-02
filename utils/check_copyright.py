@@ -28,6 +28,7 @@ import sys
 
 # List of designated copyright owners.
 AUTHORS = ['The Khronos Group Inc.',
+           'LunarG Inc.',
            'Google Inc.']
 CURRENT_YEAR='2016'
 

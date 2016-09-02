@@ -13,6 +13,7 @@
 # limitations under the License.
 
 add_subdirectory(lesspipe)
+add_subdirectory(emacs)
 
 # Add a SPIR-V Tools command line tool. Signature:
 #   add_spvtools_tool(

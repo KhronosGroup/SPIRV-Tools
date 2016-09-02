@@ -275,6 +275,22 @@ This is experimental.
     export LESSOPEN='| spirv-lesspipe.sh "%s" --no-color --raw-id'
     ```
 
+* `50spirv-tools.el` - Automatically disassembles '.spv' binary files when
+  loaded into the emacs text editor, and re-assembles them when saved,
+  provided any modifications to the file are valid.  This functionality
+  must be explicitly requested by defining the symbol
+  SPIRV_TOOLS_INSTALL_EMACS_HELPERS as follows:
+  ```
+  cmake -DSPIRV_TOOLS_INSTALL_EMACS_HELPERS=true ...
+  ```
+
+  In addition, this helper is only installed if the directory /etc/emacs/site-start.d
+  exists, which is typically true if emacs is installed on the system.
+
+  Note that symbol IDs are not currently preserved through a load/edit/save operation.
+  This may change if the ability is added to spirv-as.
+
+
 ### Tests
 
 Tests are only built when googletest is found. Use `ctest` to run all the
