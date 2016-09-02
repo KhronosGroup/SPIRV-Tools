@@ -97,9 +97,11 @@ class idUsage {
   vector<uint32_t> entry_points_;
 };
 
-#define DIAG(INDEX)         \
-  position->index += INDEX; \
-  DIAGNOSTIC
+#define DIAG(INDEX)                                                \
+  position->index += INDEX;                                        \
+  libspirv::DiagnosticStream helper(*position, pDiagnostic,        \
+                                    SPV_ERROR_INVALID_DIAGNOSTIC); \
+  helper
 
 #if 0
 template <>

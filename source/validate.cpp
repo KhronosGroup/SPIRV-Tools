@@ -189,14 +189,16 @@ spv_result_t spvValidate(const spv_const_context context,
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(binary, &endian)) {
-    DIAGNOSTIC << "Invalid SPIR-V magic number.";
-    return SPV_ERROR_INVALID_BINARY;
+    return libspirv::DiagnosticStream(position, pDiagnostic,
+                                      SPV_ERROR_INVALID_BINARY)
+           << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(binary, endian, &header)) {
-    DIAGNOSTIC << "Invalid SPIR-V header.";
-    return SPV_ERROR_INVALID_BINARY;
+    return libspirv::DiagnosticStream(position, pDiagnostic,
+                                      SPV_ERROR_INVALID_BINARY)
+           << "Invalid SPIR-V header.";
   }
 
   // NOTE: Parse the module and perform inline validation checks. These
