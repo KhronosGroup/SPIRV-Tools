@@ -150,3 +150,7 @@ add_subdirectory(test)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
   DESTINATION include/spirv-tools/)
+
+add_test(NAME spirv-tools-copyrights
+         COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
