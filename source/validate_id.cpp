@@ -24,6 +24,7 @@
 
 #include "diagnostic.h"
 #include "instruction.h"
+#include "message.h"
 #include "opcode.h"
 #include "spirv-tools/libspirv.h"
 #include "val/Function.h"
@@ -48,7 +49,7 @@ class idUsage {
           const SpvMemoryModel memoryModelArg,
           const SpvAddressingModel addressingModelArg,
           const ValidationState_t& module, const vector<uint32_t>& entry_points,
-          spv_position positionArg, spv_diagnostic* pDiagnosticArg)
+          spv_position positionArg, const spvtools::MessageConsumer& consumer)
       : opcodeTable(opcodeTableArg),
         operandTable(operandTableArg),
         extInstTable(extInstTableArg),
@@ -57,7 +58,7 @@ class idUsage {
         memoryModel(memoryModelArg),
         addressingModel(addressingModelArg),
         position(positionArg),
-        pDiagnostic(pDiagnosticArg),
+        consumer_(consumer),
         module_(module),
         entry_points_(entry_points) {}
 
@@ -75,14 +76,14 @@ class idUsage {
   const SpvMemoryModel memoryModel;
   const SpvAddressingModel addressingModel;
   spv_position position;
-  spv_diagnostic* pDiagnostic;
+  const spvtools::MessageConsumer& consumer_;
   const ValidationState_t& module_;
   vector<uint32_t> entry_points_;
 };
 
 #define DIAG(INDEX)                                                \
   position->index += INDEX;                                        \
-  libspirv::DiagnosticStream helper(*position, pDiagnostic,        \
+  libspirv::DiagnosticStream helper(*position, consumer_,          \
                                     SPV_ERROR_INVALID_DIAGNOSTIC); \
   helper
 
@@ -2553,11 +2554,10 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const spv_operand_table operandTable,
                                        const spv_ext_inst_table extInstTable,
                                        const libspirv::ValidationState_t& state,
-                                       spv_position position,
-                                       spv_diagnostic* pDiag) {
+                                       spv_position position) {
   idUsage idUsage(opcodeTable, operandTable, extInstTable, pInsts, instCount,
                   state.memory_model(), state.addressing_model(), state,
-                  state.entry_points(), position, pDiag);
+                  state.entry_points(), position, state.context()->consumer);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
     if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
     position->index += pInsts[instIndex].words.size();

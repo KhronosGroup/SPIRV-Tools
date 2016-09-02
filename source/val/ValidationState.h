@@ -53,8 +53,10 @@ enum ModuleLayoutSection {
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
  public:
-  ValidationState_t(spv_diagnostic* diagnostic,
-                    const spv_const_context context);
+  ValidationState_t(const spv_const_context context);
+
+  /// Returns the context
+  spv_const_context context() const { return context_; }
 
   /// Forward declares the id in the module
   spv_result_t ForwardDeclareId(uint32_t id);
@@ -174,7 +176,8 @@ class ValidationState_t {
  private:
   ValidationState_t(const ValidationState_t&);
 
-  spv_diagnostic* diagnostic_;
+  const spv_const_context context_;
+
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;
 
@@ -191,7 +194,8 @@ class ValidationState_t {
   std::deque<Function> module_functions_;
 
   /// The capabilities available in the module
-  libspirv::CapabilitySet module_capabilities_;  /// Module's declared capabilities.
+  libspirv::CapabilitySet
+      module_capabilities_;  /// Module's declared capabilities.
 
   /// List of all instructions in the order they appear in the binary
   std::deque<Instruction> ordered_instructions_;

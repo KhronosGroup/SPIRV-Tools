@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "instruction.h"
+#include "message.h"
 #include "spirv-tools/libspirv.h"
 #include "table.h"
 
@@ -154,7 +155,6 @@ spv_result_t InstructionPass(ValidationState_t& _,
 /// @param[in] operandTable table of specified operands
 /// @param[in] usedefs use-def info from module parsing
 /// @param[in,out] position current position in the stream
-/// @param[out] pDiag contains diagnostic on failure
 ///
 /// @return result code
 spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
@@ -163,8 +163,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const spv_operand_table operandTable,
                                        const spv_ext_inst_table extInstTable,
                                        const libspirv::ValidationState_t& state,
-                                       spv_position position,
-                                       spv_diagnostic* pDiag);
+                                       spv_position position);
 
 /// @brief Validate the ID's within a SPIR-V binary
 ///
@@ -174,7 +173,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
 /// @param[in] opcodeTable table of specified Opcodes
 /// @param[in] operandTable table of specified operands
 /// @param[in,out] position current word in the binary
-/// @param[out] pDiagnostic contains diagnostic on failure
+/// @param[in] consumer message consumer callback
 ///
 /// @return result code
 spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
@@ -182,6 +181,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const spv_opcode_table opcodeTable,
                             const spv_operand_table operandTable,
                             const spv_ext_inst_table extInstTable,
-                            spv_position position, spv_diagnostic* pDiagnostic);
+                            spv_position position,
+                            const spvtools::MessageConsumer& consumer);
 
 #endif  // LIBSPIRV_VALIDATE_H_

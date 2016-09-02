@@ -14,14 +14,14 @@
 
 #include "UnitSPIRV.h"
 
-#include "gmock/gmock.h"
 #include "TestFixture.h"
+#include "gmock/gmock.h"
+#include "message.h"
 
 #include <string>
 
 using ::testing::Eq;
 namespace {
-
 
 TEST(TextLiteral, GoodI32) {
   spv_literal_t l;
@@ -119,7 +119,7 @@ INSTANTIATE_TEST_CASE_P(
         {"\"\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
         {"\"\\\xE4\xBA\xB2\"", "\xE4\xBA\xB2"},
         {"\"this \\\" and this \\\\ and \\\xE4\xBA\xB2\"",
-         "this \" and this \\ and \xE4\xBA\xB2"}}),);
+         "this \" and this \\ and \xE4\xBA\xB2"}}), );
 
 TEST(TextLiteral, StringTooLong) {
   spv_literal_t l;
@@ -168,31 +168,32 @@ using IntegerTest =
 std::vector<uint32_t> successfulEncode(const TextLiteralCase& test,
                                        libspirv::IdTypeClass type) {
   spv_instruction_t inst;
-  spv_diagnostic diagnostic;
+  std::string message;
+  auto capture_message = [&message](spvtools::MessageLevel, const char*,
+                                    const spv_position_t&,
+                                    const char* m) { message = m; };
   libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};
   EXPECT_EQ(SPV_SUCCESS,
-            libspirv::AssemblyContext(nullptr, &diagnostic)
+            libspirv::AssemblyContext(nullptr, capture_message)
                 .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
                                             expected_type, &inst))
-      << diagnostic->error;
+      << message;
   return inst.words;
 }
 
 std::string failedEncode(const TextLiteralCase& test,
                          libspirv::IdTypeClass type) {
   spv_instruction_t inst;
-  spv_diagnostic diagnostic;
+  std::string message;
+  auto capture_message = [&message](spvtools::MessageLevel, const char*,
+                                    const spv_position_t&,
+                                    const char* m) { message = m; };
   libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};
   EXPECT_EQ(SPV_ERROR_INVALID_TEXT,
-            libspirv::AssemblyContext(nullptr, &diagnostic)
+            libspirv::AssemblyContext(nullptr, capture_message)
                 .binaryEncodeNumericLiteral(test.text, SPV_ERROR_INVALID_TEXT,
                                             expected_type, &inst));
-  std::string ret_val;
-  if (diagnostic) {
-    ret_val = diagnostic->error;
-    spvDiagnosticDestroy(diagnostic);
-  }
-  return ret_val;
+  return message;
 }
 
 TEST_P(IntegerTest, IntegerBounds) {

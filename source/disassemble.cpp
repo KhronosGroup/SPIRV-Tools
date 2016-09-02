@@ -393,10 +393,13 @@ spv_result_t spvBinaryToText(const spv_const_context context,
                              const uint32_t* code, const size_t wordCount,
                              const uint32_t options, spv_text* pText,
                              spv_diagnostic* pDiagnostic) {
-  // Invalid arguments return error codes, but don't necessarily generate
-  // diagnostics.  These are programmer errors, not user errors.
-  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-  const libspirv::AssemblyGrammar grammar(context);
+  spv_context_t hijack_context = *context;
+  if (pDiagnostic) {
+    *pDiagnostic = nullptr;
+    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
+  }
+
+  const libspirv::AssemblyGrammar grammar(&hijack_context);
   if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
 
   // Generate friendly names for Ids if requested.
@@ -404,15 +407,15 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   libspirv::NameMapper name_mapper = libspirv::GetTrivialNameMapper();
   if (options & SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES) {
     friendly_mapper.reset(
-        new libspirv::FriendlyNameMapper(context, code, wordCount));
+        new libspirv::FriendlyNameMapper(&hijack_context, code, wordCount));
     name_mapper = friendly_mapper->GetNameMapper();
   }
 
   // Now disassemble!
   Disassembler disassembler(grammar, options, name_mapper);
-  if (auto error = spvBinaryParse(context, &disassembler, code, wordCount,
-                                  DisassembleHeader, DisassembleInstruction,
-                                  pDiagnostic)) {
+  if (auto error = spvBinaryParse(&hijack_context, &disassembler, code,
+                                  wordCount, DisassembleHeader,
+                                  DisassembleInstruction, pDiagnostic)) {
     return error;
   }
 

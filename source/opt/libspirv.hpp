@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "message.h"
 #include "module.h"
 #include "spirv-tools/libspirv.h"
 
@@ -36,7 +37,8 @@ class SpvTools {
 
   ~SpvTools() { spvContextDestroy(context_); }
 
-  // TODO(antiagainst): handle error message in the following APIs.
+  // Sets the message consumer to the given |consumer|.
+  void SetMessageConsumer(MessageConsumer consumer);
 
   // Assembles the given assembly |text| and writes the result to |binary|.
   // Returns SPV_SUCCESS on successful assembling.

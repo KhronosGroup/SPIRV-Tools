@@ -22,6 +22,7 @@
 
 #include "diagnostic.h"
 #include "instruction.h"
+#include "message.h"
 #include "spirv-tools/libspirv.h"
 #include "text.h"
 
@@ -116,11 +117,8 @@ class ClampToZeroIfUnsignedType<
 // Encapsulates the data used during the assembly of a SPIR-V module.
 class AssemblyContext {
  public:
-  AssemblyContext(spv_text text, spv_diagnostic* diagnostic_arg)
-      : current_position_({}),
-        pDiagnostic_(diagnostic_arg),
-        text_(text),
-        bound_(1) {}
+  AssemblyContext(spv_text text, const spvtools::MessageConsumer& consumer)
+      : current_position_({}), consumer_(consumer), text_(text), bound_(1) {}
 
   // Assigns a new integer value to the given text ID, or returns the previously
   // assigned integer value if the ID has been seen before.
@@ -148,7 +146,7 @@ class AssemblyContext {
   // stream, and for the given error code. Any data written to this object will
   // show up in pDiagnsotic on destruction.
   DiagnosticStream diagnostic(spv_result_t error) {
-    return DiagnosticStream(current_position_, pDiagnostic_, error);
+    return DiagnosticStream(current_position_, consumer_, error);
   }
 
   // Returns a diagnostic object with the default assembly error code.
@@ -227,7 +225,6 @@ class AssemblyContext {
   spv_ext_inst_type_t getExtInstTypeForId(uint32_t id) const;
 
  private:
-
   // Maps ID names to their corresponding numerical ids.
   using spv_named_id_table = std::unordered_map<std::string, uint32_t>;
   // Maps type-defining IDs to their IdType.
@@ -241,7 +238,7 @@ class AssemblyContext {
   // Maps an extended instruction import Id to the extended instruction type.
   std::unordered_map<uint32_t, spv_ext_inst_type_t> import_id_to_ext_inst_type_;
   spv_position_t current_position_;
-  spv_diagnostic* pDiagnostic_;
+  spvtools::MessageConsumer consumer_;
   spv_text text_;
   uint32_t bound_;
 };

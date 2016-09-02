@@ -340,14 +340,14 @@ typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_0,     // Vulkan 1.0 latest revision.
   SPV_ENV_UNIVERSAL_1_1,  // SPIR-V 1.1 latest revision, no other restrictions.
-  SPV_ENV_OPENCL_2_1, // OpenCL 2.1 latest revision.
-  SPV_ENV_OPENCL_2_2, // OpenCL 2.2 latest revision.
-  SPV_ENV_OPENGL_4_0, // OpenGL 4.0 plus GL_ARB_gl_spirv, latest revisions.
-  SPV_ENV_OPENGL_4_1, // OpenGL 4.1 plus GL_ARB_gl_spirv, latest revisions.
-  SPV_ENV_OPENGL_4_2, // OpenGL 4.2 plus GL_ARB_gl_spirv, latest revisions.
-  SPV_ENV_OPENGL_4_3, // OpenGL 4.3 plus GL_ARB_gl_spirv, latest revisions.
+  SPV_ENV_OPENCL_2_1,     // OpenCL 2.1 latest revision.
+  SPV_ENV_OPENCL_2_2,     // OpenCL 2.2 latest revision.
+  SPV_ENV_OPENGL_4_0,     // OpenGL 4.0 plus GL_ARB_gl_spirv, latest revisions.
+  SPV_ENV_OPENGL_4_1,     // OpenGL 4.1 plus GL_ARB_gl_spirv, latest revisions.
+  SPV_ENV_OPENGL_4_2,     // OpenGL 4.2 plus GL_ARB_gl_spirv, latest revisions.
+  SPV_ENV_OPENGL_4_3,     // OpenGL 4.3 plus GL_ARB_gl_spirv, latest revisions.
   // There is no variant for OpenGL 4.4.
-  SPV_ENV_OPENGL_4_5, // OpenGL 4.5 plus GL_ARB_gl_spirv, latest revisions.
+  SPV_ENV_OPENGL_4_5,  // OpenGL 4.5 plus GL_ARB_gl_spirv, latest revisions.
 } spv_target_env;
 
 // Returns a string describing the given SPIR-V target environment.
@@ -361,8 +361,9 @@ void spvContextDestroy(spv_context context);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
-// be stored into *binary. Any error will be written into *diagnostic. The
-// generated binary is independent of the context and may outlive it.
+// be stored into *binary. Any error will be written into *diagnostic if
+// diagnostic is non-null. The generated binary is independent of the context
+// and may outlive it.
 spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
                              const size_t length, spv_binary* binary,
                              spv_diagnostic* diagnostic);
@@ -374,7 +375,8 @@ void spvTextDestroy(spv_text text);
 // Decodes the given SPIR-V binary representation to its assembly text. The
 // word_count parameter specifies the number of words for binary. The options
 // parameter is a bit field of spv_binary_to_text_options_t. Decoded text will
-// be stored into *text. Any error will be written into *diagnostic.
+// be stored into *text. Any error will be written into *diagnostic if
+// diagnostic is non-null.
 spv_result_t spvBinaryToText(const spv_const_context context,
                              const uint32_t* binary, const size_t word_count,
                              const uint32_t options, spv_text* text,
@@ -385,7 +387,7 @@ spv_result_t spvBinaryToText(const spv_const_context context,
 void spvBinaryDestroy(spv_binary binary);
 
 // Validates a SPIR-V binary for correctness. Any errors will be written into
-// *diagnostic.
+// *diagnostic if diagnostic is non-null.
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* diagnostic);

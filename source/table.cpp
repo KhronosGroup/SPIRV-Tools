@@ -41,7 +41,13 @@ spv_context spvContextCreate(spv_target_env env) {
   spvOperandTableGet(&operand_table, env);
   spvExtInstTableGet(&ext_inst_table, env);
 
-  return new spv_context_t{env, opcode_table, operand_table, ext_inst_table};
+  return new spv_context_t{env, opcode_table, operand_table, ext_inst_table,
+                           nullptr /* a null default consumer */};
 }
 
 void spvContextDestroy(spv_context context) { delete context; }
+
+void SetContextMessageConsumer(spv_context context,
+                               spvtools::MessageConsumer consumer) {
+  context->consumer = std::move(consumer);
+}

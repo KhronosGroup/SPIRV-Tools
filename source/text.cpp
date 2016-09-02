@@ -31,6 +31,7 @@
 #include "diagnostic.h"
 #include "ext_inst.h"
 #include "instruction.h"
+#include "message.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
@@ -662,19 +663,15 @@ spv_result_t SetHeader(spv_target_env env, const uint32_t bound,
 // If a diagnostic is generated, it is not yet marked as being
 // for a text-based input.
 spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
-                                     const spv_text text, spv_binary* pBinary,
-                                     spv_diagnostic* pDiagnostic) {
-  if (!pDiagnostic) return SPV_ERROR_INVALID_DIAGNOSTIC;
-  libspirv::AssemblyContext context(text, pDiagnostic);
+                                     const spvtools::MessageConsumer& consumer,
+                                     const spv_text text, spv_binary* pBinary) {
+  libspirv::AssemblyContext context(text, consumer);
   if (!text->str) return context.diagnostic() << "Missing assembly text.";
 
   if (!grammar.isValid()) {
     return SPV_ERROR_INVALID_TABLE;
   }
   if (!pBinary) return SPV_ERROR_INVALID_POINTER;
-
-  // NOTE: Ensure diagnostic is zero initialised
-  *pDiagnostic = {};
 
   std::vector<spv_instruction_t> instructions;
 
@@ -728,11 +725,17 @@ spv_result_t spvTextToBinary(const spv_const_context context,
                              const char* input_text,
                              const size_t input_text_size, spv_binary* pBinary,
                              spv_diagnostic* pDiagnostic) {
+  spv_context_t hijack_context = *context;
+  if (pDiagnostic) {
+    *pDiagnostic = nullptr;
+    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
+  }
+
   spv_text_t text = {input_text, input_text_size};
-  libspirv::AssemblyGrammar grammar(context);
+  libspirv::AssemblyGrammar grammar(&hijack_context);
 
   spv_result_t result =
-      spvTextToBinaryInternal(grammar, &text, pBinary, pDiagnostic);
+      spvTextToBinaryInternal(grammar, hijack_context.consumer, &text, pBinary);
   if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
 
   return result;

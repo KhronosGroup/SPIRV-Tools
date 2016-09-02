@@ -18,6 +18,7 @@
 #include "spirv/1.1/spirv.h"
 
 #include "enum_set.h"
+#include "message.h"
 #include "spirv-tools/libspirv.h"
 
 typedef struct spv_opcode_desc_t {
@@ -87,7 +88,13 @@ struct spv_context_t {
   const spv_opcode_table opcode_table;
   const spv_operand_table operand_table;
   const spv_ext_inst_table ext_inst_table;
+  spvtools::MessageConsumer consumer;
 };
+
+// Sets the message consumer to |consumer| in the given |context|. The original
+// message consumer will be overwritten.
+void SetContextMessageConsumer(spv_context context,
+                               spvtools::MessageConsumer consumer);
 
 // Populates *table with entries for env.
 spv_result_t spvOpcodeTableGet(spv_opcode_table* table, spv_target_env env);

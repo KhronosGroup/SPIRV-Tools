@@ -19,6 +19,7 @@
 #include <sstream>
 #include <utility>
 
+#include "message.h"
 #include "spirv-tools/libspirv.h"
 
 namespace libspirv {
@@ -29,20 +30,16 @@ namespace libspirv {
 // emitted during the destructor.
 class DiagnosticStream {
  public:
-  DiagnosticStream(spv_position_t position, spv_diagnostic* pDiagnostic,
+  DiagnosticStream(spv_position_t position,
+                   const spvtools::MessageConsumer& consumer,
                    spv_result_t error)
-      : position_(position), pDiagnostic_(pDiagnostic), error_(error) {}
+      : position_(position), consumer_(consumer), error_(error) {}
 
   DiagnosticStream(DiagnosticStream&& other)
       : stream_(other.stream_.str()),
         position_(other.position_),
-        pDiagnostic_(other.pDiagnostic_),
-        error_(other.error_) {
-    // The other object's destructor will emit the text in its stream_
-    // member if its pDiagnostic_ member is non-null.  Prevent that,
-    // since emitting that text is now the responsibility of *this.
-    other.pDiagnostic_ = nullptr;
-  }
+        consumer_(other.consumer_),
+        error_(other.error_) {}
 
   ~DiagnosticStream();
 
@@ -59,9 +56,17 @@ class DiagnosticStream {
  private:
   std::stringstream stream_;
   spv_position_t position_;
-  spv_diagnostic* pDiagnostic_;
+  const spvtools::MessageConsumer& consumer_;  // Message consumer callback.
   spv_result_t error_;
 };
+
+// Changes the MessageConsumer in |context| to one that updates |diagnostic|
+// with the last message received.
+//
+// This function expects that |diagnostic| is not nullptr and its content is a
+// nullptr.
+void UseDiagnosticAsMessageConsumer(spv_context context,
+                                    spv_diagnostic* diagnostic);
 
 std::string spvResultToString(spv_result_t res);
 

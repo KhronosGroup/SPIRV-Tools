@@ -126,14 +126,6 @@ TEST_F(TextToBinaryTest, InvalidPointer) {
                             nullptr, &diagnostic));
 }
 
-TEST_F(TextToBinaryTest, InvalidDiagnostic) {
-  SetText(
-      "OpEntryPoint Kernel 0 \"\"\nOpExecutionMode 0 LocalSizeHint 1 1 1\n");
-  ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvTextToBinary(ScopedContext().context, text.str, text.length,
-                            &binary, nullptr));
-}
-
 TEST_F(TextToBinaryTest, InvalidPrefix) {
   EXPECT_EQ(
       "Expected <opcode> or <result-id> at the beginning of an instruction, "

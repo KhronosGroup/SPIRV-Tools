@@ -16,6 +16,7 @@
 
 #include "ir_loader.h"
 #include "make_unique.h"
+#include "table.h"
 
 namespace spvtools {
 
@@ -38,6 +39,10 @@ spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
 };
 
 }  // annoymous namespace
+
+void SpvTools::SetMessageConsumer(MessageConsumer consumer) {
+  SetContextMessageConsumer(context_, std::move(consumer));
+}
 
 spv_result_t SpvTools::Assemble(const std::string& text,
                                 std::vector<uint32_t>* binary) {

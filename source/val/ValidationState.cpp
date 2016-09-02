@@ -182,9 +182,8 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 
 }  // anonymous namespace
 
-ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
-                                     const spv_const_context context)
-    : diagnostic_(diagnostic),
+ValidationState_t::ValidationState_t(const spv_const_context ctx)
+    : context_(ctx),
       instruction_counter_(0),
       unresolved_forward_ids_{},
       operand_names_{},
@@ -193,7 +192,7 @@ ValidationState_t::ValidationState_t(spv_diagnostic* diagnostic,
       module_capabilities_(),
       ordered_instructions_(),
       all_definitions_(),
-      grammar_(context),
+      grammar_(ctx),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
       in_function_(false) {}
@@ -290,7 +289,7 @@ bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
 
 DiagnosticStream ValidationState_t::diag(spv_result_t error_code) const {
   return libspirv::DiagnosticStream(
-      {0, 0, static_cast<size_t>(instruction_counter_)}, diagnostic_,
+      {0, 0, static_cast<size_t>(instruction_counter_)}, context_->consumer,
       error_code);
 }
 
@@ -377,8 +376,8 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
 void ValidationState_t::RegisterInstruction(
     const spv_parsed_instruction_t& inst) {
   if (in_function_body()) {
-    ordered_instructions_.emplace_back(
-        &inst, &current_function(), current_function().current_block());
+    ordered_instructions_.emplace_back(&inst, &current_function(),
+                                       current_function().current_block());
   } else {
     ordered_instructions_.emplace_back(&inst, nullptr, nullptr);
   }

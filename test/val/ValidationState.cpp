@@ -36,11 +36,9 @@ using std::vector;
 class ValidationStateTest : public testing::Test {
  public:
   ValidationStateTest()
-      : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
-        state_(&diag_, context_) {}
+      : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)), state_(context_) {}
 
  protected:
-  spv_diagnostic diag_;
   spv_context context_;
   ValidationState_t state_;
 };

@@ -19,6 +19,8 @@
 #include "TestFixture.h"
 #include "UnitSPIRV.h"
 #include "gmock/gmock.h"
+#include "source/message.h"
+#include "source/table.h"
 #include "spirv/1.0/OpenCL.std.h"
 
 // Returns true if two spv_parsed_operand_t values are equal.
@@ -256,6 +258,112 @@ TEST_F(BinaryParseTest, NullDiagnosticsIsOkForBadParse) {
       SPV_ERROR_INVALID_BINARY,
       spvBinaryParse(ScopedContext().context, &client_, words.data(),
                      words.size(), invoke_header, invoke_instruction, nullptr));
+}
+
+// Make sure that we don't blow up when both the consumer and the diagnostic are
+// null.
+TEST_F(BinaryParseTest, NullConsumerNullDiagnosticsForBadParse) {
+  auto words = CompileSuccessfully("");
+
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  SetContextMessageConsumer(ctx, nullptr);
+
+  words.push_back(0xffffffff);  // Certainly invalid instruction header.
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryParse(ctx, &client_, words.data(), words.size(),
+                           invoke_header, invoke_instruction, nullptr));
+
+  spvContextDestroy(ctx);
+}
+
+TEST_F(BinaryParseTest, SpecifyConsumerNullDiagnosticsForGoodParse) {
+  const auto words = CompileSuccessfully("");
+
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  int invocation = 0;
+  SetContextMessageConsumer(
+      ctx, [&invocation](spvtools::MessageLevel, const char*,
+                         const spv_position_t&, const char*) { ++invocation; });
+
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryParse(ctx, &client_, words.data(), words.size(),
+                           invoke_header, invoke_instruction, nullptr));
+  EXPECT_EQ(0, invocation);
+
+  spvContextDestroy(ctx);
+}
+
+TEST_F(BinaryParseTest, SpecifyConsumerNullDiagnosticsForBadParse) {
+  auto words = CompileSuccessfully("");
+
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  int invocation = 0;
+  SetContextMessageConsumer(
+      ctx, [&invocation](spvtools::MessageLevel level, const char* source,
+                         const spv_position_t& position, const char* message) {
+        ++invocation;
+        EXPECT_EQ(spvtools::MessageLevel::Error, level);
+        EXPECT_STREQ("", source);
+        EXPECT_EQ(0u, position.line);
+        EXPECT_EQ(0u, position.column);
+        EXPECT_EQ(5u, position.index);
+        EXPECT_STREQ("Invalid opcode: 65535", message);
+      });
+
+  words.push_back(0xffffffff);  // Certainly invalid instruction header.
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryParse(ctx, &client_, words.data(), words.size(),
+                           invoke_header, invoke_instruction, nullptr));
+  EXPECT_EQ(1, invocation);
+
+  spvContextDestroy(ctx);
+}
+
+TEST_F(BinaryParseTest, SpecifyConsumerSpecifyDiagnosticsForGoodParse) {
+  const auto words = CompileSuccessfully("");
+
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  int invocation = 0;
+  SetContextMessageConsumer(
+      ctx, [&invocation](spvtools::MessageLevel, const char*,
+                         const spv_position_t&, const char*) { ++invocation; });
+
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(SPV_SUCCESS,
+            spvBinaryParse(ctx, &client_, words.data(), words.size(),
+                           invoke_header, invoke_instruction, &diagnostic_));
+  EXPECT_EQ(0, invocation);
+  EXPECT_EQ(nullptr, diagnostic_);
+
+  spvContextDestroy(ctx);
+}
+
+TEST_F(BinaryParseTest, SpecifyConsumerSpecifyDiagnosticsForBadParse) {
+  auto words = CompileSuccessfully("");
+
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  int invocation = 0;
+  SetContextMessageConsumer(
+      ctx, [&invocation](spvtools::MessageLevel, const char*,
+                         const spv_position_t&, const char*) { ++invocation; });
+
+  words.push_back(0xffffffff);  // Certainly invalid instruction header.
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            spvBinaryParse(ctx, &client_, words.data(), words.size(),
+                           invoke_header, invoke_instruction, &diagnostic_));
+  EXPECT_EQ(0, invocation);
+  EXPECT_STREQ("Invalid opcode: 65535", diagnostic_->error);
+
+  spvContextDestroy(ctx);
 }
 
 TEST_F(BinaryParseTest,

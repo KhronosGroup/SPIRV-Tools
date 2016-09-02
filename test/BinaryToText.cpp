@@ -149,13 +149,6 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
   spvDiagnosticDestroy(diagnostic);
 }
 
-TEST_F(BinaryToText, InvalidDiagnostic) {
-  spv_text text;
-  ASSERT_EQ(SPV_ERROR_INVALID_DIAGNOSTIC,
-            spvBinaryToText(context, binary->code, binary->wordCount,
-                            SPV_BINARY_TO_TEXT_OPTION_NONE, &text, nullptr));
-}
-
 struct FailedDecodeCase {
   std::string source_text;
   std::vector<uint32_t> appended_instruction;
