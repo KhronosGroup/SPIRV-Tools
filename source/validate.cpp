@@ -68,9 +68,10 @@ spv_result_t spvValidateIDs(
     const spv_ext_inst_table extInstTable, const ValidationState_t& state,
     spv_position position, spv_diagnostic* pDiagnostic) {
   position->index = SPV_INDEX_INSTRUCTION;
-  spvCheckReturn(spvValidateInstructionIDs(pInsts, count, opcodeTable,
-                                           operandTable, extInstTable, state,
-                                           position, pDiagnostic));
+  if (auto error =
+          spvValidateInstructionIDs(pInsts, count, opcodeTable, operandTable,
+                                    extInstTable, state, position, pDiagnostic))
+    return error;
   return SPV_SUCCESS;
 }
 
@@ -132,10 +133,10 @@ spv_result_t ProcessInstruction(void* user_data,
 
   DebugInstructionPass(_, inst);
   // TODO(umar): Perform data rules pass
-  spvCheckReturn(IdPass(_, inst));
-  spvCheckReturn(ModuleLayoutPass(_, inst));
-  spvCheckReturn(CfgPass(_, inst));
-  spvCheckReturn(InstructionPass(_, inst));
+  if (auto error = IdPass(_, inst)) return error;
+  if (auto error = ModuleLayoutPass(_, inst)) return error;
+  if (auto error = CfgPass(_, inst)) return error;
+  if (auto error = InstructionPass(_, inst)) return error;
 
   return SPV_SUCCESS;
 }
@@ -166,7 +167,9 @@ void PrintBlocks(ValidationState_t& _, libspirv::Function func) {
 #ifdef __clang__
 #define UNUSED(func) [[gnu::unused]] func
 #elif defined(__GNUC__)
-#define UNUSED(func) func __attribute__((unused)); func
+#define UNUSED(func)            \
+  func __attribute__((unused)); \
+  func
 #elif defined(_MSC_VER)
 #define UNUSED(func) func
 #endif
@@ -204,9 +207,10 @@ spv_result_t spvValidate(const spv_const_context context,
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(pDiagnostic, context);
-  spvCheckReturn(spvBinaryParse(context, &vstate, binary->code,
-                                binary->wordCount, setHeader,
-                                ProcessInstruction, pDiagnostic));
+  if (auto error =
+          spvBinaryParse(context, &vstate, binary->code, binary->wordCount,
+                         setHeader, ProcessInstruction, pDiagnostic))
+    return error;
 
   if (vstate.in_function_body())
     return vstate.diag(SPV_ERROR_INVALID_LAYOUT)
@@ -230,9 +234,9 @@ spv_result_t spvValidate(const spv_const_context context,
 
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
-  spvCheckReturn(PerformCfgChecks(vstate));
-  spvCheckReturn(UpdateIdUse(vstate));
-  spvCheckReturn(CheckIdDefinitionDominateUse(vstate));
+  if (auto error = PerformCfgChecks(vstate)) return error;
+  if (auto error = UpdateIdUse(vstate)) return error;
+  if (auto error = CheckIdDefinitionDominateUse(vstate)) return error;
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
@@ -250,10 +254,8 @@ spv_result_t spvValidate(const spv_const_context context,
   }
 
   position.index = SPV_INDEX_INSTRUCTION;
-  spvCheckReturn(spvValidateIDs(instructions.data(), instructions.size(),
-                                context->opcode_table, context->operand_table,
-                                context->ext_inst_table, vstate, &position,
-                                pDiagnostic));
-
-  return SPV_SUCCESS;
+  return spvValidateIDs(instructions.data(), instructions.size(),
+                        context->opcode_table, context->operand_table,
+                        context->ext_inst_table, vstate, &position,
+                        pDiagnostic);
 }

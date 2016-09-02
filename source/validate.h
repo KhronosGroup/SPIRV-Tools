@@ -196,7 +196,4 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const spv_ext_inst_table extInstTable,
                             spv_position position, spv_diagnostic* pDiagnostic);
 
-#define spvCheckReturn(expression) \
-  if (spv_result_t error = (expression)) return error;
-
 #endif  // LIBSPIRV_VALIDATE_H_
