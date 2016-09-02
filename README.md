@@ -8,10 +8,12 @@
 The SPIR-V Tools project provides an API and commands for processing SPIR-V
 modules.
 
-The project includes an assembler, binary module parser, disassembler, and
-validator for SPIR-V, all based on a common static library. The library contains
-all of the implementation details, and is used in the standalone tools whilst
-also enabling integration into other code bases directly.
+The project includes an assembler, binary module parser, disassembler,
+validator, and optimizer for SPIR-V. Except for the optimizer, all are based
+on a common static library.  The library contains all of the implementation
+details, and is used in the standalone tools whilst also enabling integration
+into other code bases directly. The optimizer implementation resides in its
+own library.
 
 The interfaces are still under development, and are expected to change.
 
@@ -54,6 +56,20 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 ### Validator
 
 *Warning:* The validator is incomplete.
+
+### Optimizer
+
+*Warning:* The optimizer is still under development and its library interface is
+not yet published.
+
+Currently supported optimizations:
+* [Strip debug info](source/opt/strip_debug_info_pass.h)
+* [Freeze spec constant](source/opt/freeze_spec_constant_value_pass.h)
+* [Fold `OpSpecConstantOp` and `OpSpecConstantComposite`](source/opt/fold_spec_constant_op_and_composite_pass.h)
+* [Unify constants](source/opt/unify_const_pass.h)
+* [Eliminate dead constant](source/opt/eliminate_dead_constant_pass.h)
+
+For the latest list, please refer to `spirv-opt --help`.
 
 ## Source code
 
@@ -108,7 +124,7 @@ The project uses [CMake][cmake] to generate platform-specific build
 configurations. Assume that `<spirv-dir>` is the root directory of the checked
 out code:
 
-```
+```sh
 cd <spirv-dir>
 git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
 git clone https://github.com/google/googletest.git external/googletest # optional
@@ -125,8 +141,10 @@ development environment.
 The following CMake options are supported:
 
 * `SPIRV_COLOR_TERMINAL={ON|OFF}`, default `ON` - Enables color console output.
+* `SPIRV_SKIP_TESTS={ON|OFF}`, default `OFF`- Build only the library and
+  the command line tools.  This will prevent the tests from being built.
 * `SPIRV_SKIP_EXECUTABLES={ON|OFF}`, default `OFF`- Build only the library, not
-  the command line tools.  This will also prevent the tests from being built.
+  the command line tools and tests.
 * `SPIRV_USE_SANITIZER=<sanitizer>`, default is no sanitizing - On UNIX
   platforms with an appropriate version of `clang` this option enables the use
   of the sanitizers documented [here][clang-sanitizers].
