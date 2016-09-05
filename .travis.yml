@@ -25,6 +25,7 @@ compiler:
   - gcc
 
 matrix:
+  fast_finish: true
   include:
     # Additional build using Android NDK
     - env: BUILD_NDK=ON
