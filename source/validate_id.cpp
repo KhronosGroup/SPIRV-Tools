@@ -29,11 +29,6 @@
 #include "val/Function.h"
 #include "val/ValidationState.h"
 
-#define spvCheck(condition, action) \
-  if (condition) {                  \
-    action;                         \
-  }
-
 using libspirv::ValidationState_t;
 using std::function;
 using std::ignore;
@@ -113,12 +108,13 @@ bool idUsage::isValid<SpvOpMemberName>(const spv_instruction_t* inst,
   auto memberIndex = 2;
   auto member = inst->words[memberIndex];
   auto memberCount = (uint32_t)(type->words().size() - 2);
-  spvCheck(memberCount <= member, DIAG(memberIndex)
-                                      << "OpMemberName Member <id> '"
-                                      << inst->words[memberIndex]
-                                      << "' index is larger than Type <id> '"
-                                      << type->id() << "'s member count.";
-           return false);
+  if (memberCount <= member) {
+    DIAG(memberIndex) << "OpMemberName Member <id> '"
+                      << inst->words[memberIndex]
+                      << "' index is larger than Type <id> '" << type->id()
+                      << "'s member count.";
+    return false;
+  }
   return true;
 }
 
@@ -149,11 +145,12 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
   auto memberIndex = 2;
   auto member = inst->words[memberIndex];
   auto memberCount = static_cast<uint32_t>(structType->words().size() - 2);
-  spvCheck(memberCount < member, DIAG(memberIndex)
-                                     << "OpMemberDecorate Structure type <id> '"
-                                     << inst->words[memberIndex]
-                                     << "' member count is less than Member";
-           return false);
+  if (memberCount < member) {
+    DIAG(memberIndex) << "OpMemberDecorate Structure type <id> '"
+                      << inst->words[memberIndex]
+                      << "' member count is less than Member";
+    return false;
+  }
   return true;
 }
 
@@ -454,14 +451,14 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
   switch (resultType->opcode()) {
     case SpvOpTypeVector: {
       auto componentCount = resultType->words()[3];
-      spvCheck(
-          componentCount != constituentCount,
-          // TODO: Output ID's on diagnostic
-          DIAG(inst->words.size() - 1)
-              << "OpConstantComposite Constituent <id> count does not match "
-                 "Result Type <id> '"
-              << resultType->id() << "'s vector component count.";
-          return false);
+      if (componentCount != constituentCount) {
+        // TODO: Output ID's on diagnostic
+        DIAG(inst->words.size() - 1)
+            << "OpConstantComposite Constituent <id> count does not match "
+               "Result Type <id> '"
+            << resultType->id() << "'s vector component count.";
+        return false;
+      }
       auto componentType = module_.FindDef(resultType->words()[2]);
       assert(componentType);
       for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
@@ -487,14 +484,14 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
     } break;
     case SpvOpTypeMatrix: {
       auto columnCount = resultType->words()[3];
-      spvCheck(
-          columnCount != constituentCount,
-          // TODO: Output ID's on diagnostic
-          DIAG(inst->words.size() - 1)
-              << "OpConstantComposite Constituent <id> count does not match "
-                 "Result Type <id> '"
-              << resultType->id() << "'s matrix column count.";
-          return false);
+      if (columnCount != constituentCount) {
+        // TODO: Output ID's on diagnostic
+        DIAG(inst->words.size() - 1)
+            << "OpConstantComposite Constituent <id> count does not match "
+               "Result Type <id> '"
+            << resultType->id() << "'s matrix column count.";
+        return false;
+      }
 
       auto columnType = module_.FindDef(resultType->words()[2]);
       assert(columnType);
@@ -513,30 +510,32 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
         }
         auto vector = module_.FindDef(constituent->type_id());
         assert(vector);
-        spvCheck(columnType->opcode() != vector->opcode(),
-                 DIAG(constituentIndex)
-                     << "OpConstantComposite Constituent <id> '"
-                     << inst->words[constituentIndex]
-                     << "' type does not match Result Type <id> '"
-                     << resultType->id() << "'s matrix column type.";
-                 return false);
+        if (columnType->opcode() != vector->opcode()) {
+          DIAG(constituentIndex) << "OpConstantComposite Constituent <id> '"
+                                 << inst->words[constituentIndex]
+                                 << "' type does not match Result Type <id> '"
+                                 << resultType->id()
+                                 << "'s matrix column type.";
+          return false;
+        }
         auto vectorComponentType = module_.FindDef(vector->words()[2]);
         assert(vectorComponentType);
-        spvCheck(componentType->id() != vectorComponentType->id(),
-                 DIAG(constituentIndex)
-                     << "OpConstantComposite Constituent <id> '"
-                     << inst->words[constituentIndex]
-                     << "' component type does not match Result Type <id> '"
-                     << resultType->id() << "'s matrix column component type.";
-                 return false);
-        spvCheck(
-            componentCount != vector->words()[3],
-            DIAG(constituentIndex)
-                << "OpConstantComposite Constituent <id> '"
-                << inst->words[constituentIndex]
-                << "' vector component count does not match Result Type <id> '"
-                << resultType->id() << "'s vector component count.";
-            return false);
+        if (componentType->id() != vectorComponentType->id()) {
+          DIAG(constituentIndex)
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "' component type does not match Result Type <id> '"
+              << resultType->id() << "'s matrix column component type.";
+          return false;
+        }
+        if (componentCount != vector->words()[3]) {
+          DIAG(constituentIndex)
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "' vector component count does not match Result Type <id> '"
+              << resultType->id() << "'s vector component count.";
+          return false;
+        }
       }
     } break;
     case SpvOpTypeArray: {
@@ -544,12 +543,13 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
       assert(elementType);
       auto length = module_.FindDef(resultType->words()[3]);
       assert(length);
-      spvCheck(length->words()[3] != constituentCount,
-               DIAG(inst->words.size() - 1)
-                   << "OpConstantComposite Constituent count does not match "
-                      "Result Type <id> '"
-                   << resultType->id() << "'s array length.";
-               return false);
+      if (length->words()[3] != constituentCount) {
+        DIAG(inst->words.size() - 1)
+            << "OpConstantComposite Constituent count does not match "
+               "Result Type <id> '"
+            << resultType->id() << "'s array length.";
+        return false;
+      }
       for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
@@ -561,24 +561,25 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
         }
         auto constituentType = module_.FindDef(constituent->type_id());
         assert(constituentType);
-        spvCheck(elementType->id() != constituentType->id(),
-                 DIAG(constituentIndex)
-                     << "OpConstantComposite Constituent <id> '"
-                     << inst->words[constituentIndex]
-                     << "'s type does not match Result Type <id> '"
-                     << resultType->id() << "'s array element type.";
-                 return false);
+        if (elementType->id() != constituentType->id()) {
+          DIAG(constituentIndex) << "OpConstantComposite Constituent <id> '"
+                                 << inst->words[constituentIndex]
+                                 << "'s type does not match Result Type <id> '"
+                                 << resultType->id()
+                                 << "'s array element type.";
+          return false;
+        }
       }
     } break;
     case SpvOpTypeStruct: {
       auto memberCount = resultType->words().size() - 2;
-      spvCheck(memberCount != constituentCount,
-               DIAG(resultTypeIndex)
-                   << "OpConstantComposite Constituent <id> '"
-                   << inst->words[resultTypeIndex]
-                   << "' count does not match Result Type <id> '"
-                   << resultType->id() << "'s struct member count.";
-               return false);
+      if (memberCount != constituentCount) {
+        DIAG(resultTypeIndex) << "OpConstantComposite Constituent <id> '"
+                              << inst->words[resultTypeIndex]
+                              << "' count does not match Result Type <id> '"
+                              << resultType->id() << "'s struct member count.";
+        return false;
+      }
       for (uint32_t constituentIndex = 3, memberIndex = 2;
            constituentIndex < inst->words.size();
            constituentIndex++, memberIndex++) {
@@ -594,13 +595,14 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
 
         auto memberType = module_.FindDef(resultType->words()[memberIndex]);
         assert(memberType);
-        spvCheck(memberType->id() != constituentType->id(),
-                 DIAG(constituentIndex)
-                     << "OpConstantComposite Constituent <id> '"
-                     << inst->words[constituentIndex]
-                     << "' type does not match the Result Type <id> '"
-                     << resultType->id() << "'s member type.";
-                 return false);
+        if (memberType->id() != constituentType->id()) {
+          DIAG(constituentIndex)
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "' type does not match the Result Type <id> '"
+              << resultType->id() << "'s member type.";
+          return false;
+        }
       }
     } break;
     default: { assert(0 && "Unreachable!"); } break;
@@ -741,10 +743,11 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
                                  const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
-  spvCheck(!resultType, DIAG(resultTypeIndex) << "OpLoad Result Type <id> '"
-                                              << inst->words[resultTypeIndex]
-                                              << "' is not defind.";
-           return false);
+  if (!resultType) {
+    DIAG(resultTypeIndex) << "OpLoad Result Type <id> '"
+                          << inst->words[resultTypeIndex] << "' is not defind.";
+    return false;
+  }
   auto pointerIndex = 3;
   auto pointer = module_.FindDef(inst->words[pointerIndex]);
   if (!pointer || (addressingModel == SpvAddressingModelLogical &&
@@ -791,11 +794,11 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   }
   auto type = module_.FindDef(pointerType->words()[3]);
   assert(type);
-  spvCheck(SpvOpTypeVoid == type->opcode(), DIAG(pointerIndex)
-                                                << "OpStore Pointer <id> '"
-                                                << inst->words[pointerIndex]
-                                                << "'s type is void.";
-           return false);
+  if (SpvOpTypeVoid == type->opcode()) {
+    DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex]
+                       << "'s type is void.";
+    return false;
+  }
 
   auto objectIndex = 2;
   auto object = module_.FindDef(inst->words[objectIndex]);
@@ -806,17 +809,18 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   }
   auto objectType = module_.FindDef(object->type_id());
   assert(objectType);
-  spvCheck(SpvOpTypeVoid == objectType->opcode(),
-           DIAG(objectIndex) << "OpStore Object <id> '"
-                             << inst->words[objectIndex] << "'s type is void.";
-           return false);
+  if (SpvOpTypeVoid == objectType->opcode()) {
+    DIAG(objectIndex) << "OpStore Object <id> '" << inst->words[objectIndex]
+                      << "'s type is void.";
+    return false;
+  }
 
-  spvCheck(type->id() != objectType->id(),
-           DIAG(pointerIndex)
-               << "OpStore Pointer <id> '" << inst->words[pointerIndex]
-               << "'s type does not match Object <id> '" << objectType->id()
-               << "'s type.";
-           return false);
+  if (type->id() != objectType->id()) {
+    DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex]
+                       << "'s type does not match Object <id> '"
+                       << objectType->id() << "'s type.";
+    return false;
+  }
   return true;
 }
 
@@ -837,12 +841,13 @@ bool idUsage::isValid<SpvOpCopyMemory>(const spv_instruction_t* inst,
   assert(sourcePointerType);
   auto sourceType = module_.FindDef(sourcePointerType->words()[3]);
   assert(sourceType);
-  spvCheck(targetType->id() != sourceType->id(),
-           DIAG(sourceIndex)
-               << "OpCopyMemory Target <id> '" << inst->words[sourceIndex]
-               << "'s type does not match Source <id> '" << sourceType->id()
-               << "'s type.";
-           return false);
+  if (targetType->id() != sourceType->id()) {
+    DIAG(sourceIndex) << "OpCopyMemory Target <id> '"
+                      << inst->words[sourceIndex]
+                      << "'s type does not match Source <id> '"
+                      << sourceType->id() << "'s type.";
+    return false;
+  }
   return true;
 }
 
@@ -859,17 +864,17 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
   auto size = module_.FindDef(inst->words[sizeIndex]);
   if (!size) return false;
   auto targetPointerType = module_.FindDef(target->type_id());
-  spvCheck(
-      !targetPointerType || SpvOpTypePointer != targetPointerType->opcode(),
-      DIAG(targetIndex) << "OpCopyMemorySized Target <id> '"
-                        << inst->words[targetIndex] << "' is not a pointer.";
-      return false);
+  if (!targetPointerType || SpvOpTypePointer != targetPointerType->opcode()) {
+    DIAG(targetIndex) << "OpCopyMemorySized Target <id> '"
+                      << inst->words[targetIndex] << "' is not a pointer.";
+    return false;
+  }
   auto sourcePointerType = module_.FindDef(source->type_id());
-  spvCheck(
-      !sourcePointerType || SpvOpTypePointer != sourcePointerType->opcode(),
-      DIAG(sourceIndex) << "OpCopyMemorySized Source <id> '"
-                        << inst->words[sourceIndex] << "' is not a pointer.";
-      return false);
+  if (!sourcePointerType || SpvOpTypePointer != sourcePointerType->opcode()) {
+    DIAG(sourceIndex) << "OpCopyMemorySized Source <id> '"
+                      << inst->words[sourceIndex] << "' is not a pointer.";
+    return false;
+  }
   switch (size->opcode()) {
     // TODO: The following opcode's are assumed to be valid, refer to the
     // following bug https://cvs.khronos.org/bugzilla/show_bug.cgi?id=13871 for
@@ -878,21 +883,23 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
     case SpvOpSpecConstant: {
       auto sizeType = module_.FindDef(size->type_id());
       assert(sizeType);
-      spvCheck(SpvOpTypeInt != sizeType->opcode(),
-               DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
-                               << inst->words[sizeIndex]
-                               << "'s type is not an integer type.";
-               return false);
+      if (SpvOpTypeInt != sizeType->opcode()) {
+        DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
+                        << inst->words[sizeIndex]
+                        << "'s type is not an integer type.";
+        return false;
+      }
     } break;
     case SpvOpVariable: {
       auto pointerType = module_.FindDef(size->type_id());
       assert(pointerType);
       auto sizeType = module_.FindDef(pointerType->type_id());
-      spvCheck(!sizeType || SpvOpTypeInt != sizeType->opcode(),
-               DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
-                               << inst->words[sizeIndex]
-                               << "'s variable type is not an integer type.";
-               return false);
+      if (!sizeType || SpvOpTypeInt != sizeType->opcode()) {
+        DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
+                        << inst->words[sizeIndex]
+                        << "'s variable type is not an integer type.";
+        return false;
+      }
     } break;
     default:
       DIAG(sizeIndex) << "OpCopyMemorySized Size <id> '"
@@ -951,12 +958,13 @@ bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t* inst,
   }
   auto returnType = module_.FindDef(functionType->words()[2]);
   assert(returnType);
-  spvCheck(returnType->id() != resultType->id(),
-           DIAG(resultTypeIndex) << "OpFunction Result Type <id> '"
-                                 << inst->words[resultTypeIndex]
-                                 << "' does not match the Function Type <id> '"
-                                 << resultType->id() << "'s return type.";
-           return false);
+  if (returnType->id() != resultType->id()) {
+    DIAG(resultTypeIndex) << "OpFunction Result Type <id> '"
+                          << inst->words[resultTypeIndex]
+                          << "' does not match the Function Type <id> '"
+                          << resultType->id() << "'s return type.";
+    return false;
+  }
   return true;
 }
 
@@ -986,13 +994,13 @@ bool idUsage::isValid<SpvOpFunctionParameter>(const spv_instruction_t* inst,
   }
   auto paramType = module_.FindDef(functionType->words()[paramIndex + 3]);
   assert(paramType);
-  spvCheck(resultType->id() != paramType->id(),
-           DIAG(resultTypeIndex)
-               << "OpFunctionParameter Result Type <id> '"
-               << inst->words[resultTypeIndex]
-               << "' does not match the OpTypeFunction parameter "
-                  "type of the same index.";
-           return false);
+  if (resultType->id() != paramType->id()) {
+    DIAG(resultTypeIndex) << "OpFunctionParameter Result Type <id> '"
+                          << inst->words[resultTypeIndex]
+                          << "' does not match the OpTypeFunction parameter "
+                             "type of the same index.";
+    return false;
+  }
   return true;
 }
 
@@ -1011,22 +1019,23 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
   }
   auto returnType = module_.FindDef(function->type_id());
   assert(returnType);
-  spvCheck(returnType->id() != resultType->id(),
-           DIAG(resultTypeIndex) << "OpFunctionCall Result Type <id> '"
-                                 << inst->words[resultTypeIndex]
-                                 << "'s type does not match Function <id> '"
-                                 << returnType->id() << "'s return type.";
-           return false);
+  if (returnType->id() != resultType->id()) {
+    DIAG(resultTypeIndex) << "OpFunctionCall Result Type <id> '"
+                          << inst->words[resultTypeIndex]
+                          << "'s type does not match Function <id> '"
+                          << returnType->id() << "'s return type.";
+    return false;
+  }
   auto functionType = module_.FindDef(function->words()[4]);
   assert(functionType);
   auto functionCallArgCount = inst->words.size() - 4;
   auto functionParamCount = functionType->words().size() - 3;
-  spvCheck(
-      functionParamCount != functionCallArgCount,
-      DIAG(inst->words.size() - 1)
-          << "OpFunctionCall Function <id>'s parameter count does not match "
-             "the argument count.";
-      return false);
+  if (functionParamCount != functionCallArgCount) {
+    DIAG(inst->words.size() - 1)
+        << "OpFunctionCall Function <id>'s parameter count does not match "
+           "the argument count.";
+    return false;
+  }
   for (size_t argumentIndex = 4, paramIndex = 3;
        argumentIndex < inst->words.size(); argumentIndex++, paramIndex++) {
     auto argument = module_.FindDef(inst->words[argumentIndex]);
@@ -1035,12 +1044,13 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
     assert(argumentType);
     auto parameterType = module_.FindDef(functionType->words()[paramIndex]);
     assert(parameterType);
-    spvCheck(argumentType->id() != parameterType->id(),
-             DIAG(argumentIndex) << "OpFunctionCall Argument <id> '"
-                                 << inst->words[argumentIndex]
-                                 << "'s type does not match Function <id> '"
-                                 << parameterType->id() << "'s parameter type.";
-             return false);
+    if (argumentType->id() != parameterType->id()) {
+      DIAG(argumentIndex) << "OpFunctionCall Argument <id> '"
+                          << inst->words[argumentIndex]
+                          << "'s type does not match Function <id> '"
+                          << parameterType->id() << "'s parameter type.";
+      return false;
+    }
   }
   return true;
 }
@@ -1697,18 +1707,19 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
   // NOTE: Find OpFunction
   const spv_instruction_t* function = inst - 1;
   while (firstInst != function) {
-    spvCheck(SpvOpFunction == function->opcode, break);
+    if (SpvOpFunction == function->opcode) break;
     function--;
   }
-  spvCheck(SpvOpFunction != function->opcode,
-           DIAG(valueIndex) << "OpReturnValue is not in a basic block.";
-           return false);
+  if (SpvOpFunction != function->opcode) {
+    DIAG(valueIndex) << "OpReturnValue is not in a basic block.";
+    return false;
+  }
   auto returnType = module_.FindDef(function->words[1]);
-  spvCheck(!returnType || returnType->id() != valueType->id(),
-           DIAG(valueIndex)
-               << "OpReturnValue Value <id> '" << inst->words[valueIndex]
-               << "'s type does not match OpFunction's return type.";
-           return false);
+  if (!returnType || returnType->id() != valueType->id()) {
+    DIAG(valueIndex) << "OpReturnValue Value <id> '" << inst->words[valueIndex]
+                     << "'s type does not match OpFunction's return type.";
+    return false;
+  }
   return true;
 }
 
@@ -2097,8 +2108,8 @@ bool idUsage::isValid<OpGroupCommitWritePipe>(
 
 bool idUsage::isValid(const spv_instruction_t* inst) {
   spv_opcode_desc opcodeEntry = nullptr;
-  spvCheck(spvOpcodeTableValueLookup(opcodeTable, inst->opcode, &opcodeEntry),
-           return false);
+  if (spvOpcodeTableValueLookup(opcodeTable, inst->opcode, &opcodeEntry))
+    return false;
 #define CASE(OpCode) \
   case Spv##OpCode:  \
     return isValid<Spv##OpCode>(inst, opcodeEntry);
@@ -2521,7 +2532,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                   state.memory_model(), state.addressing_model(), state,
                   state.entry_points(), position, pDiag);
   for (uint64_t instIndex = 0; instIndex < instCount; ++instIndex) {
-    spvCheck(!idUsage.isValid(&pInsts[instIndex]), return SPV_ERROR_INVALID_ID);
+    if (!idUsage.isValid(&pInsts[instIndex])) return SPV_ERROR_INVALID_ID;
     position->index += pInsts[instIndex].words.size();
   }
   return SPV_SUCCESS;
