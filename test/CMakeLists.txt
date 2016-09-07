@@ -120,14 +120,6 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.SubgroupDispatch.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/TextWordGet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Capability.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Validate.CFG.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Layout.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Storage.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Validate.SSA.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateID.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
 )
 add_spvtools_unittest(
   TARGET spirv_unit_tests
@@ -140,3 +132,4 @@ add_spvtools_unittest(
   LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
 
 add_subdirectory(opt)
+add_subdirectory(val)
