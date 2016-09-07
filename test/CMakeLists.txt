@@ -34,29 +34,30 @@ function(add_spvtools_unittest)
     set(multi_value_args SRCS LIBS)
     cmake_parse_arguments(
       ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
-    add_executable(${ARG_TARGET} ${ARG_SRCS})
-    spvtools_default_compile_options(${ARG_TARGET})
+    set(target test_${ARG_TARGET})
+    add_executable(${target} ${ARG_SRCS})
+    spvtools_default_compile_options(${target})
     if(${COMPILER_IS_LIKE_GNU})
-      target_compile_options(${ARG_TARGET} PRIVATE -Wno-undef)
+      target_compile_options(${target} PRIVATE -Wno-undef)
     endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
       # Disable C4503 "decorated name length exceeded" warning,
       # triggered by some heavily templated types.
       # We don't care much about that in test code.
       # Important to do since we have warnings-as-errors.
-      target_compile_options(${ARG_TARGET} PRIVATE /wd4503)
+      target_compile_options(${target} PRIVATE /wd4503)
     endif()
-    target_include_directories(${ARG_TARGET} PRIVATE
-      ${spirv-tools_SOURCE_DIR}/test
+    target_include_directories(${target} PRIVATE
+      ${SPIRV_HEADER_INCLUDE_DIR}
       ${spirv-tools_SOURCE_DIR}
       ${spirv-tools_SOURCE_DIR}/include
-      ${SPIRV_HEADER_INCLUDE_DIR}
+      ${spirv-tools_SOURCE_DIR}/test
       ${gtest_SOURCE_DIR}/include
       ${gmock_SOURCE_DIR}/include
     )
-    target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
-    target_link_libraries(${ARG_TARGET} PRIVATE gmock_main)
-    add_test(NAME spirv-tools-${ARG_TARGET} COMMAND ${ARG_TARGET})
+    target_link_libraries(${target} PRIVATE ${ARG_LIBS})
+    target_link_libraries(${target} PRIVATE gmock_main)
+    add_test(NAME spirv-tools-${target} COMMAND ${target})
   endif()
 endfunction()
 
@@ -129,7 +130,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
 )
 add_spvtools_unittest(
-  TARGET UnitSPIRV
+  TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
   LIBS ${SPIRV_TOOLS})
 

@@ -277,13 +277,8 @@ This is experimental.
 
 ### Tests
 
-Tests are only built when googletest is found.
-
-The `<spirv-build-dir>/test/UnitSPIRV` executable runs the project tests.
-It supports the standard `googletest` command line options.
-
-The project also adds a CMake test `spirv-tools-testsuite`, which executes
-`UnitSPIRV`.  That way it's possible to run the tests using `ctest`.
+Tests are only built when googletest is found. Use `ctest` to run all the
+tests.
 
 ## Future Work
 <a name="future"></a>
