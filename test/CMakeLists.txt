@@ -75,9 +75,6 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/BinaryToText.Literal.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CapabilitySet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Comment.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/DiagnosticDestroy.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/DiagnosticPrint.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/DiagnosticStream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ExtInstGLSLstd450.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ExtInst.OpenCL.std.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/FixWord.cpp
@@ -121,9 +118,15 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/TextWordGet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.cpp
 )
+
 add_spvtools_unittest(
   TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
+  LIBS ${SPIRV_TOOLS})
+
+add_spvtools_unittest(
+  TARGET diagnostic
+  SRCS diagnostic.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
