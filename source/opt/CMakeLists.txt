@@ -22,6 +22,7 @@ add_library(SPIRV-Tools-opt
   instruction.h
   ir_loader.h
   libspirv.hpp
+  log.h
   module.h
   null_pass.h
   reflect.h

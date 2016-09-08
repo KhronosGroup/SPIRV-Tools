@@ -144,5 +144,10 @@ add_spvtools_unittest(
   SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ParseNumber.cpp
   LIBS ${SPIRV_TOOLS})
 
+add_spvtools_unittest(
+  TARGET log
+  SRCS test_log.cpp
+  LIBS ${SPIRV_TOOLS})
+
 add_subdirectory(opt)
 add_subdirectory(val)

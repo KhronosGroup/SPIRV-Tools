@@ -81,6 +81,11 @@ if(${SPIRV_COLOR_TERMINAL})
   add_definitions(-DSPIRV_COLOR_TERMINAL)
 endif()
 
+option(SPIRV_LOG_DEBUG "Enable excessive debug output" OFF)
+if(${SPIRV_LOG_DEBUG})
+  add_definitions(-DSPIRV_LOG_DEBUG)
+endif()
+
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
 
