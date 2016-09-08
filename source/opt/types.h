@@ -125,6 +125,7 @@ class Integer : public Type {
   Integer* AsInteger() override { return this; }
   const Integer* AsInteger() const override { return this; }
   uint32_t width() const { return width_; }
+  bool IsSigned() const { return signed_; }
 
  private:
   uint32_t width_;  // bit width

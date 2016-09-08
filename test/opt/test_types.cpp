@@ -208,6 +208,17 @@ TEST(Types, AllTypes) {
   }
 }
 
+TEST(Types, IntSignedness) {
+  std::vector<bool> signednesses = {true, false, false, true};
+  std::vector<std::unique_ptr<Integer>> types;
+  for (bool s : signednesses) {
+    types.emplace_back(new Integer(32, s));
+  }
+  for (size_t i = 0; i < signednesses.size(); i++) {
+    EXPECT_EQ(signednesses[i], types[i]->IsSigned());
+  }
+}
+
 TEST(Types, IntWidth) {
   std::vector<uint32_t> widths = {1, 2, 4, 8, 16, 32, 48, 64, 128};
   std::vector<std::unique_ptr<Integer>> types;
