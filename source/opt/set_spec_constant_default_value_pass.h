@@ -43,6 +43,42 @@ class SetSpecConstantDefaultValuePass : public Pass {
   const char* name() const override { return "set-spec-const-default-value"; }
   bool Process(ir::Module*) override;
 
+  // Parses the given null-terminated C string to get a mapping from Spec Id to
+  // default value strings. Returns a unique pointer of the mapping from spec
+  // ids to spec constant default value strings built from the given |str| on
+  // success. Returns a nullptr if the given string is not valid for building
+  // the mapping.
+  // A valid string for building the mapping should follow the rule below:
+  //
+  //  "<spec id A>:<default value for A> <spec id B>:<default value for B> ..."
+  //  Example:
+  //    "200:0x11   201:3.14   202:1.4728"
+  //
+  //  Entries are separated with blank spaces (i.e.:' ', '\n', '\r', '\t',
+  //  '\f', '\v'). Each entry corresponds to a Spec Id and default value pair.
+  //  Multiple spaces between, before or after entries are allowed. However,
+  //  spaces are not allowed within spec id or the default value string because
+  //  spaces are always considered as delimiter to separate entries.
+  //
+  //  In each entry, the spec id and value string is separated by ':'. Missing
+  //  ':' in any entry is invalid. And it is invalid to have blank spaces in
+  //  between the spec id and ':' or the default value and ':'.
+  //
+  //  <spec id>: specifies the spec id value.
+  //    The text must represent a valid uint32_t number.
+  //    Hex format with '0x' prefix is allowed.
+  //    Empty <spec id> is not allowed.
+  //    One spec id value can only be defined once, multiple default values
+  //      defined for the same spec id is not allowed. Spec ids with same value
+  //      but different formats (e.g. 0x100 and 256) are considered the same.
+  //
+  //  <default value>: the default value string.
+  //    Spaces before and after default value text is allowed.
+  //    Spaces within the text is not allowed.
+  //    Empty <default value> is not allowed.
+  static std::unique_ptr<SpecIdToValueStrMap> ParseDefaultValuesString(
+      const char* str);
+
  private:
   // The mapping from spec ids to their default values to be set.
   const SpecIdToValueStrMap spec_id_to_value_;

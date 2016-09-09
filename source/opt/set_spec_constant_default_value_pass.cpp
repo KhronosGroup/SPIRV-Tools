@@ -15,6 +15,8 @@
 #include "set_spec_constant_default_value_pass.h"
 
 #include <cstring>
+#include <cctype>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -23,6 +25,7 @@
 #include "util/parse_number.h"
 
 #include "def_use_manager.h"
+#include "make_unique.h"
 #include "type_manager.h"
 #include "types.h"
 
@@ -32,6 +35,7 @@ namespace opt {
 namespace {
 using spvutils::NumberType;
 using spvutils::EncodeNumberStatus;
+using spvutils::ParseNumber;
 using spvutils::ParseAndEncodeNumber;
 
 // Given a numeric value in a null-terminated c string and the expected type of
@@ -246,6 +250,59 @@ bool SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
     // ids.
   }
   return modified;
+}
+
+// Returns true if the given char is ':', '\0' or considered as blank space
+// (i.e.: '\n', '\r', '\v', '\t', '\f' and ' ').
+bool IsSeparator(char ch) {
+  return std::strchr(":\0", ch) || std::isspace(ch) != 0;
+}
+
+std::unique_ptr<SetSpecConstantDefaultValuePass::SpecIdToValueStrMap>
+SetSpecConstantDefaultValuePass::ParseDefaultValuesString(const char* str) {
+  if (!str) return nullptr;
+
+  auto spec_id_to_value = MakeUnique<SpecIdToValueStrMap>();
+
+  // The parsing loop, break when points to the end.
+  while (*str) {
+    // Find the spec id.
+    while (std::isspace(*str)) str++;  // skip leading spaces.
+    const char* entry_begin = str;
+    while (!IsSeparator(*str)) str++;
+    const char* entry_end = str;
+    std::string spec_id_str(entry_begin, entry_end - entry_begin);
+    uint32_t spec_id = 0;
+    if (!ParseNumber(spec_id_str.c_str(), &spec_id)) {
+      // The spec id is not a valid uint32 number.
+      return nullptr;
+    }
+    auto iter = spec_id_to_value->find(spec_id);
+    if (iter != spec_id_to_value->end()) {
+      // Same spec id has been defined before
+      return nullptr;
+    }
+    // Find the ':', spaces between the spec id and the ':' are not allowed.
+    if (*str++ != ':') {
+      // ':' not found
+      return nullptr;
+    }
+    // Find the value string
+    const char* val_begin = str;
+    while (!IsSeparator(*str)) str++;
+    const char* val_end = str;
+    if (val_end == val_begin) {
+      // Value string is empty.
+      return nullptr;
+    }
+    // Update the mapping with spec id and value string.
+    (*spec_id_to_value)[spec_id] = std::string(val_begin, val_end - val_begin);
+
+    // Skip trailing spaces.
+    while (std::isspace(*str)) str++;
+  }
+
+  return spec_id_to_value;
 }
 
 }  // namespace opt

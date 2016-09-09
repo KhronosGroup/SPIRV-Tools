@@ -14,11 +14,120 @@
 
 #include "pass_fixture.h"
 
+#include <gmock/gmock.h>
+
 namespace {
 using namespace spvtools;
 
+using testing::Eq;
+
 using SpecIdToValueStrMap =
     opt::SetSpecConstantDefaultValuePass::SpecIdToValueStrMap;
+
+struct DefaultValuesStringParsingTestCase {
+  const char* default_values_str;
+  bool expect_success;
+  SpecIdToValueStrMap expected_map;
+};
+
+using DefaultValuesStringParsingTest =
+    ::testing::TestWithParam<DefaultValuesStringParsingTestCase>;
+
+TEST_P(DefaultValuesStringParsingTest, TestCase) {
+  const auto& tc = GetParam();
+  auto actual_map =
+      opt::SetSpecConstantDefaultValuePass::ParseDefaultValuesString(
+          tc.default_values_str);
+  if (tc.expect_success) {
+    EXPECT_NE(nullptr, actual_map);
+    if (actual_map) EXPECT_THAT(*actual_map, Eq(tc.expected_map));
+  } else {
+    EXPECT_EQ(nullptr, actual_map);
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ValidString, DefaultValuesStringParsingTest,
+    ::testing::ValuesIn(std::vector<DefaultValuesStringParsingTestCase>{
+        // 0. empty map
+        {"", true, SpecIdToValueStrMap{}},
+        // 1. one pair
+        {"100:1024", true, SpecIdToValueStrMap{{100, "1024"}}},
+        // 2. two pairs
+        {"100:1024 200:2048", true,
+         SpecIdToValueStrMap{{100, "1024"}, {200, "2048"}}},
+        // 3. spaces between entries
+        {"100:1024 \n \r \t \v \f 200:2048", true,
+         SpecIdToValueStrMap{{100, "1024"}, {200, "2048"}}},
+        // 4. \t, \n, \r and spaces before spec id
+        {"   \n \r\t \t \v \f 100:1024", true,
+         SpecIdToValueStrMap{{100, "1024"}}},
+        // 5. \t, \n, \r and spaces after value string
+        {"100:1024   \n \r\t \t \v \f ", true,
+         SpecIdToValueStrMap{{100, "1024"}}},
+        // 6. maximum spec id
+        {"4294967295:0", true, SpecIdToValueStrMap{{4294967295, "0"}}},
+        // 7. minimum spec id
+        {"0:100", true, SpecIdToValueStrMap{{0, "100"}}},
+        // 8. random content without spaces are allowed
+        {"200:random_stuff", true, SpecIdToValueStrMap{{200, "random_stuff"}}},
+        // 9. support hex format spec id (just because we use the
+        // ParseNumber() utility)
+        {"0x100:1024", true, SpecIdToValueStrMap{{256, "1024"}}},
+        // 10. multiple entries
+        {"101:1 102:2 103:3 104:4 200:201 9999:1000 0x100:333", true,
+         SpecIdToValueStrMap{{101, "1"},
+                             {102, "2"},
+                             {103, "3"},
+                             {104, "4"},
+                             {200, "201"},
+                             {9999, "1000"},
+                             {256, "333"}}},
+        // 11. default value in hex float format
+        {"100:0x0.3p10", true, SpecIdToValueStrMap{{100, "0x0.3p10"}}},
+        // 12. default value in decimal float format
+        {"100:1.5e-13", true, SpecIdToValueStrMap{{100, "1.5e-13"}}},
+    }));
+
+INSTANTIATE_TEST_CASE_P(
+    InvalidString, DefaultValuesStringParsingTest,
+    ::testing::ValuesIn(std::vector<DefaultValuesStringParsingTestCase>{
+        // 0. missing default value
+        {"100:", false, SpecIdToValueStrMap{}},
+        // 1. spec id is not an integer
+        {"100.0:200", false, SpecIdToValueStrMap{}},
+        // 2. spec id is not a number
+        {"something_not_a_number:1", false, SpecIdToValueStrMap{}},
+        // 3. only spec id number
+        {"100", false, SpecIdToValueStrMap{}},
+        // 4. same spec id defined multiple times
+        {"100:20 100:21", false, SpecIdToValueStrMap{}},
+        // 5. Multiple definition of an identical spec id in different forms
+        // is not allowed
+        {"0x100:100 256:200", false, SpecIdToValueStrMap{}},
+        // 6. empty spec id
+        {":3", false, SpecIdToValueStrMap{}},
+        // 7. only colon
+        {":", false, SpecIdToValueStrMap{}},
+        // 8. spec id overflow
+        {"4294967296:200", false, SpecIdToValueStrMap{}},
+        // 9. spec id less than 0
+        {"-1:200", false, SpecIdToValueStrMap{}},
+        // 10. nullptr
+        {nullptr, false, SpecIdToValueStrMap{}},
+        // 11. only a number is invalid
+        {"1234", false, SpecIdToValueStrMap{}},
+        // 12. invalid entry separator
+        {"12:34;23:14", false, SpecIdToValueStrMap{}},
+        // 13. invalid spec id and default value separator
+        {"12@34", false, SpecIdToValueStrMap{}},
+        // 14. spaces before colon
+        {"100   :1024", false, SpecIdToValueStrMap{}},
+        // 15. spaces after colon
+        {"100:   1024", false, SpecIdToValueStrMap{}},
+        // 16. spec id represented in hex float format is invalid
+        {"0x3p10:200", false, SpecIdToValueStrMap{}},
+    }));
 
 struct SetSpecConstantDefaultValueTestCase {
   const char* code;
