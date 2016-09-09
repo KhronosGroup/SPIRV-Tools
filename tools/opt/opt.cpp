@@ -17,8 +17,8 @@
 #include <vector>
 
 #include "message.h"
+#include "source/opt/build_module.h"
 #include "source/opt/ir_loader.h"
-#include "source/opt/libspirv.hpp"
 #include "source/opt/pass_manager.h"
 #include "tools/io.h"
 
@@ -139,7 +139,8 @@ int main(int argc, char** argv) {
   spvDiagnosticDestroy(diagnostic);
   spvContextDestroy(context);
 
-  std::unique_ptr<ir::Module> module = SpvTools(target_env).BuildModule(source);
+  std::unique_ptr<ir::Module> module =
+      BuildModule(target_env, pass_manager.consumer(), source);
   pass_manager.Run(module.get());
 
   std::vector<uint32_t> target;

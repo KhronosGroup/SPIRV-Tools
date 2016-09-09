@@ -13,6 +13,7 @@
 # limitations under the License.
 add_library(SPIRV-Tools-opt
   basic_block.h
+  build_module.h
   constants.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
@@ -35,6 +36,7 @@ add_library(SPIRV-Tools-opt
   type_manager.h
   unify_const_pass.h
 
+  build_module.cpp
   def_use_manager.cpp
   eliminate_dead_constant_pass.cpp
   function.cpp

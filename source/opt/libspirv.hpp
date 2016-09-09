@@ -15,12 +15,10 @@
 #ifndef SPIRV_TOOLS_LIBSPIRV_HPP_
 #define SPIRV_TOOLS_LIBSPIRV_HPP_
 
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "message.h"
-#include "module.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
@@ -52,12 +50,6 @@ class SpvTools {
       const std::vector<uint32_t>& binary, std::string* text,
       uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                          SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-
-  // Builds and returns a Module from the given SPIR-V |binary|.
-  std::unique_ptr<ir::Module> BuildModule(const std::vector<uint32_t>& binary);
-
-  // Builds and returns a Module from the given SPIR-V assembly |text|.
-  std::unique_ptr<ir::Module> BuildModule(const std::string& text);
 
  private:
   // Context for the current invocation. Thread-safety of this class depends on

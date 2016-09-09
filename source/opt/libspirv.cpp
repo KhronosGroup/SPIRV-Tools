@@ -20,26 +20,6 @@
 
 namespace spvtools {
 
-namespace {
-
-// Sets the module header. Meets the interface requirement of spvBinaryParse().
-spv_result_t SetSpvHeader(void* builder, spv_endianness_t, uint32_t magic,
-                          uint32_t version, uint32_t generator,
-                          uint32_t id_bound, uint32_t reserved) {
-  reinterpret_cast<ir::IrLoader*>(builder)
-      ->SetModuleHeader(magic, version, generator, id_bound, reserved);
-  return SPV_SUCCESS;
-};
-
-// Processes a parsed instruction. Meets the interface requirement of
-// spvBinaryParse().
-spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
-  reinterpret_cast<ir::IrLoader*>(builder)->AddInstruction(inst);
-  return SPV_SUCCESS;
-};
-
-}  // annoymous namespace
-
 void SpvTools::SetMessageConsumer(MessageConsumer consumer) {
   SetContextMessageConsumer(context_, std::move(consumer));
 }
@@ -76,31 +56,6 @@ spv_result_t SpvTools::Disassemble(const std::vector<uint32_t>& binary,
   spvTextDestroy(spvtext);
 
   return status;
-}
-
-std::unique_ptr<ir::Module> SpvTools::BuildModule(
-    const std::vector<uint32_t>& binary) {
-  spv_diagnostic diagnostic = nullptr;
-
-  auto module = MakeUnique<ir::Module>();
-  ir::IrLoader loader(context_->consumer, module.get());
-
-  spv_result_t status =
-      spvBinaryParse(context_, &loader, binary.data(), binary.size(),
-                     SetSpvHeader, SetSpvInst, &diagnostic);
-
-  spvDiagnosticDestroy(diagnostic);
-
-  loader.EndModule();
-
-  if (status == SPV_SUCCESS) return module;
-  return nullptr;
-}
-
-std::unique_ptr<ir::Module> SpvTools::BuildModule(const std::string& text) {
-  std::vector<uint32_t> binary;
-  if (Assemble(text, &binary) != SPV_SUCCESS) return nullptr;
-  return BuildModule(binary);
 }
 
 }  // namespace spvtools

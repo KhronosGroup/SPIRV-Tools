@@ -22,6 +22,7 @@
 
 #include <gtest/gtest.h>
 
+#include "opt/build_module.h"
 #include "opt/libspirv.hpp"
 #include "opt/make_unique.h"
 #include "opt/pass_manager.h"
@@ -49,7 +50,8 @@ class PassTest : public TestT {
   // and the boolean value returned from pass Process() function.
   std::tuple<std::string, bool> OptimizeAndDisassemble(
       opt::Pass* pass, const std::string& original, bool skip_nop) {
-    std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
+    std::unique_ptr<ir::Module> module =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original);
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << original << std::endl;
     if (!module) {
@@ -110,7 +112,8 @@ class PassTest : public TestT {
   void RunAndCheck(const std::string& original, const std::string& expected) {
     assert(manager_->NumPasses());
 
-    std::unique_ptr<ir::Module> module = tools_.BuildModule(original);
+    std::unique_ptr<ir::Module> module =
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, original);
     ASSERT_NE(nullptr, module);
 
     manager_->Run(module.get());

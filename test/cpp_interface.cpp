@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include "opt/libspirv.hpp"
+#include "spirv/1.1/spirv.h"
 
 namespace {
 

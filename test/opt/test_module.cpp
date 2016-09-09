@@ -17,6 +17,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include "opt/build_module.h"
 #include "opt/libspirv.hpp"
 #include "opt/module.h"
 
@@ -42,9 +43,9 @@ TEST(ModuleTest, SetIdBound) {
 
 // Returns a module formed by assembling the given text,
 // then loading the result.
-std::unique_ptr<Module> BuildModule(std::string text) {
-  spvtools::SpvTools t(SPV_ENV_UNIVERSAL_1_1);
-  return t.BuildModule(text);
+inline std::unique_ptr<Module> BuildModule(std::string text) {
+  return spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, spvtools::IgnoreMessage,
+                               text);
 }
 
 TEST(ModuleTest, ComputeIdBound) {
@@ -69,4 +70,3 @@ TEST(ModuleTest, ComputeIdBound) {
 }
 
 }  // anonymous namespace
-

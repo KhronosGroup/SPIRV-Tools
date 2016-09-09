@@ -15,8 +15,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "opt/build_module.h"
 #include "opt/instruction.h"
-#include "opt/libspirv.hpp"
 #include "opt/type_manager.h"
 
 namespace {
@@ -89,7 +89,7 @@ TEST(TypeManager, TypeStrings) {
   };
 
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   opt::analysis::TypeManager manager(IgnoreMessage, *module);
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
@@ -119,7 +119,7 @@ TEST(Struct, DecorationOnStruct) {
     %struct7 = OpTypeStruct %f32      ; no decoration
   )";
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   opt::analysis::TypeManager manager(IgnoreMessage, *module);
 
   ASSERT_EQ(7u, manager.NumTypes());
@@ -169,7 +169,7 @@ TEST(Struct, DecorationOnMember) {
     %struct10 = OpTypeStruct %u32 %f32 ; no member decoration
   )";
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   opt::analysis::TypeManager manager(IgnoreMessage, *module);
 
   ASSERT_EQ(10u, manager.NumTypes());
@@ -207,7 +207,7 @@ TEST(Types, DecorationEmpty) {
     %struct5  = OpTypeStruct %f32
   )";
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   opt::analysis::TypeManager manager(IgnoreMessage, *module);
 
   ASSERT_EQ(5u, manager.NumTypes());

@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "opt/build_module.h"
 #include "opt/def_use_manager.h"
 #include "opt/libspirv.hpp"
 #include "pass_utils.h"
@@ -128,7 +129,7 @@ TEST_P(ParseDefUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.text};
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, JoinAllInsts(text));
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
@@ -509,7 +510,7 @@ TEST_P(ReplaceUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, JoinAllInsts(text));
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
@@ -811,7 +812,7 @@ TEST_P(KillDefTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, JoinAllInsts(text));
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
@@ -1061,7 +1062,7 @@ TEST(DefUseTest, OpSwitch) {
       "      OpFunctionEnd";
 
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(original_text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, original_text);
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
@@ -1184,7 +1185,7 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
 
   // Build module.
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.module_text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, tc.module_text);
   ASSERT_NE(nullptr, module);
 
   // Analyze the instructions.
@@ -1307,7 +1308,7 @@ TEST_P(KillInstTest, Case) {
 
   // Build module.
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.before);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, tc.before);
   ASSERT_NE(nullptr, module);
 
   // KillInst
@@ -1415,7 +1416,7 @@ TEST_P(GetAnnotationsTest, Case) {
 
   // Build module.
   std::unique_ptr<ir::Module> module =
-      SpvTools(SPV_ENV_UNIVERSAL_1_1).BuildModule(tc.code);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, tc.code);
   ASSERT_NE(nullptr, module);
 
   // Get annotations
