@@ -63,7 +63,7 @@ class PassTest : public TestT {
     std::vector<uint32_t> binary;
     module->ToBinary(&binary, skip_nop);
     std::string optimized;
-    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized))
+    EXPECT_TRUE(tools_.Disassemble(binary, &optimized))
         << "Disassembling failed for shader:\n"
         << original << std::endl;
     return std::make_tuple(optimized, modified);
@@ -122,7 +122,7 @@ class PassTest : public TestT {
     module->ToBinary(&binary, /* skip_nop = */ false);
 
     std::string optimized;
-    EXPECT_EQ(SPV_SUCCESS, tools_.Disassemble(binary, &optimized));
+    EXPECT_TRUE(tools_.Disassemble(binary, &optimized));
     EXPECT_EQ(expected, optimized);
   }
 

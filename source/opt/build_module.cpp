@@ -67,7 +67,7 @@ std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
   SpvTools t(env);
   t.SetMessageConsumer(consumer);
   std::vector<uint32_t> binary;
-  if (t.Assemble(text, &binary) != SPV_SUCCESS) return nullptr;
+  if (!t.Assemble(text, &binary)) return nullptr;
   return BuildModule(env, consumer, binary);
 }
 

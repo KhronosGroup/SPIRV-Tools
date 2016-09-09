@@ -16,46 +16,58 @@
 
 #include "ir_loader.h"
 #include "make_unique.h"
+#include "message.h"
 #include "table.h"
 
 namespace spvtools {
 
+// Structs for holding the data members for SpvTools.
+struct SpvTools::Impl {
+  explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
+    // The default consumer in spv_context_t is a null consumer, which provides
+    // equivalent functionality (from the user's perspective) as a real consumer
+    // does nothing.
+  }
+  ~Impl() { spvContextDestroy(context); }
+
+  spv_context context;  // C interface context object.
+};
+
+SpvTools::SpvTools(spv_target_env env) : impl_(new Impl(env)) {}
+
+SpvTools::~SpvTools() {}
+
 void SpvTools::SetMessageConsumer(MessageConsumer consumer) {
-  SetContextMessageConsumer(context_, std::move(consumer));
+  SetContextMessageConsumer(impl_->context, std::move(consumer));
 }
 
-spv_result_t SpvTools::Assemble(const std::string& text,
-                                std::vector<uint32_t>* binary) {
+bool SpvTools::Assemble(const std::string& text,
+                        std::vector<uint32_t>* binary) const {
   spv_binary spvbinary = nullptr;
-  spv_diagnostic diagnostic = nullptr;
-
-  spv_result_t status = spvTextToBinary(context_, text.data(), text.size(),
-                                        &spvbinary, &diagnostic);
+  spv_result_t status = spvTextToBinary(impl_->context, text.data(),
+                                        text.size(), &spvbinary, nullptr);
   if (status == SPV_SUCCESS) {
     binary->assign(spvbinary->code, spvbinary->code + spvbinary->wordCount);
   }
-
-  spvDiagnosticDestroy(diagnostic);
   spvBinaryDestroy(spvbinary);
-
-  return status;
+  return status == SPV_SUCCESS;
 }
 
-spv_result_t SpvTools::Disassemble(const std::vector<uint32_t>& binary,
-                                   std::string* text, uint32_t options) {
+bool SpvTools::Disassemble(const std::vector<uint32_t>& binary,
+                           std::string* text, uint32_t options) const {
   spv_text spvtext = nullptr;
-  spv_diagnostic diagnostic = nullptr;
-
-  spv_result_t status = spvBinaryToText(context_, binary.data(), binary.size(),
-                                        options, &spvtext, &diagnostic);
+  spv_result_t status = spvBinaryToText(
+      impl_->context, binary.data(), binary.size(), options, &spvtext, nullptr);
   if (status == SPV_SUCCESS) {
     text->assign(spvtext->str, spvtext->str + spvtext->length);
   }
-
-  spvDiagnosticDestroy(diagnostic);
   spvTextDestroy(spvtext);
+  return status == SPV_SUCCESS;
+}
 
-  return status;
+bool SpvTools::Validate(const std::vector<uint32_t>& binary) const {
+  spv_const_binary_t b = {binary.data(), binary.size()};
+  return spvValidate(impl_->context, &b, nullptr) == SPV_SUCCESS;
 }
 
 }  // namespace spvtools

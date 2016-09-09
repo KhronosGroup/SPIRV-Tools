@@ -32,7 +32,7 @@ void DoRoundTripCheck(const std::string& text) {
   module->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
-  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
   EXPECT_EQ(text, disassembled_text);
 }
 
@@ -224,7 +224,7 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   module->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
-  EXPECT_EQ(SPV_SUCCESS, t.Disassemble(binary, &disassembled_text));
+  EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
   EXPECT_EQ(text, disassembled_text);
 }
 
