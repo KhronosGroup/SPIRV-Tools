@@ -25,9 +25,7 @@
 namespace spvtools {
 namespace opt {
 
-// The optimization pass that sets the default values for the spec constants
-// that have SpecId decorations (i.e. those defined by
-// OpSpecConstant{|True|False} instructions).
+// See optimizer.hpp for documentation.
 class SetSpecConstantDefaultValuePass : public Pass {
  public:
   using SpecIdToValueStrMap = std::unordered_map<uint32_t, std::string>;

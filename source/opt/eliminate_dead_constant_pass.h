@@ -21,11 +21,7 @@
 namespace spvtools {
 namespace opt {
 
-// The optimization pass to remove dead constants, including front-end
-// contants: defined by OpConstant, OpConstantComposite, OpConstantTrue and
-// OpConstantFalse; and spec constants: defined by OpSpecConstant,
-// OpSpecConstantComposite, OpSpecConstantTrue, OpSpecConstantFalse and
-// OpSpecConstantOp.
+// See optimizer.hpp for documentation.
 class EliminateDeadConstantPass : public Pass {
  public:
   const char* name() const override { return "eliminate-dead-const"; }

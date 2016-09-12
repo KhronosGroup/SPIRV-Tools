@@ -21,8 +21,7 @@
 namespace spvtools {
 namespace opt {
 
-// The optimization pass for removing debug instructions (as documented in
-// Section 3.32.2 of the SPIR-V spec).
+// See optimizer.hpp for documentation.
 class StripDebugInfoPass : public Pass {
  public:
   const char* name() const override { return "strip-debug"; }

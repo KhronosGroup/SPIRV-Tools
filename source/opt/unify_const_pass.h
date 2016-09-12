@@ -21,19 +21,7 @@
 namespace spvtools {
 namespace opt {
 
-// The optimization pass to de-duplicate the constants. Constants with exactly
-// same values and identical form will be unified and only one constant will be
-// kept for each unique pair of type and value.
-// There are several cases not handled by this pass:
-//  1) Constants defined by OpConstantNull instructions (null constants) and
-//  constants defined by OpConstantFalse, OpConstant or OpConstantComposite
-//  with value(s) 0 (zero-valued normal constants) are not considered
-//  equivalent. So null constants won't be used to replace zero-valued normal
-//  constants, and other constants won't replace the null constants either.
-//  2) Whenever there are decorations to the constant's result id or its type
-//  id, the constants won't be handled, which means, it won't be used to
-//  replace any other constants, neither can other constants replace it.
-//  3) NaN in float point format with different bit patterns are not unified.
+// See optimizer.hpp for documentation.
 class UnifyConstantPass : public Pass {
  public:
   const char* name() const override { return "unify-const"; }

@@ -29,25 +29,7 @@
 namespace spvtools {
 namespace opt {
 
-// The optimization pass that folds "Spec Constants", which are defined by
-// OpSpecConstantOp and OpSpecConstantComposite instruction, to "Normal
-// Constants", which are defined by OpConstantTrue, OpConstantFalse,
-// OpConstant, OpConstantNull and OpConstantComposite instructions. Note that
-// Spec Constants defined with OpSpecConstant, OpSpecConstantTrue and
-// OpSpecConstantFalse instructions are not handled, as these instructions
-// indicate their value are not determined and can be changed in future.  A
-// Spec Constant is foldable if all of its value(s) can be determined from the
-// module. For example, an Integer Spec Constant defined with OpSpecConstantOp
-// instruction can be folded if its value won't change later. This pass will
-// replace the original OpSpecContantOp instruction with an OpConstant
-// instruction. When folding composite type Spec Constants, new instructions
-// may be inserted to define the components of the composite constant first,
-// then the original Spec Constants will be replace with OpConstantComposite
-// instructions.
-// There are some operations not supported:
-//  OpSConvert, OpFConvert, OpQuantizeToF16 and all the operations under Kernel
-//  capability.
-// TODO(qining): Add support for the operations listed above.
+// See optimizer.hpp for documentation.
 class FoldSpecConstantOpAndCompositePass : public Pass {
  public:
   FoldSpecConstantOpAndCompositePass();

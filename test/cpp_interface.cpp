@@ -15,7 +15,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "opt/libspirv.hpp"
+#include "opt/optimizer.hpp"
 #include "spirv/1.1/spirv.h"
 
 namespace {
@@ -159,5 +159,105 @@ TEST(CppInterface, ValidateEmptyModule) {
   EXPECT_FALSE(t.Validate({}));
   EXPECT_EQ(1, invocation_count);
 }
+
+// Checks that after running the given optimizer |opt| on the given |original|
+// source code, we can get the given |optimized| source code.
+void CheckOptimization(const char* original, const char* optimized,
+                       const Optimizer& opt) {
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> original_binary;
+  ASSERT_TRUE(t.Assemble(original, &original_binary));
+
+  std::vector<uint32_t> optimized_binary;
+  EXPECT_TRUE(opt.Run(original_binary.data(), original_binary.size(),
+                      &optimized_binary));
+
+  std::string optimized_text;
+  EXPECT_TRUE(t.Disassemble(optimized_binary, &optimized_text));
+  EXPECT_EQ(optimized, optimized_text);
+}
+
+TEST(CppInterface, OptimizeEmptyModule) {
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary;
+  EXPECT_TRUE(t.Assemble("", &binary));
+
+  Optimizer o(SPV_ENV_UNIVERSAL_1_1);
+  o.RegisterPass(CreateStripDebugInfoPass());
+  EXPECT_TRUE(o.Run(binary.data(), binary.size(), &binary));
+}
+
+TEST(CppInterface, OptimizeModifiedModule) {
+  Optimizer o(SPV_ENV_UNIVERSAL_1_1);
+  o.RegisterPass(CreateStripDebugInfoPass());
+  CheckOptimization("OpSource GLSL 450", "", o);
+}
+
+TEST(CppInterface, OptimizeMulitplePasses) {
+  const char* original_text =
+      "OpSource GLSL 450 "
+      "OpDecorate %true SpecId 1 "
+      "%bool = OpTypeBool "
+      "%true = OpSpecConstantTrue %bool";
+
+  Optimizer o(SPV_ENV_UNIVERSAL_1_1);
+  o.RegisterPass(CreateStripDebugInfoPass())
+      .RegisterPass(CreateFreezeSpecConstantValuePass());
+
+  const char* expected_text =
+      "%bool = OpTypeBool\n"
+      "%1 = OpConstantTrue %bool\n";
+
+  CheckOptimization(original_text, expected_text, o);
+}
+
+TEST(CppInterface, OptimizeDoNothingWithPassToken) {
+  CreateFreezeSpecConstantValuePass();
+  auto token = CreateUnifyConstantPass();
+}
+
+TEST(CppInterface, OptimizeReassignPassToken) {
+  auto token = CreateNullPass();
+  token = CreateStripDebugInfoPass();
+
+  CheckOptimization(
+      "OpSource GLSL 450", "",
+      Optimizer(SPV_ENV_UNIVERSAL_1_1).RegisterPass(std::move(token)));
+}
+
+TEST(CppInterface, OptimizeMoveConstructPassToken) {
+  auto token1 = CreateStripDebugInfoPass();
+  Optimizer::PassToken token2(std::move(token1));
+
+  CheckOptimization(
+      "OpSource GLSL 450", "",
+      Optimizer(SPV_ENV_UNIVERSAL_1_1).RegisterPass(std::move(token2)));
+}
+
+TEST(CppInterface, OptimizeMoveAssignPassToken) {
+  auto token1 = CreateStripDebugInfoPass();
+  auto token2 = CreateNullPass();
+  token2 = std::move(token1);
+
+  CheckOptimization(
+      "OpSource GLSL 450", "",
+      Optimizer(SPV_ENV_UNIVERSAL_1_1).RegisterPass(std::move(token2)));
+}
+
+TEST(CppInterface, OptimizeSameAddressForOriginalOptimizedBinary) {
+  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary;
+  ASSERT_TRUE(t.Assemble("OpSource GLSL 450", &binary));
+
+  EXPECT_TRUE(Optimizer(SPV_ENV_UNIVERSAL_1_1)
+                  .RegisterPass(CreateStripDebugInfoPass())
+                  .Run(binary.data(), binary.size(), &binary));
+
+  std::string optimized_text;
+  EXPECT_TRUE(t.Disassemble(binary, &optimized_text));
+  EXPECT_EQ("", optimized_text);
+}
+
+// TODO(antiagainst): tests for SetMessageConsumer().
 
 }  // anonymous namespace

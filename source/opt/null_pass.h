@@ -21,7 +21,7 @@
 namespace spvtools {
 namespace opt {
 
-// A null pass that does nothing.
+// See optimizer.hpp for documentation.
 class NullPass : public Pass {
  public:
   const char* name() const override { return "null"; }
