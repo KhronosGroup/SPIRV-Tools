@@ -21,7 +21,7 @@
 #include "log.h"
 #include "message.h"
 #include "module.h"
-#include "passes.h"
+#include "pass.h"
 
 namespace spvtools {
 namespace opt {
@@ -35,37 +35,27 @@ class PassManager {
   explicit PassManager(MessageConsumer c) : consumer_(std::move(c)) {}
 
   // Adds an externally constructed pass.
-  void AddPass(std::unique_ptr<Pass> pass) {
-    passes_.push_back(std::move(pass));
-  }
+  void AddPass(std::unique_ptr<Pass> pass);
   // Uses the argument |args| to construct a pass instance of type |T|, and adds
   // the pass instance to this pass manger. The pass added will use this pass
   // manager's message consumer.
   template <typename T, typename... Args>
-  void AddPass(Args&&... args) {
-    passes_.emplace_back(new T(consumer_, std::forward<Args>(args)...));
-  }
+  void AddPass(Args&&... args);
 
   // Returns the number of passes added.
-  uint32_t NumPasses() const { return static_cast<uint32_t>(passes_.size()); }
+  uint32_t NumPasses() const;
   // Returns a pointer to the |index|th pass added.
-  Pass* GetPass(uint32_t index) const {
-    SPIRV_ASSERT(consumer_, index < passes_.size(), "index out of bound");
-    return passes_[index].get();
-  }
+  inline Pass* GetPass(uint32_t index) const;
 
   // Returns the message consumer.
-  const MessageConsumer& consumer() const { return consumer_; }
+  inline const MessageConsumer& consumer() const;
 
-  // Runs all passes on the given |module|.
-  void Run(ir::Module* module) {
-    bool modified = false;
-    for (const auto& pass : passes_) {
-      modified |= pass->Process(module);
-    }
-    // Set the Id bound in the header in case a pass forgot to do so.
-    if (modified) module->SetIdBound(module->ComputeIdBound());
-  }
+  // Runs all passes on the given |module|. Returns Status::Failure if errors
+  // occur when processing using one of the registered passes. All passes
+  // registered after the error-reporting pass will be skipped. Returns the
+  // corresponding Status::Success if processing is succesful to indicate
+  // whether changes are made to the module.
+  Pass::Status Run(ir::Module* module);
 
  private:
   // Consumer for messages.
@@ -73,6 +63,28 @@ class PassManager {
   // A vector of passes. Order matters.
   std::vector<std::unique_ptr<Pass>> passes_;
 };
+
+inline void PassManager::AddPass(std::unique_ptr<Pass> pass) {
+  passes_.push_back(std::move(pass));
+}
+
+template <typename T, typename... Args>
+inline void PassManager::AddPass(Args&&... args) {
+  passes_.emplace_back(new T(consumer_, std::forward<Args>(args)...));
+}
+
+inline uint32_t PassManager::NumPasses() const {
+  return static_cast<uint32_t>(passes_.size());
+}
+
+inline Pass* PassManager::GetPass(uint32_t index) const {
+  SPIRV_ASSERT(consumer_, index < passes_.size(), "index out of bound");
+  return passes_[index].get();
+}
+
+inline const MessageConsumer& PassManager::consumer() const {
+  return consumer_;
+}
 
 }  // namespace opt
 }  // namespace spvtools

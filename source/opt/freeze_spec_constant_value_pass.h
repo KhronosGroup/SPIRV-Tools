@@ -34,7 +34,7 @@ class FreezeSpecConstantValuePass : public Pass {
   explicit FreezeSpecConstantValuePass(const MessageConsumer& c) : Pass(c) {}
 
   const char* name() const override { return "freeze-spec-const"; }
-  bool Process(ir::Module*) override;
+  Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

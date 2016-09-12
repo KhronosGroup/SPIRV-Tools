@@ -39,7 +39,7 @@ class UnifyConstantPass : public Pass {
   explicit UnifyConstantPass(const MessageConsumer& c) : Pass(c) {}
 
   const char* name() const override { return "unify-const"; }
-  bool Process(ir::Module*) override;
+  Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

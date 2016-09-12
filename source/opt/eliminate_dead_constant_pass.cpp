@@ -25,7 +25,7 @@
 namespace spvtools {
 namespace opt {
 
-bool EliminateDeadConstantPass::Process(ir::Module* module) {
+Pass::Status EliminateDeadConstantPass::Process(ir::Module* module) {
   analysis::DefUseManager def_use(consumer(), module);
   std::unordered_set<ir::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
@@ -109,7 +109,8 @@ bool EliminateDeadConstantPass::Process(ir::Module* module) {
   for (auto* da : dead_others) {
     da->ToNop();
   }
-  return !dead_consts.empty();
+  return dead_consts.empty() ? Status::SuccessWithoutChange
+                             : Status::SuccessWithChange;
 }
 
 }  // namespace opt

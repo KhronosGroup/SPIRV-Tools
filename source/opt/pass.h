@@ -27,6 +27,16 @@ namespace opt {
 // and all analysis and transformation is done via the Process() method.
 class Pass {
  public:
+  // The status of processing a module using a pass.
+  //
+  // The numbers for the cases are assigned to make sure that Failure & anything
+  // is Failure, SuccessWithChange & any success is SuccessWithChange.
+  enum class Status {
+    Failure = 0x00,
+    SuccessWithChange = 0x10,
+    SuccessWithoutChange = 0x11,
+  };
+
   // Constructs a new pass with the given message consumer, which will be
   // invoked every time there is a message to be communicated to the outside.
   //
@@ -39,9 +49,10 @@ class Pass {
   // Returns the reference to the message consumer for this pass.
   const MessageConsumer& consumer() const { return consumer_; }
 
-  // Processes the given |module| and returns true if the given |module| is
-  // modified for optimization.
-  virtual bool Process(ir::Module* module) = 0;
+  // Processes the given |module|. Returns Status::Failure if errors occur when
+  // processing. Returns the corresponding Status::Success if processing is
+  // succesful to indicate whether changes are made to the module.
+  virtual Status Process(ir::Module* module) = 0;
 
  private:
   const MessageConsumer& consumer_;  // Message consumer.

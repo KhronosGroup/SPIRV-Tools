@@ -251,7 +251,8 @@ FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass(
       type_mgr_(nullptr),
       id_to_const_val_() {}
 
-bool FoldSpecConstantOpAndCompositePass::ProcessImpl(ir::Module* module) {
+Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
+    ir::Module* module) {
   bool modified = false;
   // Traverse through all the constant defining instructions. For Normal
   // Constants whose values are determined and do not depend on OpUndef
@@ -327,7 +328,7 @@ bool FoldSpecConstantOpAndCompositePass::ProcessImpl(ir::Module* module) {
         break;
     }
   }
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(

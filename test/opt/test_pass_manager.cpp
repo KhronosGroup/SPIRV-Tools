@@ -78,10 +78,9 @@ class AppendOpNopPass : public opt::Pass {
   explicit AppendOpNopPass(const MessageConsumer& c) : opt::Pass(c) {}
 
   const char* name() const override { return "AppendOpNop"; }
-  bool Process(ir::Module* module) override {
-    auto inst = MakeUnique<ir::Instruction>();
-    module->AddDebugInst(std::move(inst));
-    return true;
+  Status Process(ir::Module* module) override {
+    module->AddDebugInst(MakeUnique<ir::Instruction>());
+    return Status::SuccessWithChange;
   }
 };
 
@@ -93,12 +92,11 @@ class AppendMultipleOpNopPass : public opt::Pass {
       : opt::Pass(c), num_nop_(num_nop) {}
 
   const char* name() const override { return "AppendOpNop"; }
-  bool Process(ir::Module* module) override {
+  Status Process(ir::Module* module) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      auto inst = MakeUnique<ir::Instruction>();
-      module->AddDebugInst(std::move(inst));
+      module->AddDebugInst(MakeUnique<ir::Instruction>());
     }
-    return true;
+    return Status::SuccessWithChange;
   }
 
  private:
@@ -111,10 +109,10 @@ class DuplicateInstPass : public opt::Pass {
   explicit DuplicateInstPass(const MessageConsumer& c) : opt::Pass(c) {}
 
   const char* name() const override { return "DuplicateInst"; }
-  bool Process(ir::Module* module) override {
+  Status Process(ir::Module* module) override {
     auto inst = MakeUnique<ir::Instruction>(*(--module->debug_end()));
     module->AddDebugInst(std::move(inst));
-    return true;
+    return Status::SuccessWithChange;
   }
 };
 
@@ -149,11 +147,11 @@ class AppendTypeVoidInstPass : public opt::Pass {
       : opt::Pass(c), result_id_(result_id) {}
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
-  bool Process(ir::Module* module) override {
+  Status Process(ir::Module* module) override {
     auto inst = MakeUnique<ir::Instruction>(SpvOpTypeVoid, 0, result_id_,
                                             std::vector<ir::Operand>{});
     module->AddType(std::move(inst));
-    return true;
+    return Status::SuccessWithChange;
   }
 
  private:

@@ -47,6 +47,7 @@ add_library(SPIRV-Tools-opt
   libspirv.cpp
   module.cpp
   set_spec_constant_default_value_pass.cpp
+  pass_manager.cpp
   strip_debug_info_pass.cpp
   types.cpp
   type_manager.cpp

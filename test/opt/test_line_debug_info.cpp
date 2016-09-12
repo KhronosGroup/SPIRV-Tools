@@ -25,10 +25,15 @@ class NopifyPass : public opt::Pass {
   explicit NopifyPass(const MessageConsumer& c) : opt::Pass(c) {}
 
   const char* name() const override { return "NopifyPass"; }
-  bool Process(ir::Module* module) override {
-    module->ForEachInst([](ir::Instruction* inst) { inst->ToNop(); },
-                        /* run_on_debug_line_insts = */ false);
-    return true;
+  Status Process(ir::Module* module) override {
+    bool modified = false;
+    module->ForEachInst(
+        [&modified](ir::Instruction* inst) {
+          inst->ToNop();
+          modified = true;
+        },
+        /* run_on_debug_line_insts = */ false);
+    return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
   }
 };
 

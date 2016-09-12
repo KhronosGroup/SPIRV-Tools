@@ -53,7 +53,7 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   explicit FoldSpecConstantOpAndCompositePass(const MessageConsumer& c);
 
   const char* name() const override { return "fold-spec-const-op-composite"; }
-  bool Process(ir::Module* module) override {
+  Status Process(ir::Module* module) override {
     Initialize(module);
     return ProcessImpl(module);
   };
@@ -74,8 +74,8 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   // section of the given module, finds the Spec Constants defined with
   // OpSpecConstantOp and OpSpecConstantComposite instructions. If the result
   // value of those spec constants can be folded, fold them to their
-  // corresponding normal constants. Returns true if the module was modified.
-  bool ProcessImpl(ir::Module*);
+  // corresponding normal constants.
+  Status ProcessImpl(ir::Module*);
 
   // Processes the OpSpecConstantOp instruction pointed by the given
   // instruction iterator, folds it to normal constants if possible. Returns

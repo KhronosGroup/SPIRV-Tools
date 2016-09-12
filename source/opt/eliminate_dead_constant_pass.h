@@ -31,7 +31,7 @@ class EliminateDeadConstantPass : public Pass {
   explicit EliminateDeadConstantPass(const MessageConsumer& c) : Pass(c) {}
 
   const char* name() const override { return "eliminate-dead-const"; }
-  bool Process(ir::Module*) override;
+  Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

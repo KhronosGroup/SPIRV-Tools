@@ -102,7 +102,7 @@ class ResultIdTrie {
 };
 }  // anonymous namespace
 
-bool UnifyConstantPass::Process(ir::Module* module) {
+Pass::Status UnifyConstantPass::Process(ir::Module* module) {
   bool modified = false;
   ResultIdTrie defined_constants;
   analysis::DefUseManager def_use_mgr(consumer(), module);
@@ -164,7 +164,7 @@ bool UnifyConstantPass::Process(ir::Module* module) {
         break;
     }
   }
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 }  // opt

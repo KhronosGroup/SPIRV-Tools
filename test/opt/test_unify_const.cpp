@@ -114,8 +114,8 @@ class UnifyConstantTest : public PassTest<T> {
 
     // optimized code
     std::string optimized_before_strip;
-    bool modified = false;
-    std::tie(optimized_before_strip, modified) =
+    auto status = opt::Pass::Status::SuccessWithoutChange;
+    std::tie(optimized_before_strip, status) =
         this->template SinglePassRunAndDisassemble<opt::UnifyConstantPass>(
             test_builder.GetCode(),
             /* skip_nop = */ true);
@@ -124,8 +124,10 @@ class UnifyConstantTest : public PassTest<T> {
     std::tie(optimized_without_opnames, optimized_opnames) =
         StripOpNameInstructionsToSet(optimized_before_strip);
 
-    // Flag "modified" should be returned correctly.
-    EXPECT_EQ(expected_without_opnames != original_without_opnames, modified);
+    // Flag "status" should be returned correctly.
+    EXPECT_NE(opt::Pass::Status::Failure, status);
+    EXPECT_EQ(expected_without_opnames == original_without_opnames,
+              status == opt::Pass::Status::SuccessWithoutChange);
     // Code except OpName instructions should be exactly the same.
     EXPECT_EQ(expected_without_opnames, optimized_without_opnames);
     // OpName instructions can be in different order, but the content must be
@@ -208,11 +210,11 @@ TEST_F(UnifyFrontEndConstantSingleTest, SkipWhenResultIdHasDecorations) {
       });
 
   expected_builder
-    .AppendAnnotations({
+      .AppendAnnotations({
           "OpDecorate %f_1 RelaxedPrecision",
           "OpDecorate %f_2_dup RelaxedPrecision",
-        })
-  .AppendTypesConstantsGlobals({
+      })
+      .AppendTypesConstantsGlobals({
           // clang-format off
           "%float = OpTypeFloat 32",
           "%_pf_float = OpTypePointer Function %float",
@@ -223,7 +225,7 @@ TEST_F(UnifyFrontEndConstantSingleTest, SkipWhenResultIdHasDecorations) {
           "%f_3 = OpConstant %float 3",
           // clang-format on
       })
-  .AppendInMain({
+      .AppendInMain({
           // clang-format off
           "%f_var = OpVariable %_pf_float Function",
           "OpStore %f_var %f_1_dup",
@@ -231,8 +233,8 @@ TEST_F(UnifyFrontEndConstantSingleTest, SkipWhenResultIdHasDecorations) {
           "OpStore %f_var %f_3",
           // clang-format on
       })
-  .AppendNames({
-      "OpName %f_3 \"f_3_dup\"",
+      .AppendNames({
+          "OpName %f_3 \"f_3_dup\"",
       });
 
   Check(expected_builder, test_builder);
@@ -300,8 +302,7 @@ TEST_F(UnifyFrontEndConstantSingleTest, UnifyWithDecorationOnTypes) {
           "OpStore %flat_d_var %flat_d_1",
       })
       .AppendNames({
-          "OpName %flat_1 \"flat_1_dup\"",
-          "OpName %flat_d_1 \"flat_d_1_dup\"",
+          "OpName %flat_1 \"flat_1_dup\"", "OpName %flat_d_1 \"flat_d_1_dup\"",
       });
 
   Check(expected_builder, test_builder);
@@ -348,7 +349,7 @@ TEST_P(UnifyFrontEndConstantParamTest, TestCase) {
 
 INSTANTIATE_TEST_CASE_P(Case, UnifyFrontEndConstantParamTest,
                         ::testing::ValuesIn(std::vector<UnifyConstantTestCase>({
-        // clang-format off
+                            // clang-format off
         // basic tests for scalar constants
         {
           // preserved constants
@@ -974,7 +975,7 @@ INSTANTIATE_TEST_CASE_P(Case, UnifyFrontEndConstantParamTest,
             "OpName %signed_22 \"signed_22_dup\"",
           },
         },
-        // clang-format on
-    })));
+                            // clang-format on
+                        })));
 
 }  // anonymous namespace

@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "strip_debug_info_pass.h"
+#include "pass_manager.h"
 
 namespace spvtools {
 namespace opt {
 
-Pass::Status StripDebugInfoPass::Process(ir::Module* module) {
-  bool modified = !module->debugs().empty();
-  module->debug_clear();
-
-  module->ForEachInst([&modified](ir::Instruction* inst) {
-    modified |= !inst->dbg_line_insts().empty();
-    inst->dbg_line_insts().clear();
-  });
-
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+Pass::Status PassManager::Run(ir::Module* module) {
+  auto status = Pass::Status::SuccessWithoutChange;
+  for (const auto& pass : passes_) {
+    const auto one_status = pass->Process(module);
+    if (one_status == Pass::Status::Failure) return one_status;
+    if (one_status == Pass::Status::SuccessWithChange) status = one_status;
+  }
+  // Set the Id bound in the header in case a pass forgot to do so.
+  if (status == Pass::Status::SuccessWithChange) {
+    module->SetIdBound(module->ComputeIdBound());
+  }
+  return status;
 }
 
 }  // namespace opt

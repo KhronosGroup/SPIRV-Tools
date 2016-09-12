@@ -150,7 +150,7 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
 }
 };
 
-bool SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
+Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -249,7 +249,7 @@ bool SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
     // No need to update the DefUse manager, as this pass does not change any
     // ids.
   }
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 // Returns true if the given char is ':', '\0' or considered as blank space

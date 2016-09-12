@@ -17,7 +17,7 @@
 namespace spvtools {
 namespace opt {
 
-bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
+Pass::Status FreezeSpecConstantValuePass::Process(ir::Module* module) {
   bool modified = false;
   module->ForEachInst([&modified](ir::Instruction* inst) {
     switch (inst->opcode()) {
@@ -44,7 +44,7 @@ bool FreezeSpecConstantValuePass::Process(ir::Module* module) {
         break;
     }
   });
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 }  // namespace opt

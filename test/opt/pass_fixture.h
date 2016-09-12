@@ -48,17 +48,17 @@ class PassTest : public TestT {
   // Runs the given |pass| on the binary assembled from the |assembly|, and
   // disassebles the optimized binary. Returns a tuple of disassembly string
   // and the boolean value returned from pass Process() function.
-  std::tuple<std::string, bool> OptimizeAndDisassemble(
+  std::tuple<std::string, opt::Pass::Status> OptimizeAndDisassemble(
       opt::Pass* pass, const std::string& original, bool skip_nop) {
     std::unique_ptr<ir::Module> module =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original);
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << original << std::endl;
     if (!module) {
-      return std::make_tuple(std::string(), false);
+      return std::make_tuple(std::string(), opt::Pass::Status::Failure);
     }
 
-    const bool modified = pass->Process(module.get());
+    const auto status = pass->Process(module.get());
 
     std::vector<uint32_t> binary;
     module->ToBinary(&binary, skip_nop);
@@ -66,14 +66,14 @@ class PassTest : public TestT {
     EXPECT_TRUE(tools_.Disassemble(binary, &optimized))
         << "Disassembling failed for shader:\n"
         << original << std::endl;
-    return std::make_tuple(optimized, modified);
+    return std::make_tuple(optimized, status);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
   // |assembly|, disassembles the optimized binary. Returns a tuple of
   // disassembly string and the boolean value from the pass Process() function.
   template <typename PassT, typename... Args>
-  std::tuple<std::string, bool> SinglePassRunAndDisassemble(
+  std::tuple<std::string, opt::Pass::Status> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop, Args&&... args) {
     auto pass = MakeUnique<PassT>(consumer_, std::forward<Args>(args)...);
     return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
@@ -88,11 +88,13 @@ class PassTest : public TestT {
                              const std::string& expected, bool skip_nop,
                              Args&&... args) {
     std::string optimized;
-    bool modified = false;
-    std::tie(optimized, modified) = SinglePassRunAndDisassemble<PassT>(
+    auto status = opt::Pass::Status::SuccessWithoutChange;
+    std::tie(optimized, status) = SinglePassRunAndDisassemble<PassT>(
         original, skip_nop, std::forward<Args>(args)...);
     // Check whether the pass returns the correct modification indication.
-    EXPECT_EQ(original != expected, modified);
+    EXPECT_NE(opt::Pass::Status::Failure, status);
+    EXPECT_EQ(original == expected,
+              status == opt::Pass::Status::SuccessWithoutChange);
     EXPECT_EQ(expected, optimized);
   }
 

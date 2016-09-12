@@ -42,7 +42,7 @@ class SetSpecConstantDefaultValuePass : public Pass {
       : Pass(c), spec_id_to_value_(std::move(default_values)) {}
 
   const char* name() const override { return "set-spec-const-default-value"; }
-  bool Process(ir::Module*) override;
+  Status Process(ir::Module*) override;
 
   // Parses the given null-terminated C string to get a mapping from Spec Id to
   // default value strings. Returns a unique pointer of the mapping from spec

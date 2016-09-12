@@ -20,6 +20,7 @@
 #include "source/opt/build_module.h"
 #include "source/opt/ir_loader.h"
 #include "source/opt/pass_manager.h"
+#include "source/opt/passes.h"
 #include "tools/io.h"
 
 using namespace spvtools;

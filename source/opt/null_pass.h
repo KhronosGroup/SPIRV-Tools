@@ -27,7 +27,7 @@ class NullPass : public Pass {
   explicit NullPass(const MessageConsumer& c) : Pass(c) {}
 
   const char* name() const override { return "null"; }
-  bool Process(ir::Module*) override { return false; }
+  Status Process(ir::Module*) override { return Status::SuccessWithoutChange; }
 };
 
 }  // namespace opt

@@ -206,15 +206,16 @@ TEST_P(FoldSpecConstantOpAndCompositePassTest, ParamTestCase) {
 
   // Run the optimization and get the result code in disassembly.
   std::string optimized;
-  bool modified = false;
-  std::tie(optimized, modified) =
+  auto status = opt::Pass::Status::SuccessWithoutChange;
+  std::tie(optimized, status) =
       SinglePassRunAndDisassemble<opt::FoldSpecConstantOpAndCompositePass>(
           original, /* skip_nop = */ true);
 
   // Check the optimized code, but ignore the OpName instructions.
+  EXPECT_NE(opt::Pass::Status::Failure, status);
   EXPECT_EQ(
-      StripOpNameInstructions(expected) != StripOpNameInstructions(original),
-      modified);
+      StripOpNameInstructions(expected) == StripOpNameInstructions(original),
+      status == opt::Pass::Status::SuccessWithoutChange);
   EXPECT_EQ(StripOpNameInstructions(expected),
             StripOpNameInstructions(optimized));
 }

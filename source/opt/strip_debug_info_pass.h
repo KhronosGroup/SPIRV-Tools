@@ -28,7 +28,7 @@ class StripDebugInfoPass : public Pass {
   explicit StripDebugInfoPass(const MessageConsumer& c) : Pass(c) {}
 
   const char* name() const override { return "strip-debug"; }
-  bool Process(ir::Module* module) override;
+  Status Process(ir::Module* module) override;
 };
 
 }  // namespace opt
