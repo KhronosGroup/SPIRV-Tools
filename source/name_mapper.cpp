@@ -14,6 +14,7 @@
 
 #include "name_mapper.h"
 
+#include <cassert>
 #include <algorithm>
 #include <iterator>
 #include <sstream>
@@ -95,12 +96,87 @@ void FriendlyNameMapper::SaveName(uint32_t id,
   name_for_id_[id] = name;
 }
 
+void FriendlyNameMapper::SaveBuiltInName(uint32_t target_id,
+                                         uint32_t built_in) {
+#define GLCASE(name)                  \
+  case SpvBuiltIn##name:              \
+    SaveName(target_id, "gl_" #name); \
+    return;
+#define GLCASE2(name, suggested)           \
+  case SpvBuiltIn##name:                   \
+    SaveName(target_id, "gl_" #suggested); \
+    return;
+#define CASE(name)              \
+  case SpvBuiltIn##name:        \
+    SaveName(target_id, #name); \
+    return;
+  switch (built_in) {
+    GLCASE(Position)
+    GLCASE(PointSize)
+    GLCASE(ClipDistance)
+    GLCASE(CullDistance)
+    GLCASE2(VertexId, VertexID)
+    GLCASE2(InstanceId, InstanceID)
+    GLCASE2(PrimitiveId, PrimitiveID)
+    GLCASE2(InvocationId, InvocationID)
+    GLCASE(Layer)
+    GLCASE(ViewportIndex)
+    GLCASE(TessLevelOuter)
+    GLCASE(TessLevelInner)
+    GLCASE(TessCoord)
+    GLCASE(PatchVertices)
+    GLCASE(FragCoord)
+    GLCASE(PointCoord)
+    GLCASE(FrontFacing)
+    GLCASE2(SampleId, SampleID)
+    GLCASE(SamplePosition)
+    GLCASE(SampleMask)
+    GLCASE(FragDepth)
+    GLCASE(HelperInvocation)
+    GLCASE2(NumWorkgroups, NumWorkGroups)
+    GLCASE2(WorkgroupSize, WorkGroupSize)
+    GLCASE2(WorkgroupId, WorkGroupID)
+    GLCASE2(LocalInvocationId, LocalInvocationID)
+    GLCASE2(GlobalInvocationId, GlobalInvocationID)
+    GLCASE(LocalInvocationIndex)
+    CASE(WorkDim)
+    CASE(GlobalSize)
+    CASE(EnqueuedWorkgroupSize)
+    CASE(GlobalOffset)
+    CASE(GlobalLinearId)
+    CASE(SubgroupSize)
+    CASE(SubgroupMaxSize)
+    CASE(NumSubgroups)
+    CASE(NumEnqueuedSubgroups)
+    CASE(SubgroupId)
+    CASE(SubgroupLocalInvocationId)
+    GLCASE(VertexIndex)
+    GLCASE(InstanceIndex)
+    default:
+      break;
+  }
+#undef GLCASE
+#undef GLCASE2
+#undef CASE
+}
+
 spv_result_t FriendlyNameMapper::ParseInstruction(
     const spv_parsed_instruction_t& inst) {
   const auto result_id = inst.result_id;
   switch (inst.opcode) {
     case SpvOpName:
       SaveName(inst.words[1], reinterpret_cast<const char*>(inst.words + 2));
+      break;
+    case SpvOpDecorate:
+      // Decorations come after OpName.  So OpName will take precedence over
+      // decorations.
+      //
+      // In theory, we should also handle OpGroupDecorate.  But that's unlikely
+      // to occur.
+      if (inst.words[2] == SpvDecorationBuiltIn) {
+        assert(inst.num_words > 3);
+        SaveBuiltInName(inst.words[1], inst.words[3]);
+      }
       break;
     case SpvOpTypeVoid:
       SaveName(result_id, "void");

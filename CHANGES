@@ -1,6 +1,7 @@
 Revision history for SPIRV-Tools
 
 v2016.5-dev 2016-09-12
+ - Disassembler: Generate friendly names for built-in variables.
  - Partial fixes:
    #359: Add Emacs helper for automatically diassembling/assembling a SPIR-V
      binary on file load/save.

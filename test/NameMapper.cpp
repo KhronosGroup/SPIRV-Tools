@@ -205,4 +205,76 @@ INSTANTIATE_TEST_CASE_P(ExoticTypes, FriendlyNameTest,
                             {"%1 = OpTypeNamedBarrier", 1, "NamedBarrier"},
                         }), );
 
+// Makes a test case for a BuiltIn variable declaration.
+NameIdCase BuiltInCase(std::string assembly_name, std::string expected) {
+  return NameIdCase{std::string("OpDecorate %1 BuiltIn ") + assembly_name +
+                        " %1 = OpVariable %2 Input",
+                    1, expected};
+}
+
+// Makes a test case for a BuiltIn variable declaration.  In this overload,
+// the expected result is the same as the assembly name.
+NameIdCase BuiltInCase(std::string assembly_name) {
+  return BuiltInCase(assembly_name, assembly_name);
+}
+
+// Makes a test case for a BuiltIn variable declaration.  In this overload,
+// the expected result is the same as the assembly name, but with a "gl_"
+// prefix.
+NameIdCase BuiltInGLCase(std::string assembly_name) {
+  return BuiltInCase(assembly_name, std::string("gl_") + assembly_name);
+}
+
+INSTANTIATE_TEST_CASE_P(
+    BuiltIns, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        BuiltInGLCase("Position"),
+        BuiltInGLCase("PointSize"),
+        BuiltInGLCase("ClipDistance"),
+        BuiltInGLCase("CullDistance"),
+        BuiltInCase("VertexId", "gl_VertexID"),
+        BuiltInCase("InstanceId", "gl_InstanceID"),
+        BuiltInCase("PrimitiveId", "gl_PrimitiveID"),
+        BuiltInCase("InvocationId", "gl_InvocationID"),
+        BuiltInGLCase("Layer"),
+        BuiltInGLCase("ViewportIndex"),
+        BuiltInGLCase("TessLevelOuter"),
+        BuiltInGLCase("TessLevelInner"),
+        BuiltInGLCase("TessCoord"),
+        BuiltInGLCase("PatchVertices"),
+        BuiltInGLCase("FragCoord"),
+        BuiltInGLCase("PointCoord"),
+        BuiltInGLCase("FrontFacing"),
+        BuiltInCase("SampleId", "gl_SampleID"),
+        BuiltInGLCase("SamplePosition"),
+        BuiltInGLCase("SampleMask"),
+        BuiltInGLCase("FragDepth"),
+        BuiltInGLCase("HelperInvocation"),
+        BuiltInCase("NumWorkgroups", "gl_NumWorkGroups"),
+        BuiltInCase("WorkgroupSize", "gl_WorkGroupSize"),
+        BuiltInCase("WorkgroupId", "gl_WorkGroupID"),
+        BuiltInCase("LocalInvocationId", "gl_LocalInvocationID"),
+        BuiltInCase("GlobalInvocationId", "gl_GlobalInvocationID"),
+        BuiltInGLCase("LocalInvocationIndex"),
+        BuiltInCase("WorkDim"),
+        BuiltInCase("GlobalSize"),
+        BuiltInCase("EnqueuedWorkgroupSize"),
+        BuiltInCase("GlobalOffset"),
+        BuiltInCase("GlobalLinearId"),
+        BuiltInCase("SubgroupSize"),
+        BuiltInCase("SubgroupMaxSize"),
+        BuiltInCase("NumSubgroups"),
+        BuiltInCase("NumEnqueuedSubgroups"),
+        BuiltInCase("SubgroupId"),
+        BuiltInCase("SubgroupLocalInvocationId"),
+        BuiltInGLCase("VertexIndex"),
+        BuiltInGLCase("InstanceIndex"),
+    }), );
+
+INSTANTIATE_TEST_CASE_P(DebugNameOverridesBuiltin, FriendlyNameTest,
+                        ::testing::ValuesIn(std::vector<NameIdCase>{
+                            {"OpName %1 \"foo\" OpDecorate %1 BuiltIn WorkDim "
+                             "%1 = OpVariable %2 Input",
+                             1, "foo"}}), );
+
 }  // anonymous namespace

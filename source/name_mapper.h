@@ -56,6 +56,7 @@ NameMapper GetTrivialNameMapper();
 //    human readable names.
 //  - A struct type maps to "_struct_" followed by the raw Id number.  That's
 //    pretty simplistic, but workable.
+//  - A built-in variable maps to its GLSL variable name.
 class FriendlyNameMapper {
  public:
   // Construct a friendly name mapper, and determine friendly names for each
@@ -80,10 +81,15 @@ class FriendlyNameMapper {
   // assembly language.  Two distinct inputs can map to the same output.
   std::string Sanitize(const std::string& suggested_name);
 
-  // Records a name for the given id.  Use the given suggested_name if it
-  // hasn't already been taken, and otherwise generate a new (unused) name
-  // based on the suggested name.
+  // Records a name for the given id.  If this id already has a name, then
+  // this is a no-op.  If the id doesn't have a name, use the given
+  // suggested_name if it hasn't already been taken, and otherwise generate
+  // a new (unused) name based on the suggested name.
   void SaveName(uint32_t id, const std::string& suggested_name);
+
+  // Records a built-in variable name for target_id.  If target_id already
+  // has a name then this is a no-op.
+  void SaveBuiltInName(uint32_t target_id, uint32_t built_in);
 
   // Collects information from the given parsed instruction to populate
   // name_for_id_.  Returns SPV_SUCCESS;
