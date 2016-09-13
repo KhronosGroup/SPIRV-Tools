@@ -33,6 +33,7 @@ using testing::NotNull;
 TEST(ParseNarrowSignedIntegers, Sample) {
   int16_t i16;
 
+  EXPECT_FALSE(ParseNumber(nullptr, &i16));
   EXPECT_FALSE(ParseNumber("", &i16));
   EXPECT_FALSE(ParseNumber("0=", &i16));
 
@@ -60,6 +61,7 @@ TEST(ParseNarrowSignedIntegers, Sample) {
 TEST(ParseNarrowUnsignedIntegers, Sample) {
   uint16_t u16;
 
+  EXPECT_FALSE(ParseNumber(nullptr, &u16));
   EXPECT_FALSE(ParseNumber("", &u16));
   EXPECT_FALSE(ParseNumber("0=", &u16));
 
@@ -80,6 +82,7 @@ TEST(ParseSignedIntegers, Sample) {
   int32_t i32;
 
   // Invalid parse.
+  EXPECT_FALSE(ParseNumber(nullptr, &i32));
   EXPECT_FALSE(ParseNumber("", &i32));
   EXPECT_FALSE(ParseNumber("0=", &i32));
 
@@ -112,6 +115,7 @@ TEST(ParseUnsignedIntegers, Sample) {
   uint32_t u32;
 
   // Invalid parse.
+  EXPECT_FALSE(ParseNumber(nullptr, &u32));
   EXPECT_FALSE(ParseNumber("", &u32));
   EXPECT_FALSE(ParseNumber("0=", &u32));
 
@@ -132,6 +136,7 @@ TEST(ParseUnsignedIntegers, Sample) {
 
 TEST(ParseWideSignedIntegers, Sample) {
   int64_t i64;
+  EXPECT_FALSE(ParseNumber(nullptr, &i64));
   EXPECT_FALSE(ParseNumber("", &i64));
   EXPECT_FALSE(ParseNumber("0=", &i64));
   EXPECT_TRUE(ParseNumber("0", &i64));
@@ -146,6 +151,7 @@ TEST(ParseWideSignedIntegers, Sample) {
 
 TEST(ParseWideUnsignedIntegers, Sample) {
   uint64_t u64;
+  EXPECT_FALSE(ParseNumber(nullptr, &u64));
   EXPECT_FALSE(ParseNumber("", &u64));
   EXPECT_FALSE(ParseNumber("0=", &u64));
   EXPECT_TRUE(ParseNumber("0", &u64));
@@ -160,6 +166,7 @@ TEST(ParseWideUnsignedIntegers, Sample) {
 TEST(ParseFloat, Sample) {
   float f;
 
+  EXPECT_FALSE(ParseNumber(nullptr, &f));
   EXPECT_FALSE(ParseNumber("", &f));
   EXPECT_FALSE(ParseNumber("0=", &f));
 
@@ -199,6 +206,7 @@ TEST(ParseFloat, Overflow) {
 TEST(ParseDouble, Sample) {
   double f;
 
+  EXPECT_FALSE(ParseNumber(nullptr, &f));
   EXPECT_FALSE(ParseNumber("", &f));
   EXPECT_FALSE(ParseNumber("0=", &f));
 
@@ -250,6 +258,7 @@ TEST(ParseFloat16, Overflow) {
   // on floating point.
   spvutils::HexFloat<spvutils::FloatProxy<spvutils::Float16>> f(0);
 
+  EXPECT_FALSE(ParseNumber(nullptr, &f));
   EXPECT_TRUE(ParseNumber("-0.0", &f));
   EXPECT_EQ(uint16_t{0x8000}, f.value().getAsFloat().get_value());
   EXPECT_TRUE(ParseNumber("1.0", &f));
@@ -280,6 +289,9 @@ TEST(ParseAndEncodeNarrowSignedIntegers, Invalid) {
   std::string err_msg;
   NumberType type = {16, SPV_NUMBER_SIGNED_INT};
 
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);
@@ -346,6 +358,9 @@ TEST(ParseAndEncodeNarrowUnsignedIntegers, Invalid) {
   std::string err_msg;
   NumberType type = {16, SPV_NUMBER_UNSIGNED_INT};
 
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);
@@ -405,6 +420,9 @@ TEST(ParseAndEncodeSignedIntegers, Invalid) {
   std::string err_msg;
   NumberType type = {32, SPV_NUMBER_SIGNED_INT};
 
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);
@@ -475,6 +493,9 @@ TEST(ParseAndEncodeUnsignedIntegers, Invalid) {
   std::string err_msg;
   NumberType type = {32, SPV_NUMBER_UNSIGNED_INT};
 
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);
@@ -536,6 +557,9 @@ TEST(ParseAndEncodeWideSignedIntegers, Invalid) {
   std::string err_msg;
   NumberType type = {64, SPV_NUMBER_SIGNED_INT};
 
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);
@@ -611,6 +635,9 @@ TEST(ParseAndEncodeWideUnsignedIntegers, Invalid) {
   NumberType type = {64, SPV_NUMBER_UNSIGNED_INT};
 
   // Invalid
+  rc = ParseAndEncodeIntegerNumber(nullptr, type, AssertEmitFunc, &err_msg);
+  EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
+  EXPECT_EQ("The given text is a nullptr", err_msg);
   rc = ParseAndEncodeIntegerNumber("", type, AssertEmitFunc, &err_msg);
   EXPECT_EQ(EncodeNumberStatus::kInvalidText, rc);
   EXPECT_EQ("Invalid unsigned integer literal: ", err_msg);

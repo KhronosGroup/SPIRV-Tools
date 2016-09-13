@@ -169,8 +169,9 @@ bool ParseNumber(const char* text, T* value_pointer) {
   // with a single-byte type leads to implementation-defined behaviour.
   // Similarly for uint8_t.
   static_assert(sizeof(T) > 1,
-                "Don't use a single-byte type this parse method");
+                "Single-byte types are not supported in this parse method");
 
+  if (!text)  return false;
   std::istringstream text_stream(text);
   // Allow both decimal and hex input for integers.
   // It also allows octal input, but we don't care about that case.

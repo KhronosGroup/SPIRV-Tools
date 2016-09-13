@@ -55,6 +55,11 @@ class ErrorMsgStream {
 EncodeNumberStatus ParseAndEncodeIntegerNumber(
     const char* text, const NumberType& type,
     std::function<void(uint32_t)> emit, std::string* error_msg) {
+  if (!text) {
+    ErrorMsgStream(error_msg) << "The given text is a nullptr";
+    return EncodeNumberStatus::kInvalidText;
+  }
+
   if (!IsIntegral(type)) {
     ErrorMsgStream(error_msg) << "The expected type is not a integer type";
     return EncodeNumberStatus::kInvalidUsage;
@@ -127,6 +132,11 @@ EncodeNumberStatus ParseAndEncodeIntegerNumber(
 EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
     const char* text, const NumberType& type,
     std::function<void(uint32_t)> emit, std::string* error_msg) {
+  if (!text) {
+    ErrorMsgStream(error_msg) << "The given text is a nullptr";
+    return EncodeNumberStatus::kInvalidText;
+  }
+
   if (!IsFloating(type)) {
     ErrorMsgStream(error_msg) << "The expected type is not a float type";
     return EncodeNumberStatus::kInvalidUsage;
@@ -181,6 +191,11 @@ EncodeNumberStatus ParseAndEncodeNumber(const char* text,
                                         const NumberType& type,
                                         std::function<void(uint32_t)> emit,
                                         std::string* error_msg) {
+  if (!text) {
+    ErrorMsgStream(error_msg) << "The given text is a nullptr";
+    return EncodeNumberStatus::kInvalidText;
+  }
+
   if (IsUnknown(type)) {
     ErrorMsgStream(error_msg)
         << "The expected type is not a integer or float type";
