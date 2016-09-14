@@ -615,6 +615,15 @@ TEST_F(ValidateID, OpConstantCompositeVectorGood) {
 %4 = OpConstantComposite %2 %3 %3 %3 %3)";
   CHECK(spirv, SPV_SUCCESS);
 }
+TEST_F(ValidateID, OpConstantCompositeVectorWithUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpConstant %1 3.14
+%9 = OpUndef %1
+%4 = OpConstantComposite %2 %3 %3 %3 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
 TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
@@ -623,13 +632,23 @@ TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
 %4 = OpConstantComposite %1 %3 %3 %3 %3)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
-TEST_F(ValidateID, OpConstantCompositeVectorConstituentBad) {
+TEST_F(ValidateID, OpConstantCompositeVectorConstituentTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
 %3 = OpConstant %1 3.14
-%5 = OpConstant %4 42
+%5 = OpConstant %4 42 ; bad type for constant value
+%6 = OpConstantComposite %2 %3 %5 %3 %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+TEST_F(ValidateID, OpConstantCompositeVectorConstituentUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%4 = OpTypeInt 32 0
+%3 = OpConstant %1 3.14
+%5 = OpUndef %4 ; bad type for undef value
 %6 = OpConstantComposite %2 %3 %5 %3 %3)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -647,7 +666,21 @@ TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixConstituentBad) {
+TEST_F(ValidateID, OpConstantCompositeMatrixUndefGood) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpConstant %1 0.0
+ %6 = OpConstantComposite %2 %4 %5 %5 %5
+ %7 = OpConstantComposite %2 %5 %4 %5 %5
+ %8 = OpConstantComposite %2 %5 %5 %4 %5
+ %9 = OpUndef %2
+%10 = OpConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+TEST_F(ValidateID, OpConstantCompositeMatrixConstituentTypeBad) {
   const char* spirv = R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
@@ -659,6 +692,21 @@ TEST_F(ValidateID, OpConstantCompositeMatrixConstituentBad) {
  %7 = OpConstantComposite %2 %5 %4 %5 %5
  %8 = OpConstantComposite %2 %5 %5 %4 %5
  %9 = OpConstantComposite %11 %5 %5 %5
+%10 = OpConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+TEST_F(ValidateID, OpConstantCompositeMatrixConstituentUndefTypeBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+%11 = OpTypeVector %1 3
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpConstant %1 0.0
+ %6 = OpConstantComposite %2 %4 %5 %5 %5
+ %7 = OpConstantComposite %2 %5 %4 %5 %5
+ %8 = OpConstantComposite %2 %5 %5 %4 %5
+ %9 = OpUndef %11
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -684,21 +732,40 @@ TEST_F(ValidateID, OpConstantCompositeArrayGood) {
 %4 = OpConstantComposite %3 %2 %2 %2 %2)";
   CHECK(spirv, SPV_SUCCESS);
 }
+TEST_F(ValidateID, OpConstantCompositeArrayWithUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%9 = OpUndef %1
+%3 = OpTypeArray %1 %2
+%4 = OpConstantComposite %3 %2 %2 %2 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
 TEST_F(ValidateID, OpConstantCompositeArrayConstConstituentBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
-%4 = OpConstantComposite %3 %2 %2 %2 %1)";
+%4 = OpConstantComposite %3 %2 %2 %2 %1)"; // Uses a type as operand
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
-TEST_F(ValidateID, OpConstantCompositeArrayConstituentBad) {
+TEST_F(ValidateID, OpConstantCompositeArrayConstituentTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %5 = OpTypeFloat 32
-%6 = OpConstant %5 3.14
+%6 = OpConstant %5 3.14 ; bad type for const value
+%4 = OpConstantComposite %3 %2 %2 %2 %6)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+TEST_F(ValidateID, OpConstantCompositeArrayConstituentUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%5 = OpTypeFloat 32
+%6 = OpUndef %5 ; bad type for undef
 %4 = OpConstantComposite %3 %2 %2 %2 %6)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
@@ -712,13 +779,34 @@ TEST_F(ValidateID, OpConstantCompositeStructGood) {
 %6 = OpConstantComposite %3 %4 %4 %5)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpConstantCompositeStructMemberBad) {
+TEST_F(ValidateID, OpConstantCompositeStructUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpUndef %2
+%6 = OpConstantComposite %3 %4 %4 %5)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+TEST_F(ValidateID, OpConstantCompositeStructMemberTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpConstant %2 4300000000
+%6 = OpConstantComposite %3 %4 %5 %4)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+TEST_F(ValidateID, OpConstantCompositeStructMemberUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpUndef %2
 %6 = OpConstantComposite %3 %4 %5 %4)";
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }

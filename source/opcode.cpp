@@ -205,6 +205,10 @@ int32_t spvOpcodeIsConstant(const SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsConstantOrUndef(const SpvOp opcode) {
+  return opcode == SpvOpUndef || spvOpcodeIsConstant(opcode);
+}
+
 int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeVector:
