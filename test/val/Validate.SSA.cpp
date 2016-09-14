@@ -1185,6 +1185,29 @@ TEST_F(ValidateSSA, PhiUseMayComeFromNonDominatingBlockGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
+TEST_F(ValidateSSA, PhiUsesItsOwnDefinitionGood) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/415
+  //
+  // Non-phi instructions can't use their own definitions, as
+  // already checked in test DominateUsageSameInstructionBad.
+  string str = kHeader + "OpName %loop \"loop\"\n" +
+               "OpName %value \"value\"\n" + kBasicTypes +
+               R"(
+%func        = OpFunction %voidt None %vfunct
+%entry       = OpLabel
+               OpBranch %loop
+
+%loop        = OpLabel
+%value       = OpPhi %boolt %false %entry %value %loop
+               OpBranch %loop
+
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
 TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
   string str = kHeader + "OpName %if_true \"if_true\"\n" +
                "OpName %if_false \"if_false\"\n" + "OpName %exit \"exit\"\n" +

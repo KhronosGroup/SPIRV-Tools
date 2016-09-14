@@ -4,6 +4,8 @@ v2016.5-dev 2016-09-12
  - Partial fixes:
    #359: Add Emacs helper for automatically diassembling/assembling a SPIR-V
      binary on file load/save.
+ - Fixes:
+   #415: Validator: Phi can use its own value in some cases.
 
 v2016.4 2016-09-01
  - Relicensed under Apache 2.0

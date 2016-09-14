@@ -2352,6 +2352,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       break;
 
     case SpvOpFunctionCall:
+      // The Function parameter.
       out = [](unsigned index) { return index == 2; };
       break;
 
@@ -2360,16 +2361,19 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       break;
 
     case SpvOpEnqueueKernel:
+      // The Invoke parameter.
       out = [](unsigned index) { return index == 8; };
       break;
 
     case SpvOpGetKernelNDrangeSubGroupCount:
     case SpvOpGetKernelNDrangeMaxSubGroupSize:
+      // The Invoke parameter.
       out = [](unsigned index) { return index == 3; };
       break;
 
     case SpvOpGetKernelWorkGroupSize:
     case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
+      // The Invoke parameter.
       out = [](unsigned index) { return index == 2; };
       break;
 
@@ -2479,31 +2483,45 @@ spv_result_t IdPass(ValidationState_t& _,
   auto can_have_forward_declared_ids =
       getCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
 
+  // Keep track of a result id defined by this instruction.  0 means it
+  // does not define an id.
+  uint32_t result_id = 0;
+
   for (unsigned i = 0; i < inst->num_operands; i++) {
     const spv_parsed_operand_t& operand = inst->operands[i];
     const spv_operand_type_t& type = operand.type;
-    const uint32_t* operand_ptr = inst->words + operand.offset;
+    // We only care about Id operands, which are a single word.
+    const uint32_t operand_word = inst->words[operand.offset];
 
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
-        // NOTE: Multiple Id definitions are being checked by the binary parser
-        // NOTE: result Id is added *after* all of the other Ids have been
-        // checked to avoid premature use in the same instruction
-        _.RemoveIfForwardDeclared(*operand_ptr);
+        // NOTE: Multiple Id definitions are being checked by the binary parser.
+        //
+        // Defer undefined-forward-reference removal until after we've analyzed
+        // the remaining operands to this instruction.  Deferral only matters
+        // for
+        // OpPhi since it's the only case where it defines its own forward
+        // reference.  Other instructions that can have forward references
+        // either don't define a value or the forward reference is to a function
+        // Id (and hence defined outside of a function body).
+        result_id = operand_word;
+        // NOTE: The result Id is added (in RegisterInstruction) *after* all of
+        // the other Ids have been checked to avoid premature use in the same
+        // instruction.
         ret = SPV_SUCCESS;
         break;
       case SPV_OPERAND_TYPE_ID:
       case SPV_OPERAND_TYPE_TYPE_ID:
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID:
-        if (_.IsDefinedId(*operand_ptr)) {
+        if (_.IsDefinedId(operand_word)) {
           ret = SPV_SUCCESS;
         } else if (can_have_forward_declared_ids(i)) {
-          ret = _.ForwardDeclareId(*operand_ptr);
+          ret = _.ForwardDeclareId(operand_word);
         } else {
           ret = _.diag(SPV_ERROR_INVALID_ID) << "ID "
-                                             << _.getIdName(*operand_ptr)
+                                             << _.getIdName(operand_word)
                                              << " has not been defined";
         }
         break;
@@ -2514,6 +2532,9 @@ spv_result_t IdPass(ValidationState_t& _,
     if (SPV_SUCCESS != ret) {
       return ret;
     }
+  }
+  if (result_id) {
+    _.RemoveIfForwardDeclared(result_id);
   }
   _.RegisterInstruction(*inst);
   return SPV_SUCCESS;
