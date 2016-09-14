@@ -237,6 +237,27 @@ TEST_F(BinaryParseTest, EmptyModuleHasValidHeaderAndNoInstructionCallbacks) {
   }
 }
 
+TEST_F(BinaryParseTest, NullDiagnosticsIsOkForGoodParse) {
+  const auto words = CompileSuccessfully("");
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(
+      SPV_SUCCESS,
+      spvBinaryParse(ScopedContext().context, &client_, words.data(),
+                     words.size(), invoke_header, invoke_instruction, nullptr));
+}
+
+TEST_F(BinaryParseTest, NullDiagnosticsIsOkForBadParse) {
+  auto words = CompileSuccessfully("");
+  words.push_back(0xffffffff);  // Certainly invalid instruction header.
+  EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_)).Times(0);  // No instruction callback.
+  EXPECT_EQ(
+      SPV_ERROR_INVALID_BINARY,
+      spvBinaryParse(ScopedContext().context, &client_, words.data(),
+                     words.size(), invoke_header, invoke_instruction, nullptr));
+}
+
 TEST_F(BinaryParseTest,
        ModuleWithSingleInstructionHasValidHeaderAndInstructionCallback) {
   for (bool endian_swap : kSwapEndians) {
