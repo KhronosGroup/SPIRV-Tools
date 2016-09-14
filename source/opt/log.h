@@ -78,20 +78,20 @@
 namespace spvtools {
 
 // Calls the given |consumer| by supplying  the |message|. The |message| is from
-// the given |file| and |location| and of the given severity |level|.
+// the given |source| and |location| and of the given severity |level|.
 inline void Log(const MessageConsumer& consumer, spv_message_level_t level,
-                const char* file, const spv_position_t& position,
+                const char* source, const spv_position_t& position,
                 const char* message) {
-  if (consumer != nullptr) consumer(level, file, position, message);
+  if (consumer != nullptr) consumer(level, source, position, message);
 }
 
 // Calls the given |consumer| by supplying the message composed according to the
-// given |format|. The |message| is from the given |file| and |location| and of
-// the given severity |level|.
+// given |format|. The |message| is from the given |source| and |location| and
+// of the given severity |level|.
 template <typename... Args>
 void Logf(const MessageConsumer& consumer, spv_message_level_t level,
-          const char* file, const spv_position_t& position, const char* format,
-          Args&&... args) {
+          const char* source, const spv_position_t& position,
+          const char* format, Args&&... args) {
 #if defined(_MSC_VER) && _MSC_VER < 1900
 // Sadly, snprintf() is not supported until Visual Studio 2015!
 #define snprintf _snprintf
@@ -104,7 +104,7 @@ void Logf(const MessageConsumer& consumer, spv_message_level_t level,
       snprintf(message, kInitBufferSize, format, std::forward<Args>(args)...);
 
   if (size >= 0 && size < kInitBufferSize) {
-    Log(consumer, level, file, position, message);
+    Log(consumer, level, source, position, message);
     return;
   }
 
@@ -112,11 +112,11 @@ void Logf(const MessageConsumer& consumer, spv_message_level_t level,
     std::vector<char> longer_message(size + 1);
     snprintf(longer_message.data(), longer_message.size(), format,
              std::forward<Args>(args)...);
-    Log(consumer, level, file, position, longer_message.data());
+    Log(consumer, level, source, position, longer_message.data());
     return;
   }
 
-  Log(consumer, level, file, position, "cannot compose log message");
+  Log(consumer, level, source, position, "cannot compose log message");
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
 #undef snprintf
