@@ -392,6 +392,12 @@ spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* diagnostic);
 
+// Validates a raw SPIR-V binary for correctness. Any errors will be written
+// into *diagnostic if diagnostic is non-null.
+spv_result_t spvValidateBinary(const spv_const_context context,
+                               const uint32_t* words, const size_t num_words,
+                               spv_diagnostic* diagnostic);
+
 // Creates a diagnostic object. The position parameter specifies the location in
 // the text/binary stream. The message parameter, copied into the diagnostic
 // object, contains the error message to display.
