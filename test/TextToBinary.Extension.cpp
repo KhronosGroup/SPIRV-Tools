@@ -28,7 +28,10 @@ using spvtest::Concatenate;
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
 using spvtest::TextToBinaryTest;
+using ::testing::Combine;
 using ::testing::Eq;
+using ::testing::Values;
+using ::testing::ValuesIn;
 
 TEST_F(TextToBinaryTest, InvalidExtInstImportName) {
   EXPECT_THAT(CompileFailure("%1 = OpExtInstImport \"Haskell.std\""),
@@ -85,5 +88,61 @@ TEST_F(TextToBinaryTest, ExtInstFromTwoDifferentImports) {
   // Make sure it disassembles correctly.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
+
+
+// SPV_KHR_shader_ballot
+
+// A test case for assembling into words in an instruction.
+struct AssemblyCase {
+  std::string input;
+  std::vector<uint32_t> expected;
+};
+
+using SPV_KHR_shader_ballot_Test = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<std::tuple<spv_target_env, AssemblyCase>>>;
+
+TEST_P(SPV_KHR_shader_ballot_Test, Samples) {
+  const spv_target_env& env = std::get<0>(GetParam());
+  const AssemblyCase& ac = std::get<1>(GetParam());
+
+  // Check that it assembles correctly.
+  EXPECT_THAT(CompiledInstructions(ac.input, env), Eq(ac.expected));
+
+  // Check round trip through the disassembler.
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(ac.input,
+                                          SPV_BINARY_TO_TEXT_OPTION_NONE, env),
+              Eq(ac.input));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    Assembly, SPV_KHR_shader_ballot_Test,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpCapability SubgroupBallotKHR\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilitySubgroupBallotKHR})},
+                {"%2 = OpSubgroupBallotKHR %1 %3\n",
+                 MakeInstruction(SpvOpSubgroupBallotKHR, {1, 2, 3})},
+                {"%2 = OpSubgroupFirstInvocationKHR %1 %3\n",
+                 MakeInstruction(SpvOpSubgroupFirstInvocationKHR, {1, 2, 3})},
+                {"OpDecorate %1 BuiltIn SubgroupEqMaskKHR\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInSubgroupEqMaskKHR})},
+                {"OpDecorate %1 BuiltIn SubgroupGeMaskKHR\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInSubgroupGeMaskKHR})},
+                {"OpDecorate %1 BuiltIn SubgroupGtMaskKHR\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInSubgroupGtMaskKHR})},
+                {"OpDecorate %1 BuiltIn SubgroupLeMaskKHR\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInSubgroupLeMaskKHR})},
+                {"OpDecorate %1 BuiltIn SubgroupLtMaskKHR\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInSubgroupLtMaskKHR})},
+            })), );
 
 }  // anonymous namespace

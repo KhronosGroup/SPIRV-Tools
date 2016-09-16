@@ -21,6 +21,18 @@
 #include "message.h"
 #include "spirv-tools/libspirv.h"
 
+namespace libspirv {
+
+// The known SPIR-V extensions.
+// TODO(dneto): Consider auto-generating this list?
+enum class Extension {
+  kSPV_KHR_shader_ballot
+};
+
+using ExtensionSet = EnumSet<Extension>;
+
+} // namespace libspirv
+
 typedef struct spv_opcode_desc_t {
   const char* name;
   const SpvOp opcode;
@@ -38,6 +50,12 @@ typedef struct spv_operand_desc_t {
   const char* name;
   const uint32_t value;
   const libspirv::CapabilitySet capabilities;
+  // A set of extensions that enable this feature. If empty then this operand
+  // value is always enabled, i.e. it's in core.  The assembler, binary parser,
+  // and disassembler ignore this rule, so you can freely process invalid
+  // modules.
+  // TODO(dneto): Add validator support to check extensions.
+  const libspirv::ExtensionSet extensions;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_operand_desc_t;
 
