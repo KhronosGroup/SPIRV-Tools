@@ -37,7 +37,7 @@ TEST(CppInterface, SuccessfulRoundTrip) {
   t.SetMessageConsumer([](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
     EXPECT_EQ(MessageLevel::Error, level);
-    EXPECT_STREQ("", source);
+    EXPECT_STREQ("input", source);
     EXPECT_EQ(0u, position.line);
     EXPECT_EQ(0u, position.column);
     EXPECT_EQ(1u, position.index);
@@ -69,7 +69,7 @@ TEST(CppInterface, AssembleWithWrongTargetEnv) {
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(5u, position.column);
         EXPECT_EQ(5u, position.index);
@@ -91,7 +91,7 @@ TEST(CppInterface, DisassembleEmptyModule) {
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(0u, position.index);
@@ -112,7 +112,7 @@ TEST(CppInterface, DisassembleWithWrongTargetEnv) {
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(5u, position.index);
@@ -150,7 +150,7 @@ TEST(CppInterface, ValidateEmptyModule) {
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(0u, position.index);

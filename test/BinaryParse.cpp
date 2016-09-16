@@ -307,7 +307,7 @@ TEST_F(BinaryParseTest, SpecifyConsumerNullDiagnosticsForBadParse) {
                          const spv_position_t& position, const char* message) {
         ++invocation;
         EXPECT_EQ(spvtools::MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(5u, position.index);
