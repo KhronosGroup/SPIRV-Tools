@@ -111,7 +111,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForAssembling) {
         ++invocation;
         EXPECT_EQ(MessageLevel::Error, level);
         // The error happens at scanning the begining of second line.
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(1u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(12u, position.index);
@@ -138,7 +138,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForDisassembling) {
                     const spv_position_t& position, const char* message) {
         ++invocation;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         EXPECT_EQ(5u, position.index);
@@ -173,7 +173,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForValidating) {
                     const spv_position_t& position, const char* message) {
         ++invocation;
         EXPECT_EQ(MessageLevel::Error, level);
-        EXPECT_STREQ("", source);
+        EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
         // TODO(antiagainst): what validation reports is not a word offset here.
