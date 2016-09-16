@@ -22,8 +22,9 @@
 
 #include "message.h"
 
-// Asserts the given condition is true. Otherwise, send a message to the
-// consumer. Accepts the following formats:
+// Asserts the given condition is true. Otherwise, sends a message to the
+// consumer and exits the problem with failure code. Accepts the following
+// formats:
 //
 // SPIRV_ASSERT(<message-consumer>, <condition-expression>);
 // SPIRV_ASSERT(<message-consumer>, <condition-expression>, <message>);
@@ -133,24 +134,30 @@ void Logf(const MessageConsumer& consumer, MessageLevel level, const char* file,
 
 #define SPIRV_ASSERT_1(consumer, condition)                             \
   do {                                                                  \
-    if (!(condition))                                                   \
+    if (!(condition)) {                                                 \
       spvtools::Log(consumer, MessageLevel::InternalError, __FILE__,    \
                     {__LINE__, 0, 0}, "assertion failed: " #condition); \
+      std::exit(EXIT_FAILURE);                                          \
+    }                                                                   \
   } while (0)
 
 #define SPIRV_ASSERT_2(consumer, condition, message)                 \
   do {                                                               \
-    if (!(condition))                                                \
+    if (!(condition)) {                                              \
       spvtools::Log(consumer, MessageLevel::InternalError, __FILE__, \
                     {__LINE__, 0, 0}, "assertion failed: " message); \
+      std::exit(EXIT_FAILURE);                                       \
+    }                                                                \
   } while (0)
 
 #define SPIRV_ASSERT_more(consumer, condition, format, ...)           \
   do {                                                                \
-    if (!(condition))                                                 \
+    if (!(condition)) {                                               \
       spvtools::Logf(consumer, MessageLevel::InternalError, __FILE__, \
                      {__LINE__, 0, 0}, "assertion failed: " format,   \
                      __VA_ARGS__);                                    \
+      std::exit(EXIT_FAILURE);                                        \
+    }                                                                 \
   } while (0)
 
 #define SPIRV_ASSERT_3(consumer, condition, format, ...) \
