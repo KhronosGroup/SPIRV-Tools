@@ -53,6 +53,18 @@ def compose_capability_list(caps):
     return "{" + ", ".join(['SpvCapability{}'.format(c) for c in caps]) + "}"
 
 
+def compose_extension_list(exts):
+    """Returns a string containing a braced list of extensions as enums.
+
+    Arguments:
+      - exts: a sequence of extension names
+
+    Returns:
+      a string containing the braced list of SpvCapability* enums named by caps.
+    """
+    return "{" + ", ".join(['libspirv::Extension::k{}'.format(e) for e in exts]) + "}"
+
+
 def convert_operand_kind(operand_tuple):
     """Returns the corresponding operand type used in spirv-tools for
     the given operand kind and quantifier used in the JSON grammar.
@@ -236,27 +248,30 @@ def generate_instruction_table(inst_table, is_ext_inst):
 class EnumerantInitializer(object):
     """Prints an enumerant as the initializer for spv_operand_desc_t."""
 
-    def __init__(self, enumerant, value, caps, parameters):
+    def __init__(self, enumerant, value, caps, exts, parameters):
         """Initialization.
 
         Arguments:
           - enumerant: enumerant name
           - value: enumerant value
           - caps: a sequence of capability names required by this enumerant
+          - exts: a sequence of names of extensions enabling this enumerant
           - parameters: a sequence of (operand-kind, operand-quantifier) tuples
         """
         self.enumerant = enumerant
         self.value = value
-        self.caps_mask = compose_capability_list(caps)
+        self.caps = compose_capability_list(caps)
+        self.exts = compose_extension_list(exts)
         self.parameters = [convert_operand_kind(p) for p in parameters]
 
     def __str__(self):
         template = ['{{"{enumerant}"', '{value}',
-                    '{caps_mask}', '{{{parameters}}}}}']
+                    '{caps}', '{exts}', '{{{parameters}}}}}']
         return ', '.join(template).format(
             enumerant=self.enumerant,
             value=self.value,
-            caps_mask=self.caps_mask,
+            caps=self.caps,
+            exts=self.exts,
             parameters=', '.join(self.parameters))
 
 
@@ -272,6 +287,7 @@ def generate_enum_operand_kind_entry(entry):
     enumerant = entry.get('enumerant')
     value = entry.get('value')
     caps = entry.get('capabilities', [])
+    exts = entry.get('exts', [])
     params = entry.get('parameters', [])
     params = [p.get('kind') for p in params]
     params = zip(params, [''] * len(params))
@@ -279,7 +295,7 @@ def generate_enum_operand_kind_entry(entry):
     assert enumerant is not None
     assert value is not None
 
-    return str(EnumerantInitializer(enumerant, value, caps, params))
+    return str(EnumerantInitializer(enumerant, value, caps, exts, params))
 
 
 def generate_enum_operand_kind(enum):
