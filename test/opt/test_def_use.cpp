@@ -32,7 +32,7 @@ using spvtools::opt::analysis::DefUseManager;
 
 // Disassembles the given |inst| and returns the disassembly.
 std::string DisassembleInst(ir::Instruction* inst) {
-  SpvTools tools(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
 
   std::vector<uint32_t> binary;
   // We need this to generate the necessary header in the binary.
@@ -491,7 +491,7 @@ using ReplaceUseTest = ::testing::TestWithParam<ReplaceUseCase>;
 
 // Disassembles the given |module| and returns the disassembly.
 std::string DisassembleModule(ir::Module* module) {
-  SpvTools tools(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
 
   std::vector<uint32_t> binary;
   module->ToBinary(&binary, /* skip_nop = */ false);

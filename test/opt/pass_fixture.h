@@ -134,7 +134,7 @@ class PassTest : public TestT {
 
  private:
   MessageConsumer consumer_;  // Message consumer.
-  SpvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
+  SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<opt::PassManager> manager_;  // The pass manager.
 };
 

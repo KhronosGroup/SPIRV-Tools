@@ -25,7 +25,7 @@ using ::testing::ContainerEq;
 
 TEST(CppInterface, SuccessfulRoundTrip) {
   const std::string input_text = "%2 = OpSizeOf %1 %3\n";
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
 
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble(input_text, &binary));
@@ -52,7 +52,7 @@ TEST(CppInterface, SuccessfulRoundTrip) {
 
 TEST(CppInterface, AssembleEmptyModule) {
   std::vector<uint32_t> binary(10, 42);
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   EXPECT_TRUE(t.Assemble("", &binary));
   // We only have the header.
   EXPECT_EQ(5u, binary.size());
@@ -62,7 +62,7 @@ TEST(CppInterface, AssembleEmptyModule) {
 
 TEST(CppInterface, AssembleWithWrongTargetEnv) {
   const std::string input_text = "%r = OpSizeOf %type %pointer";
-  SpvTools t(SPV_ENV_UNIVERSAL_1_0);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_0);
   int invocation_count = 0;
   t.SetMessageConsumer(
       [&invocation_count](spv_message_level_t level, const char* source,
@@ -84,7 +84,7 @@ TEST(CppInterface, AssembleWithWrongTargetEnv) {
 
 TEST(CppInterface, DisassembleEmptyModule) {
   std::string text(10, 'x');
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
   t.SetMessageConsumer(
       [&invocation_count](spv_message_level_t level, const char* source,
@@ -104,8 +104,8 @@ TEST(CppInterface, DisassembleEmptyModule) {
 
 TEST(CppInterface, DisassembleWithWrongTargetEnv) {
   const std::string input_text = "%r = OpSizeOf %type %pointer";
-  SpvTools t11(SPV_ENV_UNIVERSAL_1_1);
-  SpvTools t10(SPV_ENV_UNIVERSAL_1_0);
+  SpirvTools t11(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t10(SPV_ENV_UNIVERSAL_1_0);
   int invocation_count = 0;
   t10.SetMessageConsumer(
       [&invocation_count](spv_message_level_t level, const char* source,
@@ -130,7 +130,7 @@ TEST(CppInterface, DisassembleWithWrongTargetEnv) {
 TEST(CppInterface, SuccessfulValidation) {
   const std::string input_text =
       "OpCapability Shader\nOpMemoryModel Logical GLSL450";
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
   t.SetMessageConsumer([&invocation_count](spv_message_level_t, const char*,
                                            const spv_position_t&, const char*) {
@@ -144,7 +144,7 @@ TEST(CppInterface, SuccessfulValidation) {
 }
 
 TEST(CppInterface, ValidateEmptyModule) {
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
   t.SetMessageConsumer(
       [&invocation_count](spv_message_level_t level, const char* source,
@@ -165,7 +165,7 @@ TEST(CppInterface, ValidateEmptyModule) {
 // source code, we can get the given |optimized| source code.
 void CheckOptimization(const char* original, const char* optimized,
                        const Optimizer& opt) {
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::vector<uint32_t> original_binary;
   ASSERT_TRUE(t.Assemble(original, &original_binary));
 
@@ -179,7 +179,7 @@ void CheckOptimization(const char* original, const char* optimized,
 }
 
 TEST(CppInterface, OptimizeEmptyModule) {
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble("", &binary));
 
@@ -246,7 +246,7 @@ TEST(CppInterface, OptimizeMoveAssignPassToken) {
 }
 
 TEST(CppInterface, OptimizeSameAddressForOriginalOptimizedBinary) {
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::vector<uint32_t> binary;
   ASSERT_TRUE(t.Assemble("OpSource GLSL 450", &binary));
 

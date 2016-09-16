@@ -29,7 +29,7 @@ namespace spvtools {
 // provides methods for assembling, disassembling, and validating.
 //
 // Instances of this class provide basic thread-safety guarantee.
-class SpvTools {
+class SpirvTools {
  public:
   enum {
     // Default disassembling option used by Disassemble():
@@ -44,16 +44,16 @@ class SpvTools {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  explicit SpvTools(spv_target_env env);
+  explicit SpirvTools(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
-  SpvTools(const SpvTools&) = delete;
-  SpvTools(SpvTools&&) = delete;
-  SpvTools& operator=(const SpvTools&) = delete;
-  SpvTools& operator=(SpvTools&&) = delete;
+  SpirvTools(const SpirvTools&) = delete;
+  SpirvTools(SpirvTools&&) = delete;
+  SpirvTools& operator=(const SpirvTools&) = delete;
+  SpirvTools& operator=(SpirvTools&&) = delete;
 
   // Destructs this instance.
-  ~SpvTools();
+  ~SpirvTools();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.

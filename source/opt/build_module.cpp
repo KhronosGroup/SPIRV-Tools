@@ -64,7 +64,7 @@ std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
 std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
                                         MessageConsumer consumer,
                                         const std::string& text) {
-  SpvTools t(env);
+  SpirvTools t(env);
   t.SetMessageConsumer(consumer);
   std::vector<uint32_t> binary;
   if (!t.Assemble(text, &binary)) return nullptr;

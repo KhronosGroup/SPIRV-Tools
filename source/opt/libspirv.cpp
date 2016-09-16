@@ -22,7 +22,7 @@
 namespace spvtools {
 
 // Structs for holding the data members for SpvTools.
-struct SpvTools::Impl {
+struct SpirvTools::Impl {
   explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
     // The default consumer in spv_context_t is a null consumer, which provides
     // equivalent functionality (from the user's perspective) as a real consumer
@@ -33,16 +33,16 @@ struct SpvTools::Impl {
   spv_context context;  // C interface context object.
 };
 
-SpvTools::SpvTools(spv_target_env env) : impl_(new Impl(env)) {}
+SpirvTools::SpirvTools(spv_target_env env) : impl_(new Impl(env)) {}
 
-SpvTools::~SpvTools() {}
+SpirvTools::~SpirvTools() {}
 
-void SpvTools::SetMessageConsumer(MessageConsumer consumer) {
+void SpirvTools::SetMessageConsumer(MessageConsumer consumer) {
   SetContextMessageConsumer(impl_->context, std::move(consumer));
 }
 
-bool SpvTools::Assemble(const std::string& text,
-                        std::vector<uint32_t>* binary) const {
+bool SpirvTools::Assemble(const std::string& text,
+                          std::vector<uint32_t>* binary) const {
   spv_binary spvbinary = nullptr;
   spv_result_t status = spvTextToBinary(impl_->context, text.data(),
                                         text.size(), &spvbinary, nullptr);
@@ -53,8 +53,8 @@ bool SpvTools::Assemble(const std::string& text,
   return status == SPV_SUCCESS;
 }
 
-bool SpvTools::Disassemble(const std::vector<uint32_t>& binary,
-                           std::string* text, uint32_t options) const {
+bool SpirvTools::Disassemble(const std::vector<uint32_t>& binary,
+                             std::string* text, uint32_t options) const {
   spv_text spvtext = nullptr;
   spv_result_t status = spvBinaryToText(
       impl_->context, binary.data(), binary.size(), options, &spvtext, nullptr);
@@ -65,7 +65,7 @@ bool SpvTools::Disassemble(const std::vector<uint32_t>& binary,
   return status == SPV_SUCCESS;
 }
 
-bool SpvTools::Validate(const std::vector<uint32_t>& binary) const {
+bool SpirvTools::Validate(const std::vector<uint32_t>& binary) const {
   spv_const_binary_t b = {binary.data(), binary.size()};
   return spvValidate(impl_->context, &b, nullptr) == SPV_SUCCESS;
 }

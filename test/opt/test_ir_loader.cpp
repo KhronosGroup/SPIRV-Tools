@@ -23,7 +23,7 @@ namespace {
 using namespace spvtools;
 
 void DoRoundTripCheck(const std::string& text) {
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   ASSERT_NE(nullptr, module) << "Failed to assemble\n" << text;
@@ -210,7 +210,7 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
      "%double = OpTypeFloat 64\n";
   // clang-format on
 
-  SpvTools t(SPV_ENV_UNIVERSAL_1_1);
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
   ASSERT_NE(nullptr, module);
