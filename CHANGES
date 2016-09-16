@@ -1,5 +1,7 @@
 Revision history for SPIRV-Tools
 
+v2016.6-dev 2016-09-16
+
 v2016.5 2016-09-16
  - Support SPV_KHR_shader_ballot in assembler, disassembler, parser.
  - Disassembler: Generate friendly names for built-in variables.
