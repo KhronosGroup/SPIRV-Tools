@@ -14,10 +14,10 @@
 
 #include "validate.h"
 
-#include <cassert>
-
 #include <algorithm>
+#include <cassert>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <string>
 #include <tuple>

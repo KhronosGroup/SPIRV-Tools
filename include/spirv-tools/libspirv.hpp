@@ -15,14 +15,21 @@
 #ifndef SPIRV_TOOLS_LIBSPIRV_HPP_
 #define SPIRV_TOOLS_LIBSPIRV_HPP_
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "message.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
+
+// Message consumer. The C strings for source and message are only alive for the
+// specific invocation.
+using MessageConsumer = std::function<void(
+    spv_message_level_t /* level */, const char* /* source */,
+    const spv_position_t& /* position */, const char* /* message */
+    )>;
 
 // C++ interface for SPIRV-Tools functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and

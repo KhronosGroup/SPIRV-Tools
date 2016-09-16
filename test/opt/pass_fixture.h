@@ -23,10 +23,10 @@
 #include <gtest/gtest.h>
 
 #include "opt/build_module.h"
-#include "opt/libspirv.hpp"
 #include "opt/make_unique.h"
 #include "opt/pass_manager.h"
 #include "opt/passes.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 

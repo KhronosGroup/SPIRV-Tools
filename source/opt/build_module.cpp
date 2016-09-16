@@ -15,7 +15,6 @@
 #include "build_module.h"
 
 #include "ir_loader.h"
-#include "libspirv.hpp"
 #include "make_unique.h"
 #include "table.h"
 

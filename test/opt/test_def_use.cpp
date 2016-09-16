@@ -20,8 +20,8 @@
 
 #include "opt/build_module.h"
 #include "opt/def_use_manager.h"
-#include "opt/libspirv.hpp"
 #include "pass_utils.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace {
 

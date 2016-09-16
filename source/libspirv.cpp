@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libspirv.hpp"
+#include "spirv-tools/libspirv.hpp"
 
-#include "ir_loader.h"
-#include "make_unique.h"
 #include "message.h"
 #include "table.h"
 

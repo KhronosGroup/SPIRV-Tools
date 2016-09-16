@@ -15,12 +15,10 @@
 #ifndef LIBSPIRV_DIAGNOSTIC_H_
 #define LIBSPIRV_DIAGNOSTIC_H_
 
-#include <iostream>
 #include <sstream>
 #include <utility>
 
-#include "message.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace libspirv {
 

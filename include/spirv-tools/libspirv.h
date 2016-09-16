@@ -56,6 +56,21 @@ typedef enum spv_result_t {
   SPV_FORCE_32_BIT_ENUM(spv_result_t)
 } spv_result_t;
 
+// Severity levels of messages communicated to the consumer.
+typedef enum spv_message_level_t {
+  SPV_MSG_FATAL,           // Unrecoverable error due to environment.
+                           // Will exit the program immediately. E.g.,
+                           // out of memory.
+  SPV_MSG_INTERNAL_ERROR,  // Unrecoverable error due to SPIRV-Tools
+                           // internals.
+                           // Will exit the program immediately. E.g.,
+                           // unimplemented feature.
+  SPV_MSG_ERROR,           // Normal error due to user input.
+  SPV_MSG_WARNINING,       // Warning information.
+  SPV_MSG_INFO,            // General information.
+  SPV_MSG_DEBUG,           // Debug information.
+} spv_message_level_t;
+
 typedef enum spv_endianness_t {
   SPV_ENDIANNESS_LITTLE,
   SPV_ENDIANNESS_BIG,

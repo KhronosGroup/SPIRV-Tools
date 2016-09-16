@@ -22,12 +22,10 @@ add_library(SPIRV-Tools-opt
   freeze_spec_constant_value_pass.h
   instruction.h
   ir_loader.h
-  libspirv.hpp
   log.h
   module.h
   null_pass.h
   reflect.h
-  optimizer.hpp
   pass.h
   passes.h
   pass_manager.h
@@ -45,7 +43,6 @@ add_library(SPIRV-Tools-opt
   freeze_spec_constant_value_pass.cpp
   instruction.cpp
   ir_loader.cpp
-  libspirv.cpp
   module.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
@@ -58,6 +55,14 @@ add_library(SPIRV-Tools-opt
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt
-  PRIVATE ${spirv-tools_SOURCE_DIR}/include
+  PUBLIC ${spirv-tools_SOURCE_DIR}/include
   PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
 )
+# We need the assembling and disassembling functionalities in the main library.
+target_link_libraries(SPIRV-Tools-opt
+  PUBLIC ${SPIRV_TOOLS})
+
+install(TARGETS SPIRV-Tools-opt
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)

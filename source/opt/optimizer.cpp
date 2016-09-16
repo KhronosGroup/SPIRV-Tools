@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "optimizer.hpp"
+#include "spirv-tools/optimizer.hpp"
 
 #include "build_module.h"
 #include "make_unique.h"

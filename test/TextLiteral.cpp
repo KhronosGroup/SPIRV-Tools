@@ -169,7 +169,7 @@ std::vector<uint32_t> successfulEncode(const TextLiteralCase& test,
                                        libspirv::IdTypeClass type) {
   spv_instruction_t inst;
   std::string message;
-  auto capture_message = [&message](spvtools::spv_message_level_t, const char*,
+  auto capture_message = [&message](spv_message_level_t, const char*,
                                     const spv_position_t&,
                                     const char* m) { message = m; };
   libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};
@@ -185,7 +185,7 @@ std::string failedEncode(const TextLiteralCase& test,
                          libspirv::IdTypeClass type) {
   spv_instruction_t inst;
   std::string message;
-  auto capture_message = [&message](spvtools::spv_message_level_t, const char*,
+  auto capture_message = [&message](spv_message_level_t, const char*,
                                     const spv_position_t&,
                                     const char* m) { message = m; };
   libspirv::IdType expected_type{test.bitwidth, test.is_signed, type};

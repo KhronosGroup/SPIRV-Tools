@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "libspirv.hpp"
-#include "message.h"
 
 namespace spvtools {
 

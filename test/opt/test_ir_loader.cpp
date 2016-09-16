@@ -15,8 +15,9 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 
+#include "message.h"
 #include "opt/build_module.h"
-#include "opt/libspirv.hpp"
+#include "spirv-tools/libspirv.hpp"
 
 namespace {
 

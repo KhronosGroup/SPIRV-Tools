@@ -13,7 +13,7 @@ validator, and optimizer for SPIR-V. Except for the optimizer, all are based
 on a common static library.  The library contains all of the implementation
 details, and is used in the standalone tools whilst also enabling integration
 into other code bases directly. The optimizer implementation resides in its
-own library.
+own library, which depends on the core library.
 
 The interfaces are still under development, and are expected to change.
 
@@ -59,17 +59,18 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 
 ### Optimizer
 
-*Warning:* The optimizer is still under development and its library interface is
-not yet published.
+*Warning:* The optimizer is still under development.
 
 Currently supported optimizations:
-* [Strip debug info](source/opt/strip_debug_info_pass.h)
-* [Freeze spec constant](source/opt/freeze_spec_constant_value_pass.h)
-* [Fold `OpSpecConstantOp` and `OpSpecConstantComposite`](source/opt/fold_spec_constant_op_and_composite_pass.h)
-* [Unify constants](source/opt/unify_const_pass.h)
-* [Eliminate dead constant](source/opt/eliminate_dead_constant_pass.h)
+* Strip debug info
+* Set spec constant default value
+* Freeze spec constant
+* Fold `OpSpecConstantOp` and `OpSpecConstantComposite`
+* Unify constants
+* Eliminate dead constant
 
-For the latest list, please refer to `spirv-opt --help`.
+For the latest list with detailed documentation, please refer to
+[`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).
 
 ## Source code
 
@@ -161,23 +162,31 @@ The following CMake options are supported:
 
 ### Usage
 
-The library provides a C API, but the internals use C++11.
+The internals of the library use C++11 features, and are exposed via both a C
+and C++ API.
 
 In order to use the library from an application, the include path should point
 to `<spirv-dir>/include`, which will enable the application to include the
-header `<spirv-dir>/include/spirv-tools/libspirv.h` then linking against the
-static library in `<spirv-build-dir>/source/libSPIRV-Tools.a` or
+header `<spirv-dir>/include/spirv-tools/libspirv.h{|pp}` then linking against
+the static library in `<spirv-build-dir>/source/libSPIRV-Tools.a` or
 `<spirv-build-dir>/source/SPIRV-Tools.lib`.
+For optimization, the header file is
+`<spirv-dir>/include/spirv-tools/optimizer.hpp`, and the static library is
+`<spirv-build-dir>/source/libSPIRV-Tools-opt.a` or
+`<spirv-build-dir>/source/SPIRV-Tools-opt.lib`.
 
 * `SPIRV-Tools` CMake target: Creates the static library:
   * `<spirv-build-dir>/source/libSPIRV-Tools.a` on Linux and OS X.
   * `<spirv-build-dir>/source/libSPIRV-Tools.lib` on Windows.
+* `SPIRV-Tools-opt` CMake target: Creates the static library:
+  * `<spirv-build-dir>/source/libSPIRV-Tools-opt.a` on Linux and OS X.
+  * `<spirv-build-dir>/source/libSPIRV-Tools-opt.lib` on Windows.
 
 #### Entry points
 
 The interfaces are still under development, and are expected to change.
 
-There are three main entry points into the library.
+There are five main entry points into the library in the C interface:
 
 * `spvTextToBinary`: An assembler, translating text to a binary SPIR-V module.
 * `spvBinaryToText`: A disassembler, translating a binary SPIR-V module to
@@ -186,6 +195,12 @@ There are three main entry points into the library.
   for the header and each parsed instruction.  The disassembler is implemented
   as a client of `spvBinaryParse`.
 * `spvValidate` implements the validator functionality. *Incomplete*
+* `spvValidateBinary` implements the validator functionality. *Incomplete*
+
+The C++ interface is comprised of two classes, `SpirvTools` and `Optimizer`,
+both in the `spvtools` namespace.
+* `SpirvTools` provides `Assemble`, `Disassemble`, and `Validate` methods.
+* `Optimizer` provides methods for registering and running optimization passes.
 
 ## Command line tools
 
