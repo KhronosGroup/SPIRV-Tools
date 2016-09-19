@@ -269,6 +269,11 @@ INSTANTIATE_TEST_CASE_P(
         BuiltInCase("SubgroupLocalInvocationId"),
         BuiltInGLCase("VertexIndex"),
         BuiltInGLCase("InstanceIndex"),
+        BuiltInCase("SubgroupEqMaskKHR"),
+        BuiltInCase("SubgroupGeMaskKHR"),
+        BuiltInCase("SubgroupGtMaskKHR"),
+        BuiltInCase("SubgroupLeMaskKHR"),
+        BuiltInCase("SubgroupLtMaskKHR"),
     }), );
 
 INSTANTIATE_TEST_CASE_P(DebugNameOverridesBuiltin, FriendlyNameTest,
