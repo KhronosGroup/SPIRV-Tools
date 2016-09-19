@@ -180,6 +180,7 @@ spv_result_t spvValidate(const spv_const_context context,
   return spvValidateBinary(context, binary->code, binary->wordCount,
                            pDiagnostic);
 }
+
 spv_result_t spvValidateBinary(const spv_const_context context,
                                const uint32_t* words, const size_t num_words,
                                spv_diagnostic* pDiagnostic) {
