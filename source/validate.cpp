@@ -177,7 +177,16 @@ UNUSED(void PrintDotGraph(ValidationState_t& _, libspirv::Function func)) {
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* pDiagnostic) {
+  return spvValidateBinary(context, binary->code, binary->wordCount,
+                           pDiagnostic);
+}
+
+spv_result_t spvValidateBinary(const spv_const_context context,
+                               const uint32_t* words, const size_t num_words,
+                               spv_diagnostic* pDiagnostic) {
   spv_context_t hijack_context = *context;
+
+  spv_const_binary binary = new spv_const_binary_t{words, num_words};
   if (pDiagnostic) {
     *pDiagnostic = nullptr;
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
@@ -201,9 +210,8 @@ spv_result_t spvValidate(const spv_const_context context,
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
   ValidationState_t vstate(&hijack_context);
-  if (auto error = spvBinaryParse(&hijack_context, &vstate, binary->code,
-                                  binary->wordCount, setHeader,
-                                  ProcessInstruction, pDiagnostic))
+  if (auto error = spvBinaryParse(&hijack_context, &vstate, words, num_words,
+                                  setHeader, ProcessInstruction, pDiagnostic))
     return error;
 
   if (vstate.in_function_body())

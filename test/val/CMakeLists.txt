@@ -20,6 +20,11 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
 )
 
+add_spvtools_unittest(TARGET val_api
+  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.API.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
 
 add_spvtools_unittest(TARGET val_capability
   SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Capability.cpp
