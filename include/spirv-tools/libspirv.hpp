@@ -70,17 +70,27 @@ class SpirvTools {
   // Returns true on successful assembling. |binary| will be kept untouched if
   // assembling is unsuccessful.
   bool Assemble(const std::string& text, std::vector<uint32_t>* binary) const;
+  // |text_size| specifies the number of bytes in |text|. A terminating null
+  // character is not required to present in |text| as long as |text| is valid.
+  bool Assemble(const char* text, size_t text_size,
+                std::vector<uint32_t>* binary) const;
 
   // Disassembles the given SPIR-V |binary| with the given |options| and writes
   // the assembly to |text|. Returns ture on successful disassembling. |text|
   // will be kept untouched if diassembling is unsuccessful.
   bool Disassemble(const std::vector<uint32_t>& binary, std::string* text,
                    uint32_t options = kDefaultDisassembleOption) const;
+  // |binary_size| specifies the number of words in |binary|.
+  bool Disassemble(const uint32_t* binary, size_t binary_size,
+                   std::string* text,
+                   uint32_t options = kDefaultDisassembleOption) const;
 
   // Validates the given SPIR-V |binary|. Returns true if no issues are found.
   // Otherwise, returns false and communicates issues via the message consumer
   // registered.
   bool Validate(const std::vector<uint32_t>& binary) const;
+  // |binary_size| specifies the number of words in |binary|.
+  bool Validate(const uint32_t* binary, size_t binary_size) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.

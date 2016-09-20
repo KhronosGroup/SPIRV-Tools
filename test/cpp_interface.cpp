@@ -60,6 +60,32 @@ TEST(CppInterface, AssembleEmptyModule) {
   EXPECT_EQ(SpvVersion, binary[1]);
 }
 
+TEST(CppInterface, AssembleOverloads) {
+  const std::string input_text = "%2 = OpSizeOf %1 %3\n";
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
+  {
+    std::vector<uint32_t> binary;
+    EXPECT_TRUE(t.Assemble(input_text, &binary));
+    EXPECT_TRUE(binary.size() > 5u);
+    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(SpvVersion, binary[1]);
+  }
+  {
+    std::vector<uint32_t> binary;
+    EXPECT_TRUE(t.Assemble(input_text.data(), input_text.size(), &binary));
+    EXPECT_TRUE(binary.size() > 5u);
+    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(SpvVersion, binary[1]);
+  }
+  {  // Ignore the last newline.
+    std::vector<uint32_t> binary;
+    EXPECT_TRUE(t.Assemble(input_text.data(), input_text.size() - 1, &binary));
+    EXPECT_TRUE(binary.size() > 5u);
+    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(SpvVersion, binary[1]);
+  }
+}
+
 TEST(CppInterface, AssembleWithWrongTargetEnv) {
   const std::string input_text = "%r = OpSizeOf %type %pointer";
   SpirvTools t(SPV_ENV_UNIVERSAL_1_0);
@@ -102,6 +128,25 @@ TEST(CppInterface, DisassembleEmptyModule) {
   EXPECT_EQ(1, invocation_count);
 }
 
+TEST(CppInterface, DisassembleOverloads) {
+  const std::string input_text = "%2 = OpSizeOf %1 %3\n";
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
+
+  std::vector<uint32_t> binary;
+  EXPECT_TRUE(t.Assemble(input_text, &binary));
+
+  {
+    std::string output_text;
+    EXPECT_TRUE(t.Disassemble(binary, &output_text));
+    EXPECT_EQ(input_text, output_text);
+  }
+  {
+    std::string output_text;
+    EXPECT_TRUE(t.Disassemble(binary.data(), binary.size(), &output_text));
+    EXPECT_EQ(input_text, output_text);
+  }
+}
+
 TEST(CppInterface, DisassembleWithWrongTargetEnv) {
   const std::string input_text = "%r = OpSizeOf %type %pointer";
   SpirvTools t11(SPV_ENV_UNIVERSAL_1_1);
@@ -141,6 +186,17 @@ TEST(CppInterface, SuccessfulValidation) {
   EXPECT_TRUE(t.Assemble(input_text, &binary));
   EXPECT_TRUE(t.Validate(binary));
   EXPECT_EQ(0, invocation_count);
+}
+
+TEST(CppInterface, ValidateOverloads) {
+  const std::string input_text =
+      "OpCapability Shader\nOpMemoryModel Logical GLSL450";
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary;
+  EXPECT_TRUE(t.Assemble(input_text, &binary));
+
+  { EXPECT_TRUE(t.Validate(binary)); }
+  { EXPECT_TRUE(t.Validate(binary.data(), binary.size())); }
 }
 
 TEST(CppInterface, ValidateEmptyModule) {

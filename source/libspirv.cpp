@@ -41,9 +41,14 @@ void SpirvTools::SetMessageConsumer(MessageConsumer consumer) {
 
 bool SpirvTools::Assemble(const std::string& text,
                           std::vector<uint32_t>* binary) const {
+  return Assemble(text.data(), text.size(), binary);
+}
+
+bool SpirvTools::Assemble(const char* text, const size_t text_size,
+                          std::vector<uint32_t>* binary) const {
   spv_binary spvbinary = nullptr;
-  spv_result_t status = spvTextToBinary(impl_->context, text.data(),
-                                        text.size(), &spvbinary, nullptr);
+  spv_result_t status =
+      spvTextToBinary(impl_->context, text, text_size, &spvbinary, nullptr);
   if (status == SPV_SUCCESS) {
     binary->assign(spvbinary->code, spvbinary->code + spvbinary->wordCount);
   }
@@ -53,9 +58,14 @@ bool SpirvTools::Assemble(const std::string& text,
 
 bool SpirvTools::Disassemble(const std::vector<uint32_t>& binary,
                              std::string* text, uint32_t options) const {
+  return Disassemble(binary.data(), binary.size(), text, options);
+}
+
+bool SpirvTools::Disassemble(const uint32_t* binary, const size_t binary_size,
+                             std::string* text, uint32_t options) const {
   spv_text spvtext = nullptr;
-  spv_result_t status = spvBinaryToText(
-      impl_->context, binary.data(), binary.size(), options, &spvtext, nullptr);
+  spv_result_t status = spvBinaryToText(impl_->context, binary, binary_size,
+                                        options, &spvtext, nullptr);
   if (status == SPV_SUCCESS) {
     text->assign(spvtext->str, spvtext->str + spvtext->length);
   }
@@ -64,8 +74,13 @@ bool SpirvTools::Disassemble(const std::vector<uint32_t>& binary,
 }
 
 bool SpirvTools::Validate(const std::vector<uint32_t>& binary) const {
-  spv_const_binary_t b = {binary.data(), binary.size()};
-  return spvValidate(impl_->context, &b, nullptr) == SPV_SUCCESS;
+  return Validate(binary.data(), binary.size());
+}
+
+bool SpirvTools::Validate(const uint32_t* binary,
+                          const size_t binary_size) const {
+  return spvValidateBinary(impl_->context, binary, binary_size, nullptr) ==
+         SPV_SUCCESS;
 }
 
 }  // namespace spvtools
