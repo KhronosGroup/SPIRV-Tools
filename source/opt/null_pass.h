@@ -24,8 +24,6 @@ namespace opt {
 // A null pass that does nothing.
 class NullPass : public Pass {
  public:
-  explicit NullPass(const MessageConsumer& c) : Pass(c) {}
-
   const char* name() const override { return "null"; }
   Status Process(ir::Module*) override { return Status::SuccessWithoutChange; }
 };

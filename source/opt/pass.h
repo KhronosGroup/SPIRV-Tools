@@ -37,15 +37,19 @@ class Pass {
     SuccessWithoutChange = 0x11,
   };
 
-  // Constructs a new pass with the given message consumer, which will be
-  // invoked every time there is a message to be communicated to the outside.
+  // Constructs a new pass.
   //
-  // This pass just keeps a reference to the message consumer; so the message
-  // consumer should outlive this pass.
-  explicit Pass(const MessageConsumer& c) : consumer_(c) {}
+  // The constructed instance will have an empty message consumer, which just
+  // ignores all messages from the library. Use SetMessageConsumer() to supply
+  // one if messages are of concern.
+  Pass() : consumer_(IgnoreMessage) {}
 
   // Returns a descriptive name for this pass.
   virtual const char* name() const = 0;
+
+  // Sets the message consumer to the given |consumer|. |consumer| which will be
+  // invoked every time there is a message to be communicated to the outside.
+  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
   // Returns the reference to the message consumer for this pass.
   const MessageConsumer& consumer() const { return consumer_; }
 
@@ -55,7 +59,7 @@ class Pass {
   virtual Status Process(ir::Module* module) = 0;
 
  private:
-  const MessageConsumer& consumer_;  // Message consumer.
+  MessageConsumer consumer_;  // Message consumer.
 };
 
 }  // namespace opt

@@ -242,10 +242,8 @@ std::vector<uint32_t> OperateVectors(
 }
 }  // anonymous namespace
 
-FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass(
-    const MessageConsumer& c)
-    : Pass(c),
-      max_id_(0),
+FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass()
+    : max_id_(0),
       module_(nullptr),
       def_use_mgr_(nullptr),
       type_mgr_(nullptr),

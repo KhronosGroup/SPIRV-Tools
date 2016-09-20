@@ -29,25 +29,23 @@ using ::testing::Eq;
 // A null pass whose construtors accept arguments
 class NullPassWithArgs : public opt::NullPass {
  public:
-  NullPassWithArgs(const MessageConsumer& c, uint32_t) : NullPass(c) {}
-  NullPassWithArgs(const MessageConsumer& c, std::string) : NullPass(c) {}
-  NullPassWithArgs(const MessageConsumer& c, const std::vector<int>&)
-      : NullPass(c) {}
-  NullPassWithArgs(const MessageConsumer& c, const std::vector<int>&, uint32_t)
-      : NullPass(c) {}
+  NullPassWithArgs(uint32_t) {}
+  NullPassWithArgs(std::string) {}
+  NullPassWithArgs(const std::vector<int>&) {}
+  NullPassWithArgs(const std::vector<int>&, uint32_t) {}
 
   const char* name() const override { return "null-with-args"; }
 };
 
 TEST(PassManager, Interface) {
-  opt::PassManager manager(IgnoreMessage);
+  opt::PassManager manager;
   EXPECT_EQ(0u, manager.NumPasses());
 
   manager.AddPass<opt::StripDebugInfoPass>();
   EXPECT_EQ(1u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
 
-  manager.AddPass(MakeUnique<opt::NullPass>(IgnoreMessage));
+  manager.AddPass(MakeUnique<opt::NullPass>());
   EXPECT_EQ(2u, manager.NumPasses());
   EXPECT_STREQ("strip-debug", manager.GetPass(0)->name());
   EXPECT_STREQ("null", manager.GetPass(1)->name());
@@ -75,8 +73,6 @@ TEST(PassManager, Interface) {
 // A pass that appends an OpNop instruction to the debug section.
 class AppendOpNopPass : public opt::Pass {
  public:
-  explicit AppendOpNopPass(const MessageConsumer& c) : opt::Pass(c) {}
-
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::Module* module) override {
     module->AddDebugInst(MakeUnique<ir::Instruction>());
@@ -88,8 +84,7 @@ class AppendOpNopPass : public opt::Pass {
 // section.
 class AppendMultipleOpNopPass : public opt::Pass {
  public:
-  AppendMultipleOpNopPass(const MessageConsumer& c, uint32_t num_nop)
-      : opt::Pass(c), num_nop_(num_nop) {}
+  explicit AppendMultipleOpNopPass(uint32_t num_nop) : num_nop_(num_nop) {}
 
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::Module* module) override {
@@ -106,8 +101,6 @@ class AppendMultipleOpNopPass : public opt::Pass {
 // A pass that duplicates the last instruction in the debug section.
 class DuplicateInstPass : public opt::Pass {
  public:
-  explicit DuplicateInstPass(const MessageConsumer& c) : opt::Pass(c) {}
-
   const char* name() const override { return "DuplicateInst"; }
   Status Process(ir::Module* module) override {
     auto inst = MakeUnique<ir::Instruction>(*(--module->debug_end()));
@@ -143,8 +136,7 @@ TEST_F(PassManagerTest, Run) {
 // A pass that appends an OpTypeVoid instruction that uses a given id.
 class AppendTypeVoidInstPass : public opt::Pass {
  public:
-  AppendTypeVoidInstPass(const MessageConsumer& c, uint32_t result_id)
-      : opt::Pass(c), result_id_(result_id) {}
+  explicit AppendTypeVoidInstPass(uint32_t result_id) : result_id_(result_id) {}
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
   Status Process(ir::Module* module) override {
@@ -162,14 +154,14 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
   ir::Module module;
   EXPECT_THAT(GetIdBound(module), Eq(0u));
 
-  opt::PassManager manager(IgnoreMessage);
+  opt::PassManager manager;
   manager.Run(&module);
   manager.AddPass<AppendOpNopPass>();
   // With no ID changes, the ID bound does not change.
   EXPECT_THAT(GetIdBound(module), Eq(0u));
 
   // Now we force an Id of 100 to be used.
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(IgnoreMessage, 100));
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(100));
   EXPECT_THAT(GetIdBound(module), Eq(0u));
   manager.Run(&module);
   // The Id has been updated automatically, even though the pass
@@ -177,12 +169,12 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
   EXPECT_THAT(GetIdBound(module), Eq(101u));
 
   // Try one more time!
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(IgnoreMessage, 200));
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(200));
   manager.Run(&module);
   EXPECT_THAT(GetIdBound(module), Eq(201u));
 
   // Add another pass, but which uses a lower Id.
-  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(IgnoreMessage, 10));
+  manager.AddPass(MakeUnique<AppendTypeVoidInstPass>(10));
   manager.Run(&module);
   // The Id stays high.
   EXPECT_THAT(GetIdBound(module), Eq(201u));

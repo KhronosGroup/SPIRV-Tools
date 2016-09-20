@@ -64,9 +64,10 @@ int main(int argc, char** argv) {
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
 
-  opt::PassManager pass_manager([](MessageLevel level, const char* source,
-                                   const spv_position_t& position,
-                                   const char* message) {
+  opt::PassManager pass_manager;
+  pass_manager.SetMessageConsumer([](MessageLevel level, const char* source,
+                                     const spv_position_t& position,
+                                     const char* message) {
     std::cerr << StringifyMessage(level, source, position, message);
   });
 

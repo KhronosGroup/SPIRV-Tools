@@ -31,8 +31,15 @@ namespace opt {
 // to run on a module. Passes are executed in the exact order of addition.
 class PassManager {
  public:
-  // Constructs a pass manager with the given message consumer.
-  explicit PassManager(MessageConsumer c) : consumer_(std::move(c)) {}
+  // Constructs a pass manager.
+  //
+  // The constructed instance will have an empty message consumer, which just
+  // ignores all messages from the library. Use SetMessageConsumer() to supply
+  // one if messages are of concern.
+  PassManager() : consumer_(IgnoreMessage) {}
+
+  // Sets the message consumer to the given |consumer|.
+  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Adds an externally constructed pass.
   void AddPass(std::unique_ptr<Pass> pass);
@@ -70,7 +77,8 @@ inline void PassManager::AddPass(std::unique_ptr<Pass> pass) {
 
 template <typename T, typename... Args>
 inline void PassManager::AddPass(Args&&... args) {
-  passes_.emplace_back(new T(consumer_, std::forward<Args>(args)...));
+  passes_.emplace_back(new T(std::forward<Args>(args)...));
+  passes_.back()->SetMessageConsumer(consumer_);
 }
 
 inline uint32_t PassManager::NumPasses() const {

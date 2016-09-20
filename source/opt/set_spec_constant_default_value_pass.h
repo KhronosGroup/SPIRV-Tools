@@ -34,12 +34,11 @@ class SetSpecConstantDefaultValuePass : public Pass {
   using SpecIdToInstMap = std::unordered_map<uint32_t, ir::Instruction*>;
 
   // Constructs a pass instance with a map from spec ids to default values.
-  SetSpecConstantDefaultValuePass(const MessageConsumer& c,
-                                  const SpecIdToValueStrMap& default_values)
-      : Pass(c), spec_id_to_value_(default_values) {}
-  SetSpecConstantDefaultValuePass(const MessageConsumer& c,
-                                  SpecIdToValueStrMap&& default_values)
-      : Pass(c), spec_id_to_value_(std::move(default_values)) {}
+  explicit SetSpecConstantDefaultValuePass(
+      const SpecIdToValueStrMap& default_values)
+      : spec_id_to_value_(default_values) {}
+  explicit SetSpecConstantDefaultValuePass(SpecIdToValueStrMap&& default_values)
+      : spec_id_to_value_(std::move(default_values)) {}
 
   const char* name() const override { return "set-spec-const-default-value"; }
   Status Process(ir::Module*) override;

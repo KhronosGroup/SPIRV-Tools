@@ -28,8 +28,6 @@ namespace opt {
 // OpSpecConstantOp.
 class EliminateDeadConstantPass : public Pass {
  public:
-  explicit EliminateDeadConstantPass(const MessageConsumer& c) : Pass(c) {}
-
   const char* name() const override { return "eliminate-dead-const"; }
   Status Process(ir::Module*) override;
 };

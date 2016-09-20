@@ -43,7 +43,7 @@ class PassTest : public TestT {
   PassTest()
       : consumer_(IgnoreMessage),
         tools_(SPV_ENV_UNIVERSAL_1_1),
-        manager_(new opt::PassManager(consumer_)) {}
+        manager_(new opt::PassManager()) {}
 
   // Runs the given |pass| on the binary assembled from the |assembly|, and
   // disassebles the optimized binary. Returns a tuple of disassembly string
@@ -75,7 +75,8 @@ class PassTest : public TestT {
   template <typename PassT, typename... Args>
   std::tuple<std::string, opt::Pass::Status> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop, Args&&... args) {
-    auto pass = MakeUnique<PassT>(consumer_, std::forward<Args>(args)...);
+    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
+    pass->SetMessageConsumer(consumer_);
     return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
   }
 
@@ -105,7 +106,10 @@ class PassTest : public TestT {
   }
 
   // Renews the pass manager, including clearing all previously added passes.
-  void RenewPassManger() { manager_.reset(new opt::PassManager(consumer_)); }
+  void RenewPassManger() {
+    manager_.reset(new opt::PassManager());
+    manager_->SetMessageConsumer(consumer_);
+  }
 
   // Runs the passes added thus far using a pass manager on the binary assembled
   // from the |original| assembly, and checks whether the optimized binary can

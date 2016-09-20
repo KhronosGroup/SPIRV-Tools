@@ -50,7 +50,7 @@ namespace opt {
 // TODO(qining): Add support for the operations listed above.
 class FoldSpecConstantOpAndCompositePass : public Pass {
  public:
-  explicit FoldSpecConstantOpAndCompositePass(const MessageConsumer& c);
+  FoldSpecConstantOpAndCompositePass();
 
   const char* name() const override { return "fold-spec-const-op-composite"; }
   Status Process(ir::Module* module) override {
