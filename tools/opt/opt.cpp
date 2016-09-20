@@ -140,8 +140,8 @@ int main(int argc, char** argv) {
   spvDiagnosticDestroy(diagnostic);
   spvContextDestroy(context);
 
-  std::unique_ptr<ir::Module> module =
-      BuildModule(target_env, pass_manager.consumer(), source);
+  std::unique_ptr<ir::Module> module = BuildModule(
+      target_env, pass_manager.consumer(), source.data(), source.size());
   pass_manager.Run(module.get());
 
   std::vector<uint32_t> target;

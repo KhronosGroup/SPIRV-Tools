@@ -44,16 +44,16 @@ spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
 
 std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
                                         MessageConsumer consumer,
-                                        const std::vector<uint32_t>& binary) {
+                                        const uint32_t* binary,
+                                        const size_t size) {
   auto context = spvContextCreate(env);
   SetContextMessageConsumer(context, consumer);
 
   auto module = MakeUnique<ir::Module>();
   ir::IrLoader loader(context->consumer, module.get());
 
-  spv_result_t status =
-      spvBinaryParse(context, &loader, binary.data(), binary.size(),
-                     SetSpvHeader, SetSpvInst, nullptr);
+  spv_result_t status = spvBinaryParse(context, &loader, binary, size,
+                                       SetSpvHeader, SetSpvInst, nullptr);
   loader.EndModule();
 
   spvContextDestroy(context);
@@ -68,7 +68,7 @@ std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
   t.SetMessageConsumer(consumer);
   std::vector<uint32_t> binary;
   if (!t.Assemble(text, &binary)) return nullptr;
-  return BuildModule(env, consumer, binary);
+  return BuildModule(env, consumer, binary.data(), binary.size());
 }
 
 }  // namespace spvtools

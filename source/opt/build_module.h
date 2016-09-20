@@ -25,12 +25,13 @@
 
 namespace spvtools {
 
-// Builds and returns an ir::Module from the given SPIR-V |binary|. The |binary|
-// will be decoded according to the given target |env|. Returns nullptr if erors
-// occur and sends the errors to |consumer|.
+// Builds and returns an ir::Module from the given SPIR-V |binary|. |size|
+// specifies number of words in |binary|. The |binary| will be decoded
+// according to the given target |env|. Returns nullptr if erors occur and
+// sends the errors to |consumer|.
 std::unique_ptr<ir::Module> BuildModule(spv_target_env env,
                                         MessageConsumer consumer,
-                                        const std::vector<uint32_t>& binary);
+                                        const uint32_t* binary, size_t size);
 
 // Builds and returns an ir::Module from the given SPIR-V assembly |text|.
 // The |text| will be encoded according to the given target |env|. Returns
