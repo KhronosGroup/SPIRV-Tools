@@ -40,18 +40,20 @@ class IrLoader {
   // All internal messages will be communicated to the outside via the given
   // message |consumer|. This instance only keeps a reference to the |consumer|,
   // so the |consumer| should outlive this instance.
-  IrLoader(const MessageConsumer& consumer, Module* module)
-      : consumer_(consumer), module_(module) {}
+  IrLoader(const MessageConsumer& consumer, Module* module);
+
+  // Sets the source name of the module.
+  void SetSource(const std::string& src) { source_ = src; }
 
   // Sets the fields in the module's header to the given parameters.
   void SetModuleHeader(uint32_t magic, uint32_t version, uint32_t generator,
                        uint32_t bound, uint32_t reserved) {
     module_->SetHeader({magic, version, generator, bound, reserved});
   }
-  // Adds an instruction to the module. This method will properly capture and
-  // store the data provided in |inst| so that |inst| is no longer needed after
-  // returning.
-  void AddInstruction(const spv_parsed_instruction_t* inst);
+  // Adds an instruction to the module. Returns true if no error occurs. This
+  // method will properly capture and store the data provided in |inst| so that
+  // |inst| is no longer needed after returning.
+  bool AddInstruction(const spv_parsed_instruction_t* inst);
   // Finalizes the module construction. This must be called after the module
   // header has been set and all instructions have been added.  This is
   // forgiving in the case of a missing terminator instruction on a basic block,
@@ -63,6 +65,10 @@ class IrLoader {
   const MessageConsumer& consumer_;
   // The module to be built.
   Module* module_;
+  // The source name of the module.
+  std::string source_;
+  // The last used instruction index.
+  uint32_t inst_index_;
   // The current Function under construction.
   std::unique_ptr<Function> function_;
   // The current BasicBlock under construction.

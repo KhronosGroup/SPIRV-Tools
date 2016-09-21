@@ -20,35 +20,67 @@
 namespace spvtools {
 namespace ir {
 
-void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
+IrLoader::IrLoader(const MessageConsumer& consumer, Module* module)
+    : consumer_(consumer),
+      module_(module),
+      source_("<instruction>"),
+      inst_index_(0) {}
+
+bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
+  ++inst_index_;
   const auto opcode = static_cast<SpvOp>(inst->opcode);
   if (IsDebugLineInst(opcode)) {
     dbg_line_info_.push_back(Instruction(*inst));
-    return;
+    return true;
   }
 
   std::unique_ptr<Instruction> spv_inst(
       new Instruction(*inst, std::move(dbg_line_info_)));
   dbg_line_info_.clear();
+
+  const char* src = source_.c_str();
+  spv_position_t loc = {inst_index_, 0, 0};
+
   // Handle function and basic block boundaries first, then normal
   // instructions.
   if (opcode == SpvOpFunction) {
-    SPIRV_ASSERT(consumer_, function_ == nullptr);
-    SPIRV_ASSERT(consumer_, block_ == nullptr);
+    if (function_ != nullptr) {
+      Error(consumer_, src, loc, "function inside function");
+      return false;
+    }
     function_.reset(new Function(std::move(spv_inst)));
   } else if (opcode == SpvOpFunctionEnd) {
-    SPIRV_ASSERT(consumer_, function_ != nullptr);
-    SPIRV_ASSERT(consumer_, block_ == nullptr);
+    if (function_ == nullptr) {
+      Error(consumer_, src, loc,
+            "OpFunctionEnd without corresponding OpFunction");
+      return false;
+    }
+    if (block_ != nullptr) {
+      Error(consumer_, src, loc, "OpFunctionEnd inside basic block");
+      return false;
+    }
     function_->SetFunctionEnd(std::move(spv_inst));
     module_->AddFunction(std::move(function_));
     function_ = nullptr;
   } else if (opcode == SpvOpLabel) {
-    SPIRV_ASSERT(consumer_, function_ != nullptr);
-    SPIRV_ASSERT(consumer_, block_ == nullptr);
+    if (function_ == nullptr) {
+      Error(consumer_, src, loc, "OpLabel outside function");
+      return false;
+    }
+    if (block_ != nullptr) {
+      Error(consumer_, src, loc, "OpLabel inside basic block");
+      return false;
+    }
     block_.reset(new BasicBlock(std::move(spv_inst)));
   } else if (IsTerminatorInst(opcode)) {
-    SPIRV_ASSERT(consumer_, function_ != nullptr);
-    SPIRV_ASSERT(consumer_, block_ != nullptr);
+    if (function_ == nullptr) {
+      Error(consumer_, src, loc, "terminator instruction outside function");
+      return false;
+    }
+    if (block_ == nullptr) {
+      Error(consumer_, src, loc, "terminator instruction outside basic block");
+      return false;
+    }
     block_->AddInstruction(std::move(spv_inst));
     function_->AddBasicBlock(std::move(block_));
     block_ = nullptr;
@@ -82,13 +114,20 @@ void IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       }
     } else {
       if (block_ == nullptr) {  // Inside function but outside blocks
-        SPIRV_ASSERT(consumer_, opcode == SpvOpFunctionParameter);
+        if (opcode != SpvOpFunctionParameter) {
+          Errorf(consumer_, src, loc,
+                 "Non-OpFunctionParameter (opcode: %d) found inside "
+                 "function but outside basic block",
+                 opcode);
+          return false;
+        }
         function_->AddParameter(std::move(spv_inst));
       } else {
         block_->AddInstruction(std::move(spv_inst));
       }
     }
   }
+  return true;
 }
 
 // Resolves internal references among the module, functions, basic blocks, etc.
