@@ -34,9 +34,9 @@ TEST(CppInterface, SuccessfulRoundTrip) {
   EXPECT_EQ(SpvVersion, binary[1]);
 
   // This cannot pass validation since %1 is not defined.
-  t.SetMessageConsumer([](MessageLevel level, const char* source,
+  t.SetMessageConsumer([](spv_message_level_t level, const char* source,
                           const spv_position_t& position, const char* message) {
-    EXPECT_EQ(MessageLevel::kError, level);
+    EXPECT_EQ(SPV_MSG_ERROR, level);
     EXPECT_STREQ("input", source);
     EXPECT_EQ(0u, position.line);
     EXPECT_EQ(0u, position.column);
@@ -65,10 +65,10 @@ TEST(CppInterface, AssembleWithWrongTargetEnv) {
   SpvTools t(SPV_ENV_UNIVERSAL_1_0);
   int invocation_count = 0;
   t.SetMessageConsumer(
-      [&invocation_count](MessageLevel level, const char* source,
+      [&invocation_count](spv_message_level_t level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(5u, position.column);
@@ -87,10 +87,10 @@ TEST(CppInterface, DisassembleEmptyModule) {
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
   t.SetMessageConsumer(
-      [&invocation_count](MessageLevel level, const char* source,
+      [&invocation_count](spv_message_level_t level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -108,10 +108,10 @@ TEST(CppInterface, DisassembleWithWrongTargetEnv) {
   SpvTools t10(SPV_ENV_UNIVERSAL_1_0);
   int invocation_count = 0;
   t10.SetMessageConsumer(
-      [&invocation_count](MessageLevel level, const char* source,
+      [&invocation_count](spv_message_level_t level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -132,9 +132,10 @@ TEST(CppInterface, SuccessfulValidation) {
       "OpCapability Shader\nOpMemoryModel Logical GLSL450";
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
-  t.SetMessageConsumer(
-      [&invocation_count](MessageLevel, const char*, const spv_position_t&,
-                          const char*) { ++invocation_count; });
+  t.SetMessageConsumer([&invocation_count](spv_message_level_t, const char*,
+                                           const spv_position_t&, const char*) {
+    ++invocation_count;
+  });
 
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble(input_text, &binary));
@@ -146,10 +147,10 @@ TEST(CppInterface, ValidateEmptyModule) {
   SpvTools t(SPV_ENV_UNIVERSAL_1_1);
   int invocation_count = 0;
   t.SetMessageConsumer(
-      [&invocation_count](MessageLevel level, const char* source,
+      [&invocation_count](spv_message_level_t level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);

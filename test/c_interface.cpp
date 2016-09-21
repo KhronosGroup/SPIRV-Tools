@@ -106,10 +106,10 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForAssembling) {
   // TODO(antiagainst): Use public C API for setting the consumer once exists.
   SetContextMessageConsumer(
       context,
-      [&invocation](MessageLevel level, const char* source,
+      [&invocation](spv_message_level_t level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         // The error happens at scanning the begining of second line.
         EXPECT_STREQ("input", source);
         EXPECT_EQ(1u, position.line);
@@ -134,10 +134,10 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForDisassembling) {
   int invocation = 0;
   SetContextMessageConsumer(
       context,
-      [&invocation](MessageLevel level, const char* source,
+      [&invocation](spv_message_level_t level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -169,10 +169,10 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForValidating) {
   int invocation = 0;
   SetContextMessageConsumer(
       context,
-      [&invocation](MessageLevel level, const char* source,
+      [&invocation](spv_message_level_t level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::kError, level);
+        EXPECT_EQ(SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -203,8 +203,9 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForAssembling) {
   auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      context, [&invocation](MessageLevel, const char*, const spv_position_t&,
-                             const char*) { ++invocation; });
+      context,
+      [&invocation](spv_message_level_t, const char*, const spv_position_t&,
+                    const char*) { ++invocation; });
 
   spv_binary binary = nullptr;
   spv_diagnostic diagnostic = nullptr;
@@ -225,8 +226,9 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForDisassembling) {
   auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      context, [&invocation](MessageLevel, const char*, const spv_position_t&,
-                             const char*) { ++invocation; });
+      context,
+      [&invocation](spv_message_level_t, const char*, const spv_position_t&,
+                    const char*) { ++invocation; });
 
   spv_binary binary = nullptr;
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, input_text,
@@ -255,8 +257,9 @@ TEST(CInterface, SpecifyConsumerSpecifyDiagnosticForValidating) {
   auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      context, [&invocation](MessageLevel, const char*, const spv_position_t&,
-                             const char*) { ++invocation; });
+      context,
+      [&invocation](spv_message_level_t, const char*, const spv_position_t&,
+                    const char*) { ++invocation; });
 
   spv_binary binary = nullptr;
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(context, input_text,

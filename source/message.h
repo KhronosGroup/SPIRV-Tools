@@ -25,34 +25,35 @@ namespace spvtools {
 // TODO(antiagainst): This eventually should be in the C++ interface.
 
 // Severity levels of messages communicated to the consumer.
-enum MessageLevel {
-  kFatal,          // Unrecoverable error due to environment.
-                   // Will exit the program immediately. E.g.,
-                   // out of memory.
-  kInternalError,  // Unrecoverable error due to SPIRV-Tools internals.
-                   // Will exit the program immediately. E.g.,
-                   // unimplemented feature.
-  kError,          // Normal error due to user input.
-  kWarning,        // Warning information.
-  kInfo,           // General information.
-  kDebug,          // Debug information.
-};
+typedef enum spv_message_level_t {
+  SPV_MSG_FATAL,           // Unrecoverable error due to environment.
+                           // Will exit the program immediately. E.g.,
+                           // out of memory.
+  SPV_MSG_INTERNAL_ERROR,  // Unrecoverable error due to SPIRV-Tools
+                           // internals.
+                           // Will exit the program immediately. E.g.,
+                           // unimplemented feature.
+  SPV_MSG_ERROR,           // Normal error due to user input.
+  SPV_MSG_WARNINING,       // Warning information.
+  SPV_MSG_INFO,            // General information.
+  SPV_MSG_DEBUG,           // Debug information.
+} spv_message_level_t;
 
 // Message consumer. The C strings for source and message are only alive for the
 // specific invocation.
 using MessageConsumer = std::function<void(
-    MessageLevel /* level */, const char* /* source */,
+    spv_message_level_t /* level */, const char* /* source */,
     const spv_position_t& /* position */, const char* /* message */
     )>;
 
 // A message consumer that ignores all messages.
-inline void IgnoreMessage(MessageLevel, const char*, const spv_position_t&,
-                          const char*) {}
+inline void IgnoreMessage(spv_message_level_t, const char*,
+                          const spv_position_t&, const char*) {}
 
 // A helper function to compose and return a string from the message in the
 // following format:
 //   "<level>: <source>:<line>:<column>:<index>: <message>"
-std::string StringifyMessage(MessageLevel level, const char* source,
+std::string StringifyMessage(spv_message_level_t level, const char* source,
                              const spv_position_t& position,
                              const char* message);
 

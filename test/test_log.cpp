@@ -25,10 +25,10 @@ using ::testing::MatchesRegex;
 
 TEST(Log, Unimplemented) {
   int invocation = 0;
-  auto consumer = [&invocation](MessageLevel level, const char* source,
+  auto consumer = [&invocation](spv_message_level_t level, const char* source,
                                 const spv_position_t&, const char* message) {
     ++invocation;
-    EXPECT_EQ(MessageLevel::kInternalError, level);
+    EXPECT_EQ(SPV_MSG_INTERNAL_ERROR, level);
     EXPECT_THAT(source, MatchesRegex(".*test_log.cpp$"));
     EXPECT_STREQ("unimplemented: the-ultimite-feature", message);
   };
@@ -39,10 +39,10 @@ TEST(Log, Unimplemented) {
 
 TEST(Log, Unreachable) {
   int invocation = 0;
-  auto consumer = [&invocation](MessageLevel level, const char* source,
+  auto consumer = [&invocation](spv_message_level_t level, const char* source,
                                 const spv_position_t&, const char* message) {
     ++invocation;
-    EXPECT_EQ(MessageLevel::kInternalError, level);
+    EXPECT_EQ(SPV_MSG_INTERNAL_ERROR, level);
     EXPECT_THAT(source, MatchesRegex(".*test_log.cpp$"));
     EXPECT_STREQ("unreachable", message);
   };

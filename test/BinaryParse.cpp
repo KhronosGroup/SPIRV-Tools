@@ -284,7 +284,7 @@ TEST_F(BinaryParseTest, SpecifyConsumerNullDiagnosticsForGoodParse) {
   auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      ctx, [&invocation](spvtools::MessageLevel, const char*,
+      ctx, [&invocation](spvtools::spv_message_level_t, const char*,
                          const spv_position_t&, const char*) { ++invocation; });
 
   EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
@@ -303,10 +303,11 @@ TEST_F(BinaryParseTest, SpecifyConsumerNullDiagnosticsForBadParse) {
   auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      ctx, [&invocation](spvtools::MessageLevel level, const char* source,
-                         const spv_position_t& position, const char* message) {
+      ctx,
+      [&invocation](spvtools::spv_message_level_t level, const char* source,
+                    const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(spvtools::MessageLevel::kError, level);
+        EXPECT_EQ(spvtools::SPV_MSG_ERROR, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -331,7 +332,7 @@ TEST_F(BinaryParseTest, SpecifyConsumerSpecifyDiagnosticsForGoodParse) {
   auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      ctx, [&invocation](spvtools::MessageLevel, const char*,
+      ctx, [&invocation](spvtools::spv_message_level_t, const char*,
                          const spv_position_t&, const char*) { ++invocation; });
 
   EXPECT_HEADER(1).WillOnce(Return(SPV_SUCCESS));
@@ -351,7 +352,7 @@ TEST_F(BinaryParseTest, SpecifyConsumerSpecifyDiagnosticsForBadParse) {
   auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   int invocation = 0;
   SetContextMessageConsumer(
-      ctx, [&invocation](spvtools::MessageLevel, const char*,
+      ctx, [&invocation](spvtools::spv_message_level_t, const char*,
                          const spv_position_t&, const char*) { ++invocation; });
 
   words.push_back(0xffffffff);  // Certainly invalid instruction header.
