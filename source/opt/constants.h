@@ -15,8 +15,8 @@
 #ifndef LIBSPIRV_OPT_CONSTANTS_H_
 #define LIBSPIRV_OPT_CONSTANTS_H_
 
-#include <cassert>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "make_unique.h"

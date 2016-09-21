@@ -14,10 +14,9 @@
 
 #include "fold_spec_constant_op_and_composite_pass.h"
 
+#include <algorithm>
 #include <initializer_list>
-#include <memory>
 #include <tuple>
-#include <unordered_map>
 
 #include "constants.h"
 #include "make_unique.h"
@@ -248,6 +247,20 @@ FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass()
       def_use_mgr_(nullptr),
       type_mgr_(nullptr),
       id_to_const_val_() {}
+
+Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::Module* module) {
+  Initialize(module);
+  return ProcessImpl(module);
+}
+
+void FoldSpecConstantOpAndCompositePass::Initialize(ir::Module* module) {
+  type_mgr_.reset(new analysis::TypeManager(consumer(), *module));
+  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
+  for (const auto& id_def : def_use_mgr_->id_to_defs()) {
+    max_id_ = std::max(max_id_, id_def.first);
+  }
+  module_ = module;
+};
 
 Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
     ir::Module* module) {

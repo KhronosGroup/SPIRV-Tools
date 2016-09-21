@@ -14,7 +14,6 @@
 
 #include "instruction.h"
 
-#include <cassert>
 #include <initializer_list>
 
 #include "reflect.h"

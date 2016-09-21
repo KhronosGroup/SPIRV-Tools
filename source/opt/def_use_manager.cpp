@@ -14,11 +14,7 @@
 
 #include "def_use_manager.h"
 
-#include <functional>
-
-#include "instruction.h"
 #include "log.h"
-#include "module.h"
 #include "reflect.h"
 
 namespace spvtools {

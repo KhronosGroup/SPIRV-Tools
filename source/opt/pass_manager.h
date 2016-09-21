@@ -19,9 +19,10 @@
 #include <vector>
 
 #include "log.h"
-#include "message.h"
 #include "module.h"
 #include "pass.h"
+
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

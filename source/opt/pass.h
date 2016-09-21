@@ -15,10 +15,10 @@
 #ifndef LIBSPIRV_OPT_PASS_H_
 #define LIBSPIRV_OPT_PASS_H_
 
-#include <memory>
+#include <utility>
 
-#include "message.h"
 #include "module.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

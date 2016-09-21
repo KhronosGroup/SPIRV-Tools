@@ -15,7 +15,6 @@
 #ifndef LIBSPIRV_OPT_FOLD_SPEC_CONSTANT_OP_AND_COMPOSITE_PASS_H_
 #define LIBSPIRV_OPT_FOLD_SPEC_CONSTANT_OP_AND_COMPOSITE_PASS_H_
 
-#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -35,22 +34,13 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
   FoldSpecConstantOpAndCompositePass();
 
   const char* name() const override { return "fold-spec-const-op-composite"; }
-  Status Process(ir::Module* module) override {
-    Initialize(module);
-    return ProcessImpl(module);
-  };
+
+  Status Process(ir::Module* module) override;
 
  private:
   // Initializes the type manager, def-use manager and get the maximal id used
   // in the module.
-  void Initialize(ir::Module* module) {
-    type_mgr_.reset(new analysis::TypeManager(consumer(), *module));
-    def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
-    for (const auto& id_def : def_use_mgr_->id_to_defs()) {
-      max_id_ = std::max(max_id_, id_def.first);
-    }
-    module_ = module;
-  };
+  void Initialize(ir::Module* module);
 
   // The real entry of processing. Iterates through the types-constants-globals
   // section of the given module, finds the Spec Constants defined with

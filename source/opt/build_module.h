@@ -17,7 +17,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "module.h"
 #include "spirv-tools/libspirv.hpp"

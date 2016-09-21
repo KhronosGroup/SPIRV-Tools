@@ -18,9 +18,10 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
-#include "message.h"
 #include "module.h"
+#include "spirv-tools/libspirv.hpp"
 #include "types.h"
 
 namespace spvtools {

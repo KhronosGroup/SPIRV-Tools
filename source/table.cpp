@@ -14,7 +14,7 @@
 
 #include "table.h"
 
-#include <cstdlib>
+#include <utility>
 
 spv_context spvContextCreate(spv_target_env env) {
   switch (env) {

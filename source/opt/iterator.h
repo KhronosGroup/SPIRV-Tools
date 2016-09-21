@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_ITERATOR_H_
 #define LIBSPIRV_OPT_ITERATOR_H_
 
+#include <cstddef>  // for ptrdiff_t
 #include <iterator>
 #include <memory>
 #include <type_traits>
@@ -29,10 +30,9 @@ namespace ir {
 // std::vector<|ValueType|>.
 template <typename ValueType, bool IsConst = false>
 class UptrVectorIterator
-    : public std::iterator<
-          std::random_access_iterator_tag,
-          typename std::conditional<IsConst, const ValueType, ValueType>::type,
-          ptrdiff_t> {
+    : public std::iterator<std::random_access_iterator_tag,
+                           typename std::conditional<IsConst, const ValueType,
+                                                     ValueType>::type> {
  public:
   using super = std::iterator<
       std::random_access_iterator_tag,

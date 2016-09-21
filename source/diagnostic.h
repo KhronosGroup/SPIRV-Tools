@@ -16,7 +16,7 @@
 #define LIBSPIRV_DIAGNOSTIC_H_
 
 #include <sstream>
-#include <utility>
+#include <string>
 
 #include "spirv-tools/libspirv.hpp"
 

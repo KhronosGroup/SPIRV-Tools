@@ -19,7 +19,7 @@
 
 #include "enum_set.h"
 #include "message.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace libspirv {
 

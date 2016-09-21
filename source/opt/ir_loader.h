@@ -19,9 +19,8 @@
 
 #include "basic_block.h"
 #include "instruction.h"
-#include "message.h"
 #include "module.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace ir {

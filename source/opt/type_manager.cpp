@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
+#include "type_manager.h"
+
+#include <utility>
 
 #include "log.h"
 #include "reflect.h"
-#include "type_manager.h"
 
 namespace spvtools {
 namespace opt {

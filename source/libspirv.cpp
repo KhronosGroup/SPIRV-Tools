@@ -14,7 +14,6 @@
 
 #include "spirv-tools/libspirv.hpp"
 
-#include "message.h"
 #include "table.h"
 
 namespace spvtools {

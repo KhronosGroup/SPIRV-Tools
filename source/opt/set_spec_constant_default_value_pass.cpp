@@ -16,18 +16,15 @@
 
 #include <cctype>
 #include <cstring>
-#include <string>
 #include <tuple>
-#include <unordered_map>
 #include <vector>
-
-#include "spirv-tools/libspirv.h"
-#include "util/parse_number.h"
 
 #include "def_use_manager.h"
 #include "make_unique.h"
+#include "spirv-tools/libspirv.h"
 #include "type_manager.h"
 #include "types.h"
+#include "util/parse_number.h"
 
 namespace spvtools {
 namespace opt {
