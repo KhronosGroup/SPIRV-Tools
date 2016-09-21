@@ -123,6 +123,24 @@ void Logf(const MessageConsumer& consumer, spv_message_level_t level,
 #endif
 }
 
+// Calls the given |consumer| by supplying  the given error |message|. The
+// |message| is from the given |source| and |location|.
+inline void Error(const MessageConsumer& consumer, const char* source,
+                  const spv_position_t& position, const char* message) {
+  Log(consumer, SPV_MSG_ERROR, source, position, message);
+}
+
+// Calls the given |consumer| by supplying the error message composed according
+// to the given |format|. The |message| is from the given |source| and
+// |location|.
+template <typename... Args>
+inline void Errorf(const MessageConsumer& consumer, const char* source,
+                   const spv_position_t& position, const char* format,
+                   Args&&... args) {
+  Logf(consumer, SPV_MSG_ERROR, source, position, format,
+       std::forward<Args>(args)...);
+}
+
 }  // namespace spvtools
 
 #define SPIRV_ASSERT_IMPL(consumer, ...)                             \
