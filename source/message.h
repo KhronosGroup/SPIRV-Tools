@@ -25,15 +25,17 @@ namespace spvtools {
 // TODO(antiagainst): This eventually should be in the C++ interface.
 
 // Severity levels of messages communicated to the consumer.
-enum class MessageLevel {
-  Fatal,  // Unrecoverable error due to environment. Will abort the program
-          // immediately. E.g., out of memory.
-  InternalError,  // Unrecoverable error due to SPIRV-Tools internals. Will
-                  // abort the program immediately. E.g., unimplemented feature.
-  Error,          // Normal error due to user input.
-  Warning,        // Warning information.
-  Info,           // General information.
-  Debug,          // Debug information.
+enum MessageLevel {
+  kFatal,          // Unrecoverable error due to environment.
+                   // Will exit the program immediately. E.g.,
+                   // out of memory.
+  kInternalError,  // Unrecoverable error due to SPIRV-Tools internals.
+                   // Will exit the program immediately. E.g.,
+                   // unimplemented feature.
+  kError,          // Normal error due to user input.
+  kWarning,        // Warning information.
+  kInfo,           // General information.
+  kDebug,          // Debug information.
 };
 
 // Message consumer. The C strings for source and message are only alive for the

@@ -28,7 +28,7 @@ TEST(Log, Unimplemented) {
   auto consumer = [&invocation](MessageLevel level, const char* source,
                                 const spv_position_t&, const char* message) {
     ++invocation;
-    EXPECT_EQ(MessageLevel::InternalError, level);
+    EXPECT_EQ(MessageLevel::kInternalError, level);
     EXPECT_THAT(source, MatchesRegex(".*test_log.cpp$"));
     EXPECT_STREQ("unimplemented: the-ultimite-feature", message);
   };
@@ -42,7 +42,7 @@ TEST(Log, Unreachable) {
   auto consumer = [&invocation](MessageLevel level, const char* source,
                                 const spv_position_t&, const char* message) {
     ++invocation;
-    EXPECT_EQ(MessageLevel::InternalError, level);
+    EXPECT_EQ(MessageLevel::kInternalError, level);
     EXPECT_THAT(source, MatchesRegex(".*test_log.cpp$"));
     EXPECT_STREQ("unreachable", message);
   };

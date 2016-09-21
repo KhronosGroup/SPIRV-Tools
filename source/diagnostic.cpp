@@ -71,22 +71,22 @@ namespace libspirv {
 DiagnosticStream::~DiagnosticStream() {
   using spvtools::MessageLevel;
   if (error_ != SPV_FAILED_MATCH && consumer_ != nullptr) {
-    auto level = MessageLevel::Error;
+    auto level = MessageLevel::kError;
     switch (error_) {
       case SPV_SUCCESS:
       case SPV_REQUESTED_TERMINATION:  // Essentially success.
-        level = MessageLevel::Info;
+        level = MessageLevel::kInfo;
         break;
       case SPV_WARNING:
-        level = MessageLevel::Warning;
+        level = MessageLevel::kWarning;
         break;
       case SPV_UNSUPPORTED:
       case SPV_ERROR_INTERNAL:
       case SPV_ERROR_INVALID_TABLE:
-        level = MessageLevel::InternalError;
+        level = MessageLevel::kInternalError;
         break;
       case SPV_ERROR_OUT_OF_MEMORY:
-        level = MessageLevel::Fatal;
+        level = MessageLevel::kFatal;
         break;
       default:
         break;

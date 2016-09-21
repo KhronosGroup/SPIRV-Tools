@@ -54,18 +54,18 @@
 
 // Logs an error message to the consumer saying the given feature is
 // unimplemented.
-#define SPIRV_UNIMPLEMENTED(consumer, feature)                     \
-  do {                                                             \
-    spvtools::Log(consumer, MessageLevel::InternalError, __FILE__, \
-                  {__LINE__, 0, 0}, "unimplemented: " feature);    \
+#define SPIRV_UNIMPLEMENTED(consumer, feature)                      \
+  do {                                                              \
+    spvtools::Log(consumer, MessageLevel::kInternalError, __FILE__, \
+                  {__LINE__, 0, 0}, "unimplemented: " feature);     \
   } while (0)
 
 // Logs an error message to the consumer saying the code location
 // should be unreachable.
-#define SPIRV_UNREACHABLE(consumer)                                \
-  do {                                                             \
-    spvtools::Log(consumer, MessageLevel::InternalError, __FILE__, \
-                  {__LINE__, 0, 0}, "unreachable");                \
+#define SPIRV_UNREACHABLE(consumer)                                 \
+  do {                                                              \
+    spvtools::Log(consumer, MessageLevel::kInternalError, __FILE__, \
+                  {__LINE__, 0, 0}, "unreachable");                 \
   } while (0)
 
 // Helper macros for concatenating arguments.
@@ -135,29 +135,29 @@ void Logf(const MessageConsumer& consumer, MessageLevel level, const char* file,
 #define SPIRV_ASSERT_1(consumer, condition)                             \
   do {                                                                  \
     if (!(condition)) {                                                 \
-      spvtools::Log(consumer, MessageLevel::InternalError, __FILE__,    \
+      spvtools::Log(consumer, MessageLevel::kInternalError, __FILE__,   \
                     {__LINE__, 0, 0}, "assertion failed: " #condition); \
       std::exit(EXIT_FAILURE);                                          \
     }                                                                   \
   } while (0)
 
-#define SPIRV_ASSERT_2(consumer, condition, message)                 \
-  do {                                                               \
-    if (!(condition)) {                                              \
-      spvtools::Log(consumer, MessageLevel::InternalError, __FILE__, \
-                    {__LINE__, 0, 0}, "assertion failed: " message); \
-      std::exit(EXIT_FAILURE);                                       \
-    }                                                                \
-  } while (0)
-
-#define SPIRV_ASSERT_more(consumer, condition, format, ...)           \
+#define SPIRV_ASSERT_2(consumer, condition, message)                  \
   do {                                                                \
     if (!(condition)) {                                               \
-      spvtools::Logf(consumer, MessageLevel::InternalError, __FILE__, \
-                     {__LINE__, 0, 0}, "assertion failed: " format,   \
-                     __VA_ARGS__);                                    \
+      spvtools::Log(consumer, MessageLevel::kInternalError, __FILE__, \
+                    {__LINE__, 0, 0}, "assertion failed: " message);  \
       std::exit(EXIT_FAILURE);                                        \
     }                                                                 \
+  } while (0)
+
+#define SPIRV_ASSERT_more(consumer, condition, format, ...)            \
+  do {                                                                 \
+    if (!(condition)) {                                                \
+      spvtools::Logf(consumer, MessageLevel::kInternalError, __FILE__, \
+                     {__LINE__, 0, 0}, "assertion failed: " format,    \
+                     __VA_ARGS__);                                     \
+      std::exit(EXIT_FAILURE);                                         \
+    }                                                                  \
   } while (0)
 
 #define SPIRV_ASSERT_3(consumer, condition, format, ...) \

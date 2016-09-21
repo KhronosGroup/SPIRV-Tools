@@ -23,22 +23,22 @@ std::string StringifyMessage(MessageLevel level, const char* source,
                              const char* message) {
   const char* level_string = nullptr;
   switch (level) {
-    case MessageLevel::Fatal:
+    case MessageLevel::kFatal:
       level_string = "fatal";
       break;
-    case MessageLevel::InternalError:
+    case MessageLevel::kInternalError:
       level_string = "internal error";
       break;
-    case MessageLevel::Error:
+    case MessageLevel::kError:
       level_string = "error";
       break;
-    case MessageLevel::Warning:
+    case MessageLevel::kWarning:
       level_string = "warning";
       break;
-    case MessageLevel::Info:
+    case MessageLevel::kInfo:
       level_string = "info";
       break;
-    case MessageLevel::Debug:
+    case MessageLevel::kDebug:
       level_string = "debug";
       break;
   }

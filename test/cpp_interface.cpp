@@ -36,7 +36,7 @@ TEST(CppInterface, SuccessfulRoundTrip) {
   // This cannot pass validation since %1 is not defined.
   t.SetMessageConsumer([](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
-    EXPECT_EQ(MessageLevel::Error, level);
+    EXPECT_EQ(MessageLevel::kError, level);
     EXPECT_STREQ("input", source);
     EXPECT_EQ(0u, position.line);
     EXPECT_EQ(0u, position.column);
@@ -68,7 +68,7 @@ TEST(CppInterface, AssembleWithWrongTargetEnv) {
       [&invocation_count](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(5u, position.column);
@@ -90,7 +90,7 @@ TEST(CppInterface, DisassembleEmptyModule) {
       [&invocation_count](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -111,7 +111,7 @@ TEST(CppInterface, DisassembleWithWrongTargetEnv) {
       [&invocation_count](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -149,7 +149,7 @@ TEST(CppInterface, ValidateEmptyModule) {
       [&invocation_count](MessageLevel level, const char* source,
                           const spv_position_t& position, const char* message) {
         ++invocation_count;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);

@@ -109,7 +109,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForAssembling) {
       [&invocation](MessageLevel level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         // The error happens at scanning the begining of second line.
         EXPECT_STREQ("input", source);
         EXPECT_EQ(1u, position.line);
@@ -137,7 +137,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForDisassembling) {
       [&invocation](MessageLevel level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
@@ -172,7 +172,7 @@ TEST(CInterface, SpecifyConsumerNullDiagnosticForValidating) {
       [&invocation](MessageLevel level, const char* source,
                     const spv_position_t& position, const char* message) {
         ++invocation;
-        EXPECT_EQ(MessageLevel::Error, level);
+        EXPECT_EQ(MessageLevel::kError, level);
         EXPECT_STREQ("input", source);
         EXPECT_EQ(0u, position.line);
         EXPECT_EQ(0u, position.column);
