@@ -89,8 +89,8 @@ TEST(TypeManager, TypeStrings) {
   };
 
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
-  opt::analysis::TypeManager manager(IgnoreMessage, *module);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
   EXPECT_EQ(2u, manager.NumForwardPointers());
@@ -119,8 +119,8 @@ TEST(Struct, DecorationOnStruct) {
     %struct7 = OpTypeStruct %f32      ; no decoration
   )";
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
-  opt::analysis::TypeManager manager(IgnoreMessage, *module);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
 
   ASSERT_EQ(7u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -169,8 +169,8 @@ TEST(Struct, DecorationOnMember) {
     %struct10 = OpTypeStruct %u32 %f32 ; no member decoration
   )";
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
-  opt::analysis::TypeManager manager(IgnoreMessage, *module);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
 
   ASSERT_EQ(10u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -207,8 +207,8 @@ TEST(Types, DecorationEmpty) {
     %struct5  = OpTypeStruct %f32
   )";
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
-  opt::analysis::TypeManager manager(IgnoreMessage, *module);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
 
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());

@@ -41,7 +41,7 @@ template <typename TestT>
 class PassTest : public TestT {
  public:
   PassTest()
-      : consumer_(IgnoreMessage),
+      : consumer_(nullptr),
         tools_(SPV_ENV_UNIVERSAL_1_1),
         manager_(new opt::PassManager()) {}
 
@@ -119,7 +119,7 @@ class PassTest : public TestT {
     assert(manager_->NumPasses());
 
     std::unique_ptr<ir::Module> module =
-        BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, original);
+        BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original);
     ASSERT_NE(nullptr, module);
 
     manager_->Run(module.get());

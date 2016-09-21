@@ -42,7 +42,7 @@ class Pass {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  Pass() : consumer_(IgnoreMessage) {}
+  Pass() : consumer_(nullptr) {}
 
   // Returns a descriptive name for this pass.
   virtual const char* name() const = 0;

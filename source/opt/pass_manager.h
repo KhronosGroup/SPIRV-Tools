@@ -36,7 +36,7 @@ class PassManager {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  PassManager() : consumer_(IgnoreMessage) {}
+  PassManager() : consumer_(nullptr) {}
 
   // Sets the message consumer to the given |consumer|.
   void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }

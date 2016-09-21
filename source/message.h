@@ -21,10 +21,6 @@
 
 namespace spvtools {
 
-// A message consumer that ignores all messages.
-inline void IgnoreMessage(spv_message_level_t, const char*,
-                          const spv_position_t&, const char*) {}
-
 // A helper function to compose and return a string from the message in the
 // following format:
 //   "<level>: <source>:<line>:<column>:<index>: <message>"

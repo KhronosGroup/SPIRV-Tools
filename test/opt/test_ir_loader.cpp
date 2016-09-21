@@ -26,7 +26,7 @@ using namespace spvtools;
 void DoRoundTripCheck(const std::string& text) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   ASSERT_NE(nullptr, module) << "Failed to assemble\n" << text;
 
   std::vector<uint32_t> binary;
@@ -213,7 +213,7 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   std::unique_ptr<ir::Module> module =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, IgnoreMessage, text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   ASSERT_NE(nullptr, module);
 
   const auto opundef_count = std::count_if(
