@@ -14,6 +14,8 @@
 
 #include <cstring>
 #include <iostream>
+#include <memory>
+#include <sstream>
 #include <vector>
 
 #include "message.h"
@@ -50,6 +52,13 @@ Options:
                Fold the spec constants defined by OpSpecConstantOp or
                OpSpecConstantComposite instructions to front-end constants
                when possible.
+  --set-spec-const-default-value "<spec id>:<default value> ..."
+               Set the default values of the specialization constants with
+               <spec id>-<default value> pairs specified in a double-quoted
+               string. <spec id>-<default value> pairs must be separated by
+               blank spaces, and in each pair, spec id and default value must
+               be separated with colon ':' without any blank spaces in between.
+               e.g.: --set-spec-const-default-value "1:100 2:400"
   --unify-const
                Remove the duplicated constants.
   -h, --help   Print this help.
@@ -89,6 +98,18 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--strip-debug")) {
         pass_manager.AddPass<opt::StripDebugInfoPass>();
+      } else if (0 == strcmp(cur_arg, "--set-spec-const-default-value")) {
+        if (++argi < argc) {
+          auto spec_ids_vals =
+              opt::SetSpecConstantDefaultValuePass::ParseDefaultValuesString(
+                  argv[argi]);
+          pass_manager.AddPass<opt::SetSpecConstantDefaultValuePass>(
+              std::move(*spec_ids_vals));
+        } else {
+          fprintf(stderr,
+                  "error: Expect a string of <spec id>-<default value> pairs.");
+          return 1;
+        }
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
         pass_manager.AddPass<opt::FreezeSpecConstantValuePass>();
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
