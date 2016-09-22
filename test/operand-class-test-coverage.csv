@@ -1,6 +1,4 @@
 Operand class,Example instruction,Notes,example unit test,negative-enum coverage location
-,,,,
-,,,,
 "    OperandNone,",UNUSED,not in grammar,,not enum
 "    OperandId,",many,ID,too many to count,not enum
 "    OperandOptionalId,","Source, Variable",OPTIONAL_ID,OpSourceAcceptsOptionalFileId,not enum
@@ -10,7 +8,7 @@ Operand class,Example instruction,Notes,example unit test,negative-enum coverage
 "    OperandOptionalLiteralString,",Source,,OpSourceAcceptsOptionalSourceText,not enum
 "    OperandVariableLiterals,",Decorate,,OpDecorateSimpleTest,not enum
 "    OperandVariableIdLiteral,",GroupMemberDecorate,,GroupMemberDecorate*,not enum
-"    OperandVariableLiteralId, // zero or more pairs of (Literal, Id)",Switch,,Switch*,not enum
+"    OperandVariableLiteralId,",Switch,,Switch*,not enum
 "    OperandLiteralNumber,","Source, Switch, ...",,Switch*,not enum
 "    OperandLiteralString,",SourceContinued,,OpSourceContinued,not enum
 "    OperandSource,",Source,,OpSource,not enum
@@ -27,7 +25,7 @@ Operand class,Example instruction,Notes,example unit test,negative-enum coverage
 "    OperandImageChannelDataType,",UNUSED,returned as result value only,,
 "    OperandImageOperands,",UNUSED,used to make a spec section,,see OperandOptionalImage
 "    OperandFPFastMath,",OpDecorate,,CombinedFPFastMathMask,"TEST_F(OpDecorateEnumTest, WrongFPFastMathMode)"
-"    OperandFPRoundingMode,",OpDecorate,,"TEST_F(OpDecorateEnumTest, WrongFPRoundingMode)"
+"    OperandFPRoundingMode,",OpDecorate,,,"TEST_F(OpDecorateEnumTest, WrongFPRoundingMode)"
 "    OperandLinkageType,",OpDecorate,,OpDecorateLinkageTest,"TEST_F(OpDecorateLinkageTest, WrongType)"
 "    OperandAccessQualifier,",OpTypePipe,,AnyAccessQualifier,"TEST_F(OpTypePipeTest, WrongAccessQualifier)"
 "    OperandFuncParamAttr,",OpDecorate,,TextToBinaryDecorateFuncParamAttr,"TEST_F(OpDecorateEnumTest, WrongFuncParamAttr)"
