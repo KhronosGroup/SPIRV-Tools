@@ -13,88 +13,88 @@
 # limitations under the License.
 
 add_spvtools_unittest(TARGET instruction
-  SRCS test_instruction.cpp
+  SRCS instruction_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET ir_loader
-  SRCS test_ir_loader.cpp
+  SRCS ir_loader_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_manager
   SRCS module_utils.h
-       test_pass_manager.cpp
+       pass_manager_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_strip_debug_info
-  SRCS test_strip_debug_info.cpp pass_utils.cpp
+  SRCS strip_debug_info_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_freeze_spec_const
-  SRCS test_freeze_spec_const.cpp pass_utils.cpp
+  SRCS freeze_spec_const_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_eliminate_dead_const
-  SRCS test_eliminate_dead_const.cpp pass_utils.cpp
+  SRCS eliminate_dead_const_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_utils
-  SRCS test_utils.cpp pass_utils.cpp
+  SRCS utils_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET def_use
-  SRCS test_def_use.cpp pass_utils.cpp
+  SRCS def_use_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET assembly_builder
-  SRCS test_assembly_builder.cpp pass_utils.cpp
+  SRCS assembly_builder_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET types
-  SRCS test_types.cpp
+  SRCS types_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET type_manager
-  SRCS test_type_manager.cpp
+  SRCS type_manager_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET iterator
-  SRCS test_iterator.cpp
+  SRCS iterator_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET module
   SRCS module_utils.h
-       test_module.cpp
+       module_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_fold_spec_const_op_composite
-  SRCS test_fold_spec_const_op_composite.cpp pass_utils.cpp
+  SRCS fold_spec_const_op_composite_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_unify_const
-  SRCS test_unify_const.cpp
+  SRCS unify_const_test.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET pass_set_spec_const_default_value
-  SRCS test_set_spec_const_default_value.cpp pass_utils.cpp
+  SRCS set_spec_const_default_value_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET line_debug_info
-  SRCS test_line_debug_info.cpp pass_utils.cpp
+  SRCS line_debug_info_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )

@@ -21,7 +21,7 @@
 
 #include "gmock/gmock.h"
 
-#include "UnitSPIRV.h"
+#include "unit_spirv.h"
 #include "ValidateFixtures.h"
 #include "source/diagnostic.h"
 

@@ -15,7 +15,7 @@
 #include <sstream>
 #include <string>
 
-#include "TestFixture.h"
+#include "test_fixture.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
 // SPIR-V does not follow the logical layout rules from the spec in all cases in

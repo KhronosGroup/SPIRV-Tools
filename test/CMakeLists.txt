@@ -62,61 +62,62 @@ function(add_spvtools_unittest)
 endfunction()
 
 set(TEST_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/TestFixture.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.h
+  test_fixture.h
+  unit_spirv.h
 
-  ${CMAKE_CURRENT_SOURCE_DIR}/AssemblyContext.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/AssemblyFormat.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryDestroy.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryEndianness.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryHeaderGet.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryParse.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryToText.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/BinaryToText.Literal.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/CapabilitySet.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Comment.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ExtInstGLSLstd450.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ExtInst.OpenCL.std.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/FixWord.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/GeneratorMagicNumber.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/HexFloat.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ImmediateInt.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/LibspirvMacros.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/NamedId.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/NameMapper.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeMake.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeRequiresCapabilities.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeSplit.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OpcodeTableGet.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OperandCapabilities.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/Operand.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/OperandPattern.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/SoftwareVersion.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TargetEnv.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextAdvance.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextDestroy.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextLiteral.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextStartsNewInst.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Annotation.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Barrier.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Constant.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.ControlFlow.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Debug.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.DeviceSideEnqueue.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Extension.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Function.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Group.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Image.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Literal.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Memory.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.Miscellaneous.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.ModeSetting.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.PipeStorage.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.TypeDeclaration.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextToBinary.SubgroupDispatch.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/TextWordGet.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/UnitSPIRV.cpp
+  assembly_context_test.cpp
+  assembly_format_test.cpp
+  binary_destroy_test.cpp
+  binary_endianness_test.cpp
+  binary_header_get_test.cpp
+  binary_parse_test.cpp
+  binary_to_text_test.cpp
+  binary_to_text.literal_test.cpp
+  capability_set_test.cpp
+  comment_test.cpp
+  ext_inst.glsl_test.cpp
+  ext_inst.opencl_test.cpp
+  fix_word_test.cpp
+  generator_magic_number_test.cpp
+  hex_float_test.cpp
+  immediate_int_test.cpp
+  libspirv_macros_test.cpp
+  named_id_test.cpp
+  name_mapper_test.cpp
+  opcode_make_test.cpp
+  opcode_require_capabilities_test.cpp
+  opcode_split_test.cpp
+  opcode_table_get_test.cpp
+  operand_capabilities_test.cpp
+  operand_test.cpp
+  operand_pattern_test.cpp
+  software_version_test.cpp
+  target_env_test.cpp
+  text_advance_test.cpp
+  text_destroy_test.cpp
+  text_literal_test.cpp
+  text_start_new_inst_test.cpp
+  text_to_binary.annotation_test.cpp
+  text_to_binary.barrier_test.cpp
+  text_to_binary.constant_test.cpp
+  text_to_binary.control_flow_test.cpp
+  text_to_binary_test.cpp
+  text_to_binary.debug_test.cpp
+  text_to_binary.device_side_enqueue_test.cpp
+  text_to_binary.extension_test.cpp
+  text_to_binary.function_test.cpp
+  text_to_binary.group_test.cpp
+  text_to_binary.image_test.cpp
+  text_to_binary.literal_test.cpp
+  text_to_binary.memory_test.cpp
+  text_to_binary.misc_test.cpp
+  text_to_binary.mode_setting_test.cpp
+  text_to_binary.pipe_storage_test.cpp
+  text_to_binary.type_declaration_test.cpp
+  text_to_binary.subgroup_dispatch_test.cpp
+  text_word_get_test.cpp
+
+  unit_spirv.cpp
 )
 
 add_spvtools_unittest(
@@ -126,27 +127,27 @@ add_spvtools_unittest(
 
 add_spvtools_unittest(
   TARGET diagnostic
-  SRCS diagnostic.cpp
+  SRCS diagnostic_test.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
   TARGET c_interface
-  SRCS c_interface.cpp
+  SRCS c_interface_test.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
   TARGET cpp_interface
-  SRCS cpp_interface.cpp
-  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
+  SRCS cpp_interface_test.cpp
+  LIBS SPIRV-Tools-opt)
 
 add_spvtools_unittest(
   TARGET parse_number
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ParseNumber.cpp
+  SRCS parse_number_test.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_spvtools_unittest(
   TARGET log
-  SRCS test_log.cpp
+  SRCS log_test.cpp
   LIBS ${SPIRV_TOOLS})
 
 add_subdirectory(opt)

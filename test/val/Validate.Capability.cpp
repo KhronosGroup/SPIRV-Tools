@@ -15,8 +15,8 @@
 // Validation tests for Logical Layout
 
 #include <gmock/gmock.h>
-#include "TestFixture.h"
-#include "UnitSPIRV.h"
+#include "test_fixture.h"
+#include "unit_spirv.h"
 #include "ValidateFixtures.h"
 #include "source/assembly_grammar.h"
 

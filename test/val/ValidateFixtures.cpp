@@ -20,7 +20,7 @@
 #include <tuple>
 #include <utility>
 
-#include "TestFixture.h"
+#include "test_fixture.h"
 
 namespace spvtest {
 

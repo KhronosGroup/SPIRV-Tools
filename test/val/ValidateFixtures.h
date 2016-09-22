@@ -17,7 +17,7 @@
 #ifndef LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 #define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 
-#include "UnitSPIRV.h"
+#include "unit_spirv.h"
 
 namespace spvtest {
 

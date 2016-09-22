@@ -13,9 +13,9 @@
 # limitations under the License.
 
 set(VAL_TEST_COMMON_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/../TestFixture.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../test_fixture.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
 )
