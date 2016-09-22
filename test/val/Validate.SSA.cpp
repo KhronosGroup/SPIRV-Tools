@@ -1338,5 +1338,43 @@ TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
       MatchesRegex("ID .\\[first\\] used in function .\\[func2\\] is used "
                    "outside of it's defining function .\\[func\\]"));
 }
+
+TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/429
+  //
+  // ForwardPointers can references instructions that have not been defined
+  string str = R"(
+               OpCapability Kernel
+               OpCapability Addresses
+               OpMemoryModel Logical OpenCL
+               OpName %intptrt "intptrt"
+               OpTypeForwardPointer %intptrt UniformConstant
+       %uint = OpTypeInt 32 0
+    %intptrt = OpTypePointer UniformConstant %uint
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSSA, TypeStructForwardReference) {
+  string str = R"(
+               OpCapability Kernel
+               OpCapability Addresses
+               OpMemoryModel Logical OpenCL
+               OpName %structptr "structptr"
+               OpTypeForwardPointer %structptr UniformConstant
+       %uint = OpTypeInt 32 0
+   %structt1 = OpTypeStruct %structptr %uint
+   %structt2 = OpTypeStruct %uint %structptr
+   %structt3 = OpTypeStruct %uint %uint %structptr
+   %structt4 = OpTypeStruct %uint %uint %uint %structptr
+  %structptr = OpTypePointer UniformConstant %structt1
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 // TODO(umar): OpGroupMemberDecorate
 }  // namespace

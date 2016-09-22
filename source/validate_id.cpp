@@ -2347,6 +2347,7 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
     case SpvOpSelectionMerge:
     case SpvOpDecorate:
     case SpvOpMemberDecorate:
+    case SpvOpTypeStruct:
     case SpvOpBranch:
     case SpvOpLoopMerge:
       out = [](unsigned) { return true; };
@@ -2383,7 +2384,9 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       // The Invoke parameter.
       out = [](unsigned index) { return index == 2; };
       break;
-
+      case SpvOpTypeForwardPointer:
+        out = [](unsigned index) { return index == 0; };
+      break;
     default:
       out = [](unsigned) { return false; };
       break;
