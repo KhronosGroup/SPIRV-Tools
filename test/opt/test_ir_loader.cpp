@@ -316,13 +316,13 @@ void DoErrorMessageCheck(const std::string& assembly,
 
 TEST(IrBuilder, FunctionInsideFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpFunction %4 None %6",
-                      "error: <instruction>:2:0:0: function inside function\n");
+                      "error: <instruction>:2:0:0: function inside function");
 }
 
 TEST(IrBuilder, MismatchOpFunctionEnd) {
   DoErrorMessageCheck("OpFunctionEnd",
                       "error: <instruction>:1:0:0: OpFunctionEnd without "
-                      "corresponding OpFunction\n");
+                      "corresponding OpFunction");
 }
 
 TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
@@ -330,12 +330,12 @@ TEST(IrBuilder, OpFunctionEndInsideBasicBlock) {
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
       "OpFunctionEnd",
-      "error: <instruction>:3:0:0: OpFunctionEnd inside basic block\n");
+      "error: <instruction>:3:0:0: OpFunctionEnd inside basic block");
 }
 
 TEST(IrBuilder, BasicBlockOutsideFunction) {
   DoErrorMessageCheck("OpCapability Shader\n%1 = OpLabel",
-                      "error: <instruction>:2:0:0: OpLabel outside function\n");
+                      "error: <instruction>:2:0:0: OpLabel outside function");
 }
 
 TEST(IrBuilder, OpLabelInsideBasicBlock) {
@@ -343,26 +343,26 @@ TEST(IrBuilder, OpLabelInsideBasicBlock) {
       "%2 = OpFunction %1 None %3\n"
       "%4 = OpLabel\n"
       "%5 = OpLabel",
-      "error: <instruction>:3:0:0: OpLabel inside basic block\n");
+      "error: <instruction>:3:0:0: OpLabel inside basic block");
 }
 
 TEST(IrBuilder, TerminatorOutsideFunction) {
   DoErrorMessageCheck(
       "OpReturn",
-      "error: <instruction>:1:0:0: terminator instruction outside function\n");
+      "error: <instruction>:1:0:0: terminator instruction outside function");
 }
 
 TEST(IrBuilder, TerminatorOutsideBasicBlock) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\nOpReturn",
                       "error: <instruction>:2:0:0: terminator instruction "
-                      "outside basic block\n");
+                      "outside basic block");
 }
 
 TEST(IrBuilder, NotAllowedInstAppearingInFunction) {
   DoErrorMessageCheck("%2 = OpFunction %1 None %3\n%5 = OpVariable %4 Function",
                       "error: <instruction>:2:0:0: Non-OpFunctionParameter "
                       "(opcode: 59) found inside function but outside basic "
-                      "block\n");
+                      "block");
 }
 
 }  // anonymous namespace

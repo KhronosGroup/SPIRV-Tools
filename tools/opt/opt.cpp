@@ -77,7 +77,8 @@ int main(int argc, char** argv) {
   pass_manager.SetMessageConsumer(
       [](spv_message_level_t level, const char* source,
          const spv_position_t& position, const char* message) {
-        std::cerr << StringifyMessage(level, source, position, message);
+        std::cerr << StringifyMessage(level, source, position, message)
+                  << std::endl;
       });
 
   for (int argi = 1; argi < argc; ++argi) {
@@ -113,8 +114,9 @@ int main(int argc, char** argv) {
           pass_manager.AddPass<opt::SetSpecConstantDefaultValuePass>(
               std::move(*spec_ids_vals));
         } else {
-          fprintf(stderr,
-                  "error: Expected a string of <spec id>:<default value> pairs.");
+          fprintf(
+              stderr,
+              "error: Expected a string of <spec id>:<default value> pairs.");
           return 1;
         }
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {

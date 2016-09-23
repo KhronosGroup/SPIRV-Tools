@@ -48,7 +48,6 @@ std::string StringifyMessage(spv_message_level_t level, const char* source,
   oss << position.line << ":" << position.column << ":";
   oss << position.index << ": ";
   if (message) oss << message;
-  oss << "\n";
   return oss.str();
 }
 
