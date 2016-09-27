@@ -17,6 +17,7 @@
 
 // A single header to include all passes.
 
+#include "eliminate_dead_code_pass.h"
 #include "eliminate_dead_constant_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
 #include "freeze_spec_constant_value_pass.h"

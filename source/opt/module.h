@@ -84,6 +84,9 @@ class Module {
   std::vector<Instruction*> GetConstants();
   std::vector<const Instruction*> GetConstants() const;
 
+  IteratorRange<inst_iterator> ext_inst_imports();
+  IteratorRange<const_inst_iterator> ext_inst_imports() const;
+
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
   // this module.
   inline inst_iterator debug_begin();
@@ -185,6 +188,15 @@ inline void Module::AddGlobalValue(std::unique_ptr<Instruction> v) {
 
 inline void Module::AddFunction(std::unique_ptr<Function> f) {
   functions_.emplace_back(std::move(f));
+}
+
+inline IteratorRange<Module::inst_iterator> Module::ext_inst_imports() {
+  return make_range(ext_inst_imports_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::ext_inst_imports()
+    const {
+  return make_const_range(ext_inst_imports_);
 }
 
 inline Module::inst_iterator Module::debug_begin() {

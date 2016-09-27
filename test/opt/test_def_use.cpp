@@ -25,9 +25,9 @@
 
 namespace {
 
-using ::testing::ElementsAre;
-
 using namespace spvtools;
+
+using ::testing::ElementsAre;
 using spvtools::opt::analysis::DefUseManager;
 
 // Disassembles the given |inst| and returns the disassembly.
