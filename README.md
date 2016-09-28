@@ -91,6 +91,7 @@ We intend to maintain a linear history on the GitHub `master` branch.
 
 ### Source code organization
 
+* `example`: demo code of using SPIRV-Tools APIs
 * `external/googletest`: Intended location for the
   [googletest][googletest] sources, not provided
 * `include/`: API clients should add this directory to the include search path
