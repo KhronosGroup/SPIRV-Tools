@@ -20,7 +20,6 @@
 #include <tuple>
 
 #include <gmock/gmock.h>
-#include "UnitSPIRV.h"
 #include "source/util/hex_float.h"
 
 namespace {
