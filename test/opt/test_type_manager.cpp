@@ -103,7 +103,7 @@ TEST(TypeManager, TypeStrings) {
   EXPECT_EQ("forward_pointer(10000)", manager.GetForwardPointer(1)->str());
 }
 
-TEST(Struct, DecorationOnStruct) {
+TEST(TypeManager, DecorationOnStruct) {
   const std::string text = R"(
     OpDecorate %struct1 Block
     OpDecorate %struct2 Block
@@ -145,7 +145,7 @@ TEST(Struct, DecorationOnStruct) {
   }
 }
 
-TEST(Struct, DecorationOnMember) {
+TEST(TypeManager, DecorationOnMember) {
   const std::string text = R"(
     OpMemberDecorate %struct1  0 Offset 0
     OpMemberDecorate %struct2  0 Offset 0
@@ -195,7 +195,7 @@ TEST(Struct, DecorationOnMember) {
   }
 }
 
-TEST(Types, DecorationEmpty) {
+TEST(TypeManager, DecorationEmpty) {
   const std::string text = R"(
     OpDecorate %struct1 Block
     OpMemberDecorate %struct2  0 Offset 0
@@ -224,6 +224,54 @@ TEST(Types, DecorationEmpty) {
   EXPECT_TRUE(manager.GetType(4)->decoration_empty());
   // %struct5 has no decorations
   EXPECT_TRUE(manager.GetType(5)->decoration_empty());
+}
+
+TEST(TypeManager, BeginEndForEmptyModule) {
+  const std::string text = "";
+  std::unique_ptr<ir::Module> module =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
+  ASSERT_EQ(0u, manager.NumTypes());
+  ASSERT_EQ(0u, manager.NumForwardPointers());
+
+  EXPECT_EQ(manager.begin(), manager.end());
+}
+
+TEST(TypeManager, BeginEnd) {
+  const std::string text = R"(
+    %void1   = OpTypeVoid
+    %void2   = OpTypeVoid
+    %bool    = OpTypeBool
+    %u32     = OpTypeInt 32 0
+    %f64     = OpTypeFloat 64
+  )";
+  std::unique_ptr<ir::Module> module =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  opt::analysis::TypeManager manager(nullptr, *module);
+  ASSERT_EQ(5u, manager.NumTypes());
+  ASSERT_EQ(0u, manager.NumForwardPointers());
+
+  EXPECT_NE(manager.begin(), manager.end());
+  for (const auto& t : manager) {
+    switch (t.first) {
+      case 1:
+      case 2:
+        EXPECT_EQ("void", t.second->str());
+        break;
+      case 3:
+        EXPECT_EQ("bool", t.second->str());
+        break;
+      case 4:
+        EXPECT_EQ("uint32", t.second->str());
+        break;
+      case 5:
+        EXPECT_EQ("float64", t.second->str());
+        break;
+      default:
+        EXPECT_TRUE(false && "unreachable");
+        break;
+    }
+  }
 }
 
 }  // anonymous namespace
