@@ -513,7 +513,7 @@ spv_result_t CfgPass(ValidationState_t& _,
     case SpvOpReturn:
     case SpvOpReturnValue:
     case SpvOpUnreachable:
-      _.current_function().RegisterBlockEnd({}, opcode);
+      _.current_function().RegisterBlockEnd(vector<uint32_t>(), opcode);
       break;
     default:
       break;

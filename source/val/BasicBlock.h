@@ -108,7 +108,7 @@ class BasicBlock {
   void RegisterBranchInstruction(SpvOp branch_instruction);
 
   /// Adds @p next BasicBlocks as successors of this BasicBlock
-  void RegisterSuccessors(const std::vector<BasicBlock*>& next = {});
+  void RegisterSuccessors(const std::vector<BasicBlock*>& next = std::vector<BasicBlock*>());
 
   /// Returns true if the id of the BasicBlock matches
   bool operator==(const BasicBlock& other) const { return other.id_ == id_; }

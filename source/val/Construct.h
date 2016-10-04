@@ -46,7 +46,7 @@ class Construct {
  public:
   Construct(ConstructType type, BasicBlock* dominator,
             BasicBlock* exit = nullptr,
-            std::vector<Construct*> constructs = {});
+            std::vector<Construct*> constructs = std::vector<Construct*>());
 
   /// Returns the type of the construct
   ConstructType type() const;
