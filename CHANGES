@@ -3,6 +3,7 @@ Revision history for SPIRV-Tools
 v2016.6-dev 2016-09-16
  - Published the C++ interface for assembling, disassembling, validation, and
    optimization.
+ - Support SPV_KHR_shader_draw_parameters in assembler, disassembler, parser.
  - Fixes issues:
    #429: Validator: Allow OpTypeForwardPointer and OpTypeStruct to reference
      undefined IDs

@@ -90,18 +90,16 @@ TEST_F(TextToBinaryTest, ExtInstFromTwoDifferentImports) {
 }
 
 
-// SPV_KHR_shader_ballot
-
 // A test case for assembling into words in an instruction.
 struct AssemblyCase {
   std::string input;
   std::vector<uint32_t> expected;
 };
 
-using SPV_KHR_shader_ballot_Test = spvtest::TextToBinaryTestBase<
+using ExtensionRoundTripTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::tuple<spv_target_env, AssemblyCase>>>;
 
-TEST_P(SPV_KHR_shader_ballot_Test, Samples) {
+TEST_P(ExtensionRoundTripTest, Samples) {
   const spv_target_env& env = std::get<0>(GetParam());
   const AssemblyCase& ac = std::get<1>(GetParam());
 
@@ -114,8 +112,10 @@ TEST_P(SPV_KHR_shader_ballot_Test, Samples) {
               Eq(ac.input));
 }
 
+// SPV_KHR_shader_ballot
+
 INSTANTIATE_TEST_CASE_P(
-    Assembly, SPV_KHR_shader_ballot_Test,
+    SPV_KHR_shader_ballot, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
@@ -144,5 +144,28 @@ INSTANTIATE_TEST_CASE_P(
                  MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
                                                  SpvBuiltInSubgroupLtMaskKHR})},
             })), );
+
+// SPV_KHR_shader_draw_parameters
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_shader_draw_parameters, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+               SPV_ENV_VULKAN_1_0),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpCapability DrawParameters\n",
+             MakeInstruction(SpvOpCapability, {SpvCapabilityDrawParameters})},
+            {"OpDecorate %1 BuiltIn BaseVertex\n",
+             MakeInstruction(SpvOpDecorate,
+                             {1, SpvDecorationBuiltIn, SpvBuiltInBaseVertex})},
+            {"OpDecorate %1 BuiltIn BaseInstance\n",
+             MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                             SpvBuiltInBaseInstance})},
+            {"OpDecorate %1 BuiltIn DrawIndex\n",
+             MakeInstruction(SpvOpDecorate,
+                             {1, SpvDecorationBuiltIn, SpvBuiltInDrawIndex})},
+        })), );
 
 }  // anonymous namespace
