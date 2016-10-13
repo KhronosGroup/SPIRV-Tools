@@ -57,6 +57,7 @@ NameMapper GetTrivialNameMapper();
 //  - A struct type maps to "_struct_" followed by the raw Id number.  That's
 //    pretty simplistic, but workable.
 //  - A built-in variable maps to its GLSL variable name.
+//  - Numeric literals in OpConstant map to a human-friendly name.
 class FriendlyNameMapper {
  public:
   // Construct a friendly name mapper, and determine friendly names for each

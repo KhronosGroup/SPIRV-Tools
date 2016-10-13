@@ -51,13 +51,13 @@ INSTANTIATE_TEST_CASE_P(
         // Type declaration, original spec constant definition, expected frozen
         // spec constants.
         {"%int = OpTypeInt 32 1", "%2 = OpSpecConstant %int 1",
-         "%2 = OpConstant %int 1"},
+         "%int_1 = OpConstant %int 1"},
         {"%uint = OpTypeInt 32 0", "%2 = OpSpecConstant %uint 1",
-         "%2 = OpConstant %uint 1"},
+         "%uint_1 = OpConstant %uint 1"},
         {"%float = OpTypeFloat 32", "%2 = OpSpecConstant %float 3.14",
-         "%2 = OpConstant %float 3.14"},
+         "%float_3_14 = OpConstant %float 3.14"},
         {"%double = OpTypeFloat 64", "%2 = OpSpecConstant %double 3.1415926",
-         "%2 = OpConstant %double 3.1415926"},
+         "%double_3_1415926 = OpConstant %double 3.1415926"},
         {"%bool = OpTypeBool", "%2 = OpSpecConstantTrue %bool",
          "%2 = OpConstantTrue %bool"},
         {"%bool = OpTypeBool", "%2 = OpSpecConstantFalse %bool",
@@ -103,12 +103,16 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
   std::string expected_disassembly = SelectiveJoin(text, [](const char* line) {
     return std::string(line).find("SpecId") != std::string::npos;
   });
-  std::vector<std::pair<const char*, const char*>> opcode_replacement_pairs = {
-      {" OpSpecConstant ", " OpConstant "},
+  std::vector<std::pair<const char*, const char*>> replacement_pairs = {
+      {"%3 = OpSpecConstant %int 3", "%int_3 = OpConstant %int 3"},
+      {"%4 = OpSpecConstant %float 3.14",
+       "%float_3_14 = OpConstant %float 3.14"},
+      {"%5 = OpSpecConstant %double 3.14159265358979",
+       "%double_3_14159265358979 = OpConstant %double 3.14159265358979"},
       {" OpSpecConstantTrue ", " OpConstantTrue "},
       {" OpSpecConstantFalse ", " OpConstantFalse "},
   };
-  for (auto& p : opcode_replacement_pairs) {
+  for (auto& p : replacement_pairs) {
     EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second))
         << "text:\n"
         << expected_disassembly << "\n"

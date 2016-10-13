@@ -473,13 +473,13 @@ INSTANTIATE_TEST_CASE_P(
             // code
             "OpDecorate %1 SpecId 100\n"
             "%int = OpTypeInt 32 1\n"
-            "%1 = OpConstant %int 101\n",
+            "%int_101 = OpConstant %int 101\n",
             // default values
             SpecIdToValueStrMap{{100, "0x7fffffff"}},
             // expected
             "OpDecorate %1 SpecId 100\n"
             "%int = OpTypeInt 32 1\n"
-            "%1 = OpConstant %int 101\n",
+            "%int_101 = OpConstant %int 101\n",
         },
         // 3. Do nothing when SpecId decoration is not attached to a
         // OpSpecConstant{|True|False} instruction.
@@ -527,7 +527,7 @@ INSTANTIATE_TEST_CASE_P(
             "%1 = OpDecorationGroup\n"
             "OpGroupDecorate %1 %2\n"
             "%int = OpTypeInt 32 1\n"
-            "%2 = OpConstant %int 100\n",
+            "%int_100 = OpConstant %int 100\n",
             // default values
             SpecIdToValueStrMap{{100, "0xffffffff"}},
             // expected
@@ -535,7 +535,7 @@ INSTANTIATE_TEST_CASE_P(
             "%1 = OpDecorationGroup\n"
             "OpGroupDecorate %1 %2\n"
             "%int = OpTypeInt 32 1\n"
-            "%2 = OpConstant %int 100\n",
+            "%int_100 = OpConstant %int 100\n",
         },
     }));
 

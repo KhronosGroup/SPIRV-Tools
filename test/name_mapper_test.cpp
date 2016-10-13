@@ -282,4 +282,57 @@ INSTANTIATE_TEST_CASE_P(DebugNameOverridesBuiltin, FriendlyNameTest,
                              "%1 = OpVariable %2 Input",
                              1, "foo"}}), );
 
+INSTANTIATE_TEST_CASE_P(
+    SimpleIntegralConstants, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeInt 32 0 %2 = OpConstant %1 0", 2, "uint_0"},
+        {"%1 = OpTypeInt 32 0 %2 = OpConstant %1 1", 2, "uint_1"},
+        {"%1 = OpTypeInt 32 0 %2 = OpConstant %1 2", 2, "uint_2"},
+        {"%1 = OpTypeInt 32 0 %2 = OpConstant %1 9", 2, "uint_9"},
+        {"%1 = OpTypeInt 32 0 %2 = OpConstant %1 42", 2, "uint_42"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 0", 2, "int_0"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 1", 2, "int_1"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 2", 2, "int_2"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 9", 2, "int_9"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 42", 2, "int_42"},
+        {"%1 = OpTypeInt 32 1 %2 = OpConstant %1 -42", 2, "int_n42"},
+        // Exotic bit widths
+        {"%1 = OpTypeInt 33 0 %2 = OpConstant %1 0", 2, "u33_0"},
+        {"%1 = OpTypeInt 33 1 %2 = OpConstant %1 10", 2, "i33_10"},
+        {"%1 = OpTypeInt 33 1 %2 = OpConstant %1 -19", 2, "i33_n19"},
+    }), );
+
+INSTANTIATE_TEST_CASE_P(
+    SimpleFloatConstants, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ff4p+16", 2,
+         "half_0x1_ff4p_16"},
+        {"%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.d2cp-10", 2,
+         "half_n0x1_d2cpn10"},
+        // 32-bit floats
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.275", 2, "float_n3_275"},
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.8p+128", 2,
+         "float_0x1_8p_128"},  // NaN
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0002p+128", 2,
+         "float_n0x1_0002p_128"},  // NaN
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1p+128", 2,
+         "float_0x1p_128"},  // Inf
+        {"%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128", 2,
+         "float_n0x1p_128"},  // -Inf
+                              // 64-bit floats
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.275", 2, "double_n3_275"},
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.ffffffffffffap-1023", 2,
+         "double_0x1_ffffffffffffapn1023"},  // small normal
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.ffffffffffffap-1023", 2,
+         "double_n0x1_ffffffffffffapn1023"},
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.8p+1024", 2,
+         "double_0x1_8p_1024"},  // NaN
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0002p+1024", 2,
+         "double_n0x1_0002p_1024"},  // NaN
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1p+1024", 2,
+         "double_0x1p_1024"},  // Inf
+        {"%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1p+1024", 2,
+         "double_n0x1p_1024"},  // -Inf
+    }), );
+
 }  // anonymous namespace

@@ -25,6 +25,8 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 
+#include "parsed_operand.h"
+
 namespace {
 
 // Converts a uint32_t to its string decimal representation.
@@ -287,6 +289,16 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       // are a struct and then give the raw Id number.
       SaveName(result_id, std::string("_struct_") + to_string(result_id));
       break;
+    case SpvOpConstant: {
+      std::ostringstream value;
+      EmitNumericLiteral(&value, inst, inst.operands[2]);
+      auto value_str = value.str();
+      // Use 'n' to signify negative. Other invalid characters will be mapped
+      // to underscore.
+      for (auto& c : value_str)
+        if (c == '-') c = 'n';
+      SaveName(result_id, NameForId(inst.type_id) + "_" + value_str);
+    } break;
     default:
       // If this instruction otherwise defines an Id, then save a mapping for
       // it.  This is needed to ensure uniqueness in there is an OpName with

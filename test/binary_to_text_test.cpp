@@ -435,7 +435,7 @@ OpMemoryModel Logical GLSL450
 OpMemoryModel Logical GLSL450
 %uint = OpTypeInt 32 0
 %_struct_2 = OpTypeStruct %uint %3 %4 %5 %6 %7 %8 %9 %10
-%11 = OpConstant %uint 42
+%uint_42 = OpConstant %uint 42
 )";
   EXPECT_THAT(EncodeAndDecodeSuccessfully(
                   input, SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES),
