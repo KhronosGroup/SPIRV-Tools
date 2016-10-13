@@ -28,6 +28,7 @@
 #include "ext_inst.h"
 #include "name_mapper.h"
 #include "opcode.h"
+#include "parsed_operand.h"
 #include "print.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
@@ -229,48 +230,8 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER: {
       SetRed();
-      if (operand.num_words == 1) {
-        switch (operand.number_kind) {
-          case SPV_NUMBER_SIGNED_INT:
-            stream_ << int32_t(word);
-            break;
-          case SPV_NUMBER_UNSIGNED_INT:
-            stream_ << word;
-            break;
-          case SPV_NUMBER_FLOATING:
-            if (operand.number_bit_width == 16) {
-              stream_ << spvutils::FloatProxy<spvutils::Float16>(
-                  uint16_t(word & 0xFFFF));
-            } else {
-              // Assume 32-bit floats.
-              stream_ << spvutils::FloatProxy<float>(word);
-            }
-            break;
-          default:
-            assert(false && "Unreachable");
-        }
-      } else if (operand.num_words == 2) {
-        // Multi-word numbers are presented with lower order words first.
-        uint64_t bits =
-            uint64_t(word) | (uint64_t(inst.words[operand.offset + 1]) << 32);
-        switch (operand.number_kind) {
-          case SPV_NUMBER_SIGNED_INT:
-            stream_ << int64_t(bits);
-            break;
-          case SPV_NUMBER_UNSIGNED_INT:
-            stream_ << bits;
-            break;
-          case SPV_NUMBER_FLOATING:
-            // Assume only 64-bit floats.
-            stream_ << spvutils::FloatProxy<double>(bits);
-            break;
-          default:
-            assert(false && "Unreachable");
-        }
-      } else {
-        // TODO(dneto): Support more than 64-bits at a time.
-        assert(false && "Unhandled");
-      }
+      libspirv::EmitNumericLiteral(&stream_, inst, operand);
+      ResetColor();
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
       stream_ << "\"";

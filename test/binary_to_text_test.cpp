@@ -236,6 +236,39 @@ TEST_P(RoundTripInstructionsTest, Sample) {
 }
 
 INSTANTIATE_TEST_CASE_P(
+    NumericLiterals, RoundTripInstructionsTest,
+    // This test is independent of environment, so just test the one.
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "%1 = OpTypeInt 12 0\n%2 = OpConstant %1 1867\n",
+                "%1 = OpTypeInt 12 1\n%2 = OpConstant %1 1867\n",
+                "%1 = OpTypeInt 12 1\n%2 = OpConstant %1 -1867\n",
+                "%1 = OpTypeInt 32 0\n%2 = OpConstant %1 1867\n",
+                "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 1867\n",
+                "%1 = OpTypeInt 32 1\n%2 = OpConstant %1 -1867\n",
+                "%1 = OpTypeInt 64 0\n%2 = OpConstant %1 18446744073709551615\n",
+                "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 9223372036854775807\n",
+                "%1 = OpTypeInt 64 1\n%2 = OpConstant %1 -9223372036854775808\n",
+                // 16-bit floats print as hex floats.
+                "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ff4p+16\n",
+                "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.d2cp-10\n",
+                // 32-bit floats
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -3.275\n",
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1.8p+128\n", // NaN
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1.0002p+128\n", // NaN
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 0x1p+128\n", // Inf
+                "%1 = OpTypeFloat 32\n%2 = OpConstant %1 -0x1p+128\n", // -Inf
+                // 64-bit floats
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -3.275\n",
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.ffffffffffffap-1023\n", // small normal
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.ffffffffffffap-1023\n",
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1.8p+1024\n", // NaN
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1.0002p+1024\n", // NaN
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0x1p+1024\n", // Inf
+                "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -0x1p+1024\n", // -Inf
+            })), );
+
+INSTANTIATE_TEST_CASE_P(
     MemoryAccessMasks, RoundTripInstructionsTest,
     Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ::testing::ValuesIn(std::vector<std::string>{
