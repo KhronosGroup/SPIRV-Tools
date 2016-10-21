@@ -27,6 +27,7 @@
 
 #include "validate.h"
 
+#include <cassert>
 #include <string>
 #include <tuple>
 #include <unordered_map>
