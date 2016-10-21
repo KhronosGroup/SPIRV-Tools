@@ -624,7 +624,7 @@ TEST_F(ValidateID, OpConstantCompositeVectorWithUndefGood) {
 %4 = OpConstantComposite %2 %3 %3 %3 %9)";
   CHECK(spirv, SPV_SUCCESS);
 }
-TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
+TEST_F(ValidateID, DISABLED_OpConstantCompositeVectorResultTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4

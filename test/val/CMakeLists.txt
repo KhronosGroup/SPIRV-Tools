@@ -17,7 +17,6 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
 )
 
 
