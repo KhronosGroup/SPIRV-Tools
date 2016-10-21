@@ -147,6 +147,10 @@ spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
 spv_result_t DataRulesPass(ValidationState_t& _,
                            const spv_parsed_instruction_t* inst);
 
+/// Performs Type validation of a module
+spv_result_t TypePass(ValidationState_t& _,
+                      const spv_parsed_instruction_t* inst);
+
 /// Performs instruction validation.
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst);

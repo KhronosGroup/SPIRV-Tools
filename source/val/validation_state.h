@@ -182,6 +182,10 @@ class ValidationState_t {
 
   bool AddType(const spv_parsed_instruction_t &inst);
 
+  Type* types(uint32_t type_id) { return &types_.at(type_id); }
+
+  const Type* types(uint32_t type_id) const { return &types_.at(type_id); }
+
   const Type* GetTypeAlias(const spv_parsed_instruction_t &inst) const;
 
  private:

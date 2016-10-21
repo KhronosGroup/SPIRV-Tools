@@ -170,19 +170,6 @@ spv_result_t InstructionPass(ValidationState_t& _,
     }
   }
 
-  if (spvOpcodeGeneratesType(opcode)) {
-    if (opcode != SpvOpTypeArray && opcode != SpvOpTypeStruct &&
-        opcode != SpvOpTypeRuntimeArray) {
-      if (const auto* alias = _.GetTypeAlias(*inst)) {
-        return _.diag(SPV_ERROR_INVALID_TYPE)
-               << "Type " << _.getIdName(inst->result_id)
-               << " is an alias to type " << _.getIdName(alias->id());
-      } else {
-        _.AddType(*inst);
-      }
-    }
-  }
-
   return CapCheck(_, inst);
 }
 }  // namespace libspirv
