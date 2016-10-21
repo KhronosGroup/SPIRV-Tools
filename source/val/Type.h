@@ -49,11 +49,12 @@ class Type {
                   inst.words + inst.num_words) {}
 
   bool IsAlias(const spv_parsed_instruction_t& inst) const {
-    spv_type_category_t category =
+    spv_type_category_t cat =
         OpcodeToTypeFlag(static_cast<SpvOp>(inst.opcode));
 
     // TODO(umar): comment about the magic numbers
-    if (category == category_ && operands().size() == inst.num_words - 2 &&
+    if (cat == category_ && operands().size() ==
+        size_t(inst.num_words - 2) &&
         equal(begin(operands()), end(operands()),
               inst.words + inst.operands->offset + 1)) {
       return true;
@@ -61,10 +62,10 @@ class Type {
     return false;
   }
 
-  bool IsType(spv_type_category_t category) { return category & category_; }
-  bool IsTypeAny(const std::vector<spv_type_category_t>& categories) {
+  bool IsType(spv_type_category_t cat) { return cat & category_; }
+  bool IsTypeAny(const std::vector<spv_type_category_t>& possibilities) {
     return any_of(
-        begin(categories), end(categories),
+        begin(possibilities), end(possibilities),
         [this](spv_type_category_t cat) { return cat & category_; });
   }
 
