@@ -399,7 +399,6 @@ const Type* ValidationState_t::GetTypeAlias(
 }
 
 bool ValidationState_t::AddType(const spv_parsed_instruction_t& inst) {
-  assert(GetTypeAlias(inst) == nullptr);
   types_.emplace(make_pair(inst.result_id, Type{inst}));
   return true;
 }

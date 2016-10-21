@@ -160,6 +160,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_type.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/BasicBlock.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/Construct.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/Function.cpp

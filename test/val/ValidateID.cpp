@@ -575,7 +575,7 @@ TEST_F(ValidateID, OpConstantTrueBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantTrue %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK(spirv, SPV_ERROR_INVALID_TYPE);
 }
 
 TEST_F(ValidateID, OpConstantFalseGood) {
@@ -588,7 +588,7 @@ TEST_F(ValidateID, OpConstantFalseBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantFalse %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK(spirv, SPV_ERROR_INVALID_TYPE);
 }
 
 TEST_F(ValidateID, OpConstantGood) {
@@ -822,7 +822,7 @@ TEST_F(ValidateID, OpConstantSamplerResultTypeBad) {
   const char* spirv = R"(
 %1 = OpTypeFloat 32
 %2 = OpConstantSampler %1 Clamp 0 Nearest)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK(spirv, SPV_ERROR_INVALID_TYPE);
 }
 
 TEST_F(ValidateID, OpConstantNullGood) {
@@ -864,7 +864,7 @@ TEST_F(ValidateID, OpConstantNullBasicBad) {
   const char* spirv = R"(
 %1 = OpTypeVoid
 %2 = OpConstantNull %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK(spirv, SPV_ERROR_INVALID_TYPE);
 }
 
 TEST_F(ValidateID, OpConstantNullArrayBad) {
@@ -890,7 +890,7 @@ TEST_F(ValidateID, OpConstantNullRuntimeArrayBad) {
 %bool = OpTypeBool
 %array = OpTypeRuntimeArray %bool
 %null = OpConstantNull %array)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK(spirv, SPV_ERROR_INVALID_TYPE);
 }
 
 TEST_F(ValidateID, OpSpecConstantTrueGood) {

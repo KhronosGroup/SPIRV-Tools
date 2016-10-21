@@ -29,6 +29,8 @@
 
 #include <cstdint>
 
+#include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
@@ -36,33 +38,46 @@
 
 namespace libspirv {
 
+spv_type_category_t OpcodeToTypeFlag(SpvOp opcode);
+
 class Type {
  public:
   explicit Type(const spv_parsed_instruction_t& inst)
       : id_(inst.result_id),
-        type_(static_cast<SpvOp>(inst.opcode)),
+        category_(OpcodeToTypeFlag(static_cast<SpvOp>(inst.opcode))),
         operands_(inst.words + inst.operands->offset + 1,  // skip result_id
                   inst.words + inst.num_words) {}
 
   bool IsAlias(const spv_parsed_instruction_t& inst) const {
-    if (inst.opcode == type_
-        && equal(begin(operands()), end(operands()),
+    spv_type_category_t category =
+        OpcodeToTypeFlag(static_cast<SpvOp>(inst.opcode));
+
+    // TODO(umar): comment about the magic numbers
+    if (category == category_ && operands().size() == inst.num_words - 2 &&
+        equal(begin(operands()), end(operands()),
               inst.words + inst.operands->offset + 1)) {
       return true;
     }
     return false;
   }
 
+  bool IsType(spv_type_category_t category) { return category & category_; }
+  bool IsTypeAny(const std::vector<spv_type_category_t>& categories) {
+    return any_of(
+        begin(categories), end(categories),
+        [this](spv_type_category_t cat) { return cat & category_; });
+  }
+
   uint32_t id() const { return id_; }
-  SpvOp type() const { return type_; }
+  spv_type_category_t category() const { return category_; }
   const std::vector<uint32_t>& operands() const { return operands_; }
 
  private:
   uint32_t id_;
-  SpvOp type_;
+  spv_type_category_t category_;
   std::vector<uint32_t> operands_;
 };
 
 }  // namespace libspirv
 
-#endif  /// LIBSPIRV_VAL_CONSTRUCT_H_
+#endif  // LIBSPIRV_VAL_TYPE_H_

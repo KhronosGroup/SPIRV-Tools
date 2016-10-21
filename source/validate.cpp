@@ -45,9 +45,10 @@ using std::transform;
 using std::vector;
 
 using libspirv::CfgPass;
+using libspirv::IdPass;
 using libspirv::InstructionPass;
 using libspirv::ModuleLayoutPass;
-using libspirv::IdPass;
+using libspirv::TypePass;
 using libspirv::ValidationState_t;
 
 spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
@@ -124,6 +125,7 @@ spv_result_t ProcessInstruction(void* user_data,
   DebugInstructionPass(_, inst);
   // TODO(umar): Perform data rules pass
   if (auto error = IdPass(_, inst)) return error;
+  if (auto error = TypePass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
   if (auto error = InstructionPass(_, inst)) return error;
