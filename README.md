@@ -95,8 +95,8 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `external/googletest`: Intended location for the
   [googletest][googletest] sources, not provided
 * `include/`: API clients should add this directory to the include search path
-* `external/spirv-headers`: Intended location for
-  [SPIR-V headers][spirv-headers], not provided
+* `external/SPIRV-Headers`: Intended location for
+  [SPIR-V headers][SPIRV-Headers], not provided
 * `include/spirv-tools/libspirv.h`: C API public interface
 * `source/`: API implementation
 * `test/`: Tests, using the [googletest][googletest] framework
@@ -128,7 +128,7 @@ out code:
 
 ```sh
 cd <spirv-dir>
-git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
+git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/SPIRV-Headers
 git clone https://github.com/google/googletest.git external/googletest # optional
 
 mkdir build && cd build
@@ -348,7 +348,7 @@ limitations under the License.
 ```
 
 [spirv-registry]: https://www.khronos.org/registry/spir-v/
-[spirv-headers]: https://github.com/KhronosGroup/SPIRV-Headers
+[SPIRV-Headers]: https://github.com/KhronosGroup/SPIRV-Headers
 [googletest]: https://github.com/google/googletest
 [googletest-pull-612]: https://github.com/google/googletest/pull/612
 [googletest-issue-610]: https://github.com/google/googletest/issues/610
