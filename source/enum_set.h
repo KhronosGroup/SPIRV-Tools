@@ -84,7 +84,7 @@ class EnumSet {
   bool Contains(uint32_t word) const {
     // We shouldn't call Overflow() since this is a const method.
     if (auto bits = AsMask(word)) {
-      return mask_ & bits;
+      return (mask_ & bits) != 0;
     } else if (auto overflow = overflow_.get()) {
       return overflow->find(word) != overflow->end();
     }
