@@ -44,6 +44,7 @@ const char kGLSL450MemoryModel[] = R"(
      OpCapability Pipes
      OpCapability LiteralSampler
      OpCapability DeviceEnqueue
+     OpCapability Vector16
      OpMemoryModel Logical GLSL450
 )";
 
@@ -746,7 +747,7 @@ TEST_F(ValidateID, OpConstantCompositeArrayConstConstituentBad) {
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
-%4 = OpConstantComposite %3 %2 %2 %2 %1)"; // Uses a type as operand
+%4 = OpConstantComposite %3 %2 %2 %2 %1)";  // Uses a type as operand
   CHECK(spirv, SPV_ERROR_INVALID_ID);
 }
 TEST_F(ValidateID, OpConstantCompositeArrayConstituentTypeBad) {
