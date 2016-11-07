@@ -98,3 +98,8 @@ add_spvtools_unittest(TARGET line_debug_info
   SRCS test_line_debug_info.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET eliminate_dead_code
+  SRCS test_eliminate_dead_code.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)

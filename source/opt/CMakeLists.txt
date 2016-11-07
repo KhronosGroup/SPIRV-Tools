@@ -16,6 +16,7 @@ add_library(SPIRV-Tools-opt
   build_module.h
   constants.h
   def_use_manager.h
+  eliminate_dead_code_pass.h
   eliminate_dead_constant_pass.h
   function.h
   fold_spec_constant_op_and_composite_pass.h
@@ -37,6 +38,7 @@ add_library(SPIRV-Tools-opt
 
   build_module.cpp
   def_use_manager.cpp
+  eliminate_dead_code_pass.cpp
   eliminate_dead_constant_pass.cpp
   function.cpp
   fold_spec_constant_op_and_composite_pass.cpp
