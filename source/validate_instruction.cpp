@@ -169,6 +169,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
       }
     }
   }
+
   return CapCheck(_, inst);
 }
 }  // namespace libspirv

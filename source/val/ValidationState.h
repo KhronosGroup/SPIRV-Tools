@@ -29,6 +29,7 @@
 #include "spirv_definition.h"
 #include "val/Function.h"
 #include "val/Instruction.h"
+#include "val/Type.h"
 
 namespace libspirv {
 
@@ -173,6 +174,14 @@ class ValidationState_t {
     return all_definitions_;
   }
 
+  bool AddType(const spv_parsed_instruction_t &inst);
+
+  Type* types(uint32_t type_id) { return &types_.at(type_id); }
+
+  const Type* types(uint32_t type_id) const { return &types_.at(type_id); }
+
+  const Type* GetTypeAlias(const spv_parsed_instruction_t &inst) const;
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -202,6 +211,8 @@ class ValidationState_t {
 
   /// Instructions that can be referenced by Ids
   std::unordered_map<uint32_t, Instruction*> all_definitions_;
+
+  std::unordered_map<uint32_t, Type> types_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;

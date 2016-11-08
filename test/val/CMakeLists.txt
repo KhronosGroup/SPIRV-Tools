@@ -17,7 +17,6 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../UnitSPIRV.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
 )
 
 
@@ -59,6 +58,12 @@ add_spvtools_unittest(TARGET val_storage
 
 add_spvtools_unittest(TARGET val_state
   SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
+add_spvtools_unittest(TARGET val_type
+  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Type.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
