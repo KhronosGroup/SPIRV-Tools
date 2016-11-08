@@ -14,7 +14,7 @@
 
 // Validation tests for Data Rules.
 
-#include "UnitSPIRV.h"
+#include "unit_spirv.h"
 #include "ValidateFixtures.h"
 #include "gmock/gmock.h"
 
