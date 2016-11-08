@@ -62,3 +62,10 @@ add_spvtools_unittest(TARGET val_state
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
+
+add_spvtools_unittest(TARGET val_data
+	SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ValidateData.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+

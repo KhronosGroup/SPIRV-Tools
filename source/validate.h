@@ -141,6 +141,12 @@ spv_result_t CfgPass(ValidationState_t& _,
 /// Performs Id and SSA validation of a module
 spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
 
+/// Performs validation of the Data Rules subsection of 2.16.1 Universal
+/// Validation Rules.
+/// TODO(ehsann): add more comments here as more validation code is added.
+spv_result_t DataRulesPass(ValidationState_t& _,
+                           const spv_parsed_instruction_t* inst);
+
 /// Performs instruction validation.
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst);

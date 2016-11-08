@@ -47,6 +47,7 @@ using std::vector;
 using libspirv::CfgPass;
 using libspirv::InstructionPass;
 using libspirv::ModuleLayoutPass;
+using libspirv::DataRulesPass;
 using libspirv::IdPass;
 using libspirv::ValidationState_t;
 
@@ -122,7 +123,7 @@ spv_result_t ProcessInstruction(void* user_data,
     _.entry_points().push_back(inst->words[2]);
 
   DebugInstructionPass(_, inst);
-  // TODO(umar): Perform data rules pass
+  if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = IdPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
   if (auto error = CfgPass(_, inst)) return error;
