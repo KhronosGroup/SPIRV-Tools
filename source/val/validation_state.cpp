@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "val/ValidationState.h"
+#include "val/validation_state.h"
 
 #include <cassert>
 
-#include "val/BasicBlock.h"
-#include "val/Construct.h"
-#include "val/Function.h"
+#include "val/basic_block.h"
+#include "val/construct.h"
+#include "val/function.h"
 
 using std::deque;
 using std::make_pair;

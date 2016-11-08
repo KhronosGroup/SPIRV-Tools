@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "val/Function.h"
+#include "val/function.h"
 
 #include <cassert>
 
@@ -21,8 +21,8 @@
 #include <unordered_map>
 #include <utility>
 
-#include "val/BasicBlock.h"
-#include "val/Construct.h"
+#include "val/basic_block.h"
+#include "val/construct.h"
 #include "validate.h"
 
 using std::ignore;

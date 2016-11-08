@@ -26,8 +26,8 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using libspirv::AssemblyGrammar;
 using libspirv::CapabilitySet;

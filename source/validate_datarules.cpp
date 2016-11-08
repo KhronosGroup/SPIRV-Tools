@@ -23,7 +23,7 @@
 #include "diagnostic.h"
 #include "opcode.h"
 #include "operand.h"
-#include "val/ValidationState.h"
+#include "val/validation_state.h"
 
 using libspirv::CapabilitySet;
 using libspirv::DiagnosticStream;

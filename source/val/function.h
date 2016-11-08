@@ -15,16 +15,16 @@
 #ifndef LIBSPIRV_VAL_FUNCTION_H_
 #define LIBSPIRV_VAL_FUNCTION_H_
 
-#include <list>
 #include <functional>
+#include <list>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
-#include "val/BasicBlock.h"
-#include "val/Construct.h"
+#include "val/basic_block.h"
+#include "val/construct.h"
 
 namespace libspirv {
 

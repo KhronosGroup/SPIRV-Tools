@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "BasicBlock.h"
+#include "val/basic_block.h"
 
 #include <algorithm>
 #include <utility>

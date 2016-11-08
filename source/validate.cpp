@@ -32,9 +32,9 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
-#include "val/Construct.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/construct.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using std::function;
 using std::ostream_iterator;

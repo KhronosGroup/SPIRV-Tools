@@ -22,8 +22,8 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using libspirv::ValidationState_t;
 using libspirv::kLayoutMemoryModel;

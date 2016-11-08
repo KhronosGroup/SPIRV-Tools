@@ -21,9 +21,9 @@
 #include "spirv/1.1/spirv.h"
 
 #include "enum_set.h"
-#include "val/Construct.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/construct.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 #include "validate.h"
 
 namespace {

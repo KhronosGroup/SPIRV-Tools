@@ -26,10 +26,10 @@
 #include <utility>
 #include <vector>
 
-#include "val/BasicBlock.h"
-#include "val/Construct.h"
-#include "val/Function.h"
-#include "val/ValidationState.h"
+#include "val/basic_block.h"
+#include "val/construct.h"
+#include "val/function.h"
+#include "val/validation_state.h"
 
 using std::find;
 using std::function;
