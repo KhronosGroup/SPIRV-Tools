@@ -27,7 +27,7 @@
 
 #include "test_fixture.h"
 #include "unit_spirv.h"
-#include "ValidateFixtures.h"
+#include "val_fixtures.h"
 #include "source/diagnostic.h"
 #include "source/validate.h"
 

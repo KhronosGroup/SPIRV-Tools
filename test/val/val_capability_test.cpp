@@ -14,16 +14,17 @@
 
 // Validation tests for Logical Layout
 
-#include <gmock/gmock.h>
-#include "test_fixture.h"
-#include "unit_spirv.h"
-#include "ValidateFixtures.h"
-#include "source/assembly_grammar.h"
-
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <utility>
+
+#include <gmock/gmock.h>
+
+#include "source/assembly_grammar.h"
+#include "test_fixture.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 namespace {
 

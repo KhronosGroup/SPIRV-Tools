@@ -14,13 +14,13 @@
 
 // Validation tests for Data Rules.
 
-#include "unit_spirv.h"
-#include "ValidateFixtures.h"
-#include "gmock/gmock.h"
-
 #include <sstream>
 #include <string>
 #include <utility>
+
+#include "gmock/gmock.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;

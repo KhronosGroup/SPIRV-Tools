@@ -21,9 +21,9 @@
 
 #include "gmock/gmock.h"
 
-#include "unit_spirv.h"
-#include "ValidateFixtures.h"
 #include "source/diagnostic.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 using std::function;
 using std::ostream;

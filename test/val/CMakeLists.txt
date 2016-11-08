@@ -16,55 +16,55 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../test_fixture.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/ValidateFixtures.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val_fixtures.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/val_fixtures.cpp
 )
 
 
 add_spvtools_unittest(TARGET val_capability
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Capability.cpp
+  SRCS val_capability_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_cfg
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.CFG.cpp
+  SRCS val_cfg_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_id
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ValidateID.cpp
+  SRCS val_id_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_layout
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Layout.cpp
+  SRCS val_layout_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_ssa
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.SSA.cpp
+  SRCS val_ssa_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_storage
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Storage.cpp
+  SRCS val_storage_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_state
-  SRCS ${CMAKE_CURRENT_SOURCE_DIR}/ValidationState.cpp
+  SRCS val_state_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )
 
 add_spvtools_unittest(TARGET val_data
-	SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Validate.Data.cpp
+	SRCS val_data_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS}
 )

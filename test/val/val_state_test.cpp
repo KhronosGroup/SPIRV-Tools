@@ -15,8 +15,6 @@
 
 // Unit tests for ValidationState_t.
 
-#include "val/ValidationState.h"
-
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -25,6 +23,7 @@
 #include "enum_set.h"
 #include "val/Construct.h"
 #include "val/Function.h"
+#include "val/ValidationState.h"
 #include "validate.h"
 
 namespace {

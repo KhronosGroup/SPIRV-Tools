@@ -18,8 +18,8 @@
 #include <string>
 #include <tuple>
 
-#include "ValidateFixtures.h"
 #include "gmock/gmock.h"
+#include "val_fixtures.h"
 
 using ValidateStorage = spvtest::ValidateBase<std::string>;
 
