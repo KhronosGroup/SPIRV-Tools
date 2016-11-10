@@ -36,6 +36,12 @@ string header = R"(
      OpMemoryModel Logical GLSL450
 %1 = OpTypeFloat 32
 )";
+string header_with_addresses = R"(
+     OpCapability Addresses
+     OpCapability Kernel
+     OpCapability GenericPointer
+     OpMemoryModel Physical32 OpenCL
+)";
 string header_with_vec16_cap = R"(
      OpCapability Shader
      OpCapability Vector16
@@ -390,3 +396,69 @@ TEST_F(ValidateData, specialize_boolean_to_int) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Specialization constant must be a boolean"));
 }
+
+TEST_F(ValidateData, missing_forward_pointer_decl) {
+  string str = header_with_addresses + R"(
+%2 = OpTypeInt 32 0
+%3 = OpTypeStruct %3 %4
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must first be declared using OpTypeForwardPointer"));
+}
+
+TEST_F(ValidateData, forward_pointer_missing_definition) {
+  string str = header_with_addresses + R"(
+OpTypeForwardPointer %_ptr_Generic_struct_A Generic
+%uintt = OpTypeInt 32 0
+%struct_B = OpTypeStruct %uintt %_ptr_Generic_struct_A
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("forward referenced IDs have not been defined"));
+}
+
+TEST_F(ValidateData, forward_ref_bad_type) {
+  string str = header_with_addresses + R"(
+OpTypeForwardPointer %_ptr_Generic_struct_A Generic
+%uintt = OpTypeInt 32 0
+%struct_B = OpTypeStruct %uintt %_ptr_Generic_struct_A
+%_ptr_Generic_struct_A = OpTypeFloat 32
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Found a forward reference to a non-pointer type in "
+                        "OpTypeStruct instruction."));
+}
+
+TEST_F(ValidateData, forward_ref_points_to_non_struct) {
+  string str = header_with_addresses + R"(
+OpTypeForwardPointer %_ptr_Generic_struct_A Generic
+%uintt = OpTypeInt 32 0
+%struct_B = OpTypeStruct %uintt %_ptr_Generic_struct_A
+%_ptr_Generic_struct_A = OpTypePointer Generic %uintt
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("A forward reference operand in an OpTypeStruct must "
+                        "be an OpTypePointer that points to an OpTypeStruct. "
+                        "Found OpTypePointer that points to TypeInt."));
+}
+
+TEST_F(ValidateData, struct_forward_pointer_good) {
+  string str = header_with_addresses + R"(
+OpTypeForwardPointer %_ptr_Generic_struct_A Generic
+%uintt = OpTypeInt 32 0
+%struct_B = OpTypeStruct %uintt %_ptr_Generic_struct_A
+%struct_C = OpTypeStruct %uintt %struct_B
+%struct_A = OpTypeStruct %uintt %struct_C
+%_ptr_Generic_struct_A = OpTypePointer Generic %struct_C
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+

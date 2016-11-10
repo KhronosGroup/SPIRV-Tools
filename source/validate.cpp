@@ -230,7 +230,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
 
     auto id_str = ss.str();
     return vstate.diag(SPV_ERROR_INVALID_ID)
-           << "The following forward referenced IDs have not be defined:\n"
+           << "The following forward referenced IDs have not been defined:\n"
            << id_str.substr(0, id_str.size() - 1);
   }
 

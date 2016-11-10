@@ -64,6 +64,12 @@ class ValidationState_t {
   /// Removes a forward declared ID if it has been defined
   spv_result_t RemoveIfForwardDeclared(uint32_t id);
 
+  /// Registers an ID as a forward pointer
+  spv_result_t RegisterForwardPointer(uint32_t id);
+
+  /// Returns whether or not an ID is a forward pointer
+  bool IsForwardPointer(uint32_t id) const;
+
   /// Assigns a name to an ID
   void AssignNameToId(uint32_t id, std::string name);
 
@@ -183,6 +189,9 @@ class ValidationState_t {
 
   /// IDs which have been forward declared but have not been defined
   std::unordered_set<uint32_t> unresolved_forward_ids_;
+
+  /// IDs that have been declared as forward pointers.
+  std::unordered_set<uint32_t> forward_pointer_ids_;
 
   /// A map of operand IDs and their names defined by the OpName instruction
   std::unordered_map<uint32_t, std::string> operand_names_;

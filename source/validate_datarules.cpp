@@ -190,6 +190,33 @@ spv_result_t ValidateSpecConstBoolean(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Records the <id> of the forward pointer to be used for validation.
+spv_result_t ValidateForwardPointer(ValidationState_t& _,
+                                    const spv_parsed_instruction_t* inst) {
+  // Record the <id> (which is operand 0) to ensure it's used properly.
+  // OpTypeStruct can only include undefined pointers that are
+  // previously declared as a ForwardPointer
+  return (_.RegisterForwardPointer(inst->words[inst->operands[0].offset]));
+}
+
+// Validates that any undefined component of the struct is a forward pointer.
+// It is valid to declare a forward pointer, and use its <id> as one of the
+// components of a struct.
+spv_result_t ValidateStruct(ValidationState_t& _,
+                            const spv_parsed_instruction_t* inst) {
+  // Struct components are operands 1, 2, etc.
+  for (unsigned i = 1; i < inst->num_operands; i++) {
+    auto type_id = inst->words[inst->operands[i].offset];
+    auto type_instruction = _.FindDef(type_id);
+    if (type_instruction == nullptr && !_.IsForwardPointer(type_id)) {
+      return _.diag(SPV_ERROR_INVALID_ID)
+             << "Forward reference operands in an OpTypeStruct must first be "
+                "declared using OpTypeForwardPointer.";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 }  // anonymous namespace
 
 namespace libspirv {
@@ -225,6 +252,14 @@ spv_result_t DataRulesPass(ValidationState_t& _,
     case SpvOpSpecConstantFalse:
     case SpvOpSpecConstantTrue: {
       if (auto error = ValidateSpecConstBoolean(_, inst)) return error;
+      break;
+    }
+    case SpvOpTypeForwardPointer: {
+      if (auto error = ValidateForwardPointer(_, inst)) return error;
+      break;
+    }
+    case SpvOpTypeStruct: {
+      if (auto error = ValidateStruct(_, inst)) return error;
       break;
     }
     // TODO(ehsan): add more data rules validation here.

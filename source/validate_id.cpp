@@ -355,12 +355,34 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
   for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
        ++memberTypeIndex) {
-    auto memberType = module_.FindDef(inst->words[memberTypeIndex]);
+    auto memberTypeId = inst->words[memberTypeIndex];
+    auto memberType = module_.FindDef(memberTypeId);
     if (!memberType || !spvOpcodeGeneratesType(memberType->opcode())) {
       DIAG(memberTypeIndex) << "OpTypeStruct Member Type <id> '"
                             << inst->words[memberTypeIndex]
                             << "' is not a type.";
       return false;
+    }
+    if (memberType && module_.IsForwardPointer(memberTypeId)) {
+      if (memberType->opcode() != SpvOpTypePointer) {
+        DIAG(memberTypeIndex) << "Found a forward reference to a non-pointer "
+                                 "type in OpTypeStruct instruction.";
+        return false;
+      }
+      // If we're dealing with a forward pointer:
+      // Find out the type that the pointer is pointing to (must be struct)
+      // word 3 is the <id> of the type being pointed to.
+      auto typePointingTo = module_.FindDef(memberType->words()[3]);
+      if (typePointingTo && typePointingTo->opcode() != SpvOpTypeStruct) {
+        // Forward declared operands of a struct may only point to a struct.
+        DIAG(memberTypeIndex)
+            << "A forward reference operand in an "
+               "OpTypeStruct must be an OpTypePointer that "
+               "points to an OpTypeStruct. Found OpTypePointer that points to "
+            << spvOpcodeString(static_cast<SpvOp>(typePointingTo->opcode()))
+            << ".";
+        return false;
+      }
     }
   }
   return true;
@@ -591,7 +613,8 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
            constituentIndex < inst->words.size();
            constituentIndex++, memberIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
-        if (!constituent || !spvOpcodeIsConstantOrUndef(constituent->opcode())) {
+        if (!constituent ||
+            !spvOpcodeIsConstantOrUndef(constituent->opcode())) {
           DIAG(constituentIndex) << "OpConstantComposite Constituent <id> '"
                                  << inst->words[constituentIndex]
                                  << "' is not a constant or undef.";
@@ -2384,8 +2407,8 @@ function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
       // The Invoke parameter.
       out = [](unsigned index) { return index == 2; };
       break;
-      case SpvOpTypeForwardPointer:
-        out = [](unsigned index) { return index == 0; };
+    case SpvOpTypeForwardPointer:
+      out = [](unsigned index) { return index == 0; };
       break;
     default:
       out = [](unsigned) { return false; };

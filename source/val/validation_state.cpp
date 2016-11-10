@@ -207,6 +207,15 @@ spv_result_t ValidationState_t::RemoveIfForwardDeclared(uint32_t id) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidationState_t::RegisterForwardPointer(uint32_t id) {
+  forward_pointer_ids_.insert(id);
+  return SPV_SUCCESS;
+}
+
+bool ValidationState_t::IsForwardPointer(uint32_t id) const {
+  return (forward_pointer_ids_.find(id) != forward_pointer_ids_.end());
+}
+
 void ValidationState_t::AssignNameToId(uint32_t id, string name) {
   operand_names_[id] = name;
 }
