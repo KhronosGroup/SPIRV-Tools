@@ -20,7 +20,6 @@
 #include <utility>
 
 #include "gmock/gmock.h"
-
 #include "source/diagnostic.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
@@ -95,8 +94,8 @@ const vector<string>& getInstructions() {
     "%floatt   = OpTypeFloat 32",
     "%voidt    = OpTypeVoid",
     "%boolt    = OpTypeBool",
-    "%vec4     = OpTypeVector %intt 4",
-    "%vec3     = OpTypeVector %intt 3",
+    "%vec4     = OpTypeVector %floatt 4",
+    "%vec3     = OpTypeVector %floatt 3",
     "%mat33    = OpTypeMatrix %vec3 3",
     "%mat44    = OpTypeMatrix %vec4 4",
     "%struct   = OpTypeStruct %intt %mat33",
@@ -150,9 +149,9 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
                      , make_tuple(string("OpDecorationGroup")         , Range<13, 16>()        , Range<0, 15>())
                      , make_tuple(string("OpTypeBool")                , Range<17, 30>()        , All)
                      , make_tuple(string("OpTypeVoid")                , Range<17, 30>()        , Range<0, 25>())
-                     , make_tuple(string("OpTypeFloat")               , Range<17, 30>()        , All)
+                     , make_tuple(string("OpTypeFloat")               , Range<17, 30>()        , Range<0,20>())
                      , make_tuple(string("OpTypeInt")                 , Range<17, 30>()        , Range<0, 20>())
-                     , make_tuple(string("OpTypeVector %intt 4")      , Range<17, 30>()        , Range<18, 23>())
+                     , make_tuple(string("OpTypeVector %floatt 4")      , Range<17, 30>()        , Range<19, 23>())
                      , make_tuple(string("OpTypeMatrix %vec4 4")      , Range<17, 30>()        , Range<22, kRangeEnd>())
                      , make_tuple(string("OpTypeStruct")              , Range<17, 30>()        , Range<24, kRangeEnd>())
                      , make_tuple(string("%vfunct   = OpTypeFunction"), Range<17, 30>()        , Range<20, 30>())

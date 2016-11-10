@@ -234,7 +234,8 @@ TEST_F(ValidateSSA, ForwardMemberDecorateGood) {
            OpMemoryModel Logical GLSL450
            OpMemberDecorate %struct 1 RowMajor
 %intt   =  OpTypeInt 32 1
-%vec3   =  OpTypeVector %intt 3
+%f32    =  OpTypeFloat 32
+%vec3   =  OpTypeVector %f32 3
 %mat33  =  OpTypeMatrix %vec3 3
 %struct =  OpTypeStruct %intt %mat33
 )";
@@ -249,7 +250,8 @@ TEST_F(ValidateSSA, ForwardMemberDecorateInvalidIdBad) {
            OpName %missing "missing"
            OpMemberDecorate %missing 1 RowMajor ; Target not defined
 %intt   =  OpTypeInt 32 1
-%vec3   =  OpTypeVector %intt 3
+%f32    =  OpTypeFloat 32
+%vec3   =  OpTypeVector %f32 3
 %mat33  =  OpTypeMatrix %vec3 3
 %struct =  OpTypeStruct %intt %mat33
 )";
@@ -265,9 +267,9 @@ TEST_F(ValidateSSA, ForwardGroupDecorateGood) {
           OpDecorate %dgrp RowMajor
 %dgrp   = OpDecorationGroup
           OpGroupDecorate %dgrp %mat33 %mat44
-%intt   = OpTypeInt 32 1
-%vec3   = OpTypeVector %intt 3
-%vec4   = OpTypeVector %intt 4
+%f32    =  OpTypeFloat 32
+%vec3   = OpTypeVector %f32 3
+%vec4   = OpTypeVector %f32 4
 %mat33  = OpTypeMatrix %vec3 3
 %mat44  = OpTypeMatrix %vec4 4
 )";
@@ -302,9 +304,9 @@ TEST_F(ValidateSSA, ForwardGroupDecorateMissingTargetBad) {
            OpDecorate %dgrp RowMajor
 %dgrp   =  OpDecorationGroup
            OpGroupDecorate %dgrp %missing %mat44 ; Target not defined
-%intt   =  OpTypeInt 32 1
-%vec3   =  OpTypeVector %intt 3
-%vec4   =  OpTypeVector %intt 4
+%f32    =  OpTypeFloat 32
+%vec3   =  OpTypeVector %f32 3
+%vec4   =  OpTypeVector %f32 4
 %mat33  =  OpTypeMatrix %vec3 3
 %mat44  =  OpTypeMatrix %vec4 4
 )";
@@ -1241,10 +1243,8 @@ TEST_F(ValidateSSA, PhiVariableDefNotDominatedByParentBlockBad) {
                    "definition does not dominate its parent .\\[if_false\\]"));
 }
 
-TEST_F(ValidateSSA,
-       PhiVariableDefDominatesButNotDefinedInParentBlock) {
-  string str = kHeader + "OpName %if_true \"if_true\"\n" +
-               kBasicTypes +
+TEST_F(ValidateSSA, PhiVariableDefDominatesButNotDefinedInParentBlock) {
+  string str = kHeader + "OpName %if_true \"if_true\"\n" + kBasicTypes +
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel

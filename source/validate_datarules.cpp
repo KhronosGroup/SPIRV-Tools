@@ -24,6 +24,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "val/validation_state.h"
+#include "val/instruction.h"
 
 using libspirv::CapabilitySet;
 using libspirv::DiagnosticStream;
@@ -31,32 +32,155 @@ using libspirv::ValidationState_t;
 
 namespace {
 
-// Validates that the number of components in the vector type is legal.
+// Validates that the number of components in the vector is valid.
 // Vector types can only be parameterized as having 2, 3, or 4 components.
 // If the Vector16 capability is added, 8 and 16 components are also allowed.
-spv_result_t ValidateNumVecComponents(ValidationState_t& _,
+spv_result_t ValidateVecNumComponents(ValidationState_t& _,
                                       const spv_parsed_instruction_t* inst) {
-  if (inst->opcode == SpvOpTypeVector) {
-    // operand 2 specifies the number of components in the vector.
-    const uint32_t num_components = inst->words[inst->operands[2].offset];
-    if (num_components == 2 || num_components == 3 || num_components == 4) {
+  // Operand 2 specifies the number of components in the vector.
+  const uint32_t num_components = inst->words[inst->operands[2].offset];
+  if (num_components == 2 || num_components == 3 || num_components == 4) {
+    return SPV_SUCCESS;
+  }
+  if (num_components == 8 || num_components == 16) {
+    if (_.HasCapability(SpvCapabilityVector16)) {
       return SPV_SUCCESS;
     }
-    if (num_components == 8 || num_components == 16) {
-      if (_.HasCapability(SpvCapabilityVector16)) {
-        return SPV_SUCCESS;
-      } else {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-               << "Having " << num_components << " components for "
-               << spvOpcodeString(static_cast<SpvOp>(inst->opcode))
-               << " requires the Vector16 capability";
-      }
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Having " << num_components << " components for "
+           << spvOpcodeString(static_cast<SpvOp>(inst->opcode))
+           << " requires the Vector16 capability";
+  }
+  return _.diag(SPV_ERROR_INVALID_DATA)
+         << "Illegal number of components (" << num_components << ") for "
+         << spvOpcodeString(static_cast<SpvOp>(inst->opcode));
+}
+
+// Validates that the number of bits specifed for a float type is valid.
+// Scalar floating-point types can be parameterized only with 32-bits.
+// Float16 capability allows using a 16-bit OpTypeFloat.
+// Float64 capability allows using a 64-bit OpTypeFloat.
+spv_result_t ValidateFloatSize(ValidationState_t& _,
+                               const spv_parsed_instruction_t* inst) {
+  // Operand 1 is the number of bits for this float
+  const uint32_t num_bits = inst->words[inst->operands[1].offset];
+  if (num_bits == 32) {
+    return SPV_SUCCESS;
+  }
+  if (num_bits == 16) {
+    if (_.HasCapability(SpvCapabilityFloat16)) {
+      return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << "Illegal number of components (" << num_components << ") for "
-           << spvOpcodeString(static_cast<SpvOp>(inst->opcode));
+           << "Using a 16-bit floating point "
+           << "type requires the Float16 capability.";
+  }
+  if (num_bits == 64) {
+    if (_.HasCapability(SpvCapabilityFloat64)) {
+      return SPV_SUCCESS;
+    }
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Using a 64-bit floating point "
+           << "type requires the Float64 capability.";
+  }
+  return _.diag(SPV_ERROR_INVALID_DATA)
+         << "Invalid number of bits (" << num_bits << ") used for OpTypeFloat.";
+}
+
+// Validates that the number of bits specified for an Int type is valid.
+// Scalar integer types can be parameterized only with 32-bits.
+// Int8, Int16, and Int64 capabilities allow using 8-bit, 16-bit, and 64-bit
+// integers, respectively.
+spv_result_t ValidateIntSize(ValidationState_t& _,
+                             const spv_parsed_instruction_t* inst) {
+  // Operand 1 is the number of bits for this integer.
+  const uint32_t num_bits = inst->words[inst->operands[1].offset];
+  if (num_bits == 32) {
+    return SPV_SUCCESS;
+  }
+  if (num_bits == 8) {
+    if (_.HasCapability(SpvCapabilityInt8)) {
+      return SPV_SUCCESS;
+    }
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Using an 8-bit integer type requires the Int8 capability.";
+  }
+  if (num_bits == 16) {
+    if (_.HasCapability(SpvCapabilityInt16)) {
+      return SPV_SUCCESS;
+    }
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Using a 16-bit integer type requires the Int16 capability.";
+  }
+  if (num_bits == 64) {
+    if (_.HasCapability(SpvCapabilityInt64)) {
+      return SPV_SUCCESS;
+    }
+    return _.diag(SPV_ERROR_INVALID_DATA)
+           << "Using a 64-bit integer type requires the Int64 capability.";
+  }
+  return _.diag(SPV_ERROR_INVALID_DATA) << "Invalid number of bits ("
+                                        << num_bits << ") used for OpTypeInt.";
+}
+
+// Validates that the matrix is parameterized with floating-point types.
+spv_result_t ValidateMatrixDataType(ValidationState_t& _,
+                                    const spv_parsed_instruction_t* inst) {
+  // Find the component type of matrix columns (must be vector).
+  auto type_id = inst->words[inst->operands[1].offset];
+  auto col_type_instr = _.FindDef(type_id);
+  if (col_type_instr->opcode() != SpvOpTypeVector) {
+    return _.diag(SPV_ERROR_INVALID_ID)
+           << "Columns in a matrix must be of type vector.";
   }
 
+  // trace back once more to find out the type of components in the vector.
+  auto comp_type_id =
+      col_type_instr->words()[col_type_instr->operands()[1].offset];
+  auto comp_type_instruction = _.FindDef(comp_type_id);
+  if (comp_type_instruction->opcode() != SpvOpTypeFloat) {
+    return _.diag(SPV_ERROR_INVALID_DATA) << "Matrix types can only be "
+                                             "parameterized with "
+                                             "floating-point types.";
+  }
+  return SPV_SUCCESS;
+}
+
+// Validates that the matrix has 2,3, or 4 columns.
+spv_result_t ValidateMatrixNumCols(ValidationState_t& _,
+                                   const spv_parsed_instruction_t* inst) {
+  const uint32_t num_cols = inst->words[inst->operands[2].offset];
+  if (num_cols != 2 && num_cols != 3 && num_cols != 4) {
+    return _.diag(SPV_ERROR_INVALID_DATA) << "Matrix types can only be "
+                                             "parameterized as having only 2, "
+                                             "3, or 4 columns.";
+  }
+  return SPV_SUCCESS;
+}
+
+// Validates that OpSpecConstant specializes to either int or float type.
+spv_result_t ValidateSpecConstNumerical(ValidationState_t& _,
+                                        const spv_parsed_instruction_t* inst) {
+  auto type_id = inst->words[inst->operands[0].offset];
+  auto type_instruction = _.FindDef(type_id);
+  auto type_opcode = type_instruction->opcode();
+  if (type_opcode != SpvOpTypeInt && type_opcode != SpvOpTypeFloat) {
+    return _.diag(SPV_ERROR_INVALID_DATA) << "Specialization constant must be "
+                                             "an integer or floating-point "
+                                             "number.";
+  }
+  return SPV_SUCCESS;
+}
+
+// Validates that OpSpecConstantTrue and OpSpecConstantFalse specialize to bool.
+spv_result_t ValidateSpecConstBoolean(ValidationState_t& _,
+                                      const spv_parsed_instruction_t* inst) {
+  auto type_id = inst->words[inst->operands[0].offset];
+  auto type_instruction = _.FindDef(type_id);
+  if (type_instruction->opcode() != SpvOpTypeBool) {
+    return _.diag(SPV_ERROR_INVALID_ID) << "Specialization constant must be "
+                                           "a boolean type.";
+  }
   return SPV_SUCCESS;
 }
 
@@ -68,9 +192,36 @@ namespace libspirv {
 // (Data Rules subsection of 2.16.1 Universal Validation Rules)
 spv_result_t DataRulesPass(ValidationState_t& _,
                            const spv_parsed_instruction_t* inst) {
-  if (auto error = ValidateNumVecComponents(_, inst)) return error;
-
-  // TODO(ehsan): add more data rules validation here.
+  switch (inst->opcode) {
+    case SpvOpTypeVector: {
+      if (auto error = ValidateVecNumComponents(_, inst)) return error;
+      break;
+    }
+    case SpvOpTypeFloat: {
+      if (auto error = ValidateFloatSize(_, inst)) return error;
+      break;
+    }
+    case SpvOpTypeInt: {
+      if (auto error = ValidateIntSize(_, inst)) return error;
+      break;
+    }
+    case SpvOpTypeMatrix: {
+      if (auto error = ValidateMatrixDataType(_, inst)) return error;
+      if (auto error = ValidateMatrixNumCols(_, inst)) return error;
+      break;
+    }
+    case SpvOpSpecConstant: {
+      if (auto error = ValidateSpecConstNumerical(_, inst)) return error;
+      break;
+    }
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstantTrue: {
+      if (auto error = ValidateSpecConstBoolean(_, inst)) return error;
+      break;
+    }
+    // TODO(ehsan): add more data rules validation here.
+    default: { break; }
+  }
 
   return SPV_SUCCESS;
 }
