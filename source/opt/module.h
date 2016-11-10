@@ -51,7 +51,7 @@ class Module {
   // Sets the header to the given |header|.
   void SetHeader(const ModuleHeader& header) { header_ = header; }
   // Sets the Id bound.
-  void SetIdBound(uint32_t bound) { header_.bound = bound; }
+  inline void SetIdBound(uint32_t bound) { header_.bound = bound; }
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction> c);
   // Appends an extension instruction to this module.
@@ -84,12 +84,18 @@ class Module {
   std::vector<Instruction*> GetConstants();
   std::vector<const Instruction*> GetConstants() const;
 
+  inline uint32_t GetIdBound() { return header_.bound; }
+
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
   // this module.
   inline inst_iterator debug_begin();
   inline inst_iterator debug_end();
   inline IteratorRange<inst_iterator> debugs();
   inline IteratorRange<const_inst_iterator> debugs() const;
+
+  // Interators for entry point instructions contained in this module
+  inline IteratorRange<inst_iterator> entry_points();
+  inline IteratorRange<const_inst_iterator> entry_points() const;
 
   // Clears all debug instructions (excluding OpLine & OpNoLine).
   void debug_clear() { debugs_.clear(); }
@@ -200,6 +206,14 @@ inline IteratorRange<Module::inst_iterator> Module::debugs() {
 
 inline IteratorRange<Module::const_inst_iterator> Module::debugs() const {
   return make_const_range(debugs_);
+}
+
+inline IteratorRange<Module::inst_iterator> Module::entry_points() {
+  return make_range(entry_points_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::entry_points() const {
+  return make_const_range(entry_points_);
 }
 
 inline IteratorRange<Module::inst_iterator> Module::annotations() {

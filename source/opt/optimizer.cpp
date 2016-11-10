@@ -118,4 +118,8 @@ Optimizer::PassToken CreateEliminateDeadConstantPass() {
       MakeUnique<opt::EliminateDeadConstantPass>());
 }
 
+Optimizer::PassToken CreateInlinePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::InlinePass>());
+}
+
 }  // namespace spvtools

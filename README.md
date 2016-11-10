@@ -85,6 +85,7 @@ Currently supported optimizations:
 * Fold `OpSpecConstantOp` and `OpSpecConstantComposite`
 * Unify constants
 * Eliminate dead constant
+* Inline all function calls
 
 For the latest list with detailed documentation, please refer to
 [`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).

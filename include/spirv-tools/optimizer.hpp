@@ -167,6 +167,10 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpSpecConstantOp.
 Optimizer::PassToken CreateEliminateDeadConstantPass();
 
+// Creates a inline pass.
+// An inline pass exhaustively inlines all function calls.
+Optimizer::PassToken CreateInlinePass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
