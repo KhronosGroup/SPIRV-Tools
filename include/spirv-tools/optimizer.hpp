@@ -167,6 +167,15 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpSpecConstantOp.
 Optimizer::PassToken CreateEliminateDeadConstantPass();
 
+// Creates an inline pass.
+// An inline pass exhaustively inlines all function calls in all functions
+// designated as an entry point. The intent is to enable, albeit through
+// brute force, analysis and optimization across function calls by subsequent
+// passes. As the inlining is exhaustive, there is no attempt to optimize for
+// size or runtime performance. Functions that are not designated as entry
+// points are not changed.
+Optimizer::PassToken CreateInlinePass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

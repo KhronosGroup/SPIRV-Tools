@@ -47,6 +47,9 @@ class BasicBlock {
   // The label starting this basic block.
   Instruction& Label() { return *label_; }
 
+  // Returns the id of the label at the top of this block
+  inline uint32_t label_id() const { return label_->result_id(); }
+
   iterator begin() { return iterator(&insts_, insts_.begin()); }
   iterator end() { return iterator(&insts_, insts_.end()); }
   const_iterator cbegin() { return const_iterator(&insts_, insts_.cbegin()); }
@@ -58,6 +61,15 @@ class BasicBlock {
                           bool run_on_debug_line_insts = false);
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
+
+  // Runs the given function |f| on each Phi instruction in this basic block,
+  // and optionally on the debug line instructions that might precede them.
+  inline void ForEachPhiInst(const std::function<void(Instruction*)>& f,
+                             bool run_on_debug_line_insts = false);
+
+  // Runs the given function |f| on each label id of each successor block
+  void ForEachSuccessorLabel(
+      const std::function<void(const uint32_t)>& f);
 
  private:
   // The enclosing function.
@@ -90,6 +102,14 @@ inline void BasicBlock::ForEachInst(
   for (const auto& inst : insts_)
     static_cast<const Instruction*>(inst.get())
         ->ForEachInst(f, run_on_debug_line_insts);
+}
+
+inline void BasicBlock::ForEachPhiInst(
+    const std::function<void(Instruction*)>& f, bool run_on_debug_line_insts) {
+  for (auto& inst : insts_) {
+    if (inst->opcode() != SpvOpPhi) break;
+    inst->ForEachInst(f, run_on_debug_line_insts);
+  }
 }
 
 }  // namespace ir

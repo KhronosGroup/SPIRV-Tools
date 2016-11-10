@@ -20,6 +20,7 @@ add_library(SPIRV-Tools-opt
   function.h
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
+  inline_pass.h
   instruction.h
   ir_loader.h
   log.h
@@ -35,12 +36,14 @@ add_library(SPIRV-Tools-opt
   type_manager.h
   unify_const_pass.h
 
+  basic_block.cpp
   build_module.cpp
   def_use_manager.cpp
   eliminate_dead_constant_pass.cpp
   function.cpp
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
+  inline_pass.cpp
   instruction.cpp
   ir_loader.cpp
   module.cpp

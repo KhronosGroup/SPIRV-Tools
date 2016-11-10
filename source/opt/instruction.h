@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include "operand.h"
+
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.1/spirv.h"
 
@@ -135,6 +137,8 @@ class Instruction {
   inline void SetInOperand(uint32_t index, std::vector<uint32_t>&& data);
   // Sets the result type id.
   inline void SetResultType(uint32_t ty_id);
+  // Sets the result id
+  inline void SetResultId(uint32_t res_id);
 
   // The following methods are similar to the above, but are for in operands.
   uint32_t NumInOperands() const {
@@ -161,6 +165,13 @@ class Instruction {
                           bool run_on_debug_line_insts = false);
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
+
+  // Runs the given function |f| on all "in" operand ids
+  inline void ForEachInId(const std::function<void(uint32_t*)>& f);
+  inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
+
+  // Returns true if any operands can be labels
+  inline bool has_labels() const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
@@ -192,6 +203,13 @@ inline void Instruction::SetInOperand(uint32_t index,
   assert(index + TypeResultIdCount() < operands_.size() &&
          "operand index out of bound");
   operands_[index + TypeResultIdCount()].words = std::move(data);
+}
+
+inline void Instruction::SetResultId(uint32_t res_id) {
+  result_id_ = res_id;
+  auto ridx = (type_id_ != 0) ? 1 : 0;
+  assert(operands_[ridx].type == SPV_OPERAND_TYPE_RESULT_ID);
+  operands_[ridx].words = {res_id};
 }
 
 inline void Instruction::SetResultType(uint32_t ty_id) {
@@ -226,6 +244,33 @@ inline void Instruction::ForEachInst(
   if (run_on_debug_line_insts)
     for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
   f(this);
+}
+
+inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {
+  for (auto& opnd : operands_)
+    if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
+}
+
+inline void Instruction::ForEachInId(
+    const std::function<void(const uint32_t*)>& f) const {
+  for (const auto& opnd : operands_)
+    if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
+}
+
+inline bool Instruction::has_labels() const {
+  switch (opcode_) {
+    case SpvOpSelectionMerge:
+    case SpvOpBranch:
+    case SpvOpLoopMerge:
+    case SpvOpBranchConditional:
+    case SpvOpSwitch:
+    case SpvOpPhi:
+      return true;
+      break;
+    default:
+      break;
+  }
+  return false;
 }
 
 }  // namespace ir
