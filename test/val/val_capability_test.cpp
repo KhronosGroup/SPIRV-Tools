@@ -114,8 +114,8 @@ TEST_F(ValidateCapability, Default) {
             OpCapability Kernel
             OpCapability Matrix
             OpMemoryModel Logical OpenCL
-%intt     = OpTypeInt 32 1
-%vec3     = OpTypeVector %intt 3
+%f32      = OpTypeFloat 32
+%vec3     = OpTypeVector %f32 3
 %mat33    = OpTypeMatrix %vec3 3
 )";
 
@@ -1098,8 +1098,8 @@ INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateCapability,
                             ValuesIn(AllCapabilities()),
                             Values(
 make_pair(string(kOpenCLMemoryModel) +
-          "%intt     = OpTypeInt 32 1\n"
-          "%vec3     = OpTypeVector %intt 3\n"
+          "%f32      = OpTypeFloat 32\n"
+          "%vec3     = OpTypeVector %f32 3\n"
           "%mat33    = OpTypeMatrix %vec3 3\n", MatrixDependencies()))),);
 // clang-format on
 

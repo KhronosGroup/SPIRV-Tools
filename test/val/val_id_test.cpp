@@ -45,6 +45,10 @@ const char kGLSL450MemoryModel[] = R"(
      OpCapability LiteralSampler
      OpCapability DeviceEnqueue
      OpCapability Vector16
+     OpCapability Int8
+     OpCapability Int16
+     OpCapability Int64
+     OpCapability Float64
      OpMemoryModel Logical GLSL450
 )";
 
@@ -343,7 +347,7 @@ TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
 
 TEST_F(ValidateID, OpTypeMatrixGood) {
   const char* spirv = R"(
-%1 = OpTypeInt 32 0
+%1 = OpTypeFloat 32
 %2 = OpTypeVector %1 2
 %3 = OpTypeMatrix %2 3)";
   CHECK(spirv, SPV_SUCCESS);
@@ -460,8 +464,9 @@ TEST_P(OpTypeArrayLengthTest, LengthNegative) {
             Val(CompileSuccessfully(MakeArrayLength(neg_max, kSigned, width))));
 }
 
+// The only valid widths for integers are 8, 16, 32, and 64.
 INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
-                        ValuesIn(vector<int>{8, 16, 32, 48, 64}));
+                        ValuesIn(vector<int>{8, 16, 32, 64}));
 
 TEST_F(ValidateID, OpTypeArrayLengthNull) {
   const char* spirv = R"(
@@ -844,7 +849,7 @@ TEST_F(ValidateID, OpConstantNullGood) {
 %14 = OpConstantNull %13
 %15 = OpTypeQueue
 %16 = OpConstantNull %15
-%17 = OpTypeVector %3 2
+%17 = OpTypeVector %5 2
 %18 = OpConstantNull %17
 %19 = OpTypeMatrix %17 2
 %20 = OpConstantNull %19
