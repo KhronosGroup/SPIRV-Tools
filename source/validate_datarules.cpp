@@ -23,8 +23,8 @@
 #include "diagnostic.h"
 #include "opcode.h"
 #include "operand.h"
-#include "val/validation_state.h"
 #include "val/instruction.h"
+#include "val/validation_state.h"
 
 using libspirv::CapabilitySet;
 using libspirv::DiagnosticStream;
@@ -127,6 +127,7 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
 spv_result_t ValidateMatrixDataType(ValidationState_t& _,
                                     const spv_parsed_instruction_t* inst) {
   // Find the component type of matrix columns (must be vector).
+  // Operand 1 is the <id> of the type specified for matrix columns.
   auto type_id = inst->words[inst->operands[1].offset];
   auto col_type_instr = _.FindDef(type_id);
   if (col_type_instr->opcode() != SpvOpTypeVector) {
@@ -134,7 +135,8 @@ spv_result_t ValidateMatrixDataType(ValidationState_t& _,
            << "Columns in a matrix must be of type vector.";
   }
 
-  // trace back once more to find out the type of components in the vector.
+  // Trace back once more to find out the type of components in the vector.
+  // Operand 1 is the <id> of the type of data in the vector.
   auto comp_type_id =
       col_type_instr->words()[col_type_instr->operands()[1].offset];
   auto comp_type_instruction = _.FindDef(comp_type_id);
@@ -149,6 +151,7 @@ spv_result_t ValidateMatrixDataType(ValidationState_t& _,
 // Validates that the matrix has 2,3, or 4 columns.
 spv_result_t ValidateMatrixNumCols(ValidationState_t& _,
                                    const spv_parsed_instruction_t* inst) {
+  // Operand 2 is the number of columns in the matrix.
   const uint32_t num_cols = inst->words[inst->operands[2].offset];
   if (num_cols != 2 && num_cols != 3 && num_cols != 4) {
     return _.diag(SPV_ERROR_INVALID_DATA) << "Matrix types can only be "
@@ -161,6 +164,7 @@ spv_result_t ValidateMatrixNumCols(ValidationState_t& _,
 // Validates that OpSpecConstant specializes to either int or float type.
 spv_result_t ValidateSpecConstNumerical(ValidationState_t& _,
                                         const spv_parsed_instruction_t* inst) {
+  // Operand 0 is the <id> of the type that we're specializing to.
   auto type_id = inst->words[inst->operands[0].offset];
   auto type_instruction = _.FindDef(type_id);
   auto type_opcode = type_instruction->opcode();
@@ -175,6 +179,7 @@ spv_result_t ValidateSpecConstNumerical(ValidationState_t& _,
 // Validates that OpSpecConstantTrue and OpSpecConstantFalse specialize to bool.
 spv_result_t ValidateSpecConstBoolean(ValidationState_t& _,
                                       const spv_parsed_instruction_t* inst) {
+  // Operand 0 is the <id> of the type that we're specializing to.
   auto type_id = inst->words[inst->operands[0].offset];
   auto type_instruction = _.FindDef(type_id);
   if (type_instruction->opcode() != SpvOpTypeBool) {
