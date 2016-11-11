@@ -187,7 +187,7 @@ TEST_F(ValidateData, int64_bad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_int64_cap_error));
 }
 
-// number of bits in an integer may only one of: {8,16,32,64}
+// Number of bits in an integer may be only one of: {8,16,32,64}
 TEST_F(ValidateData, int64_invalid_bits) {
   string str = header + "%2 = OpTypeInt 48 1";
   CompileSuccessfully(str.c_str());
@@ -221,6 +221,7 @@ TEST_F(ValidateData, float64_bad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_float64_cap_error));
 }
 
+// Number of bits in a float may be only one of: {16,32,64}
 TEST_F(ValidateData, float64_invalid_bits) {
   string str = header + "%2 = OpTypeFloat 48";
   CompileSuccessfully(str.c_str());
@@ -342,7 +343,7 @@ TEST_F(ValidateData, matrix_with_5_column) {
       HasSubstr("can only be parameterized as having only 2, 3, or 4 columns"));
 }
 
-TEST_F(ValidateData, specialize_const_to_int) {
+TEST_F(ValidateData, specialize_int) {
   string str = header + R"(
 %i32 = OpTypeInt 32 1
 %len = OpSpecConstant %i32 2)";
@@ -350,7 +351,7 @@ TEST_F(ValidateData, specialize_const_to_int) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateData, specialize_const_to_float) {
+TEST_F(ValidateData, specialize_float) {
   string str = header + R"(
 %f32 = OpTypeFloat 32
 %len = OpSpecConstant %f32 2)";
