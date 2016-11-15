@@ -62,6 +62,11 @@ string header_with_float16 = R"(
      OpCapability Float16
      OpMemoryModel Logical GLSL450
 )";
+string header_with_float16_buffer = R"(
+     OpCapability Shader
+     OpCapability Float16Buffer
+     OpMemoryModel Logical GLSL450
+)";
 string header_with_float64 = R"(
      OpCapability Shader
      OpCapability Float64
@@ -72,7 +77,8 @@ string missing_cap_error = "requires the Vector16 capability";
 string missing_int8_cap_error = "requires the Int8 capability";
 string missing_int16_cap_error = "requires the Int16 capability";
 string missing_int64_cap_error = "requires the Int64 capability";
-string missing_float16_cap_error = "requires the Float16 capability";
+string missing_float16_cap_error =
+    "requires the Float16 or Float16Buffer capability.";
 string missing_float64_cap_error = "requires the Float64 capability";
 string invalid_num_bits_error = "Invalid number of bits";
 
@@ -188,7 +194,7 @@ TEST_F(ValidateData, int64_bad) {
 }
 
 // Number of bits in an integer may be only one of: {8,16,32,64}
-TEST_F(ValidateData, int64_invalid_bits) {
+TEST_F(ValidateData, int_invalid_num_bits) {
   string str = header + "%2 = OpTypeInt 48 1";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
@@ -197,6 +203,12 @@ TEST_F(ValidateData, int64_invalid_bits) {
 
 TEST_F(ValidateData, float16_good) {
   string str = header_with_float16 + "%2 = OpTypeFloat 16";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, float16_buffer_good) {
+  string str = header_with_float16_buffer + "%2 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -222,7 +234,7 @@ TEST_F(ValidateData, float64_bad) {
 }
 
 // Number of bits in a float may be only one of: {16,32,64}
-TEST_F(ValidateData, float64_invalid_bits) {
+TEST_F(ValidateData, float_invalid_num_bits) {
   string str = header + "%2 = OpTypeFloat 48";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());

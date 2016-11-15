@@ -59,6 +59,7 @@ spv_result_t ValidateVecNumComponents(ValidationState_t& _,
 // Validates that the number of bits specifed for a float type is valid.
 // Scalar floating-point types can be parameterized only with 32-bits.
 // Float16 capability allows using a 16-bit OpTypeFloat.
+// Float16Buffer capability allows creation of a 16-bit OpTypeFloat.
 // Float64 capability allows using a 64-bit OpTypeFloat.
 spv_result_t ValidateFloatSize(ValidationState_t& _,
                                const spv_parsed_instruction_t* inst) {
@@ -68,12 +69,13 @@ spv_result_t ValidateFloatSize(ValidationState_t& _,
     return SPV_SUCCESS;
   }
   if (num_bits == 16) {
-    if (_.HasCapability(SpvCapabilityFloat16)) {
+    if (_.HasCapability(SpvCapabilityFloat16) ||
+        _.HasCapability(SpvCapabilityFloat16Buffer)) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Using a 16-bit floating point "
-           << "type requires the Float16 capability.";
+           << "type requires the Float16 or Float16Buffer capability.";
   }
   if (num_bits == 64) {
     if (_.HasCapability(SpvCapabilityFloat64)) {
@@ -124,8 +126,8 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
 }
 
 // Validates that the matrix is parameterized with floating-point types.
-spv_result_t ValidateMatrixDataType(ValidationState_t& _,
-                                    const spv_parsed_instruction_t* inst) {
+spv_result_t ValidateMatrixColumnType(ValidationState_t& _,
+                                      const spv_parsed_instruction_t* inst) {
   // Find the component type of matrix columns (must be vector).
   // Operand 1 is the <id> of the type specified for matrix columns.
   auto type_id = inst->words[inst->operands[1].offset];
@@ -179,9 +181,8 @@ spv_result_t ValidateSpecConstNumerical(ValidationState_t& _,
 // Validates that OpSpecConstantTrue and OpSpecConstantFalse specialize to bool.
 spv_result_t ValidateSpecConstBoolean(ValidationState_t& _,
                                       const spv_parsed_instruction_t* inst) {
-  // Operand 0 is the <id> of the type that we're specializing to.
-  auto type_id = inst->words[inst->operands[0].offset];
-  auto type_instruction = _.FindDef(type_id);
+  // Find out the type that we're specializing to.
+  auto type_instruction = _.FindDef(inst->type_id);
   if (type_instruction->opcode() != SpvOpTypeBool) {
     return _.diag(SPV_ERROR_INVALID_ID) << "Specialization constant must be "
                                            "a boolean type.";
@@ -211,10 +212,12 @@ spv_result_t DataRulesPass(ValidationState_t& _,
       break;
     }
     case SpvOpTypeMatrix: {
-      if (auto error = ValidateMatrixDataType(_, inst)) return error;
+      if (auto error = ValidateMatrixColumnType(_, inst)) return error;
       if (auto error = ValidateMatrixNumCols(_, inst)) return error;
       break;
     }
+    // TODO(ehsan): Add OpSpecConstantComposite validation code.
+    // TODO(ehsan): Add OpSpecConstantOp validation code (if any).
     case SpvOpSpecConstant: {
       if (auto error = ValidateSpecConstNumerical(_, inst)) return error;
       break;
