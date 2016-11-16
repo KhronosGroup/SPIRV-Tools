@@ -15,7 +15,10 @@
 #include <sstream>
 #include <string>
 
+#include "gmock/gmock.h"
 #include "test_fixture.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
 // SPIR-V does not follow the logical layout rules from the spec in all cases in
@@ -26,19 +29,15 @@
 namespace {
 
 using ::testing::ValuesIn;
+using ::testing::HasSubstr;
 using spvtest::ScopedContext;
 using std::ostringstream;
 using std::string;
 using std::vector;
 
-class ValidateID : public ::testing::Test {
- public:
-  virtual void TearDown() { spvBinaryDestroy(binary); }
-  spv_const_binary get_const_binary() { return spv_const_binary(binary); }
-  spv_binary binary;
-};
+using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
-const char kGLSL450MemoryModel[] = R"(
+string kGLSL450MemoryModel = R"(
      OpCapability Shader
      OpCapability Addresses
      OpCapability Pipes
@@ -52,7 +51,7 @@ const char kGLSL450MemoryModel[] = R"(
      OpMemoryModel Logical GLSL450
 )";
 
-const char kOpenCLMemoryModel32[] = R"(
+string kOpenCLMemoryModel32 = R"(
      OpCapability Addresses
      OpCapability Linkage
      OpCapability Kernel
@@ -60,7 +59,7 @@ const char kOpenCLMemoryModel32[] = R"(
      OpMemoryModel Physical32 OpenCL
 )";
 
-const char kOpenCLMemoryModel64[] = R"(
+string kOpenCLMemoryModel64 = R"(
      OpCapability Addresses
      OpCapability Linkage
      OpCapability Kernel
@@ -69,135 +68,103 @@ const char kOpenCLMemoryModel64[] = R"(
      OpMemoryModel Physical64 OpenCL
 )";
 
-// TODO(dekimir): this can be removed by adding a method to ValidateID akin to
-// OpTypeArrayLengthTest::Val().
-#define CHECK(str, expected)                                                   \
-  spv_diagnostic diagnostic;                                                   \
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
-  std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
-  spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
-                                       &binary, &diagnostic);                  \
-  if (error) {                                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-    ASSERT_EQ(SPV_SUCCESS, error) << shader;                                   \
-  }                                                                            \
-  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
-  if (SPV_SUCCESS != result) {                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-  }                                                                            \
-  ASSERT_EQ(expected, result);                                                 \
-  spvContextDestroy(context);
-
-#define CHECK_KERNEL(str, expected, bitness)                                   \
-  ASSERT_TRUE(bitness == 32 || bitness == 64);                                 \
-  spv_diagnostic diagnostic;                                                   \
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
-  std::string kernel = std::string(bitness == 32 ? kOpenCLMemoryModel32        \
-                                                 : kOpenCLMemoryModel64) +     \
-                       str;                                                    \
-  spv_result_t error = spvTextToBinary(context, kernel.c_str(), kernel.size(), \
-                                       &binary, &diagnostic);                  \
-  if (error) {                                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-    ASSERT_EQ(SPV_SUCCESS, error);                                             \
-  }                                                                            \
-  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
-  if (SPV_SUCCESS != result) {                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-  }                                                                            \
-  ASSERT_EQ(expected, result);                                                 \
-  spvContextDestroy(context);
-
 // TODO: OpUndef
 
-TEST_F(ValidateID, OpName) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpName) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpName %2 "name"
 %1 = OpTypeInt 32 0
 %2 = OpTypePointer UniformConstant %1
 %3 = OpVariable %2 UniformConstant)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpMemberNameGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberNameGood) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberName %2 0 "foo"
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpMemberNameTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberNameTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberName %1 0 "foo"
 %1 = OpTypeInt 32 0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpMemberNameMemberBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberName %2 1 "foo"
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpLineGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLineGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpString "/path/to/source.file"
      OpLine %1 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Input %2
 %4 = OpVariable %3 Input)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpLineFileBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLineFileBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpLine %2 0 0
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer Input %2
 %4 = OpVariable %3 Input)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpDecorateGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpDecorateGood) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpDecorate %2 GLSLShared
 %1 = OpTypeInt 64 0
 %2 = OpTypeStruct %1 %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpDecorateBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpDecorateBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 OpDecorate %1 GLSLShared)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpMemberDecorateGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberDecorate %2 0 Uniform
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpMemberDecorateBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberDecorate %1 0 Uniform
 %1 = OpTypeInt 32 0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpMemberDecorateMemberBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemberDecorate %2 3 Uniform
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct %1 %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpGroupDecorateGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
      OpDecorate %1 Uniform
      OpDecorate %1 GLSLShared
@@ -205,31 +172,34 @@ TEST_F(ValidateID, OpGroupDecorateGood) {
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 42
 %4 = OpConstant %2 23)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpGroupDecorateDecorationGroupBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpGroupDecorateDecorationGroupBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpGroupDecorate %2 %3 %4
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 42
 %4 = OpConstant %2 23)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpGroupDecorateTargetBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpGroupDecorateTargetBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpDecorationGroup
      OpDecorate %1 Uniform
      OpDecorate %1 GLSLShared
      OpGroupDecorate %1 %3
 %2 = OpTypeInt 32 0)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: OpGroupMemberDecorate
 // TODO: OpExtInst
 
-TEST_F(ValidateID, OpEntryPointGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpEntryPointGood) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -238,16 +208,18 @@ TEST_F(ValidateID, OpEntryPointGood) {
      OpReturn
      OpFunctionEnd
 )";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpEntryPointFunctionBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpEntryPointFunctionBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %1 ""
 %1 = OpTypeVoid)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpEntryPointParameterCountBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1 %1
@@ -255,10 +227,11 @@ TEST_F(ValidateID, OpEntryPointParameterCountBad) {
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpEntryPointReturnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeInt 32 0
 %2 = OpTypeFunction %1
@@ -266,11 +239,12 @@ TEST_F(ValidateID, OpEntryPointReturnTypeBad) {
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpExecutionModeGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpExecutionModeGood) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
@@ -279,11 +253,12 @@ TEST_F(ValidateID, OpExecutionModeGood) {
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpExecutionModeEntryPointMissing) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpExecutionModeEntryPointMissing) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpExecutionMode %3 LocalSize 1 1 1
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -291,11 +266,12 @@ TEST_F(ValidateID, OpExecutionModeEntryPointMissing) {
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpExecutionModeEntryPointBad) {
+  string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 "" %a
      OpExecutionMode %a LocalSize 1 1 1
 %void = OpTypeVoid
@@ -306,80 +282,91 @@ TEST_F(ValidateID, OpExecutionModeEntryPointBad) {
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeVectorFloat) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeVectorFloat) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeVectorInt) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeVectorInt) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypeVector %1 4)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeVectorUInt) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeVectorUInt) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 64 0
 %2 = OpTypeVector %1 4)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeVectorBool) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeVectorBool) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeBool
 %2 = OpTypeVector %1 4)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeVectorComponentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeVectorComponentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypePointer UniformConstant %1
 %3 = OpTypeVector %2 4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeMatrixGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeMatrixGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 2
 %3 = OpTypeMatrix %2 3)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypeMatrixColumnTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeMatrixColumnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeMatrix %1 3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeSamplerGood) {
+TEST_F(ValidateIdWithMessage, OpTypeSamplerGood) {
   // In Rev31, OpTypeSampler takes no arguments.
-  const char* spirv = R"(
+  string spirv = kGLSL450MemoryModel + R"(
 %s = OpTypeSampler)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeArrayGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeArrayGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1
 %3 = OpTypeArray %1 %2)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeArrayElementTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeArrayElementTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1
 %3 = OpTypeArray %2 %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // Signed or unsigned.
@@ -468,198 +455,223 @@ TEST_P(OpTypeArrayLengthTest, LengthNegative) {
 INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
                         ValuesIn(vector<int>{8, 16, 32, 64}));
 
-TEST_F(ValidateID, OpTypeArrayLengthNull) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeArrayLengthNull) {
+  string spirv = kGLSL450MemoryModel + R"(
 %i32 = OpTypeInt 32 1
 %len = OpConstantNull %i32
 %ary = OpTypeArray %i32 %len)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthSpecConst) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeArrayLengthSpecConst) {
+  string spirv = kGLSL450MemoryModel + R"(
 %i32 = OpTypeInt 32 1
 %len = OpSpecConstant %i32 2
 %ary = OpTypeArray %i32 %len)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeArrayLengthSpecConstOp) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeArrayLengthSpecConstOp) {
+  string spirv = kGLSL450MemoryModel + R"(
 %i32 = OpTypeInt 32 1
 %c1 = OpConstant %i32 1
 %c2 = OpConstant %i32 2
 %len = OpSpecConstantOp %i32 IAdd %c1 %c2
 %ary = OpTypeArray %i32 %len)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeRuntimeArrayGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeRuntimeArrayGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeRuntimeArray %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypeRuntimeArrayBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeRuntimeArrayBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeRuntimeArray %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 // TODO: Object of this type can only be created with OpVariable using the
 // Unifrom Storage Class
 
-TEST_F(ValidateID, OpTypeStructGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeStructGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeFloat 64
 %3 = OpTypePointer Input %1
 %4 = OpTypeStruct %1 %2 %3)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypeStructMemberTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeStructMemberTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeFloat 64
 %3 = OpConstant %2 0.0
 %4 = OpTypeStruct %1 %2 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypePointerGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypePointerGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypePointer Input %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypePointerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypePointerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypePointer Input %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypeFunctionGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeFunctionGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypeFunctionReturnTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeFunctionReturnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 0
 %3 = OpTypeFunction %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpTypeFunctionParameterBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypeFunctionParameterBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 0
 %4 = OpTypeFunction %1 %2 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpTypePipeGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpTypePipeGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 16
 %3 = OpTypePipe ReadOnly)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantTrueGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantTrueGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeBool
 %2 = OpConstantTrue %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantTrueBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantTrueBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpConstantTrue %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantFalseGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantFalseGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeBool
 %2 = OpConstantTrue %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantFalseBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantFalseBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpConstantFalse %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpConstant !1 !0)";
   // The expected failure code is implementation dependent (currently
   // INVALID_BINARY because the binary parser catches these cases) and may
   // change over time, but this must always fail.
-  CHECK(spirv, SPV_ERROR_INVALID_BINARY);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantCompositeVectorGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpConstant %1 3.14
 %4 = OpConstantComposite %2 %3 %3 %3 %3)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeVectorWithUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpConstant %1 3.14
 %9 = OpUndef %1
 %4 = OpConstantComposite %2 %3 %3 %3 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeVectorResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpConstant %1 3.14
 %4 = OpConstantComposite %1 %3 %3 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeVectorConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeVectorConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
 %3 = OpConstant %1 3.14
 %5 = OpConstant %4 42 ; bad type for constant value
 %6 = OpConstantComposite %2 %3 %5 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeVectorConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpConstantCompositeVectorConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
 %3 = OpConstant %1 3.14
 %5 = OpUndef %4 ; bad type for undef value
 %6 = OpConstantComposite %2 %3 %5 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -670,10 +682,11 @@ TEST_F(ValidateID, OpConstantCompositeMatrixGood) {
  %8 = OpConstantComposite %2 %5 %5 %4 %5
  %9 = OpConstantComposite %2 %5 %5 %5 %4
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -684,10 +697,11 @@ TEST_F(ValidateID, OpConstantCompositeMatrixUndefGood) {
  %8 = OpConstantComposite %2 %5 %5 %4 %5
  %9 = OpUndef %2
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
 %11 = OpTypeVector %1 3
@@ -699,10 +713,12 @@ TEST_F(ValidateID, OpConstantCompositeMatrixConstituentTypeBad) {
  %8 = OpConstantComposite %2 %5 %5 %4 %5
  %9 = OpConstantComposite %11 %5 %5 %5
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpConstantCompositeMatrixConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
 %11 = OpTypeVector %1 3
@@ -714,10 +730,11 @@ TEST_F(ValidateID, OpConstantCompositeMatrixConstituentUndefTypeBad) {
  %8 = OpConstantComposite %2 %5 %5 %4 %5
  %9 = OpUndef %11
 %10 = OpConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeMatrixColumnTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeMatrixColumnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeVector %1 2
@@ -728,111 +745,123 @@ TEST_F(ValidateID, OpConstantCompositeMatrixColumnTypeBad) {
  %8 = OpConstantComposite %3 %6 %6
  %9 = OpConstantComposite %4 %7 %7
 %10 = OpConstantComposite %5 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeArrayGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpConstantComposite %3 %2 %2 %2 %2)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeArrayWithUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %9 = OpUndef %1
 %3 = OpTypeArray %1 %2
 %4 = OpConstantComposite %3 %2 %2 %2 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeArrayConstConstituentBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpConstantComposite %3 %2 %2 %2 %1)";  // Uses a type as operand
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeArrayConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %5 = OpTypeFloat 32
 %6 = OpConstant %5 3.14 ; bad type for const value
 %4 = OpConstantComposite %3 %2 %2 %2 %6)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeArrayConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %5 = OpTypeFloat 32
 %6 = OpUndef %5 ; bad type for undef
 %4 = OpConstantComposite %3 %2 %2 %2 %6)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeStructGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeStructGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpConstant %2 4300000000
 %6 = OpConstantComposite %3 %4 %4 %5)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeStructUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeStructUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpUndef %2
 %6 = OpConstantComposite %3 %4 %4 %5)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantCompositeStructMemberTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpConstant %2 4300000000
 %6 = OpConstantComposite %3 %4 %5 %4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantCompositeStructMemberUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpUndef %2
 %6 = OpConstantComposite %3 %4 %5 %4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantSamplerGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantSamplerGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %float = OpTypeFloat 32
 %samplerType = OpTypeSampler
 %3 = OpConstantSampler %samplerType ClampToEdge 0 Nearest)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpConstantSamplerResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantSamplerResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpConstantSampler %1 Clamp 0 Nearest)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantNullGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantNullGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeBool
  %2 = OpConstantNull %1
  %3 = OpTypeInt 32 0
@@ -863,119 +892,578 @@ TEST_F(ValidateID, OpConstantNullGood) {
 %28 = OpTypeStruct %7 %26 %26 %1
 %29 = OpConstantNull %28
 )";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantNullBasicBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantNullBasicBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpConstantNull %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantNullArrayBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantNullArrayBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %2 = OpTypeInt 32 0
 %3 = OpTypeSampler
 %4 = OpConstant %2 4
 %5 = OpTypeArray %3 %4
 %6 = OpConstantNull %5)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantNullStructBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantNullStructBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %2 = OpTypeSampler
 %3 = OpTypeStruct %2 %2
 %4 = OpConstantNull %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpConstantNullRuntimeArrayBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpConstantNullRuntimeArrayBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %bool = OpTypeBool
 %array = OpTypeRuntimeArray %bool
 %null = OpConstantNull %array)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpSpecConstantTrueGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantTrueGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeBool
 %2 = OpSpecConstantTrue %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpSpecConstantTrueBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantTrueBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstantTrue %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpSpecConstantFalseGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantFalseGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeBool
 %2 = OpSpecConstantFalse %1)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpSpecConstantFalseBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantFalseBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstantFalse %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpSpecConstantGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpSpecConstant %1 42)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpSpecConstantBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpSpecConstant !1 !4)";
   // The expected failure code is implementation dependent (currently
   // INVALID_BINARY because the binary parser catches these cases) and may
   // change over time, but this must always fail.
-  CHECK(spirv, SPV_ERROR_INVALID_BINARY);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
 }
 
-// TODO: OpSpecConstantComposite
+// Valid: SpecConstantComposite specializes to a vector.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%4 = OpConstant %1 3.14
+%5 = OpSpecConstantComposite %2 %3 %3 %4 %4)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Valid: Vector of floats and Undefs.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%5 = OpConstant %1 3.14
+%9 = OpUndef %1
+%4 = OpSpecConstantComposite %2 %3 %5 %3 %9)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: result type is float.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%4 = OpSpecConstantComposite %1 %3 %3 %3 %3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a composite type"));
+}
+
+// Invalid: Vector contains a mix of Int and Float.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%4 = OpTypeInt 32 0
+%3 = OpSpecConstant %1 3.14
+%5 = OpConstant %4 42 ; bad type for constant value
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '2's vector element "
+                        "type."));
+}
+
+// Invalid: Constituent is not a constant
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeVectorConstituentNotConstantBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpTypeInt 32 0
+%4 = OpSpecConstant %1 3.14
+%6 = OpSpecConstantComposite %2 %3 %4 %4 %4)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '3' is not a "
+                        "constant or undef."));
+}
+
+// Invalid: Vector contains a mix of Undef-int and Float.
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeVectorConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%4 = OpTypeInt 32 0
+%3 = OpSpecConstant %1 3.14
+%5 = OpUndef %4 ; bad type for undef value
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '2's vector element "
+                        "type."));
+}
+
+// Invalid: Vector expects 3 components, but 4 specified.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorNumComponentsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 3
+%3 = OpConstant %1 3.14
+%5 = OpSpecConstant %1 4.0
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> count does "
+                        "not match Result Type <id> '2's vector component "
+                        "count."));
+}
+
+// Valid: 4x4 matrix of floats
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpSpecConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpSpecConstantComposite %2 %5 %5 %5 %4
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Valid: Matrix in which one column is Undef
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpSpecConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpUndef %2
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Matrix in which the sizes of column vectors are not equal.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeVector %1 3
+ %4 = OpTypeMatrix %2 4
+ %5 = OpSpecConstant %1 1.0
+ %6 = OpConstant %1 0.0
+ %7 = OpSpecConstantComposite %2 %5 %6 %6 %6
+ %8 = OpSpecConstantComposite %2 %6 %5 %6 %6
+ %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
+ %10 = OpSpecConstantComposite %3 %6 %6 %6
+%11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '10' vector "
+                        "component count does not match Result Type <id> '4's "
+                        "vector component count."));
+}
+
+// Invalid: Matrix type expects 4 columns but only 3 specified.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixNumColsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpSpecConstant %1 1.0
+ %5 = OpConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+%10 = OpSpecConstantComposite %3 %6 %7 %8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpSpecConstantComposite Constituent <id> count does "
+                "not match Result Type <id> '3's matrix column count."));
+}
+
+// Invalid: Composite contains a non-const/undef component
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeMatrixConstituentNotConstBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpConstant %1 0.0
+ %3 = OpTypeVector %1 4
+ %4 = OpTypeMatrix %3 4
+ %5 = OpSpecConstantComposite %3 %2 %2 %2 %2
+ %6 = OpSpecConstantComposite %4 %5 %5 %5 %1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant composite or undef."));
+}
+
+// Invalid: Composite contains a column that is *not* a vector (it's an array)
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeInt 32 0
+ %3 = OpSpecConstant %2 4
+ %4 = OpConstant %1 0.0
+ %5 = OpTypeVector %1 4
+ %6 = OpTypeArray %2 %3
+ %7 = OpTypeMatrix %5 4
+ %8  = OpSpecConstantComposite %6 %3 %3 %3 %3
+ %9  = OpSpecConstantComposite %5 %4 %4 %4 %4
+ %10 = OpSpecConstantComposite %7 %9 %9 %9 %8)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '8' type "
+                        "does not match Result Type <id> '7's matrix column "
+                        "type."));
+}
+
+// Invalid: Matrix with an Undef column of the wrong size.
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeVector %1 3
+ %4 = OpTypeMatrix %2 4
+ %5 = OpSpecConstant %1 1.0
+ %6 = OpSpecConstant %1 0.0
+ %7 = OpSpecConstantComposite %2 %5 %6 %6 %6
+ %8 = OpSpecConstantComposite %2 %6 %5 %6 %6
+ %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
+ %10 = OpUndef %3
+ %11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '10' vector "
+                        "component count does not match Result Type <id> '4's "
+                        "vector component count."));
+}
+
+// Invalid: Matrix in which some columns are Int and some are Float.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColumnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+ %1 = OpTypeInt 32 0
+ %2 = OpTypeFloat 32
+ %3 = OpTypeVector %1 2
+ %4 = OpTypeVector %2 2
+ %5 = OpTypeMatrix %4 2
+ %6 = OpSpecConstant %1 42
+ %7 = OpConstant %2 3.14
+ %8 = OpSpecConstantComposite %3 %6 %6
+ %9 = OpSpecConstantComposite %4 %7 %7
+%10 = OpSpecConstantComposite %5 %8 %9)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '8' "
+                        "component type does not match Result Type <id> '5's "
+                        "matrix column component type."));
+}
+
+// Valid: Array of integers
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%5 = OpConstant %1 5
+%3 = OpTypeArray %1 %2
+%6 = OpTypeArray %1 %5
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %2
+%7 = OpSpecConstantComposite %3 %5 %5 %5 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Expecting an array of 4 components, but 3 specified.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayNumComponentsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent count does not "
+                        "match Result Type <id> '3's array length."));
+}
+
+// Valid: Array of Integers and Undef-int
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%9 = OpUndef %1
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %9)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Array uses a type as operand.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstConstituentBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %1)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef."));
+}
+
+// Invalid: Array has a mix of Int and Float components.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpTypeFloat 32
+%5 = OpSpecConstant %4 3.14 ; bad type for const value
+%6 = OpSpecConstantComposite %3 %2 %2 %2 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '3's array element "
+                        "type."));
+}
+
+// Invalid: Array has a mix of Int and Undef-float.
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeArrayConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%3 = OpTypeArray %1 %2
+%5 = OpTypeFloat 32
+%6 = OpUndef %5 ; bad type for undef
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '3's array element "
+                        "type."));
+}
+
+// Valid: Struct of {Int32,Int32,Int64}.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %2 4300000000
+%6 = OpSpecConstantComposite %3 %4 %4 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: missing one int32 struct member.
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeStructMissingComponentBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%3 = OpTypeStruct %1 %1 %1
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %1 430
+%6 = OpSpecConstantComposite %3 %4 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '2' count "
+                        "does not match Result Type <id> '2's struct member "
+                        "count."));
+}
+
+// Valid: Struct uses Undef-int64.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %4 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Composite contains non-const/undef component.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructNonConstBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %1 %5)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef."));
+}
+
+// Invalid: Struct component type does not match expected specialization type.
+// Second component was expected to be Int32, but got Int64.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %2 4300000000
+%6 = OpSpecConstantComposite %3 %4 %5 %4)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5' type "
+                        "does not match the Result Type <id> '3's member "
+                        "type."));
+}
+
+// Invalid: Undef-int64 used when Int32 was expected.
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %5 %4)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5' type "
+                        "does not match the Result Type <id> '3's member "
+                        "type."));
+}
+
 // TODO: OpSpecConstantOp
 
-TEST_F(ValidateID, OpVariableGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpVariableGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Input %1
 %3 = OpVariable %2 Input)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpVariableInitializerGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpVariableInitializerGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Input %1
 %3 = OpConstant %1 42
 %4 = OpVariable %2 Input %3)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 // TODO: Positive test OpVariable with OpConstantNull of OpTypePointer
-TEST_F(ValidateID, OpVariableResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpVariableResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpVariable %1 Input)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpVariableInitializerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpVariableInitializerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Input %1
 %3 = OpVariable %2 Input %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpLoadGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLoadGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 1
  %3 = OpTypePointer UniformConstant %2
@@ -987,10 +1475,11 @@ TEST_F(ValidateID, OpLoadGood) {
  %9 = OpReturn
 %10 = OpFunctionEnd
 )";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpLoadResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1002,10 +1491,11 @@ TEST_F(ValidateID, OpLoadResultTypeBad) {
      OpReturn
      OpFunctionEnd
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpLoadPointerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %9 = OpTypeFloat 32
@@ -1017,11 +1507,12 @@ TEST_F(ValidateID, OpLoadPointerBad) {
      OpReturn
      OpFunctionEnd
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpStoreGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1033,10 +1524,11 @@ TEST_F(ValidateID, OpStoreGood) {
      OpStore %6 %5
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpStorePointerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1048,10 +1540,11 @@ TEST_F(ValidateID, OpStorePointerBad) {
      OpStore %3 %5
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpStoreObjectGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1063,10 +1556,11 @@ TEST_F(ValidateID, OpStoreObjectGood) {
      OpStore %6 %7
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpStoreTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %9 = OpTypeFloat 32
@@ -1079,11 +1573,12 @@ TEST_F(ValidateID, OpStoreTypeBad) {
      OpStore %6 %5
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpStoreVoid) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreVoid) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1095,11 +1590,12 @@ TEST_F(ValidateID, OpStoreVoid) {
      OpStore %6 %9
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpStoreLabel) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreLabel) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
@@ -1110,13 +1606,14 @@ TEST_F(ValidateID, OpStoreLabel) {
      OpStore %6 %8
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: enable when this bug is fixed:
 // https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
-TEST_F(ValidateID, DISABLED_OpStoreFunction) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, DISABLED_OpStoreFunction) {
+  string spirv = kGLSL450MemoryModel + R"(
 %2 = OpTypeInt 32 1
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %2
@@ -1127,11 +1624,12 @@ TEST_F(ValidateID, DISABLED_OpStoreFunction) {
      OpStore %6 %7
      OpReturnValue %5
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpCopyMemoryGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemoryGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -1146,10 +1644,11 @@ TEST_F(ValidateID, OpCopyMemoryGood) {
       OpReturn
       OpFunctionEnd
 )";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpCopyMemoryBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemoryBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -1165,12 +1664,13 @@ TEST_F(ValidateID, OpCopyMemoryBad) {
       OpReturn
       OpFunctionEnd
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: OpCopyMemorySized
-TEST_F(ValidateID, OpCopyMemorySizedGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -1184,10 +1684,11 @@ TEST_F(ValidateID, OpCopyMemorySizedGood) {
       OpCopyMemorySized %10 %6 %5 None
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpCopyMemorySizedTargetBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedTargetBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
@@ -1200,10 +1701,11 @@ TEST_F(ValidateID, OpCopyMemorySizedTargetBad) {
      OpCopyMemorySized %9 %6 %5 None
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpCopyMemorySizedSourceBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSourceBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
@@ -1216,10 +1718,11 @@ TEST_F(ValidateID, OpCopyMemorySizedSourceBad) {
      OpCopyMemorySized %9 %6 %5 None
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpCopyMemorySizedSizeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -1233,10 +1736,11 @@ TEST_F(ValidateID, OpCopyMemorySizedSizeBad) {
       OpCopyMemorySized %10 %6 %6 None
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpCopyMemorySizedSizeTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
  %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
@@ -1252,7 +1756,8 @@ TEST_F(ValidateID, OpCopyMemorySizedSizeTypeBad) {
       OpCopyMemorySized %10 %6 %12 None
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: OpAccessChain
@@ -1261,36 +1766,39 @@ TEST_F(ValidateID, OpCopyMemorySizedSizeTypeBad) {
 // TODO: OpImagePointer
 // TODO: OpGenericPtrMemSemantics
 
-TEST_F(ValidateID, OpFunctionGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %3 = OpTypeFunction %1 %2 %2
 %4 = OpFunction %1 None %3
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %5 = OpConstant %2 42
 %3 = OpTypeFunction %1 %2 %2
 %4 = OpFunction %2 None %3
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionFunctionTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 1
 %4 = OpFunction %1 None %2
 OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpFunctionParameterGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionParameterGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2
@@ -1299,10 +1807,11 @@ TEST_F(ValidateID, OpFunctionParameterGood) {
 %6 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionParameterMultipleGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionParameterMultipleGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2 %2
@@ -1312,10 +1821,11 @@ TEST_F(ValidateID, OpFunctionParameterMultipleGood) {
 %7 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionParameterResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2
@@ -1324,11 +1834,12 @@ TEST_F(ValidateID, OpFunctionParameterResultTypeBad) {
 %6 = OpLabel
      OpReturn
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpFunctionCallGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionCallGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1346,10 +1857,11 @@ TEST_F(ValidateID, OpFunctionCallGood) {
 %12 = OpFunctionCall %2 %6 %5
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionCallResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionCallResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1368,10 +1880,11 @@ TEST_F(ValidateID, OpFunctionCallResultTypeBad) {
 %12 = OpFunctionCall %1 %6 %5
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionCallFunctionBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionCallFunctionBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1383,10 +1896,11 @@ TEST_F(ValidateID, OpFunctionCallFunctionBad) {
 %12 = OpFunctionCall %2 %5 %5
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpFunctionCallArgumentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2 %2
@@ -1408,10 +1922,11 @@ TEST_F(ValidateID, OpFunctionCallArgumentTypeBad) {
 %12 = OpFunctionCall %2 %6 %14
       OpReturn
       OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 #if 0
-TEST_F(ValidateID, OpFunctionCallArgumentCountBar) {
+TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentCountBar) {
   const char *spirv = R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
@@ -1566,8 +2081,8 @@ TEST_F(ValidateID, OpFunctionCallArgumentCountBar) {
 // TODO: OpBranchConditional
 // TODO: OpSwitch
 
-TEST_F(ValidateID, OpReturnValueConstantGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueConstantGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2
@@ -1576,11 +2091,12 @@ TEST_F(ValidateID, OpReturnValueConstantGood) {
 %6 = OpLabel
      OpReturnValue %4
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueVariableGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueVariableGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0 ;10
 %3 = OpTypeFunction %2
@@ -1592,11 +2108,12 @@ TEST_F(ValidateID, OpReturnValueVariableGood) {
 %9 = OpLoad %2 %7
      OpReturnValue %9 ;36
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueExpressionGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueExpressionGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2
@@ -1606,11 +2123,12 @@ TEST_F(ValidateID, OpReturnValueExpressionGood) {
 %7 = OpIAdd %2 %4 %4
      OpReturnValue %7
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueIsType) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueIsType) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2
@@ -1618,11 +2136,12 @@ TEST_F(ValidateID, OpReturnValueIsType) {
 %6 = OpLabel
      OpReturnValue %1
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueIsLabel) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueIsLabel) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2
@@ -1630,11 +2149,12 @@ TEST_F(ValidateID, OpReturnValueIsLabel) {
 %6 = OpLabel
      OpReturnValue %6
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueIsVoid) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpReturnValueIsVoid) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1
@@ -1643,12 +2163,13 @@ TEST_F(ValidateID, OpReturnValueIsVoid) {
 %7 = OpFunctionCall %1 %5
      OpReturnValue %7
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueIsVariableInPhysical) {
+TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInPhysical) {
   // It's valid to return a pointer in a physical addressing model.
-  const char* spirv = R"(
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemoryModel Physical32 OpenCL
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
@@ -1659,12 +2180,13 @@ TEST_F(ValidateID, OpReturnValueIsVariableInPhysical) {
 %7 = OpVariable %3 Function
      OpReturnValue %7
      OpFunctionEnd)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpReturnValueIsVariableInLogical) {
+TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
   // It's invalid to return a pointer in a physical addressing model.
-  const char* spirv = R"(
+  string spirv = kGLSL450MemoryModel + R"(
      OpMemoryModel Logical GLSL450
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
@@ -1675,13 +2197,14 @@ TEST_F(ValidateID, OpReturnValueIsVariableInLogical) {
 %7 = OpVariable %3 Function
      OpReturnValue %7
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: enable when this bug is fixed:
 // https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
-TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, DISABLED_OpReturnValueIsFunction) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %2
@@ -1689,18 +2212,20 @@ TEST_F(ValidateID, DISABLED_OpReturnValueIsFunction) {
 %6 = OpLabel
      OpReturnValue %5
      OpFunctionEnd)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, UndefinedTypeId) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, UndefinedTypeId) {
+  string spirv = kGLSL450MemoryModel + R"(
 %s = OpTypeStruct %i32
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, UndefinedIdScope) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, UndefinedIdScope) {
+  string spirv = kGLSL450MemoryModel + R"(
 %u32    = OpTypeInt 32 0
 %memsem = OpConstant %u32 0
 %void   = OpTypeVoid
@@ -1711,11 +2236,12 @@ TEST_F(ValidateID, UndefinedIdScope) {
           OpReturn
           OpFunctionEnd
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, UndefinedIdMemSem) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, UndefinedIdMemSem) {
+  string spirv = kGLSL450MemoryModel + R"(
 %u32    = OpTypeInt 32 0
 %scope  = OpConstant %u32 0
 %void   = OpTypeVoid
@@ -1726,11 +2252,13 @@ TEST_F(ValidateID, UndefinedIdMemSem) {
           OpReturn
           OpFunctionEnd
 )";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-TEST_F(ValidateID, KernelOpEntryPointAndOpInBoundsPtrAccessChainGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       KernelOpEntryPointAndOpInBoundsPtrAccessChainGood) {
+  string spirv = kOpenCLMemoryModel32 + R"(
       OpEntryPoint Kernel %2 "simple_kernel"
       OpSource OpenCL_C 200000
       OpDecorate %3 BuiltIn GlobalInvocationId
@@ -1757,11 +2285,12 @@ TEST_F(ValidateID, KernelOpEntryPointAndOpInBoundsPtrAccessChainGood) {
       OpStore %18 %14 Aligned 4
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_SUCCESS, 32);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpPtrAccessChainGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpPtrAccessChainGood) {
+  string spirv = kOpenCLMemoryModel64 + R"(
       OpEntryPoint Kernel %2 "another_kernel"
       OpSource OpenCL_C 200000
       OpDecorate %3 BuiltIn GlobalInvocationId
@@ -1791,11 +2320,12 @@ TEST_F(ValidateID, OpPtrAccessChainGood) {
       OpStore %21 %16 Aligned 4
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_SUCCESS, 64);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateID, OpLoadBitcastPointerGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLoadBitcastPointerGood) {
+  string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
 %3  = OpTypeInt 32 1
 %4  = OpTypeFloat 32
@@ -1809,10 +2339,11 @@ TEST_F(ValidateID, OpLoadBitcastPointerGood) {
 %12 = OpLoad %4 %11
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_SUCCESS, 64);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpLoadBitcastNonPointerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpLoadBitcastNonPointerBad) {
+  string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
 %3  = OpTypeInt 32 1
 %4  = OpTypeFloat 32
@@ -1826,10 +2357,11 @@ TEST_F(ValidateID, OpLoadBitcastNonPointerBad) {
 %12 = OpLoad %3 %11
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_ERROR_INVALID_ID, 64);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateID, OpStoreBitcastPointerGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreBitcastPointerGood) {
+  string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
 %3  = OpTypeInt 32 1
 %4  = OpTypeFloat 32
@@ -1844,10 +2376,11 @@ TEST_F(ValidateID, OpStoreBitcastPointerGood) {
       OpStore %12 %8
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_SUCCESS, 64);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateID, OpStoreBitcastNonPointerBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpStoreBitcastNonPointerBad) {
+  string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
 %3  = OpTypeInt 32 1
 %4  = OpTypeFloat 32
@@ -1861,7 +2394,8 @@ TEST_F(ValidateID, OpStoreBitcastNonPointerBad) {
       OpStore %11 %7
       OpReturn
       OpFunctionEnd)";
-  CHECK_KERNEL(spirv, SPV_ERROR_INVALID_ID, 64);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
 // TODO: OpLifetimeStart
