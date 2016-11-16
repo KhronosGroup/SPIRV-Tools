@@ -446,7 +446,7 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("A forward reference operand in an OpTypeStruct must "
                         "be an OpTypePointer that points to an OpTypeStruct. "
-                        "Found OpTypePointer that points to TypeInt."));
+                        "Found OpTypePointer that points to OpTypeInt."));
 }
 
 TEST_F(ValidateData, struct_forward_pointer_good) {

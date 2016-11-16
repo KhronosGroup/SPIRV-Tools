@@ -376,9 +376,9 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
       if (typePointingTo && typePointingTo->opcode() != SpvOpTypeStruct) {
         // Forward declared operands of a struct may only point to a struct.
         DIAG(memberTypeIndex)
-            << "A forward reference operand in an "
-               "OpTypeStruct must be an OpTypePointer that "
-               "points to an OpTypeStruct. Found OpTypePointer that points to "
+            << "A forward reference operand in an OpTypeStruct must be an "
+               "OpTypePointer that points to an OpTypeStruct. "
+               "Found OpTypePointer that points to Op"
             << spvOpcodeString(static_cast<SpvOp>(typePointingTo->opcode()))
             << ".";
         return false;
