@@ -399,8 +399,8 @@ TEST_F(ValidateData, specialize_boolean_to_int) {
 
 TEST_F(ValidateData, missing_forward_pointer_decl) {
   string str = header_with_addresses + R"(
-%2 = OpTypeInt 32 0
-%3 = OpTypeStruct %3 %4
+%uintt = OpTypeInt 32 0
+%3 = OpTypeStruct %fwd_ptrt %uintt
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
