@@ -941,7 +941,299 @@ TEST_F(ValidateID, OpSpecConstantBad) {
   CHECK(spirv, SPV_ERROR_INVALID_BINARY);
 }
 
-// TODO: OpSpecConstantComposite
+// Valid: SpecConstantComposite specializes to a vector.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorGood) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%4 = OpConstant %1 3.14
+%5 = OpSpecConstantComposite %2 %3 %3 %4 %4)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Valid: Vector of floats and Undefs.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorWithUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%5 = OpConstant %1 3.14
+%9 = OpUndef %1
+%4 = OpSpecConstantComposite %2 %3 %5 %3 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: result type is float.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorResultTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpSpecConstant %1 3.14
+%4 = OpSpecConstantComposite %1 %3 %3 %3 %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Vector contains a mix of Int and Float.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%4 = OpTypeInt 32 0
+%3 = OpSpecConstant %1 3.14
+%5 = OpConstant %4 42 ; bad type for constant value
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Vector contains a mix of Undef-int and Float.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%4 = OpTypeInt 32 0
+%3 = OpSpecConstant %1 3.14
+%5 = OpUndef %4 ; bad type for undef value
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Vector expects 3 components, but 4 specified.
+TEST_F(ValidateID, OpSpecConstantCompositeVectorNumComponentsBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 3
+%3 = OpConstant %1 3.14
+%5 = OpSpecConstant %1 4.0
+%6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Valid: 4x4 matrix of floats
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixGood) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpSpecConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpSpecConstantComposite %2 %5 %5 %5 %4
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Valid: Matrix in which one column is Undef
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixUndefGood) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpConstant %1 1.0
+ %5 = OpSpecConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpUndef %2
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: Matrix in which the sizes of column vectors are not equal.
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentTypeBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+%11 = OpTypeVector %1 3
+ %3 = OpTypeMatrix %2 4
+ %4 = OpSpecConstant %1 1.0
+ %5 = OpConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpSpecConstantComposite %11 %5 %5 %5
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Matrix type expects 4 columns but only 3 specified.
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixNumColsBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+ %3 = OpTypeMatrix %2 4
+ %4 = OpSpecConstant %1 1.0
+ %5 = OpConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+%10 = OpSpecConstantComposite %3 %6 %7 %8)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Matrix with an Undef column the wrong size.
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeVector %1 4
+%11 = OpTypeVector %1 3
+ %3 = OpTypeMatrix %2 4
+ %4 = OpSpecConstant %1 1.0
+ %5 = OpSpecConstant %1 0.0
+ %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
+ %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
+ %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
+ %9 = OpUndef %11
+%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Matrix in which some columns are Int and some are Float.
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixColumnTypeBad) {
+  const char* spirv = R"(
+ %1 = OpTypeInt 32 0
+ %2 = OpTypeFloat 32
+ %3 = OpTypeVector %1 2
+ %4 = OpTypeVector %3 2
+ %5 = OpTypeMatrix %2 2
+ %6 = OpSpecConstant %1 42
+ %7 = OpConstant %2 3.14
+ %8 = OpSpecConstantComposite %3 %6 %6
+ %9 = OpSpecConstantComposite %4 %7 %7
+%10 = OpSpecConstantComposite %5 %8 %9)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Valid: Array of integers
+TEST_F(ValidateID, OpSpecConstantCompositeArrayGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%5 = OpConstant %1 5
+%3 = OpTypeArray %1 %2
+%6 = OpTypeArray %1 %5
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %2
+%7 = OpSpecConstantComposite %3 %5 %5 %5 %5)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: Expecting an array of 4 components, but 3 specified.
+TEST_F(ValidateID, OpSpecConstantCompositeArrayNumComponentsBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Valid: Array of Integers and Undef-int
+TEST_F(ValidateID, OpSpecConstantCompositeArrayWithUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%9 = OpUndef %1
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %9)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: Array uses a type as operand.
+TEST_F(ValidateID, OpSpecConstantCompositeArrayConstConstituentBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %1)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Array has a mix of Int and Float components.
+TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 4
+%3 = OpTypeArray %1 %2
+%5 = OpTypeFloat 32
+%6 = OpSpecConstant %5 3.14 ; bad type for const value
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Array has a mix of Int and Undef-float.
+TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpSpecConstant %1 4
+%3 = OpTypeArray %1 %2
+%5 = OpTypeFloat 32
+%6 = OpUndef %5 ; bad type for undef
+%4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Valid: Struct of {Int32,Int32,Int64}.
+TEST_F(ValidateID, OpSpecConstantCompositeStructGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %2 4300000000
+%6 = OpSpecConstantComposite %3 %4 %4 %5)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: missing one int32 struct member.
+TEST_F(ValidateID, OpSpecConstantCompositeStructMissingComponentBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%3 = OpTypeStruct %1 %1 %1
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %1 430
+%6 = OpSpecConstantComposite %3 %4 %5)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Valid: Struct uses Undef-int64.
+TEST_F(ValidateID, OpSpecConstantCompositeStructUndefGood) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %4 %5)";
+  CHECK(spirv, SPV_SUCCESS);
+}
+
+// Invalid: Struct component type does not match expected specialization type.
+// Second component was expected to be Int32, but got Int64.
+TEST_F(ValidateID, OpSpecConstantCompositeStructMemberTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpConstant %1 42
+%5 = OpSpecConstant %2 4300000000
+%6 = OpSpecConstantComposite %3 %4 %5 %4)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
+// Invalid: Undef-int64 used when Int32 was expected.
+TEST_F(ValidateID, OpSpecConstantCompositeStructMemberUndefTypeBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %5 %4)";
+  CHECK(spirv, SPV_ERROR_INVALID_ID);
+}
+
 // TODO: OpSpecConstantOp
 
 TEST_F(ValidateID, OpVariableGood) {
