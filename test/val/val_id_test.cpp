@@ -15,6 +15,7 @@
 #include <sstream>
 #include <string>
 
+#include "gmock/gmock.h"
 #include "test_fixture.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
@@ -26,6 +27,7 @@
 namespace {
 
 using ::testing::ValuesIn;
+using ::testing::HasSubstr;
 using spvtest::ScopedContext;
 using std::ostringstream;
 using std::string;
@@ -107,6 +109,26 @@ const char kOpenCLMemoryModel64[] = R"(
   spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
   if (SPV_SUCCESS != result) {                                                 \
     spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+  }                                                                            \
+  ASSERT_EQ(expected, result);                                                 \
+  spvContextDestroy(context);
+
+#define CHECK_WITH_DIAGNOSTIC(str, expected, err_substr)                       \
+  spv_diagnostic diagnostic;                                                   \
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
+  std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
+  spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
+                                       &binary, &diagnostic);                  \
+  if (error) {                                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    spvDiagnosticDestroy(diagnostic);                                          \
+    ASSERT_EQ(SPV_SUCCESS, error) << shader;                                   \
+  }                                                                            \
+  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
+  if (SPV_SUCCESS != result) {                                                 \
+    spvDiagnosticPrint(diagnostic);                                            \
+    EXPECT_THAT(diagnostic->error, HasSubstr(err_substr));                     \
     spvDiagnosticDestroy(diagnostic);                                          \
   }                                                                            \
   ASSERT_EQ(expected, result);                                                 \
@@ -971,7 +993,7 @@ TEST_F(ValidateID, OpSpecConstantCompositeVectorResultTypeBad) {
 %2 = OpTypeVector %1 4
 %3 = OpSpecConstant %1 3.14
 %4 = OpSpecConstantComposite %1 %3 %3 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID, "is not a composite type");
 }
 
 // Invalid: Vector contains a mix of Int and Float.
@@ -983,7 +1005,23 @@ TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentTypeBad) {
 %3 = OpSpecConstant %1 3.14
 %5 = OpConstant %4 42 ; bad type for constant value
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '2's vector element "
+                        "type.");
+}
+
+// Invalid: Constituent is not a constant
+TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentNotConstantBad) {
+  const char* spirv = R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+%3 = OpTypeInt 32 0
+%4 = OpSpecConstant %1 3.14
+%6 = OpSpecConstantComposite %2 %3 %4 %4 %4)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '3' is not a "
+                        "constant or undef.");
 }
 
 // Invalid: Vector contains a mix of Undef-int and Float.
@@ -995,7 +1033,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentUndefTypeBad) {
 %3 = OpSpecConstant %1 3.14
 %5 = OpUndef %4 ; bad type for undef value
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '2's vector element "
+                        "type.");
 }
 
 // Invalid: Vector expects 3 components, but 4 specified.
@@ -1006,7 +1047,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeVectorNumComponentsBad) {
 %3 = OpConstant %1 3.14
 %5 = OpSpecConstant %1 4.0
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> count does "
+                        "not match Result Type <id> '2's vector component "
+                        "count.");
 }
 
 // Valid: 4x4 matrix of floats
@@ -1046,16 +1090,19 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentTypeBad) {
   const char* spirv = R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
-%11 = OpTypeVector %1 3
- %3 = OpTypeMatrix %2 4
- %4 = OpSpecConstant %1 1.0
- %5 = OpConstant %1 0.0
- %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
- %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
- %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
- %9 = OpSpecConstantComposite %11 %5 %5 %5
-%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+ %3 = OpTypeVector %1 3
+ %4 = OpTypeMatrix %2 4
+ %5 = OpSpecConstant %1 1.0
+ %6 = OpConstant %1 0.0
+ %7 = OpSpecConstantComposite %2 %5 %6 %6 %6
+ %8 = OpSpecConstantComposite %2 %6 %5 %6 %6
+ %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
+ %10 = OpSpecConstantComposite %3 %6 %6 %6
+%11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '10' vector "
+                        "component count does not match Result Type <id> '4's "
+                        "vector component count.");
 }
 
 // Invalid: Matrix type expects 4 columns but only 3 specified.
@@ -1070,24 +1117,62 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixNumColsBad) {
  %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
  %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
 %10 = OpSpecConstantComposite %3 %6 %7 %8)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> count does "
+                        "not match Result Type <id> '3's matrix column count.");
 }
 
-// Invalid: Matrix with an Undef column the wrong size.
+// Invalid: Composite contains a non-const/undef component
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentNotConstBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpConstant %1 0.0
+ %3 = OpTypeVector %1 4
+ %4 = OpTypeMatrix %3 4
+ %5 = OpSpecConstantComposite %3 %2 %2 %2 %2
+ %6 = OpSpecConstantComposite %4 %5 %5 %5 %1)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant composite or undef.");
+}
+
+// Invalid: Composite contains a column that is *not* a vector (it's an array)
+TEST_F(ValidateID, OpSpecConstantCompositeMatrixColTypeBad) {
+  const char* spirv = R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeInt 32 0
+ %3 = OpSpecConstant %2 4
+ %4 = OpConstant %1 0.0
+ %5 = OpTypeVector %1 4
+ %6 = OpTypeArray %2 %3
+ %7 = OpTypeMatrix %5 4
+ %8  = OpSpecConstantComposite %6 %3 %3 %3 %3
+ %9  = OpSpecConstantComposite %5 %4 %4 %4 %4
+ %10 = OpSpecConstantComposite %7 %9 %9 %9 %8)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '8' type "
+                        "does not match Result Type <id> '7's matrix column "
+                        "type.");
+}
+
+// Invalid: Matrix with an Undef column of the wrong size.
 TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
   const char* spirv = R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
-%11 = OpTypeVector %1 3
- %3 = OpTypeMatrix %2 4
- %4 = OpSpecConstant %1 1.0
- %5 = OpSpecConstant %1 0.0
- %6 = OpSpecConstantComposite %2 %4 %5 %5 %5
- %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
- %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
- %9 = OpUndef %11
-%10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+ %3 = OpTypeVector %1 3
+ %4 = OpTypeMatrix %2 4
+ %5 = OpSpecConstant %1 1.0
+ %6 = OpSpecConstant %1 0.0
+ %7 = OpSpecConstantComposite %2 %5 %6 %6 %6
+ %8 = OpSpecConstantComposite %2 %6 %5 %6 %6
+ %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
+ %10 = OpUndef %3
+ %11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '10' vector "
+                        "component count does not match Result Type <id> '4's "
+                        "vector component count.");
 }
 
 // Invalid: Matrix in which some columns are Int and some are Float.
@@ -1096,14 +1181,17 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixColumnTypeBad) {
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeVector %1 2
- %4 = OpTypeVector %3 2
- %5 = OpTypeMatrix %2 2
+ %4 = OpTypeVector %2 2
+ %5 = OpTypeMatrix %4 2
  %6 = OpSpecConstant %1 42
  %7 = OpConstant %2 3.14
  %8 = OpSpecConstantComposite %3 %6 %6
  %9 = OpSpecConstantComposite %4 %7 %7
 %10 = OpSpecConstantComposite %5 %8 %9)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '8' "
+                        "component type does not match Result Type <id> '5's "
+                        "matrix column component type.");
 }
 
 // Valid: Array of integers
@@ -1126,7 +1214,9 @@ TEST_F(ValidateID, OpSpecConstantCompositeArrayNumComponentsBad) {
 %2 = OpSpecConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpSpecConstantComposite %3 %2 %2 %2)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent count does not "
+                        "match Result Type <id> '3's array length.");
 }
 
 // Valid: Array of Integers and Undef-int
@@ -1147,7 +1237,9 @@ TEST_F(ValidateID, OpSpecConstantCompositeArrayConstConstituentBad) {
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %1)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef.");
 }
 
 // Invalid: Array has a mix of Int and Float components.
@@ -1156,10 +1248,13 @@ TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentTypeBad) {
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
-%5 = OpTypeFloat 32
-%6 = OpSpecConstant %5 3.14 ; bad type for const value
-%4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+%4 = OpTypeFloat 32
+%5 = OpSpecConstant %4 3.14 ; bad type for const value
+%6 = OpSpecConstantComposite %3 %2 %2 %2 %5)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '3's array element "
+                        "type.");
 }
 
 // Invalid: Array has a mix of Int and Undef-float.
@@ -1171,7 +1266,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentUndefTypeBad) {
 %5 = OpTypeFloat 32
 %6 = OpUndef %5 ; bad type for undef
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5's type "
+                        "does not match Result Type <id> '3's array element "
+                        "type.");
 }
 
 // Valid: Struct of {Int32,Int32,Int64}.
@@ -1194,7 +1292,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeStructMissingComponentBad) {
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %1 430
 %6 = OpSpecConstantComposite %3 %4 %5)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '2' count "
+                        "does not match Result Type <id> '2's struct member "
+                        "count.");
 }
 
 // Valid: Struct uses Undef-int64.
@@ -1209,6 +1310,20 @@ TEST_F(ValidateID, OpSpecConstantCompositeStructUndefGood) {
   CHECK(spirv, SPV_SUCCESS);
 }
 
+// Invalid: Composite contains non-const/undef component.
+TEST_F(ValidateID, OpSpecConstantCompositeStructNonConstBad) {
+  const char* spirv = R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeInt 64 1
+%3 = OpTypeStruct %1 %1 %2
+%4 = OpSpecConstant %1 42
+%5 = OpUndef %2
+%6 = OpSpecConstantComposite %3 %4 %1 %5)";
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef.");
+}
+
 // Invalid: Struct component type does not match expected specialization type.
 // Second component was expected to be Int32, but got Int64.
 TEST_F(ValidateID, OpSpecConstantCompositeStructMemberTypeBad) {
@@ -1219,7 +1334,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeStructMemberTypeBad) {
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %2 4300000000
 %6 = OpSpecConstantComposite %3 %4 %5 %4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5' type "
+                        "does not match the Result Type <id> '3's member "
+                        "type.");
 }
 
 // Invalid: Undef-int64 used when Int32 was expected.
@@ -1231,7 +1349,10 @@ TEST_F(ValidateID, OpSpecConstantCompositeStructMemberUndefTypeBad) {
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
 %6 = OpSpecConstantComposite %3 %4 %5 %4)";
-  CHECK(spirv, SPV_ERROR_INVALID_ID);
+  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
+                        "OpSpecConstantComposite Constituent <id> '5' type "
+                        "does not match the Result Type <id> '3's member "
+                        "type.");
 }
 
 // TODO: OpSpecConstantOp

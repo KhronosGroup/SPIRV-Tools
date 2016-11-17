@@ -729,6 +729,8 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
     // * Number of constituents in the result type and the vector must match.
     // * All the components of the vector must have the same type (or specialize
     // to the same type). OpConstant and OpSpecConstant are allowed.
+    // To check that condition, we check each supplied value argument's type
+    // against the element type of the result type.
     case SpvOpTypeVector: {
       auto componentCount = resultType->words()[3];
       if (componentCount != constituentCount) {
