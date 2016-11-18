@@ -17,6 +17,8 @@
 
 #include "gmock/gmock.h"
 #include "test_fixture.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 // NOTE: The tests in this file are ONLY testing ID usage, there for the input
 // SPIR-V does not follow the logical layout rules from the spec in all cases in
@@ -33,6 +35,8 @@ using std::ostringstream;
 using std::string;
 using std::vector;
 
+using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
+
 class ValidateID : public ::testing::Test {
  public:
   virtual void TearDown() { spvBinaryDestroy(binary); }
@@ -40,7 +44,7 @@ class ValidateID : public ::testing::Test {
   spv_binary binary;
 };
 
-const char kGLSL450MemoryModel[] = R"(
+string kGLSL450MemoryModel = R"(
      OpCapability Shader
      OpCapability Addresses
      OpCapability Pipes
@@ -76,7 +80,7 @@ const char kOpenCLMemoryModel64[] = R"(
 #define CHECK(str, expected)                                                   \
   spv_diagnostic diagnostic;                                                   \
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
-  std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
+  std::string shader = kGLSL450MemoryModel + str;                              \
   spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
                                        &binary, &diagnostic);                  \
   if (error) {                                                                 \
@@ -109,26 +113,6 @@ const char kOpenCLMemoryModel64[] = R"(
   spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
   if (SPV_SUCCESS != result) {                                                 \
     spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-  }                                                                            \
-  ASSERT_EQ(expected, result);                                                 \
-  spvContextDestroy(context);
-
-#define CHECK_WITH_DIAGNOSTIC(str, expected, err_substr)                       \
-  spv_diagnostic diagnostic;                                                   \
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);               \
-  std::string shader = std::string(kGLSL450MemoryModel) + str;                 \
-  spv_result_t error = spvTextToBinary(context, shader.c_str(), shader.size(), \
-                                       &binary, &diagnostic);                  \
-  if (error) {                                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    spvDiagnosticDestroy(diagnostic);                                          \
-    ASSERT_EQ(SPV_SUCCESS, error) << shader;                                   \
-  }                                                                            \
-  spv_result_t result = spvValidate(context, get_const_binary(), &diagnostic); \
-  if (SPV_SUCCESS != result) {                                                 \
-    spvDiagnosticPrint(diagnostic);                                            \
-    EXPECT_THAT(diagnostic->error, HasSubstr(err_substr));                     \
     spvDiagnosticDestroy(diagnostic);                                          \
   }                                                                            \
   ASSERT_EQ(expected, result);                                                 \
@@ -964,98 +948,112 @@ TEST_F(ValidateID, OpSpecConstantBad) {
 }
 
 // Valid: SpecConstantComposite specializes to a vector.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpSpecConstant %1 3.14
 %4 = OpConstant %1 3.14
 %5 = OpSpecConstantComposite %2 %3 %3 %4 %4)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Valid: Vector of floats and Undefs.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorWithUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpSpecConstant %1 3.14
 %5 = OpConstant %1 3.14
 %9 = OpUndef %1
 %4 = OpSpecConstantComposite %2 %3 %5 %3 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: result type is float.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorResultTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorResultTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpSpecConstant %1 3.14
 %4 = OpSpecConstantComposite %1 %3 %3 %3 %3)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID, "is not a composite type");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a composite type"));
 }
 
 // Invalid: Vector contains a mix of Int and Float.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
 %3 = OpSpecConstant %1 3.14
 %5 = OpConstant %4 42 ; bad type for constant value
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5's type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
                         "does not match Result Type <id> '2's vector element "
-                        "type.");
+                        "type."));
 }
 
 // Invalid: Constituent is not a constant
-TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentNotConstantBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeVectorConstituentNotConstantBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %3 = OpTypeInt 32 0
 %4 = OpSpecConstant %1 3.14
 %6 = OpSpecConstantComposite %2 %3 %4 %4 %4)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '3' is not a "
-                        "constant or undef.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '3' is not a "
+                        "constant or undef."));
 }
 
 // Invalid: Vector contains a mix of Undef-int and Float.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeVectorConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 4
 %4 = OpTypeInt 32 0
 %3 = OpSpecConstant %1 3.14
 %5 = OpUndef %4 ; bad type for undef value
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5's type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
                         "does not match Result Type <id> '2's vector element "
-                        "type.");
+                        "type."));
 }
 
 // Invalid: Vector expects 3 components, but 4 specified.
-TEST_F(ValidateID, OpSpecConstantCompositeVectorNumComponentsBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeVectorNumComponentsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeFloat 32
 %2 = OpTypeVector %1 3
 %3 = OpConstant %1 3.14
 %5 = OpSpecConstant %1 4.0
 %6 = OpSpecConstantComposite %2 %3 %5 %3 %3)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> count does "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> count does "
                         "not match Result Type <id> '2's vector component "
-                        "count.");
+                        "count."));
 }
 
 // Valid: 4x4 matrix of floats
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -1066,12 +1064,13 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixGood) {
  %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
  %9 = OpSpecConstantComposite %2 %5 %5 %5 %4
 %10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Valid: Matrix in which one column is Undef
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -1082,12 +1081,13 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixUndefGood) {
  %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
  %9 = OpUndef %2
 %10 = OpSpecConstantComposite %3 %6 %7 %8 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: Matrix in which the sizes of column vectors are not equal.
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeVector %1 3
@@ -1099,15 +1099,17 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentTypeBad) {
  %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
  %10 = OpSpecConstantComposite %3 %6 %6 %6
 %11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '10' vector "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '10' vector "
                         "component count does not match Result Type <id> '4's "
-                        "vector component count.");
+                        "vector component count."));
 }
 
 // Invalid: Matrix type expects 4 columns but only 3 specified.
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixNumColsBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixNumColsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeMatrix %2 4
@@ -1117,28 +1119,34 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixNumColsBad) {
  %7 = OpSpecConstantComposite %2 %5 %4 %5 %5
  %8 = OpSpecConstantComposite %2 %5 %5 %4 %5
 %10 = OpSpecConstantComposite %3 %6 %7 %8)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> count does "
-                        "not match Result Type <id> '3's matrix column count.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpSpecConstantComposite Constituent <id> count does "
+                "not match Result Type <id> '3's matrix column count."));
 }
 
 // Invalid: Composite contains a non-const/undef component
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentNotConstBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeMatrixConstituentNotConstBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpConstant %1 0.0
  %3 = OpTypeVector %1 4
  %4 = OpTypeMatrix %3 4
  %5 = OpSpecConstantComposite %3 %2 %2 %2 %2
  %6 = OpSpecConstantComposite %4 %5 %5 %5 %1)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '1' is not a "
-                        "constant composite or undef.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant composite or undef."));
 }
 
 // Invalid: Composite contains a column that is *not* a vector (it's an array)
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixColTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeInt 32 0
  %3 = OpSpecConstant %2 4
@@ -1149,15 +1157,18 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixColTypeBad) {
  %8  = OpSpecConstantComposite %6 %3 %3 %3 %3
  %9  = OpSpecConstantComposite %5 %4 %4 %4 %4
  %10 = OpSpecConstantComposite %7 %9 %9 %9 %8)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '8' type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '8' type "
                         "does not match Result Type <id> '7's matrix column "
-                        "type.");
+                        "type."));
 }
 
 // Invalid: Matrix with an Undef column of the wrong size.
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeVector %1 3
@@ -1169,15 +1180,17 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixConstituentUndefTypeBad) {
  %9 = OpSpecConstantComposite %2 %6 %6 %5 %6
  %10 = OpUndef %3
  %11 = OpSpecConstantComposite %4 %7 %8 %9 %10)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '10' vector "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '10' vector "
                         "component count does not match Result Type <id> '4's "
-                        "vector component count.");
+                        "vector component count."));
 }
 
 // Invalid: Matrix in which some columns are Int and some are Float.
-TEST_F(ValidateID, OpSpecConstantCompositeMatrixColumnTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeMatrixColumnTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeVector %1 2
@@ -1188,15 +1201,17 @@ TEST_F(ValidateID, OpSpecConstantCompositeMatrixColumnTypeBad) {
  %8 = OpSpecConstantComposite %3 %6 %6
  %9 = OpSpecConstantComposite %4 %7 %7
 %10 = OpSpecConstantComposite %5 %8 %9)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '8' "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '8' "
                         "component type does not match Result Type <id> '5's "
-                        "matrix column component type.");
+                        "matrix column component type."));
 }
 
 // Valid: Array of integers
-TEST_F(ValidateID, OpSpecConstantCompositeArrayGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpSpecConstant %1 4
 %5 = OpConstant %1 5
@@ -1204,155 +1219,177 @@ TEST_F(ValidateID, OpSpecConstantCompositeArrayGood) {
 %6 = OpTypeArray %1 %5
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %2
 %7 = OpSpecConstantComposite %3 %5 %5 %5 %5)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: Expecting an array of 4 components, but 3 specified.
-TEST_F(ValidateID, OpSpecConstantCompositeArrayNumComponentsBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayNumComponentsBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpSpecConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpSpecConstantComposite %3 %2 %2 %2)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent count does not "
-                        "match Result Type <id> '3's array length.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent count does not "
+                        "match Result Type <id> '3's array length."));
 }
 
 // Valid: Array of Integers and Undef-int
-TEST_F(ValidateID, OpSpecConstantCompositeArrayWithUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayWithUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpSpecConstant %1 4
 %9 = OpUndef %1
 %3 = OpTypeArray %1 %2
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %9)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: Array uses a type as operand.
-TEST_F(ValidateID, OpSpecConstantCompositeArrayConstConstituentBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstConstituentBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %1)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '1' is not a "
-                        "constant or undef.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef."));
 }
 
 // Invalid: Array has a mix of Int and Float components.
-TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeArrayConstituentTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpConstant %1 4
 %3 = OpTypeArray %1 %2
 %4 = OpTypeFloat 32
 %5 = OpSpecConstant %4 3.14 ; bad type for const value
 %6 = OpSpecConstantComposite %3 %2 %2 %2 %5)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5's type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
                         "does not match Result Type <id> '3's array element "
-                        "type.");
+                        "type."));
 }
 
 // Invalid: Array has a mix of Int and Undef-float.
-TEST_F(ValidateID, OpSpecConstantCompositeArrayConstituentUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeArrayConstituentUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpSpecConstant %1 4
 %3 = OpTypeArray %1 %2
 %5 = OpTypeFloat 32
 %6 = OpUndef %5 ; bad type for undef
 %4 = OpSpecConstantComposite %3 %2 %2 %2 %6)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5's type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5's type "
                         "does not match Result Type <id> '3's array element "
-                        "type.");
+                        "type."));
 }
 
 // Valid: Struct of {Int32,Int32,Int64}.
-TEST_F(ValidateID, OpSpecConstantCompositeStructGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %2 4300000000
 %6 = OpSpecConstantComposite %3 %4 %4 %5)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: missing one int32 struct member.
-TEST_F(ValidateID, OpSpecConstantCompositeStructMissingComponentBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage,
+       OpSpecConstantCompositeStructMissingComponentBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %3 = OpTypeStruct %1 %1 %1
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %1 430
 %6 = OpSpecConstantComposite %3 %4 %5)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '2' count "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '2' count "
                         "does not match Result Type <id> '2's struct member "
-                        "count.");
+                        "count."));
 }
 
 // Valid: Struct uses Undef-int64.
-TEST_F(ValidateID, OpSpecConstantCompositeStructUndefGood) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructUndefGood) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
 %6 = OpSpecConstantComposite %3 %4 %4 %5)";
-  CHECK(spirv, SPV_SUCCESS);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 // Invalid: Composite contains non-const/undef component.
-TEST_F(ValidateID, OpSpecConstantCompositeStructNonConstBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructNonConstBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
 %6 = OpSpecConstantComposite %3 %4 %1 %5)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '1' is not a "
-                        "constant or undef.");
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '1' is not a "
+                        "constant or undef."));
 }
 
 // Invalid: Struct component type does not match expected specialization type.
 // Second component was expected to be Int32, but got Int64.
-TEST_F(ValidateID, OpSpecConstantCompositeStructMemberTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %2 4300000000
 %6 = OpSpecConstantComposite %3 %4 %5 %4)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5' type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5' type "
                         "does not match the Result Type <id> '3's member "
-                        "type.");
+                        "type."));
 }
 
 // Invalid: Undef-int64 used when Int32 was expected.
-TEST_F(ValidateID, OpSpecConstantCompositeStructMemberUndefTypeBad) {
-  const char* spirv = R"(
+TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberUndefTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeInt 64 1
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
 %6 = OpSpecConstantComposite %3 %4 %5 %4)";
-  CHECK_WITH_DIAGNOSTIC(spirv, SPV_ERROR_INVALID_ID,
-                        "OpSpecConstantComposite Constituent <id> '5' type "
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSpecConstantComposite Constituent <id> '5' type "
                         "does not match the Result Type <id> '3's member "
-                        "type.");
+                        "type."));
 }
 
 // TODO: OpSpecConstantOp
