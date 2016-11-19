@@ -166,7 +166,8 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/construct.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/function.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/instruction.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/val/validation_state.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validation_state.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_type.cpp)
 
 # The software_version.cpp file includes build-version.inc.
 # Rebuild the software_version.cpp object file if it is older than

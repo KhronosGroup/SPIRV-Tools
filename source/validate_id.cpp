@@ -431,34 +431,6 @@ bool idUsage::isValid<SpvOpTypePipe>(const spv_instruction_t*,
 }
 
 template <>
-bool idUsage::isValid<SpvOpConstantTrue>(const spv_instruction_t* inst,
-                                         const spv_opcode_desc) {
-  auto resultTypeIndex = 1;
-  auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType || SpvOpTypeBool != resultType->opcode()) {
-    DIAG(resultTypeIndex) << "OpConstantTrue Result Type <id> '"
-                          << inst->words[resultTypeIndex]
-                          << "' is not a boolean type.";
-    return false;
-  }
-  return true;
-}
-
-template <>
-bool idUsage::isValid<SpvOpConstantFalse>(const spv_instruction_t* inst,
-                                          const spv_opcode_desc) {
-  auto resultTypeIndex = 1;
-  auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType || SpvOpTypeBool != resultType->opcode()) {
-    DIAG(resultTypeIndex) << "OpConstantFalse Result Type <id> '"
-                          << inst->words[resultTypeIndex]
-                          << "' is not a boolean type.";
-    return false;
-  }
-  return true;
-}
-
-template <>
 bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
                                               const spv_opcode_desc) {
   auto resultTypeIndex = 1;
@@ -643,14 +615,15 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
 template <>
 bool idUsage::isValid<SpvOpConstantSampler>(const spv_instruction_t* inst,
                                             const spv_opcode_desc) {
-  auto resultTypeIndex = 1;
-  auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
-  if (!resultType || SpvOpTypeSampler != resultType->opcode()) {
-    DIAG(resultTypeIndex) << "OpConstantSampler Result Type <id> '"
-                          << inst->words[resultTypeIndex]
-                          << "' is not a sampler type.";
-    return false;
-  }
+  // auto resultTypeIndex = 1;
+  // auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
+  // if (!resultType || SpvOpTypeSampler != resultType->opcode()) {
+  //   DIAG(resultTypeIndex) << "OpConstantSampler Result Type <id> '"
+  //                         << inst->words[resultTypeIndex]
+  //                         << "' is not a sampler type.";
+  //   return false;
+  // }
+  (void)inst;
   return true;
 }
 
@@ -2352,8 +2325,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpTypePointer)
     CASE(OpTypeFunction)
     CASE(OpTypePipe)
-    CASE(OpConstantTrue)
-    CASE(OpConstantFalse)
+    TODO(OpConstantTrue)
+    TODO(OpConstantFalse)
     CASE(OpConstantComposite)
     CASE(OpConstantSampler)
     CASE(OpConstantNull)
