@@ -1925,6 +1925,169 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
+
+// Valid: OpSampledImage result <id> is used in the same block by
+// OpImageSampleImplictLod
+TEST_F(ValidateIdWithMessage, OpSampledImageGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+       %void             = OpTypeVoid
+          %3             = OpTypeFunction %void
+      %float             = OpTypeFloat 32
+    %v4float             = OpTypeVector %float 4
+%_ptr_Function_v4float   = OpTypePointer Function %v4float
+         %10             = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10
+        %tex             = OpVariable %_ptr_UniformConstant_10 UniformConstant
+         %14             = OpTypeSampler
+%_ptr_UniformConstant_14 = OpTypePointer UniformConstant %14
+          %s             = OpVariable %_ptr_UniformConstant_14 UniformConstant
+         %18             = OpTypeSampledImage %10
+    %v2float             = OpTypeVector %float 2
+    %float_1             = OpConstant %float 1
+         %23             = OpConstantComposite %v2float %float_1 %float_1
+       %main             = OpFunction %void None %3
+          %5             = OpLabel
+          %x             = OpVariable %_ptr_Function_v4float Function
+         %13             = OpLoad %10 %tex
+         %17             = OpLoad %14 %s
+         %19             = OpSampledImage %18 %13 %17
+         %24             = OpImageSampleImplicitLod %v4float %19 %23
+         OpStore %x %24
+         OpReturn
+         OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: OpSampledImage result <id> is defined in one block and used in a
+// different block.
+TEST_F(ValidateIdWithMessage, OpSampledImageUsedInDifferentBlockBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+       %void             = OpTypeVoid
+          %3             = OpTypeFunction %void
+      %float             = OpTypeFloat 32
+    %v4float             = OpTypeVector %float 4
+%_ptr_Function_v4float   = OpTypePointer Function %v4float
+         %10             = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10
+        %tex             = OpVariable %_ptr_UniformConstant_10 UniformConstant
+         %14             = OpTypeSampler
+%_ptr_UniformConstant_14 = OpTypePointer UniformConstant %14
+          %s             = OpVariable %_ptr_UniformConstant_14 UniformConstant
+         %18             = OpTypeSampledImage %10
+    %v2float             = OpTypeVector %float 2
+    %float_1             = OpConstant %float 1
+    %float_2             = OpConstant %float 2
+         %23             = OpConstantComposite %v2float %float_1 %float_1
+         %24             = OpConstantComposite %v2float %float_2 %float_2
+         %40             = OpTypeBool
+         %41             = OpSpecConstantTrue %40
+       %main             = OpFunction %void None %3
+          %5             = OpLabel
+          %x             = OpVariable %_ptr_Function_v4float Function
+         %13             = OpLoad %10 %tex
+         %17             = OpLoad %14 %s
+         %25             = OpSampledImage %18 %13 %17
+         OpBranchConditional %41 %50 %70
+         %50             = OpLabel
+         %28             = OpImageSampleImplicitLod %v4float %25 %23
+         OpBranch %70
+         %70             = OpLabel
+         OpReturn
+         OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("All OpSampledImage instructions must be in the same block in "
+                "which their Result <id> are consumed. OpSampledImage Result "
+                "Type <id> '25' has a consumer in a different basic block. The "
+                "consumer instruction <id> is '28'."));
+}
+
+// Invalid: OpSampledImage result <id> is used by OpSelect
+// Note: According to the Spec, OpSelect parameters must be either a scalar or a
+// vector. Therefore, OpTypeSampledImage is an illegal parameter for OpSelect.
+// However, the OpSelect validation does not catch this today. Therefore, it is
+// caught by the OpSampledImage validation. If the OpSelect validation code is
+// updated, the error message for this test may change.
+TEST_F(ValidateIdWithMessage, OpSampledImageUsedInOpSelectBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+       %void             = OpTypeVoid
+          %3             = OpTypeFunction %void
+      %float             = OpTypeFloat 32
+    %v4float             = OpTypeVector %float 4
+%_ptr_Function_v4float   = OpTypePointer Function %v4float
+         %10             = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10
+        %tex             = OpVariable %_ptr_UniformConstant_10 UniformConstant
+         %14             = OpTypeSampler
+%_ptr_UniformConstant_14 = OpTypePointer UniformConstant %14
+          %s             = OpVariable %_ptr_UniformConstant_14 UniformConstant
+         %18             = OpTypeSampledImage %10
+    %v2float             = OpTypeVector %float 2
+    %float_1             = OpConstant %float 1
+    %float_2             = OpConstant %float 2
+         %23             = OpConstantComposite %v2float %float_1 %float_1
+         %24             = OpConstantComposite %v2float %float_2 %float_2
+         %40             = OpTypeBool
+         %41             = OpSpecConstantTrue %40
+       %main             = OpFunction %void None %3
+          %5             = OpLabel
+          %x             = OpVariable %_ptr_Function_v4float Function
+         %13             = OpLoad %10 %tex
+         %17             = OpLoad %14 %s
+         %25             = OpSampledImage %18 %13 %17
+         %26             = OpSelect %18 %41 %25 %25
+         OpReturn
+         OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result <id> from OpSampledImage instruction must not "
+                        "appear as operands of OpSelect. Found result <id> "
+                        "'25' as an operand of <id> '26'."));
+}
+
+// Invalid: OpSampledImage result <id> is used by OpPhi
+TEST_F(ValidateIdWithMessage, OpSampledImageUsedInOpPhiBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+       %void             = OpTypeVoid
+          %3             = OpTypeFunction %void
+      %float             = OpTypeFloat 32
+    %v4float             = OpTypeVector %float 4
+%_ptr_Function_v4float   = OpTypePointer Function %v4float
+         %10             = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_10 = OpTypePointer UniformConstant %10
+        %tex             = OpVariable %_ptr_UniformConstant_10 UniformConstant
+         %14             = OpTypeSampler
+%_ptr_UniformConstant_14 = OpTypePointer UniformConstant %14
+          %s             = OpVariable %_ptr_UniformConstant_14 UniformConstant
+         %18             = OpTypeSampledImage %10
+    %v2float             = OpTypeVector %float 2
+    %float_1             = OpConstant %float 1
+    %float_2             = OpConstant %float 2
+         %23             = OpConstantComposite %v2float %float_1 %float_1
+         %24             = OpConstantComposite %v2float %float_2 %float_2
+         %40             = OpTypeBool
+         %41             = OpSpecConstantTrue %40
+       %main             = OpFunction %void None %3
+          %5             = OpLabel
+          %x             = OpVariable %_ptr_Function_v4float Function
+         %13             = OpLoad %10 %tex
+         %17             = OpLoad %14 %s
+         %25             = OpSampledImage %18 %13 %17
+         %26             = OpPhi %18 %25 %5
+         OpReturn
+         OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result <id> from OpSampledImage instruction must not "
+                        "appear as operands of OpPhi. Found result <id> '25' "
+                        "as an operand of <id> '26'."));
+}
+
 #if 0
 TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentCountBar) {
   const char *spirv = R"(
@@ -1950,7 +2113,6 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentCountBar) {
 }
 #endif
 
-// TODO: OpSampledImage
 // TODO: The many things that changed with how images are used.
 // TODO: OpTextureSample
 // TODO: OpTextureSampleDref

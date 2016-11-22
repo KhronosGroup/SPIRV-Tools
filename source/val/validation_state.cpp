@@ -394,5 +394,34 @@ void ValidationState_t::RegisterInstruction(
   if (id) {
     all_definitions_.insert(make_pair(id, &ordered_instructions_.back()));
   }
+
+  // If the instruction is using an OpTypeSampledImage as an operand, it should
+  // be recorded. The validator will ensure that all usages of an
+  // OpTypeSampledImage and its definition are in the same basic block.
+  for (auto i = 0; i < inst.num_operands; ++i) {
+    auto operand = inst.words[inst.operands[i].offset];
+    auto operand_inst = FindDef(operand);
+    if (operand_inst && SpvOpSampledImage == operand_inst->opcode()) {
+      RegisterSampledImageConsumer(operand, inst.result_id);
+    }
+  }
 }
+
+std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
+    uint32_t sampled_image_id) const {
+  std::vector<uint32_t> result;
+  auto iter = sampled_image_consumers_.find(sampled_image_id);
+  if (iter != sampled_image_consumers_.end()) {
+    for (auto id : iter->second) {
+      result.push_back(id);
+    }
+  }
+  return result;
+}
+
+void ValidationState_t::RegisterSampledImageConsumer(uint32_t sampled_image_id,
+                                                     uint32_t consumer_id) {
+  sampled_image_consumers_[sampled_image_id].push_back(consumer_id);
+}
+
 }  /// namespace libspirv

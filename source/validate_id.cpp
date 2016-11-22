@@ -734,6 +734,48 @@ bool idUsage::isValid<SpvOpSpecConstantFalse>(const spv_instruction_t* inst,
 }
 
 template <>
+bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
+                                         const spv_opcode_desc) {
+  auto resultTypeIndex = 2;
+  auto resultID = inst->words[resultTypeIndex];
+  auto sampledImageInstr = module_.FindDef(resultID);
+  // We need to validate 2 things:
+  // * All OpSampledImage instructions must be in the same block in which their
+  // Result <id> are consumed.
+  // * Result <id> from OpSampledImage instructions must not appear as operands
+  // to OpPhi instructions or OpSelect instructions, or any instructions other
+  // than the image lookup and query instructions specified to take an operand
+  // whose type is OpTypeSampledImage.
+  std::vector<uint32_t> consumers = module_.getSampledImageConsumers(resultID);
+  if (!consumers.empty()) {
+    for (auto consumer_id : consumers) {
+      auto consumer_instr = module_.FindDef(consumer_id);
+      auto consumer_opcode = consumer_instr->opcode();
+      if (consumer_instr->block() != sampledImageInstr->block()) {
+        DIAG(resultTypeIndex)
+            << "All OpSampledImage instructions must be in the same block in "
+               "which their Result <id> are consumed. OpSampledImage Result "
+               "Type <id> '"
+            << resultID << "' has a consumer in a different basic "
+                           "block. The consumer instruction <id> is '"
+            << consumer_id << "'.";
+        return false;
+      }
+      if (consumer_opcode == SpvOpPhi || consumer_opcode == SpvOpSelect) {
+        DIAG(resultTypeIndex)
+            << "Result <id> from OpSampledImage instruction must not appear as "
+               "operands of Op"
+            << spvOpcodeString(static_cast<SpvOp>(consumer_opcode)) << "."
+            << " Found result <id> '" << resultID << "' as an operand of <id> '"
+            << consumer_id << "'.";
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+template <>
 bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
                                                   const spv_opcode_desc) {
   // The result type must be a composite type.
@@ -2360,6 +2402,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpSpecConstantTrue)
     CASE(OpSpecConstantFalse)
     CASE(OpSpecConstantComposite)
+    CASE(OpSampledImage)
     TODO(OpSpecConstantOp)
     CASE(OpVariable)
     CASE(OpLoad)

@@ -179,6 +179,14 @@ class ValidationState_t {
     return all_definitions_;
   }
 
+  /// Returns a vector containing the Ids of instructions that consume the given
+  /// SampledImage id.
+  std::vector<uint32_t> getSampledImageConsumers(uint32_t id) const;
+
+  /// Records cons_id as a consumer of sampled_image_id.
+  void RegisterSampledImageConsumer(uint32_t sampled_image_id,
+                                    uint32_t cons_id);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -192,6 +200,10 @@ class ValidationState_t {
 
   /// IDs that have been declared as forward pointers.
   std::unordered_set<uint32_t> forward_pointer_ids_;
+
+  /// Stores a vector of instructions that use the result of a given
+  /// OpSampledImage instruction.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> sampled_image_consumers_;
 
   /// A map of operand IDs and their names defined by the OpName instruction
   std::unordered_map<uint32_t, std::string> operand_names_;
