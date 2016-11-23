@@ -746,7 +746,8 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
   // to OpPhi instructions or OpSelect instructions, or any instructions other
   // than the image lookup and query instructions specified to take an operand
   // whose type is OpTypeSampledImage.
-  std::vector<uint32_t> consumers = module_.getSampledImageConsumers(resultID);
+  const std::vector<uint32_t> consumers =
+      module_.getSampledImageConsumers(resultID);
   if (!consumers.empty()) {
     for (auto consumer_id : consumers) {
       auto consumer_instr = module_.FindDef(consumer_id);
@@ -761,6 +762,11 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
             << consumer_id << "'.";
         return false;
       }
+      // TODO: The following check is incomplete. We should also check that the
+      // Sampled Image is not used by instructions that should not take
+      // SampledImage as an argument. We could find the list of valid
+      // instructions by scanning for "Sampled Image" in the operand description
+      // field in the grammar file.
       if (consumer_opcode == SpvOpPhi || consumer_opcode == SpvOpSelect) {
         DIAG(resultTypeIndex)
             << "Result <id> from OpSampledImage instruction must not appear as "

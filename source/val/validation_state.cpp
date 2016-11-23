@@ -398,23 +398,24 @@ void ValidationState_t::RegisterInstruction(
   // If the instruction is using an OpTypeSampledImage as an operand, it should
   // be recorded. The validator will ensure that all usages of an
   // OpTypeSampledImage and its definition are in the same basic block.
-  for (auto i = 0; i < inst.num_operands; ++i) {
-    auto operand = inst.words[inst.operands[i].offset];
-    auto operand_inst = FindDef(operand);
-    if (operand_inst && SpvOpSampledImage == operand_inst->opcode()) {
-      RegisterSampledImageConsumer(operand, inst.result_id);
+  for (uint16_t i = 0; i < inst.num_operands; ++i) {
+    const spv_parsed_operand_t& operand = inst.operands[i];
+    const uint32_t operand_word = inst.words[operand.offset];
+    if (SPV_OPERAND_TYPE_ID == operand.type) {
+      Instruction* operand_inst = FindDef(operand_word);
+      if (operand_inst && SpvOpSampledImage == operand_inst->opcode()) {
+        RegisterSampledImageConsumer(operand_word, inst.result_id);
+      }
     }
   }
 }
 
-std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
+const std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
     uint32_t sampled_image_id) const {
   std::vector<uint32_t> result;
   auto iter = sampled_image_consumers_.find(sampled_image_id);
   if (iter != sampled_image_consumers_.end()) {
-    for (auto id : iter->second) {
-      result.push_back(id);
-    }
+    result = iter->second;
   }
   return result;
 }
