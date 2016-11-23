@@ -1966,7 +1966,7 @@ TEST_F(ValidateIdWithMessage, OpSampledImageGood) {
 // Invalid: OpSampledImage result <id> is defined in one block and used in a
 // different block.
 TEST_F(ValidateIdWithMessage, OpSampledImageUsedInDifferentBlockBad) {
-  string spirv = kGLSL450MemoryModel + sampledImageSetup  + R"(
+  string spirv = kGLSL450MemoryModel + sampledImageSetup + R"(
 %smpld_img = OpSampledImage %sampled_image_type %image_inst %sampler_inst
 OpBranch %label_2
 %label_2 = OpLabel
