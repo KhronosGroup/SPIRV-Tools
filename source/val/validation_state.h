@@ -181,7 +181,7 @@ class ValidationState_t {
 
   /// Returns a vector containing the Ids of instructions that consume the given
   /// SampledImage id.
-  const std::vector<uint32_t> getSampledImageConsumers(uint32_t id) const;
+  std::vector<uint32_t> getSampledImageConsumers(uint32_t id) const;
 
   /// Records cons_id as a consumer of sampled_image_id.
   void RegisterSampledImageConsumer(uint32_t sampled_image_id,

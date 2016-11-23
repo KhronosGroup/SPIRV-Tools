@@ -746,7 +746,7 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
   // to OpPhi instructions or OpSelect instructions, or any instructions other
   // than the image lookup and query instructions specified to take an operand
   // whose type is OpTypeSampledImage.
-  const std::vector<uint32_t> consumers =
+  std::vector<uint32_t> consumers =
       module_.getSampledImageConsumers(resultID);
   if (!consumers.empty()) {
     for (auto consumer_id : consumers) {

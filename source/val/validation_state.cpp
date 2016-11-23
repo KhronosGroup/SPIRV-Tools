@@ -400,8 +400,8 @@ void ValidationState_t::RegisterInstruction(
   // OpTypeSampledImage and its definition are in the same basic block.
   for (uint16_t i = 0; i < inst.num_operands; ++i) {
     const spv_parsed_operand_t& operand = inst.operands[i];
-    const uint32_t operand_word = inst.words[operand.offset];
     if (SPV_OPERAND_TYPE_ID == operand.type) {
+      const uint32_t operand_word = inst.words[operand.offset];
       Instruction* operand_inst = FindDef(operand_word);
       if (operand_inst && SpvOpSampledImage == operand_inst->opcode()) {
         RegisterSampledImageConsumer(operand_word, inst.result_id);
@@ -410,7 +410,7 @@ void ValidationState_t::RegisterInstruction(
   }
 }
 
-const std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
+std::vector<uint32_t> ValidationState_t::getSampledImageConsumers(
     uint32_t sampled_image_id) const {
   std::vector<uint32_t> result;
   auto iter = sampled_image_consumers_.find(sampled_image_id);
