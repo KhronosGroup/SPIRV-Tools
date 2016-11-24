@@ -51,3 +51,28 @@ TEST_F(ValidateLimits, idBoundBad) {
               HasSubstr("Result <id> '64' exceeds the ID bound '3'"));
 }
 
+TEST_F(ValidateLimits, structNumMembersGood) {
+  string str = header + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 16383; ++i) {
+    str += " %1";
+  }
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLimits, structNumMembersExceededBad) {
+  string str = header + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 16384; ++i) {
+    str += " %1";
+  }
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of OpTypeStruct members (16384) has exceeded "
+                        "the limit (16,383)."));
+}
+
