@@ -78,6 +78,12 @@ class ValidationState_t {
   /// the OpName instruction
   std::string getIdName(uint32_t id) const;
 
+  /// Accessor function for ID bound.
+  uint32_t getIdBound() const;
+
+  /// Mutator function for ID bound.
+  void setIdBound(uint32_t bound);
+
   /// Like getIdName but does not display the id if the \p id has a name
   std::string getIdOrName(uint32_t id) const;
 
@@ -226,6 +232,9 @@ class ValidationState_t {
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
+
+  /// ID Bound from the Header
+  uint32_t id_bound_;
 
   AssemblyGrammar grammar_;
 
