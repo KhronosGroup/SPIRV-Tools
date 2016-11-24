@@ -2,7 +2,7 @@
 .ycm_extra_conf.py*
 compile_commands.json
 /external/googletest/
-/external/spirv-headers/
+/external/SPIRV-Headers/
 /TAGS
 /.clang_complete
 
