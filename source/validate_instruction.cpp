@@ -151,6 +151,20 @@ spv_result_t LimitCheckIdBound(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that the number of OpTypeStruct members is within the limit.
+spv_result_t LimitCheckStruct(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  // Number of members is the number of operands of the instruction minus 1.
+  // One operand is the result ID.
+  uint16_t limit = 0x3fff;
+  if (SpvOpTypeStruct == inst->opcode && inst->num_operands - 1 > limit) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Number of OpTypeStruct members (" << inst->num_operands - 1
+           << ") has exceeded the limit (16,383).";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -192,6 +206,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
 
   if (auto error = CapCheck(_, inst)) return error;
   if (auto error = LimitCheckIdBound(_, inst)) return error;
+  if (auto error = LimitCheckStruct(_, inst)) return error;
 
   // All instruction checks have passed.
   return SPV_SUCCESS;
