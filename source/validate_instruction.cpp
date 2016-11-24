@@ -131,6 +131,17 @@ spv_result_t CapCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that the Resuld <id> is within the valid bound.
+spv_result_t LimitCheckIdBound(ValidationState_t& _,
+                               const spv_parsed_instruction_t* inst) {
+  if (inst->result_id >= _.getIdBound()) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Result <id> '" << inst->result_id
+           << "' must be less than the ID bound '" << _.getIdBound() << "'.";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -169,6 +180,11 @@ spv_result_t InstructionPass(ValidationState_t& _,
       }
     }
   }
-  return CapCheck(_, inst);
+
+  if (auto error = CapCheck(_, inst)) return error;
+  if (auto error = LimitCheckIdBound(_, inst)) return error;
+
+  // All instruction checks have passed.
+  return SPV_SUCCESS;
 }
 }  // namespace libspirv
