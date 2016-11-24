@@ -76,3 +76,30 @@ TEST_F(ValidateLimits, idEqualToBoundBad) {
       HasSubstr("Result <id> '64' must be less than the ID bound '64'."));
 }
 
+TEST_F(ValidateLimits, structNumMembersGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 16383; ++i) {
+    spirv << " %1";
+  }
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLimits, structNumMembersExceededBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 16384; ++i) {
+    spirv << " %1";
+  }
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of OpTypeStruct members (16384) has exceeded "
+                        "the limit (16383)."));
+}
+
