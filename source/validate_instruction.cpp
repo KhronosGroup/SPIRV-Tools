@@ -167,10 +167,16 @@ spv_result_t LimitCheckIdBound(ValidationState_t& _,
     auto operand = inst->operands[i];
     if (SPV_OPERAND_TYPE_RESULT_ID == operand.type) {
       const uint32_t result_id = inst->words[operand.offset];
-      if (result_id > _.getIdBound()) {
-        return _.diag(SPV_ERROR_INVALID_BINARY) << "Result <id> '" << result_id
-                                                << "' exceeds the ID bound '"
-                                                << _.getIdBound() << "'.";
+      if (result_id <= 0) {
+        return _.diag(SPV_ERROR_INVALID_BINARY)
+               << "Result <id> '" << result_id
+               << "' is not a valid ID as it must be larger than 0.";
+      }
+      if (result_id >= _.getIdBound()) {
+        return _.diag(SPV_ERROR_INVALID_BINARY)
+               << "Result <id> '" << result_id
+               << "' must be less than the ID bound '" << _.getIdBound()
+               << "'.";
       }
       // Each instruction has 1 result <id>, so we can exit the loop now.
       break;

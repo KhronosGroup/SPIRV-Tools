@@ -34,7 +34,7 @@ string header = R"(
      OpMemoryModel Logical GLSL450
 )";
 
-TEST_F(ValidateLimits, idBoundBad) {
+TEST_F(ValidateLimits, idLargerThanBoundBad) {
   string str = header + R"(
 ;  %i32 has ID 1
 %i32    = OpTypeInt 32 1
@@ -47,7 +47,32 @@ TEST_F(ValidateLimits, idBoundBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Result <id> '64' exceeds the ID bound '3'"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Result <id> '64' must be less than the ID bound '3'."));
+}
+
+TEST_F(ValidateLimits, idEqualToBoundBad) {
+  string str = header + R"(
+;  %i32 has ID 1
+%i32    = OpTypeInt 32 1
+%c      = OpConstant %i32 100
+
+; Fake an instruction with 64 as the result id.
+; !64 = OpConstantNull %i32
+!0x3002e !1 !64
+)";
+
+  CompileSuccessfully(str);
+
+  // The largest ID used in this program is 64. Let's overwrite the ID bound in
+  // the header to be 64. This should result in an error because all IDs must
+  // satisfy: 0 < id < bound.
+  OverwriteAssembledBinary(3, 64);
+
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Result <id> '64' must be less than the ID bound '64'."));
 }
 
