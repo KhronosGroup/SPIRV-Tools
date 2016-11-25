@@ -69,14 +69,15 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
 namespace {
 
 // TODO(umar): Validate header
-// TODO(umar): The Id bound should be validated also. But you can only do that
-// after you've seen all the instructions in the module.
 // TODO(umar): The binary parser validates the magic word, and the length of the
 // header, but nothing else.
 spv_result_t setHeader(void* user_data, spv_endianness_t endian, uint32_t magic,
                        uint32_t version, uint32_t generator, uint32_t id_bound,
                        uint32_t reserved) {
-  (void)user_data;
+  // Record the ID bound so that the validator can ensure no ID is out of bound.
+  ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
+  _.setIdBound(id_bound);
+
   (void)endian;
   (void)magic;
   (void)version;

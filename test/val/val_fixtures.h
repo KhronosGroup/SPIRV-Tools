@@ -35,6 +35,12 @@ class ValidateBase : public ::testing::Test,
   void CompileSuccessfully(std::string code,
                            spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
 
+  // Overwrites the word at index 'index' with the given word.
+  // For testing purposes, it is often useful to be able to manipulate the
+  // assembled binary before running the validator on it.
+  // This function overwrites the word at the given index with a new word.
+  void OverwriteAssembledBinary(uint32_t index, uint32_t word);
+
   // Performs validation on the SPIR-V code and compares the result of the
   // spvValidate function
   spv_result_t ValidateInstructions(spv_target_env env = SPV_ENV_UNIVERSAL_1_0);

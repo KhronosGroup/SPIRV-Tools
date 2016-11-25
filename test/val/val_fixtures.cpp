@@ -54,6 +54,14 @@ void ValidateBase<T>::CompileSuccessfully(std::string code,
 }
 
 template <typename T>
+void ValidateBase<T>::OverwriteAssembledBinary(uint32_t index, uint32_t word) {
+  ASSERT_TRUE(index < binary_->wordCount)
+      << "OverwriteAssembledBinary: The given index is larger than the binary "
+         "word count.";
+  binary_->code[index] = word;
+}
+
+template <typename T>
 spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
   return spvValidate(ScopedContext(env).context, get_const_binary(),
                      &diagnostic_);
