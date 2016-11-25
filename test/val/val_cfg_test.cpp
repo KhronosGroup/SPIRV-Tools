@@ -25,11 +25,11 @@
 
 #include "gmock/gmock.h"
 
+#include "source/diagnostic.h"
+#include "source/validate.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
-#include "source/diagnostic.h"
-#include "source/validate.h"
 
 using std::array;
 using std::make_pair;
@@ -80,12 +80,12 @@ class Block {
 
   /// Sets the instructions which will appear in the body of the block
   Block& SetBody(std::string body) {
-      body_ = body;
+    body_ = body;
     return *this;
   }
 
   Block& AppendBody(std::string body) {
-      body_ += body;
+    body_ += body;
     return *this;
   }
 
@@ -465,7 +465,7 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
                            "is targeted by block .\\[bad\\]"));
 }
 
@@ -489,7 +489,7 @@ TEST_P(ValidateCFG, BranchConditionalTrueTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
                            "is targeted by block .\\[bad\\]"));
 }
 
@@ -516,7 +516,7 @@ TEST_P(ValidateCFG, BranchConditionalFalseTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
                            "is targeted by block .\\[bad\\]"));
 }
 
@@ -550,7 +550,7 @@ TEST_P(ValidateCFG, SwitchTargetFirstBlockBad) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRegex("First block .\\[entry\\] of funciton .\\[Main\\] "
+              MatchesRegex("First block .\\[entry\\] of function .\\[Main\\] "
                            "is targeted by block .\\[bad\\]"));
 }
 
@@ -1019,7 +1019,8 @@ TEST_P(ValidateCFG, BranchOutOfConstructToMergeBad) {
     EXPECT_THAT(getDiagnosticString(),
                 MatchesRegex("The continue construct with the continue target "
                              ".\\[loop\\] is not post dominated by the "
-                             "back-edge block .\\[cont\\]")) << str;
+                             "back-edge block .\\[cont\\]"))
+        << str;
   } else {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   }
@@ -1254,7 +1255,7 @@ TEST_P(ValidateCFG, SingleLatchBlockMultipleBranchesToLoopHeader) {
 
   str += entry >> loop;
   str += loop >> vector<Block>({latch, merge});
-  str += latch >> vector<Block>({loop, loop}); // This is the key
+  str += latch >> vector<Block>({loop, loop});  // This is the key
   str += merge;
   str += "OpFunctionEnd";
 
