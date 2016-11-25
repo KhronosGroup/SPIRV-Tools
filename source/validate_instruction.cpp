@@ -156,6 +156,26 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that the number of (literal, label) pairs in OpSwitch is within the
+// limit.
+spv_result_t LimitCheckSwitch(ValidationState_t& _,
+                              const spv_parsed_instruction_t* inst) {
+  if (SpvOpSwitch == inst->opcode) {
+    // The instruction syntax is as follows:
+    // OpSwitch <selector ID> <Default ID> literal label literal label ...
+    // literal,label pairs come after the first 2 operands.
+    // It is guaranteed at this point that num_operands is an even numner.
+    unsigned int num_pairs = (inst->num_operands - 2) / 2;
+    const unsigned int num_pairs_limit = 16383;
+    if (num_pairs > num_pairs_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of (literal, label) pairs in OpSwitch (" << num_pairs
+             << ") exceeds the limit (" << num_pairs_limit << ").";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -198,6 +218,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (auto error = CapCheck(_, inst)) return error;
   if (auto error = LimitCheckIdBound(_, inst)) return error;
   if (auto error = LimitCheckStruct(_, inst)) return error;
+  if (auto error = LimitCheckSwitch(_, inst)) return error;
 
   // All instruction checks have passed.
   return SPV_SUCCESS;

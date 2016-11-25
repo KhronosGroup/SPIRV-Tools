@@ -103,3 +103,62 @@ TEST_F(ValidateLimits, structNumMembersExceededBad) {
                         "the limit (16383)."));
 }
 
+// Valid: Switch statement has 16,383 branches.
+TEST_F(ValidateLimits, switchNumBranchesGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 16383; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Switch statement has 16,384 branches.
+TEST_F(ValidateLimits, switchNumBranchesBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 16384; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of (literal, label) pairs in OpSwitch (16384) "
+                        "exceeds the limit (16383)."));
+}
+
