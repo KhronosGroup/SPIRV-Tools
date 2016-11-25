@@ -131,47 +131,13 @@ spv_result_t CapCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-// Checks that the number of characters in a string doesn't exceed the limit.
-spv_result_t LimitCheckString(ValidationState_t& _,
-                              const spv_parsed_instruction_t* inst) {
-  // By definition, num_words of an operand is a 16-bit unsigned which will not
-  // exceed the limit of characters for a string literal.
-  // This function checks that a NULL termination must be found before reaching
-  // the end of the string words.
-  for (int i = 0; i < inst->num_operands; ++i) {
-    auto operand = inst->operands[i];
-    if (SPV_OPERAND_TYPE_LITERAL_STRING == operand.type) {
-      bool null_terminated = false;
-      for (auto word_i = 0; !null_terminated && word_i < operand.num_words;
-           ++word_i) {
-        const uint32_t word = inst->words[operand.offset + word_i];
-        // check if any BYTE in the word is NULL.
-        if ((word & 0x000000ff) == 0 || (word & 0x0000ff00) == 0 ||
-            (word & 0x00ff0000) == 0 || (word & 0xff000000) == 0) {
-          null_terminated = true;
-        }
-      }
-      if (!null_terminated) {
-        return _.diag(SPV_ERROR_INVALID_BINARY)
-               << "Found a string that is not null-terminated.";
-      }
-    }
-  }
-  return SPV_SUCCESS;
-}
-
 // Checks that the Resuld <id> is within the valid bound.
 spv_result_t LimitCheckIdBound(ValidationState_t& _,
                                const spv_parsed_instruction_t* inst) {
   for (int i = 0; i < inst->num_operands; ++i) {
-    auto operand = inst->operands[i];
+    const auto& operand = inst->operands[i];
     if (SPV_OPERAND_TYPE_RESULT_ID == operand.type) {
       const uint32_t result_id = inst->words[operand.offset];
-      if (result_id <= 0) {
-        return _.diag(SPV_ERROR_INVALID_BINARY)
-               << "Result <id> '" << result_id
-               << "' is not a valid ID as it must be larger than 0.";
-      }
       if (result_id >= _.getIdBound()) {
         return _.diag(SPV_ERROR_INVALID_BINARY)
                << "Result <id> '" << result_id
@@ -182,14 +148,6 @@ spv_result_t LimitCheckIdBound(ValidationState_t& _,
       break;
     }
   }
-  return SPV_SUCCESS;
-}
-
-spv_result_t LimitCheck(ValidationState_t& _,
-                        const spv_parsed_instruction_t* inst) {
-  if (auto error = LimitCheckString(_, inst)) return error;
-  if (auto error = LimitCheckIdBound(_, inst)) return error;
-
   return SPV_SUCCESS;
 }
 
@@ -233,7 +191,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
   }
 
   if (auto error = CapCheck(_, inst)) return error;
-  if (auto error = LimitCheck(_, inst)) return error;
+  if (auto error = LimitCheckIdBound(_, inst)) return error;
 
   // All instruction checks have passed.
   return SPV_SUCCESS;

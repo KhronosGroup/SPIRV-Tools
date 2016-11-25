@@ -1228,7 +1228,7 @@ OpFunctionEnd
 
   CompileSuccessfully(str);
 
-  // Sine we are forcing usage of <id> 64, the "id bound" in the binary header
+  // Since we are forcing usage of <id> 64, the "id bound" in the binary header
   // must be overwritten so that <id> 64 is considered within bound.
   // ID Bound is at index 3 of the binary. Set it to 65.
   OverwriteAssembledBinary(3, 65);
