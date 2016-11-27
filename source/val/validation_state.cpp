@@ -425,4 +425,7 @@ void ValidationState_t::RegisterSampledImageConsumer(uint32_t sampled_image_id,
   sampled_image_consumers_[sampled_image_id].push_back(consumer_id);
 }
 
+uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
+
+void ValidationState_t::setIdBound(const uint32_t bound) { id_bound_ = bound; }
 }  /// namespace libspirv
