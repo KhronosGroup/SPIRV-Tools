@@ -134,19 +134,10 @@ spv_result_t CapCheck(ValidationState_t& _,
 // Checks that the Resuld <id> is within the valid bound.
 spv_result_t LimitCheckIdBound(ValidationState_t& _,
                                const spv_parsed_instruction_t* inst) {
-  for (int i = 0; i < inst->num_operands; ++i) {
-    const auto& operand = inst->operands[i];
-    if (SPV_OPERAND_TYPE_RESULT_ID == operand.type) {
-      const uint32_t result_id = inst->words[operand.offset];
-      if (result_id >= _.getIdBound()) {
-        return _.diag(SPV_ERROR_INVALID_BINARY)
-               << "Result <id> '" << result_id
-               << "' must be less than the ID bound '" << _.getIdBound()
-               << "'.";
-      }
-      // Each instruction has 1 result <id>, so we can exit the loop now.
-      break;
-    }
+  if (inst->result_id >= _.getIdBound()) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Result <id> '" << inst->result_id
+           << "' must be less than the ID bound '" << _.getIdBound() << "'.";
   }
   return SPV_SUCCESS;
 }
