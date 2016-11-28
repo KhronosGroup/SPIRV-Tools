@@ -746,8 +746,7 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
   // to OpPhi instructions or OpSelect instructions, or any instructions other
   // than the image lookup and query instructions specified to take an operand
   // whose type is OpTypeSampledImage.
-  std::vector<uint32_t> consumers =
-      module_.getSampledImageConsumers(resultID);
+  std::vector<uint32_t> consumers = module_.getSampledImageConsumers(resultID);
   if (!consumers.empty()) {
     for (auto consumer_id : consumers) {
       auto consumer_instr = module_.FindDef(consumer_id);
@@ -1301,8 +1300,10 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
            "the argument count.";
     return false;
   }
+  size_t num_args = 0;
   for (size_t argumentIndex = 4, paramIndex = 3;
-       argumentIndex < inst->words.size(); argumentIndex++, paramIndex++) {
+       argumentIndex < inst->words.size();
+       argumentIndex++, paramIndex++, num_args++) {
     auto argument = module_.FindDef(inst->words[argumentIndex]);
     if (!argument) return false;
     auto argumentType = module_.FindDef(argument->type_id());
@@ -1317,6 +1318,17 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
       return false;
     }
   }
+
+  // Number of actual arguments passed to OpFunctionCall may not be larger than
+  // 255. Reference: Universal Limits (2.17 SPIR-V Spec).
+  if (num_args > 255) {
+    DIAG(resultTypeIndex)
+        << "Number of actual arguments passed to OpFunctionCall may "
+           "not be larger than 255. OpFunctionCall <id> '"
+        << inst->words[2] << "' has " << num_args << " actual arguments.";
+    return false;
+  }
+
   return true;
 }
 

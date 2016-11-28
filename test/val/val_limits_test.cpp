@@ -158,3 +158,73 @@ OpFunctionEnd
                         "exceeds the limit (16,383)."));
 }
 
+// Valid: OpFunctionCall with 255 arguments.
+TEST_F(ValidateLimits, OpFunctionCallGood) {
+  int num_args = 255;
+  string spirv = header + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %2)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv += " %2";
+  }
+  spirv += R"(
+%4 = OpTypeFunction %1
+%5 = OpConstant %2 42 ;21
+
+%6 = OpFunction %2 None %3
+%7 = OpFunctionParameter %2
+%8 = OpLabel
+     OpReturnValue %7
+     OpFunctionEnd
+
+%9  = OpFunction %1 None %4
+%10 = OpLabel
+%11 = OpFunctionCall %2 %6)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv += " %5";
+  }
+  spirv += R"(
+      OpReturn
+      OpFunctionEnd)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: OpFunctionCall with 256 arguments. (limit is 255 according to the
+// spec Universal Limits (2.17).
+TEST_F(ValidateLimits, OpFunctionCallBad) {
+  int num_args = 256;
+  string spirv = header + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFunction %2)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv += " %2";
+  }
+  spirv += R"(
+%4 = OpTypeFunction %1
+%5 = OpConstant %2 42 ;21
+
+%6 = OpFunction %2 None %3
+%7 = OpFunctionParameter %2
+%8 = OpLabel
+     OpReturnValue %7
+     OpFunctionEnd
+
+%9  = OpFunction %1 None %4
+%10 = OpLabel
+%11 = OpFunctionCall %2 %6)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv += " %5";
+  }
+  spirv += R"(
+      OpReturn
+      OpFunctionEnd)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of actual arguments passed to OpFunctionCall "
+                        "may not be larger than 255. OpFunctionCall <id> '11' "
+                        "has 256 actual arguments."));
+}
