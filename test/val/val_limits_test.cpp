@@ -162,3 +162,35 @@ OpFunctionEnd
                         "exceeds the limit (16383)."));
 }
 
+// Valid: OpTypeFunction with 255 arguments.
+TEST_F(ValidateLimits, OpTypeFunctionGood) {
+  int num_args = 255;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  // add parameters
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: OpTypeFunction with 256 arguments. (limit is 255 according to the
+// spec Universal Limits (2.17).
+TEST_F(ValidateLimits, OpTypeFunctionBad) {
+  int num_args = 256;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeFunction may not take more than 255 arguments. "
+                        "OpTypeFunction <id> '2' has 256 arguments."));
+}
