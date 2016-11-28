@@ -411,14 +411,22 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
                           << inst->words[returnTypeIndex] << "' is not a type.";
     return false;
   }
+  size_t num_args = 0;
   for (size_t paramTypeIndex = 3; paramTypeIndex < inst->words.size();
-       ++paramTypeIndex) {
+       ++paramTypeIndex, ++num_args) {
     auto paramType = module_.FindDef(inst->words[paramTypeIndex]);
     if (!paramType || !spvOpcodeGeneratesType(paramType->opcode())) {
       DIAG(paramTypeIndex) << "OpTypeFunction Parameter Type <id> '"
                            << inst->words[paramTypeIndex] << "' is not a type.";
       return false;
     }
+  }
+  if (num_args > 255) {
+    DIAG(returnTypeIndex) << "OpTypeFunction may not take more than 255 "
+                             "arguments. OpTypeFunction <id> '"
+                          << inst->words[1] << "' has " << num_args
+                          << " arguments.";
+    return false;
   }
   return true;
 }
@@ -746,8 +754,7 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
   // to OpPhi instructions or OpSelect instructions, or any instructions other
   // than the image lookup and query instructions specified to take an operand
   // whose type is OpTypeSampledImage.
-  std::vector<uint32_t> consumers =
-      module_.getSampledImageConsumers(resultID);
+  std::vector<uint32_t> consumers = module_.getSampledImageConsumers(resultID);
   if (!consumers.empty()) {
     for (auto consumer_id : consumers) {
       auto consumer_instr = module_.FindDef(consumer_id);
