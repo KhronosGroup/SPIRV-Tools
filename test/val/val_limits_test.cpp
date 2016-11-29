@@ -194,3 +194,96 @@ TEST_F(ValidateLimits, OpTypeFunctionBad) {
               HasSubstr("OpTypeFunction may not take more than 255 arguments. "
                         "OpTypeFunction <id> '2' has 256 arguments."));
 }
+
+// Valid: module has 65,535 global variables.
+TEST_F(ValidateLimits, NumGlobalVarsGood) {
+  int num_globals = 65535;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 65,536 global variables (limit is 65,535).
+TEST_F(ValidateLimits, NumGlobalVarsBad) {
+  int num_globals = 65536;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of Global Variables (Storage Class other than "
+                        "'Function') exceeded the valid limit (65535)."));
+}
+
+// Valid: module has 524,287 local variables.
+TEST_F(ValidateLimits, NumLocalVarsGood) {
+  int num_locals = 524287;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 524,288 local variables (limit is 524,287).
+TEST_F(ValidateLimits, NumLocalVarsBad) {
+  int num_locals = 524288;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of local variables ('Function' Storage Class) "
+                        "exceeded the valid limit (524287)."));
+}
+

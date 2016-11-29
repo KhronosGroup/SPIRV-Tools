@@ -176,6 +176,31 @@ spv_result_t LimitCheckSwitch(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Ensure the number of variables of the given class does not exceed the limit.
+spv_result_t LimitCheckNumVars(ValidationState_t& _,
+                               const SpvStorageClass storage_class) {
+  if (SpvStorageClassFunction == storage_class) {
+    _.incrementNumLocalVars();
+    const uint32_t num_local_vars_limit = 0x7FFFF;
+    if (_.num_local_vars() > num_local_vars_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of local variables ('Function' Storage Class) "
+                "exceeded the valid limit ("
+             << num_local_vars_limit << ").";
+    }
+  } else {
+    _.incrementNumGlobalVars();
+    const uint32_t num_global_vars_limit = 0xFFFF;
+    if (_.num_global_vars() > num_global_vars_limit) {
+      return _.diag(SPV_ERROR_INVALID_BINARY)
+             << "Number of Global Variables (Storage Class other than "
+                "'Function') exceeded the valid limit ("
+             << num_global_vars_limit << ").";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -191,6 +216,9 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (opcode == SpvOpVariable) {
     const auto storage_class =
         static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
+    if (auto error = LimitCheckNumVars(_, storage_class)) {
+      return error;
+    }
     if (storage_class == SpvStorageClassGeneric)
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "OpVariable storage class cannot be Generic";
