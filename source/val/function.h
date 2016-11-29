@@ -180,6 +180,10 @@ class Function {
   /// Prints a directed graph of the CFG of the current funciton
   void PrintBlocks() const;
 
+  // Returns a reference to the construct corresponding to the given entry
+  // block.
+  Construct& FindConstructForEntryBlock(const BasicBlock* entry_block);
+
  private:
   // Computes the representation of the augmented CFG.
   // Populates augmented_successors_map_ and augmented_predecessors_map_.
@@ -189,9 +193,6 @@ class Function {
   // Returns a reference to the stored construct.
   Construct& AddConstruct(const Construct& new_construct);
 
-  // Returns a reference to the construct corresponding to the given entry
-  // block.
-  Construct& FindConstructForEntryBlock(const BasicBlock* entry_block);
 
   /// The result id of the OpLabel that defined this block
   uint32_t id_;
