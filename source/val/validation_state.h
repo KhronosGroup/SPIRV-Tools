@@ -193,6 +193,18 @@ class ValidationState_t {
   void RegisterSampledImageConsumer(uint32_t sampled_image_id,
                                     uint32_t cons_id);
 
+  /// Returns the number of Global Variables
+  uint32_t num_global_vars() { return num_global_vars_; }
+
+  /// Returns the number of Local Variables
+  uint32_t num_local_vars() { return num_local_vars_; }
+
+  /// Increments the number of Global Variables
+  void incrementNumGlobalVars() { ++num_global_vars_; }
+
+  /// Increments the number of Local Variables
+  void incrementNumLocalVars() { ++num_local_vars_; }
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -235,6 +247,12 @@ class ValidationState_t {
 
   /// ID Bound from the Header
   uint32_t id_bound_;
+
+  /// Number of Global Variables (Storage Class other than 'Function')
+  uint32_t num_global_vars_;
+
+  /// Number of Local Variables ('Function' Storage Class)
+  uint32_t num_local_vars_;
 
   AssemblyGrammar grammar_;
 
