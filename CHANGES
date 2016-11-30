@@ -4,6 +4,12 @@ v2016.6-dev 2016-09-16
  - Published the C++ interface for assembling, disassembling, validation, and
    optimization.
  - Support SPV_KHR_shader_draw_parameters in assembler, disassembler, parser.
+ - Validator has increased coverage:
+   - Checks "Data rules" in Universal Validation Rules, section 2.16.1
+   - WIP: Universal Limits.
+     - The minimum mandated upper bounds are checked.
+     - TODO: Parameterize the validator to allow larger limits accepted by
+       a more than minimally capable implementation.
  - Fixes issues:
    #429: Validator: Allow OpTypeForwardPointer and OpTypeStruct to reference
      undefined IDs

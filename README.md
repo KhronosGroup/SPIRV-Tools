@@ -56,6 +56,13 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 ### Validator
 
 *Warning:* The validator is incomplete.
+Check the [CHANGES](CHANGES) file for reports on progress.
+
+*Note*: The validator checks some Universal Limits, from section 2.17 of the SPIR-V spec.
+The validator will fail on a module that exceeds those minimum upper bound limits.
+It is future work to parameterize the validator to allow larger
+limits accepted by a more than minimally capable SPIR-V consumer.
+
 
 ### Optimizer
 
