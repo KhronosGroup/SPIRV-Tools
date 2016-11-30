@@ -77,27 +77,29 @@ TEST_F(ValidateLimits, idEqualToBoundBad) {
 }
 
 TEST_F(ValidateLimits, structNumMembersGood) {
-  string str = header + R"(
+  std::ostringstream spirv;
+  spirv << header << R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct)";
   for (int i = 0; i < 16383; ++i) {
-    str += " %1";
+    spirv << " %1";
   }
-  CompileSuccessfully(str.c_str());
+  CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateLimits, structNumMembersExceededBad) {
-  string str = header + R"(
+  std::ostringstream spirv;
+  spirv << header << R"(
 %1 = OpTypeInt 32 0
 %2 = OpTypeStruct)";
   for (int i = 0; i < 16384; ++i) {
-    str += " %1";
+    spirv << " %1";
   }
-  CompileSuccessfully(str.c_str());
+  CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Number of OpTypeStruct members (16384) has exceeded "
-                        "the limit (16,383)."));
+                        "the limit (16383)."));
 }
 
