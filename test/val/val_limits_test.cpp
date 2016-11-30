@@ -107,7 +107,7 @@ OpFunctionEnd
 // Invalid: Switch statement has 16,384 branches.
 TEST_F(ValidateLimits, switchNumBranchesBad) {
   std::ostringstream spirv;
-  spirv << header + R"(
+  spirv << header << R"(
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpTypeInt 32 0
