@@ -1914,8 +1914,21 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Base <id> '10' in OpAccessChain must be a pointer "
-                        "pointing to a composite object."));
+              HasSubstr("OpAccessChain reached non-composite type while "
+                        "indexes still remain to be traversed."));
+}
+
+// Invalid. No Indexes passed to OpAccessChain
+TEST_F(ValidateIdWithMessage, OpAccessChainMissingIndexesBad) {
+  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+%entry = OpAccessChain %_ptr_Private_float %my_float_var
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("No Indexes were passes to OpAccessChain."));
 }
 
 // Invalid: 256 indexes passed to OpAccessChain. Limit is 255.

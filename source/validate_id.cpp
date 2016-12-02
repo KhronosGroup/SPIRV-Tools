@@ -1220,12 +1220,7 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
 
   // The type pointed to by OpTypePointer (word 3) must be a composite type.
   auto typePointedTo = module_.FindDef(baseTypeInstr->word(3));
-  if (!typePointedTo || !spvOpcodeIsComposite(typePointedTo->opcode())) {
-    DIAG(baseIdIndex) << "The Base <id> '" << inst->words[baseIdIndex]
-                      << "' in OpAccessChain must be a pointer "
-                         "pointing to a composite object.";
-    return false;
-  }
+
   // Check Universal Limit (SPIR-V Spec. Section 2.17).
   // The number of indexes passed to OpAccessChain may not exceed 255
   // The instruction includes 4 words + N words (for N indexes)
@@ -1237,7 +1232,10 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
         << num_indexes_limit << ". Found " << num_indexes << " indexes.";
     return false;
   }
-
+  if (num_indexes <= 0) {
+    DIAG(resultTypeIndex) << "No Indexes were passes to OpAccessChain.";
+    return false;
+  }
   // Indexes walk the type hierarchy to the desired depth, potentially down to
   // scalar granularity. The first index in Indexes will select the top-level
   // member/element/component/element of the base composite. All composite
@@ -1273,6 +1271,10 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
           return false;
         }
         // Get the index value from the OpConstant (word 3 of OpConstant).
+        // OpConstant could be a signed integer. But it's okay to treat it as
+        // unsigned because a negative constant int would never be seen as
+        // correct as a struct offset, since structs can't have more than 2
+        // billion members.
         const uint32_t cur_index = cur_word_instr->word(3);
         // The index points to the struct member we want, therefore, the index
         // should be less than the number of struct members.
