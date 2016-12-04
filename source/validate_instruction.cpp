@@ -16,6 +16,7 @@
 
 #include "validate.h"
 
+#include <algorithm>
 #include <cassert>
 
 #include <sstream>
@@ -145,13 +146,44 @@ spv_result_t LimitCheckIdBound(ValidationState_t& _,
 // Checks that the number of OpTypeStruct members is within the limit.
 spv_result_t LimitCheckStruct(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst) {
+  if (SpvOpTypeStruct != inst->opcode) {
+    return SPV_SUCCESS;
+  }
+
   // Number of members is the number of operands of the instruction minus 1.
   // One operand is the result ID.
   const uint16_t limit = 0x3fff;
-  if (SpvOpTypeStruct == inst->opcode && inst->num_operands - 1 > limit) {
+  if (inst->num_operands - 1 > limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Number of OpTypeStruct members (" << inst->num_operands - 1
            << ") has exceeded the limit (" << limit << ").";
+  }
+
+  // Section 2.17 of SPIRV Spec specifies that the "Structure Nesting Depth"
+  // must be less than or equal to 255.
+  // This is interpreted as structures including other structures as members.
+  // The code does not follow pointers or look into arrays to see if we reach a
+  // structure downstream.
+  // The nesting depth of a struct is 1+(largest depth of any member).
+  // Scalars are at depth 0.
+  uint32_t max_member_depth = 0;
+  // Struct members start at word 2 of OpTypeStruct instruction.
+  for (size_t word_i = 2; word_i < inst->num_words; ++word_i) {
+    auto member = inst->words[word_i];
+    auto memberTypeInstr = _.FindDef(member);
+    if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
+      max_member_depth = std::max(
+          max_member_depth, _.struct_nesting_depth(memberTypeInstr->id()));
+    }
+  }
+
+  const uint32_t depth_limit = 255;
+  const uint32_t cur_depth = 1 + max_member_depth;
+  _.set_struct_nesting_depth(inst->result_id, cur_depth);
+  if (cur_depth > depth_limit) {
+    return _.diag(SPV_ERROR_INVALID_BINARY)
+           << "Structure Nesting Depth may not be larger than " << depth_limit
+           << ". Found " << cur_depth << ".";
   }
   return SPV_SUCCESS;
 }

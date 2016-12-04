@@ -205,6 +205,16 @@ class ValidationState_t {
   /// Increments the number of Local Variables
   void incrementNumLocalVars() { ++num_local_vars_; }
 
+  /// Sets the struct nesting depth for a given struct ID
+  void set_struct_nesting_depth(uint32_t id, uint32_t depth) {
+    struct_nesting_depth_[id] = depth;
+  }
+
+  /// Returns the nesting depth of a given structure ID
+  uint32_t struct_nesting_depth(uint32_t id) {
+    return struct_nesting_depth_[id];
+  }
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -253,6 +263,9 @@ class ValidationState_t {
 
   /// Number of Local Variables ('Function' Storage Class)
   uint32_t num_local_vars_;
+
+  /// Structure Nesting Depth
+  std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;
 
   AssemblyGrammar grammar_;
 
