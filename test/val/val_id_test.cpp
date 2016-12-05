@@ -2787,17 +2787,15 @@ TEST_F(ValidateIdWithMessage, ResultIdUsedOutsideOfFunctionBad) {
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpTypeInt 32 0
-%4 = OpConstant %3 1234
-%5 = OpTypePointer Function %3
-%6 = OpFunction %1 None %2
-%7 = OpLabel
-%8 = OpVariable %5 Function
-%9 = OpIAdd %3 %4 %4
+%4 = OpTypePointer Function %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+%7 = OpVariable %4 Function
 OpReturn
 OpFunctionEnd
-%10 = OpFunction %1 None %2
-%11 = OpLabel
-OpStore %8 %4
+%8 = OpFunction %1 None %2
+%9 = OpLabel
+%10 = OpLoad %3 %7
 OpReturn
 OpFunctionEnd
   )";
@@ -2806,7 +2804,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "ID 8 defined in block 7 does not dominate its use in block 11"));
+          "ID 7 defined in block 6 does not dominate its use in block 9"));
 }
 
 // TODO: OpLifetimeStart
