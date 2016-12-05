@@ -1814,8 +1814,10 @@ string opAccessChainSpirvSetup = R"(
 ; uniform blockName {
 ;   S s;
 ;   bool cond;
+;   RunTimeArray arr;
 ; }
 
+%f32arr = OpTypeRuntimeArray %float
 %bool = OpTypeBool
 %v4float = OpTypeVector %float 4
 %array5_mat4x3 = OpTypeArray %mat4x3 %int_5
@@ -1824,7 +1826,7 @@ string opAccessChainSpirvSetup = R"(
 %_ptr_Function_vec4 = OpTypePointer Function %v4float
 %_ptr_Uniform_vec4 = OpTypePointer Uniform %v4float
 %struct_s = OpTypeStruct %bool %array5_vec4 %int %array5_mat4x3
-%struct_blockName = OpTypeStruct %struct_s %bool
+%struct_blockName = OpTypeStruct %struct_s %bool %f32arr
 %_ptr_Uniform_blockName = OpTypePointer Uniform %struct_blockName
 %_ptr_Uniform_struct_s = OpTypePointer Uniform %struct_s
 %_ptr_Uniform_array5_mat4x3 = OpTypePointer Uniform %array5_mat4x3
@@ -1857,7 +1859,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Result Type of OpAccessChain <id> '35' must be "
+              HasSubstr("The Result Type of OpAccessChain <id> '36' must be "
                         "OpTypePointer. Found OpTypeFloat."));
 }
 
@@ -2010,10 +2012,10 @@ OpFunctionEnd
                         "indexes still remain to be traversed."));
 }
 
-// Invalid: Trying to find index 2 of the struct that has only 2 members.
+// Invalid: Trying to find index 3 of the struct that has only 3 members.
 TEST_F(ValidateIdWithMessage, OpAccessChainStructIndexOutOfBoundBad) {
   string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
-%entry = OpAccessChain %_ptr_Uniform_float %blockName_var %int_2 %int_2 %int_2
+%entry = OpAccessChain %_ptr_Uniform_float %blockName_var %int_3 %int_2 %int_2
 OpReturn
 OpFunctionEnd
   )";
@@ -2021,8 +2023,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index is out of bound: OpAccessChain can not find "
-                        "index 2 into the structure <id> '25'. This structure "
-                        "has 2 members. Largest valid index is 1."));
+                        "index 3 into the structure <id> '26'. This structure "
+                        "has 3 members. Largest valid index is 2."));
 }
 
 // Valid: Tests that we can index into Struct, Array, Matrix, and Vector!
@@ -2044,6 +2046,31 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Valid: Access an element of OpTypeRuntimeArray.
+TEST_F(ValidateIdWithMessage, OpAccessChainIndexIntoRuntimeArrayGood) {
+  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+%runtime_arr_entry = OpAccessChain %_ptr_Uniform_float %blockName_var %int_2 %int_0
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Unused index when accessing OpTypeRuntimeArray.
+TEST_F(ValidateIdWithMessage, OpAccessChainIndexIntoRuntimeArrayBad) {
+  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+%runtime_arr_entry = OpAccessChain %_ptr_Uniform_float %blockName_var %int_2 %int_0 %int_1
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpAccessChain reached non-composite type while "
+                        "indexes still remain to be traversed."));
 }
 
 // Invalid: Reached scalar type before arguments to OpAccessChain finished.

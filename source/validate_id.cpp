@@ -1264,9 +1264,10 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
     switch (typePointedTo->opcode()) {
       case SpvOpTypeMatrix:
       case SpvOpTypeVector:
-      case SpvOpTypeArray: {
-        // In OpTypeMatrix, OpTypeArray, and OpTypeVector, word 2 is the
-        // Element Type.
+      case SpvOpTypeArray:
+      case SpvOpTypeRuntimeArray: {
+        // In OpTypeMatrix, OpTypeVector, OpTypeArray, and OpTypeRuntimeArray,
+        // word 2 is the Element Type.
         typePointedTo = module_.FindDef(typePointedTo->word(2));
         break;
       }
