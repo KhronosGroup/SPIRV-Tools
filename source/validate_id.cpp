@@ -1193,11 +1193,14 @@ bool idUsage::isValid<SpvOpCopyMemorySized>(const spv_instruction_t* inst,
 template <>
 bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
                                         const spv_opcode_desc) {
+  std::string instr_name =
+      "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode)));
+
   // The result type must be OpTypePointer. Result Type is at word 1.
   auto resultTypeIndex = 1;
   auto resultTypeInstr = module_.FindDef(inst->words[resultTypeIndex]);
   if (SpvOpTypePointer != resultTypeInstr->opcode()) {
-    DIAG(resultTypeIndex) << "The Result Type of OpAccessChain <id> '"
+    DIAG(resultTypeIndex) << "The Result Type of " << instr_name << " <id> '"
                           << inst->words[2]
                           << "' must be OpTypePointer. Found Op"
                           << spvOpcodeString(
@@ -1217,7 +1220,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   auto baseTypeInstr = module_.FindDef(baseInstr->type_id());
   if (!baseTypeInstr || SpvOpTypePointer != baseTypeInstr->opcode()) {
     DIAG(baseIdIndex) << "The Base <id> '" << inst->words[baseIdIndex]
-                      << "' in OpAccessChain instruction must be a pointer.";
+                      << "' in " << instr_name
+                      << " instruction must be a pointer.";
     return false;
   }
 
@@ -1227,8 +1231,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   auto baseTypeStorageClass = baseTypeInstr->word(2);
   if (resultTypeStorageClass != baseTypeStorageClass) {
     DIAG(resultTypeIndex) << "The result pointer storage class and base "
-                             "pointer storage class in OpAccessChain do not "
-                             "match.";
+                             "pointer storage class in "
+                          << instr_name << " do not match.";
     return false;
   }
 
@@ -1241,13 +1245,13 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   const size_t num_indexes = inst->words.size() - 4;
   const size_t num_indexes_limit = 255;
   if (num_indexes > num_indexes_limit) {
-    DIAG(resultTypeIndex)
-        << "The number of indexes in OpAccessChain may not exceed "
-        << num_indexes_limit << ". Found " << num_indexes << " indexes.";
+    DIAG(resultTypeIndex) << "The number of indexes in " << instr_name
+                          << " may not exceed " << num_indexes_limit
+                          << ". Found " << num_indexes << " indexes.";
     return false;
   }
   if (num_indexes <= 0) {
-    DIAG(resultTypeIndex) << "No Indexes were passes to OpAccessChain.";
+    DIAG(resultTypeIndex) << "No Indexes were passes to " << instr_name << ".";
     return false;
   }
   // Indexes walk the type hierarchy to the desired depth, potentially down to
@@ -1264,7 +1268,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
     // The index must be a scalar integer type (See OpAccessChain in the Spec.)
     auto indexTypeInstr = module_.FindDef(cur_word_instr->type_id());
     if (!indexTypeInstr || SpvOpTypeInt != indexTypeInstr->opcode()) {
-      DIAG(i) << "Indexes passed to OpAccessChain must be of type integer.";
+      DIAG(i) << "Indexes passed to " << instr_name
+              << " must be of type integer.";
       return false;
     }
     switch (typePointedTo->opcode()) {
@@ -1281,7 +1286,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
         // In case of structures, there is an additional constraint on the
         // index: the index must be an OpConstant.
         if (SpvOpConstant != cur_word_instr->opcode()) {
-          DIAG(i) << "The <id> passed to OpAccessChain to index into a "
+          DIAG(i) << "The <id> passed to " << instr_name
+                  << " to index into a "
                      "structure must be an OpConstant.";
           return false;
         }
@@ -1296,10 +1302,11 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
         const uint32_t num_struct_members =
             static_cast<uint32_t>(typePointedTo->words().size() - 2);
         if (cur_index >= num_struct_members) {
-          DIAG(i) << "Index is out of bound: OpAccessChain can not find index "
-                  << cur_index << " into the structure <id> '"
-                  << typePointedTo->id() << "'. This structure has "
-                  << num_struct_members << " members. Largest valid index is "
+          DIAG(i) << "Index is out of bound: " << instr_name
+                  << " can not find index " << cur_index
+                  << " into the structure <id> '" << typePointedTo->id()
+                  << "'. This structure has " << num_struct_members
+                  << " members. Largest valid index is "
                   << num_struct_members - 1 << ".";
           return false;
         }
@@ -1310,8 +1317,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        DIAG(i) << "OpAccessChain reached non-composite type while indexes "
-                   "still remain to be traversed.";
+        DIAG(i) << instr_name << " reached non-composite type while indexes "
+                                 "still remain to be traversed.";
         return false;
       }
     }
@@ -1320,7 +1327,7 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   // The type being pointed to should be the same as the result type.
   if (typePointedTo->id() != resultTypePointedTo->id()) {
     DIAG(resultTypeIndex)
-        << "OpAccessChain result type (Op"
+        << instr_name << " result type (Op"
         << spvOpcodeString(static_cast<SpvOp>(resultTypePointedTo->opcode()))
         << ") does not match the type that results from indexing into the base "
            "<id> (Op"
@@ -1331,11 +1338,11 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
 template <>
 bool idUsage::isValid<SpvOpInBoundsAccessChain>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
+    const spv_instruction_t* inst, const spv_opcode_desc opcodeEntry) {
+  return isValid<SpvOpAccessChain>(inst, opcodeEntry);
+}
 
 #if 0
 template <>
@@ -2564,7 +2571,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpCopyMemory)
     CASE(OpCopyMemorySized)
     CASE(OpAccessChain)
-    TODO(OpInBoundsAccessChain)
+    CASE(OpInBoundsAccessChain)
     TODO(OpArrayLength)
     TODO(OpGenericPtrMemSemantics)
     CASE(OpFunction)
