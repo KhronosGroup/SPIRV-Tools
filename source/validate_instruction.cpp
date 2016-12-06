@@ -164,28 +164,22 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
   // This is interpreted as structures including other structures as members.
   // The code does not follow pointers or look into arrays to see if we reach a
   // structure downstream.
-  //
-  // This lambda takes a valid struct ID and finds its nesting depth.
   // The nesting depth of a struct is 1+(largest depth of any member).
   // Scalars are at depth 0.
-  std::function<int(uint32_t)> find_struct_depth_recursive = [&](uint32_t id) {
-    int max_member_depth = 0;
-    auto cur_instr = _.FindDef(id);
-    // Struct members start at word 2 of OpTypeStruct instruction.
-    for (size_t word_i = 2; word_i < cur_instr->words().size(); ++word_i) {
-      auto member = cur_instr->word(word_i);
-      auto memberTypeInstr = _.FindDef(member);
-      if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
-        max_member_depth =
-            std::max(max_member_depth,
-                     find_struct_depth_recursive(memberTypeInstr->id()));
-      }
+  uint32_t max_member_depth = 0;
+  // Struct members start at word 2 of OpTypeStruct instruction.
+  for (size_t word_i = 2; word_i < inst->num_words; ++word_i) {
+    auto member = inst->words[word_i];
+    auto memberTypeInstr = _.FindDef(member);
+    if (memberTypeInstr && SpvOpTypeStruct == memberTypeInstr->opcode()) {
+      max_member_depth = std::max(
+          max_member_depth, _.struct_nesting_depth(memberTypeInstr->id()));
     }
-    return 1 + max_member_depth;
-  };
+  }
 
-  int depth_limit = 255;
-  int cur_depth = find_struct_depth_recursive(inst->result_id);
+  const uint32_t depth_limit = 255;
+  const uint32_t cur_depth = 1 + max_member_depth;
+  _.set_struct_nesting_depth(inst->result_id, cur_depth);
   if (cur_depth > depth_limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Structure Nesting Depth may not be larger than " << depth_limit

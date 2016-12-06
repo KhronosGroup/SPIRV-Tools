@@ -194,6 +194,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx)
       all_definitions_(),
       num_global_vars_(0),
       num_local_vars_(0),
+      struct_nesting_depth_(),
       grammar_(ctx),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
