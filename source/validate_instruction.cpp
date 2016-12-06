@@ -16,6 +16,7 @@
 
 #include "validate.h"
 
+#include <algorithm>
 #include <cassert>
 
 #include <sstream>
