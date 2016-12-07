@@ -1933,8 +1933,48 @@ OpFunctionEnd
               HasSubstr("No Indexes were passes to OpAccessChain."));
 }
 
+// Valid: 255 indexes passed to OpAccessChain. Limit is 255.
+TEST_F(ValidateIdWithMessage, OpAccessChainTooManyIndexesGood) {
+  int depth = 255;
+  std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
+  header.erase(header.find("%func"));
+  std::ostringstream spirv;
+  spirv << header << "\n";
+
+  // Build nested structures. Struct 'i' contains struct 'i-1'
+  spirv << "%s_depth_1 = OpTypeStruct %float\n";
+  for (int i = 2; i <= depth; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %s_depth_" << i - 1 << "\n";
+  }
+
+  // Define Pointer and Variable to use for OpAccessChain.
+  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+        << depth << "\n";
+  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+
+  // Function Start
+  spirv << R"(
+  %func = OpFunction %void None %void_f
+  %my_label = OpLabel
+  )";
+
+  // OpAccessChain with 'n' indexes (n = depth)
+  spirv << "%entry = OpAccessChain %_ptr_Uniform_float %deep_var";
+  for (int i = 0; i < depth; ++i) {
+    spirv << " %int_0";
+  }
+
+  // Function end
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 // Invalid: 256 indexes passed to OpAccessChain. Limit is 255.
-TEST_F(ValidateIdWithMessage, OpAccessChainTooManyIndecesBad) {
+TEST_F(ValidateIdWithMessage, OpAccessChainTooManyIndexesBad) {
   std::ostringstream spirv;
   spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup;
   spirv << "%entry = OpAccessChain %_ptr_Private_float %my_matrix";
@@ -2123,9 +2163,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Result Type of OpInBoundsAccessChain <id> '36' must be "
-                        "OpTypePointer. Found OpTypeFloat."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Result Type of OpInBoundsAccessChain <id> '36' must be "
+                "OpTypePointer. Found OpTypeFloat."));
 }
 
 // Invalid. The base type of OpInBoundsAccessChain must be a pointer.
@@ -2137,9 +2178,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Base <id> '1' in OpInBoundsAccessChain instruction must "
-                        "be a pointer."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Base <id> '1' in OpInBoundsAccessChain instruction must "
+                "be a pointer."));
 }
 
 // Invalid. The base type of OpInBoundsAccessChain must be a pointer.
@@ -2151,9 +2193,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Base <id> '8' in OpInBoundsAccessChain instruction must "
-                        "be a pointer."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Base <id> '8' in OpInBoundsAccessChain instruction must "
+                "be a pointer."));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -2166,13 +2209,16 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The result pointer storage class and base pointer "
-                        "storage class in OpInBoundsAccessChain do not match."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The result pointer storage class and base pointer "
+                "storage class in OpInBoundsAccessChain do not match."));
 }
 
-// Invalid. The base type of OpInBoundsAccessChain must point to a composite object.
-TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainBasePtrNotPointingToCompositeBad) {
+// Invalid. The base type of OpInBoundsAccessChain must point to a composite
+// object.
+TEST_F(ValidateIdWithMessage,
+       OpInBoundsAccessChainBasePtrNotPointingToCompositeBad) {
   string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
 %entry = OpInBoundsAccessChain %_ptr_Private_float %my_float_var %int_0
 OpReturn
@@ -2180,9 +2226,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpInBoundsAccessChain reached non-composite type while "
-                        "indexes still remain to be traversed."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpInBoundsAccessChain reached non-composite type while "
+                "indexes still remain to be traversed."));
 }
 
 // Invalid. No Indexes passed to OpInBoundsAccessChain
@@ -2198,8 +2245,48 @@ OpFunctionEnd
               HasSubstr("No Indexes were passes to OpInBoundsAccessChain."));
 }
 
+// Valid: 255 indexes passed to OpAccessChain. Limit is 255.
+TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainTooManyIndexesGood) {
+  int depth = 255;
+  std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
+  header.erase(header.find("%func"));
+  std::ostringstream spirv;
+  spirv << header << "\n";
+
+  // Build nested structures. Struct 'i' contains struct 'i-1'
+  spirv << "%s_depth_1 = OpTypeStruct %float\n";
+  for (int i = 2; i <= depth; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %s_depth_" << i - 1 << "\n";
+  }
+
+  // Define Pointer and Variable to use for OpInBoundsAccessChain.
+  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+        << depth << "\n";
+  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+
+  // Function Start
+  spirv << R"(
+  %func = OpFunction %void None %void_f
+  %my_label = OpLabel
+  )";
+
+  // OpAccessChain with 'n' indexes (n = depth)
+  spirv << "%entry = OpInBoundsAccessChain %_ptr_Uniform_float %deep_var";
+  for (int i = 0; i < depth; ++i) {
+    spirv << " %int_0";
+  }
+
+  // Function end
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 // Invalid: 256 indexes passed to OpInBoundsAccessChain. Limit is 255.
-TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainTooManyIndecesBad) {
+TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainTooManyIndexesBad) {
   std::ostringstream spirv;
   spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup;
   spirv << "%entry = OpInBoundsAccessChain %_ptr_Private_float %my_matrix";
@@ -2212,9 +2299,10 @@ TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainTooManyIndecesBad) {
   )";
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The number of indexes in OpInBoundsAccessChain may not exceed "
-                        "255. Found 256 indexes."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The number of indexes in OpInBoundsAccessChain may not exceed "
+                "255. Found 256 indexes."));
 }
 
 // Invalid: Index passed to OpInBoundsAccessChain is float (must be integer).
@@ -2228,11 +2316,12 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Indexes passed to OpInBoundsAccessChain must be of type integer."));
+      HasSubstr(
+          "Indexes passed to OpInBoundsAccessChain must be of type integer."));
 }
 
-// Invalid: The OpInBoundsAccessChain index argument that indexes into a struct must be
-// of type OpConstant.
+// Invalid: The OpInBoundsAccessChain index argument that indexes into a struct
+// must be of type OpConstant.
 TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainStructIndexNotConstantBad) {
   string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
 %f = OpInBoundsAccessChain %_ptr_Uniform_float %blockName_var %int_0 %spec_int %int_2
@@ -2241,9 +2330,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The <id> passed to OpInBoundsAccessChain to index into a "
-                        "structure must be an OpConstant."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The <id> passed to OpInBoundsAccessChain to index into a "
+                "structure must be an OpConstant."));
 }
 
 // Invalid: Indexing up to a vec4 granularity, but result type expected float.
@@ -2256,11 +2346,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpInBoundsAccessChain result type (OpTypeFloat) does not match the type "
-          "that results from indexing into the base <id> (OpTypeVector)."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpInBoundsAccessChain result type (OpTypeFloat) does "
+                        "not match the type that results from indexing into "
+                        "the base <id> (OpTypeVector)."));
 }
 
 // Invalid: Reach non-composite type (bool) when unused indexes remain.
@@ -2272,9 +2361,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpInBoundsAccessChain reached non-composite type while "
-                        "indexes still remain to be traversed."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpInBoundsAccessChain reached non-composite type while "
+                "indexes still remain to be traversed."));
 }
 
 // Invalid: Trying to find index 3 of the struct that has only 3 members.
@@ -2286,10 +2376,11 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Index is out of bound: OpInBoundsAccessChain can not find "
-                        "index 3 into the structure <id> '26'. This structure "
-                        "has 3 members. Largest valid index is 2."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bound: OpInBoundsAccessChain can not find "
+                "index 3 into the structure <id> '26'. This structure "
+                "has 3 members. Largest valid index is 2."));
 }
 
 // Valid: Tests that we can index into Struct, Array, Matrix, and Vector!
@@ -2333,13 +2424,16 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpInBoundsAccessChain reached non-composite type while "
-                        "indexes still remain to be traversed."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpInBoundsAccessChain reached non-composite type while "
+                "indexes still remain to be traversed."));
 }
 
-// Invalid: Reached scalar type before arguments to OpInBoundsAccessChain finished.
-TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainMatrixMoreArgsThanNeededBad) {
+// Invalid: Reached scalar type before arguments to OpInBoundsAccessChain
+// finished.
+TEST_F(ValidateIdWithMessage,
+       OpInBoundsAccessChainMatrixMoreArgsThanNeededBad) {
   string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
 %entry = OpInBoundsAccessChain %_ptr_Private_float %my_matrix %int_0 %int_1 %int_0
 OpReturn
@@ -2347,9 +2441,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpInBoundsAccessChain reached non-composite type while "
-                        "indexes still remain to be traversed."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpInBoundsAccessChain reached non-composite type while "
+                "indexes still remain to be traversed."));
 }
 
 // Invalid: The result type and the type indexed into do not match.
@@ -2362,10 +2457,11 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpInBoundsAccessChain result type (OpTypeMatrix) does not "
-                        "match the type that results from indexing into the "
-                        "base <id> (OpTypeFloat)."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpInBoundsAccessChain result type (OpTypeMatrix) does not "
+                "match the type that results from indexing into the "
+                "base <id> (OpTypeFloat)."));
 }
 
 // TODO: OpArrayLength
