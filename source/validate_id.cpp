@@ -988,7 +988,7 @@ bool idUsage::isValid<SpvOpSpecConstantOp>(const spv_instruction_t *inst) {}
 
 template <>
 bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t* inst,
-                                     const spv_opcode_desc opcodeEntry) {
+                                     const spv_opcode_desc) {
   auto resultTypeIndex = 1;
   auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
   if (!resultType || SpvOpTypePointer != resultType->opcode()) {
@@ -997,13 +997,19 @@ bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t* inst,
                           << "' is not a pointer type.";
     return false;
   }
-  if (opcodeEntry->numTypes < inst->words.size()) {
-    auto initialiserIndex = 4;
-    auto initialiser = module_.FindDef(inst->words[initialiserIndex]);
-    if (!initialiser || !spvOpcodeIsConstant(initialiser->opcode())) {
+  const auto initialiserIndex = 4;
+  if (initialiserIndex < inst->words.size()) {
+    const auto initialiser = module_.FindDef(inst->words[initialiserIndex]);
+    const auto storageClassIndex = 3;
+    const auto is_module_scope_var =
+        initialiser && (initialiser->opcode() == SpvOpVariable) &&
+        (initialiser->word(storageClassIndex) != SpvStorageClassFunction);
+    const auto is_constant =
+        initialiser && spvOpcodeIsConstant(initialiser->opcode());
+    if (!initialiser || !(is_constant || is_module_scope_var)) {
       DIAG(initialiserIndex) << "OpVariable Initializer <id> '"
                              << inst->words[initialiserIndex]
-                             << "' is not a constant.";
+                             << "' is not a constant or module-scope variable.";
       return false;
     }
   }

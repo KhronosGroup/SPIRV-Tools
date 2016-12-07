@@ -1461,12 +1461,22 @@ TEST_F(ValidateIdWithMessage, OpVariableGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-TEST_F(ValidateIdWithMessage, OpVariableInitializerGood) {
+TEST_F(ValidateIdWithMessage, OpVariableInitializerConstantGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Input %1
 %3 = OpConstant %1 42
 %4 = OpVariable %2 Input %3)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+TEST_F(ValidateIdWithMessage, OpVariableInitializerGlobalVariableGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 1
+%2 = OpTypePointer Uniform %1
+%3 = OpVariable %2 Uniform
+%4 = OpTypePointer Uniform %2 ; pointer to pointer
+%5 = OpVariable %4 Uniform %3)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -1478,13 +1488,55 @@ TEST_F(ValidateIdWithMessage, OpVariableResultTypeBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
-TEST_F(ValidateIdWithMessage, OpVariableInitializerBad) {
+TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 1
 %2 = OpTypePointer Input %1
 %3 = OpVariable %2 Input %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpVariable Initializer <id> '2' is not a constant or "
+                        "module-scope variable"));
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableInitializerIsFunctionVarBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 1
+%ptrint = OpTypePointer Function %int
+%ptrptrint = OpTypePointer Function %ptrint
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%var = OpVariable %ptrint Function
+%varinit = OpVariable %ptrptrint Function %var ; Can't initialize function variable.
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpVariable Initializer <id> '8' is not a constant or "
+                        "module-scope variable"));
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableInitializerIsModuleVarGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 1
+%ptrint = OpTypePointer Uniform %int
+%mvar = OpVariable %ptrint Uniform
+%ptrptrint = OpTypePointer Function %ptrint
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%goodvar = OpVariable %ptrptrint Function %mvar ; This is ok
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateIdWithMessage, OpLoadGood) {
