@@ -2245,7 +2245,7 @@ OpFunctionEnd
               HasSubstr("No Indexes were passes to OpInBoundsAccessChain."));
 }
 
-// Valid: 255 indexes passed to OpAccessChain. Limit is 255.
+// Valid: 255 indexes passed to OpInBoundsAccessChain. Limit is 255.
 TEST_F(ValidateIdWithMessage, OpInBoundsAccessChainTooManyIndexesGood) {
   int depth = 255;
   std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
