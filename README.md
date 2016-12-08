@@ -15,7 +15,13 @@ details, and is used in the standalone tools whilst also enabling integration
 into other code bases directly. The optimizer implementation resides in its
 own library, which depends on the core library.
 
-The interfaces are still under development, and are expected to change.
+The interfaces have stabilized:
+We don't anticipate making a breaking change for existing features.
+
+See [`projects.md`](projects.md) to see how we use the
+[GitHub Project
+feature](https://help.github.com/articles/tracking-the-progress-of-your-work-with-projects/)
+to organize planned and in-progress work.
 
 SPIR-V is defined by the Khronos Group Inc.
 See the [SPIR-V Registry][spirv-registry] for the SPIR-V specification,
@@ -56,11 +62,15 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 ### Validator
 
 *Warning:* The validator is incomplete.
-Check the [CHANGES](CHANGES) file for reports on progress.
+Check the [CHANGES](CHANGES) file for reports on completed work, and
+the [Validator
+sub-project](https://github.com/KhronosGroup/SPIRV-Tools/projects/1) for planned
+and in-progress work.
 
 *Note*: The validator checks some Universal Limits, from section 2.17 of the SPIR-V spec.
 The validator will fail on a module that exceeds those minimum upper bound limits.
-It is future work to parameterize the validator to allow larger
+It is [future work](https://github.com/KhronosGroup/SPIRV-Tools/projects/1#card-1052403)
+to parameterize the validator to allow larger
 limits accepted by a more than minimally capable SPIR-V consumer.
 
 
