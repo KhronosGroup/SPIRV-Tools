@@ -456,9 +456,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
               block_depth[merge_block] = depth;
               block_depth[continue_block] = depth + 1;
               ++depth;
-            }
-            // Header block of a selection.
-            else if (b->is_type(kBlockTypeHeader)) {
+            } else if (b->is_type(kBlockTypeHeader)) {
+              // Header block of a selection.
               const auto& construct = function.FindConstructForEntryBlock(b);
               const auto& merge_block = construct.exit_block();
               block_depth[b] = depth;
