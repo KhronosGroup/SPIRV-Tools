@@ -13,6 +13,7 @@
 # limitations under the License.
 
 set(GRAMMAR_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_grammar_tables.py")
+set(XML_REGISTRY_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_registry_tables.py")
 
 # macro() definitions are used in the following because we need to append .inc
 # file paths into some global lists (*_CPP_DEPENDS). And those global lists are
@@ -65,6 +66,18 @@ spvtools_core_tables("1.0")
 spvtools_core_tables("1.1")
 spvtools_opencl_tables("1.0")
 spvtools_glsl_tables("1.0")
+
+
+# Extract the list of known generators from the SPIR-V XML registry file.
+set(GENERATOR_INC_FILE ${spirv-tools_BINARY_DIR}/generators.inc)
+set(SPIRV_XML_REGISTRY_FILE ${SPIRV_HEADER_INCLUDE_DIR}/spirv/spir-v.xml)
+add_custom_command(OUTPUT ${GENERATOR_INC_FILE}
+  COMMAND ${PYTHON_EXECUTABLE} ${XML_REGISTRY_PROCESSING_SCRIPT}
+    --xml=${SPIRV_XML_REGISTRY_FILE}
+    --generator-output=${GENERATOR_INC_FILE}
+  DEPENDS ${XML_REGISTRY_PROCESSING_SCRIPT} ${SPIRV_XML_REGISTRY_FILE}
+  COMMENT "Generate tables based on the SPIR-V XML registry.")
+list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 
 # The following .cpp files include the above generated .inc files.
 # Add those .inc files as their dependencies.

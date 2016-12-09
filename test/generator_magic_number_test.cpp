@@ -37,7 +37,7 @@ INSTANTIATE_TEST_CASE_P(
         {SPV_GENERATOR_KHRONOS, "Khronos"},
         {SPV_GENERATOR_LUNARG, "LunarG"},
         {SPV_GENERATOR_VALVE, "Valve"},
-        {SPV_GENERATOR_CODEPLAY, "Codeplay Software Ltd."},
+        {SPV_GENERATOR_CODEPLAY, "Codeplay"},
         {SPV_GENERATOR_NVIDIA, "NVIDIA"},
         {SPV_GENERATOR_ARM, "ARM"},
         {SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR,
@@ -49,8 +49,9 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     Unregistered, GeneratorMagicNumberTest,
     ::testing::ValuesIn(std::vector<EnumCase<spv_generator_t>>{
-        // Currently value 6 and beyond are unregiestered.
-        {spv_generator_t(9), "Unknown"},
+        // We read registered entries from the SPIR-V XML Registry file
+        // which can change over time.
+        {spv_generator_t(1000), "Unknown"},
         {spv_generator_t(9999), "Unknown"},
     }),);
 }  // anonymous namespace

@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "instruction.h"
@@ -36,31 +37,28 @@ const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
 #include "core.insts-1.1.inc"
 };
 
+// Represents a vendor tool entry in the SPIR-V XML Regsitry.
+struct VendorTool {
+  uint32_t value;
+  const char* vendor;
+  const char* tool; // Might be empty string.
+  const char* vendor_tool; // Combiantion of vendor and tool.
+};
+
+const VendorTool vendor_tools[] = {
+#include "generators.inc"
+};
+
 }  // anonymous namespace
 
+// TODO(dneto): Move this to another file.  It doesn't belong with opcode
+// processing.
 const char* spvGeneratorStr(uint32_t generator) {
-  switch (generator) {
-    case SPV_GENERATOR_KHRONOS:
-      return "Khronos";
-    case SPV_GENERATOR_LUNARG:
-      return "LunarG";
-    case SPV_GENERATOR_VALVE:
-      return "Valve";
-    case SPV_GENERATOR_CODEPLAY:
-      return "Codeplay Software Ltd.";
-    case SPV_GENERATOR_NVIDIA:
-      return "NVIDIA";
-    case SPV_GENERATOR_ARM:
-      return "ARM";
-    case SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR:
-      return "Khronos LLVM/SPIR-V Translator";
-    case SPV_GENERATOR_KHRONOS_ASSEMBLER:
-      return "Khronos SPIR-V Tools Assembler";
-    case SPV_GENERATOR_KHRONOS_GLSLANG:
-      return "Khronos Glslang Reference Front End";
-    default:
-      return "Unknown";
-  }
+  auto where = std::find_if(
+      std::begin(vendor_tools), std::end(vendor_tools),
+      [generator](const VendorTool& vt) { return generator == vt.value; });
+  if (where != std::end(vendor_tools)) return where->vendor_tool;
+  return "Unknown";
 }
 
 uint32_t spvOpcodeMake(uint16_t wordCount, SpvOp opcode) {
