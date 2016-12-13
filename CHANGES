@@ -1,18 +1,28 @@
 Revision history for SPIRV-Tools
 
-v2016.6-dev 2016-09-16
+v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
    optimization.
  - Support SPV_KHR_shader_draw_parameters in assembler, disassembler, parser.
- - Validator has increased coverage:
-   - Checks "Data rules" in Universal Validation Rules, section 2.16.1
-   - WIP: Universal Limits.
-     - The minimum mandated upper bounds are checked.
-     - TODO: Parameterize the validator to allow larger limits accepted by
-       a more than minimally capable implementation.
+ - Validator:
+   - Add validator API accepting raw binary words
+   - Increased coverage:
+     - Checks "Data rules" in Universal Validation Rules, section 2.16.1
+     - WIP: Universal Limits.
+       - The minimum mandated upper bounds are checked.
+       - TODO: Parameterize the validator to allow larger limits accepted by
+         a more than minimally capable implementation.
+   - OpSampledImage checks
+   - OpConstantComposite checks
+   - Id bound check
+ - Disasssembler:
+   - Generates friendly GLSL-based names for more builtin variables
+   - Generates friendly names for numeric OpConstant values
+   - Vendor tool info extracted from SPIR-V XML registry file.
  - Fixes issues:
    #429: Validator: Allow OpTypeForwardPointer and OpTypeStruct to reference
      undefined IDs
+   #482: Validator: OpVariable initializer can be an ID of a module-scope variable
 
 v2016.5 2016-09-16
  - Support SPV_KHR_shader_ballot in assembler, disassembler, parser.
