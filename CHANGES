@@ -1,5 +1,7 @@
 Revision history for SPIRV-Tools
 
+v2016.7-dev 2016-12-13
+
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
    optimization.
