@@ -1,6 +1,8 @@
 Revision history for SPIRV-Tools
 
 v2016.7-dev 2016-12-13
+ - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
+   assembly syntax file for Vim.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and

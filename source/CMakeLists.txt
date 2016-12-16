@@ -13,6 +13,7 @@
 # limitations under the License.
 
 set(GRAMMAR_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_grammar_tables.py")
+set(VIMSYNTAX_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_vim_syntax.py")
 set(XML_REGISTRY_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_registry_tables.py")
 
 # macro() definitions are used in the following because we need to append .inc
@@ -33,6 +34,22 @@ macro(spvtools_core_tables VERSION)
   list(APPEND OPCODE_CPP_DEPENDS ${GRAMMAR_INSTS_INC_FILE})
   list(APPEND OPERAND_CPP_DEPENDS ${GRAMMAR_KINDS_INC_FILE})
 endmacro(spvtools_core_tables)
+
+macro(spvtools_vimsyntax VERSION CLVERSION)
+  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
+  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
+  set(OPENCL_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst-1.0.opencl.std.grammar.json")
+  set(VIMSYNTAX_FILE "${spirv-tools_BINARY_DIR}/spvasm.vim")
+  add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
+      --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+      --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
+      --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
+      >${VIMSYNTAX_FILE}
+    DEPENDS ${VIMSYNTAX_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE}
+            ${GLSL_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
+    COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
+endmacro(spvtools_vimsyntax)
 
 macro(spvtools_glsl_tables VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
@@ -66,6 +83,9 @@ spvtools_core_tables("1.0")
 spvtools_core_tables("1.1")
 spvtools_opencl_tables("1.0")
 spvtools_glsl_tables("1.0")
+
+spvtools_vimsyntax("1.1" "1.0")
+add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})
 
 
 # Extract the list of known generators from the SPIR-V XML registry file.

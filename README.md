@@ -89,6 +89,13 @@ Currently supported optimizations:
 For the latest list with detailed documentation, please refer to
 [`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).
 
+### Extras
+
+* [Utility filters](#utility-filters)
+* Build target `spirv-tools-vimsyntax` generates file `spvasm.vim`.
+  Copy that file into your `$HOME/.vim/syntax` directory to get SPIR-V assembly syntax
+  highlighting in Vim.  This build target is not built by default.
+
 ## Source code
 
 The SPIR-V Tools are maintained by members of the The Khronos Group Inc.,
@@ -331,6 +338,9 @@ tests.
 
 ## Future Work
 <a name="future"></a>
+
+_See the [projects pages](https://github.com/KhronosGroup/SPIRV-Tools/projects)
+for more information._
 
 ### Assembler and disassembler
 
