@@ -71,6 +71,7 @@ set(TEST_SOURCES
   binary_endianness_test.cpp
   binary_header_get_test.cpp
   binary_parse_test.cpp
+  binary_strnlen_s_test.cpp
   binary_to_text_test.cpp
   binary_to_text.literal_test.cpp
   capability_set_test.cpp

@@ -550,7 +550,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       const size_t remaining_input_bytes =
           sizeof(uint32_t) * (_.num_words - _.word_index);
       const size_t string_num_content_bytes =
-          strnlen(string, remaining_input_bytes);
+          spv_strnlen_s(string, remaining_input_bytes);
       // If there was no terminating null byte, then that's an end-of-input
       // error.
       if (string_num_content_bytes == remaining_input_bytes)
@@ -769,4 +769,12 @@ void spvBinaryDestroy(spv_binary binary) {
   if (!binary) return;
   delete[] binary->code;
   delete binary;
+}
+
+size_t spv_strnlen_s(const char* str, size_t strsz) {
+  if (!str) return 0;
+  for (size_t i = 0; i < strsz; i++) {
+    if (!str[i]) return i;
+  }
+  return strsz;
 }
