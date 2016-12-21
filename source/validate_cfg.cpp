@@ -403,7 +403,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_block = [](cbb_ptr) {};
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
-      /// calculate dominators
+      /// Calculate dominators
       DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
@@ -414,7 +414,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         edge.first->SetImmediateDominator(edge.second);
       }
 
-      /// calculate post dominators
+      /// Calculate post dominators
       DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
@@ -424,7 +424,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       for (auto edge : postdom_edges) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
-      /// calculate back edges.
+      /// Calculate back edges.
       DepthFirstTraversal(
           function.pseudo_entry_block(),
           function
@@ -432,6 +432,55 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           ignore_block, ignore_block, [&](cbb_ptr from, cbb_ptr to) {
             back_edges.emplace_back(from->id(), to->id());
           });
+
+      // Perform a DepthFirstTraversal that ensures CFG nesting depth is valid.
+      const int cfg_depth_limit = 1023;
+      bool cfg_depth_limit_violated = false;
+      int depth = 0;
+      std::unordered_map<cbb_ptr, int> block_depth;
+      DepthFirstTraversal(
+          function.first_block(), function.AugmentedCFGSuccessorsFunction(),
+          [&](cbb_ptr b) {
+            // Header block of a loop.
+            if (b->is_type(kBlockTypeLoop)) {
+              // at this point we can set the depth for the merge block and
+              // continue block of the loop.
+              const auto& construct = function.FindConstructForEntryBlock(b);
+              const auto& merge_block = construct.exit_block();
+              // since it's a loop, the corresponding construct is just the
+              // continue construct: A vector with 1 element.
+              const auto& continue_construct =
+                  construct.corresponding_constructs()[0];
+              const auto& continue_block = continue_construct->entry_block();
+              block_depth[b] = depth;
+              block_depth[merge_block] = depth;
+              block_depth[continue_block] = depth + 1;
+              ++depth;
+            } else if (b->is_type(kBlockTypeHeader)) {
+              // Header block of a selection.
+              const auto& construct = function.FindConstructForEntryBlock(b);
+              const auto& merge_block = construct.exit_block();
+              block_depth[b] = depth;
+              block_depth[merge_block] = depth;
+              ++depth;
+            } else if (block_depth.find(b) == block_depth.end()) {
+              block_depth[b] = depth;
+            }
+            if (block_depth[b] > cfg_depth_limit) {
+              cfg_depth_limit_violated = true;
+            }
+          },
+          [&](cbb_ptr b) {
+            if (b->is_type(kBlockTypeLoop) || b->is_type(kBlockTypeHeader)) {
+              --depth;
+            }
+          },
+          ignore_edge);
+
+      if (cfg_depth_limit_violated) {
+        return _.diag(SPV_ERROR_INVALID_CFG)
+               << "Maximum Control Flow nesting depth exceeded.";
+      }
     }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
