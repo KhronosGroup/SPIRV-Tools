@@ -435,10 +435,10 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
-    // Check if the order of blocks in the binary appear before the blocks they
-    // dominate
     auto& blocks = function.ordered_blocks();
-    if (blocks.empty() == false) {
+    if (!blocks.empty()) {
+      // Check if the order of blocks in the binary appear before the blocks
+      // they dominate
       for (auto block = begin(blocks) + 1; block != end(blocks); ++block) {
         if (auto idom = (*block)->immediate_dominator()) {
           if (idom != function.pseudo_entry_block() &&
@@ -448,6 +448,14 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
                    << " appears in the binary before its dominator "
                    << _.getIdName(idom->id());
           }
+        }
+      }
+      // Check that no block has a nesting depth larger than the limit.
+      const int control_flow_nesting_depth_limit = 1023;
+      for (auto block = begin(blocks); block != end(blocks); ++block) {
+        if (function.GetBlockDepth(*block) > control_flow_nesting_depth_limit) {
+          return _.diag(SPV_ERROR_INVALID_CFG)
+                 << "Maximum Control Flow nesting depth exceeded.";
         }
       }
     }

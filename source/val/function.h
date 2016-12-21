@@ -174,6 +174,9 @@ class Function {
   /// Returns the block predecessors function for the augmented CFG.
   GetBlocksFunction AugmentedCFGPredecessorsFunction() const;
 
+  /// Returns the control flow nesting depth of the given basic block.
+  int GetBlockDepth(BasicBlock* bb);
+
   /// Prints a GraphViz digraph of the CFG of the current funciton
   void PrintDotGraph() const;
 
@@ -278,6 +281,12 @@ class Function {
 
   /// Maps a construct's entry block to the construct.
   std::unordered_map<const BasicBlock*, Construct*> entry_block_to_construct_;
+
+  /// This map provides the header block for a given merge block.
+  std::unordered_map<BasicBlock*, BasicBlock*> merge_block_header_;
+
+  /// Stores the control flow nesting depth of a given basic block
+  std::unordered_map<BasicBlock*, int> block_depth_;
 };
 
 }  /// namespace libspirv
