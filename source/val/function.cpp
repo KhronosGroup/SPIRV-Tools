@@ -137,6 +137,7 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
       AddConstruct({ConstructType::kContinue, &continue_target_block});
   continue_construct.set_corresponding_constructs({&loop_construct});
   loop_construct.set_corresponding_constructs({&continue_construct});
+  merge_block_header_[&merge_block] = current_block_;
 
   return SPV_SUCCESS;
 }
@@ -146,6 +147,7 @@ spv_result_t Function::RegisterSelectionMerge(uint32_t merge_id) {
   BasicBlock& merge_block = blocks_.at(merge_id);
   current_block_->set_type(kBlockTypeHeader);
   merge_block.set_type(kBlockTypeMerge);
+  merge_block_header_[&merge_block] = current_block_;
 
   AddConstruct({ConstructType::kSelection, current_block(), &merge_block});
 
@@ -369,6 +371,56 @@ Construct& Function::FindConstructForEntryBlock(const BasicBlock* entry_block) {
   auto construct_ptr = (*where).second;
   assert(construct_ptr);
   return *construct_ptr;
+}
+
+int Function::GetBlockDepth(BasicBlock* bb) {
+  // Guard against nullptr.
+  if (!bb) {
+    return 0;
+  }
+  // Only calculate the depth if it's not already calculated.
+  // This function uses memoization to avoid duplicate CFG depth calculations.
+  if (block_depth_.find(bb) != block_depth_.end()) {
+    return block_depth_[bb];
+  }
+
+  BasicBlock* bb_dom = bb->immediate_dominator();
+  if (!bb_dom || bb == bb_dom) {
+    // This block has no dominator, so it's at depth 0.
+    block_depth_[bb] = 0;
+  } else if (bb->is_type(kBlockTypeMerge)) {
+    // If this is a merge block, its depth is equal to the block before
+    // branching.
+    BasicBlock* header = merge_block_header_[bb];
+    assert(header);
+    block_depth_[bb] = GetBlockDepth(header);
+  } else if (bb->is_type(kBlockTypeContinue)) {
+    // The depth of the continue block entry point is 1 + loop header depth.
+    Construct* continue_construct = entry_block_to_construct_[bb];
+    assert(continue_construct);
+    // Continue construct has only 1 corresponding construct (loop header).
+    Construct* loop_construct =
+        continue_construct->corresponding_constructs()[0];
+    assert(loop_construct);
+    BasicBlock* loop_header = loop_construct->entry_block();
+    // The continue target may be the loop itself (while 1).
+    // In such cases, the depth of the continue block is: 1 + depth of the
+    // loop's dominator block.
+    if (loop_header == bb) {
+      block_depth_[bb] = 1 + GetBlockDepth(bb_dom);
+    } else {
+      block_depth_[bb] = 1 + GetBlockDepth(loop_header);
+    }
+  } else if (bb_dom->is_type(kBlockTypeHeader) ||
+             bb_dom->is_type(kBlockTypeLoop)) {
+    // The dominator of the given block is a header block. So, the nesting
+    // depth of this block is: 1 + nesting depth of the header.
+    block_depth_[bb] = 1 + GetBlockDepth(bb_dom);
+  } else {
+    block_depth_[bb] = GetBlockDepth(bb_dom);
+  }
+
+  return block_depth_[bb];
 }
 
 }  /// namespace libspirv

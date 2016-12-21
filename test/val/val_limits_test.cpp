@@ -22,9 +22,10 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace {
+
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
-
 using std::string;
 
 using ValidateLimits = spvtest::ValidateBase<bool>;
@@ -34,7 +35,7 @@ string header = R"(
      OpMemoryModel Logical GLSL450
 )";
 
-TEST_F(ValidateLimits, idLargerThanBoundBad) {
+TEST_F(ValidateLimits, IdLargerThanBoundBad) {
   string str = header + R"(
 ;  %i32 has ID 1
 %i32    = OpTypeInt 32 1
@@ -52,7 +53,7 @@ TEST_F(ValidateLimits, idLargerThanBoundBad) {
       HasSubstr("Result <id> '64' must be less than the ID bound '3'."));
 }
 
-TEST_F(ValidateLimits, idEqualToBoundBad) {
+TEST_F(ValidateLimits, IdEqualToBoundBad) {
   string str = header + R"(
 ;  %i32 has ID 1
 %i32    = OpTypeInt 32 1
@@ -76,7 +77,7 @@ TEST_F(ValidateLimits, idEqualToBoundBad) {
       HasSubstr("Result <id> '64' must be less than the ID bound '64'."));
 }
 
-TEST_F(ValidateLimits, structNumMembersGood) {
+TEST_F(ValidateLimits, StructNumMembersGood) {
   std::ostringstream spirv;
   spirv << header << R"(
 %1 = OpTypeInt 32 0
@@ -88,7 +89,7 @@ TEST_F(ValidateLimits, structNumMembersGood) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateLimits, structNumMembersExceededBad) {
+TEST_F(ValidateLimits, StructNumMembersExceededBad) {
   std::ostringstream spirv;
   spirv << header << R"(
 %1 = OpTypeInt 32 0
@@ -104,7 +105,7 @@ TEST_F(ValidateLimits, structNumMembersExceededBad) {
 }
 
 // Valid: Switch statement has 16,383 branches.
-TEST_F(ValidateLimits, switchNumBranchesGood) {
+TEST_F(ValidateLimits, SwitchNumBranchesGood) {
   std::ostringstream spirv;
   spirv << header << R"(
 %1 = OpTypeVoid
@@ -132,7 +133,7 @@ OpFunctionEnd
 }
 
 // Invalid: Switch statement has 16,384 branches.
-TEST_F(ValidateLimits, switchNumBranchesBad) {
+TEST_F(ValidateLimits, SwitchNumBranchesBad) {
   std::ostringstream spirv;
   spirv << header << R"(
 %1 = OpTypeVoid
@@ -320,3 +321,97 @@ TEST_F(ValidateLimits, StructNestingDepthBad) {
       HasSubstr(
           "Structure Nesting Depth may not be larger than 255. Found 256."));
 }
+
+// clang-format off
+// Generates an SPIRV program with the given control flow nesting depth
+void GenerateSpirvProgramWithCfgNestingDepth(std::string& str, int depth) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+         %12 = OpConstantTrue %bool
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpBranch %6
+          %6 = OpLabel
+               OpLoopMerge %8 %9 None
+               OpBranch %10
+         %10 = OpLabel
+               OpBranchConditional %12 %7 %8
+          %7 = OpLabel
+  )";
+  int first_id = 13;
+  int last_id = 14;
+  // We already have 1 level of nesting due to the Loop.
+  int num_if_conditions = depth-1;
+  int largest_index = first_id + 2*num_if_conditions - 2;
+  for (int i = first_id; i <= largest_index; i = i + 2) {
+    spirv << "OpSelectionMerge %" << i+1 << " None" << "\n";
+    spirv << "OpBranchConditional %12 " << "%" << i << " %" << i+1 << "\n";
+    spirv << "%" << i << " = OpLabel" << "\n";
+  }
+  spirv << "OpBranch %9" << "\n";
+
+  for (int i = largest_index+1; i > last_id; i = i - 2) {
+    spirv << "%" << i << " = OpLabel" << "\n";
+    spirv << "OpBranch %" << i-2 << "\n";
+  }
+  spirv << "%" << last_id << " = OpLabel" << "\n";
+  spirv << "OpBranch %9" << "\n";
+  spirv << R"(
+    %9 = OpLabel
+    OpBranch %6
+    %8 = OpLabel
+    OpReturn
+    OpFunctionEnd
+  )";
+  str = spirv.str();
+}
+// clang-format on
+
+// Valid: Control Flow Nesting depth is 1023.
+TEST_F(ValidateLimits, ControlFlowDepthGood) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 1023);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Control Flow Nesting depth is 1024. (limit is 1023).
+TEST_F(ValidateLimits, ControlFlowDepthBad) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 1024);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Maximum Control Flow nesting depth exceeded."));
+}
+
+// Valid. The purpose here is to test the CFG depth calculation code when a loop
+// continue target is the loop iteself. It also exercises the case where a loop
+// is unreachable.
+TEST_F(ValidateLimits, ControlFlowNoEntryToLoopGood) {
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpName %entry "entry"
+           OpName %loop "loop"
+           OpName %exit "exit"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%main    = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpBranch %exit
+%loop    = OpLabel
+           OpLoopMerge %loop %loop None
+           OpBranch %loop
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+  )";
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+}  // anonymous namespace
