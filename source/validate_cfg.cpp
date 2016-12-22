@@ -450,12 +450,16 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           }
         }
       }
-      // Check that no block has a nesting depth larger than the limit.
-      const int control_flow_nesting_depth_limit = 1023;
-      for (auto block = begin(blocks); block != end(blocks); ++block) {
-        if (function.GetBlockDepth(*block) > control_flow_nesting_depth_limit) {
-          return _.diag(SPV_ERROR_INVALID_CFG)
-                 << "Maximum Control Flow nesting depth exceeded.";
+      // If we have structed control flow, check that no block has a control
+      // flow nesting depth larger than the limit.
+      if (_.HasCapability(SpvCapabilityShader)) {
+        const int control_flow_nesting_depth_limit = 1023;
+        for (auto block = begin(blocks); block != end(blocks); ++block) {
+          if (function.GetBlockDepth(*block) >
+              control_flow_nesting_depth_limit) {
+            return _.diag(SPV_ERROR_INVALID_CFG)
+                   << "Maximum Control Flow nesting depth exceeded.";
+          }
         }
       }
     }

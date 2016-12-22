@@ -175,6 +175,9 @@ class Function {
   GetBlocksFunction AugmentedCFGPredecessorsFunction() const;
 
   /// Returns the control flow nesting depth of the given basic block.
+  /// This function only works when you have structured control flow.
+  /// This function should only be called after the control flow constructs have
+  /// been identified and dominators have been computed.
   int GetBlockDepth(BasicBlock* bb);
 
   /// Prints a GraphViz digraph of the CFG of the current funciton
