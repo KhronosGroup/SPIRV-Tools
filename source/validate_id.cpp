@@ -1251,7 +1251,7 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
     return false;
   }
   if (num_indexes <= 0) {
-    DIAG(resultTypeIndex) << "No Indexes were passes to " << instr_name << ".";
+    DIAG(resultTypeIndex) << "No Indexes were passed to " << instr_name << ".";
     return false;
   }
   // Indexes walk the type hierarchy to the desired depth, potentially down to
@@ -1342,6 +1342,28 @@ template <>
 bool idUsage::isValid<SpvOpInBoundsAccessChain>(
     const spv_instruction_t* inst, const spv_opcode_desc opcodeEntry) {
   return isValid<SpvOpAccessChain>(inst, opcodeEntry);
+}
+
+template <>
+bool idUsage::isValid<SpvOpPtrAccessChain>(const spv_instruction_t* inst,
+                                           const spv_opcode_desc opcodeEntry) {
+  // OpPtrAccessChain's validation rules are similar to OpAccessChain, with one
+  // difference: word 4 must be id of an integer (Element <id>).
+  // The grammar guarantees that there are at least 5 words in the instruction
+  // (i.e. if there are fewer than 5 words, the SPIR-V code will not compile.)
+  int elem_index = 4;
+  // We can remove the Element <id> from the instruction words, and simply call
+  // the validation code of OpAccessChain.
+  spv_instruction_t new_inst = *inst;
+  new_inst.words.erase(new_inst.words.begin() + elem_index);
+  return isValid<SpvOpAccessChain>(&new_inst, opcodeEntry);
+}
+
+template <>
+bool idUsage::isValid<SpvOpInBoundsPtrAccessChain>(
+    const spv_instruction_t* inst, const spv_opcode_desc opcodeEntry) {
+  // Has the same validation rules as OpPtrAccessChain
+  return isValid<SpvOpPtrAccessChain>(inst, opcodeEntry);
 }
 
 #if 0
@@ -2572,6 +2594,8 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpCopyMemorySized)
     CASE(OpAccessChain)
     CASE(OpInBoundsAccessChain)
+    CASE(OpPtrAccessChain)
+    CASE(OpInBoundsPtrAccessChain)
     TODO(OpArrayLength)
     TODO(OpGenericPtrMemSemantics)
     CASE(OpFunction)
