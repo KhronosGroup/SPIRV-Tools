@@ -398,7 +398,7 @@ int Function::GetBlockDepth(BasicBlock* bb) {
       block_depth_[bb] = 1 + GetBlockDepth(loop_header);
     } else {
       BasicBlock* bb_dom = bb->immediate_dominator();
-      if (!bb_dom) {
+      if (!bb_dom || bb_dom == bb) {
         // This block has no dominator, so it's at depth 0.
         block_depth_[bb] = 0;
       } else if (bb_dom->is_type(kBlockTypeHeader) ||
