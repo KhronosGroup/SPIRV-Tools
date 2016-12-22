@@ -395,7 +395,14 @@ int Function::GetBlockDepth(BasicBlock* bb) {
           continue_construct->corresponding_constructs()[0];
       assert(loop_construct);
       BasicBlock* loop_header = loop_construct->entry_block();
-      block_depth_[bb] = 1 + GetBlockDepth(loop_header);
+      // The continue target may be the loop itself (while 1).
+      // In such cases, the depth of the continue block is: 1 + depth of the
+      // loop's dominator block.
+      if (loop_header == bb) {
+        block_depth_[bb] = 1 + GetBlockDepth(bb->immediate_dominator());
+      } else {
+        block_depth_[bb] = 1 + GetBlockDepth(loop_header);
+      }
     } else {
       BasicBlock* bb_dom = bb->immediate_dominator();
       if (!bb_dom || bb_dom == bb) {
