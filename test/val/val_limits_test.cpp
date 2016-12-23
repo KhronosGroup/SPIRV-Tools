@@ -388,4 +388,30 @@ TEST_F(ValidateLimits, ControlFlowDepthBad) {
               HasSubstr("Maximum Control Flow nesting depth exceeded."));
 }
 
+// Valid. The purpose here is to test the CFG depth calculation code when a loop
+// continue target is the loop iteself. It also exercises the case where a loop
+// is unreachable.
+TEST_F(ValidateLimits, ControlFlowNoEntryToLoopGood) {
+  string str = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpName %entry "entry"
+           OpName %loop "loop"
+           OpName %exit "exit"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%main    = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpBranch %exit
+%loop    = OpLabel
+           OpLoopMerge %loop %loop None
+           OpBranch %loop
+%exit    = OpLabel
+           OpReturn
+           OpFunctionEnd
+  )";
+  CompileSuccessfully(str);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // anonymous namespace
