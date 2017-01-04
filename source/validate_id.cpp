@@ -1613,20 +1613,19 @@ bool idUsage::isValid<OpCompositeConstruct>(
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpCompositeExtract>(
-    const spv_instruction_t *inst, const spv_opcode_desc) {
+bool idUsage::isValid<SpvOpCompositeExtract>(const spv_instruction_t* inst,
+                                             const spv_opcode_desc) {
   std::string instr_name =
       "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode)));
 
   // Remember the result type. Result Type is at word 1.
   // This will be used to make sure the indexing results in the same type.
-  auto resultTypeIndex = 1;
+  const size_t resultTypeIndex = 1;
   auto resultTypeInstr = module_.FindDef(inst->words[resultTypeIndex]);
 
   // The Composite <id> is at word 3. ID definition checks ensure this id is
   // already defined.
-  auto baseIdIndex = 3;
-  auto baseInstr = module_.FindDef(inst->words[baseIdIndex]);
+  auto baseInstr = module_.FindDef(inst->words[3]);
   auto curTypeInstr = module_.FindDef(baseInstr->type_id());
 
   // Check Universal Limit (SPIR-V Spec. Section 2.17).
@@ -1708,8 +1707,8 @@ bool idUsage::isValid<SpvOpCompositeExtract>(
 }
 
 template <>
-bool idUsage::isValid<SpvOpCompositeInsert>(
-    const spv_instruction_t *inst, const spv_opcode_desc) {
+bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
+                                            const spv_opcode_desc) {
   std::string instr_name =
       "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode)));
 
@@ -1717,12 +1716,12 @@ bool idUsage::isValid<SpvOpCompositeInsert>(
   // word at index 1. Composite is at word 4.
   // The grammar guarantees that the instruction has at least 5 words.
   // ID definition checks ensure these IDs are already defined.
-  auto resultTypeIndex = 1;
-  auto compositeIndex = 4;
+  const size_t resultTypeIndex = 1;
+  const size_t compositeIndex = 4;
   auto resultTypeInstr = module_.FindDef(inst->words[resultTypeIndex]);
   auto compositeInstr = module_.FindDef(inst->words[compositeIndex]);
   auto compositeTypeInstr = module_.FindDef(compositeInstr->type_id());
-  if(resultTypeInstr != compositeTypeInstr) {
+  if (resultTypeInstr != compositeTypeInstr) {
     DIAG(resultTypeIndex)
         << "The Result Type must be the same as Composite type in "
         << instr_name << ".";

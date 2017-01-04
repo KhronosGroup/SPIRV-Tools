@@ -2550,8 +2550,6 @@ TEST_F(ValidateIdWithMessage, CompositeExtractInsertGood) {
 
 // Valid. Tests both CompositeExtract and CompositeInsert with 255 indexes.
 TEST_F(ValidateIdWithMessage, CompositeExtractInsertLimitsGood) {
-  //const std::string instr = GetParam();
-  const std::string instr = "OpCompositeExtract";
   int depth = 255;
   std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
   header.erase(header.find("%func"));
