@@ -296,7 +296,7 @@ class Function {
   /// Since a basic block may be the entry block of different types of
   /// constructs, the type of the construct should also be specified in order to
   /// get the unique construct.
-  std::unordered_map<std::pair<const BasicBlock*, int>, Construct*,
+  std::unordered_map<std::pair<const BasicBlock*, ConstructType>, Construct*,
                      libspirv::pair_hash>
       entry_block_to_construct_;
 

@@ -21,7 +21,7 @@
 namespace libspirv {
 
 enum class ConstructType {
-  kNone,
+  kNone = 0,
   /// The set of blocks dominated by a selection header, minus the set of blocks
   /// dominated by the header's merge block
   kSelection,
@@ -122,5 +122,16 @@ class Construct {
 };
 
 }  /// namespace libspirv
+
+// Override std::hash for libspirv::ConstructType so that the enum can be used
+// as a key in an unordered_map.
+namespace std {
+template <>
+struct hash<libspirv::ConstructType> {
+  size_t operator()(const libspirv::ConstructType& e) const {
+    return hash<int>()(static_cast<int>(e));
+  }
+};
+}
 
 #endif  /// LIBSPIRV_VAL_CONSTRUCT_H_

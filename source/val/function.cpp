@@ -363,15 +363,15 @@ void Function::ComputeAugmentedCFG() {
 Construct& Function::AddConstruct(const Construct& new_construct) {
   cfg_constructs_.push_back(new_construct);
   auto& result = cfg_constructs_.back();
-  entry_block_to_construct_[std::make_pair(
-      new_construct.entry_block(), int(new_construct.type()))] = &result;
+  entry_block_to_construct_[std::make_pair(new_construct.entry_block(),
+                                           new_construct.type())] = &result;
   return result;
 }
 
 Construct& Function::FindConstructForEntryBlock(const BasicBlock* entry_block,
                                                 ConstructType type) {
   auto where =
-      entry_block_to_construct_.find(std::make_pair(entry_block, int(type)));
+      entry_block_to_construct_.find(std::make_pair(entry_block, type));
   assert(where != entry_block_to_construct_.end());
   auto construct_ptr = (*where).second;
   assert(construct_ptr);
@@ -401,8 +401,8 @@ int Function::GetBlockDepth(BasicBlock* bb) {
     block_depth_[bb] = GetBlockDepth(header);
   } else if (bb->is_type(kBlockTypeContinue)) {
     // The depth of the continue block entry point is 1 + loop header depth.
-    Construct* continue_construct = entry_block_to_construct_[std::make_pair(
-        bb, int(ConstructType::kContinue))];
+    Construct* continue_construct =
+        entry_block_to_construct_[std::make_pair(bb, ConstructType::kContinue)];
     assert(continue_construct);
     // Continue construct has only 1 corresponding construct (loop header).
     Construct* loop_construct =
