@@ -20,8 +20,8 @@
 
 namespace libspirv {
 
-enum class ConstructType {
-  kNone,
+enum class ConstructType : int {
+  kNone = 0,
   /// The set of blocks dominated by a selection header, minus the set of blocks
   /// dominated by the header's merge block
   kSelection,
