@@ -28,11 +28,12 @@
 
 namespace libspirv {
 
-struct pair_hash {
-  template <class T1, class T2>
-  std::size_t operator()(const std::pair<T1, T2>& p) const {
-    auto h1 = std::hash<T1>{}(p.first);
-    auto h2 = std::hash<T2>{}(p.second);
+struct bb_constr_type_pair_hash {
+  std::size_t operator()(
+      const std::pair<const BasicBlock*, ConstructType>& p) const {
+    auto h1 = std::hash<const BasicBlock*>{}(p.first);
+    auto h2 = std::hash<std::underlying_type<ConstructType>::type>{}(
+        static_cast<std::underlying_type<ConstructType>::type>(p.second));
     return (h1 ^ h2);
   }
 };
@@ -297,7 +298,7 @@ class Function {
   /// constructs, the type of the construct should also be specified in order to
   /// get the unique construct.
   std::unordered_map<std::pair<const BasicBlock*, ConstructType>, Construct*,
-                     libspirv::pair_hash>
+                     libspirv::bb_constr_type_pair_hash>
       entry_block_to_construct_;
 
   /// This map provides the header block for a given merge block.
