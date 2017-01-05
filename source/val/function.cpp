@@ -135,6 +135,7 @@ spv_result_t Function::RegisterLoopMerge(uint32_t merge_id,
       AddConstruct({ConstructType::kLoop, current_block_, &merge_block});
   Construct& continue_construct =
       AddConstruct({ConstructType::kContinue, &continue_target_block});
+
   continue_construct.set_corresponding_constructs({&loop_construct});
   loop_construct.set_corresponding_constructs({&continue_construct});
   merge_block_header_[&merge_block] = current_block_;
@@ -211,10 +212,11 @@ void Function::RegisterBlockEnd(vector<uint32_t> next_list,
     std::vector<BasicBlock*>& next_blocks_plus_continue_target =
         loop_header_successors_plus_continue_target_map_[current_block_];
     next_blocks_plus_continue_target = next_blocks;
-    auto continue_target = FindConstructForEntryBlock(current_block_)
-                               .corresponding_constructs()
-                               .back()
-                               ->entry_block();
+    auto continue_target =
+        FindConstructForEntryBlock(current_block_, ConstructType::kLoop)
+            .corresponding_constructs()
+            .back()
+            ->entry_block();
     if (continue_target != current_block_) {
       next_blocks_plus_continue_target.push_back(continue_target);
     }
@@ -361,12 +363,15 @@ void Function::ComputeAugmentedCFG() {
 Construct& Function::AddConstruct(const Construct& new_construct) {
   cfg_constructs_.push_back(new_construct);
   auto& result = cfg_constructs_.back();
-  entry_block_to_construct_[new_construct.entry_block()] = &result;
+  entry_block_to_construct_[std::make_pair(
+      new_construct.entry_block(), int(new_construct.type()))] = &result;
   return result;
 }
 
-Construct& Function::FindConstructForEntryBlock(const BasicBlock* entry_block) {
-  auto where = entry_block_to_construct_.find(entry_block);
+Construct& Function::FindConstructForEntryBlock(const BasicBlock* entry_block,
+                                                ConstructType type) {
+  auto where =
+      entry_block_to_construct_.find(std::make_pair(entry_block, int(type)));
   assert(where != entry_block_to_construct_.end());
   auto construct_ptr = (*where).second;
   assert(construct_ptr);
@@ -396,7 +401,8 @@ int Function::GetBlockDepth(BasicBlock* bb) {
     block_depth_[bb] = GetBlockDepth(header);
   } else if (bb->is_type(kBlockTypeContinue)) {
     // The depth of the continue block entry point is 1 + loop header depth.
-    Construct* continue_construct = entry_block_to_construct_[bb];
+    Construct* continue_construct = entry_block_to_construct_[std::make_pair(
+        bb, int(ConstructType::kContinue))];
     assert(continue_construct);
     // Continue construct has only 1 corresponding construct (loop header).
     Construct* loop_construct =
@@ -419,7 +425,6 @@ int Function::GetBlockDepth(BasicBlock* bb) {
   } else {
     block_depth_[bb] = GetBlockDepth(bb_dom);
   }
-
   return block_depth_[bb];
 }
 

@@ -28,6 +28,15 @@
 
 namespace libspirv {
 
+struct pair_hash {
+  template <class T1, class T2>
+  std::size_t operator()(const std::pair<T1, T2>& p) const {
+    auto h1 = std::hash<T1>{}(p.first);
+    auto h2 = std::hash<T2>{}(p.second);
+    return (h1 ^ h2);
+  }
+};
+
 enum class FunctionDecl {
   kFunctionDeclUnknown,      /// < Unknown function declaration
   kFunctionDeclDeclaration,  /// < Function declaration
@@ -197,7 +206,8 @@ class Function {
 
   // Returns a reference to the construct corresponding to the given entry
   // block.
-  Construct& FindConstructForEntryBlock(const BasicBlock* entry_block);
+  Construct& FindConstructForEntryBlock(const BasicBlock* entry_block,
+                                        ConstructType t);
 
   /// The result id of the OpLabel that defined this block
   uint32_t id_;
@@ -282,8 +292,13 @@ class Function {
   /// The function parameter ids of the functions
   std::vector<uint32_t> parameter_ids_;
 
-  /// Maps a construct's entry block to the construct.
-  std::unordered_map<const BasicBlock*, Construct*> entry_block_to_construct_;
+  /// Maps a construct's entry block to the construct(s).
+  /// Since a basic block may be the entry block of different types of
+  /// constructs, the type of the construct should also be specified in order to
+  /// get the unique construct.
+  std::unordered_map<std::pair<const BasicBlock*, int>, Construct*,
+                     libspirv::pair_hash>
+      entry_block_to_construct_;
 
   /// This map provides the header block for a given merge block.
   std::unordered_map<BasicBlock*, BasicBlock*> merge_block_header_;
