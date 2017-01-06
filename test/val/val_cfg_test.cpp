@@ -1296,6 +1296,48 @@ TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
                                                  << getDiagnosticString();
 }
 
+// Unit test to check the case where a basic block is the entry block of 2
+// different constructs. In this case, the basic block is the entry block of a
+// continue construct as well as a selection construct. See issue# 517 for more
+// details.
+TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+        %int = OpTypeInt 32 1
+  %void_func = OpTypeFunction %void
+      %int_0 = OpConstant %int 0
+    %testfun = OpFunction %void None %void_func
+    %label_1 = OpLabel
+               OpBranch %start
+      %start = OpLabel
+       %cond = OpSLessThan %bool %int_0 %int_0
+       ;
+       ; Note: In this case, the "target" block is both the entry block of
+       ;       the continue construct of the loop as well as the entry block of
+       ;       the selection construct.
+       ;
+               OpLoopMerge %loop_merge %target None
+               OpBranchConditional %cond %target %loop_merge
+ %loop_merge = OpLabel
+               OpReturn
+     %target = OpLabel
+               OpSelectionMerge %selection_merge None
+               OpBranchConditional %cond %do_stuff %do_other_stuff
+     %do_other_stuff = OpLabel
+               OpBranch %selection_merge
+     %selection_merge = OpLabel
+               OpBranch %start
+         %do_stuff = OpLabel
+               OpBranch %selection_merge
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  /// namespace
