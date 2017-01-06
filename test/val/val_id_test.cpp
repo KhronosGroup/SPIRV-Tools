@@ -1837,7 +1837,7 @@ TEST_F(ValidateIdWithMessage, OpCopyMemorySizedSizeTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
-string opAccessChainSpirvSetup = R"(
+const char kDeeplyNestedStructureSetup[] = R"(
 %void = OpTypeVoid
 %void_f  = OpTypeFunction %void
 %int = OpTypeInt 32 0
@@ -1855,7 +1855,7 @@ string opAccessChainSpirvSetup = R"(
 %int_3 = OpConstant %int 3
 %int_5 = OpConstant %int 5
 
-; Let's make the following structures to test OpAccessChain
+; Making the following nested structures.
 ;
 ; struct S {
 ;   bool b;
@@ -1905,7 +1905,7 @@ bool AccessChainRequiresElemId(const std::string& instr) {
 TEST_P(AccessChainInstructionTest, AccessChainGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup +
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup +
                  "%float_entry = " + instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem + R"(%int_0 %int_1
               OpReturn
@@ -1919,7 +1919,7 @@ TEST_P(AccessChainInstructionTest, AccessChainGood) {
 TEST_P(AccessChainInstructionTest, AccessChainResultTypeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %float_entry = )" +
                  instr + R"( %float %my_matrix )" + elem + R"(%int_0 %int_1
 OpReturn
@@ -1938,7 +1938,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %float_entry = )" +
                  instr + " %_ptr_Private_float %void " + elem + R"(%int_0 %int_1
 OpReturn
@@ -1956,7 +1956,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_float %_ptr_Private_float )" + elem +
                  R"(%int_0 %int_1
@@ -1976,7 +1976,7 @@ TEST_P(AccessChainInstructionTest,
        AccessChainResultAndBaseStorageClassDoesntMatchBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Function_float %my_matrix )" + elem +
                  R"(%int_0 %int_1
@@ -1997,7 +1997,7 @@ TEST_P(AccessChainInstructionTest,
        AccessChainBasePtrNotPointingToCompositeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(%int_0
 OpReturn
@@ -2015,7 +2015,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainMissingIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(
 OpReturn
@@ -2032,7 +2032,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
   int depth = 255;
-  std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
+  std::string header = kGLSL450MemoryModel + kDeeplyNestedStructureSetup;
   header.erase(header.find("%func"));
   std::ostringstream spirv;
   spirv << header << "\n";
@@ -2074,7 +2074,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
   std::ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
   spirv << "%entry = " << instr << " %_ptr_Private_float %my_matrix" << elem;
   for (int i = 0; i < 256; ++i) {
     spirv << " %int_0";
@@ -2095,7 +2095,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesBad) {
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
 OpReturn
@@ -2113,7 +2113,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %f = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
                  elem + R"(%int_0 %spec_int %int_2
 OpReturn
@@ -2132,7 +2132,7 @@ TEST_P(AccessChainInstructionTest,
        AccessChainStructResultTypeDoesntMatchIndexedTypeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_1 %int_2
@@ -2152,7 +2152,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_2 %int_2
@@ -2171,7 +2171,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_3 %int_2 %int_2
@@ -2198,7 +2198,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoAllTypesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << std::endl;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%ss = " << instr << " %_ptr_Uniform_struct_s %blockName_var "
         << elem << "%int_0" << std::endl;
   spirv << "%sa = " << instr << " %_ptr_Uniform_array5_mat4x3 %blockName_var "
@@ -2221,7 +2221,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
                  instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
@@ -2237,7 +2237,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %runtime_arr_entry = )" +
                  instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
@@ -2258,7 +2258,7 @@ OpFunctionEnd
 TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem +
                  R"(%int_0 %int_1 %int_0
@@ -2278,7 +2278,7 @@ TEST_P(AccessChainInstructionTest,
        AccessChainResultTypeDoesntMatchIndexedTypeBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + opAccessChainSpirvSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
                  R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
                  R"(%int_0 %int_1
@@ -2535,7 +2535,7 @@ OpFunctionEnd)";
 // Valid: Insert float into a matrix using CompositeInsert.
 TEST_F(ValidateIdWithMessage, CompositeExtractInsertGood) {
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << std::endl;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%float_entry = OpCompositeExtract  %float %matrix 0 1" << std::endl;
 
@@ -2551,7 +2551,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractInsertGood) {
 // Valid. Tests both CompositeExtract and CompositeInsert with 255 indexes.
 TEST_F(ValidateIdWithMessage, CompositeExtractInsertLimitsGood) {
   int depth = 255;
-  std::string header = kGLSL450MemoryModel + opAccessChainSpirvSetup;
+  std::string header = kGLSL450MemoryModel + kDeeplyNestedStructureSetup;
   header.erase(header.find("%func"));
   std::ostringstream spirv;
   spirv << header << std::endl;
@@ -2562,7 +2562,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractInsertLimitsGood) {
     spirv << "%s_depth_" << i << " = OpTypeStruct %s_depth_" << i - 1 << "\n";
   }
 
-  // Define Pointer and Variable to use for the AccessChain instruction.
+  // Define Pointer and Variable to use for CompositeExtract/Insert.
   spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
         << depth << "\n";
   spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
@@ -2599,7 +2599,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractInsertLimitsGood) {
 // Invalid: 256 indexes passed to OpCompositeExtract. Limit is 255.
 TEST_F(ValidateIdWithMessage, CompositeExtractArgCountExceededLimitBad) {
   std::ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%entry = OpCompositeExtract %float %matrix";
   for (int i = 0; i < 256; ++i) {
@@ -2619,7 +2619,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractArgCountExceededLimitBad) {
 // Invalid: 256 indexes passed to OpCompositeInsert. Limit is 255.
 TEST_F(ValidateIdWithMessage, CompositeInsertArgCountExceededLimitBad) {
   std::ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%new_composite = OpCompositeInsert %mat4x3 %int_0 %matrix";
   for (int i = 0; i < 256; ++i) {
@@ -2639,7 +2639,7 @@ TEST_F(ValidateIdWithMessage, CompositeInsertArgCountExceededLimitBad) {
 // Invalid: In OpCompositeInsert, result type must be the same as composite type
 TEST_F(ValidateIdWithMessage, CompositeInsertWrongResultTypeBad) {
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << std::endl;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%float_entry = OpCompositeExtract  %float %matrix 0 1" << std::endl;
   spirv << "%new_composite = OpCompositeInsert %float %float_entry %matrix 0 1"
@@ -2655,7 +2655,7 @@ TEST_F(ValidateIdWithMessage, CompositeInsertWrongResultTypeBad) {
 // Invalid: No Indexes were passed to OpCompositeExtract.
 TEST_F(ValidateIdWithMessage, CompositeExtractMissingIndexesBad) {
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << std::endl;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%float_entry = OpCompositeExtract  %float %matrix" << std::endl;
   spirv << R"(OpReturn
@@ -2669,7 +2669,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractMissingIndexesBad) {
 // Invalid: No Indexes were passed to OpCompositeInsert.
 TEST_F(ValidateIdWithMessage, CompositeInsertMissingIndexesBad) {
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << std::endl;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
   spirv << "%new_composite = OpCompositeInsert %mat4x3 %int_0 %matrix";
   spirv << R"(
@@ -2690,7 +2690,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractInsertIndexIntoAllTypesGood) {
   // 2 will select the column (which is a vector) within the matrix at index 2
   // 0 will select the element at the index 0 of the vector. (which is a float).
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %ss = OpCompositeExtract %struct_s %myblock 0
     %sa = OpCompositeExtract %array5_mat4x3 %myblock 0 3
@@ -2722,7 +2722,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractReachedScalarBad) {
   // 2 will select the column (which is a vector) within the matrix at index 2
   // 0 will select the element at the index 0 of the vector. (which is a float).
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %fl = OpCompositeExtract %float %myblock 0 3 1 2 0 1
     OpReturn
@@ -2745,7 +2745,7 @@ TEST_F(ValidateIdWithMessage, CompositeInsertReachedScalarBad) {
   // 2 will select the column (which is a vector) within the matrix at index 2
   // 0 will select the element at the index 0 of the vector. (which is a float).
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %fl = OpCompositeExtract %float %myblock 0 3 1 2 0
     %b5 = OpCompositeInsert %struct_blockName %fl %myblock 0 3 1 2 0 1
@@ -2771,7 +2771,7 @@ TEST_F(ValidateIdWithMessage,
   // 2 will select the column (which is a vector) within the matrix at index 2
   // 0 will select the element at the index 0 of the vector. (which is a float).
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %fl = OpCompositeExtract %int %myblock 0 3 1 2 0
     OpReturn
@@ -2798,7 +2798,7 @@ TEST_F(ValidateIdWithMessage,
   // 0 will select the element at the index 0 of the vector. (which is a float).
   // We are trying to insert an integer where we should be inserting a float.
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %b5 = OpCompositeInsert %struct_blockName %int_0 %myblock 0 3 1 2 0
     OpReturn
@@ -2817,7 +2817,7 @@ TEST_F(ValidateIdWithMessage,
 TEST_F(ValidateIdWithMessage, CompositeExtractStructIndexOutOfBoundBad) {
   // struct_blockName has 3 members (index 0,1,2). We'll try to access index 3.
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %ss = OpCompositeExtract %struct_s %myblock 3
     OpReturn
@@ -2836,7 +2836,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractStructIndexOutOfBoundBad) {
 TEST_F(ValidateIdWithMessage, CompositeInsertStructIndexOutOfBoundBad) {
   // struct_blockName has 3 members (index 0,1,2). We'll try to access index 3.
   ostringstream spirv;
-  spirv << kGLSL450MemoryModel << opAccessChainSpirvSetup << R"(
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << R"(
     %myblock = OpLoad %struct_blockName %blockName_var
     %ss = OpCompositeExtract %struct_s %myblock 0
     %new_composite = OpCompositeInsert %struct_blockName %ss %myblock 3
