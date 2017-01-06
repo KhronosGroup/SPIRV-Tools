@@ -1630,7 +1630,7 @@ bool walkCompositeTypeHierarchy(
     std::vector<uint32_t>::const_iterator word_iter_end,
     const libspirv::Instruction* base,
     const libspirv::Instruction** result_type_instr,
-    std::function<std::string(void)> instr_name, std::ostringstream* error) {
+    std::function<std::string(void)> instr_name, std::ostream* error) {
   auto cur_type = base;
   for (; word_iter != word_iter_end; ++word_iter) {
     switch (cur_type->opcode()) {
