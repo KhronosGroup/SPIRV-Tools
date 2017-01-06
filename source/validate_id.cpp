@@ -1629,18 +1629,18 @@ bool walkCompositeTypeHierarchy(
     std::vector<uint32_t>::const_iterator word_iter,
     std::vector<uint32_t>::const_iterator word_iter_end,
     const libspirv::Instruction* base,
-    const libspirv::Instruction*& result_type_instr,
-    std::function<std::string(void)> instr_name, std::stringstream& error) {
-  result_type_instr = base;
+    const libspirv::Instruction** result_type_instr,
+    std::function<std::string(void)> instr_name, std::ostringstream* error) {
+  auto cur_type = base;
   for (; word_iter != word_iter_end; ++word_iter) {
-    switch (result_type_instr->opcode()) {
+    switch (cur_type->opcode()) {
       case SpvOpTypeMatrix:
       case SpvOpTypeVector:
       case SpvOpTypeArray:
       case SpvOpTypeRuntimeArray: {
         // In OpTypeMatrix, OpTypeVector, OpTypeArray, and OpTypeRuntimeArray,
         // word 2 is the Element Type.
-        result_type_instr = module.FindDef(result_type_instr->word(2));
+        cur_type = module.FindDef(cur_type->word(2));
         break;
       }
       case SpvOpTypeStruct: {
@@ -1649,29 +1649,30 @@ bool walkCompositeTypeHierarchy(
         // The index points to the struct member we want, therefore, the index
         // should be less than the number of struct members.
         const uint32_t num_struct_members =
-            static_cast<uint32_t>(result_type_instr->words().size() - 2);
+            static_cast<uint32_t>(cur_type->words().size() - 2);
         if (cur_index >= num_struct_members) {
-          error << "Index is out of bound: " << instr_name()
-                << " can not find index " << cur_index
-                << " into the structure <id> '" << result_type_instr->id()
-                << "'. This structure has " << num_struct_members
-                << " members. Largest valid index is " << num_struct_members - 1
-                << ".";
+          *error << "Index is out of bound: " << instr_name()
+                 << " can not find index " << cur_index
+                 << " into the structure <id> '" << cur_type->id()
+                 << "'. This structure has " << num_struct_members
+                 << " members. Largest valid index is "
+                 << num_struct_members - 1 << ".";
           return false;
         }
         // Struct members IDs start at word 2 of OpTypeStruct.
-        auto structMemberId = result_type_instr->word(cur_index + 2);
-        result_type_instr = module.FindDef(structMemberId);
+        auto structMemberId = cur_type->word(cur_index + 2);
+        cur_type = module.FindDef(structMemberId);
         break;
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        error << instr_name() << " reached non-composite type while indexes "
-                                 "still remain to be traversed.";
+        *error << instr_name() << " reached non-composite type while indexes "
+                                  "still remain to be traversed.";
         return false;
       }
     }
   }
+  *result_type_instr = cur_type;
   return true;
 }
 
@@ -1713,10 +1714,10 @@ bool idUsage::isValid<SpvOpCompositeExtract>(const spv_instruction_t* inst,
 
   // Walk down the composite type structure. Indexes start at word 4.
   const libspirv::Instruction* indexedTypeInstr = nullptr;
-  std::stringstream error;
+  std::ostringstream error;
   bool success = walkCompositeTypeHierarchy(
       module_, inst->words.begin() + 4, inst->words.end(), curTypeInstr,
-      indexedTypeInstr, instr_name, error);
+      &indexedTypeInstr, instr_name, &error);
   if (!success) {
     DIAG(resultTypeIndex) << error.str();
     return success;
@@ -1782,10 +1783,10 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
 
   // Walk the composite type structure. Indexes start at word 5.
   const libspirv::Instruction* indexedTypeInstr = nullptr;
-  std::stringstream error;
+  std::ostringstream error;
   bool success = walkCompositeTypeHierarchy(
       module_, inst->words.begin() + 5, inst->words.end(), compositeTypeInstr,
-      indexedTypeInstr, instr_name, error);
+      &indexedTypeInstr, instr_name, &error);
   if (!success) {
     DIAG(resultTypeIndex) << error.str();
     return success;
