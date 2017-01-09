@@ -303,6 +303,7 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
 TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
   string str = R"(
          OpCapability Kernel
+         OpCapability Linkage
          OpMemoryModel Logical OpenCL
 %voidt = OpTypeVoid
 %uintt = OpTypeInt 32 0
@@ -321,6 +322,7 @@ TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
 TEST_F(ValidateLayout, OpUndefCanAppearInBlock) {
   string str = R"(
          OpCapability Kernel
+         OpCapability Linkage
          OpMemoryModel Logical OpenCL
 %voidt = OpTypeVoid
 %uintt = OpTypeInt 32 0
@@ -339,6 +341,7 @@ TEST_F(ValidateLayout, OpUndefCanAppearInBlock) {
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionWithBody) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %tf = OpTypeFunction %void
@@ -356,6 +359,7 @@ OpReturn
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionPrototype) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %tf = OpTypeFunction %void
@@ -373,6 +377,7 @@ using ValidateOpFunctionParameter = spvtest::ValidateBase<int>;
 TEST_F(ValidateOpFunctionParameter, OpLineBetweenParameters) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %foo_frag = OpString "foo.frag"
 %i32 = OpTypeInt 32 1
@@ -394,6 +399,7 @@ OpFunctionEnd
 TEST_F(ValidateOpFunctionParameter, TooManyParameters) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %i32 = OpTypeInt 32 1
 %tf = OpTypeFunction %i32 %i32 %i32

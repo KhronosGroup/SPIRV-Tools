@@ -26,7 +26,9 @@ using namespace spvtools;
 TEST(CInterface, DefaultConsumerNullDiagnosticForValidInput) {
   auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
   const char input_text[] =
-      "OpCapability Shader\nOpMemoryModel Logical GLSL450";
+      "OpCapability Shader\n"
+      "OpCapability Linkage\n"
+      "OpMemoryModel Logical GLSL450";
 
   spv_binary binary = nullptr;
   EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, input_text,

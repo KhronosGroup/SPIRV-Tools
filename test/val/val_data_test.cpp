@@ -33,6 +33,7 @@ using ValidateData = spvtest::ValidateBase<pair<string, bool>>;
 
 string header = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
 %1 = OpTypeFloat 32
 )";
@@ -40,41 +41,49 @@ string header_with_addresses = R"(
      OpCapability Addresses
      OpCapability Kernel
      OpCapability GenericPointer
+     OpCapability Linkage
      OpMemoryModel Physical32 OpenCL
 )";
 string header_with_vec16_cap = R"(
      OpCapability Shader
      OpCapability Vector16
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
 %1 = OpTypeFloat 32
 )";
 string header_with_int8 = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Int8
      OpMemoryModel Logical GLSL450
 )";
 string header_with_int16 = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Int16
      OpMemoryModel Logical GLSL450
 )";
 string header_with_int64 = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Int64
      OpMemoryModel Logical GLSL450
 )";
 string header_with_float16 = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Float16
      OpMemoryModel Logical GLSL450
 )";
 string header_with_float16_buffer = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Float16Buffer
      OpMemoryModel Logical GLSL450
 )";
 string header_with_float64 = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Float64
      OpMemoryModel Logical GLSL450
 )";

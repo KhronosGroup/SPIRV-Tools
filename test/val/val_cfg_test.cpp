@@ -1,4 +1,3 @@
-
 // Copyright (c) 2015-2016 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -156,10 +155,12 @@ Block& operator>>(Block& lhs, Block& successor) {
 const char* header(SpvCapability cap) {
   static const char* shader_header =
       "OpCapability Shader\n"
+      "OpCapability Linkage\n"
       "OpMemoryModel Logical GLSL450\n";
 
   static const char* kernel_header =
       "OpCapability Kernel\n"
+      "OpCapability Linkage\n"
       "OpMemoryModel Logical OpenCL\n";
 
   return (cap == SpvCapabilityShader) ? shader_header : kernel_header;
@@ -194,6 +195,7 @@ TEST_P(ValidateCFG, LoopReachableFromEntryButNeverLeadingToReturn) {
   // https://github.com/KhronosGroup/SPIRV-Tools/issues/279
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
 
            OpName %entry "entry"
@@ -231,6 +233,7 @@ TEST_P(ValidateCFG, LoopUnreachableFromEntryButLeadingToReturn) {
   // post-dominators.
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
 
            OpName %entry "entry"
@@ -1069,6 +1072,7 @@ TEST_F(ValidateCFG, OpSwitchToUnreachableBlock) {
 
   string str = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main" %id
 OpExecutionMode %main LocalSize 1 1 1
@@ -1108,6 +1112,7 @@ OpDecorate %id BuiltIn GlobalInvocationId
 TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
            OpName %loop "loop"
@@ -1133,6 +1138,7 @@ TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
 TEST_F(ValidateCFG, LoopWithBackEdgeFromUnreachableContinueConstructGood) {
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
            OpName %loop "loop"
@@ -1303,6 +1309,7 @@ TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
 TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
   std::string spirv = R"(
                OpCapability Shader
+               OpCapability Linkage
                OpMemoryModel Logical GLSL450
        %void = OpTypeVoid
        %bool = OpTypeBool
@@ -1336,6 +1343,42 @@ TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Tests that not having OpEntryPoint causes an error.
+TEST_F(ValidateCFG, NoEntryPointBad) {
+  std::string spirv = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("No OpEntryPoint instruction was found. This is only "
+                        "allowed if the Linkage capability is being used."));
+}
+
+// Invalid. A function may not be a target of both OpEntryPoint and
+// OpFunctionCall.
+TEST_F(ValidateCFG, FunctionIsTargetOfEntryPointAndFunctionCallBad) {
+  std::string spirv = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %foo "foo"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%floatt  = OpTypeFloat 32
+%foo     = OpFunction %voidt None %funct
+%entry   = OpLabel
+%recurse = OpFunctionCall %voidt %foo
+           OpReturn
+           OpFunctionEnd
+      )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("A function (1) may not be targeted by both an OpEntryPoint "
+                "instruction and an OpFunctionCall instruction."));
 }
 
 /// TODO(umar): Switch instructions
