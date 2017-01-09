@@ -129,6 +129,16 @@ class ValidationState_t {
   std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
+  /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
+  void AddFunctionCallTarget(const uint32_t id) {
+    function_call_targets_.insert(id);
+  }
+
+  /// Returns whether or not a function<id> is the target of OpFunctionCall.
+  bool IsFunctionCallTarget(const uint32_t id) {
+    return (function_call_targets_.find(id) != function_call_targets_.end());
+  }
+
   /// Registers the capability and its dependent capabilities
   void RegisterCapability(SpvCapability cap);
 
@@ -254,6 +264,9 @@ class ValidationState_t {
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
+
+  /// Functions IDs that are target of OpFunctionCall.
+  std::unordered_set<uint32_t> function_call_targets_;
 
   /// ID Bound from the Header
   uint32_t id_bound_;

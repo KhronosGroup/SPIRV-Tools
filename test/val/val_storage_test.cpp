@@ -28,6 +28,7 @@ namespace {
 TEST_F(ValidateStorage, FunctionStorageInsideFunction) {
   char str[] = R"(
           OpCapability Shader
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
 %voidt  = OpTypeVoid
@@ -47,6 +48,7 @@ TEST_F(ValidateStorage, FunctionStorageInsideFunction) {
 TEST_F(ValidateStorage, FunctionStorageOutsideFunction) {
   char str[] = R"(
           OpCapability Shader
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
 %voidt  = OpTypeVoid
@@ -68,6 +70,7 @@ TEST_F(ValidateStorage, OtherStorageOutsideFunction) {
           OpCapability Shader
           OpCapability Kernel
           OpCapability AtomicStorage
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
 %voidt  = OpTypeVoid
@@ -100,6 +103,7 @@ TEST_P(ValidateStorage, OtherStorageInsideFunction) {
           OpCapability Shader
           OpCapability Kernel
           OpCapability AtomicStorage
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
 %voidt  = OpTypeVoid
@@ -132,6 +136,7 @@ INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
 TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
   const auto str = R"(
           OpCapability Kernel
+          OpCapability Linkage
           OpMemoryModel Logical OpenCL
 %intt   = OpTypeInt 32 1
 %ptrt   = OpTypePointer Function %intt
@@ -144,6 +149,7 @@ TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
 TEST_F(ValidateStorage, GenericVariableInsideFunction) {
   const auto str = R"(
           OpCapability Shader
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
 %intt   = OpTypeInt 32 1
 %voidt  = OpTypeVoid

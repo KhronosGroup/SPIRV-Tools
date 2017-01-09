@@ -32,6 +32,7 @@ using ValidateLimits = spvtest::ValidateBase<bool>;
 
 string header = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
 )";
 
@@ -392,9 +393,7 @@ TEST_F(ValidateLimits, ControlFlowDepthBad) {
 // continue target is the loop iteself. It also exercises the case where a loop
 // is unreachable.
 TEST_F(ValidateLimits, ControlFlowNoEntryToLoopGood) {
-  string str = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
+  string str = header + R"(
            OpName %entry "entry"
            OpName %loop "loop"
            OpName %exit "exit"

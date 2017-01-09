@@ -35,6 +35,7 @@ using ValidateSSA = spvtest::ValidateBase<pair<string, bool>>;
 TEST_F(ValidateSSA, Default) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpEntryPoint GLCompute %3 ""
      OpExecutionMode %3 LocalSize 1 1 1
@@ -52,6 +53,7 @@ TEST_F(ValidateSSA, Default) {
 TEST_F(ValidateSSA, IdUndefinedBad) {
   char str[] = R"(
           OpCapability Shader
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
           OpName %missing "missing"
 %voidt  = OpTypeVoid
@@ -69,6 +71,7 @@ TEST_F(ValidateSSA, IdUndefinedBad) {
 TEST_F(ValidateSSA, IdRedefinedBad) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpName %2 "redefined"
 %1 = OpTypeVoid
@@ -85,6 +88,7 @@ TEST_F(ValidateSSA, IdRedefinedBad) {
 TEST_F(ValidateSSA, DominateUsageBad) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpName %1 "not_dominant"
 %2 = OpTypeFunction %1              ; uses %1 before it's definition
@@ -98,6 +102,7 @@ TEST_F(ValidateSSA, DominateUsageBad) {
 TEST_F(ValidateSSA, DominateUsageWithinBlockBad) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpName %bad "bad"
 %voidt = OpTypeVoid
@@ -120,6 +125,7 @@ TEST_F(ValidateSSA, DominateUsageWithinBlockBad) {
 TEST_F(ValidateSSA, DominateUsageSameInstructionBad) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpName %sum "sum"
 %voidt = OpTypeVoid
@@ -141,6 +147,7 @@ TEST_F(ValidateSSA, DominateUsageSameInstructionBad) {
 TEST_F(ValidateSSA, ForwardNameGood) {
   char str[] = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpMemoryModel Logical GLSL450
      OpName %3 "main"
 %1 = OpTypeVoid
@@ -157,6 +164,7 @@ TEST_F(ValidateSSA, ForwardNameGood) {
 TEST_F(ValidateSSA, ForwardNameMissingTargetBad) {
   char str[] = R"(
       OpCapability Shader
+      OpCapability Linkage
       OpMemoryModel Logical GLSL450
       OpName %5 "main"              ; Target never defined
 )";
@@ -168,6 +176,7 @@ TEST_F(ValidateSSA, ForwardNameMissingTargetBad) {
 TEST_F(ValidateSSA, ForwardMemberNameGood) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpMemberName %struct 0 "value"
            OpMemberName %struct 1 "size"
@@ -182,6 +191,7 @@ TEST_F(ValidateSSA, ForwardMemberNameGood) {
 TEST_F(ValidateSSA, ForwardMemberNameMissingTargetBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpMemberName %struct 0 "value"
            OpMemberName %bad 1 "size"     ; Target is not defined
@@ -197,6 +207,7 @@ TEST_F(ValidateSSA, ForwardMemberNameMissingTargetBad) {
 TEST_F(ValidateSSA, ForwardDecorateGood) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpDecorate %var Restrict
 %intt   =  OpTypeInt 32 1
@@ -210,6 +221,7 @@ TEST_F(ValidateSSA, ForwardDecorateGood) {
 TEST_F(ValidateSSA, ForwardDecorateInvalidIDBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %missing Restrict        ;Missing ID
@@ -231,6 +243,7 @@ TEST_F(ValidateSSA, ForwardDecorateInvalidIDBad) {
 TEST_F(ValidateSSA, ForwardMemberDecorateGood) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpMemberDecorate %struct 1 RowMajor
 %intt   =  OpTypeInt 32 1
@@ -246,6 +259,7 @@ TEST_F(ValidateSSA, ForwardMemberDecorateGood) {
 TEST_F(ValidateSSA, ForwardMemberDecorateInvalidIdBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpMemberDecorate %missing 1 RowMajor ; Target not defined
@@ -263,6 +277,7 @@ TEST_F(ValidateSSA, ForwardMemberDecorateInvalidIdBad) {
 TEST_F(ValidateSSA, ForwardGroupDecorateGood) {
   char str[] = R"(
           OpCapability Shader
+          OpCapability Linkage
           OpMemoryModel Logical GLSL450
           OpDecorate %dgrp RowMajor
 %dgrp   = OpDecorationGroup
@@ -280,6 +295,7 @@ TEST_F(ValidateSSA, ForwardGroupDecorateGood) {
 TEST_F(ValidateSSA, ForwardGroupDecorateMissingGroupBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %dgrp RowMajor
@@ -299,6 +315,7 @@ TEST_F(ValidateSSA, ForwardGroupDecorateMissingGroupBad) {
 TEST_F(ValidateSSA, ForwardGroupDecorateMissingTargetBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %dgrp RowMajor
@@ -318,6 +335,7 @@ TEST_F(ValidateSSA, ForwardGroupDecorateMissingTargetBad) {
 TEST_F(ValidateSSA, ForwardGroupDecorateDecorationGroupDominateBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %dgrp "group"
            OpDecorate %dgrp RowMajor
@@ -337,6 +355,7 @@ TEST_F(ValidateSSA, ForwardGroupDecorateDecorationGroupDominateBad) {
 TEST_F(ValidateSSA, ForwardDecorateInvalidIdBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
            OpDecorate %missing Restrict        ; Missing target
@@ -358,6 +377,7 @@ TEST_F(ValidateSSA, ForwardDecorateInvalidIdBad) {
 TEST_F(ValidateSSA, FunctionCallGood) {
   char str[] = R"(
          OpCapability Shader
+         OpCapability Linkage
          OpMemoryModel Logical GLSL450
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
@@ -385,6 +405,7 @@ TEST_F(ValidateSSA, FunctionCallGood) {
 TEST_F(ValidateSSA, ForwardFunctionCallGood) {
   char str[] = R"(
          OpCapability Shader
+         OpCapability Linkage
          OpMemoryModel Logical GLSL450
 %1    =  OpTypeVoid
 %2    =  OpTypeInt 32 1
@@ -412,6 +433,7 @@ TEST_F(ValidateSSA, ForwardFunctionCallGood) {
 TEST_F(ValidateSSA, ForwardBranchConditionalGood) {
   char str[] = R"(
             OpCapability Shader
+            OpCapability Linkage
             OpMemoryModel Logical GLSL450
 %voidt  =   OpTypeVoid
 %boolt  =   OpTypeBool
@@ -438,6 +460,7 @@ TEST_F(ValidateSSA, ForwardBranchConditionalGood) {
 TEST_F(ValidateSSA, ForwardBranchConditionalWithWeightsGood) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
@@ -464,6 +487,7 @@ TEST_F(ValidateSSA, ForwardBranchConditionalWithWeightsGood) {
 TEST_F(ValidateSSA, ForwardBranchConditionalNonDominantConditionBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %tcpy "conditional"
 %voidt  =  OpTypeVoid
@@ -493,6 +517,7 @@ TEST_F(ValidateSSA, ForwardBranchConditionalNonDominantConditionBad) {
 TEST_F(ValidateSSA, ForwardBranchConditionalMissingTargetBad) {
   char str[] = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpName %missing "missing"
 %voidt  =  OpTypeVoid
@@ -521,6 +546,7 @@ TEST_F(ValidateSSA, ForwardBranchConditionalMissingTargetBad) {
 const string kHeader = R"(
 OpCapability Int8
 OpCapability DeviceEnqueue
+OpCapability Linkage
 OpMemoryModel Logical OpenCL
 )";
 
@@ -1346,6 +1372,7 @@ TEST_F(ValidateSSA, TypeForwardPointerForwardReference) {
   string str = R"(
                OpCapability Kernel
                OpCapability Addresses
+               OpCapability Linkage
                OpMemoryModel Logical OpenCL
                OpName %intptrt "intptrt"
                OpTypeForwardPointer %intptrt UniformConstant
@@ -1361,6 +1388,7 @@ TEST_F(ValidateSSA, TypeStructForwardReference) {
   string str = R"(
                OpCapability Kernel
                OpCapability Addresses
+               OpCapability Linkage
                OpMemoryModel Logical OpenCL
                OpName %structptr "structptr"
                OpTypeForwardPointer %structptr UniformConstant

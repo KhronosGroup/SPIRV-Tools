@@ -35,7 +35,7 @@ using std::tuple;
 using std::vector;
 
 using ::testing::StrEq;
-
+using ::testing::HasSubstr;
 using libspirv::spvResultToString;
 
 using pred_type = function<spv_result_t(int)>;
@@ -303,6 +303,7 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
 TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
   string str = R"(
          OpCapability Kernel
+         OpCapability Linkage
          OpMemoryModel Logical OpenCL
 %voidt = OpTypeVoid
 %uintt = OpTypeInt 32 0
@@ -321,6 +322,7 @@ TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
 TEST_F(ValidateLayout, OpUndefCanAppearInBlock) {
   string str = R"(
          OpCapability Kernel
+         OpCapability Linkage
          OpMemoryModel Logical OpenCL
 %voidt = OpTypeVoid
 %uintt = OpTypeInt 32 0
@@ -339,6 +341,7 @@ TEST_F(ValidateLayout, OpUndefCanAppearInBlock) {
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionWithBody) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %tf = OpTypeFunction %void
@@ -356,6 +359,7 @@ OpReturn
 TEST_F(ValidateLayout, MissingFunctionEndForFunctionPrototype) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %tf = OpTypeFunction %void
@@ -373,6 +377,7 @@ using ValidateOpFunctionParameter = spvtest::ValidateBase<int>;
 TEST_F(ValidateOpFunctionParameter, OpLineBetweenParameters) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %foo_frag = OpString "foo.frag"
 %i32 = OpTypeInt 32 1
@@ -394,6 +399,7 @@ OpFunctionEnd
 TEST_F(ValidateOpFunctionParameter, TooManyParameters) {
   const auto s = R"(
 OpCapability Shader
+OpCapability Linkage
 OpMemoryModel Logical GLSL450
 %i32 = OpTypeInt 32 1
 %tf = OpTypeFunction %i32 %i32 %i32
@@ -413,5 +419,61 @@ OpFunctionEnd
   CompileSuccessfully(s);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
+
+using ValidateEntryPoint = spvtest::ValidateBase<bool>;
+
+// Tests that not having OpEntryPoint causes an error.
+TEST_F(ValidateEntryPoint, NoEntryPointBad) {
+  std::string spirv = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("No OpEntryPoint instruction was found. This is only "
+                        "allowed if the Linkage capability is being used."));
+}
+
+// Invalid. A function may not be a target of both OpEntryPoint and
+// OpFunctionCall.
+TEST_F(ValidateEntryPoint, FunctionIsTargetOfEntryPointAndFunctionCallBad) {
+  std::string spirv = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %foo "foo"
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%foo     = OpFunction %voidt None %funct
+%entry   = OpLabel
+%recurse = OpFunctionCall %voidt %foo
+           OpReturn
+           OpFunctionEnd
+      )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("A function (1) may not be targeted by both an OpEntryPoint "
+                "instruction and an OpFunctionCall instruction."));
+}
+
+// Valid. Module with a function but no entry point is valid when Linkage
+// Capability is used.
+TEST_F(ValidateEntryPoint, NoEntryPointWithLinkageCapGood) {
+  std::string spirv = R"(
+           OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+%voidt   = OpTypeVoid
+%funct   = OpTypeFunction %voidt
+%foo     = OpFunction %voidt None %funct
+%entry   = OpLabel
+           OpReturn
+           OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 // TODO(umar): Test optional instructions
 }

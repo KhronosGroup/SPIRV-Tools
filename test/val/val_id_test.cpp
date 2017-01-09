@@ -39,6 +39,7 @@ using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
 string kGLSL450MemoryModel = R"(
      OpCapability Shader
+     OpCapability Linkage
      OpCapability Addresses
      OpCapability Pipes
      OpCapability LiteralSampler

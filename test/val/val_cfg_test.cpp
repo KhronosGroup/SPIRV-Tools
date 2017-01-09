@@ -1,4 +1,3 @@
-
 // Copyright (c) 2015-2016 The Khronos Group Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -156,10 +155,12 @@ Block& operator>>(Block& lhs, Block& successor) {
 const char* header(SpvCapability cap) {
   static const char* shader_header =
       "OpCapability Shader\n"
+      "OpCapability Linkage\n"
       "OpMemoryModel Logical GLSL450\n";
 
   static const char* kernel_header =
       "OpCapability Kernel\n"
+      "OpCapability Linkage\n"
       "OpMemoryModel Logical OpenCL\n";
 
   return (cap == SpvCapabilityShader) ? shader_header : kernel_header;
@@ -194,6 +195,7 @@ TEST_P(ValidateCFG, LoopReachableFromEntryButNeverLeadingToReturn) {
   // https://github.com/KhronosGroup/SPIRV-Tools/issues/279
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
 
            OpName %entry "entry"
@@ -231,6 +233,7 @@ TEST_P(ValidateCFG, LoopUnreachableFromEntryButLeadingToReturn) {
   // post-dominators.
   string str = R"(
            OpCapability Shader
+           OpCapability Linkage
            OpMemoryModel Logical GLSL450
 
            OpName %entry "entry"
@@ -1303,6 +1306,7 @@ TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
 TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
   std::string spirv = R"(
                OpCapability Shader
+               OpCapability Linkage
                OpMemoryModel Logical GLSL450
        %void = OpTypeVoid
        %bool = OpTypeBool
