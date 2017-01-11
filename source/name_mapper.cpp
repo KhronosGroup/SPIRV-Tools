@@ -289,6 +289,12 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       // are a struct and then give the raw Id number.
       SaveName(result_id, std::string("_struct_") + to_string(result_id));
       break;
+    case SpvOpConstantTrue:
+      SaveName(result_id, "true");
+      break;
+    case SpvOpConstantFalse:
+      SaveName(result_id, "false");
+      break;
     case SpvOpConstant: {
       std::ostringstream value;
       EmitNumericLiteral(&value, inst, inst.operands[2]);

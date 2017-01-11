@@ -263,7 +263,7 @@ TEST(CppInterface, OptimizeMulitplePasses) {
 
   const char* expected_text =
       "%bool = OpTypeBool\n"
-      "%1 = OpConstantTrue %bool\n";
+      "%true = OpConstantTrue %bool\n";
 
   CheckOptimization(original_text, expected_text, o);
 }

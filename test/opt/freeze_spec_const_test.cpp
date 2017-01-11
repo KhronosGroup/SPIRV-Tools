@@ -59,9 +59,9 @@ INSTANTIATE_TEST_CASE_P(
         {"%double = OpTypeFloat 64", "%2 = OpSpecConstant %double 3.1415926",
          "%double_3_1415926 = OpConstant %double 3.1415926"},
         {"%bool = OpTypeBool", "%2 = OpSpecConstantTrue %bool",
-         "%2 = OpConstantTrue %bool"},
+         "%true = OpConstantTrue %bool"},
         {"%bool = OpTypeBool", "%2 = OpSpecConstantFalse %bool",
-         "%2 = OpConstantFalse %bool"},
+         "%false = OpConstantFalse %bool"},
     })));
 
 using FreezeSpecConstantValueRemoveDecorationTest = PassTest<::testing::Test>;
@@ -109,8 +109,8 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
        "%float_3_14 = OpConstant %float 3.14"},
       {"%5 = OpSpecConstant %double 3.14159265358979",
        "%double_3_14159265358979 = OpConstant %double 3.14159265358979"},
-      {" OpSpecConstantTrue ", " OpConstantTrue "},
-      {" OpSpecConstantFalse ", " OpConstantFalse "},
+      {"%6 = OpSpecConstantTrue ", "%true = OpConstantTrue "},
+      {"%13 = OpSpecConstantFalse ", "%false = OpConstantFalse "},
   };
   for (auto& p : replacement_pairs) {
     EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second))

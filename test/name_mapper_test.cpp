@@ -335,4 +335,11 @@ INSTANTIATE_TEST_CASE_P(
          "double_n0x1p_1024"},  // -Inf
     }), );
 
+INSTANTIATE_TEST_CASE_P(
+    BooleanConstants, FriendlyNameTest,
+    ::testing::ValuesIn(std::vector<NameIdCase>{
+        {"%1 = OpTypeBool\n%2 = OpConstantTrue %1", 2, "true"},
+        {"%1 = OpTypeBool\n%2 = OpConstantFalse %1", 2, "false"},
+    }), );
+
 }  // anonymous namespace
