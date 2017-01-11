@@ -147,9 +147,12 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
   auto member = inst->words[memberIndex];
   auto memberCount = static_cast<uint32_t>(structType->words().size() - 2);
   if (memberCount < member) {
-    DIAG(memberIndex) << "OpMemberDecorate Structure type <id> '"
-                      << inst->words[memberIndex]
-                      << "' member count is less than Member";
+    DIAG(memberIndex) << "Index " << member
+                      << " provided in OpMemberDecorate for struct <id> "
+                      << inst->words[structTypeIndex]
+                      << " is out of bound. The structure has " << memberCount
+                      << " members. Largest valid index is " << memberCount - 1
+                      << ".";
     return false;
   }
   return true;
@@ -169,11 +172,41 @@ bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
 template <>
 bool idUsage::isValid<SpvOpGroupMemberDecorate>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif  // 0
+    const spv_instruction_t* inst, const spv_opcode_desc) {
+  auto decorationGroupIndex = 1;
+  auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
+  if (!decorationGroup || SpvOpDecorationGroup != decorationGroup->opcode()) {
+    DIAG(decorationGroupIndex)
+        << "OpGroupMemberDecorate Decoration group <id> '"
+        << inst->words[decorationGroupIndex] << "' is not a decoration group.";
+    return false;
+  }
+  // Grammar checks ensures that the number of arguments to this instruction
+  // is an odd number: 1 decoration group + (id,literal) pairs.
+  for (size_t i = 2; i + 1 < inst->words.size(); i = i + 2) {
+    const uint32_t struct_id = inst->words[i];
+    const uint32_t index = inst->words[i + 1];
+    auto struct_instr = module_.FindDef(struct_id);
+    if (!struct_instr || SpvOpTypeStruct != struct_instr->opcode()) {
+      DIAG(i) << "OpGroupMemberDecorate Structure type <id> '" << struct_id
+              << "' is not a struct type.";
+      return false;
+    }
+    const uint32_t num_struct_members =
+        static_cast<uint32_t>(struct_instr->words().size() - 2);
+    if (index >= num_struct_members) {
+      DIAG(i) << "Index " << index
+              << " provided in OpGroupMemberDecorate for struct <id> "
+              << struct_id << " is out of bound. The structure has "
+              << num_struct_members << " members. Largest valid index is "
+              << num_struct_members - 1 << ".";
+      return false;
+    }
+  }
+  return true;
+}
 
 #if 0
 template <>
@@ -2752,7 +2785,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpLine)
     CASE(OpMemberDecorate)
     CASE(OpGroupDecorate)
-    TODO(OpGroupMemberDecorate)
+    CASE(OpGroupMemberDecorate)
     TODO(OpExtInst)
     CASE(OpEntryPoint)
     CASE(OpExecutionMode)
