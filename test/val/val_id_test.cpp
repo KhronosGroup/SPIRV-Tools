@@ -163,6 +163,8 @@ TEST_F(ValidateIdWithMessage, OpDecorateBad) {
 OpDecorate %1 GLSLShared)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("forward referenced IDs have not been defined"));
 }
 
 TEST_F(ValidateIdWithMessage, OpMemberDecorateGood) {
@@ -179,14 +181,22 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateBad) {
 %1 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpMemberDecorate Structure type <id> '1' is not a struct type."));
 }
 TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   string spirv = kGLSL450MemoryModel + R"(
-     OpMemberDecorate %2 3 Uniform
-%1 = OpTypeInt 32 0
-%2 = OpTypeStruct %1 %1)";
+     OpMemberDecorate %1 3 Uniform
+%int = OpTypeInt 32 0
+%1 = OpTypeStruct %int %int)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index 3 provided in OpMemberDecorate for struct <id> "
+                        "1 is out of bounds. The structure has 2 members. "
+                        "Largest valid index is 1."));
 }
 
 TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
@@ -202,13 +212,19 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 TEST_F(ValidateIdWithMessage, OpGroupDecorateDecorationGroupBad) {
-  string spirv = kGLSL450MemoryModel + R"(
-     OpGroupDecorate %2 %3 %4
+  string spirv = R"(
+    OpCapability Shader
+    OpCapability Linkage
+    %1 = OpExtInstImport "GLSL.std.450"
+    OpMemoryModel Logical GLSL450
+    OpGroupDecorate %1 %2 %3
 %2 = OpTypeInt 32 0
-%3 = OpConstant %2 42
-%4 = OpConstant %2 23)";
+%3 = OpConstant %2 42)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGroupDecorate Decoration group <id> '1' is not a "
+                        "decoration group."));
 }
 TEST_F(ValidateIdWithMessage, OpGroupDecorateTargetBad) {
   string spirv = kGLSL450MemoryModel + R"(
@@ -219,9 +235,50 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateTargetBad) {
 %2 = OpTypeInt 32 0)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("forward referenced IDs have not been defined"));
+}
+TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateDecorationGroupBad) {
+  string spirv = R"(
+    OpCapability Shader
+    OpCapability Linkage
+    %1 = OpExtInstImport "GLSL.std.450"
+    OpMemoryModel Logical GLSL450
+    OpGroupMemberDecorate %1 %2 0
+%2 = OpTypeInt 32 0)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGroupMemberDecorate Decoration group <id> '1' is "
+                        "not a decoration group."));
+}
+TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIdNotStructBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+     %1 = OpDecorationGroup
+     OpGroupMemberDecorate %1 %2 0
+%2 = OpTypeInt 32 0)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGroupMemberDecorate Structure type <id> '2' is not "
+                        "a struct type."));
+}
+TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIndexOutOfBoundBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+  OpDecorate %1 Offset 0
+  %1 = OpDecorationGroup
+  OpGroupMemberDecorate %1 %struct 3
+%float  = OpTypeFloat 32
+%struct = OpTypeStruct %float %float %float
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index 3 provided in OpGroupMemberDecorate for struct "
+                        "<id> 2 is out of bounds. The structure has 3 members. "
+                        "Largest valid index is 2."));
 }
 
-// TODO: OpGroupMemberDecorate
 // TODO: OpExtInst
 
 TEST_F(ValidateIdWithMessage, OpEntryPointGood) {
@@ -2179,7 +2236,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "Index is out of bound: " + instr +
+  const std::string expected_err = "Index is out of bounds: " + instr +
                                    " can not find index 3 into the structure "
                                    "<id> '26'. This structure has 3 members. "
                                    "Largest valid index is 2.";
@@ -2828,7 +2885,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractStructIndexOutOfBoundBad) {
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Index is out of bound: OpCompositeExtract can not "
+              HasSubstr("Index is out of bounds: OpCompositeExtract can not "
                         "find index 3 into the structure <id> '26'. This "
                         "structure has 3 members. Largest valid index is 2."));
 }
@@ -2847,10 +2904,11 @@ TEST_F(ValidateIdWithMessage, CompositeInsertStructIndexOutOfBoundBad) {
 
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Index is out of bound: OpCompositeInsert can not find "
-                        "index 3 into the structure <id> '26'. This structure "
-                        "has 3 members. Largest valid index is 2."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bounds: OpCompositeInsert can not find "
+                "index 3 into the structure <id> '26'. This structure "
+                "has 3 members. Largest valid index is 2."));
 }
 
 #if 0
