@@ -50,6 +50,8 @@ function(add_spvtools_unittest)
     target_include_directories(${target} PRIVATE
       ${SPIRV_HEADER_INCLUDE_DIR}
       ${spirv-tools_SOURCE_DIR}
+      ${spirv-tools_SOURCE_DIR}/source
+      ${spirv-tools_SOURCE_DIR}/source/val
       ${spirv-tools_SOURCE_DIR}/include
       ${spirv-tools_SOURCE_DIR}/test
       ${gtest_SOURCE_DIR}/include

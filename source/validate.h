@@ -190,4 +190,11 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             spv_position position,
                             const spvtools::MessageConsumer& consumer);
 
+// Performs validation for the SPIRV-V module binary and returns the
+// ValidationState to the caller.
+spv_result_t ValidateAndReturnValidationState(
+    const spv_const_context context, const uint32_t* words,
+    const size_t num_words, spv_diagnostic* pDiagnostic,
+    std::unique_ptr<libspirv::ValidationState_t>* vstate);
+
 #endif  // LIBSPIRV_VALIDATE_H_
