@@ -18,7 +18,7 @@
 #define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 
 #include "unit_spirv.h"
-#include "validation_state.h"
+#include "source/val/validation_state.h"
 
 namespace spvtest {
 
@@ -46,8 +46,8 @@ class ValidateBase : public ::testing::Test,
   // spvValidate function
   spv_result_t ValidateInstructions(spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
 
-  // Performs validation on the SPIR-V code and retrieves the
-  // ValidationState object.
+  // Performs validation. Returns the status and stores validation state into
+  // the vstate_ member.
   spv_result_t ValidateAndRetrieveValidationState(
       spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
 

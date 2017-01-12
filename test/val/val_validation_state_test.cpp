@@ -45,7 +45,7 @@ TEST_F(ValidationStateTest, CheckNumInstructions) {
   string spirv = string(header) + "%int = OpTypeInt 32 0";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_EQ(4, vstate_->ordered_instructions().size());
+  EXPECT_EQ(size_t(4), vstate_->ordered_instructions().size());
 }
 
 // Tests that the number of global variables in ValidationState is correct.
@@ -58,7 +58,7 @@ TEST_F(ValidationStateTest, CheckNumGlobalVars) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_EQ(2, vstate_->num_global_vars());
+  EXPECT_EQ(unsigned(2), vstate_->num_global_vars());
 }
 
 // Tests that the number of local variables in ValidationState is correct.
@@ -78,7 +78,7 @@ TEST_F(ValidationStateTest, CheckNumLocalVars) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_EQ(3, vstate_->num_local_vars());
+  EXPECT_EQ(unsigned(3), vstate_->num_local_vars());
 }
 
 // Tests that the "id bound" in ValidationState is correct.
@@ -89,7 +89,7 @@ TEST_F(ValidationStateTest, CheckIdBound) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_EQ(3, vstate_->getIdBound());
+  EXPECT_EQ(unsigned(3), vstate_->getIdBound());
 }
 
 // Tests that the entry_points in ValidationState is correct.
@@ -98,7 +98,7 @@ TEST_F(ValidationStateTest, CheckEntryPoints) {
                  string(kVoidFVoid);
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_EQ(1, vstate_->entry_points().size());
+  EXPECT_EQ(size_t(1), vstate_->entry_points().size());
   EXPECT_EQ(SpvOpFunction,
             vstate_->FindDef(vstate_->entry_points()[0])->opcode());
 }

@@ -70,7 +70,7 @@ spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
 template <typename T>
 spv_result_t ValidateBase<T>::ValidateAndRetrieveValidationState(
     spv_target_env env) {
-  return ValidateAndReturnValidationState(
+  return spvtools::ValidateBinaryAndKeepValidationState(
       ScopedContext(env).context, get_const_binary()->code,
       get_const_binary()->wordCount, &diagnostic_, &vstate_);
 }

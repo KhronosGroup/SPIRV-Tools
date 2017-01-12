@@ -273,7 +273,7 @@ spv_result_t spvValidateBinary(const spv_const_context context,
       hijack_context, words, num_words, pDiagnostic, &vstate);
 }
 
-spv_result_t ValidateAndReturnValidationState(
+spv_result_t spvtools::ValidateBinaryAndKeepValidationState(
     const spv_const_context context, const uint32_t* words,
     const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<ValidationState_t>* vstate) {
