@@ -1072,7 +1072,6 @@ TEST_F(ValidateCFG, OpSwitchToUnreachableBlock) {
 
   string str = R"(
 OpCapability Shader
-OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main" %id
 OpExecutionMode %main LocalSize 1 1 1
@@ -1112,7 +1111,6 @@ OpDecorate %id BuiltIn GlobalInvocationId
 TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
   string str = R"(
            OpCapability Shader
-           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
            OpName %loop "loop"
@@ -1138,7 +1136,6 @@ TEST_F(ValidateCFG, LoopWithZeroBackEdgesBad) {
 TEST_F(ValidateCFG, LoopWithBackEdgeFromUnreachableContinueConstructGood) {
   string str = R"(
            OpCapability Shader
-           OpCapability Linkage
            OpMemoryModel Logical GLSL450
            OpEntryPoint Fragment %main "main"
            OpName %loop "loop"
@@ -1343,42 +1340,6 @@ TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
-// Tests that not having OpEntryPoint causes an error.
-TEST_F(ValidateCFG, NoEntryPointBad) {
-  std::string spirv = R"(
-      OpCapability Shader
-      OpMemoryModel Logical GLSL450)";
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("No OpEntryPoint instruction was found. This is only "
-                        "allowed if the Linkage capability is being used."));
-}
-
-// Invalid. A function may not be a target of both OpEntryPoint and
-// OpFunctionCall.
-TEST_F(ValidateCFG, FunctionIsTargetOfEntryPointAndFunctionCallBad) {
-  std::string spirv = R"(
-           OpCapability Shader
-           OpMemoryModel Logical GLSL450
-           OpEntryPoint Fragment %foo "foo"
-%voidt   = OpTypeVoid
-%funct   = OpTypeFunction %voidt
-%floatt  = OpTypeFloat 32
-%foo     = OpFunction %voidt None %funct
-%entry   = OpLabel
-%recurse = OpFunctionCall %voidt %foo
-           OpReturn
-           OpFunctionEnd
-      )";
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("A function (1) may not be targeted by both an OpEntryPoint "
-                "instruction and an OpFunctionCall instruction."));
 }
 
 /// TODO(umar): Switch instructions

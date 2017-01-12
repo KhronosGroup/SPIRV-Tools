@@ -124,7 +124,7 @@ spv_result_t ProcessInstruction(void* user_data,
     _.entry_points().push_back(inst->words[2]);
   }
   if (static_cast<SpvOp>(inst->opcode) == SpvOpFunctionCall) {
-    _.function_call_targets().push_back(inst->words[3]);
+    _.AddFunctionCallTarget(inst->words[3]);
   }
 
   DebugInstructionPass(_, inst);
@@ -245,7 +245,6 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   if (auto error = UpdateIdUse(vstate)) return error;
   if (auto error = CheckIdDefinitionDominateUse(vstate)) return error;
 
-
   // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
   // SPIRV spec:
   // * There is at least one OpEntryPoint instruction, unless the Linkage
@@ -258,10 +257,8 @@ spv_result_t spvValidateBinary(const spv_const_context context,
            << "No OpEntryPoint instruction was found. This is only allowed if "
               "the Linkage capability is being used.";
   }
-  for(const auto& entry_point : vstate.entry_points()) {
-    if (std::find(vstate.function_call_targets().begin(),
-                  vstate.function_call_targets().end(),
-                  entry_point) != vstate.function_call_targets().end()) {
+  for (const auto& entry_point : vstate.entry_points()) {
+    if (vstate.IsFunctionCallTarget(entry_point)) {
       return vstate.diag(SPV_ERROR_INVALID_BINARY)
              << "A function (" << entry_point
              << ") may not be targeted by both an OpEntryPoint instruction and "
