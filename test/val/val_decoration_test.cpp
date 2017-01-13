@@ -146,5 +146,37 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   EXPECT_THAT(vstate_->id_decorations(4), Eq(expected_decorations));
 }
 
+TEST_F(ValidateDecorations, LinkageImportUsedForInitializedVariableBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %target LinkageAttributes "link_ptr" Import
+      %float = OpTypeFloat 32
+ %_ptr_float = OpTypePointer Uniform %float
+       %zero = OpConstantNull %float
+     %target = OpVariable %_ptr_float Uniform %zero
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("A module-scope OpVariable with initialization value "
+                        "cannot be marked with the Import Linkage Type."));
+}
+TEST_F(ValidateDecorations, LinkageExportUsedForInitializedVariableGood) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %target LinkageAttributes "link_ptr" Export
+      %float = OpTypeFloat 32
+ %_ptr_float = OpTypePointer Uniform %float
+       %zero = OpConstantNull %float
+     %target = OpVariable %_ptr_float Uniform %zero
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
 }  // anonymous namespace
 

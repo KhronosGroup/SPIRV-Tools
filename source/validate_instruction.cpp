@@ -209,10 +209,10 @@ spv_result_t LimitCheckSwitch(ValidationState_t& _,
 }
 
 // Ensure the number of variables of the given class does not exceed the limit.
-spv_result_t LimitCheckNumVars(ValidationState_t& _,
+spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
                                const SpvStorageClass storage_class) {
   if (SpvStorageClassFunction == storage_class) {
-    _.incrementNumLocalVars();
+    _.registerLocalVariable(var_id);
     const uint32_t num_local_vars_limit = 0x7FFFF;
     if (_.num_local_vars() > num_local_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
@@ -221,7 +221,7 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _,
              << num_local_vars_limit << ").";
     }
   } else {
-    _.incrementNumGlobalVars();
+    _.registerGlobalVariable(var_id);
     const uint32_t num_global_vars_limit = 0xFFFF;
     if (_.num_global_vars() > num_global_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
@@ -321,7 +321,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (opcode == SpvOpVariable) {
     const auto storage_class =
         static_cast<SpvStorageClass>(inst->words[inst->operands[2].offset]);
-    if (auto error = LimitCheckNumVars(_, storage_class)) {
+    if (auto error = LimitCheckNumVars(_, inst->result_id, storage_class)) {
       return error;
     }
     if (storage_class == SpvStorageClassGeneric)
