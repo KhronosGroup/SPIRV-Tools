@@ -235,17 +235,23 @@ class ValidationState_t {
   void RegisterSampledImageConsumer(uint32_t sampled_image_id,
                                     uint32_t cons_id);
 
-  /// Returns the number of Global Variables
-  uint32_t num_global_vars() { return num_global_vars_; }
+  /// Returns the set of Global Variables.
+  std::unordered_set<uint32_t>& global_vars() { return global_vars_; }
 
-  /// Returns the number of Local Variables
-  uint32_t num_local_vars() { return num_local_vars_; }
+  /// Returns the set of Local Variables.
+  std::unordered_set<uint32_t>& local_vars() { return local_vars_; }
 
-  /// Increments the number of Global Variables
-  void incrementNumGlobalVars() { ++num_global_vars_; }
+  /// Returns the number of Global Variables.
+  size_t num_global_vars() { return global_vars_.size(); }
 
-  /// Increments the number of Local Variables
-  void incrementNumLocalVars() { ++num_local_vars_; }
+  /// Returns the number of Local Variables.
+  size_t num_local_vars() { return local_vars_.size(); }
+
+  /// Inserts a new <id> to the set of Global Variables.
+  void registerGlobalVariable(const uint32_t id) { global_vars_.insert(id); }
+
+  /// Inserts a new <id> to the set of Local Variables.
+  void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
 
   /// Sets the struct nesting depth for a given struct ID
   void set_struct_nesting_depth(uint32_t id, uint32_t depth) {
@@ -303,11 +309,11 @@ class ValidationState_t {
   /// ID Bound from the Header
   uint32_t id_bound_;
 
-  /// Number of Global Variables (Storage Class other than 'Function')
-  uint32_t num_global_vars_;
+  /// Set of Global Variable IDs (Storage Class other than 'Function')
+  std::unordered_set<uint32_t> global_vars_;
 
-  /// Number of Local Variables ('Function' Storage Class)
-  uint32_t num_local_vars_;
+  /// Set of Local Variable IDs ('Function' Storage Class)
+  std::unordered_set<uint32_t> local_vars_;
 
   /// Structure Nesting Depth
   std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;

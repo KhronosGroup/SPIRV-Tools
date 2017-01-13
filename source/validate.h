@@ -151,6 +151,9 @@ spv_result_t DataRulesPass(ValidationState_t& _,
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst);
 
+/// Performs decoration validation.
+spv_result_t ValidateDecorations(ValidationState_t& _);
+
 }  // namespace libspirv
 
 /// @brief Validate the ID usage of the instruction stream
