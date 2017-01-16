@@ -150,7 +150,7 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
     DIAG(memberIndex) << "Index " << member
                       << " provided in OpMemberDecorate for struct <id> "
                       << inst->words[structTypeIndex]
-                      << " is out of bound. The structure has " << memberCount
+                      << " is out of bounds. The structure has " << memberCount
                       << " members. Largest valid index is " << memberCount - 1
                       << ".";
     return false;
@@ -199,7 +199,7 @@ bool idUsage::isValid<SpvOpGroupMemberDecorate>(
     if (index >= num_struct_members) {
       DIAG(i) << "Index " << index
               << " provided in OpGroupMemberDecorate for struct <id> "
-              << struct_id << " is out of bound. The structure has "
+              << struct_id << " is out of bounds. The structure has "
               << num_struct_members << " members. Largest valid index is "
               << num_struct_members - 1 << ".";
       return false;
@@ -1335,7 +1335,7 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
         const uint32_t num_struct_members =
             static_cast<uint32_t>(typePointedTo->words().size() - 2);
         if (cur_index >= num_struct_members) {
-          DIAG(i) << "Index is out of bound: " << instr_name
+          DIAG(i) << "Index is out of bounds: " << instr_name
                   << " can not find index " << cur_index
                   << " into the structure <id> '" << typePointedTo->id()
                   << "'. This structure has " << num_struct_members
@@ -1684,7 +1684,7 @@ bool walkCompositeTypeHierarchy(
         const uint32_t num_struct_members =
             static_cast<uint32_t>(cur_type->words().size() - 2);
         if (cur_index >= num_struct_members) {
-          *error << "Index is out of bound: " << instr_name()
+          *error << "Index is out of bounds: " << instr_name()
                  << " can not find index " << cur_index
                  << " into the structure <id> '" << cur_type->id()
                  << "'. This structure has " << num_struct_members

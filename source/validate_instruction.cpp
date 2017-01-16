@@ -271,10 +271,12 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
       // Word 1 is the group <id>. All subsequent words are target <id>s that
       // are going to be decorated with the decorations.
       const uint32_t decoration_group_id = inst->words[1];
-      auto group_decs = _.id_decorations(decoration_group_id);
+      std::vector<Decoration>& group_decorations =
+          _.id_decorations(decoration_group_id);
       for (int i = 2; i < inst->num_words; ++i) {
         const uint32_t target_id = inst->words[i];
-        _.RegisterDecorationsForId(target_id, group_decs);
+        _.RegisterDecorationsForId(target_id, group_decorations.begin(),
+                                   group_decorations.end());
       }
       break;
     }
@@ -283,7 +285,8 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
       // pairs. All decorations of the group should be applied to all the struct
       // members that are specified in the instructions.
       const uint32_t decoration_group_id = inst->words[1];
-      auto group_decs = _.id_decorations(decoration_group_id);
+      std::vector<Decoration>& group_decorations =
+          _.id_decorations(decoration_group_id);
       // Grammar checks ensures that the number of arguments to this instruction
       // is an odd number: 1 decoration group + (id,literal) pairs.
       for (int i = 2; i + 1 < inst->num_words; i = i + 2) {
@@ -291,7 +294,9 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
         const uint32_t index = inst->words[i + 1];
         // ID validation phase ensures this is in fact a struct instruction and
         // that the index is not out of bound.
-        _.RegisterDecorationsForStructMember(struct_id, index, group_decs);
+        _.RegisterDecorationsForStructMember(struct_id, index,
+                                             group_decorations.begin(),
+                                             group_decorations.end());
       }
       break;
     }

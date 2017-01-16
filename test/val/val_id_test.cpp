@@ -195,7 +195,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpMemberDecorate for struct <id> "
-                        "1 is out of bound. The structure has 2 members. "
+                        "1 is out of bounds. The structure has 2 members. "
                         "Largest valid index is 1."));
 }
 
@@ -275,7 +275,7 @@ TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIndexOutOfBoundBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpGroupMemberDecorate for struct "
-                        "<id> 2 is out of bound. The structure has 3 members. "
+                        "<id> 2 is out of bounds. The structure has 3 members. "
                         "Largest valid index is 2."));
 }
 
@@ -2236,7 +2236,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "Index is out of bound: " + instr +
+  const std::string expected_err = "Index is out of bounds: " + instr +
                                    " can not find index 3 into the structure "
                                    "<id> '26'. This structure has 3 members. "
                                    "Largest valid index is 2.";
@@ -2885,7 +2885,7 @@ TEST_F(ValidateIdWithMessage, CompositeExtractStructIndexOutOfBoundBad) {
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Index is out of bound: OpCompositeExtract can not "
+              HasSubstr("Index is out of bounds: OpCompositeExtract can not "
                         "find index 3 into the structure <id> '26'. This "
                         "structure has 3 members. Largest valid index is 2."));
 }
@@ -2904,10 +2904,11 @@ TEST_F(ValidateIdWithMessage, CompositeInsertStructIndexOutOfBoundBad) {
 
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Index is out of bound: OpCompositeInsert can not find "
-                        "index 3 into the structure <id> '26'. This structure "
-                        "has 3 members. Largest valid index is 2."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bounds: OpCompositeInsert can not find "
+                "index 3 into the structure <id> '26'. This structure "
+                "has 3 members. Largest valid index is 2."));
 }
 
 #if 0

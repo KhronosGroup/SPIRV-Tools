@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Google Inc.
+// Copyright (c) 2017 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 #include "gmock/gmock.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
+#include "source/val/decoration.h"
 
 namespace {
 
 using std::string;
+using std::vector;
 using ::testing::HasSubstr;
+using ::testing::Eq;
+using libspirv::Decoration;
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
 
@@ -40,15 +44,10 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
-  EXPECT_EQ(size_t(2), vstate_->id_decorations(id).size());
-  // First decoration.
-  EXPECT_EQ(SpvDecorationArrayStride,
-            vstate_->id_decorations(id)[0].dec_type());
-  EXPECT_EQ(size_t(1), vstate_->id_decorations(id)[0].params().size());
-  EXPECT_EQ(unsigned(4), vstate_->id_decorations(id)[0].params()[0]);
-  // Second decoration.
-  EXPECT_EQ(SpvDecorationUniform, vstate_->id_decorations(id)[1].dec_type());
-  EXPECT_EQ(size_t(0), vstate_->id_decorations(id)[1].params().size());
+  EXPECT_THAT(vstate_->id_decorations(id),
+              Eq(vector<Decoration>{
+                  Decoration(SpvDecorationArrayStride, vector<uint32_t>{4}),
+                  Decoration(SpvDecorationUniform)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
@@ -71,32 +70,17 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
 
   // The array must have 1 decoration.
   const uint32_t arr_id = 1;
-  EXPECT_EQ(size_t(1), vstate_->id_decorations(arr_id).size());
-  EXPECT_EQ(SpvDecorationArrayStride,
-            vstate_->id_decorations(arr_id)[0].dec_type());
-  EXPECT_EQ(-1, vstate_->id_decorations(arr_id)[0].struct_member_index());
-  EXPECT_EQ(size_t(1), vstate_->id_decorations(arr_id)[0].params().size());
-  EXPECT_EQ(unsigned(4), vstate_->id_decorations(arr_id)[0].params()[0]);
+  EXPECT_THAT(vstate_->id_decorations(arr_id),
+              Eq(vector<Decoration>{
+                  Decoration(SpvDecorationArrayStride, vector<uint32_t>{4})}));
 
   // The struct must have 3 decorations.
   const uint32_t struct_id = 2;
-  EXPECT_EQ(size_t(3), vstate_->id_decorations(struct_id).size());
-  // First decoration:
-  EXPECT_EQ(SpvDecorationNonReadable,
-            vstate_->id_decorations(struct_id)[0].dec_type());
-  EXPECT_EQ(2, vstate_->id_decorations(struct_id)[0].struct_member_index());
-  EXPECT_EQ(size_t(0), vstate_->id_decorations(struct_id)[0].params().size());
-  // Second decoration:
-  EXPECT_EQ(SpvDecorationOffset,
-            vstate_->id_decorations(struct_id)[1].dec_type());
-  EXPECT_EQ(2, vstate_->id_decorations(struct_id)[1].struct_member_index());
-  EXPECT_EQ(size_t(1), vstate_->id_decorations(struct_id)[1].params().size());
-  EXPECT_EQ(unsigned(2), vstate_->id_decorations(struct_id)[1].params()[0]);
-  // Third decoration:
-  EXPECT_EQ(SpvDecorationBufferBlock,
-            vstate_->id_decorations(struct_id)[2].dec_type());
-  EXPECT_EQ(-1, vstate_->id_decorations(struct_id)[2].struct_member_index());
-  EXPECT_EQ(size_t(0), vstate_->id_decorations(struct_id)[2].params().size());
+  EXPECT_THAT(vstate_->id_decorations(struct_id),
+              Eq(vector<Decoration>{
+                  Decoration(SpvDecorationNonReadable, vector<uint32_t>{}, 2),
+                  Decoration(SpvDecorationOffset, vector<uint32_t>{2}, 2),
+                  Decoration(SpvDecorationBufferBlock)}));
 }
 
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
@@ -127,23 +111,11 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
 
   // Decoration group has 3 decorations.
   auto check_decorations_for_id = [this](const uint32_t obj_id) {
-    EXPECT_EQ(size_t(3), vstate_->id_decorations(obj_id).size());
-    // First decoration:
-    EXPECT_EQ(SpvDecorationDescriptorSet,
-              vstate_->id_decorations(obj_id)[0].dec_type());
-    EXPECT_EQ(-1, vstate_->id_decorations(obj_id)[0].struct_member_index());
-    EXPECT_EQ(size_t(1), vstate_->id_decorations(obj_id)[0].params().size());
-    EXPECT_EQ(unsigned(0), vstate_->id_decorations(obj_id)[0].params()[0]);
-    // Second decoration:
-    EXPECT_EQ(SpvDecorationNonWritable,
-              vstate_->id_decorations(obj_id)[1].dec_type());
-    EXPECT_EQ(-1, vstate_->id_decorations(obj_id)[1].struct_member_index());
-    EXPECT_EQ(size_t(0), vstate_->id_decorations(obj_id)[1].params().size());
-    // Third decoration:
-    EXPECT_EQ(SpvDecorationRestrict,
-              vstate_->id_decorations(obj_id)[2].dec_type());
-    EXPECT_EQ(-1, vstate_->id_decorations(obj_id)[2].struct_member_index());
-    EXPECT_EQ(size_t(0), vstate_->id_decorations(obj_id)[2].params().size());
+    EXPECT_THAT(vstate_->id_decorations(obj_id),
+                Eq(vector<Decoration>{
+                    Decoration(SpvDecorationDescriptorSet, vector<uint32_t>{0}),
+                    Decoration(SpvDecorationNonWritable),
+                    Decoration(SpvDecorationRestrict)}));
   };
 
   // Decoration group is applied to id 1, 2, 3, and 4. Note that id 1 (which is
@@ -172,12 +144,9 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Decoration group has 1 decoration.
   auto check_decorations_for_id = [this](const uint32_t obj_id) {
-    EXPECT_EQ(size_t(1), vstate_->id_decorations(obj_id).size());
-    EXPECT_EQ(SpvDecorationOffset,
-              vstate_->id_decorations(obj_id)[0].dec_type());
-    EXPECT_EQ(3, vstate_->id_decorations(obj_id)[0].struct_member_index());
-    EXPECT_EQ(size_t(1), vstate_->id_decorations(obj_id)[0].params().size());
-    EXPECT_EQ(unsigned(3), vstate_->id_decorations(obj_id)[0].params()[0]);
+    EXPECT_THAT(vstate_->id_decorations(obj_id),
+                Eq(vector<Decoration>{
+                    Decoration(SpvDecorationOffset, vector<uint32_t>{3}, 3)}));
   };
 
   // Decoration group is applied to id 1, 2, 3, and 4. Note that id 1 (which is
