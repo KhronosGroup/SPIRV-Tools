@@ -130,6 +130,17 @@ class ValidationState_t {
   std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
+  /// Adds a new interface id to the interfaces of the given entry point.
+  void RegisterInterfaceForEntryPoint(uint32_t entry_point,
+                                      uint32_t interface) {
+    entry_point_interfaces_[entry_point].push_back(interface);
+  }
+
+  /// Returns the interfaces of a given entry point.
+  std::vector<uint32_t>& entry_point_interfaces(uint32_t entry_point) {
+    return entry_point_interfaces_[entry_point];
+  }
+
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
     function_call_targets_.insert(id);
@@ -263,6 +274,15 @@ class ValidationState_t {
     return struct_nesting_depth_[id];
   }
 
+  /// Adds the structure to the set of BuiltIn structs.
+  void RegisterBuiltInStruct(uint32_t id) {
+    builtin_structs_.insert(id);
+  }
+
+  /// Returns whether or not a structure has the BuiltIn decoration.
+  bool IsBuiltInStruct(uint32_t id) const {
+    return (builtin_structs_.find(id) != builtin_structs_.end());
+  }
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -303,6 +323,9 @@ class ValidationState_t {
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
 
+  /// Maps an entry point id to its interfaces.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> entry_point_interfaces_;
+
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;
 
@@ -314,6 +337,9 @@ class ValidationState_t {
 
   /// Set of Local Variable IDs ('Function' Storage Class)
   std::unordered_set<uint32_t> local_vars_;
+
+  /// Set of structures that have the BuiltIn decoration.
+  std::unordered_set<uint32_t> builtin_structs_;
 
   /// Structure Nesting Depth
   std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;

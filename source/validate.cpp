@@ -122,6 +122,11 @@ spv_result_t ProcessInstruction(void* user_data,
   _.increment_instruction_count();
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     _.entry_points().push_back(inst->words[2]);
+    // Operand 3 and later are the <id> of interfaces for the entry point.
+    for (int i = 3; i < inst->num_operands; ++i) {
+      _.RegisterInterfaceForEntryPoint(inst->words[2],
+                                       inst->words[inst->operands[i].offset]);
+    }
   }
   if (static_cast<SpvOp>(inst->opcode) == SpvOpFunctionCall) {
     _.AddFunctionCallTarget(inst->words[3]);
