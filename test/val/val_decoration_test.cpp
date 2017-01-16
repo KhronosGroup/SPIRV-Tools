@@ -45,9 +45,8 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
   EXPECT_THAT(vstate_->id_decorations(id),
-              Eq(vector<Decoration>{
-                  Decoration(SpvDecorationArrayStride, vector<uint32_t>{4}),
-                  Decoration(SpvDecorationUniform)}));
+              Eq(vector<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
+                                    Decoration(SpvDecorationUniform)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
@@ -70,17 +69,16 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
 
   // The array must have 1 decoration.
   const uint32_t arr_id = 1;
-  EXPECT_THAT(vstate_->id_decorations(arr_id),
-              Eq(vector<Decoration>{
-                  Decoration(SpvDecorationArrayStride, vector<uint32_t>{4})}));
+  EXPECT_THAT(
+      vstate_->id_decorations(arr_id),
+      Eq(vector<Decoration>{Decoration(SpvDecorationArrayStride, {4})}));
 
   // The struct must have 3 decorations.
   const uint32_t struct_id = 2;
   EXPECT_THAT(vstate_->id_decorations(struct_id),
-              Eq(vector<Decoration>{
-                  Decoration(SpvDecorationNonReadable, vector<uint32_t>{}, 2),
-                  Decoration(SpvDecorationOffset, vector<uint32_t>{2}, 2),
-                  Decoration(SpvDecorationBufferBlock)}));
+              Eq(vector<Decoration>{Decoration(SpvDecorationNonReadable, {}, 2),
+                                    Decoration(SpvDecorationOffset, {2}, 2),
+                                    Decoration(SpvDecorationBufferBlock)}));
 }
 
 TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
@@ -110,20 +108,16 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 
   // Decoration group has 3 decorations.
-  auto check_decorations_for_id = [this](const uint32_t obj_id) {
-    EXPECT_THAT(vstate_->id_decorations(obj_id),
-                Eq(vector<Decoration>{
-                    Decoration(SpvDecorationDescriptorSet, vector<uint32_t>{0}),
-                    Decoration(SpvDecorationNonWritable),
-                    Decoration(SpvDecorationRestrict)}));
-  };
+  auto expected_decorations = vector<Decoration>{
+      Decoration(SpvDecorationDescriptorSet, {0}),
+      Decoration(SpvDecorationNonWritable), Decoration(SpvDecorationRestrict)};
 
   // Decoration group is applied to id 1, 2, 3, and 4. Note that id 1 (which is
   // the decoration group id) also has all the decorations.
-  check_decorations_for_id(1);
-  check_decorations_for_id(2);
-  check_decorations_for_id(3);
-  check_decorations_for_id(4);
+  EXPECT_THAT(vstate_->id_decorations(1), Eq(expected_decorations));
+  EXPECT_THAT(vstate_->id_decorations(2), Eq(expected_decorations));
+  EXPECT_THAT(vstate_->id_decorations(3), Eq(expected_decorations));
+  EXPECT_THAT(vstate_->id_decorations(4), Eq(expected_decorations));
 }
 
 TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
@@ -143,17 +137,13 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Decoration group has 1 decoration.
-  auto check_decorations_for_id = [this](const uint32_t obj_id) {
-    EXPECT_THAT(vstate_->id_decorations(obj_id),
-                Eq(vector<Decoration>{
-                    Decoration(SpvDecorationOffset, vector<uint32_t>{3}, 3)}));
-  };
+  auto expected_decorations =
+      vector<Decoration>{Decoration(SpvDecorationOffset, {3}, 3)};
 
-  // Decoration group is applied to id 1, 2, 3, and 4. Note that id 1 (which is
-  // the decoration group id) also has all the decorations.
-  check_decorations_for_id(2);
-  check_decorations_for_id(3);
-  check_decorations_for_id(4);
+  // Decoration group is applied to id 2, 3, and 4.
+  EXPECT_THAT(vstate_->id_decorations(2), Eq(expected_decorations));
+  EXPECT_THAT(vstate_->id_decorations(3), Eq(expected_decorations));
+  EXPECT_THAT(vstate_->id_decorations(4), Eq(expected_decorations));
 }
 
 }  // anonymous namespace
