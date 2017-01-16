@@ -61,6 +61,7 @@ class Decoration {
 
   void set_struct_member_index(uint32_t index) { struct_member_index_ = index; }
   int struct_member_index() { return struct_member_index_; }
+  int struct_member_index() const { return struct_member_index_; }
   SpvDecoration dec_type() { return dec_type_; }
   SpvDecoration dec_type() const { return dec_type_; }
   std::vector<uint32_t>& params() { return params_; }

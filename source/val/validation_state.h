@@ -126,9 +126,27 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
+  /// Registers the given <id> as an Entry Point.
+  void RegisterEntryPointId(const uint32_t id) {
+    entry_points_.push_back(id);
+    entry_point_interfaces_.insert(std::make_pair(id, std::vector<uint32_t>()));
+  }
+
   /// Returns a list of entry point function ids
-  std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
+
+  /// Adds a new interface id to the interfaces of the given entry point.
+  void RegisterInterfaceForEntryPoint(uint32_t entry_point,
+                                      uint32_t interface) {
+    entry_point_interfaces_[entry_point].push_back(interface);
+  }
+
+  /// Returns the interfaces of a given entry point. If the given id is not a
+  /// valid Entry Point id, std::out_of_range exception is thrown.
+  const std::vector<uint32_t>& entry_point_interfaces(
+      uint32_t entry_point) const {
+    return entry_point_interfaces_.at(entry_point);
+  }
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
@@ -263,6 +281,15 @@ class ValidationState_t {
     return struct_nesting_depth_[id];
   }
 
+  /// Records that the structure type has a member decorated with a built-in.
+  void RegisterStructTypeWithBuiltInMember(uint32_t id) {
+    builtin_structs_.insert(id);
+  }
+
+  /// Returns true if the struct type with the given Id has a BuiltIn member.
+  bool IsStructTypeWithBuiltInMember(uint32_t id) const {
+    return (builtin_structs_.find(id) != builtin_structs_.end());
+  }
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -303,6 +330,9 @@ class ValidationState_t {
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
 
+  /// Maps an entry point id to its interfaces.
+  std::unordered_map<uint32_t, std::vector<uint32_t>> entry_point_interfaces_;
+
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;
 
@@ -314,6 +344,9 @@ class ValidationState_t {
 
   /// Set of Local Variable IDs ('Function' Storage Class)
   std::unordered_set<uint32_t> local_vars_;
+
+  /// Set of struct types that have members with a BuiltIn decoration.
+  std::unordered_set<uint32_t> builtin_structs_;
 
   /// Structure Nesting Depth
   std::unordered_map<uint32_t, uint32_t> struct_nesting_depth_;

@@ -31,6 +31,7 @@
 #include "val/validation_state.h"
 
 using libspirv::ValidationState_t;
+using libspirv::Decoration;
 using std::function;
 using std::ignore;
 using std::make_pair;
@@ -386,6 +387,8 @@ bool idUsage::isValid<SpvOpTypeRuntimeArray>(const spv_instruction_t* inst,
 template <>
 bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
                                        const spv_opcode_desc) {
+  ValidationState_t& vstate = const_cast<ValidationState_t&>(module_);
+  const uint32_t struct_id = inst->words[1];
   for (size_t memberTypeIndex = 2; memberTypeIndex < inst->words.size();
        ++memberTypeIndex) {
     auto memberTypeId = inst->words[memberTypeIndex];
@@ -396,7 +399,17 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
                             << "' is not a type.";
       return false;
     }
-    if (memberType && module_.IsForwardPointer(memberTypeId)) {
+    if (SpvOpTypeStruct == memberType->opcode() &&
+        module_.IsStructTypeWithBuiltInMember(memberTypeId)) {
+      DIAG(memberTypeIndex)
+          << "Structure <id> " << memberTypeId
+          << " contains members with BuiltIn decoration. Therefore this "
+             "structure may not be contained as a member of another structure "
+             "type. Structure <id> "
+          << struct_id << " contains structure <id> " << memberTypeId << ".";
+      return false;
+    }
+    if (module_.IsForwardPointer(memberTypeId)) {
       if (memberType->opcode() != SpvOpTypePointer) {
         DIAG(memberTypeIndex) << "Found a forward reference to a non-pointer "
                                  "type in OpTypeStruct instruction.";
@@ -417,6 +430,27 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
         return false;
       }
     }
+  }
+  std::unordered_set<uint32_t> built_in_members;
+  for (auto decoration : vstate.id_decorations(struct_id)) {
+    if (decoration.dec_type() == SpvDecorationBuiltIn &&
+        decoration.struct_member_index() != Decoration::kInvalidMember) {
+      built_in_members.insert(decoration.struct_member_index());
+    }
+  }
+  int num_struct_members = static_cast<int>(inst->words.size() - 2);
+  int num_builtin_members = static_cast<int>(built_in_members.size());
+  if (num_builtin_members > 0 && num_builtin_members != num_struct_members) {
+    DIAG(0)
+        << "When BuiltIn decoration is applied to a structure-type member, "
+           "all members of that structure type must also be decorated with "
+           "BuiltIn (No allowed mixing of built-in variables and "
+           "non-built-in variables within a single structure). Structure id "
+        << struct_id << " does not meet this requirement.";
+    return false;
+  }
+  if (num_builtin_members > 0) {
+    vstate.RegisterStructTypeWithBuiltInMember(struct_id);
   }
   return true;
 }

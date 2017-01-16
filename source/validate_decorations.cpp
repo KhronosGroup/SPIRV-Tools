@@ -14,14 +14,31 @@
 
 #include "validate.h"
 
+#include <algorithm>
 #include <string>
 
 #include "diagnostic.h"
 #include "opcode.h"
 #include "val/validation_state.h"
 
+using libspirv::Decoration;
 using libspirv::DiagnosticStream;
 using libspirv::ValidationState_t;
+
+namespace {
+
+// Returns whether the given structure type has any members with BuiltIn
+// decoration.
+bool isBuiltInStruct(uint32_t struct_id, ValidationState_t& vstate) {
+  const auto& decorations = vstate.id_decorations(struct_id);
+  return std::any_of(
+      decorations.begin(), decorations.end(), [](const Decoration& d) {
+        return SpvDecorationBuiltIn == d.dec_type() &&
+               Decoration::kInvalidMember != d.struct_member_index();
+      });
+}
+
+}  // anonymous namespace
 
 namespace libspirv {
 
@@ -48,7 +65,49 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
     }
   }
 
-  // TODO: Add more decoration validation code here.
+  for (uint32_t entry_point : vstate.entry_points()) {
+    const auto& interfaces = vstate.entry_point_interfaces(entry_point);
+    int num_builtin_inputs = 0;
+    int num_builtin_outputs = 0;
+    for (auto interface : interfaces) {
+      Instruction* var_instr = vstate.FindDef(interface);
+      if (SpvOpVariable != var_instr->opcode()) {
+        return vstate.diag(SPV_ERROR_INVALID_ID)
+               << "Interfaces passed to OpEntryPoint must be of type "
+                  "OpTypeVariable. Found Op"
+               << spvOpcodeString(static_cast<SpvOp>(var_instr->opcode()))
+               << ".";
+      }
+      const uint32_t ptr_id = var_instr->word(1);
+      Instruction* ptr_instr = vstate.FindDef(ptr_id);
+      // It is guaranteed (by validator ID checks) that ptr_instr is
+      // OpTypePointer. Word 3 of this instruction is the type being pointed to.
+      const uint32_t type_id = ptr_instr->word(3);
+      Instruction* type_instr = vstate.FindDef(type_id);
+      const auto storage_class =
+          static_cast<SpvStorageClass>(var_instr->word(3));
+      if (storage_class != SpvStorageClassInput &&
+          storage_class != SpvStorageClassOutput) {
+        return vstate.diag(SPV_ERROR_INVALID_ID)
+               << "OpEntryPoint interfaces must be OpVariables with "
+                  "Storage Class of Input(1) or Output(3). Found Storage Class "
+               << storage_class << " for Entry Point id " << entry_point << ".";
+      }
+      if (type_instr && SpvOpTypeStruct == type_instr->opcode() &&
+          isBuiltInStruct(type_id, vstate)) {
+        if (storage_class == SpvStorageClassInput) ++num_builtin_inputs;
+        if (storage_class == SpvStorageClassOutput) ++num_builtin_outputs;
+        if (num_builtin_inputs > 1 || num_builtin_outputs > 1) break;
+      }
+    }
+    if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {
+      return vstate.diag(SPV_ERROR_INVALID_BINARY)
+             << "There must be at most one object per Storage Class that can "
+                "contain a structure type containing members decorated with "
+                "BuiltIn, consumed per entry-point. Entry Point id "
+             << entry_point << " does not meet this requirement.";
+    }
+  }
 
   return SPV_SUCCESS;
 }

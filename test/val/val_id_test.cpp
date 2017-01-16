@@ -326,6 +326,57 @@ TEST_F(ValidateIdWithMessage, OpEntryPointReturnTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
 }
 
+TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceIsNotVariableTypeBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Geometry
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %main "main" %ptr_builtin_1
+               OpMemberDecorate %struct_1 0 BuiltIn InvocationId
+      %int = OpTypeInt 32 1
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+ %struct_1 = OpTypeStruct %int
+%ptr_builtin_1 = OpTypePointer Input %struct_1
+       %main = OpFunction %void None %func
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Interfaces passed to OpEntryPoint must be of type "
+                        "OpTypeVariable. Found OpTypePointer."));
+}
+
+
+TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceStorageClassBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Geometry
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %main "main" %in_1
+               OpMemberDecorate %struct_1 0 BuiltIn InvocationId
+      %int = OpTypeInt 32 1
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+ %struct_1 = OpTypeStruct %int
+%ptr_builtin_1 = OpTypePointer Uniform %struct_1
+       %in_1 = OpVariable %ptr_builtin_1 Uniform
+       %main = OpFunction %void None %func
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint interfaces must be OpVariables with "
+                        "Storage Class of Input(1) or Output(3). Found Storage "
+                        "Class 2 for Entry Point id 1."));
+}
+
 TEST_F(ValidateIdWithMessage, OpExecutionModeGood) {
   string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
