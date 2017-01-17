@@ -2467,7 +2467,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallResultTypeBad) {
 %6 = OpFunction %2 None %3
 %7 = OpFunctionParameter %2
 %8 = OpLabel
-%9 = OpLoad %2 %7
+%9 = OpIAdd %2 %7 %7
      OpReturnValue %9
      OpFunctionEnd
 
@@ -2478,6 +2478,9 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallResultTypeBad) {
       OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFunctionCall Result Type <id> '1's type does not "
+                        "match Function <id> '2's return type."));
 }
 TEST_F(ValidateIdWithMessage, OpFunctionCallFunctionBad) {
   string spirv = kGLSL450MemoryModel + R"(
@@ -2494,6 +2497,8 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallFunctionBad) {
       OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFunctionCall Function <id> '5' is not a function."));
 }
 TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
@@ -2509,7 +2514,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
 %6 = OpFunction %2 None %3
 %7 = OpFunctionParameter %2
 %8 = OpLabel
-%9 = OpLoad %2 %7
+%9 = OpIAdd %2 %7 %7
      OpReturnValue %9
      OpFunctionEnd
 
@@ -2520,6 +2525,9 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentTypeBad) {
       OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFunctionCall Argument <id> '7's type does not match "
+                        "Function <id> '2's parameter type."));
 }
 
 // Valid: OpSampledImage result <id> is used in the same block by
