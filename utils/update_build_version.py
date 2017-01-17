@@ -33,10 +33,12 @@ from __future__ import print_function
 
 import datetime
 import errno
+import os
 import os.path
 import re
 import subprocess
 import sys
+import time
 
 
 def mkdir_p(directory):
@@ -108,7 +110,9 @@ def describe(directory):
             return command_output(
                 ['git', 'rev-parse', 'HEAD'], directory).rstrip().decode()
         except:
-            return 'unknown hash, {}'.format(datetime.date.today().isoformat())
+            return 'unknown hash, {}'.format(datetime.date.fromtimestamp(
+                int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
+                ).isoformat())
 
 
 def main():
