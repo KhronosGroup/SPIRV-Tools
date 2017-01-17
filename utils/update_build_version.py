@@ -110,9 +110,15 @@ def describe(directory):
             return command_output(
                 ['git', 'rev-parse', 'HEAD'], directory).rstrip().decode()
         except:
-            return 'unknown hash, {}'.format(datetime.date.fromtimestamp(
-                int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
-                ).isoformat())
+            # This is the fallback case where git gives us no information,
+            # e.g. because the source tree might not be in a git tree.
+            # In this case, usually use a timestamp.  However, to ensure
+            # reproducible builds, allow the builder to override the wall
+            # clock time with enviornment variable SOURCE_DATE_EPOCH
+            # containing a (presumably) fixed timestamp.
+            timestamp = int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
+            formatted = datetime.date.fromtimestamp(timestamp).isoformat()
+            return 'unknown hash, {}'.format(formatted)
 
 
 def main():

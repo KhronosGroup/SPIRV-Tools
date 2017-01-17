@@ -3,6 +3,8 @@ Revision history for SPIRV-Tools
 v2016.7-dev 2017-01-06
  - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
    assembly syntax file for Vim.
+ - Version string: Allow overriding of wall clock timestamp with contents
+   of environment variable SOURCE_DATE_EPOCH.
  - Fixes:
    #508: Support compilation under CYGWIN
    #517: Fix validation when continue (or case) contstruct is also the head of a
