@@ -107,7 +107,22 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
                 "BuiltIn, consumed per entry-point. Entry Point id "
              << entry_point << " does not meet this requirement.";
     }
+    // The LinkageAttributes Decoration cannot be applied to functions targeted
+    // by an OpEntryPoint instruction
+    for (auto& decoration : vstate.id_decorations(entry_point)) {
+      if (SpvDecorationLinkageAttributes == decoration.dec_type()) {
+        const char* linkage_name =
+            reinterpret_cast<const char*>(&decoration.params()[0]);
+        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+               << "The LinkageAttributes Decoration (Linkage name: "
+               << linkage_name << ") cannot be applied to function id "
+               << entry_point
+               << " because it is targeted by an OpEntryPoint instruction.";
+      }
+    }
   }
+
+  // TODO: Refactor this function into smaller pieces.
 
   return SPV_SUCCESS;
 }

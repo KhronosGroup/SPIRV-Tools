@@ -337,5 +337,28 @@ TEST_F(ValidateDecorations, NoBuiltInObjectsConsumedByOpEntryPointGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, EntryPointFunctionHasLinkageAttributeBad) {
+  string spirv = R"(
+      OpCapability Shader
+      OpCapability Linkage
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpDecorate %main LinkageAttributes "import_main" Import
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%main = OpFunction %1 None %2
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The LinkageAttributes Decoration (Linkage name: import_main) "
+                "cannot be applied to function id 1 because it is targeted by "
+                "an OpEntryPoint instruction."));
+}
+
 }  // anonymous namespace
 
