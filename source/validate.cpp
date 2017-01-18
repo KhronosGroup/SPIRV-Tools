@@ -260,6 +260,27 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     }
   }
 
+  // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
+  // SPIRV spec:
+  // * There is at least one OpEntryPoint instruction, unless the Linkage
+  // capability is being used.
+  // * No function can be targeted by both an OpEntryPoint instruction and an
+  // OpFunctionCall instruction.
+  if (vstate.entry_points().empty() &&
+      !vstate.HasCapability(SpvCapabilityLinkage)) {
+    return vstate.diag(SPV_ERROR_INVALID_BINARY)
+           << "No OpEntryPoint instruction was found. This is only allowed if "
+              "the Linkage capability is being used.";
+  }
+  for (const auto& entry_point : vstate.entry_points()) {
+    if (vstate.IsFunctionCallTarget(entry_point)) {
+      return vstate.diag(SPV_ERROR_INVALID_BINARY)
+             << "A function (" << entry_point
+             << ") may not be targeted by both an OpEntryPoint instruction and "
+                "an OpFunctionCall instruction.";
+    }
+  }
+
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
   uint64_t index = SPV_INDEX_INSTRUCTION;
