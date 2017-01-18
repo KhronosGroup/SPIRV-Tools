@@ -154,8 +154,8 @@ TEST_F(ValidateDecorations, LinkageImportUsedForInitializedVariableBad) {
                OpDecorate %target LinkageAttributes "link_ptr" Import
       %float = OpTypeFloat 32
  %_ptr_float = OpTypePointer Uniform %float
-      %var_1 = OpVariable %_ptr_float Input
-     %target = OpVariable %_ptr_float Uniform %var_1
+       %zero = OpConstantNull %float
+     %target = OpVariable %_ptr_float Uniform %zero
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
@@ -171,8 +171,8 @@ TEST_F(ValidateDecorations, LinkageExportUsedForInitializedVariableGood) {
                OpDecorate %target LinkageAttributes "link_ptr" Export
       %float = OpTypeFloat 32
  %_ptr_float = OpTypePointer Uniform %float
-      %var_1 = OpVariable %_ptr_float Output
-     %target = OpVariable %_ptr_float Uniform %var_1
+       %zero = OpConstantNull %float
+     %target = OpVariable %_ptr_float Uniform %zero
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());

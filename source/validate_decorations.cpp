@@ -34,11 +34,11 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
     // Initializer <id> is an optional argument for OpVariable. If initializer
     // <id> is present, the instruction will have 5 words.
     auto variable_instr = vstate.FindDef(global_var_id);
-    if (variable_instr->words().size() == size_t(5)) {
+    if (variable_instr->words().size() == 5u) {
       for (const auto& decoration : vstate.id_decorations(global_var_id)) {
         // the Linkage Type is the last parameter of the decoration.
         if (SpvDecorationLinkageAttributes == decoration.dec_type() &&
-            decoration.params().size() >= size_t(2) &&
+            decoration.params().size() >= 2u &&
             decoration.params().back() == 1) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
                  << "A module-scope OpVariable with initialization value "
