@@ -2069,8 +2069,9 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
 }
 
-// Invalid. No Indexes passed to the access chain instruction.
-TEST_P(AccessChainInstructionTest, AccessChainMissingIndexesBad) {
+// Valid. No Indexes were passed to the access chain instruction. The Result
+// Type is the same as the Base type.
+TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
@@ -2079,10 +2080,27 @@ TEST_P(AccessChainInstructionTest, AccessChainMissingIndexesBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "No Indexes were passed to " + instr;
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid. No Indexes were passed to the access chain instruction, but the
+// Result Type is different from the Base type.
+TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
+  const std::string instr = GetParam();
+  const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+%entry = )" + instr +
+                 R"( %_ptr_Private_mat4x3 %my_float_var )" + elem + R"(
+OpReturn
+OpFunctionEnd
+  )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("result type (OpTypeMatrix) does not match the type that "
+                "results from indexing into the base <id> (OpTypeFloat)."));
 }
 
 // Valid: 255 indexes passed to the access chain instruction. Limit is 255.
@@ -2718,8 +2736,22 @@ TEST_F(ValidateIdWithMessage, CompositeInsertWrongResultTypeBad) {
               HasSubstr("The Result Type must be the same as Composite type"));
 }
 
-// Invalid: No Indexes were passed to OpCompositeExtract.
-TEST_F(ValidateIdWithMessage, CompositeExtractMissingIndexesBad) {
+// Valid: No Indexes were passed to OpCompositeExtract, and the Result Type is
+// the same as the Base Composite type.
+TEST_F(ValidateIdWithMessage, CompositeExtractNoIndexesGood) {
+  ostringstream spirv;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
+  spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%float_entry = OpCompositeExtract  %mat4x3 %matrix" << std::endl;
+  spirv << R"(OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: No Indexes were passed to OpCompositeExtract, but the Result Type is
+// different from the Base Composite type.
+TEST_F(ValidateIdWithMessage, CompositeExtractNoIndexesBad) {
   ostringstream spirv;
   spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
   spirv << "%matrix = OpLoad %mat4x3 %my_matrix" << std::endl;
@@ -2729,10 +2761,28 @@ TEST_F(ValidateIdWithMessage, CompositeExtractMissingIndexesBad) {
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("No Indexes were passed to OpCompositeExtract"));
+              HasSubstr("OpCompositeExtract result type (OpTypeFloat) does not "
+                        "match the type that results from indexing into the "
+                        "composite (OpTypeMatrix)."));
 }
 
-// Invalid: No Indexes were passed to OpCompositeInsert.
+// Valid: No Indexes were passed to OpCompositeInsert, and the type of the
+// Object<id> argument matches the Composite type.
+TEST_F(ValidateIdWithMessage, CompositeInsertMissingIndexesGood) {
+  ostringstream spirv;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
+  spirv << "%matrix   = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%matrix_2 = OpLoad %mat4x3 %my_matrix" << std::endl;
+  spirv << "%new_composite = OpCompositeInsert %mat4x3 %matrix_2 %matrix";
+  spirv << R"(
+              OpReturn
+              OpFunctionEnd)";
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: No Indexes were passed to OpCompositeInsert, but the type of the
+// Object<id> argument does not match the Composite type.
 TEST_F(ValidateIdWithMessage, CompositeInsertMissingIndexesBad) {
   ostringstream spirv;
   spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup << std::endl;
@@ -2744,7 +2794,9 @@ TEST_F(ValidateIdWithMessage, CompositeInsertMissingIndexesBad) {
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("No Indexes were passed to OpCompositeInsert"));
+              HasSubstr("The Object type (OpTypeInt) in OpCompositeInsert does "
+                        "not match the type that results from indexing into "
+                        "the Composite (OpTypeMatrix)."));
 }
 
 // Valid: Tests that we can index into Struct, Array, Matrix, and Vector!

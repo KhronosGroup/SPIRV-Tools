@@ -1283,10 +1283,6 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
                           << ". Found " << num_indexes << " indexes.";
     return false;
   }
-  if (num_indexes <= 0) {
-    DIAG(resultTypeIndex) << "No Indexes were passed to " << instr_name << ".";
-    return false;
-  }
   // Indexes walk the type hierarchy to the desired depth, potentially down to
   // scalar granularity. The first index in Indexes will select the top-level
   // member/element/component/element of the base composite. All composite
@@ -1739,11 +1735,6 @@ bool idUsage::isValid<SpvOpCompositeExtract>(const spv_instruction_t* inst,
                           << ". Found " << num_indexes << " indexes.";
     return false;
   }
-  if (num_indexes <= 0) {
-    DIAG(resultTypeIndex) << "No Indexes were passed to " << instr_name()
-                          << ".";
-    return false;
-  }
 
   // Walk down the composite type structure. Indexes start at word 4.
   const libspirv::Instruction* indexedTypeInstr = nullptr;
@@ -1806,11 +1797,6 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
     DIAG(resultTypeIndex) << "The number of indexes in " << instr_name()
                           << " may not exceed " << num_indexes_limit
                           << ". Found " << num_indexes << " indexes.";
-    return false;
-  }
-  if (num_indexes <= 0) {
-    DIAG(resultTypeIndex) << "No Indexes were passed to " << instr_name()
-                          << ".";
     return false;
   }
 
