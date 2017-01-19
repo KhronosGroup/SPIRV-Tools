@@ -126,8 +126,13 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
+  /// Registers the given <id> as an Entry Point.
+  void RegisterEntryPointId(const uint32_t id) {
+    entry_points_.push_back(id);
+    entry_point_interfaces_.insert(std::make_pair(id, std::vector<uint32_t>()));
+  }
+
   /// Returns a list of entry point function ids
-  std::vector<uint32_t>& entry_points() { return entry_points_; }
   const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
   /// Adds a new interface id to the interfaces of the given entry point.
@@ -136,9 +141,11 @@ class ValidationState_t {
     entry_point_interfaces_[entry_point].push_back(interface);
   }
 
-  /// Returns the interfaces of a given entry point.
-  std::vector<uint32_t>& entry_point_interfaces(uint32_t entry_point) {
-    return entry_point_interfaces_[entry_point];
+  /// Returns the interfaces of a given entry point. If the given id is not a
+  /// valid Entry Point id, std::out_of_range exception is thrown.
+  const std::vector<uint32_t>& entry_point_interfaces(
+      uint32_t entry_point) const {
+    return entry_point_interfaces_.at(entry_point);
   }
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.

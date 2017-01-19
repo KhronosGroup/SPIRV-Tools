@@ -122,7 +122,7 @@ spv_result_t ProcessInstruction(void* user_data,
   _.increment_instruction_count();
   if (static_cast<SpvOp>(inst->opcode) == SpvOpEntryPoint) {
     const auto entry_point = inst->words[2];
-    _.entry_points().push_back(entry_point);
+    _.RegisterEntryPointId(entry_point);
     // Operand 3 and later are the <id> of interfaces for the entry point.
     for (int i = 3; i < inst->num_operands; ++i) {
       _.RegisterInterfaceForEntryPoint(entry_point,

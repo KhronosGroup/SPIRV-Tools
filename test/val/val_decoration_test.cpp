@@ -208,12 +208,13 @@ TEST_F(ValidateDecorations, MixedBuiltInDecorationsBad) {
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("When BuiltIn decoration is applied to a "
-                        "structure-type member, all members of that structure "
-                        "type must also be decorated with BuiltIn. (No allowed "
-                        "mixing of built-in variables and non-built-in "
-                        "variables within a single structure.)"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("When BuiltIn decoration is applied to a structure-type "
+                "member, all members of that structure type must also be "
+                "decorated with BuiltIn (No allowed mixing of built-in "
+                "variables and non-built-in variables within a single "
+                "structure). Structure id 1 does not meet this requirement."));
 }
 
 TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
@@ -311,6 +312,30 @@ TEST_F(ValidateDecorations,
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+TEST_F(ValidateDecorations, NoBuiltInObjectsConsumedByOpEntryPointGood) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Geometry
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %main "main" %in_1 %out_1
+      %int = OpTypeInt 32 1
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+    %float = OpTypeFloat 32
+ %struct_1 = OpTypeStruct %int
+ %struct_2 = OpTypeStruct %float
+%ptr_builtin_1 = OpTypePointer Input %struct_1
+%ptr_builtin_2 = OpTypePointer Output %struct_2
+%in_1 = OpVariable %ptr_builtin_1 Input
+%out_1 = OpVariable %ptr_builtin_2 Output
+       %main = OpFunction %void None %func
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
 
 }  // anonymous namespace
 

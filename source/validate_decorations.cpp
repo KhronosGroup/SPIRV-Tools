@@ -84,18 +84,17 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
       // OpTypePointer. Word 3 of this instruction is the type being pointed to.
       const uint32_t type_id = ptr_instr->word(3);
       Instruction* type_instr = vstate.FindDef(type_id);
+      const auto storage_class =
+          static_cast<SpvStorageClass>(var_instr->word(3));
+      if (storage_class != SpvStorageClassInput &&
+          storage_class != SpvStorageClassOutput) {
+        return vstate.diag(SPV_ERROR_INVALID_ID)
+               << "OpEntryPoint interfaces must be OpVariables with "
+                  "Storage Class of Input(1) or Output(3). Found Storage Class "
+               << storage_class << " for Entry Point id " << entry_point << ".";
+      }
       if (type_instr && SpvOpTypeStruct == type_instr->opcode() &&
           isBuiltInStruct(type_id, vstate)) {
-        const auto storage_class =
-            static_cast<SpvStorageClass>(var_instr->word(3));
-        if (storage_class != SpvStorageClassInput &&
-            storage_class != SpvStorageClassOutput) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "OpEntryPoint interfaces must be OpVariables with "
-                    "Storage "
-                    "Class of Input(1) or Output(3). Found "
-                 << storage_class << ".";
-        }
         if (storage_class == SpvStorageClassInput) ++num_builtin_inputs;
         if (storage_class == SpvStorageClassOutput) ++num_builtin_outputs;
         if (num_builtin_inputs > 1 || num_builtin_outputs > 1) break;
@@ -105,7 +104,8 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
       return vstate.diag(SPV_ERROR_INVALID_BINARY)
              << "There must be at most one object per Storage Class that can "
                 "contain a structure type containing members decorated with "
-                "BuiltIn, consumed per entry-point.";
+                "BuiltIn, consumed per entry-point. Entry Point id "
+             << entry_point << " does not meet this requirement.";
     }
   }
 

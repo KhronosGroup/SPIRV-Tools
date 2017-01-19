@@ -373,7 +373,8 @@ TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceStorageClassBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpEntryPoint interfaces must be OpVariables with "
-                        "Storage Class of Input(1) or Output(3). Found 2."));
+                        "Storage Class of Input(1) or Output(3). Found Storage "
+                        "Class 2 for Entry Point id 1."));
 }
 
 TEST_F(ValidateIdWithMessage, OpExecutionModeGood) {
