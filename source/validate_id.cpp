@@ -399,7 +399,7 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
       return false;
     }
     if (SpvOpTypeStruct == memberType->opcode() &&
-        module_.IsBuiltInStruct(memberTypeId)) {
+        module_.IsStructTypeWithBuiltInMember(memberTypeId)) {
       DIAG(memberTypeIndex)
           << "Structure <id> " << memberTypeId
           << " contains members with BuiltIn decoration. Therefore this "
@@ -448,7 +448,7 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
     return false;
   }
   if (num_builtin_members > 0) {
-    vstate.RegisterBuiltInStruct(inst->words[1]);
+    vstate.RegisterStructTypeWithBuiltInMember(inst->words[1]);
   }
   return true;
 }

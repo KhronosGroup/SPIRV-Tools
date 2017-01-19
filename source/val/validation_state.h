@@ -274,13 +274,13 @@ class ValidationState_t {
     return struct_nesting_depth_[id];
   }
 
-  /// Adds the structure to the set of BuiltIn structs.
-  void RegisterBuiltInStruct(uint32_t id) {
+  /// Records that the structure type has a member decorated with a built-in.
+  void RegisterStructTypeWithBuiltInMember(uint32_t id) {
     builtin_structs_.insert(id);
   }
 
-  /// Returns whether or not a structure has the BuiltIn decoration.
-  bool IsBuiltInStruct(uint32_t id) const {
+  /// Returns true if the struct type with the given Id has a BuiltIn member.
+  bool IsStructTypeWithBuiltInMember(uint32_t id) const {
     return (builtin_structs_.find(id) != builtin_structs_.end());
   }
  private:
@@ -338,7 +338,7 @@ class ValidationState_t {
   /// Set of Local Variable IDs ('Function' Storage Class)
   std::unordered_set<uint32_t> local_vars_;
 
-  /// Set of structures that have the BuiltIn decoration.
+  /// Set of struct types that have members with a BuiltIn decoration.
   std::unordered_set<uint32_t> builtin_structs_;
 
   /// Structure Nesting Depth

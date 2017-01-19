@@ -14,6 +14,7 @@
 
 #include "validate.h"
 
+#include <algorithm>
 #include <string>
 
 #include "diagnostic.h"
@@ -26,18 +27,15 @@ using libspirv::ValidationState_t;
 
 namespace {
 
-// Returns whether the given structure has BuiltIn members.
+// Returns whether the given structure type has any members with BuiltIn
+// decoration.
 bool isBuiltInStruct(uint32_t struct_id, ValidationState_t& vstate) {
-  // According to the Universal Validation Rules of the SPIR-V Spec, if any one
-  // member is BuiltIn, then all members must be BuiltIn. Therefore, it is
-  // enough to check just one member.
-  for (const auto& decoration : vstate.id_decorations(struct_id)) {
-    if (SpvDecorationBuiltIn == decoration.dec_type() &&
-        Decoration::kInvalidMember != decoration.struct_member_index()) {
-      return true;
-    }
-  }
-  return false;
+  const auto& decorations = vstate.id_decorations(struct_id);
+  return std::any_of(
+      decorations.begin(), decorations.end(), [](const Decoration& d) {
+        return SpvDecorationBuiltIn == d.dec_type() &&
+               Decoration::kInvalidMember != d.struct_member_index();
+      });
 }
 
 }  // anonymous namespace
@@ -88,7 +86,8 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
       Instruction* type_instr = vstate.FindDef(type_id);
       if (type_instr && SpvOpTypeStruct == type_instr->opcode() &&
           isBuiltInStruct(type_id, vstate)) {
-        auto storage_class = static_cast<SpvStorageClass>(var_instr->word(3));
+        const auto storage_class =
+            static_cast<SpvStorageClass>(var_instr->word(3));
         if (storage_class != SpvStorageClassInput &&
             storage_class != SpvStorageClassOutput) {
           return vstate.diag(SPV_ERROR_INVALID_ID)
