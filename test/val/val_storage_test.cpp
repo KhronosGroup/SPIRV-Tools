@@ -21,6 +21,8 @@
 #include "gmock/gmock.h"
 #include "val_fixtures.h"
 
+using ::testing::HasSubstr;
+
 using ValidateStorage = spvtest::ValidateBase<std::string>;
 
 namespace {
@@ -63,6 +65,9 @@ TEST_F(ValidateStorage, FunctionStorageOutsideFunction) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variables can not have a function[7] storage class "
+                        "outside of a function"));
 }
 
 TEST_F(ValidateStorage, OtherStorageOutsideFunction) {
@@ -118,6 +123,8 @@ TEST_P(ValidateStorage, OtherStorageInsideFunction) {
 
   CompileSuccessfully(ss.str());
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Variables must have a function[7] storage class inside of a function"));
 }
 
 INSTANTIATE_TEST_CASE_P(MatrixOp, ValidateStorage,
@@ -144,6 +151,8 @@ TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpVariable storage class cannot be Generic"));
 }
 
 TEST_F(ValidateStorage, GenericVariableInsideFunction) {
@@ -163,5 +172,7 @@ TEST_F(ValidateStorage, GenericVariableInsideFunction) {
 )";
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpVariable storage class cannot be Generic"));
 }
 }

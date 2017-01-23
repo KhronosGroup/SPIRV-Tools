@@ -225,6 +225,10 @@ TEST_F(ValidateLayout, MemoryModelMissing) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "EntryPoint cannot appear before the memory model instruction"));
 }
 
 TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
@@ -249,6 +253,10 @@ TEST_F(ValidateLayout, FunctionDefinitionBeforeDeclarationBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Function declarations must appear before function definitions."));
 }
 
 // TODO(umar): Passes but gives incorrect error message. Should be fixed after
@@ -273,6 +281,9 @@ TEST_F(ValidateLayout, LabelBeforeFunctionParameterBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Function parameters must only appear immediately "
+                        "after the function definition"));
 }
 
 TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
@@ -298,6 +309,9 @@ TEST_F(ValidateLayout, FuncParameterNotImmediatlyAfterFuncBad) {
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Function parameters must only appear immediately "
+                        "after the function definition"));
 }
 
 TEST_F(ValidateLayout, OpUndefCanAppearInTypeDeclarationSection) {
