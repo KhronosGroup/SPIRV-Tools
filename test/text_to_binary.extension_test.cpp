@@ -227,4 +227,20 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInDeviceIndex})},
             })), );
 
+// SPV_KHR_multiview
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_multiview, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpCapability MultiView\n",
+                 MakeInstruction(SpvOpCapability, {SpvCapabilityMultiView})},
+                {"OpDecorate %1 BuiltIn ViewIndex\n",
+                 MakeInstruction(SpvOpDecorate, {1, SpvDecorationBuiltIn,
+                                                 SpvBuiltInViewIndex})},
+            })), );
+
 }  // anonymous namespace
