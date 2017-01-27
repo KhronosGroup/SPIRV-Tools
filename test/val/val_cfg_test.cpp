@@ -757,7 +757,10 @@ TEST_P(ValidateCFG, UnreachableBranch) {
 
 TEST_P(ValidateCFG, EmptyFunction) {
   string str = header(GetParam()) + string(types_consts()) +
-               "%func    = OpFunction %voidt None %funct\n" + "OpFunctionEnd\n";
+               R"(%func    = OpFunction %voidt None %funct
+                  %l = OpLabel
+                  OpReturn
+                  OpFunctionEnd)";
 
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());

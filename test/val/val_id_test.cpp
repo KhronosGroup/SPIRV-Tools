@@ -2675,6 +2675,8 @@ TEST_F(ValidateIdWithMessage, OpFunctionGood) {
 %2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2 %2
 %4 = OpFunction %1 None %3
+%5 = OpLabel
+     OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -2683,9 +2685,11 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%5 = OpConstant %2 42
-%3 = OpTypeFunction %1 %2 %2
-%4 = OpFunction %2 None %3
+%3 = OpConstant %2 42
+%4 = OpTypeFunction %1 %2 %2
+%5 = OpFunction %2 None %4
+%6 = OpLabel
+     OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -2698,6 +2702,8 @@ TEST_F(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %4 = OpFunction %1 None %2
+%5 = OpLabel
+     OpReturn
 OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
