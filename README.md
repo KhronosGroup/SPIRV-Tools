@@ -61,8 +61,18 @@ See [`syntax.md`](syntax.md) for the assembly language syntax.
 
 ### Validator
 
-*Warning:* The validator is incomplete.
-Check the [CHANGES](CHANGES) file for reports on completed work, and
+The validator checks validation rules described by the SPIR-V specification.
+
+Khronos recommends that tools that create or transform SPIR-V modules use the
+validator to ensure their outputs are valid, and that tools that consume SPIR-V
+modules optionally use the validator to protect themselves from from bad inputs.
+This is especially encouraged for debug and development scenarios.
+
+The validator has one-sided error: it will only return an error when it has
+implemented a rule check and the module violates that rule.
+
+The validator is incomplete.
+See the [CHANGES](CHANGES) file for reports on completed work, and
 the [Validator
 sub-project](https://github.com/KhronosGroup/SPIRV-Tools/projects/1) for planned
 and in-progress work.
