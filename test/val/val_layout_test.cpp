@@ -107,13 +107,15 @@ const vector<string>& getInstructions() {
     "OpLine %str 3 4",
     "OpNoLine",
     "%func     = OpFunction %voidt None %vfunct",
-    "OpFunctionEnd",
+    "%l = OpLabel",
+    "OpReturn ; %func return",
+    "OpFunctionEnd ; %func end",
     "%func2    = OpFunction %voidt None %viifunct",
     "%funcp1   = OpFunctionParameter %intt",
     "%funcp2   = OpFunctionParameter %intt",
     "%fLabel   = OpLabel",
-    "            OpNop",
-    "            OpReturn",
+    "OpNop",
+    "OpReturn ; %func2 return",
     "OpFunctionEnd"
   };
   return instructions;
@@ -151,16 +153,16 @@ INSTANTIATE_TEST_CASE_P(InstructionsOrder,
                      , make_tuple(string("OpTypeVoid")                , Range<17, 30>()        , Range<0, 25>())
                      , make_tuple(string("OpTypeFloat")               , Range<17, 30>()        , Range<0,20>())
                      , make_tuple(string("OpTypeInt")                 , Range<17, 30>()        , Range<0, 20>())
-                     , make_tuple(string("OpTypeVector %floatt 4")      , Range<17, 30>()        , Range<19, 23>())
+                     , make_tuple(string("OpTypeVector %floatt 4")    , Range<17, 30>()        , Range<19, 23>())
                      , make_tuple(string("OpTypeMatrix %vec4 4")      , Range<17, 30>()        , Range<22, kRangeEnd>())
                      , make_tuple(string("OpTypeStruct")              , Range<17, 30>()        , Range<24, kRangeEnd>())
                      , make_tuple(string("%vfunct   = OpTypeFunction"), Range<17, 30>()        , Range<20, 30>())
                      , make_tuple(string("OpConstant")                , Range<17, 30>()        , Range<20, kRangeEnd>())
                      , make_tuple(string("OpLine ")                   , Range<17, kRangeEnd>() , Range<7, kRangeEnd>())
                      , make_tuple(string("OpNoLine")                  , Range<17, kRangeEnd>() , All)
-                     , make_tuple(string("OpLabel")                   , Equals<36>             , All)
-                     , make_tuple(string("OpNop")                     , Equals<37>             , All)
-                     , make_tuple(string("OpReturn")                  , Equals<38>             , All)
+                     , make_tuple(string("%fLabel   = OpLabel")       , Equals<38>             , All)
+                     , make_tuple(string("OpNop")                     , Equals<39>             , Range<39,kRangeEnd>())
+                     , make_tuple(string("OpReturn ; %func2 return")  , Equals<40>             , All)
     )),);
 // clang-format on
 
