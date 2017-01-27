@@ -188,4 +188,27 @@ INSTANTIATE_TEST_CASE_P(
              MakeInstruction(SpvOpSubgroupAllEqualKHR, {1, 2, 3})},
         })), );
 
+// SPV_KHR_16bit_storage
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_16bit_storage, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpCapability StorageUniformBufferBlock16\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageUniformBufferBlock16})},
+                {"OpCapability StorageUniform16\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageUniform16})},
+                {"OpCapability StoragePushConstant16\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStoragePushConstant16})},
+                {"OpCapability StorageInputOutput16\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageInputOutput16})},
+            })), );
+
 }  // anonymous namespace
