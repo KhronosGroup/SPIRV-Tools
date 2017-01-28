@@ -147,13 +147,13 @@ TEST_F(ValidateIdWithMessage, OpLineGood) {
 }
 TEST_F(ValidateIdWithMessage, OpLineFileBad) {
   string spirv = kGLSL450MemoryModel + R"(
-     OpLine %2 0 0
-%2 = OpTypeInt 32 0
-%3 = OpTypePointer Input %2
-%4 = OpVariable %3 Input)";
+  %1 = OpTypeInt 32 0
+     OpLine %1 0 0
+  )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 1 has not been defined"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLine Target <id> '1' is not an OpString."));
 }
 
 TEST_F(ValidateIdWithMessage, OpDecorateGood) {
@@ -555,7 +555,7 @@ class OpTypeArrayLengthTest
   ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
 
   // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
-  spv_result_t Val(const SpirvVector& v, const char* expected_err = "") {
+  spv_result_t Val(const SpirvVector& v, const std::string &expected_err = "") {
     spv_const_binary_t cbinary{v.data(), v.size()};
     const auto status =
         spvValidate(ScopedContext().context, &cbinary, &diagnostic_);
