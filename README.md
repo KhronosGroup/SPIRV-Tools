@@ -65,7 +65,7 @@ The validator checks validation rules described by the SPIR-V specification.
 
 Khronos recommends that tools that create or transform SPIR-V modules use the
 validator to ensure their outputs are valid, and that tools that consume SPIR-V
-modules optionally use the validator to protect themselves from from bad inputs.
+modules optionally use the validator to protect themselves from bad inputs.
 This is especially encouraged for debug and development scenarios.
 
 The validator has one-sided error: it will only return an error when it has
