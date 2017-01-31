@@ -168,6 +168,7 @@ class Instruction {
 
   // Runs the given function |f| on all "in" operand ids
   inline void ForEachInId(const std::function<void(uint32_t*)>& f);
+  inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
 
   // Returns true if any operands can be labels
   inline bool IsControlFlow() const;
@@ -246,6 +247,12 @@ inline void Instruction::ForEachInst(
 }
 
 inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {
+  for (auto& opnd : operands_)
+    if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
+}
+
+inline void Instruction::ForEachInId(
+    const std::function<void(const uint32_t*)>& f) const {
   for (auto& opnd : operands_)
     if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
 }
