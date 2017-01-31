@@ -15,9 +15,6 @@
 // limitations under the License.
 
 #include "inline_pass.h"
-#include "iterator.h"
-
-#include <unordered_map>
 
 // Indices of operands in SPIR-V instructions
 
