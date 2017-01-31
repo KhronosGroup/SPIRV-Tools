@@ -19,14 +19,15 @@
 
 #include <unordered_map>
 
-static const int SPV_ENTRY_POINT_FUNCTION_ID = 1;
-static const int SPV_FUNCTION_CALL_FUNCTION_ID = 2;
-static const int SPV_FUNCTION_CALL_ARGUMENT_ID = 3;
-static const int SPV_FUNCTION_PARAMETER_RESULT_ID = 1;
-static const int SPV_STORE_OBJECT_ID = 1;
-static const int SPV_RETURN_VALUE_ID = 0;
-static const int SPV_TYPE_POINTER_STORAGE_CLASS = 1;
-static const int SPV_TYPE_POINTER_TYPE_ID = 2;
+// Indices of operands in SPIR-V instructions
+
+static const int kSpvEntryPointFunctionId = 1;
+static const int kSpvFunctionCallFunctionId = 2;
+static const int kSpvFuncitonCallArgumentId = 3;
+static const int kSpvFunctionParameterResultId = 1;
+static const int kSpvReturnValueId = 0;
+static const int kSpvTypePointerStorageClass = 1;
+static const int kSpvTypePointerTypeId = 2;
 
 namespace spvtools {
 namespace opt {
@@ -36,8 +37,8 @@ uint32_t InlinePass::FindPointerToType(uint32_t typeId) {
   for (; type_itr != module_->types_values_end(); ++type_itr) {
     const ir::Instruction* type_inst = &*type_itr;
     if (type_inst->opcode() == SpvOpTypePointer &&
-        type_inst->GetOperand(SPV_TYPE_POINTER_TYPE_ID).words[0] == typeId &&
-        type_inst->GetOperand(SPV_TYPE_POINTER_STORAGE_CLASS).words[0] ==
+        type_inst->GetOperand(kSpvTypePointerTypeId).words[0] == typeId &&
+        type_inst->GetOperand(kSpvTypePointerStorageClass).words[0] ==
             SpvStorageClassFunction)
       break;
   }
@@ -110,7 +111,7 @@ void InlinePass::GenInlineCode(
   std::unordered_map<uint32_t, uint32_t> postCallSI;
 
   const uint32_t calleeId =
-      call_ii->GetOperand(SPV_FUNCTION_CALL_FUNCTION_ID).words[0];
+      call_ii->GetOperand(kSpvFunctionCallFunctionId).words[0];
   ir::Function* calleeFn = id2function_[calleeId];
 
   // Map parameters to actual arguments
@@ -118,9 +119,9 @@ void InlinePass::GenInlineCode(
   calleeFn->ForEachParam(
       [&call_ii, &i, &callee2caller](const ir::Instruction* cpi) {
         const uint32_t pid =
-            cpi->GetOperand(SPV_FUNCTION_PARAMETER_RESULT_ID).words[0];
+            cpi->GetOperand(kSpvFunctionParameterResultId).words[0];
         callee2caller[pid] =
-            call_ii->GetOperand(SPV_FUNCTION_CALL_ARGUMENT_ID + i).words[0];
+            call_ii->GetOperand(kSpvFuncitonCallArgumentId + i).words[0];
         i++;
       });
 
@@ -222,7 +223,7 @@ void InlinePass::GenInlineCode(
           case SpvOpReturnValue: {
             // store return value to return variable
             assert(returnVarId != 0);
-            uint32_t valId = cpi->GetInOperand(SPV_RETURN_VALUE_ID).words[0];
+            uint32_t valId = cpi->GetInOperand(kSpvReturnValueId).words[0];
             const auto mapItr = callee2caller.find(valId);
             if (mapItr != callee2caller.end()) {
               valId = mapItr->second;
@@ -411,7 +412,7 @@ Pass::Status InlinePass::ProcessImpl() {
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetOperand(SPV_ENTRY_POINT_FUNCTION_ID).words[0]];
+        id2function_[e.GetOperand(kSpvEntryPointFunctionId).words[0]];
     modified = modified || Inline(fn);
   }
 
