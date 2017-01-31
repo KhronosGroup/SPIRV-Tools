@@ -253,7 +253,7 @@ inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {
 
 inline void Instruction::ForEachInId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (auto& opnd : operands_)
+  for (const auto& opnd : operands_)
     if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
 }
 
