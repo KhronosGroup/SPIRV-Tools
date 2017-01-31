@@ -45,10 +45,13 @@ class InlinePass : public Pass {
   // Next unused ID
   uint32_t nextId_;
 
-  inline void finalizeNextId(ir::Module* module) {
+  // Write the next available Id back to the module
+  inline void FinalizeNextId(ir::Module* module) {
     module->SetIdBound(nextId_);
   }
-  inline uint32_t getNextId() { return nextId_++; }
+
+  // Return the next available Id and increment it
+  inline uint32_t TakeNextId() { return nextId_++; }
 
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func.

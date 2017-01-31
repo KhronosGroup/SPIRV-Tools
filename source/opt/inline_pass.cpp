@@ -43,7 +43,7 @@ uint32_t InlinePass::FindPointerToType(uint32_t typeId) {
 }
 
 uint32_t InlinePass::AddPointerToType(uint32_t typeId) {
-  uint32_t resultId = getNextId();
+  uint32_t resultId = TakeNextId();
   std::vector<ir::Operand> in_operands;
   in_operands.emplace_back(
       spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
@@ -128,7 +128,7 @@ void InlinePass::GenInlineCode(
   auto cvi = cbi->begin();
   while (cvi->opcode() == SpvOp::SpvOpVariable) {
     std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(*cvi));
-    uint32_t newId = getNextId();
+    uint32_t newId = TakeNextId();
     var_inst->SetResultId(newId);
     callee2caller[cvi->result_id()] = newId;
     newVars.push_back(std::move(var_inst));
@@ -145,7 +145,7 @@ void InlinePass::GenInlineCode(
     uint32_t returnVarTypeId = FindPointerToType(calleeTypeId);
     if (returnVarTypeId == 0) returnVarTypeId = AddPointerToType(calleeTypeId);
     // Add return var to new function scope variables
-    returnVarId = getNextId();
+    returnVarId = TakeNextId();
     std::vector<ir::Operand> in_operands;
     in_operands.emplace_back(
         spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
@@ -175,7 +175,7 @@ void InlinePass::GenInlineCode(
             // instruction
             // to return block
             if (prevInstWasReturn) {
-              if (returnLabelId == 0) returnLabelId = this->getNextId();
+              if (returnLabelId == 0) returnLabelId = this->TakeNextId();
               AddBranch(returnLabelId, bp);
               prevInstWasReturn = false;
             }
@@ -189,7 +189,7 @@ void InlinePass::GenInlineCode(
               const uint32_t rid = cpi->result_id();
               const auto mapItr = callee2caller.find(rid);
               labelId = (mapItr != callee2caller.end()) ? mapItr->second
-                                                        : this->getNextId();
+                                                        : this->TakeNextId();
             } else {
               // first block needs to use label of original block
               // but map callee label in case of phi reference
@@ -277,7 +277,7 @@ void InlinePass::GenInlineCode(
                           std::unique_ptr<ir::Instruction> samp_inst(
                               new ir::Instruction(*inInst));
                           const uint32_t rid = samp_inst->result_id();
-                          const uint32_t nid = this->getNextId();
+                          const uint32_t nid = this->TakeNextId();
                           samp_inst->SetResultId(nid);
                           postCallSI[rid] = nid;
                           *iid = nid;
@@ -313,7 +313,7 @@ void InlinePass::GenInlineCode(
                   // forward label reference. allocate a new label id, map it,
                   // use
                   // it and check for it at each label.
-                  const uint32_t nid = this->getNextId();
+                  const uint32_t nid = this->TakeNextId();
                   callee2caller[*iid] = nid;
                   *iid = nid;
                 }
@@ -322,7 +322,7 @@ void InlinePass::GenInlineCode(
             // map and reset result id
             const uint32_t rid = spv_inst->result_id();
             if (rid != 0) {
-              const uint32_t nid = this->getNextId();
+              const uint32_t nid = this->TakeNextId();
               callee2caller[rid] = nid;
               spv_inst->SetResultId(nid);
             }
@@ -413,7 +413,7 @@ Pass::Status InlinePass::ProcessImpl() {
     modified = modified || Inline(fn);
   }
 
-  finalizeNextId(module_);
+  FinalizeNextId(module_);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
