@@ -57,39 +57,39 @@ uint32_t InlinePass::AddPointerToType(uint32_t typeId) {
 }
 
 void InlinePass::AddBranch(uint32_t labelId,
-                           std::unique_ptr<ir::BasicBlock>& bp) {
+                           std::unique_ptr<ir::BasicBlock>* bp) {
   std::vector<ir::Operand> branch_in_operands;
   branch_in_operands.push_back(
       ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                   std::initializer_list<uint32_t>{labelId}));
   std::unique_ptr<ir::Instruction> newBranch(
       new ir::Instruction(SpvOpBranch, 0, 0, branch_in_operands));
-  bp->AddInstruction(std::move(newBranch));
+  (*bp)->AddInstruction(std::move(newBranch));
 }
 
-void InlinePass::AddStore(uint32_t destId, uint32_t valId,
-                          std::unique_ptr<ir::BasicBlock>& bp) {
+void InlinePass::AddStore(uint32_t ptrId, uint32_t valId,
+                          std::unique_ptr<ir::BasicBlock>* bp) {
   std::vector<ir::Operand> store_in_operands;
   store_in_operands.push_back(
       ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{destId}));
+                  std::initializer_list<uint32_t>{ptrId}));
   store_in_operands.push_back(
       ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                   std::initializer_list<uint32_t>{valId}));
   std::unique_ptr<ir::Instruction> newStore(
       new ir::Instruction(SpvOpStore, 0, 0, store_in_operands));
-  bp->AddInstruction(std::move(newStore));
+  (*bp)->AddInstruction(std::move(newStore));
 }
 
-void InlinePass::AddLoad(uint32_t typeId, uint32_t resultId, uint32_t srcId,
-                         std::unique_ptr<ir::BasicBlock>& bp) {
+void InlinePass::AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
+                         std::unique_ptr<ir::BasicBlock>* bp) {
   std::vector<ir::Operand> load_in_operands;
   load_in_operands.push_back(
       ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{srcId}));
+                  std::initializer_list<uint32_t>{ptrId}));
   std::unique_ptr<ir::Instruction> newLoad(
       new ir::Instruction(SpvOpLoad, typeId, resultId, load_in_operands));
-  bp->AddInstruction(std::move(newLoad));
+  (*bp)->AddInstruction(std::move(newLoad));
 }
 
 // Generate callee code into newBlocks to be inlined for the function call at
@@ -176,7 +176,7 @@ void InlinePass::GenInlineCode(
             // to return block
             if (prevInstWasReturn) {
               if (returnLabelId == 0) returnLabelId = this->TakeNextId();
-              AddBranch(returnLabelId, bp);
+              AddBranch(returnLabelId, &bp);
               prevInstWasReturn = false;
             }
             // finish current block (if it exists) and get label for next block
@@ -225,7 +225,7 @@ void InlinePass::GenInlineCode(
             if (mapItr != callee2caller.end()) {
               valId = mapItr->second;
             }
-            AddStore(returnVarId, valId, bp);
+            AddStore(returnVarId, valId, &bp);
 
             // Remember we saw a return; if followed by a label, will need to
             // insert
@@ -243,7 +243,7 @@ void InlinePass::GenInlineCode(
             // if previous instruction was return, insert branch instruction
             // to return block
             if (returnLabelId != 0) {
-              if (prevInstWasReturn) AddBranch(returnLabelId, bp);
+              if (prevInstWasReturn) AddBranch(returnLabelId, &bp);
               newBlocks.push_back(std::move(bp));
               const std::vector<ir::Operand> label_in_operands;
               std::unique_ptr<ir::Instruction> newLabel(new ir::Instruction(
@@ -255,7 +255,7 @@ void InlinePass::GenInlineCode(
             if (returnVarId != 0) {
               const uint32_t resId = call_ii->result_id();
               assert(resId != 0);
-              AddLoad(calleeTypeId, resId, returnVarId, bp);
+              AddLoad(calleeTypeId, resId, returnVarId, &bp);
             }
             // copy remaining instructions from caller block.
             auto cii = call_ii;

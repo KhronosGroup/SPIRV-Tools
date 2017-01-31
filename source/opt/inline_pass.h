@@ -63,13 +63,16 @@ class InlinePass : public Pass {
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t typeId);
 
-  void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>& bp);
+  // Add unconditional branch to labelId to end of block bp
+  void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* bp);
 
-  void AddStore(uint32_t destId, uint32_t valId,
-                std::unique_ptr<ir::BasicBlock>& bp);
+  // Add store of valId to ptrId to end of block bp
+  void AddStore(uint32_t ptrId, uint32_t valId,
+                std::unique_ptr<ir::BasicBlock>* bp);
 
-  void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t srcId,
-               std::unique_ptr<ir::BasicBlock>& bp);
+  // Add load of ptrId into resultId to end of block bp
+  void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
+               std::unique_ptr<ir::BasicBlock>* bp);
 
   // Return in newBlocks the result of inlining the call at call_ii within
   // its block call_bi. Also return in newVars additional OpVariable
