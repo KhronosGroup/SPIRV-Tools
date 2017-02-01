@@ -325,6 +325,13 @@ This is experimental.
     export LESSOPEN='| spirv-lesspipe.sh "%s" --no-color --raw-id'
     ```
 
+* [vim-spirv](https://github.com/kbenzie/vim-spirv) - A vim plugin which
+  supports automatic disassembly of `.spv` files using the `:edit` command and
+  assembly using the `:write` command. The plugin also provides additional
+  features which include; syntax highlighting; highlighting of all ID's matching
+  the ID under the cursor; and highlighting errors where the `Instruction`
+  operand of `OpExtInst` is used without an appropriate `OpExtInstImport`.
+
 * `50spirv-tools.el` - Automatically disassembles '.spv' binary files when
   loaded into the emacs text editor, and re-assembles them when saved,
   provided any modifications to the file are valid.  This functionality
