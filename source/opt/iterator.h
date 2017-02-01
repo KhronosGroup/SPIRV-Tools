@@ -88,7 +88,7 @@ class UptrVectorIterator
   // insertion point will be invalidated.
   template <bool IsConstForMethod = IsConst>
   inline typename std::enable_if<!IsConstForMethod, UptrVectorIterator>::type
-  MoveBefore(UptrVector& valueVector);
+  InsertBefore(UptrVector* valueVector);
 
   // Erases the value at the position pointed to by this iterator
   // and returns an iterator to the following value.
@@ -205,13 +205,13 @@ template <typename VT, bool IC>
 template <bool IsConstForMethod>
 inline
     typename std::enable_if<!IsConstForMethod, UptrVectorIterator<VT, IC>>::type
-    UptrVectorIterator<VT, IC>::MoveBefore(UptrVector& values) {
+    UptrVectorIterator<VT, IC>::InsertBefore(UptrVector* values) {
   const auto pos = iterator_ - container_->begin();
   const auto origsz = container_->size();
-  container_->resize(origsz + values.size());
+  container_->resize(origsz + values->size());
   std::move_backward(container_->begin() + pos, container_->begin() + origsz,
                      container_->end());
-  std::move(values.begin(), values.end(), container_->begin() + pos);
+  std::move(values->begin(), values->end(), container_->begin() + pos);
   return UptrVectorIterator(container_, container_->begin() + pos);
 }
 

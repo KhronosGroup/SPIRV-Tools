@@ -363,12 +363,12 @@ bool InlinePass::Inline(ir::Function* func) {
         }
         // replace old calling block with new block(s)
         bi = bi.Erase();
-        bi = bi.MoveBefore(newBlocks);
+        bi = bi.InsertBefore(&newBlocks);
         // insert new function variables
         if (newVars.size() > 0) {
           auto vbi = func->begin();
           auto vii = vbi->begin();
-          vii.MoveBefore(newVars);
+          vii.InsertBefore(&newVars);
         }
         // restart inlining at beginning of calling block
         ii = bi->begin();
