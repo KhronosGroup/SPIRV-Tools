@@ -1805,6 +1805,163 @@ TEST_F(ValidateIdWithMessage, OpLoadGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+// TODO: Add tests that exercise VariablePointersUniformBufferBlock instead of
+// VariablePointers.
+void createVariablePointerSpirvProgram(std::ostringstream* spirv,
+                                       std::string result_strategy,
+                                       bool use_varptr_cap,
+                                       bool add_helper_function) {
+  *spirv << "OpCapability Shader ";
+  if (use_varptr_cap) {
+    *spirv << "OpCapability VariablePointers ";
+    *spirv << "OpExtension \"SPV_KHR_variable_pointers\" ";
+  }
+  *spirv << R"(
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    %void      = OpTypeVoid
+    %voidf     = OpTypeFunction %void
+    %bool      = OpTypeBool
+    %i32       = OpTypeInt 32 1
+    %f32       = OpTypeFloat 32
+    %f32ptr    = OpTypePointer Uniform %f32
+    %i         = OpConstant %i32 1
+    %zero      = OpConstant %i32 0
+    %float_1   = OpConstant %f32 1.0
+    %ptr1      = OpVariable %f32ptr Uniform
+    %ptr2      = OpVariable %f32ptr Uniform
+  )";
+  if (add_helper_function) {
+    *spirv << R"(
+      ; ////////////////////////////////////////////////////////////
+      ;;;; Function that returns a pointer
+      ; ////////////////////////////////////////////////////////////
+      %selector_func_type  = OpTypeFunction %f32ptr %bool %f32ptr %f32ptr
+      %choose_input_func   = OpFunction %f32ptr None %selector_func_type
+      %is_neg_param        = OpFunctionParameter %bool
+      %first_ptr_param     = OpFunctionParameter %f32ptr
+      %second_ptr_param    = OpFunctionParameter %f32ptr
+      %selector_func_begin = OpLabel
+      %result_ptr          = OpSelect %f32ptr %is_neg_param %first_ptr_param %second_ptr_param
+      OpReturnValue %result_ptr
+      OpFunctionEnd
+    )";
+  }
+  *spirv << R"(
+    %main      = OpFunction %void None %voidf
+    %label     = OpLabel
+  )";
+  *spirv << result_strategy;
+  *spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+}
+
+// With the VariablePointer Capability, OpLoad should allow loading a
+// VaiablePointer. In this test the variable pointer is obtained by an OpSelect
+TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpSelectGood) {
+  std::string result_strategy = R"(
+    %isneg     = OpSLessThan %bool %i %zero
+    %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
+    %result    = OpLoad %f32 %varptr
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
+                                    true /* Add VariablePointers Capability? */,
+                                    false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Without the VariablePointers Capability, OpLoad will not allow loading
+// through a variable pointer.
+TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpSelectBad) {
+  std::string result_strategy = R"(
+    %isneg     = OpSLessThan %bool %i %zero
+    %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
+    %result    = OpLoad %f32 %varptr
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
+                                    false /* Add VariablePointers Capability?*/,
+                                    false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a logical pointer."));
+}
+
+// With the VariablePointer Capability, OpLoad should allow loading a
+// VaiablePointer. In this test the variable pointer is obtained by an OpPhi
+TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiGood) {
+  std::string result_strategy = R"(
+    %is_neg      = OpSLessThan %bool %i %zero
+    OpSelectionMerge %end_label None
+    OpBranchConditional %is_neg %take_ptr_1 %take_ptr_2
+    %take_ptr_1 = OpLabel
+    OpBranch      %end_label
+    %take_ptr_2 = OpLabel
+    OpBranch      %end_label
+    %end_label  = OpLabel
+    %varptr     = OpPhi %f32ptr %ptr1 %take_ptr_1 %ptr2 %take_ptr_2
+    %result     = OpLoad %f32 %varptr
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
+                                    true /* Add VariablePointers Capability?*/,
+                                    false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Without the VariablePointers Capability, OpLoad will not allow loading
+// through a variable pointer.
+TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpPhiBad) {
+  std::string result_strategy = R"(
+    %is_neg      = OpSLessThan %bool %i %zero
+    OpSelectionMerge %end_label None
+    OpBranchConditional %is_neg %take_ptr_1 %take_ptr_2
+    %take_ptr_1 = OpLabel
+    OpBranch      %end_label
+    %take_ptr_2 = OpLabel
+    OpBranch      %end_label
+    %end_label  = OpLabel
+    %varptr     = OpPhi %f32ptr %ptr1 %take_ptr_1 %ptr2 %take_ptr_2
+    %result     = OpLoad %f32 %varptr
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
+                                    false /* Add VariablePointers Capability?*/,
+                                    false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a logical pointer"));
+}
+
+// With the VariablePointer Capability, OpLoad should allow loading through a
+// VaiablePointer. In this test the variable pointer is obtained from an
+// OpFunctionCall (return value from a function)
+TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpFunctionCallGood) {
+  std::ostringstream spirv;
+  std::string result_strategy = R"(
+    %isneg     = OpSLessThan %bool %i %zero
+    %varptr    = OpFunctionCall %f32ptr %choose_input_func %isneg %ptr1 %ptr2
+    %result    = OpLoad %f32 %varptr
+  )";
+
+  createVariablePointerSpirvProgram(&spirv,
+                                    result_strategy,
+                                    true /* Add VariablePointers Capability?*/,
+                                    true /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
@@ -1925,6 +2082,41 @@ TEST_F(ValidateIdWithMessage, OpStoreLogicalPointerBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '10' is not a logical pointer."));
+}
+
+// Without the VariablePointer Capability, OpStore should may not store
+// through a variable pointer.
+TEST_F(ValidateIdWithMessage, OpStoreVarPtrBad) {
+  std::string result_strategy = R"(
+    %isneg     = OpSLessThan %bool %i %zero
+    %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
+                 OpStore %varptr %float_1
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(
+      &spirv, result_strategy, false /* Add VariablePointers Capability? */,
+      false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a logical pointer."));
+}
+
+// With the VariablePointer Capability, OpStore should allow storing through a
+// variable pointer.
+TEST_F(ValidateIdWithMessage, OpStoreVarPtrGood) {
+  std::string result_strategy = R"(
+    %isneg     = OpSLessThan %bool %i %zero
+    %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
+                 OpStore %varptr %float_1
+  )";
+
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
+                                    true /* Add VariablePointers Capability? */,
+                                    false /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
@@ -3611,6 +3803,33 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpReturnValue value's type <id> '3' is a pointer, "
+                        "which is invalid in the Logical addressing model."));
+}
+
+// With the VariablePointer Capability, the return value of a function is
+// allowed to be a pointer.
+TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrGood) {
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv,
+                                    ""   /* Instructions to add to "main" */,
+                                    true /* Add VariablePointers Capability?*/,
+                                    true /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Without the VariablePointer Capability, the return value of a function is
+// *not* allowed to be a pointer.
+TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrBad) {
+  std::ostringstream spirv;
+  createVariablePointerSpirvProgram(&spirv,
+                                    ""    /* Instructions to add to "main" */,
+                                    false /* Add VariablePointers Capability?*/,
+                                    true  /* Use Helper Function? */);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpReturnValue value's type <id> '7' is a pointer, "
                         "which is invalid in the Logical addressing model."));
 }
 

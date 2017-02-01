@@ -62,6 +62,12 @@ class ValidationState_t {
     bool free_fp_rounding_mode = false;  // Allow the FPRoundingMode decoration
                                          // and its vaules to be used without
                                          // requiring any capability
+
+    // Allow functionalities enabled by VariablePointers capability.
+    bool variable_pointers = false;
+    // Allow functionalities enabled by VariablePointersUniformBufferBlock
+    // capability.
+    bool variable_pointers_uniform_buffer_block = false;
   };
 
   ValidationState_t(const spv_const_context context,

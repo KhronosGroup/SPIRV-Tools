@@ -395,9 +395,10 @@ spv_result_t InstructionPass(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   if (opcode == SpvOpExtension)
     CheckIfKnownExtension(_, inst);
-  if (opcode == SpvOpCapability)
+  if (opcode == SpvOpCapability) {
     _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));
+  }
   if (opcode == SpvOpMemoryModel) {
     _.set_addressing_model(
         static_cast<SpvAddressingModel>(inst->words[inst->operands[0].offset]));
