@@ -51,7 +51,7 @@ class Module {
   // Sets the header to the given |header|.
   void SetHeader(const ModuleHeader& header) { header_ = header; }
   // Sets the Id bound.
-  inline void SetIdBound(uint32_t bound) { header_.bound = bound; }
+  void SetIdBound(uint32_t bound) { header_.bound = bound; }
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction> c);
   // Appends an extension instruction to this module.

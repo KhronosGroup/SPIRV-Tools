@@ -75,11 +75,18 @@ class InlinePass : public Pass {
                std::unique_ptr<ir::BasicBlock>* bp);
 
   // Return in newBlocks the result of inlining the call at call_ii within
-  // its block call_bi. Also return in newVars additional OpVariable
-  // instructions required by and to be inserted into the caller function
-  // after the block call_bi is replaced with newBlocks.
-  void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>& newBlocks,
-                     std::vector<std::unique_ptr<ir::Instruction>>& newVars,
+  // its block call_bi. The block call_bi can just be replaced with the blocks
+  // in newBlocks. Any additional branches are avoided. Debug instructions
+  // are cloned along with their callee instructions. Early returns are
+  // replaced by storing to a local return variable and branching to a 
+  // (created) exit block where the local variable is returned. Formal
+  // parameters are trivially mapped to their actual parameters.
+  //
+  // Also return in newVars additional OpVariable instructions required by 
+  // and to be inserted into the caller function after the block call_bi is 
+  // replaced with newBlocks.
+  void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* newBlocks,
+                     std::vector<std::unique_ptr<ir::Instruction>>* newVars,
                      ir::UptrVectorIterator<ir::Instruction> call_ii,
                      ir::UptrVectorIterator<ir::BasicBlock> call_bi);
 

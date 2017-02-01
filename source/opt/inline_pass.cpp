@@ -96,8 +96,8 @@ void InlinePass::AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
 // call_ii. Also add new function variables into caller func
 
 void InlinePass::GenInlineCode(
-    std::vector<std::unique_ptr<ir::BasicBlock>>& newBlocks,
-    std::vector<std::unique_ptr<ir::Instruction>>& newVars,
+    std::vector<std::unique_ptr<ir::BasicBlock>>* newBlocks,
+    std::vector<std::unique_ptr<ir::Instruction>>* newVars,
     ir::UptrVectorIterator<ir::Instruction> call_ii,
     ir::UptrVectorIterator<ir::BasicBlock> call_bi) {
   // Map from callee id to caller id
@@ -131,7 +131,7 @@ void InlinePass::GenInlineCode(
     uint32_t newId = TakeNextId();
     var_inst->SetResultId(newId);
     callee2caller[cvi->result_id()] = newId;
-    newVars.push_back(std::move(var_inst));
+    newVars->push_back(std::move(var_inst));
     cvi++;
   }
 
@@ -152,7 +152,7 @@ void InlinePass::GenInlineCode(
         std::initializer_list<uint32_t>{uint32_t(SpvStorageClassFunction)});
     std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(
         SpvOpVariable, returnVarTypeId, returnVarId, in_operands));
-    newVars.push_back(std::move(var_inst));
+    newVars->push_back(std::move(var_inst));
   }
 
   // Clone and map callee code
@@ -183,7 +183,7 @@ void InlinePass::GenInlineCode(
             uint32_t labelId;
             bool firstBlock = false;
             if (bp != nullptr) {
-              newBlocks.push_back(std::move(bp));
+              newBlocks->push_back(std::move(bp));
               // if result id is already mapped, use it, otherwise get a new
               // one.
               const uint32_t rid = cpi->result_id();
@@ -244,7 +244,7 @@ void InlinePass::GenInlineCode(
             // to return block
             if (returnLabelId != 0) {
               if (prevInstWasReturn) AddBranch(returnLabelId, &bp);
-              newBlocks.push_back(std::move(bp));
+              newBlocks->push_back(std::move(bp));
               const std::vector<ir::Operand> label_in_operands;
               std::unique_ptr<ir::Instruction> newLabel(new ir::Instruction(
                   SpvOpLabel, 0, returnLabelId, label_in_operands));
@@ -296,7 +296,7 @@ void InlinePass::GenInlineCode(
               bp->AddInstruction(std::move(spv_inst));
             }
             // finalize
-            newBlocks.push_back(std::move(bp));
+            newBlocks->push_back(std::move(bp));
           } break;
           default: {
             // copy callee instruction and remap all input Ids
@@ -340,7 +340,7 @@ bool InlinePass::Inline(ir::Function* func) {
         // Inline call
         std::vector<std::unique_ptr<ir::BasicBlock>> newBlocks;
         std::vector<std::unique_ptr<ir::Instruction>> newVars;
-        GenInlineCode(newBlocks, newVars, ii, bi);
+        GenInlineCode(&newBlocks, &newVars, ii, bi);
         // update block map given replacement blocks
         for (auto& blk : newBlocks) {
           id2block_[blk->GetLabelId()] = &*blk;
