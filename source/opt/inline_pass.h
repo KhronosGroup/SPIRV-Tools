@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 #include "def_use_manager.h"
 #include "module.h"
