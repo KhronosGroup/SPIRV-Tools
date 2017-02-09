@@ -170,7 +170,7 @@ const char* types_consts() {
   static const char* types =
       "%voidt   = OpTypeVoid\n"
       "%boolt   = OpTypeBool\n"
-      "%intt    = OpTypeInt 32 1\n"
+      "%intt    = OpTypeInt 32 0\n"
       "%one     = OpConstant %intt 1\n"
       "%two     = OpConstant %intt 2\n"
       "%ptrt    = OpTypePointer Function %intt\n"

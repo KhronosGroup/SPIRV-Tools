@@ -22,6 +22,8 @@
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
+namespace {
+
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -170,7 +172,7 @@ TEST_F(ValidateData, vec15) {
 }
 
 TEST_F(ValidateData, int8_good) {
-  string str = header_with_int8 + "%2 = OpTypeInt 8 1";
+  string str = header_with_int8 + "%2 = OpTypeInt 8 0";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -471,3 +473,4 @@ OpTypeForwardPointer %_ptr_Generic_struct_A Generic
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+}  // anonymous namespace

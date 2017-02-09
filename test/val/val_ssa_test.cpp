@@ -543,6 +543,8 @@ TEST_F(ValidateSSA, ForwardBranchConditionalMissingTargetBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("missing"));
 }
 
+// Since Int8 requires the Kernel capability, the signedness of int types may
+// not be "1".
 const string kHeader = R"(
 OpCapability Int8
 OpCapability DeviceEnqueue
@@ -554,13 +556,12 @@ const string kBasicTypes = R"(
 %voidt  =  OpTypeVoid
 %boolt  =  OpTypeBool
 %int8t  =  OpTypeInt 8 0
-%intt   =  OpTypeInt 32 1
 %uintt  =  OpTypeInt 32 0
 %vfunct =  OpTypeFunction %voidt
-%intptrt = OpTypePointer UniformConstant %intt
-%zero      = OpConstant %intt 0
-%one       = OpConstant %intt 1
-%ten       = OpConstant %intt 10
+%intptrt = OpTypePointer UniformConstant %uintt
+%zero      = OpConstant %uintt 0
+%one       = OpConstant %uintt 1
+%ten       = OpConstant %uintt 10
 %false     = OpConstantFalse %boolt
 )";
 
@@ -568,23 +569,23 @@ const string kKernelTypesAndConstants = R"(
 %queuet  = OpTypeQueue
 
 %three   = OpConstant %uintt 3
-%arr3t   = OpTypeArray %intt %three
-%ndt     = OpTypeStruct %intt %arr3t %arr3t %arr3t
+%arr3t   = OpTypeArray %uintt %three
+%ndt     = OpTypeStruct %uintt %arr3t %arr3t %arr3t
 
 %eventt  = OpTypeEvent
 
-%offset = OpConstant %intt 0
-%local  = OpConstant %intt 1
-%gl     = OpConstant %intt 1
+%offset = OpConstant %uintt 0
+%local  = OpConstant %uintt 1
+%gl     = OpConstant %uintt 1
 
-%nevent = OpConstant %intt 0
+%nevent = OpConstant %uintt 0
 %event  = OpConstantNull %eventt
 
 %firstp = OpConstant %int8t 0
-%psize  = OpConstant %intt 0
-%palign = OpConstant %intt 32
-%lsize  = OpConstant %intt 1
-%flags  = OpConstant %intt 0 ; NoWait
+%psize  = OpConstant %uintt 0
+%palign = OpConstant %uintt 32
+%lsize  = OpConstant %uintt 1
+%flags  = OpConstant %uintt 0 ; NoWait
 
 %kfunct = OpTypeFunction %voidt %intptrt
 )";
@@ -720,7 +721,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter4Bad) {
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent2
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize
-              %nevent2 = OpCopyObject %intt %nevent
+              %nevent2 = OpCopyObject %uintt %nevent
                         OpReturn
                         OpFunctionEnd
               )";
@@ -776,7 +777,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter9Bad) {
               %err    = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize2
                                         %palign %lsize
-              %psize2 = OpCopyObject %intt %psize
+              %psize2 = OpCopyObject %uintt %psize
                         OpReturn
                         OpFunctionEnd
               )";
@@ -790,7 +791,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter10Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign2 %lsize
-              %palign2 = OpCopyObject %intt %palign
+              %palign2 = OpCopyObject %uintt %palign
                         OpReturn
                         OpFunctionEnd
               )";
@@ -804,7 +805,7 @@ TEST_F(ValidateSSA, ForwardEnqueueKernelNonDominantParameter11Bad) {
               %err     = OpEnqueueKernel %uintt %dqueue %flags %ndval %nevent
                                         %event %revent %kfunc %firstp %psize
                                         %palign %lsize2
-              %lsize2  = OpCopyObject %intt %lsize
+              %lsize2  = OpCopyObject %uintt %lsize
                          OpReturn
                          OpFunctionEnd
               )";
@@ -949,7 +950,7 @@ TEST_P(ValidateSSA,
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("psize2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize2 %palign"
-     << "\n %psize2  = OpCopyObject %intt %psize"
+     << "\n %psize2  = OpCopyObject %uintt %psize"
      << return_instructions;
   // clang-format on
 
@@ -968,7 +969,7 @@ TEST_P(ValidateSSA,
   // clang-format off
   ss << forwardKernelNonDominantParameterBaseCode("palign2") + " %numsg = "
      << instruction + " %uintt" + ndrange_param + "%kfunc %firstp %psize %palign2"
-     << "\n %palign2 = OpCopyObject %intt %palign"
+     << "\n %palign2 = OpCopyObject %uintt %palign"
      << return_instructions;
   // clang-format on
 
@@ -984,11 +985,11 @@ TEST_F(ValidateSSA, PhiGood) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
-%init      = OpCopyObject %intt %zero
+%init      = OpCopyObject %uintt %zero
              OpBranch %loop
 %loop      = OpLabel
-%i         = OpPhi %intt %init %preheader %loopi %loop
-%loopi     = OpIAdd %intt %i %one
+%i         = OpPhi %uintt %init %preheader %loopi %loop
+%loopi     = OpIAdd %uintt %i %one
              OpNop
 %cond      = OpSLessThan %boolt %i %ten
              OpLoopMerge %endl %loop None
@@ -1007,11 +1008,11 @@ TEST_F(ValidateSSA, PhiMissingTypeBad) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
-%init      = OpCopyObject %intt %zero
+%init      = OpCopyObject %uintt %zero
              OpBranch %loop
 %loop      = OpLabel
 %i         = OpPhi %missing %init %preheader %loopi %loop
-%loopi     = OpIAdd %intt %i %one
+%loopi     = OpIAdd %uintt %i %one
              OpNop
 %cond      = OpSLessThan %boolt %i %ten
              OpLoopMerge %endl %loop None
@@ -1031,11 +1032,11 @@ TEST_F(ValidateSSA, PhiMissingIdBad) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
-%init      = OpCopyObject %intt %zero
+%init      = OpCopyObject %uintt %zero
              OpBranch %loop
 %loop      = OpLabel
-%i         = OpPhi %intt %missing %preheader %loopi %loop
-%loopi     = OpIAdd %intt %i %one
+%i         = OpPhi %uintt %missing %preheader %loopi %loop
+%loopi     = OpIAdd %uintt %i %one
              OpNop
 %cond      = OpSLessThan %boolt %i %ten
              OpLoopMerge %endl %loop None
@@ -1055,11 +1056,11 @@ TEST_F(ValidateSSA, PhiMissingLabelBad) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %preheader = OpLabel
-%init      = OpCopyObject %intt %zero
+%init      = OpCopyObject %uintt %zero
              OpBranch %loop
 %loop      = OpLabel
-%i         = OpPhi %intt %init %missing %loopi %loop
-%loopi     = OpIAdd %intt %i %one
+%i         = OpPhi %uintt %init %missing %loopi %loop
+%loopi     = OpIAdd %uintt %i %one
              OpNop
 %cond      = OpSLessThan %boolt %i %ten
              OpLoopMerge %endl %loop None
@@ -1079,15 +1080,15 @@ TEST_F(ValidateSSA, IdDominatesItsUseGood) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %entry     = OpLabel
-%cond      = OpSLessThan %intt %one %ten
-%eleven    = OpIAdd %intt %one %ten
+%cond      = OpSLessThan %uintt %one %ten
+%eleven    = OpIAdd %uintt %one %ten
              OpSelectionMerge %merge None
              OpBranchConditional %cond %t %f
 %t         = OpLabel
-%twelve    = OpIAdd %intt %eleven %one
+%twelve    = OpIAdd %uintt %eleven %one
              OpBranch %merge
 %f         = OpLabel
-%twentytwo = OpIAdd %intt %eleven %ten
+%twentytwo = OpIAdd %uintt %eleven %ten
              OpBranch %merge
 %merge     = OpLabel
              OpReturn
@@ -1107,15 +1108,15 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
-%cond        = OpSLessThan %intt %one %ten
+%cond        = OpSLessThan %uintt %one %ten
                OpSelectionMerge %merge None
                OpBranchConditional %cond %true_block %false_block
 %true_block  = OpLabel
-%eleven      = OpIAdd %intt %one %ten
-%twelve      = OpIAdd %intt %eleven %one
+%eleven      = OpIAdd %uintt %one %ten
+%twelve      = OpIAdd %uintt %eleven %one
                OpBranch %merge
 %false_block = OpLabel
-%twentytwo   = OpIAdd %intt %eleven %ten
+%twentytwo   = OpIAdd %uintt %eleven %ten
                OpBranch %merge
 %merge       = OpLabel
                OpReturn
@@ -1135,17 +1136,17 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %var_one     = OpVariable %intptrt Function %one
-%one_val     = OpLoad %intt %var_one
+%one_val     = OpLoad %uintt %var_one
                OpBranch %loop
 %loop        = OpLabel
-%i           = OpPhi %intt %one_val %entry %inew %cont
-%cond        = OpSLessThan %intt %one %ten
+%i           = OpPhi %uintt %one_val %entry %inew %cont
+%cond        = OpSLessThan %uintt %one %ten
                OpLoopMerge %merge %cont None
                OpBranchConditional %cond %body %merge
 %body        = OpLabel
                OpBranch %cont
 %cont        = OpLabel
-%inew        = OpIAdd %intt %i %one
+%inew        = OpIAdd %uintt %i %one
                OpBranch %loop
 %merge       = OpLabel
                OpReturn
@@ -1163,18 +1164,18 @@ TEST_F(ValidateSSA,
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
 %var_one     = OpVariable %intptrt Function %one
-%one_val     = OpLoad %intt %var_one
+%one_val     = OpLoad %uintt %var_one
                OpBranch %loop
 %loop        = OpLabel
-%i           = OpPhi %intt %one_val %entry %inew %cont
-%bad         = OpIAdd %intt %inew %one
-%cond        = OpSLessThan %intt %one %ten
+%i           = OpPhi %uintt %one_val %entry %inew %cont
+%bad         = OpIAdd %uintt %inew %one
+%cond        = OpSLessThan %uintt %one %ten
                OpLoopMerge %merge %cont None
                OpBranchConditional %cond %body %merge
 %body        = OpLabel
                OpBranch %cont
 %cont        = OpLabel
-%inew        = OpIAdd %intt %i %one
+%inew        = OpIAdd %uintt %i %one
                OpBranch %loop
 %merge       = OpLabel
                OpReturn
@@ -1321,14 +1322,14 @@ TEST_F(ValidateSSA,
        DominanceCheckIgnoresUsesInUnreachableBlocksDefIsParamGood) {
   string str = kHeader + kBasicTypes +
                R"(
-%void_fn_int = OpTypeFunction %voidt %intt
+%void_fn_int = OpTypeFunction %voidt %uintt
 %func        = OpFunction %voidt None %void_fn_int
-%int_param   = OpFunctionParameter %intt
+%int_param   = OpFunctionParameter %uintt
 %entry       = OpLabel
                OpReturn
 
 %unreach     = OpLabel
-%use         = OpCopyObject %intt %int_param
+%use         = OpCopyObject %uintt %int_param
                OpReturn
                OpFunctionEnd
 )";
@@ -1343,16 +1344,16 @@ TEST_F(ValidateSSA, UseFunctionParameterFromOtherFunctionBad) {
                "OpName %func \"func\"\n" +
                "OpName %func2 \"func2\"\n" + kBasicTypes +
                R"(
-%viifunct  = OpTypeFunction %voidt %intt %intt
+%viifunct  = OpTypeFunction %voidt %uintt %uintt
 %func      = OpFunction %voidt None %viifunct
-%first     = OpFunctionParameter %intt
-%second    = OpFunctionParameter %intt
+%first     = OpFunctionParameter %uintt
+%second    = OpFunctionParameter %uintt
              OpFunctionEnd
 %func2     = OpFunction %voidt None %viifunct
-%first2    = OpFunctionParameter %intt
-%second2   = OpFunctionParameter %intt
+%first2    = OpFunctionParameter %uintt
+%second2   = OpFunctionParameter %uintt
 %entry2    = OpLabel
-%baduse    = OpIAdd %intt %first %first2
+%baduse    = OpIAdd %uintt %first %first2
              OpReturn
              OpFunctionEnd
 )";

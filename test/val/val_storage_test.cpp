@@ -77,7 +77,7 @@ TEST_F(ValidateStorage, OtherStorageOutsideFunction) {
           OpCapability AtomicStorage
           OpCapability Linkage
           OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
+%intt   = OpTypeInt 32 0
 %voidt  = OpTypeVoid
 %vfunct = OpTypeFunction %voidt
 %ptrt   = OpTypePointer Function %intt
@@ -110,7 +110,7 @@ TEST_P(ValidateStorage, OtherStorageInsideFunction) {
           OpCapability AtomicStorage
           OpCapability Linkage
           OpMemoryModel Logical GLSL450
-%intt   = OpTypeInt 32 1
+%intt   = OpTypeInt 32 0
 %voidt  = OpTypeVoid
 %vfunct = OpTypeFunction %voidt
 %ptrt   = OpTypePointer Function %intt
@@ -145,7 +145,7 @@ TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
           OpCapability Kernel
           OpCapability Linkage
           OpMemoryModel Logical OpenCL
-%intt   = OpTypeInt 32 1
+%intt   = OpTypeInt 32 0
 %ptrt   = OpTypePointer Function %intt
 %var    = OpVariable %ptrt Generic
 )";

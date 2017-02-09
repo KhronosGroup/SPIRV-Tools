@@ -451,7 +451,7 @@ TEST_F(ValidateIdWithMessage, OpTypeVectorFloat) {
 
 TEST_F(ValidateIdWithMessage, OpTypeVectorInt) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpTypeVector %1 4)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -537,9 +537,16 @@ enum Signed { kSigned, kUnsigned };
 // Creates an assembly snippet declaring OpTypeArray with the given length.
 string MakeArrayLength(const string& len, Signed isSigned, int width) {
   ostringstream ss;
-  ss << kGLSL450MemoryModel;
-  ss << " %t = OpTypeInt " << width << (isSigned == kSigned ? " 1" : " 0")
-     << " %l = OpConstant %t " << len << " %a = OpTypeArray %t %l";
+  ss << R"(
+    OpCapability Shader
+    OpCapability Linkage
+    OpCapability Int16
+    OpCapability Int64
+  )";
+  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << " %t = OpTypeInt " << width << (isSigned == kSigned ? " 1" : " 0");
+  ss << " %l = OpConstant %t " << len;
+  ss << " %a = OpTypeArray %t %l";
   return ss.str();
 }
 
@@ -627,12 +634,16 @@ TEST_P(OpTypeArrayLengthTest, LengthNegative) {
 }
 
 // The only valid widths for integers are 8, 16, 32, and 64.
+// Since the Int8 capability requires the Kernel capability, and the Kernel
+// capability prohibits usage of signed integers, we can skip 8-bit integers
+// here since the purpose of these tests is to check the validity of
+// OpTypeArray, not OpTypeInt.
 INSTANTIATE_TEST_CASE_P(Widths, OpTypeArrayLengthTest,
-                        ValuesIn(vector<int>{8, 16, 32, 64}));
+                        ValuesIn(vector<int>{16, 32, 64}));
 
 TEST_F(ValidateIdWithMessage, OpTypeArrayLengthNull) {
   string spirv = kGLSL450MemoryModel + R"(
-%i32 = OpTypeInt 32 1
+%i32 = OpTypeInt 32 0
 %len = OpConstantNull %i32
 %ary = OpTypeArray %i32 %len)";
   CompileSuccessfully(spirv.c_str());
@@ -645,7 +656,7 @@ TEST_F(ValidateIdWithMessage, OpTypeArrayLengthNull) {
 
 TEST_F(ValidateIdWithMessage, OpTypeArrayLengthSpecConst) {
   string spirv = kGLSL450MemoryModel + R"(
-%i32 = OpTypeInt 32 1
+%i32 = OpTypeInt 32 0
 %len = OpSpecConstant %i32 2
 %ary = OpTypeArray %i32 %len)";
   CompileSuccessfully(spirv.c_str());
@@ -654,7 +665,7 @@ TEST_F(ValidateIdWithMessage, OpTypeArrayLengthSpecConst) {
 
 TEST_F(ValidateIdWithMessage, OpTypeArrayLengthSpecConstOp) {
   string spirv = kGLSL450MemoryModel + R"(
-%i32 = OpTypeInt 32 1
+%i32 = OpTypeInt 32 0
 %c1 = OpConstant %i32 1
 %c2 = OpConstant %i32 2
 %len = OpSpecConstantOp %i32 IAdd %c1 %c2
@@ -1029,7 +1040,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstituentUndefTypeBad) {
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpConstant %2 4300000000
@@ -1040,7 +1051,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeStructGood) {
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructUndefGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpUndef %2
@@ -1051,7 +1062,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeStructUndefGood) {
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpConstant %2 4300000000
@@ -1066,7 +1077,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberTypeBad) {
 TEST_F(ValidateIdWithMessage, OpConstantCompositeStructMemberUndefTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpUndef %2
@@ -1596,7 +1607,7 @@ TEST_F(ValidateIdWithMessage,
 TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %2 4300000000
@@ -1626,7 +1637,7 @@ TEST_F(ValidateIdWithMessage,
 TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructUndefGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
@@ -1639,7 +1650,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructUndefGood) {
 TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructNonConstBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
@@ -1656,7 +1667,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructNonConstBad) {
 TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpConstant %1 42
 %5 = OpSpecConstant %2 4300000000
@@ -1673,7 +1684,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberTypeBad) {
 TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberUndefTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypeInt 64 1
+%2 = OpTypeInt 64 0
 %3 = OpTypeStruct %1 %1 %2
 %4 = OpSpecConstant %1 42
 %5 = OpUndef %2
@@ -1690,7 +1701,7 @@ TEST_F(ValidateIdWithMessage, OpSpecConstantCompositeStructMemberUndefTypeBad) {
 
 TEST_F(ValidateIdWithMessage, OpVariableGood) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpTypePointer Input %1
 %3 = OpVariable %2 Input)";
   CompileSuccessfully(spirv.c_str());
@@ -1698,7 +1709,7 @@ TEST_F(ValidateIdWithMessage, OpVariableGood) {
 }
 TEST_F(ValidateIdWithMessage, OpVariableInitializerConstantGood) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpTypePointer Input %1
 %3 = OpConstant %1 42
 %4 = OpVariable %2 Input %3)";
@@ -1707,7 +1718,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerConstantGood) {
 }
 TEST_F(ValidateIdWithMessage, OpVariableInitializerGlobalVariableGood) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpTypePointer Uniform %1
 %3 = OpVariable %2 Uniform
 %4 = OpTypePointer Uniform %2 ; pointer to pointer
@@ -1718,7 +1729,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerGlobalVariableGood) {
 // TODO: Positive test OpVariable with OpConstantNull of OpTypePointer
 TEST_F(ValidateIdWithMessage, OpVariableResultTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpVariable %1 Input)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -1728,7 +1739,7 @@ TEST_F(ValidateIdWithMessage, OpVariableResultTypeBad) {
 }
 TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 1
+%1 = OpTypeInt 32 0
 %2 = OpTypePointer Input %1
 %3 = OpVariable %2 Input %2)";
   CompileSuccessfully(spirv.c_str());
@@ -1740,7 +1751,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
 
 TEST_F(ValidateIdWithMessage, OpVariableInitializerIsFunctionVarBad) {
   string spirv = kGLSL450MemoryModel + R"(
-%int = OpTypeInt 32 1
+%int = OpTypeInt 32 0
 %ptrint = OpTypePointer Function %int
 %ptrptrint = OpTypePointer Function %ptrint
 %void = OpTypeVoid
@@ -1761,7 +1772,7 @@ OpFunctionEnd
 
 TEST_F(ValidateIdWithMessage, OpVariableInitializerIsModuleVarGood) {
   string spirv = kGLSL450MemoryModel + R"(
-%int = OpTypeInt 32 1
+%int = OpTypeInt 32 0
 %ptrint = OpTypePointer Uniform %int
 %mvar = OpVariable %ptrint Uniform
 %ptrptrint = OpTypePointer Function %ptrint
@@ -1780,7 +1791,7 @@ OpFunctionEnd
 TEST_F(ValidateIdWithMessage, OpLoadGood) {
   string spirv = kGLSL450MemoryModel + R"(
  %1 = OpTypeVoid
- %2 = OpTypeInt 32 1
+ %2 = OpTypeInt 32 0
  %3 = OpTypePointer UniformConstant %2
  %4 = OpTypeFunction %1
  %5 = OpVariable %3 UniformConstant
@@ -1796,7 +1807,7 @@ TEST_F(ValidateIdWithMessage, OpLoadGood) {
 TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %5 = OpVariable %3 UniformConstant
@@ -1815,7 +1826,7 @@ TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
 TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %9 = OpTypeFloat 32
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
@@ -1834,7 +1845,7 @@ TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
 TEST_F(ValidateIdWithMessage, OpStoreGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
@@ -1850,7 +1861,7 @@ TEST_F(ValidateIdWithMessage, OpStoreGood) {
 TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
@@ -1868,7 +1879,7 @@ TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
 TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
@@ -1886,7 +1897,7 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
 TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %9 = OpTypeFloat 32
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
@@ -1907,7 +1918,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
 TEST_F(ValidateIdWithMessage, OpStoreVoid) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %6 = OpVariable %3 UniformConstant
@@ -1926,7 +1937,7 @@ TEST_F(ValidateIdWithMessage, OpStoreVoid) {
 TEST_F(ValidateIdWithMessage, OpStoreLabel) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
 %6 = OpVariable %3 UniformConstant
@@ -1945,7 +1956,7 @@ TEST_F(ValidateIdWithMessage, OpStoreLabel) {
 // https://cvs.khronos.org/bugzilla/show_bug.cgi?id=15404
 TEST_F(ValidateIdWithMessage, DISABLED_OpStoreFunction) {
   string spirv = kGLSL450MemoryModel + R"(
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %2
 %5 = OpConstant %2 123
@@ -2593,7 +2604,7 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(ValidateIdWithMessage, OpFunctionGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %3 = OpTypeFunction %1 %2 %2
 %4 = OpFunction %1 None %3
      OpFunctionEnd)";
@@ -2603,7 +2614,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionGood) {
 TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %5 = OpConstant %2 42
 %3 = OpTypeFunction %1 %2 %2
 %4 = OpFunction %2 None %3
@@ -2617,7 +2628,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
 TEST_F(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
-%2 = OpTypeInt 32 1
+%2 = OpTypeInt 32 0
 %4 = OpFunction %1 None %2
 OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
@@ -3609,7 +3620,7 @@ TEST_F(ValidateIdWithMessage, OpPtrAccessChainGood) {
 TEST_F(ValidateIdWithMessage, OpLoadBitcastPointerGood) {
   string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
-%3  = OpTypeInt 32 1
+%3  = OpTypeInt 32 0
 %4  = OpTypeFloat 32
 %5  = OpTypePointer UniformConstant %3
 %6  = OpTypePointer UniformConstant %4
@@ -3627,7 +3638,7 @@ TEST_F(ValidateIdWithMessage, OpLoadBitcastPointerGood) {
 TEST_F(ValidateIdWithMessage, OpLoadBitcastNonPointerBad) {
   string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
-%3  = OpTypeInt 32 1
+%3  = OpTypeInt 32 0
 %4  = OpTypeFloat 32
 %5  = OpTypePointer UniformConstant %3
 %6  = OpTypeFunction %2
@@ -3648,7 +3659,7 @@ TEST_F(ValidateIdWithMessage, OpLoadBitcastNonPointerBad) {
 TEST_F(ValidateIdWithMessage, OpStoreBitcastPointerGood) {
   string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
-%3  = OpTypeInt 32 1
+%3  = OpTypeInt 32 0
 %4  = OpTypeFloat 32
 %5  = OpTypePointer Function %3
 %6  = OpTypePointer Function %4
@@ -3667,7 +3678,7 @@ TEST_F(ValidateIdWithMessage, OpStoreBitcastPointerGood) {
 TEST_F(ValidateIdWithMessage, OpStoreBitcastNonPointerBad) {
   string spirv = kOpenCLMemoryModel64 + R"(
 %2  = OpTypeVoid
-%3  = OpTypeInt 32 1
+%3  = OpTypeInt 32 0
 %4  = OpTypeFloat 32
 %5  = OpTypePointer Function %4
 %6  = OpTypeFunction %2
