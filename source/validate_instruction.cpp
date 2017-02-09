@@ -348,6 +348,15 @@ spv_result_t InstructionPass(ValidationState_t& _,
     }
   }
 
+  // SPIR-V Spec 2.16.3: Validation Rules for Kernel Capabilities: The
+  // Signedness in OpTypeInt must always be 0.
+  if (SpvOpTypeInt == inst->opcode && _.HasCapability(SpvCapabilityKernel) &&
+      inst->words[inst->operands[2].offset] != 0u) {
+    return _.diag(SPV_ERROR_INVALID_BINARY) << "The Signedness in OpTypeInt "
+                                               "must always be 0 when Kernel "
+                                               "capability is used.";
+  }
+
   // In order to validate decoration rules, we need to know all the decorations
   // that are applied to any given <id>.
   RegisterDecorations(_, inst);
