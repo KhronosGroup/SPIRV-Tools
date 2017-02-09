@@ -9,6 +9,8 @@ v2016.7-dev 2017-01-06
    #508: Support compilation under CYGWIN
    #517: Fix validation when continue (or case) contstruct is also the head of a
      nested control construct.
+   #551: If a merge block is reachable, it must be *strictly* dominated by its
+     header.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and

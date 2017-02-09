@@ -278,14 +278,8 @@ tuple<string, string, string> ConstructNames(ConstructType type) {
 string ConstructErrorString(const Construct& construct,
                             const string& header_string,
                             const string& exit_string,
-                            bool post_dominate = false) {
-  string construct_name, header_name, exit_name, dominate_text;
-  if (post_dominate) {
-    dominate_text = "is not post dominated by";
-  } else {
-    dominate_text = "does not dominate";
-  }
-
+                            const string& dominate_text) {
+  string construct_name, header_name, exit_name;
   tie(construct_name, header_name, exit_name) =
       ConstructNames(construct.type());
 
@@ -345,22 +339,29 @@ spv_result_t StructuredControlFlowChecks(
                     exit_name + ". This may be a bug in the validator.";
     }
 
-    // If the merge block is reachable then it's dominated by the header.
-    if (merge && merge->reachable() &&
-        find(merge->dom_begin(), merge->dom_end(), header) ==
-            merge->dom_end()) {
-      return _.diag(SPV_ERROR_INVALID_CFG)
-             << ConstructErrorString(construct, _.getIdName(header->id()),
-                                     _.getIdName(merge->id()));
+    // If the exit block is reachable then it's dominated by the
+    // header.
+    if (merge && merge->reachable()) {
+      if (!header->dominates(*merge)) {
+        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
+                   construct, _.getIdName(header->id()),
+                   _.getIdName(merge->id()), "does not dominate");
+      }
+      // If it's really a merge block for a selection or loop, then it must be
+      // *strictly* dominated by the header.
+      if (construct.ExitBlockIsMergeBlock() && (header == merge)) {
+        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
+                   construct, _.getIdName(header->id()),
+                   _.getIdName(merge->id()), "does not strictly dominate");
+      }
     }
     // Check post-dominance for continue constructs.  But dominance and
     // post-dominance only make sense when the construct is reachable.
     if (header->reachable() && construct.type() == ConstructType::kContinue) {
-      if (find(header->pdom_begin(), header->pdom_end(), merge) ==
-          merge->pdom_end()) {
-        return _.diag(SPV_ERROR_INVALID_CFG)
-               << ConstructErrorString(construct, _.getIdName(header->id()),
-                                       _.getIdName(merge->id()), true);
+      if (!merge->postdominates(*header)) {
+        return _.diag(SPV_ERROR_INVALID_CFG) << ConstructErrorString(
+                   construct, _.getIdName(header->id()),
+                   _.getIdName(merge->id()), "is not post dominated by");
       }
     }
     // TODO(umar):  an OpSwitch block dominates all its defined case

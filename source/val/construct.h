@@ -85,6 +85,12 @@ class Construct {
   /// constructs which do not know the back-edge block during construction
   void set_exit(BasicBlock* exit_block);
 
+  // Returns whether the exit block of this construct is the merge block
+  // for an OpLoopMerge or OpSelectionMerge
+  bool ExitBlockIsMergeBlock() const {
+    return type_ == ConstructType::kLoop || type_ == ConstructType::kSelection;
+  }
+
  private:
   /// The type of the construct
   ConstructType type_;
