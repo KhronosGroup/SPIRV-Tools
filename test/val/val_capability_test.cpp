@@ -1492,6 +1492,7 @@ OpMemoryModel Logical OpenCL
 %i32    = OpTypeInt 32 0
 )";
   CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateCapability, IntSignednessKernelBad) {
@@ -1517,6 +1518,7 @@ OpMemoryModel Logical GLSL450
 %i32    = OpTypeInt 32 1
 )";
   CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace anonymous
