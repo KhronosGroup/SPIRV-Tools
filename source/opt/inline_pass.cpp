@@ -352,14 +352,15 @@ bool InlinePass::Inline(ir::Function* func) {
           const auto lastBlk = newBlocks.end() - 1;
           const uint32_t firstId = (*firstBlk)->GetLabelId();
           const uint32_t lastId = (*lastBlk)->GetLabelId();
-          (*lastBlk)->ForEachSucc([&firstId, &lastId, this](uint32_t succ) {
-            ir::BasicBlock* sbp = this->id2block_[succ];
-            sbp->ForEachPhiInst([&firstId, &lastId](ir::Instruction* phi) {
-              phi->ForEachInId([&firstId, &lastId](uint32_t* id) {
-                if (*id == firstId) *id = lastId;
+          (*lastBlk)
+              ->ForEachSuccessorLabel([&firstId, &lastId, this](uint32_t succ) {
+                ir::BasicBlock* sbp = this->id2block_[succ];
+                sbp->ForEachPhiInst([&firstId, &lastId](ir::Instruction* phi) {
+                  phi->ForEachInId([&firstId, &lastId](uint32_t* id) {
+                    if (*id == firstId) *id = lastId;
+                  });
+                });
               });
-            });
-          });
         }
         // replace old calling block with new block(s)
         bi = bi.Erase();

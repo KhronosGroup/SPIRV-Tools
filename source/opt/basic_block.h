@@ -61,7 +61,8 @@ class BasicBlock {
                           bool run_on_debug_line_insts = false) const;
 
   // Runs the given function |f| on each label id of each successor block
-  inline void ForEachSucc(const std::function<void(const uint32_t)>& f);
+  inline void ForEachSuccessorLabel(
+      const std::function<void(const uint32_t)>& f);
 
   // Runs the given function |f| on each Phi instruction in this basic block,
   // and optionally on the debug line instructions that might precede them.
@@ -109,7 +110,7 @@ inline void BasicBlock::ForEachPhiInst(
   }
 }
 
-inline void BasicBlock::ForEachSucc(
+inline void BasicBlock::ForEachSuccessorLabel(
     const std::function<void(const uint32_t)>& f) {
   const auto br = &*insts_.back();
   switch (br->opcode()) {
