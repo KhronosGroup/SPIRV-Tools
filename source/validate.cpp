@@ -249,8 +249,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   // If unrecognized extensions are used and 'permissive' mode is enabled,
   // consider the module valid.
   if (context.permissive) {
-    // Go over the given extensions and figure out if any unrecognized
-    // extensions are used.
     for (uint64_t instIndex = 0;
          instIndex < instructions.size() &&
          SpvOpMemoryModel != instructions[instIndex].opcode;
