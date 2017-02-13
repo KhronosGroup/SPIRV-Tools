@@ -50,13 +50,10 @@ class Function {
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
   // Returns function's id
-  inline uint32_t GetResultId() { return def_inst_->result_id(); }
+  inline uint32_t result_id() const { return def_inst_->result_id(); }
 
   // Returns function's id
-  inline uint32_t GetTypeId() { return def_inst_->type_id(); }
-
-  // Returns function's module
-  inline Module* GetModule() { return module_; }
+  inline uint32_t type_id() const { return def_inst_->type_id(); }
 
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }

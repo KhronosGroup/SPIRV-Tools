@@ -137,7 +137,7 @@ void InlinePass::GenInlineCode(
 
   // Create return var if needed
   uint32_t returnVarId = 0;
-  const uint32_t calleeTypeId = calleeFn->GetTypeId();
+  const uint32_t calleeTypeId = calleeFn->type_id();
   const ir::Instruction* calleeType =
       def_use_mgr_->id_to_defs().find(calleeTypeId)->second;
   if (calleeType->opcode() != SpvOpTypeVoid) {
@@ -193,7 +193,7 @@ void InlinePass::GenInlineCode(
             } else {
               // first block needs to use label of original block
               // but map callee label in case of phi reference
-              labelId = call_bi->GetLabelId();
+              labelId = call_bi->label_id();
               callee2caller[cpi->result_id()] = labelId;
               firstBlock = true;
             }
@@ -343,15 +343,15 @@ bool InlinePass::Inline(ir::Function* func) {
         GenInlineCode(&newBlocks, &newVars, ii, bi);
         // update block map given replacement blocks
         for (auto& blk : newBlocks) {
-          id2block_[blk->GetLabelId()] = &*blk;
+          id2block_[blk->label_id()] = &*blk;
         }
         // update phi functions in succesor blocks if call block
         // is replaced with more than one block
         if (newBlocks.size() > 1) {
           const auto firstBlk = newBlocks.begin();
           const auto lastBlk = newBlocks.end() - 1;
-          const uint32_t firstId = (*firstBlk)->GetLabelId();
-          const uint32_t lastId = (*lastBlk)->GetLabelId();
+          const uint32_t firstId = (*firstBlk)->label_id();
+          const uint32_t lastId = (*lastBlk)->label_id();
           (*lastBlk)
               ->ForEachSuccessorLabel([&firstId, &lastId, this](uint32_t succ) {
                 ir::BasicBlock* sbp = this->id2block_[succ];
@@ -398,9 +398,9 @@ void InlinePass::Initialize(ir::Module* module) {
   id2function_.clear();
   id2block_.clear();
   for (auto& fn : *module_) {
-    id2function_[fn.GetResultId()] = &fn;
+    id2function_[fn.result_id()] = &fn;
     for (auto& blk : fn) {
-      id2block_[blk.GetLabelId()] = &blk;
+      id2block_[blk.label_id()] = &blk;
     }
   }
 };
