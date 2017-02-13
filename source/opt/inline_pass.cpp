@@ -386,11 +386,11 @@ void InlinePass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
 
   // Initialize next unused Id
-  nextId_ = 0;
+  next_id_ = 0;
   for (const auto& id_def : def_use_mgr_->id_to_defs()) {
-    nextId_ = std::max(nextId_, id_def.first);
+    next_id_ = std::max(next_id_, id_def.first);
   }
-  nextId_++;
+  next_id_++;
 
   module_ = module;
 
@@ -420,7 +420,7 @@ Pass::Status InlinePass::ProcessImpl() {
 }
 
 InlinePass::InlinePass()
-    : nextId_(0), module_(nullptr), def_use_mgr_(nullptr) {}
+    : module_(nullptr), def_use_mgr_(nullptr), next_id_(0) {}
 
 Pass::Status InlinePass::Process(ir::Module* module) {
   Initialize(module);

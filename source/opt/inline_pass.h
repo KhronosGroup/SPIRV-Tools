@@ -37,22 +37,13 @@ class InlinePass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
-  // Map from block's label id to block
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
-  // Next unused ID
-  uint32_t nextId_;
-
   // Write the next available Id back to the module
   inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(nextId_);
+    module->SetIdBound(next_id_);
   }
 
   // Return the next available Id and increment it
-  inline uint32_t TakeNextId() { return nextId_++; }
+  inline uint32_t TakeNextId() { return next_id_++; }
 
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func.
@@ -96,6 +87,16 @@ class InlinePass : public Pass {
 
   ir::Module* module_;
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Map from block's label id to block
+  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
+
+  // Next unused ID
+  uint32_t next_id_;
+
 };
 
 }  // namespace opt
