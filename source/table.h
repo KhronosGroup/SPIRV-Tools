@@ -31,6 +31,9 @@ enum class Extension {
 
 using ExtensionSet = EnumSet<Extension>;
 
+// Returns true if the input is a known extension.
+bool isValidExtensionName(std::string ext_name);
+
 }  // namespace libspirv
 
 typedef struct spv_opcode_desc_t {
@@ -106,6 +109,7 @@ struct spv_context_t {
   const spv_opcode_table opcode_table;
   const spv_operand_table operand_table;
   const spv_ext_inst_table ext_inst_table;
+  bool permissive;
   spvtools::MessageConsumer consumer;
 };
 

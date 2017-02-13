@@ -44,7 +44,8 @@ class ValidateBase : public ::testing::Test,
 
   // Performs validation on the SPIR-V code and compares the result of the
   // spvValidate function
-  spv_result_t ValidateInstructions(spv_target_env env = SPV_ENV_UNIVERSAL_1_0);
+  spv_result_t ValidateInstructions(spv_target_env env = SPV_ENV_UNIVERSAL_1_0,
+                                    bool permissive = false);
 
   // Performs validation. Returns the status and stores validation state into
   // the vstate_ member.

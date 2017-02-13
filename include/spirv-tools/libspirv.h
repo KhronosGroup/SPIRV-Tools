@@ -370,7 +370,7 @@ typedef enum {
 const char* spvTargetEnvDescription(spv_target_env env);
 
 // Creates a context object.  Returns null if env is invalid.
-spv_context spvContextCreate(spv_target_env env);
+spv_context spvContextCreate(spv_target_env env, bool permissive = false);
 
 // Destroys the given context object.
 void spvContextDestroy(spv_context context);

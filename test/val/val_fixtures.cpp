@@ -62,8 +62,9 @@ void ValidateBase<T>::OverwriteAssembledBinary(uint32_t index, uint32_t word) {
 }
 
 template <typename T>
-spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
-  return spvValidate(ScopedContext(env).context, get_const_binary(),
+spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env,
+                                                   bool permissive) {
+  return spvValidate(ScopedContext(env, permissive).context, get_const_binary(),
                      &diagnostic_);
 }
 

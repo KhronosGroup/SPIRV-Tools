@@ -16,7 +16,7 @@
 
 #include <utility>
 
-spv_context spvContextCreate(spv_target_env env) {
+spv_context spvContextCreate(spv_target_env env, bool permissive) {
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_VULKAN_1_0:
@@ -41,8 +41,9 @@ spv_context spvContextCreate(spv_target_env env) {
   spvOperandTableGet(&operand_table, env);
   spvExtInstTableGet(&ext_inst_table, env);
 
-  return new spv_context_t{env, opcode_table, operand_table, ext_inst_table,
-                           nullptr /* a null default consumer */};
+  return new spv_context_t{
+      env,        opcode_table, operand_table, ext_inst_table,
+      permissive, nullptr /* a null default consumer */};
 }
 
 void spvContextDestroy(spv_context context) { delete context; }
@@ -51,3 +52,4 @@ void SetContextMessageConsumer(spv_context context,
                                spvtools::MessageConsumer consumer) {
   context->consumer = std::move(consumer);
 }
+
