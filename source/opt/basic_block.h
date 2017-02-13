@@ -119,10 +119,10 @@ inline void BasicBlock::ForEachSuccessorLabel(
     } break;
     case SpvOpBranchConditional:
     case SpvOpSwitch: {
-      int cnt = 0;
-      br->ForEachInId([&cnt, &f](const uint32_t* idp) {
-        if (cnt > 0) f(*idp);
-        cnt++;
+      bool is_first = true;
+      br->ForEachInId([&is_first, &f](const uint32_t* idp) {
+        if (!is_first) f(*idp);
+        is_first = false;
       });
     } break;
     default:
