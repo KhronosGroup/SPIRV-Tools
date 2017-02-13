@@ -307,7 +307,7 @@ void InlinePass::GenInlineCode(
               const auto mapItr = callee2caller.find(*iid);
               if (mapItr != callee2caller.end()) {
                 *iid = mapItr->second;
-              } else if (cpi->IsControlFlow()) {
+              } else if (cpi->has_labels()) {
                 const ir::Instruction* inst =
                     def_use_mgr_->id_to_defs().find(*iid)->second;
                 if (inst->opcode() == SpvOpLabel) {

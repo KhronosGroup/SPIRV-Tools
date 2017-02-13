@@ -171,7 +171,7 @@ class Instruction {
   inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
 
   // Returns true if any operands can be labels
-  inline bool IsControlFlow() const;
+  inline bool has_labels() const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
@@ -257,8 +257,7 @@ inline void Instruction::ForEachInId(
     if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
 }
 
-inline bool Instruction::IsControlFlow() const {
-  bool hasLabels = false;
+inline bool Instruction::has_labels() const {
   switch (opcode_) {
     case SpvOpSelectionMerge:
     case SpvOpBranch:
@@ -266,12 +265,12 @@ inline bool Instruction::IsControlFlow() const {
     case SpvOpBranchConditional:
     case SpvOpSwitch:
     case SpvOpPhi:
-      hasLabels = true;
+      return true;
       break;
     default:
       break;
   }
-  return hasLabels;
+  return false;
 }
 
 }  // namespace ir
