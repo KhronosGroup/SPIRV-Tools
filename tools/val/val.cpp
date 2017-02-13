@@ -34,6 +34,7 @@ NOTE: The validator is a work in progress.
 
 Options:
   -h, --help   Print this help.
+  --permissive Validation should pass if an unrecognized extension is used by the module.
   --version    Display validator version information.
   --target-env {vulkan1.0|spv1.0|spv1.1}
                Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
