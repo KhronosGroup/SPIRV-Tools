@@ -17,10 +17,10 @@
 #ifndef LIBSPIRV_OPT_INLINE_PASS_H_
 #define LIBSPIRV_OPT_INLINE_PASS_H_
 
-#include <memory>
-#include <vector>
-#include <unordered_map>
 #include <algorithm>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include "def_use_manager.h"
 #include "module.h"
