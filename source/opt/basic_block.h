@@ -46,7 +46,7 @@ class BasicBlock {
   inline void AddInstruction(std::unique_ptr<Instruction> i);
 
   // Returns the id of the label at the top of this block
-  inline uint32_t GetLabelId() { return label_->result_id(); }
+  inline uint32_t GetLabelId() const { return label_->result_id(); }
 
   iterator begin() { return iterator(&insts_, insts_.begin()); }
   iterator end() { return iterator(&insts_, insts_.end()); }
