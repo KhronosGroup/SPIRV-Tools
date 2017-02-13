@@ -69,7 +69,7 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
 }
 
 // Returns true if the input is a known extension.
-// TODO: The list of recognized extensions should be populated automatiicaly.
+// TODO: The list of recognized extensions should be populated atuomatically.
 bool libspirv::isValidExtensionName(std::string ext_name) {
   std::unordered_set<std::string> known_extensions = {
       "SPV_KHR_shader_ballot", "SPV_KHR_shader_draw_parameters"};
