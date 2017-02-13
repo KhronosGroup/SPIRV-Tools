@@ -49,8 +49,9 @@ class InlinePass : public Pass {
   // all code that is inlined into func.
   bool Inline(ir::Function* func);
 
-  // Find pointer to type in module, return its resultId. 0 if not found.
-  uint32_t FindPointerToType(uint32_t typeId);
+  // Find pointer to type and storage in module, return its resultId.
+  // 0 if not found.
+  uint32_t FindPointerToType(uint32_t type_id, uint32_t storage_id);
 
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t typeId);
