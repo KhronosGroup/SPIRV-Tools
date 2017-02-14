@@ -55,12 +55,9 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id) {
 
 void InlinePass::AddBranch(uint32_t label_id,
                            std::unique_ptr<ir::BasicBlock>* bp) {
-  std::vector<ir::Operand> branch_in_operands;
-  branch_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{label_id}));
-  std::unique_ptr<ir::Instruction> newBranch(
-      new ir::Instruction(SpvOpBranch, 0, 0, branch_in_operands));
+  std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
+      SpvOpBranch, 0, 0,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {label_id}}}));
   (*bp)->AddInstruction(std::move(newBranch));
 }
 
