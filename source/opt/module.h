@@ -93,7 +93,7 @@ class Module {
   inline IteratorRange<inst_iterator> debugs();
   inline IteratorRange<const_inst_iterator> debugs() const;
 
-  // Interators for entry point instructions contained in this module
+  // Iterators for entry point instructions contained in this module
   inline IteratorRange<inst_iterator> entry_points();
   inline IteratorRange<const_inst_iterator> entry_points() const;
 
