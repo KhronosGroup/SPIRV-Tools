@@ -63,26 +63,17 @@ void InlinePass::AddBranch(uint32_t label_id,
 
 void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
                           std::unique_ptr<ir::BasicBlock>* bp) {
-  std::vector<ir::Operand> store_in_operands;
-  store_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{ptr_id}));
-  store_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{val_id}));
-  std::unique_ptr<ir::Instruction> newStore(
-      new ir::Instruction(SpvOpStore, 0, 0, store_in_operands));
+  std::unique_ptr<ir::Instruction> newStore(new ir::Instruction(
+      SpvOpStore, 0, 0, {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}},
+                         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {val_id}}}));
   (*bp)->AddInstruction(std::move(newStore));
 }
 
 void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
                          std::unique_ptr<ir::BasicBlock>* bp) {
-  std::vector<ir::Operand> load_in_operands;
-  load_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{ptr_id}));
-  std::unique_ptr<ir::Instruction> newLoad(
-      new ir::Instruction(SpvOpLoad, type_id, resultId, load_in_operands));
+  std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
+      SpvOpLoad, type_id, resultId,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}}}));
   (*bp)->AddInstruction(std::move(newLoad));
 }
 
