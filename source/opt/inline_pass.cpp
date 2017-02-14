@@ -99,8 +99,7 @@ void InlinePass::GenInlineCode(
   int param_idx = 0;
   calleeFn->ForEachParam([&call_inst_itr, &param_idx, &callee2caller](
       const ir::Instruction* cpi) {
-    const uint32_t pid =
-        cpi->GetOperand(kSpvFunctionParameterResultId).words[0];
+    const uint32_t pid = cpi->result_id();
     callee2caller[pid] = call_inst_itr->GetOperand(kSpvFuncitonCallArgumentId +
                                                    param_idx).words[0];
     param_idx++;
