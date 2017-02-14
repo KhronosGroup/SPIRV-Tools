@@ -96,15 +96,15 @@ void InlinePass::GenInlineCode(
   ir::Function* calleeFn = id2function_[calleeId];
 
   // Map parameters to actual arguments
-  int i = 0;
-  calleeFn->ForEachParam(
-      [&call_inst_itr, &i, &callee2caller](const ir::Instruction* cpi) {
-        const uint32_t pid =
-            cpi->GetOperand(kSpvFunctionParameterResultId).words[0];
-        callee2caller[pid] =
-            call_inst_itr->GetOperand(kSpvFuncitonCallArgumentId + i).words[0];
-        i++;
-      });
+  int param_idx = 0;
+  calleeFn->ForEachParam([&call_inst_itr, &param_idx, &callee2caller](
+      const ir::Instruction* cpi) {
+    const uint32_t pid =
+        cpi->GetOperand(kSpvFunctionParameterResultId).words[0];
+    callee2caller[pid] = call_inst_itr->GetOperand(kSpvFuncitonCallArgumentId +
+                                                   param_idx).words[0];
+    param_idx++;
+  });
 
   // Define caller local variables for all callee variables and create map to
   // them
