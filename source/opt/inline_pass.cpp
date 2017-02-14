@@ -82,8 +82,8 @@ void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* newBlocks,
     std::vector<std::unique_ptr<ir::Instruction>>* newVars,
-    ir::UptrVectorIterator<ir::Instruction> call_ii,
-    ir::UptrVectorIterator<ir::BasicBlock> call_bi) {
+    ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+    ir::UptrVectorIterator<ir::BasicBlock> call_block_itr) {
   // Map from callee id to caller id
   std::unordered_map<uint32_t, uint32_t> callee2caller;
   // Pre-call OpSampledImage Insts
@@ -92,17 +92,17 @@ void InlinePass::GenInlineCode(
   std::unordered_map<uint32_t, uint32_t> postCallSI;
 
   const uint32_t calleeId =
-      call_ii->GetOperand(kSpvFunctionCallFunctionId).words[0];
+      call_inst_itr->GetOperand(kSpvFunctionCallFunctionId).words[0];
   ir::Function* calleeFn = id2function_[calleeId];
 
   // Map parameters to actual arguments
   int i = 0;
   calleeFn->ForEachParam(
-      [&call_ii, &i, &callee2caller](const ir::Instruction* cpi) {
+      [&call_inst_itr, &i, &callee2caller](const ir::Instruction* cpi) {
         const uint32_t pid =
             cpi->GetOperand(kSpvFunctionParameterResultId).words[0];
         callee2caller[pid] =
-            call_ii->GetOperand(kSpvFuncitonCallArgumentId + i).words[0];
+            call_inst_itr->GetOperand(kSpvFuncitonCallArgumentId + i).words[0];
         i++;
       });
 
@@ -146,9 +146,10 @@ void InlinePass::GenInlineCode(
   bool multiBlocks = false;
   std::unique_ptr<ir::BasicBlock> bp;
   calleeFn->ForEachInst(
-      [&newBlocks, &callee2caller, &call_bi, &call_ii, &bp, &prevInstWasReturn,
-       &returnLabelId, &returnVarId, &calleeTypeId, &multiBlocks, &postCallSI,
-       &preCallSI, this](const ir::Instruction* cpi) {
+      [&newBlocks, &callee2caller, &call_block_itr, &call_inst_itr, &bp,
+       &prevInstWasReturn, &returnLabelId, &returnVarId, &calleeTypeId,
+       &multiBlocks, &postCallSI, &preCallSI, this](
+          const ir::Instruction* cpi) {
         switch (cpi->opcode()) {
           case SpvOpFunction:
           case SpvOpFunctionParameter:
@@ -178,7 +179,7 @@ void InlinePass::GenInlineCode(
             } else {
               // first block needs to use label of original block
               // but map callee label in case of phi reference
-              labelId = call_bi->label_id();
+              labelId = call_block_itr->label_id();
               callee2caller[cpi->result_id()] = labelId;
               firstBlock = true;
             }
@@ -189,7 +190,8 @@ void InlinePass::GenInlineCode(
             bp.reset(new ir::BasicBlock(std::move(newLabel)));
             if (firstBlock) {
               // Copy contents of original caller block up to call instruction
-              for (auto cii = call_bi->begin(); cii != call_ii; cii++) {
+              for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
+                   cii++) {
                 std::unique_ptr<ir::Instruction> spv_inst(
                     new ir::Instruction(*cii));
                 // remember OpSampledImages for possible regeneration
@@ -238,14 +240,14 @@ void InlinePass::GenInlineCode(
             }
             // load return value into result id of call, if it exists
             if (returnVarId != 0) {
-              const uint32_t resId = call_ii->result_id();
+              const uint32_t resId = call_inst_itr->result_id();
               assert(resId != 0);
               AddLoad(calleeTypeId, resId, returnVarId, &bp);
             }
             // copy remaining instructions from caller block.
-            auto cii = call_ii;
+            auto cii = call_inst_itr;
             cii++;
-            for (; cii != call_bi->end(); cii++) {
+            for (; cii != call_block_itr->end(); cii++) {
               std::unique_ptr<ir::Instruction> spv_inst(
                   new ir::Instruction(*cii));
               // if multiple blocks generated, regenerate any OpSampledImage
