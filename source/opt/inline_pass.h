@@ -77,8 +77,8 @@ class InlinePass : public Pass {
   // replaced with new_blocks.
   void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
-                     ir::UptrVectorIterator<ir::Instruction> call_ii,
-                     ir::UptrVectorIterator<ir::BasicBlock> call_bi);
+                     ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+                     ir::UptrVectorIterator<ir::BasicBlock> call_block_itr);
 
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Return true if func is modified.
