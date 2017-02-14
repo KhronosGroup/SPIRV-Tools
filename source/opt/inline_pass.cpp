@@ -157,8 +157,7 @@ void InlinePass::GenInlineCode(
             break;
           case SpvOpLabel: {
             // if previous instruction was early return, insert branch
-            // instruction
-            // to return block
+            // instruction to return block
             if (prevInstWasReturn) {
               if (returnLabelId == 0) returnLabelId = this->TakeNextId();
               AddBranch(returnLabelId, &new_blk_ptr);
