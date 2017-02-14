@@ -21,7 +21,6 @@
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvFunctionCallFunctionId = 2;
 static const int kSpvFuncitonCallArgumentId = 3;
-static const int kSpvFunctionParameterResultId = 1;
 static const int kSpvReturnValueId = 0;
 static const int kSpvTypePointerStorageClass = 1;
 static const int kSpvTypePointerTypeId = 2;
