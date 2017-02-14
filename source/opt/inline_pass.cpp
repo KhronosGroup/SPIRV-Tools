@@ -243,8 +243,7 @@ void InlinePass::GenInlineCode(
             }
             // copy remaining instructions from caller block.
             auto cii = call_inst_itr;
-            cii++;
-            for (; cii != call_block_itr->end(); cii++) {
+            for (cii++; cii != call_block_itr->end(); cii++) {
               std::unique_ptr<ir::Instruction> spv_inst(
                   new ir::Instruction(*cii));
               // if multiple blocks generated, regenerate any OpSampledImage
@@ -351,11 +350,8 @@ bool InlinePass::Inline(ir::Function* func) {
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // insert new function variables
-        if (newVars.size() > 0) {
-          auto vbi = func->begin();
-          auto vii = vbi->begin();
-          vii.InsertBefore(&newVars);
-        }
+        if (newVars.size() > 0) 
+          func->begin()->begin().InsertBefore(&newVars);
         // restart inlining at beginning of calling block
         ii = bi->begin();
         modified = true;
