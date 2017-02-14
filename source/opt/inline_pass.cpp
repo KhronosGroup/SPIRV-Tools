@@ -199,8 +199,9 @@ void InlinePass::GenInlineCode(
                 }
                 new_blk_ptr->AddInstruction(std::move(spv_inst));
               }
-            } else
+            } else {
               multiBlocks = true;
+            }
           } break;
           case SpvOpReturnValue: {
             // store return value to return variable
