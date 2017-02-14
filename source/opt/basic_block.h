@@ -60,14 +60,14 @@ class BasicBlock {
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
 
-  // Runs the given function |f| on each label id of each successor block
-  inline void ForEachSuccessorLabel(
-      const std::function<void(const uint32_t)>& f);
-
   // Runs the given function |f| on each Phi instruction in this basic block,
   // and optionally on the debug line instructions that might precede them.
   inline void ForEachPhiInst(const std::function<void(Instruction*)>& f,
                              bool run_on_debug_line_insts = false);
+
+  // Runs the given function |f| on each label id of each successor block
+  void ForEachSuccessorLabel(
+      const std::function<void(const uint32_t)>& f);
 
  private:
   // The enclosing function.
@@ -107,26 +107,6 @@ inline void BasicBlock::ForEachPhiInst(
   for (auto& inst : insts_) {
     if (inst->opcode() != SpvOpPhi) break;
     inst->ForEachInst(f, run_on_debug_line_insts);
-  }
-}
-
-inline void BasicBlock::ForEachSuccessorLabel(
-    const std::function<void(const uint32_t)>& f) {
-  const auto br = &*insts_.back();
-  switch (br->opcode()) {
-    case SpvOpBranch: {
-      f(br->GetOperand(0).words[0]);
-    } break;
-    case SpvOpBranchConditional:
-    case SpvOpSwitch: {
-      bool is_first = true;
-      br->ForEachInId([&is_first, &f](const uint32_t* idp) {
-        if (!is_first) f(*idp);
-        is_first = false;
-      });
-    } break;
-    default:
-      break;
   }
 }
 

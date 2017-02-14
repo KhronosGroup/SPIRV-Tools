@@ -36,6 +36,7 @@ add_library(SPIRV-Tools-opt
   type_manager.h
   unify_const_pass.h
 
+  basic_block.cpp
   build_module.cpp
   def_use_manager.cpp
   eliminate_dead_constant_pass.cpp
