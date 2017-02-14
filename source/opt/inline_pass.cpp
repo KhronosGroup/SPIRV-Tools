@@ -96,24 +96,26 @@ void InlinePass::GenInlineCode(
 
   // Map parameters to actual arguments
   int param_idx = 0;
-  calleeFn->ForEachParam([&call_inst_itr, &param_idx, &callee2caller](
-      const ir::Instruction* cpi) {
-    const uint32_t pid = cpi->result_id();
-    callee2caller[pid] = call_inst_itr->GetSingleWordOperand(kSpvFuncitonCallArgumentId + param_idx);
-    param_idx++;
-  });
+  calleeFn->ForEachParam(
+      [&call_inst_itr, &param_idx, &callee2caller](const ir::Instruction* cpi) {
+        const uint32_t pid = cpi->result_id();
+        callee2caller[pid] = call_inst_itr->GetSingleWordOperand(
+            kSpvFuncitonCallArgumentId + param_idx);
+        param_idx++;
+      });
 
   // Define caller local variables for all callee variables and create map to
   // them
-  auto cbi = calleeFn->begin();
-  auto cvi = cbi->begin();
-  while (cvi->opcode() == SpvOp::SpvOpVariable) {
-    std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(*cvi));
+  auto callee_block_itr = calleeFn->begin();
+  auto callee_var_itr = callee_block_itr->begin();
+  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
+    std::unique_ptr<ir::Instruction> var_inst(
+        new ir::Instruction(*callee_var_itr));
     uint32_t newId = TakeNextId();
     var_inst->SetResultId(newId);
-    callee2caller[cvi->result_id()] = newId;
+    callee2caller[callee_var_itr->result_id()] = newId;
     newVars->push_back(std::move(var_inst));
-    cvi++;
+    callee_var_itr++;
   }
 
   // Create return var if needed
