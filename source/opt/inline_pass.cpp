@@ -44,14 +44,11 @@ uint32_t InlinePass::FindPointerToType(uint32_t type_id, uint32_t storage_id) {
 
 uint32_t InlinePass::AddPointerToType(uint32_t type_id) {
   uint32_t resultId = TakeNextId();
-  std::vector<ir::Operand> in_operands;
-  in_operands.emplace_back(
-      spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
-      std::initializer_list<uint32_t>{uint32_t(SpvStorageClassFunction)});
-  in_operands.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                           std::initializer_list<uint32_t>{uint32_t(type_id)});
-  std::unique_ptr<ir::Instruction> type_inst(
-      new ir::Instruction(SpvOpTypePointer, 0, resultId, in_operands));
+  std::unique_ptr<ir::Instruction> type_inst(new ir::Instruction(
+      SpvOpTypePointer, 0, resultId,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
+        {SpvStorageClassFunction}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
   module_->AddType(std::move(type_inst));
   return resultId;
 }
