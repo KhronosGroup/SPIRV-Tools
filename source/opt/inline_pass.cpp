@@ -79,7 +79,6 @@ void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
 
 // Generate callee code into newBlocks to be inlined for the function call at
 // call_ii. Also add new function variables into caller func
-
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* newBlocks,
     std::vector<std::unique_ptr<ir::Instruction>>* newVars,
