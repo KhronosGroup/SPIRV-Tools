@@ -214,14 +214,12 @@ void InlinePass::GenInlineCode(
             AddStore(returnVarId, valId, &new_blk_ptr);
 
             // Remember we saw a return; if followed by a label, will need to
-            // insert
-            // branch
+            // insert branch
             prevInstWasReturn = true;
           } break;
           case SpvOpReturn: {
             // Remember we saw a return; if followed by a label, will need to
-            // insert
-            // branch
+            // insert branch
             prevInstWasReturn = true;
           } break;
           case SpvOpFunctionEnd: {
