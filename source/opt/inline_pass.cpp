@@ -41,12 +41,11 @@ uint32_t InlinePass::FindPointerToType(uint32_t type_id, uint32_t storage_id) {
   return (type_itr != module_->types_values_end()) ? type_itr->result_id() : 0;
 }
 
-uint32_t InlinePass::AddPointerToType(uint32_t type_id) {
+uint32_t InlinePass::AddPointerToType(uint32_t type_id, uint32_t storage_id) {
   uint32_t resultId = TakeNextId();
   std::unique_ptr<ir::Instruction> type_inst(new ir::Instruction(
       SpvOpTypePointer, 0, resultId,
-      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
-        {SpvStorageClassFunction}},
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_id}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
   module_->AddType(std::move(type_inst));
   return resultId;
@@ -127,7 +126,8 @@ void InlinePass::GenInlineCode(
     // find or create ptr to callee return type
     uint32_t returnVarTypeId =
         FindPointerToType(calleeTypeId, SpvStorageClassFunction);
-    if (returnVarTypeId == 0) returnVarTypeId = AddPointerToType(calleeTypeId);
+    if (returnVarTypeId == 0)
+      returnVarTypeId = AddPointerToType(calleeTypeId, SpvStorageClassFunction);
     // Add return var to new function scope variables
     returnVarId = TakeNextId();
     std::vector<ir::Operand> in_operands;
@@ -350,8 +350,7 @@ bool InlinePass::Inline(ir::Function* func) {
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // insert new function variables
-        if (newVars.size() > 0) 
-          func->begin()->begin().InsertBefore(&newVars);
+        if (newVars.size() > 0) func->begin()->begin().InsertBefore(&newVars);
         // restart inlining at beginning of calling block
         ii = bi->begin();
         modified = true;

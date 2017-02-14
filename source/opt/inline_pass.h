@@ -51,32 +51,32 @@ class InlinePass : public Pass {
   uint32_t FindPointerToType(uint32_t type_id, uint32_t storage_id);
 
   // Add pointer to type to module and return resultId.
-  uint32_t AddPointerToType(uint32_t typeId);
+  uint32_t AddPointerToType(uint32_t type_id, uint32_t storage_id);
 
-  // Add unconditional branch to labelId to end of block bp
-  void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* bp);
+  // Add unconditional branch to labelId to end of block block_ptr
+  void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Add store of valId to ptrId to end of block bp
+  // Add store of valId to ptrId to end of block block_ptr
   void AddStore(uint32_t ptrId, uint32_t valId,
-                std::unique_ptr<ir::BasicBlock>* bp);
+                std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Add load of ptrId into resultId to end of block bp
+  // Add load of ptrId into resultId to end of block block_ptr
   void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
-               std::unique_ptr<ir::BasicBlock>* bp);
+               std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Return in newBlocks the result of inlining the call at call_ii within
+  // Return in new_blocks the result of inlining the call at call_ii within
   // its block call_bi. The block call_bi can just be replaced with the blocks
-  // in newBlocks. Any additional branches are avoided. Debug instructions
+  // in new_blocks. Any additional branches are avoided. Debug instructions
   // are cloned along with their callee instructions. Early returns are
   // replaced by storing to a local return variable and branching to a 
   // (created) exit block where the local variable is returned. Formal
   // parameters are trivially mapped to their actual parameters.
   //
-  // Also return in newVars additional OpVariable instructions required by 
+  // Also return in new_vars additional OpVariable instructions required by 
   // and to be inserted into the caller function after the block call_bi is 
-  // replaced with newBlocks.
-  void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* newBlocks,
-                     std::vector<std::unique_ptr<ir::Instruction>>* newVars,
+  // replaced with new_blocks.
+  void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
+                     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
                      ir::UptrVectorIterator<ir::Instruction> call_ii,
                      ir::UptrVectorIterator<ir::BasicBlock> call_bi);
 
