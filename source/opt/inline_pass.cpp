@@ -33,8 +33,8 @@ uint32_t InlinePass::FindPointerToType(uint32_t type_id, uint32_t storage_id) {
   for (; type_itr != module_->types_values_end(); ++type_itr) {
     const ir::Instruction* type_inst = &*type_itr;
     if (type_inst->opcode() == SpvOpTypePointer &&
-        type_inst->GetOperand(kSpvTypePointerTypeId).words[0] == type_id &&
-        type_inst->GetOperand(kSpvTypePointerStorageClass).words[0] ==
+        type_inst->GetSingleWordOperand(kSpvTypePointerTypeId) == type_id &&
+        type_inst->GetSingleWordOperand(kSpvTypePointerStorageClass) ==
             storage_id)
       break;
   }
@@ -91,7 +91,7 @@ void InlinePass::GenInlineCode(
   std::unordered_map<uint32_t, uint32_t> postCallSI;
 
   const uint32_t calleeId =
-      call_inst_itr->GetOperand(kSpvFunctionCallFunctionId).words[0];
+      call_inst_itr->GetSingleWordOperand(kSpvFunctionCallFunctionId);
   ir::Function* calleeFn = id2function_[calleeId];
 
   // Map parameters to actual arguments
@@ -99,8 +99,7 @@ void InlinePass::GenInlineCode(
   calleeFn->ForEachParam([&call_inst_itr, &param_idx, &callee2caller](
       const ir::Instruction* cpi) {
     const uint32_t pid = cpi->result_id();
-    callee2caller[pid] = call_inst_itr->GetOperand(kSpvFuncitonCallArgumentId +
-                                                   param_idx).words[0];
+    callee2caller[pid] = call_inst_itr->GetSingleWordOperand(kSpvFuncitonCallArgumentId + param_idx);
     param_idx++;
   });
 
@@ -395,7 +394,7 @@ Pass::Status InlinePass::ProcessImpl() {
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetOperand(kSpvEntryPointFunctionId).words[0]];
+        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
     modified = modified || Inline(fn);
   }
 
