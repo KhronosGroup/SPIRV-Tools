@@ -33,8 +33,9 @@ namespace opt {
 class InlinePass : public Pass {
  public:
   InlinePass();
-  const char* name() const override { return "inline"; }
   Status Process(ir::Module*) override;
+
+  const char* name() const override { return "inline"; }
 
  private:
   // Write the next available Id back to the module
@@ -44,10 +45,6 @@ class InlinePass : public Pass {
 
   // Return the next available Id and increment it
   inline uint32_t TakeNextId() { return next_id_++; }
-
-  // Exhaustively inline all function calls in func as well as in
-  // all code that is inlined into func.
-  bool Inline(ir::Function* func);
 
   // Find pointer to type and storage in module, return its resultId.
   // 0 if not found.
@@ -82,6 +79,10 @@ class InlinePass : public Pass {
                      std::vector<std::unique_ptr<ir::Instruction>>* newVars,
                      ir::UptrVectorIterator<ir::Instruction> call_ii,
                      ir::UptrVectorIterator<ir::BasicBlock> call_bi);
+
+  // Exhaustively inline all function calls in func as well as in
+  // all code that is inlined into func.
+  bool Inline(ir::Function* func);
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
