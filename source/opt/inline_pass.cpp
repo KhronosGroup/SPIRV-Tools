@@ -143,11 +143,11 @@ void InlinePass::GenInlineCode(
   bool prevInstWasReturn = false;
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
-  std::unique_ptr<ir::BasicBlock> bp;
+  std::unique_ptr<ir::BasicBlock> new_blk_ptr;
   calleeFn->ForEachInst(
-      [&newBlocks, &callee2caller, &call_block_itr, &call_inst_itr, &bp,
-       &prevInstWasReturn, &returnLabelId, &returnVarId, &calleeTypeId,
-       &multiBlocks, &postCallSI, &preCallSI, this](
+      [&newBlocks, &callee2caller, &call_block_itr, &call_inst_itr,
+       &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
+       &calleeTypeId, &multiBlocks, &postCallSI, &preCallSI, this](
           const ir::Instruction* cpi) {
         switch (cpi->opcode()) {
           case SpvOpFunction:
@@ -161,14 +161,14 @@ void InlinePass::GenInlineCode(
             // to return block
             if (prevInstWasReturn) {
               if (returnLabelId == 0) returnLabelId = this->TakeNextId();
-              AddBranch(returnLabelId, &bp);
+              AddBranch(returnLabelId, &new_blk_ptr);
               prevInstWasReturn = false;
             }
             // finish current block (if it exists) and get label for next block
             uint32_t labelId;
             bool firstBlock = false;
-            if (bp != nullptr) {
-              newBlocks->push_back(std::move(bp));
+            if (new_blk_ptr != nullptr) {
+              newBlocks->push_back(std::move(new_blk_ptr));
               // if result id is already mapped, use it, otherwise get a new
               // one.
               const uint32_t rid = cpi->result_id();
@@ -186,7 +186,7 @@ void InlinePass::GenInlineCode(
             const std::vector<ir::Operand> label_in_operands;
             std::unique_ptr<ir::Instruction> newLabel(
                 new ir::Instruction(SpvOpLabel, 0, labelId, label_in_operands));
-            bp.reset(new ir::BasicBlock(std::move(newLabel)));
+            new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
             if (firstBlock) {
               // Copy contents of original caller block up to call instruction
               for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
@@ -198,7 +198,7 @@ void InlinePass::GenInlineCode(
                   auto* samp_inst_ptr = spv_inst.get();
                   preCallSI[spv_inst->result_id()] = samp_inst_ptr;
                 }
-                bp->AddInstruction(std::move(spv_inst));
+                new_blk_ptr->AddInstruction(std::move(spv_inst));
               }
             } else
               multiBlocks = true;
@@ -211,7 +211,7 @@ void InlinePass::GenInlineCode(
             if (mapItr != callee2caller.end()) {
               valId = mapItr->second;
             }
-            AddStore(returnVarId, valId, &bp);
+            AddStore(returnVarId, valId, &new_blk_ptr);
 
             // Remember we saw a return; if followed by a label, will need to
             // insert
@@ -229,19 +229,19 @@ void InlinePass::GenInlineCode(
             // if previous instruction was return, insert branch instruction
             // to return block
             if (returnLabelId != 0) {
-              if (prevInstWasReturn) AddBranch(returnLabelId, &bp);
-              newBlocks->push_back(std::move(bp));
+              if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
+              newBlocks->push_back(std::move(new_blk_ptr));
               const std::vector<ir::Operand> label_in_operands;
               std::unique_ptr<ir::Instruction> newLabel(new ir::Instruction(
                   SpvOpLabel, 0, returnLabelId, label_in_operands));
-              bp.reset(new ir::BasicBlock(std::move(newLabel)));
+              new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
               multiBlocks = true;
             }
             // load return value into result id of call, if it exists
             if (returnVarId != 0) {
               const uint32_t resId = call_inst_itr->result_id();
               assert(resId != 0);
-              AddLoad(calleeTypeId, resId, returnVarId, &bp);
+              AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
             }
             // copy remaining instructions from caller block.
             auto cii = call_inst_itr;
@@ -253,7 +253,8 @@ void InlinePass::GenInlineCode(
               // instruction that has not been seen in this last block.
               if (multiBlocks) {
                 spv_inst->ForEachInId(
-                    [&postCallSI, &preCallSI, &cpi, &bp, this](uint32_t* iid) {
+                    [&postCallSI, &preCallSI, &cpi, &new_blk_ptr, this](
+                        uint32_t* iid) {
                       const auto mapItr = postCallSI.find(*iid);
                       if (mapItr == postCallSI.end()) {
                         const auto mapItr2 = preCallSI.find(*iid);
@@ -267,7 +268,7 @@ void InlinePass::GenInlineCode(
                           samp_inst->SetResultId(nid);
                           postCallSI[rid] = nid;
                           *iid = nid;
-                          bp->AddInstruction(std::move(samp_inst));
+                          new_blk_ptr->AddInstruction(std::move(samp_inst));
                         }
                       } else
                         // reset OpSampledImage operand
@@ -279,10 +280,10 @@ void InlinePass::GenInlineCode(
                   postCallSI[rid] = rid;
                 }
               }
-              bp->AddInstruction(std::move(spv_inst));
+              new_blk_ptr->AddInstruction(std::move(spv_inst));
             }
             // finalize
-            newBlocks->push_back(std::move(bp));
+            newBlocks->push_back(std::move(new_blk_ptr));
           } break;
           default: {
             // copy callee instruction and remap all input Ids
@@ -312,7 +313,7 @@ void InlinePass::GenInlineCode(
               callee2caller[rid] = nid;
               spv_inst->SetResultId(nid);
             }
-            bp->AddInstruction(std::move(spv_inst));
+            new_blk_ptr->AddInstruction(std::move(spv_inst));
           } break;
         }
       });
