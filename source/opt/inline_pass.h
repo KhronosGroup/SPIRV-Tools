@@ -81,7 +81,7 @@ class InlinePass : public Pass {
                      ir::UptrVectorIterator<ir::BasicBlock> call_bi);
 
   // Exhaustively inline all function calls in func as well as in
-  // all code that is inlined into func.
+  // all code that is inlined into func. Return true if func is modified.
   bool Inline(ir::Function* func);
 
   void Initialize(ir::Module* module);
