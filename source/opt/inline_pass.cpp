@@ -179,9 +179,8 @@ void InlinePass::GenInlineCode(
               firstBlock = true;
             }
             // create first/next block
-            const std::vector<ir::Operand> label_in_operands;
             std::unique_ptr<ir::Instruction> newLabel(
-                new ir::Instruction(SpvOpLabel, 0, labelId, label_in_operands));
+                new ir::Instruction(SpvOpLabel, 0, labelId, {}));
             new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
             if (firstBlock) {
               // Copy contents of original caller block up to call instruction
