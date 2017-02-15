@@ -129,12 +129,10 @@ void InlinePass::GenInlineCode(
       returnVarTypeId = AddPointerToType(calleeTypeId, SpvStorageClassFunction);
     // Add return var to new function scope variables
     returnVarId = TakeNextId();
-    std::vector<ir::Operand> in_operands;
-    in_operands.emplace_back(
-        spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
-        std::initializer_list<uint32_t>{uint32_t(SpvStorageClassFunction)});
     std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(
-        SpvOpVariable, returnVarTypeId, returnVarId, in_operands));
+        SpvOpVariable, returnVarTypeId, returnVarId,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
+          {SpvStorageClassFunction}}}));
     new_vars->push_back(std::move(var_inst));
   }
 
