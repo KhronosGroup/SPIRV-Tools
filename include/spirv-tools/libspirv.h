@@ -327,6 +327,8 @@ typedef struct spv_diagnostic_t {
 // Its object is used by various translation API functions.
 typedef struct spv_context_t spv_context_t;
 
+typedef struct spv_validator_options_t spv_validator_options_t;
+
 // Type Definitions
 
 typedef spv_const_binary_t* spv_const_binary;
@@ -336,6 +338,8 @@ typedef spv_position_t* spv_position;
 typedef spv_diagnostic_t* spv_diagnostic;
 typedef const spv_context_t* spv_const_context;
 typedef spv_context_t* spv_context;
+typedef spv_validator_options_t* spv_validator_options;
+typedef const spv_validator_options_t* spv_const_validator_options;
 
 // Platform API
 
@@ -375,6 +379,21 @@ spv_context spvContextCreate(spv_target_env env);
 // Destroys the given context object.
 void spvContextDestroy(spv_context context);
 
+// Creates a Validator options object with default options.
+spv_validator_options spvValidatorOptionsCreate();
+
+// Destroys the given Validator options object.
+void spvValidatorOptionsDestroy(spv_validator_options options);
+
+// Records the maximum number of structure members that is considered valid in
+// the given Validator options object. <options> argument must be non-null.
+void spvValidatorOptionsSetMaxStructMembers(spv_validator_options options,
+                                            const char* limit);
+
+// Returns the maximum number of structure members that is considered valid in
+// the given Validator options object. <options> argument must be non-null.
+int spvValidatorOptionsGetMaxStructMembers(spv_const_validator_options options);
+
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic if
@@ -407,6 +426,13 @@ void spvBinaryDestroy(spv_binary binary);
 spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* diagnostic);
+
+// Validates a SPIR-V binary for correctness. Any errors will be written into
+// *diagnostic if diagnostic is non-null.
+spv_result_t spvValidateWithOptions(const spv_const_context context,
+                                    const spv_const_validator_options options,
+                                    const spv_const_binary binary,
+                                    spv_diagnostic* diagnostic);
 
 // Validates a raw SPIR-V binary for correctness. Any errors will be written
 // into *diagnostic if diagnostic is non-null.

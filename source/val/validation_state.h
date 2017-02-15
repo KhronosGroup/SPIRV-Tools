@@ -60,10 +60,14 @@ class ValidationState_t {
     bool declare_float16_type = false;  // Allow OpTypeFloat with 16 bit width?
   };
 
-  ValidationState_t(const spv_const_context context);
+  ValidationState_t(const spv_const_context context,
+                    const spv_const_validator_options opt);
 
   /// Returns the context
   spv_const_context context() const { return context_; }
+
+  /// Returns the command line options
+  spv_const_validator_options options() const { return options_; }
 
   /// Forward declares the id in the module
   spv_result_t ForwardDeclareId(uint32_t id);
@@ -304,6 +308,8 @@ class ValidationState_t {
   ValidationState_t(const ValidationState_t&);
 
   const spv_const_context context_;
+
+  const spv_const_validator_options options_;
 
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;

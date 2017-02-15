@@ -299,15 +299,33 @@ spv_result_t spvValidateBinary(const spv_const_context context,
   }
 
   // Create the ValidationState using the context.
-  ValidationState_t vstate(&hijack_context);
+  // This interface is used for default command line options.
+  ValidationState_t vstate(&hijack_context, nullptr);
 
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, &vstate);
 }
 
+spv_result_t spvValidateWithOptions(const spv_const_context context,
+                                    spv_const_validator_options options,
+                                    const spv_const_binary binary,
+                                    spv_diagnostic* pDiagnostic) {
+  spv_context_t hijack_context = *context;
+  if (pDiagnostic) {
+    *pDiagnostic = nullptr;
+    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
+  }
+
+  // Create the ValidationState using the context.
+  ValidationState_t vstate(&hijack_context, options);
+
+  return ValidateBinaryUsingContextAndValidationState(
+      hijack_context, binary->code, binary->wordCount, pDiagnostic, &vstate);
+}
+
 spv_result_t spvtools::ValidateBinaryAndKeepValidationState(
-    const spv_const_context context, const uint32_t* words,
-    const size_t num_words, spv_diagnostic* pDiagnostic,
+    const spv_const_context context, spv_const_validator_options options,
+    const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<ValidationState_t>* vstate) {
   spv_context_t hijack_context = *context;
   if (pDiagnostic) {
@@ -315,7 +333,8 @@ spv_result_t spvtools::ValidateBinaryAndKeepValidationState(
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  vstate->reset(new ValidationState_t(&hijack_context));
+  vstate->reset(new ValidationState_t(&hijack_context, options));
+
   return ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, vstate->get());
 }

@@ -53,9 +53,11 @@ class ValidateBase : public ::testing::Test,
 
   std::string getDiagnosticString();
   spv_position_t getErrorPosition();
+  spv_validator_options getValidatorOptions();
 
   spv_binary binary_;
   spv_diagnostic diagnostic_;
+  spv_validator_options options_;
   std::unique_ptr<libspirv::ValidationState_t> vstate_;
 };
 }

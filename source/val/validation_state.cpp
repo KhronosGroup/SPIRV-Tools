@@ -182,8 +182,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 
 }  // anonymous namespace
 
-ValidationState_t::ValidationState_t(const spv_const_context ctx)
+ValidationState_t::ValidationState_t(const spv_const_context ctx,
+                                     const spv_const_validator_options opt)
     : context_(ctx),
+      options_(opt),
       instruction_counter_(0),
       unresolved_forward_ids_{},
       operand_names_{},
