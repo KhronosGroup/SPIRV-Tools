@@ -263,9 +263,10 @@ void InlinePass::GenInlineCode(
                           *iid = nid;
                           new_blk_ptr->AddInstruction(std::move(samp_inst));
                         }
-                      } else
+                      } else {
                         // reset OpSampledImage operand
                         *iid = mapItr->second;
+                      }
                     });
                 // remember OpSampledImage in this block
                 if (spv_inst->opcode() == SpvOpSampledImage) {
