@@ -182,8 +182,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
 
 }  // anonymous namespace
 
-ValidationState_t::ValidationState_t(const spv_const_context ctx)
+ValidationState_t::ValidationState_t(const spv_const_context ctx,
+                                     const spv_const_validator_options opt)
     : context_(ctx),
+      options_(opt),
       instruction_counter_(0),
       unresolved_forward_ids_{},
       operand_names_{},
@@ -198,7 +200,9 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx)
       grammar_(ctx),
       addressing_model_(SpvAddressingModelLogical),
       memory_model_(SpvMemoryModelSimple),
-      in_function_(false) {}
+      in_function_(false) {
+  assert(opt && "Validator options may not be Null.");
+}
 
 spv_result_t ValidationState_t::ForwardDeclareId(uint32_t id) {
   unresolved_forward_ids_.insert(id);

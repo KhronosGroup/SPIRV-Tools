@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "spirv_validator_options.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "val/function.h"
@@ -454,7 +455,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       // If we have structed control flow, check that no block has a control
       // flow nesting depth larger than the limit.
       if (_.HasCapability(SpvCapabilityShader)) {
-        const int control_flow_nesting_depth_limit = 1023;
+        const int control_flow_nesting_depth_limit =
+            _.options()->universal_limits_.max_control_flow_nesting_depth;
         for (auto block = begin(blocks); block != end(blocks); ++block) {
           if (function.GetBlockDepth(*block) >
               control_flow_nesting_depth_limit) {

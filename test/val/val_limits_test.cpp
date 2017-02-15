@@ -105,6 +105,37 @@ TEST_F(ValidateLimits, StructNumMembersExceededBad) {
                         "the limit (16383)."));
 }
 
+TEST_F(ValidateLimits, CustomizedStructNumMembersGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 32000; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_members, 32000u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLimits, CustomizedStructNumMembersBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 32001; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_members, 32000u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of OpTypeStruct members (32001) has exceeded "
+                        "the limit (32000)."));
+}
+
 // Valid: Switch statement has 16,383 branches.
 TEST_F(ValidateLimits, SwitchNumBranchesGood) {
   std::ostringstream spirv;
@@ -164,6 +195,69 @@ OpFunctionEnd
                         "exceeds the limit (16383)."));
 }
 
+// Valid: Switch statement has 10 branches (limit is 10)
+TEST_F(ValidateLimits, CustomizedSwitchNumBranchesGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 10; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_switch_branches, 10u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Switch statement has 11 branches (limit is 10)
+TEST_F(ValidateLimits, CustomizedSwitchNumBranchesBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 11; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_switch_branches, 10u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of (literal, label) pairs in OpSwitch (11) "
+                        "exceeds the limit (10)."));
+}
+
 // Valid: OpTypeFunction with 255 arguments.
 TEST_F(ValidateLimits, OpTypeFunctionGood) {
   int num_args = 255;
@@ -195,6 +289,42 @@ TEST_F(ValidateLimits, OpTypeFunctionBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpTypeFunction may not take more than 255 arguments. "
                         "OpTypeFunction <id> '2' has 256 arguments."));
+}
+
+// Valid: OpTypeFunction with 100 arguments (Custom limit: 100)
+TEST_F(ValidateLimits, CustomizedOpTypeFunctionGood) {
+  int num_args = 100;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  // add parameters
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(options_,
+                                       spv_validator_limit_max_function_args, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: OpTypeFunction with 101 arguments. (Custom limit: 100)
+TEST_F(ValidateLimits, CustomizedOpTypeFunctionBad) {
+  int num_args = 101;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(options_,
+                                       spv_validator_limit_max_function_args, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeFunction may not take more than 100 arguments. "
+                        "OpTypeFunction <id> '2' has 101 arguments."));
 }
 
 // Valid: module has 65,535 global variables.
@@ -232,6 +362,47 @@ TEST_F(ValidateLimits, NumGlobalVarsBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Number of Global Variables (Storage Class other than "
                         "'Function') exceeded the valid limit (65535)."));
+}
+
+// Valid: module has 50 global variables (limit is 50)
+TEST_F(ValidateLimits, CustomizedNumGlobalVarsGood) {
+  int num_globals = 50;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_global_variables, 50u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 51 global variables (limit is 50).
+TEST_F(ValidateLimits, CustomizedNumGlobalVarsBad) {
+  int num_globals = 51;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_global_variables, 50u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of Global Variables (Storage Class other than "
+                        "'Function') exceeded the valid limit (50)."));
 }
 
 // Valid: module has 524,287 local variables.
@@ -289,6 +460,65 @@ TEST_F(ValidateLimits, NumLocalVarsBad) {
                         "exceeded the valid limit (524287)."));
 }
 
+// Valid: module has 100 local variables (limit is 100).
+TEST_F(ValidateLimits, CustomizedNumLocalVarsGood) {
+  int num_locals = 100;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_local_variables, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 101 local variables (limit is 100).
+TEST_F(ValidateLimits, CustomizedNumLocalVarsBad) {
+  int num_locals = 101;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_local_variables, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of local variables ('Function' Storage Class) "
+                        "exceeded the valid limit (100)."));
+}
+
 // Valid: Structure nesting depth of 255.
 TEST_F(ValidateLimits, StructNestingDepthGood) {
   std::ostringstream spirv;
@@ -321,6 +551,44 @@ TEST_F(ValidateLimits, StructNestingDepthBad) {
       getDiagnosticString(),
       HasSubstr(
           "Structure Nesting Depth may not be larger than 255. Found 256."));
+}
+
+// Valid: Structure nesting depth of 100 (limit is 100).
+TEST_F(ValidateLimits, CustomizedStructNestingDepthGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+    %int = OpTypeInt 32 0
+    %s_depth_1  = OpTypeStruct %int
+  )";
+  for (auto i = 2; i <= 100; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
+    spirv << "\n";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_depth, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Structure nesting depth of 101 (limit is 100).
+TEST_F(ValidateLimits, CustomizedStructNestingDepthBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+    %int = OpTypeInt 32 0
+    %s_depth_1  = OpTypeStruct %int
+  )";
+  for (auto i = 2; i <= 101; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
+    spirv << "\n";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_depth, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure Nesting Depth may not be larger than 100. Found 101."));
 }
 
 // clang-format off
@@ -383,6 +651,28 @@ TEST_F(ValidateLimits, ControlFlowDepthGood) {
 TEST_F(ValidateLimits, ControlFlowDepthBad) {
   std::string spirv;
   GenerateSpirvProgramWithCfgNestingDepth(spirv, 1024);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Maximum Control Flow nesting depth exceeded."));
+}
+
+// Valid: Control Flow Nesting depth is 10 (custom limit: 10).
+TEST_F(ValidateLimits, CustomizedControlFlowDepthGood) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 10);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 10u);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Control Flow Nesting depth is 11. (custom limit: 10).
+TEST_F(ValidateLimits, CustomizedControlFlowDepthBad) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 11);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 10u);
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),

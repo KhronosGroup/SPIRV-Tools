@@ -17,6 +17,7 @@
 #include <string>
 
 #include "gmock/gmock.h"
+#include "spirv_validator_options.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
@@ -101,6 +102,54 @@ TEST_F(ValidationStateTest, CheckEntryPoints) {
   EXPECT_EQ(size_t(1), vstate_->entry_points().size());
   EXPECT_EQ(SpvOpFunction,
             vstate_->FindDef(vstate_->entry_points()[0])->opcode());
+}
+
+TEST_F(ValidationStateTest, CheckStructMemberLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_members, 32000u);
+  EXPECT_EQ(32000u, options_->universal_limits_.max_struct_members);
+}
+
+TEST_F(ValidationStateTest, CheckNumGlobalVarsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_global_variables, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_global_variables);
+}
+
+TEST_F(ValidationStateTest, CheckNumLocalVarsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_local_variables, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_local_variables);
+}
+
+TEST_F(ValidationStateTest, CheckStructDepthLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_struct_depth, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_struct_depth);
+}
+
+TEST_F(ValidationStateTest, CheckSwitchBranchesLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_switch_branches, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_switch_branches);
+}
+
+TEST_F(ValidationStateTest, CheckFunctionArgsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_function_args, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_function_args);
+}
+
+TEST_F(ValidationStateTest, CheckCFGDepthLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_control_flow_nesting_depth);
+}
+
+TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_access_chain_indexes, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_access_chain_indexes);
 }
 
 }  // anonymous namespace
