@@ -38,33 +38,33 @@ class InlinePass : public Pass {
   const char* name() const override { return "inline"; }
 
  private:
-  // Write the next available Id back to the module
+  // Write the next available Id back to the module.
   inline void FinalizeNextId(ir::Module* module) {
     module->SetIdBound(next_id_);
   }
 
-  // Return the next available Id and increment it
+  // Return the next available Id and increment it.
   inline uint32_t TakeNextId() { return next_id_++; }
 
-  // Find pointer to type and storage in module, return its resultId.
+  // Find pointer to type and storage in module, return its resultId,
   // 0 if not found. TODO(greg-lunarg): Move this into type manager.
   uint32_t FindPointerToType(uint32_t type_id, uint32_t storage_id);
 
   // Add pointer to type to module and return resultId.
   uint32_t AddPointerToType(uint32_t type_id, uint32_t storage_id);
 
-  // Add unconditional branch to labelId to end of block block_ptr
+  // Add unconditional branch to labelId to end of block block_ptr.
   void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Add store of valId to ptrId to end of block block_ptr
+  // Add store of valId to ptrId to end of block block_ptr.
   void AddStore(uint32_t ptrId, uint32_t valId,
                 std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Add load of ptrId into resultId to end of block block_ptr
+  // Add load of ptrId into resultId to end of block block_ptr.
   void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
                std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Return new label
+  // Return new label.
   std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
 
   // Return in new_blocks the result of inlining the call at call_inst_itr
@@ -77,8 +77,8 @@ class InlinePass : public Pass {
   // parameters.
   //
   // Also return in new_vars additional OpVariable instructions required by
-  // and to be inserted into the caller function after the block call_bi is
-  // replaced with new_blocks.
+  // and to be inserted into the caller function after the block at
+  // call_block_itr is replaced with new_blocks.
   void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
                      ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
@@ -94,10 +94,10 @@ class InlinePass : public Pass {
   ir::Module* module_;
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
-  // Map from function's result id to function
+  // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
-  // Map from block's label id to block
+  // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 
   // Next unused ID
