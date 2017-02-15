@@ -292,8 +292,7 @@ void InlinePass::GenInlineCode(
                     def_use_mgr_->id_to_defs().find(*iid)->second;
                 if (inst->opcode() == SpvOpLabel) {
                   // forward label reference. allocate a new label id, map it,
-                  // use
-                  // it and check for it at each label.
+                  // use it and check for it at each label.
                   const uint32_t nid = this->TakeNextId();
                   callee2caller[*iid] = nid;
                   *iid = nid;
