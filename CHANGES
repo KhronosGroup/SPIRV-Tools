@@ -11,6 +11,8 @@ v2016.7-dev 2017-01-06
      nested control construct.
    #551: If a merge block is reachable, it must be *strictly* dominated by its
      header.
+   #548: Validator: Error when the reserved OpImageSparseSampleProj* opcodes
+     are used.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
