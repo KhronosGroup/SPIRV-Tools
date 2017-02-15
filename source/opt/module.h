@@ -84,7 +84,7 @@ class Module {
   std::vector<Instruction*> GetConstants();
   std::vector<const Instruction*> GetConstants() const;
 
-  inline uint32_t GetIdBound() { return header_.bound; }
+  inline uint32_t id_bound() { return header_.bound; }
 
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
   // this module.

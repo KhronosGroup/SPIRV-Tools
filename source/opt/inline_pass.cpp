@@ -364,12 +364,9 @@ void InlinePass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
 
   // Initialize next unused Id.
-  next_id_ = 0;
-  for (const auto& id_def : def_use_mgr_->id_to_defs()) {
-    next_id_ = std::max(next_id_, id_def.first);
-  }
-  next_id_++;
+  next_id_ = module->id_bound();
 
+  // Save module.
   module_ = module;
 
   // Initialize function and block maps.
