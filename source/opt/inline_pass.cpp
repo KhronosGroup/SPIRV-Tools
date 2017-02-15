@@ -80,7 +80,8 @@ void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
     ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
     ir::UptrVectorIterator<ir::BasicBlock> call_block_itr) {
-  // Map from callee id to caller id
+  // Map from all ids in the callee to their equivalent id in the caller
+  // as callee instructions are copied into caller.
   std::unordered_map<uint32_t, uint32_t> callee2caller;
   // Pre-call OpSampledImage Insts
   std::unordered_map<uint32_t, ir::Instruction*> preCallSI;
