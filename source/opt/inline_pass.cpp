@@ -75,6 +75,12 @@ void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
   (*block_ptr)->AddInstruction(std::move(newLoad));
 }
 
+std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
+  std::unique_ptr<ir::Instruction> newLabel(
+      new ir::Instruction(SpvOpLabel, 0, label_id, {}));
+  return std::move(newLabel);
+}
+
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -179,9 +185,7 @@ void InlinePass::GenInlineCode(
               firstBlock = true;
             }
             // create first/next block
-            std::unique_ptr<ir::Instruction> newLabel(
-                new ir::Instruction(SpvOpLabel, 0, labelId, {}));
-            new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
+            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(labelId)));
             if (firstBlock) {
               // Copy contents of original caller block up to call instruction
               for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
@@ -225,9 +229,7 @@ void InlinePass::GenInlineCode(
             if (returnLabelId != 0) {
               if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
               new_blocks->push_back(std::move(new_blk_ptr));
-              std::unique_ptr<ir::Instruction> newLabel(new ir::Instruction(
-                  SpvOpLabel, 0, returnLabelId, {}));
-              new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
+              new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
               multiBlocks = true;
             }
             // load return value into result id of call, if it exists

@@ -64,6 +64,9 @@ class InlinePass : public Pass {
   void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
                std::unique_ptr<ir::BasicBlock>* block_ptr);
 
+  // Return new label
+  std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
+
   // Return in new_blocks the result of inlining the call at call_inst_itr
   // within its block at call_block_itr. The block at call_block_itr can
   // just be replaced with the blocks in new_blocks. Any additional branches
@@ -73,8 +76,8 @@ class InlinePass : public Pass {
   // is returned. Formal parameters are trivially mapped to their actual
   // parameters.
   //
-  // Also return in new_vars additional OpVariable instructions required by 
-  // and to be inserted into the caller function after the block call_bi is 
+  // Also return in new_vars additional OpVariable instructions required by
+  // and to be inserted into the caller function after the block call_bi is
   // replaced with new_blocks.
   void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -99,7 +102,6 @@ class InlinePass : public Pass {
 
   // Next unused ID
   uint32_t next_id_;
-
 };
 
 }  // namespace opt
