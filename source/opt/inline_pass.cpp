@@ -36,9 +36,9 @@ uint32_t InlinePass::FindPointerToType(uint32_t type_id, uint32_t storage_id) {
         type_inst->GetSingleWordOperand(kSpvTypePointerTypeId) == type_id &&
         type_inst->GetSingleWordOperand(kSpvTypePointerStorageClass) ==
             storage_id)
-      break;
+      return type_inst->result_id();
   }
-  return (type_itr != module_->types_values_end()) ? type_itr->result_id() : 0;
+  return 0;
 }
 
 uint32_t InlinePass::AddPointerToType(uint32_t type_id, uint32_t storage_id) {
