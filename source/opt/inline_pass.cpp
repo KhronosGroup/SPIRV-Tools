@@ -311,6 +311,10 @@ void InlinePass::GenInlineCode(
           } break;
         }
       });
+  // Update block map given replacement blocks.
+  for (auto& blk : *new_blocks) {
+    id2block_[blk->label_id()] = &*blk;
+  }
 }
 
 bool InlinePass::Inline(ir::Function* func) {
@@ -323,10 +327,6 @@ bool InlinePass::Inline(ir::Function* func) {
         std::vector<std::unique_ptr<ir::BasicBlock>> newBlocks;
         std::vector<std::unique_ptr<ir::Instruction>> newVars;
         GenInlineCode(&newBlocks, &newVars, ii, bi);
-        // Update block map given replacement blocks.
-        for (auto& blk : newBlocks) {
-          id2block_[blk->label_id()] = &*blk;
-        }
         // Update phi functions in succesor blocks if call block
         // is replaced with more than one block.
         if (newBlocks.size() > 1) {
