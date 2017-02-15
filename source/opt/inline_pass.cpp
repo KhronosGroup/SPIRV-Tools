@@ -327,7 +327,7 @@ bool InlinePass::Inline(ir::Function* func) {
         std::vector<std::unique_ptr<ir::BasicBlock>> newBlocks;
         std::vector<std::unique_ptr<ir::Instruction>> newVars;
         GenInlineCode(&newBlocks, &newVars, ii, bi);
-        // Update phi functions in succesor blocks if call block
+        // Update phi functions in successor blocks if call block
         // is replaced with more than one block.
         if (newBlocks.size() > 1) {
           const auto firstBlk = newBlocks.begin();
