@@ -225,9 +225,8 @@ void InlinePass::GenInlineCode(
             if (returnLabelId != 0) {
               if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
               new_blocks->push_back(std::move(new_blk_ptr));
-              const std::vector<ir::Operand> label_in_operands;
               std::unique_ptr<ir::Instruction> newLabel(new ir::Instruction(
-                  SpvOpLabel, 0, returnLabelId, label_in_operands));
+                  SpvOpLabel, 0, returnLabelId, {}));
               new_blk_ptr.reset(new ir::BasicBlock(std::move(newLabel)));
               multiBlocks = true;
             }
