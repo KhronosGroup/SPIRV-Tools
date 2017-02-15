@@ -315,6 +315,7 @@ void InlinePass::GenInlineCode(
 
 bool InlinePass::Inline(ir::Function* func) {
   bool modified = false;
+  // Using block iterators here because of block erasures and insertions 
   for (auto bi = func->begin(); bi != func->end(); bi++) {
     for (auto ii = bi->begin(); ii != bi->end();) {
       if (ii->opcode() == SpvOp::SpvOpFunctionCall) {
