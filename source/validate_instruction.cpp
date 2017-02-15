@@ -132,6 +132,23 @@ spv_result_t CapCheck(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Checks that the instruction is not reserved for future use.
+spv_result_t ReservedCheck(ValidationState_t& _,
+                           const spv_parsed_instruction_t* inst) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  switch (opcode) {
+    case SpvOpImageSparseSampleProjImplicitLod:
+    case SpvOpImageSparseSampleProjExplicitLod:
+    case SpvOpImageSparseSampleProjDrefImplicitLod:
+    case SpvOpImageSparseSampleProjDrefExplicitLod:
+      return _.diag(SPV_ERROR_RESERVED_OPCODE)
+             << "Opcode " << spvOpcodeString(opcode)
+             << " is reserved for future use.";
+    default:
+      return SPV_SUCCESS;
+  }
+}
+
 // Checks that the Resuld <id> is within the valid bound.
 spv_result_t LimitCheckIdBound(ValidationState_t& _,
                                const spv_parsed_instruction_t* inst) {
@@ -365,6 +382,7 @@ spv_result_t InstructionPass(ValidationState_t& _,
   if (auto error = LimitCheckIdBound(_, inst)) return error;
   if (auto error = LimitCheckStruct(_, inst)) return error;
   if (auto error = LimitCheckSwitch(_, inst)) return error;
+  if (auto error = ReservedCheck(_, inst)) return error;
 
   // All instruction checks have passed.
   return SPV_SUCCESS;
