@@ -64,13 +64,14 @@ class InlinePass : public Pass {
   void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
                std::unique_ptr<ir::BasicBlock>* block_ptr);
 
-  // Return in new_blocks the result of inlining the call at call_ii within
-  // its block call_bi. The block call_bi can just be replaced with the blocks
-  // in new_blocks. Any additional branches are avoided. Debug instructions
-  // are cloned along with their callee instructions. Early returns are
-  // replaced by storing to a local return variable and branching to a 
-  // (created) exit block where the local variable is returned. Formal
-  // parameters are trivially mapped to their actual parameters.
+  // Return in new_blocks the result of inlining the call at call_inst_itr
+  // within its block at call_block_itr. The block at call_block_itr can
+  // just be replaced with the blocks in new_blocks. Any additional branches
+  // are avoided. Debug instructions are cloned along with their callee
+  // instructions. Early returns are replaced by a store to a local return
+  // variable and a branch to a (created) exit block where the local variable
+  // is returned. Formal parameters are trivially mapped to their actual
+  // parameters.
   //
   // Also return in new_vars additional OpVariable instructions required by 
   // and to be inserted into the caller function after the block call_bi is 
