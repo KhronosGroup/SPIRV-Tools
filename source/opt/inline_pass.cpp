@@ -389,8 +389,6 @@ Pass::Status InlinePass::ProcessImpl() {
     modified = modified || Inline(fn);
   }
 
-  FinalizeNextId(module_);
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

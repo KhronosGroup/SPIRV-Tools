@@ -38,11 +38,6 @@ class InlinePass : public Pass {
   const char* name() const override { return "inline"; }
 
  private:
-  // Write the next available Id back to the module.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
   // Return the next available Id and increment it.
   inline uint32_t TakeNextId() { return next_id_++; }
 
