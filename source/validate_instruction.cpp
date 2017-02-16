@@ -141,8 +141,8 @@ spv_result_t ReservedCheck(ValidationState_t& _,
     case SpvOpImageSparseSampleProjExplicitLod:
     case SpvOpImageSparseSampleProjDrefImplicitLod:
     case SpvOpImageSparseSampleProjDrefExplicitLod:
-      return _.diag(SPV_ERROR_RESERVED_OPCODE)
-             << "Opcode " << spvOpcodeString(opcode)
+      return _.diag(SPV_ERROR_INVALID_VALUE)
+             << spvOpcodeString(opcode)
              << " is reserved for future use.";
     default:
       return SPV_SUCCESS;

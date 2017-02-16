@@ -54,7 +54,6 @@ typedef enum spv_result_t {
   SPV_ERROR_INVALID_LAYOUT = -12,
   SPV_ERROR_INVALID_CAPABILITY = -13,
   SPV_ERROR_INVALID_DATA = -14,  // Indicates data rules validation failure.
-  SPV_ERROR_RESERVED_OPCODE = -15,
   SPV_FORCE_32_BIT_ENUM(spv_result_t)
 } spv_result_t;
 

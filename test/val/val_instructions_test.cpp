@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright 2017 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,143 +16,68 @@
 
 #include <sstream>
 #include <string>
-#include <tuple>
+#include <utility>
 
 #include "gmock/gmock.h"
 #include "val_fixtures.h"
 
 using ::testing::HasSubstr;
 
-using ValidateIns = spvtest::ValidateBase<std::string>;
+using ImageSampleTestParameter = std::pair<std::string, std::string>;
+
+const std::string& Opcode(const ImageSampleTestParameter& p) { return p.first; }
+const std::string& Operands(const ImageSampleTestParameter& p) {
+  return p.second;
+}
+
+using ValidateIns = spvtest::ValidateBase<ImageSampleTestParameter>;
 
 namespace {
 
-TEST_F(ValidateIns, OpImageSparseSampleProjImplicitLod) {
-  char str[] = R"(
+TEST_P(ValidateIns, Reserved) {
+  const auto& param = GetParam();
+
+  std::string str = R"(
              OpCapability Shader
-             OpCapability Linkage
-             OpCapability Sampled1D
              OpCapability SparseResidency
              OpMemoryModel Logical GLSL450
+             OpEntryPoint Fragment %main "main" %img
 %void      = OpTypeVoid
 %int       = OpTypeInt 32 0
 %float     = OpTypeFloat 32
 %floatp    = OpTypePointer Input %float
 %fnt       = OpTypeFunction %void
-%imgt      = OpTypeImage %float 1D 0 0 0 0 Unknown
+%coord     = OpConstantNull %float
+%lod       = OpConstantNull %float
+%dref      = OpConstantNull %float
+%imgt      = OpTypeImage %float 2D 0 0 0 0 Rgba32f
 %sampledt  = OpTypeSampledImage %imgt
 %sampledp  = OpTypePointer Uniform %sampledt
-%img       = OpVariable %sampledp Uniform
-%coord     = OpVariable %floatp Input
-%func      = OpFunction %void None %fnt
+%img       = OpVariable %sampledp Input
+%main      = OpFunction %void None %fnt
 %label     = OpLabel
-%sample    = OpImageSparseSampleProjImplicitLod %float %img %coord
+%sample    = Op)" + Opcode(param) +
+                    " " + Operands(param) + R"(
              OpReturn
              OpFunctionEnd
 )";
 
   CompileSuccessfully(str);
-  EXPECT_EQ(SPV_ERROR_RESERVED_OPCODE, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_VALUE, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Opcode ImageSparseSampleProjImplicitLod is reserved "
-                        "for future use."));
+              HasSubstr(Opcode(param) + " is reserved for future use."));
 }
 
-TEST_F(ValidateIns, OpImageSparseSampleProjExplicitLod) {
-  char str[] = R"(
-             OpCapability Shader
-             OpCapability Linkage
-             OpCapability Sampled1D
-             OpCapability SparseResidency
-             OpMemoryModel Logical GLSL450
-%void      = OpTypeVoid
-%int       = OpTypeInt 32 0
-%float     = OpTypeFloat 32
-%floatp    = OpTypePointer Input %float
-%fnt       = OpTypeFunction %void
-%imgt      = OpTypeImage %float 1D 0 0 0 0 Unknown
-%sampledt  = OpTypeSampledImage %imgt
-%sampledp  = OpTypePointer Uniform %sampledt
-%img       = OpVariable %sampledp Uniform
-%coord     = OpVariable %floatp Input
-%lod       = OpVariable %floatp Input
-%func      = OpFunction %void None %fnt
-%label     = OpLabel
-%sample    = OpImageSparseSampleProjExplicitLod %float %img %coord Lod %lod
-             OpReturn
-             OpFunctionEnd
-)";
+#define CASE(NAME, ARGS) \
+  { "ImageSparseSampleProj" #NAME, ARGS }
 
-  CompileSuccessfully(str);
-  EXPECT_EQ(SPV_ERROR_RESERVED_OPCODE, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Opcode ImageSparseSampleProjExplicitLod is reserved "
-                        "for future use."));
-}
-
-TEST_F(ValidateIns, OpImageSparseSampleProjDrefImplicitLod) {
-  char str[] = R"(
-             OpCapability Shader
-             OpCapability Linkage
-             OpCapability Sampled1D
-             OpCapability SparseResidency
-             OpMemoryModel Logical GLSL450
-%void      = OpTypeVoid
-%int       = OpTypeInt 32 0
-%float     = OpTypeFloat 32
-%floatp    = OpTypePointer Input %float
-%fnt       = OpTypeFunction %void
-%imgt      = OpTypeImage %float 1D 0 0 0 0 Unknown
-%sampledt  = OpTypeSampledImage %imgt
-%sampledp  = OpTypePointer Uniform %sampledt
-%img       = OpVariable %sampledp Uniform
-%coord     = OpVariable %floatp Input
-%dref      = OpVariable %floatp Input
-%func      = OpFunction %void None %fnt
-%label     = OpLabel
-%sample    = OpImageSparseSampleProjDrefImplicitLod %float %img %coord %dref
-             OpReturn
-             OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  EXPECT_EQ(SPV_ERROR_RESERVED_OPCODE, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Opcode ImageSparseSampleProjDrefImplicitLod is "
-                        "reserved for future use."));
-}
-
-TEST_F(ValidateIns, OpImageSparseSampleProjDrefExplicitLod) {
-  char str[] = R"(
-             OpCapability Shader
-             OpCapability Linkage
-             OpCapability Sampled1D
-             OpCapability SparseResidency
-             OpMemoryModel Logical GLSL450
-%void      = OpTypeVoid
-%int       = OpTypeInt 32 0
-%float     = OpTypeFloat 32
-%floatp    = OpTypePointer Input %float
-%fnt       = OpTypeFunction %void
-%imgt      = OpTypeImage %float 1D 0 0 0 0 Unknown
-%sampledt  = OpTypeSampledImage %imgt
-%sampledp  = OpTypePointer Uniform %sampledt
-%img       = OpVariable %sampledp Uniform
-%coord     = OpVariable %floatp Input
-%lod       = OpVariable %floatp Input
-%dref      = OpVariable %floatp Input
-%func      = OpFunction %void None %fnt
-%label     = OpLabel
-%sample    = OpImageSparseSampleProjDrefExplicitLod %float %img %coord %dref Lod %lod
-             OpReturn
-             OpFunctionEnd
-             OpFunctionEnd
-)";
-
-  CompileSuccessfully(str);
-  EXPECT_EQ(SPV_ERROR_RESERVED_OPCODE, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Opcode ImageSparseSampleProjDrefExplicitLod is "
-                        "reserved for future use."));
-}
+INSTANTIATE_TEST_CASE_P(
+    OpImageSparseSampleProj, ValidateIns,
+    ::testing::ValuesIn(std::vector<ImageSampleTestParameter>{
+        CASE(ImplicitLod, "%float %img %coord"),
+        CASE(ExplicitLod, "%float %img %coord Lod %lod"),
+        CASE(DrefImplicitLod, "%float %img %coord %dref"),
+        CASE(DrefExplicitLod, "%float %img %coord %dref Lod %lod"),
+    }), );
+#undef CASE
 }
