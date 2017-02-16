@@ -78,7 +78,7 @@ void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
 std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
   std::unique_ptr<ir::Instruction> newLabel(
       new ir::Instruction(SpvOpLabel, 0, label_id, {}));
-  return std::move(newLabel);
+  return newLabel;
 }
 
 void InlinePass::MapParams(
