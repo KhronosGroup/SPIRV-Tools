@@ -81,9 +81,10 @@ std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
   return std::move(newLabel);
 }
 
-void InlinePass::MapParams(ir::Function* calleeFn,
+void InlinePass::MapParams(
+    ir::Function* calleeFn,
     ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
-    std::unordered_map<uint32_t, uint32_t> *callee2caller) {
+    std::unordered_map<uint32_t, uint32_t>* callee2caller) {
   int param_idx = 0;
   calleeFn->ForEachParam(
       [&call_inst_itr, &param_idx, &callee2caller](const ir::Instruction* cpi) {
@@ -93,7 +94,6 @@ void InlinePass::MapParams(ir::Function* calleeFn,
         param_idx++;
       });
 }
-    
 
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
@@ -108,9 +108,8 @@ void InlinePass::GenInlineCode(
   // Post-call OpSampledImage Ids
   std::unordered_map<uint32_t, uint32_t> postCallSI;
 
-  const uint32_t calleeId =
-      call_inst_itr->GetSingleWordOperand(kSpvFunctionCallFunctionId);
-  ir::Function* calleeFn = id2function_[calleeId];
+  ir::Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
+      kSpvFunctionCallFunctionId)];
 
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, &callee2caller);
