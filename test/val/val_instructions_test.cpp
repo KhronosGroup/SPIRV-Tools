@@ -45,7 +45,6 @@ TEST_P(ValidateIns, Reserved) {
 %void      = OpTypeVoid
 %int       = OpTypeInt 32 0
 %float     = OpTypeFloat 32
-%floatp    = OpTypePointer Input %float
 %fnt       = OpTypeFunction %void
 %coord     = OpConstantNull %float
 %lod       = OpConstantNull %float
