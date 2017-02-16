@@ -112,6 +112,30 @@ void InlinePass::CloneAndMapLocals(
   }
 }
 
+uint32_t InlinePass::CreateReturnVar(
+    ir::Function* calleeFn,
+    std::vector<std::unique_ptr<ir::Instruction>>* new_vars) {
+  uint32_t returnVarId = 0;
+  const uint32_t calleeTypeId = calleeFn->type_id();
+  const ir::Instruction* calleeType =
+      def_use_mgr_->id_to_defs().find(calleeTypeId)->second;
+  if (calleeType->opcode() != SpvOpTypeVoid) {
+    // Find or create ptr to callee return type.
+    uint32_t returnVarTypeId =
+        FindPointerToType(calleeTypeId, SpvStorageClassFunction);
+    if (returnVarTypeId == 0)
+      returnVarTypeId = AddPointerToType(calleeTypeId, SpvStorageClassFunction);
+    // Add return var to new function scope variables.
+    returnVarId = TakeNextId();
+    std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(
+        SpvOpVariable, returnVarTypeId, returnVarId,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
+          {SpvStorageClassFunction}}}));
+    new_vars->push_back(std::move(var_inst));
+  }
+  return returnVarId;
+}
+
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -136,30 +160,14 @@ void InlinePass::GenInlineCode(
   CloneAndMapLocals(calleeFn, new_vars, &callee2caller);
 
   // Create return var if needed.
-  uint32_t returnVarId = 0;
-  const uint32_t calleeTypeId = calleeFn->type_id();
-  const ir::Instruction* calleeType =
-      def_use_mgr_->id_to_defs().find(calleeTypeId)->second;
-  if (calleeType->opcode() != SpvOpTypeVoid) {
-    // Find or create ptr to callee return type.
-    uint32_t returnVarTypeId =
-        FindPointerToType(calleeTypeId, SpvStorageClassFunction);
-    if (returnVarTypeId == 0)
-      returnVarTypeId = AddPointerToType(calleeTypeId, SpvStorageClassFunction);
-    // Add return var to new function scope variables.
-    returnVarId = TakeNextId();
-    std::unique_ptr<ir::Instruction> var_inst(new ir::Instruction(
-        SpvOpVariable, returnVarTypeId, returnVarId,
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
-          {SpvStorageClassFunction}}}));
-    new_vars->push_back(std::move(var_inst));
-  }
+  uint32_t returnVarId = CreateReturnVar(calleeFn, new_vars);
 
   // Clone and map callee code. Copy caller block code to beginning of
   // first block and end of last block.
   bool prevInstWasReturn = false;
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
+  const uint32_t calleeTypeId = calleeFn->type_id();
   std::unique_ptr<ir::BasicBlock> new_blk_ptr;
   calleeFn->ForEachInst(
       [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
