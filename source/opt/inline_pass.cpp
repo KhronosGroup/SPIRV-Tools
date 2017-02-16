@@ -148,7 +148,8 @@ void InlinePass::GenInlineCode(
     new_vars->push_back(std::move(var_inst));
   }
 
-  // Clone and map callee code.
+  // Clone and map callee code. Copy caller block code to beginning of
+  // first block and end of last block.
   bool prevInstWasReturn = false;
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
