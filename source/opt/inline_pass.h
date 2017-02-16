@@ -67,6 +67,12 @@ class InlinePass : public Pass {
                  ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
+  // Clone and map callee locals
+  void CloneAndMapLocals(
+      ir::Function* calleeFn,
+      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
+      std::unordered_map<uint32_t, uint32_t>* callee2caller);
+
   // Return in new_blocks the result of inlining the call at call_inst_itr
   // within its block at call_block_itr. The block at call_block_itr can
   // just be replaced with the blocks in new_blocks. Any additional branches

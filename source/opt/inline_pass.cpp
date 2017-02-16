@@ -95,6 +95,23 @@ void InlinePass::MapParams(
       });
 }
 
+void InlinePass::CloneAndMapLocals(
+    ir::Function* calleeFn,
+    std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
+    std::unordered_map<uint32_t, uint32_t>* callee2caller) {
+  auto callee_block_itr = calleeFn->begin();
+  auto callee_var_itr = callee_block_itr->begin();
+  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
+    std::unique_ptr<ir::Instruction> var_inst(
+        new ir::Instruction(*callee_var_itr));
+    uint32_t newId = TakeNextId();
+    var_inst->SetResultId(newId);
+    (*callee2caller)[callee_var_itr->result_id()] = newId;
+    new_vars->push_back(std::move(var_inst));
+    callee_var_itr++;
+  }
+}
+
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -116,17 +133,7 @@ void InlinePass::GenInlineCode(
 
   // Define caller local variables for all callee variables and create map to
   // them.
-  auto callee_block_itr = calleeFn->begin();
-  auto callee_var_itr = callee_block_itr->begin();
-  while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
-    std::unique_ptr<ir::Instruction> var_inst(
-        new ir::Instruction(*callee_var_itr));
-    uint32_t newId = TakeNextId();
-    var_inst->SetResultId(newId);
-    callee2caller[callee_var_itr->result_id()] = newId;
-    new_vars->push_back(std::move(var_inst));
-    callee_var_itr++;
-  }
+  CloneAndMapLocals(calleeFn, new_vars, &callee2caller);
 
   // Create return var if needed.
   uint32_t returnVarId = 0;
