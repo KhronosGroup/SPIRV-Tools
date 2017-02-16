@@ -82,7 +82,7 @@ class UptrVectorIterator
   InsertBefore(Uptr value);
 
   // Inserts the given |valueVector| to the position pointed to by this iterator
-  // and returns an iterator to the newly inserted |valueVector|.
+  // and returns an iterator to the first newly inserted value.
   // If the underlying vector changes capacity, all previous iterators will be
   // invalidated. Otherwise, those previous iterators pointing to after the
   // insertion point will be invalidated.
