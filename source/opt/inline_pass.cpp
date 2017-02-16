@@ -198,149 +198,145 @@ void InlinePass::GenInlineCode(
   bool multiBlocks = false;
   const uint32_t calleeTypeId = calleeFn->type_id();
   std::unique_ptr<ir::BasicBlock> new_blk_ptr;
-  calleeFn->ForEachInst(
-      [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
-       &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
-       &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, this](
-          const ir::Instruction* cpi) {
-        switch (cpi->opcode()) {
-          case SpvOpFunction:
-          case SpvOpFunctionParameter:
-          case SpvOpVariable:
-            // Already processed
-            break;
-          case SpvOpLabel: {
-            // If previous instruction was early return, insert branch
-            // instruction to return block.
-            if (prevInstWasReturn) {
-              if (returnLabelId == 0) returnLabelId = this->TakeNextId();
-              AddBranch(returnLabelId, &new_blk_ptr);
-              prevInstWasReturn = false;
-            }
-            // Finish current block (if it exists) and get label for next block.
-            uint32_t labelId;
-            bool firstBlock = false;
-            if (new_blk_ptr != nullptr) {
-              new_blocks->push_back(std::move(new_blk_ptr));
-              // If result id is already mapped, use it, otherwise get a new
-              // one.
-              const uint32_t rid = cpi->result_id();
-              const auto mapItr = callee2caller.find(rid);
-              labelId = (mapItr != callee2caller.end()) ? mapItr->second
-                                                        : this->TakeNextId();
-            } else {
-              // First block needs to use label of original block
-              // but map callee label in case of phi reference.
-              labelId = call_block_itr->label_id();
-              callee2caller[cpi->result_id()] = labelId;
-              firstBlock = true;
-            }
-            // Create first/next block.
-            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(labelId)));
-            if (firstBlock) {
-              // Copy contents of original caller block up to call instruction.
-              for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
-                   cii++) {
-                std::unique_ptr<ir::Instruction> cp_inst(
-                    new ir::Instruction(*cii));
-                // Remember same-block ops for possible regeneration.
-                if (cp_inst->opcode() == SpvOpSampledImage) {
-                  auto* samp_inst_ptr = cp_inst.get();
-                  preCallSB[cp_inst->result_id()] = samp_inst_ptr;
-                }
-                new_blk_ptr->AddInstruction(std::move(cp_inst));
-              }
-            } else {
-              multiBlocks = true;
-            }
-          } break;
-          case SpvOpReturnValue: {
-            // Store return value to return variable.
-            assert(returnVarId != 0);
-            uint32_t valId = cpi->GetInOperand(kSpvReturnValueId).words[0];
-            const auto mapItr = callee2caller.find(valId);
-            if (mapItr != callee2caller.end()) {
-              valId = mapItr->second;
-            }
-            AddStore(returnVarId, valId, &new_blk_ptr);
-
-            // Remember we saw a return; if followed by a label, will need to
-            // insert branch.
-            prevInstWasReturn = true;
-          } break;
-          case SpvOpReturn: {
-            // Remember we saw a return; if followed by a label, will need to
-            // insert branch.
-            prevInstWasReturn = true;
-          } break;
-          case SpvOpFunctionEnd: {
-            // If there was an early return, create return label/block.
-            // If previous instruction was return, insert branch instruction
-            // to return block.
-            if (returnLabelId != 0) {
-              if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-              new_blocks->push_back(std::move(new_blk_ptr));
-              new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
-              multiBlocks = true;
-            }
-            // Load return value into result id of call, if it exists.
-            if (returnVarId != 0) {
-              const uint32_t resId = call_inst_itr->result_id();
-              assert(resId != 0);
-              AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
-            }
-            // Copy remaining instructions from caller block.
-            auto cii = call_inst_itr;
-            for (cii++; cii != call_block_itr->end(); cii++) {
-              std::unique_ptr<ir::Instruction> cp_inst(
-                  new ir::Instruction(*cii));
-              // If multiple blocks generated, regenerate any same-block
-              // instruction that has not been seen in this last block.
-              if (multiBlocks) {
-                CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB,
-                    &new_blk_ptr);
-                // Remember same-block ops in this block.
-                if (cp_inst->opcode() == SpvOpSampledImage) {
-                  const uint32_t rid = cp_inst->result_id();
-                  postCallSB[rid] = rid;
-                }
-              }
-              new_blk_ptr->AddInstruction(std::move(cp_inst));
-            }
-            // Finalize inline code.
-            new_blocks->push_back(std::move(new_blk_ptr));
-          } break;
-          default: {
-            // Copy callee instruction and remap all input Ids.
-            std::unique_ptr<ir::Instruction> cp_inst(
-                new ir::Instruction(*cpi));
-            cp_inst->ForEachInId([&callee2caller, &cpi, this](uint32_t* iid) {
-              const auto mapItr = callee2caller.find(*iid);
-              if (mapItr != callee2caller.end()) {
-                *iid = mapItr->second;
-              } else if (cpi->has_labels()) {
-                const ir::Instruction* inst =
-                    def_use_mgr_->id_to_defs().find(*iid)->second;
-                if (inst->opcode() == SpvOpLabel) {
-                  // Forward label reference. Allocate a new label id, map it,
-                  // use it and check for it at each label.
-                  const uint32_t nid = this->TakeNextId();
-                  callee2caller[*iid] = nid;
-                  *iid = nid;
-                }
-              }
-            });
-            // Map and reset result id.
-            const uint32_t rid = cp_inst->result_id();
-            if (rid != 0) {
-              const uint32_t nid = this->TakeNextId();
-              callee2caller[rid] = nid;
-              cp_inst->SetResultId(nid);
+  calleeFn->ForEachInst([&new_blocks, &callee2caller, &call_block_itr,
+                         &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
+                         &returnLabelId, &returnVarId, &calleeTypeId,
+                         &multiBlocks, &postCallSB, &preCallSB, this](
+      const ir::Instruction* cpi) {
+    switch (cpi->opcode()) {
+      case SpvOpFunction:
+      case SpvOpFunctionParameter:
+      case SpvOpVariable:
+        // Already processed
+        break;
+      case SpvOpLabel: {
+        // If previous instruction was early return, insert branch
+        // instruction to return block.
+        if (prevInstWasReturn) {
+          if (returnLabelId == 0) returnLabelId = this->TakeNextId();
+          AddBranch(returnLabelId, &new_blk_ptr);
+          prevInstWasReturn = false;
+        }
+        // Finish current block (if it exists) and get label for next block.
+        uint32_t labelId;
+        bool firstBlock = false;
+        if (new_blk_ptr != nullptr) {
+          new_blocks->push_back(std::move(new_blk_ptr));
+          // If result id is already mapped, use it, otherwise get a new
+          // one.
+          const uint32_t rid = cpi->result_id();
+          const auto mapItr = callee2caller.find(rid);
+          labelId = (mapItr != callee2caller.end()) ? mapItr->second
+                                                    : this->TakeNextId();
+        } else {
+          // First block needs to use label of original block
+          // but map callee label in case of phi reference.
+          labelId = call_block_itr->label_id();
+          callee2caller[cpi->result_id()] = labelId;
+          firstBlock = true;
+        }
+        // Create first/next block.
+        new_blk_ptr.reset(new ir::BasicBlock(NewLabel(labelId)));
+        if (firstBlock) {
+          // Copy contents of original caller block up to call instruction.
+          for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
+               cii++) {
+            std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
+            // Remember same-block ops for possible regeneration.
+            if (cp_inst->opcode() == SpvOpSampledImage) {
+              auto* samp_inst_ptr = cp_inst.get();
+              preCallSB[cp_inst->result_id()] = samp_inst_ptr;
             }
             new_blk_ptr->AddInstruction(std::move(cp_inst));
-          } break;
+          }
+        } else {
+          multiBlocks = true;
         }
-      });
+      } break;
+      case SpvOpReturnValue: {
+        // Store return value to return variable.
+        assert(returnVarId != 0);
+        uint32_t valId = cpi->GetInOperand(kSpvReturnValueId).words[0];
+        const auto mapItr = callee2caller.find(valId);
+        if (mapItr != callee2caller.end()) {
+          valId = mapItr->second;
+        }
+        AddStore(returnVarId, valId, &new_blk_ptr);
+
+        // Remember we saw a return; if followed by a label, will need to
+        // insert branch.
+        prevInstWasReturn = true;
+      } break;
+      case SpvOpReturn: {
+        // Remember we saw a return; if followed by a label, will need to
+        // insert branch.
+        prevInstWasReturn = true;
+      } break;
+      case SpvOpFunctionEnd: {
+        // If there was an early return, create return label/block.
+        // If previous instruction was return, insert branch instruction
+        // to return block.
+        if (returnLabelId != 0) {
+          if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
+          new_blocks->push_back(std::move(new_blk_ptr));
+          new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
+          multiBlocks = true;
+        }
+        // Load return value into result id of call, if it exists.
+        if (returnVarId != 0) {
+          const uint32_t resId = call_inst_itr->result_id();
+          assert(resId != 0);
+          AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr);
+        }
+        // Copy remaining instructions from caller block.
+        auto cii = call_inst_itr;
+        for (cii++; cii != call_block_itr->end(); cii++) {
+          std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
+          // If multiple blocks generated, regenerate any same-block
+          // instruction that has not been seen in this last block.
+          if (multiBlocks) {
+            CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB, &new_blk_ptr);
+            // Remember same-block ops in this block.
+            if (cp_inst->opcode() == SpvOpSampledImage) {
+              const uint32_t rid = cp_inst->result_id();
+              postCallSB[rid] = rid;
+            }
+          }
+          new_blk_ptr->AddInstruction(std::move(cp_inst));
+        }
+        // Finalize inline code.
+        new_blocks->push_back(std::move(new_blk_ptr));
+      } break;
+      default: {
+        // Copy callee instruction and remap all input Ids.
+        std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cpi));
+        cp_inst->ForEachInId([&callee2caller, &cpi, this](uint32_t* iid) {
+          const auto mapItr = callee2caller.find(*iid);
+          if (mapItr != callee2caller.end()) {
+            *iid = mapItr->second;
+          } else if (cpi->has_labels()) {
+            const ir::Instruction* inst =
+                def_use_mgr_->id_to_defs().find(*iid)->second;
+            if (inst->opcode() == SpvOpLabel) {
+              // Forward label reference. Allocate a new label id, map it,
+              // use it and check for it at each label.
+              const uint32_t nid = this->TakeNextId();
+              callee2caller[*iid] = nid;
+              *iid = nid;
+            }
+          }
+        });
+        // Map and reset result id.
+        const uint32_t rid = cp_inst->result_id();
+        if (rid != 0) {
+          const uint32_t nid = this->TakeNextId();
+          callee2caller[rid] = nid;
+          cp_inst->SetResultId(nid);
+        }
+        new_blk_ptr->AddInstruction(std::move(cp_inst));
+      } break;
+    }
+  });
   // Update block map given replacement blocks.
   for (auto& blk : *new_blocks) {
     id2block_[blk->label_id()] = &*blk;
