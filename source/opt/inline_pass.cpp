@@ -81,6 +81,20 @@ std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
   return std::move(newLabel);
 }
 
+void InlinePass::MapParams(ir::Function* calleeFn,
+    ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+    std::unordered_map<uint32_t, uint32_t> *callee2caller) {
+  int param_idx = 0;
+  calleeFn->ForEachParam(
+      [&call_inst_itr, &param_idx, &callee2caller](const ir::Instruction* cpi) {
+        const uint32_t pid = cpi->result_id();
+        (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
+            kSpvFuncitonCallArgumentId + param_idx);
+        param_idx++;
+      });
+}
+    
+
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -99,14 +113,7 @@ void InlinePass::GenInlineCode(
   ir::Function* calleeFn = id2function_[calleeId];
 
   // Map parameters to actual arguments.
-  int param_idx = 0;
-  calleeFn->ForEachParam(
-      [&call_inst_itr, &param_idx, &callee2caller](const ir::Instruction* cpi) {
-        const uint32_t pid = cpi->result_id();
-        callee2caller[pid] = call_inst_itr->GetSingleWordOperand(
-            kSpvFuncitonCallArgumentId + param_idx);
-        param_idx++;
-      });
+  MapParams(calleeFn, call_inst_itr, &callee2caller);
 
   // Define caller local variables for all callee variables and create map to
   // them.

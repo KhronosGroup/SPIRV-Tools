@@ -62,6 +62,11 @@ class InlinePass : public Pass {
   // Return new label.
   std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
 
+  // Map callee params to caller args
+  void MapParams(ir::Function* calleeFn,
+      ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+      std::unordered_map<uint32_t, uint32_t> *callee2caller);
+
   // Return in new_blocks the result of inlining the call at call_inst_itr
   // within its block at call_block_itr. The block at call_block_itr can
   // just be replaced with the blocks in new_blocks. Any additional branches
