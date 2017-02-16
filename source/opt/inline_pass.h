@@ -79,6 +79,16 @@ class InlinePass : public Pass {
       ir::Function* calleeFn,
       std::vector<std::unique_ptr<ir::Instruction>>* new_vars);
 
+  // Clone operands which must be in same block as consumer instructions.
+  // Look in preCallSB for instructions that need cloning. Look in
+  // postCallSB for instructions already cloned. Add cloned instruction
+  // to postCallSB.
+  void CloneSameBlockOps(
+      std::unique_ptr<ir::Instruction>* inst,
+      std::unordered_map<uint32_t, uint32_t>* postCallSB,
+      std::unordered_map<uint32_t, ir::Instruction*>* preCallSB,
+      std::unique_ptr<ir::BasicBlock>* block_ptr);
+
   // Return in new_blocks the result of inlining the call at call_inst_itr
   // within its block at call_block_itr. The block at call_block_itr can
   // just be replaced with the blocks in new_blocks. Any additional branches

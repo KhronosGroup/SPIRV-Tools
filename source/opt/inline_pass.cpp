@@ -136,6 +136,35 @@ uint32_t InlinePass::CreateReturnVar(
   return returnVarId;
 }
 
+void InlinePass::CloneSameBlockOps(
+    std::unique_ptr<ir::Instruction>* inst,
+    std::unordered_map<uint32_t, uint32_t>* postCallSB,
+    std::unordered_map<uint32_t, ir::Instruction*>* preCallSB,
+    std::unique_ptr<ir::BasicBlock>* block_ptr) {
+  (*inst)
+      ->ForEachInId([&postCallSB, &preCallSB, &block_ptr, this](uint32_t* iid) {
+        const auto mapItr = (*postCallSB).find(*iid);
+        if (mapItr == (*postCallSB).end()) {
+          const auto mapItr2 = (*preCallSB).find(*iid);
+          if (mapItr2 != (*preCallSB).end()) {
+            // Clone pre-call same-block ops, map result id.
+            const ir::Instruction* inInst = mapItr2->second;
+            std::unique_ptr<ir::Instruction> samp_inst(
+                new ir::Instruction(*inInst));
+            const uint32_t rid = samp_inst->result_id();
+            const uint32_t nid = this->TakeNextId();
+            samp_inst->SetResultId(nid);
+            (*postCallSB)[rid] = nid;
+            *iid = nid;
+            (*block_ptr)->AddInstruction(std::move(samp_inst));
+          }
+        } else {
+          // Reset same-block op operand.
+          *iid = mapItr->second;
+        }
+      });
+}
+
 void InlinePass::GenInlineCode(
     std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
     std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
@@ -144,10 +173,10 @@ void InlinePass::GenInlineCode(
   // Map from all ids in the callee to their equivalent id in the caller
   // as callee instructions are copied into caller.
   std::unordered_map<uint32_t, uint32_t> callee2caller;
-  // Pre-call OpSampledImage Insts
-  std::unordered_map<uint32_t, ir::Instruction*> preCallSI;
-  // Post-call OpSampledImage Ids
-  std::unordered_map<uint32_t, uint32_t> postCallSI;
+  // Pre-call same-block insts
+  std::unordered_map<uint32_t, ir::Instruction*> preCallSB;
+  // Post-call same-block op ids
+  std::unordered_map<uint32_t, uint32_t> postCallSB;
 
   ir::Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
@@ -172,7 +201,7 @@ void InlinePass::GenInlineCode(
   calleeFn->ForEachInst(
       [&new_blocks, &callee2caller, &call_block_itr, &call_inst_itr,
        &new_blk_ptr, &prevInstWasReturn, &returnLabelId, &returnVarId,
-       &calleeTypeId, &multiBlocks, &postCallSI, &preCallSI, this](
+       &calleeTypeId, &multiBlocks, &postCallSB, &preCallSB, this](
           const ir::Instruction* cpi) {
         switch (cpi->opcode()) {
           case SpvOpFunction:
@@ -212,14 +241,14 @@ void InlinePass::GenInlineCode(
               // Copy contents of original caller block up to call instruction.
               for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
                    cii++) {
-                std::unique_ptr<ir::Instruction> spv_inst(
+                std::unique_ptr<ir::Instruction> cp_inst(
                     new ir::Instruction(*cii));
-                // Remember OpSampledImages for possible regeneration.
-                if (spv_inst->opcode() == SpvOpSampledImage) {
-                  auto* samp_inst_ptr = spv_inst.get();
-                  preCallSI[spv_inst->result_id()] = samp_inst_ptr;
+                // Remember same-block ops for possible regeneration.
+                if (cp_inst->opcode() == SpvOpSampledImage) {
+                  auto* samp_inst_ptr = cp_inst.get();
+                  preCallSB[cp_inst->result_id()] = samp_inst_ptr;
                 }
-                new_blk_ptr->AddInstruction(std::move(spv_inst));
+                new_blk_ptr->AddInstruction(std::move(cp_inst));
               }
             } else {
               multiBlocks = true;
@@ -263,50 +292,29 @@ void InlinePass::GenInlineCode(
             // Copy remaining instructions from caller block.
             auto cii = call_inst_itr;
             for (cii++; cii != call_block_itr->end(); cii++) {
-              std::unique_ptr<ir::Instruction> spv_inst(
+              std::unique_ptr<ir::Instruction> cp_inst(
                   new ir::Instruction(*cii));
-              // If multiple blocks generated, regenerate any OpSampledImage
+              // If multiple blocks generated, regenerate any same-block
               // instruction that has not been seen in this last block.
               if (multiBlocks) {
-                spv_inst->ForEachInId(
-                    [&postCallSI, &preCallSI, &cpi, &new_blk_ptr, this](
-                        uint32_t* iid) {
-                      const auto mapItr = postCallSI.find(*iid);
-                      if (mapItr == postCallSI.end()) {
-                        const auto mapItr2 = preCallSI.find(*iid);
-                        if (mapItr2 != preCallSI.end()) {
-                          // Clone pre-call OpSampledImage, map result id.
-                          const ir::Instruction* inInst = mapItr2->second;
-                          std::unique_ptr<ir::Instruction> samp_inst(
-                              new ir::Instruction(*inInst));
-                          const uint32_t rid = samp_inst->result_id();
-                          const uint32_t nid = this->TakeNextId();
-                          samp_inst->SetResultId(nid);
-                          postCallSI[rid] = nid;
-                          *iid = nid;
-                          new_blk_ptr->AddInstruction(std::move(samp_inst));
-                        }
-                      } else {
-                        // Reset OpSampledImage operand.
-                        *iid = mapItr->second;
-                      }
-                    });
-                // Remember OpSampledImage in this block.
-                if (spv_inst->opcode() == SpvOpSampledImage) {
-                  const uint32_t rid = spv_inst->result_id();
-                  postCallSI[rid] = rid;
+                CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB,
+                    &new_blk_ptr);
+                // Remember same-block ops in this block.
+                if (cp_inst->opcode() == SpvOpSampledImage) {
+                  const uint32_t rid = cp_inst->result_id();
+                  postCallSB[rid] = rid;
                 }
               }
-              new_blk_ptr->AddInstruction(std::move(spv_inst));
+              new_blk_ptr->AddInstruction(std::move(cp_inst));
             }
             // Finalize inline code.
             new_blocks->push_back(std::move(new_blk_ptr));
           } break;
           default: {
             // Copy callee instruction and remap all input Ids.
-            std::unique_ptr<ir::Instruction> spv_inst(
+            std::unique_ptr<ir::Instruction> cp_inst(
                 new ir::Instruction(*cpi));
-            spv_inst->ForEachInId([&callee2caller, &cpi, this](uint32_t* iid) {
+            cp_inst->ForEachInId([&callee2caller, &cpi, this](uint32_t* iid) {
               const auto mapItr = callee2caller.find(*iid);
               if (mapItr != callee2caller.end()) {
                 *iid = mapItr->second;
@@ -323,13 +331,13 @@ void InlinePass::GenInlineCode(
               }
             });
             // Map and reset result id.
-            const uint32_t rid = spv_inst->result_id();
+            const uint32_t rid = cp_inst->result_id();
             if (rid != 0) {
               const uint32_t nid = this->TakeNextId();
               callee2caller[rid] = nid;
-              spv_inst->SetResultId(nid);
+              cp_inst->SetResultId(nid);
             }
-            new_blk_ptr->AddInstruction(std::move(spv_inst));
+            new_blk_ptr->AddInstruction(std::move(cp_inst));
           } break;
         }
       });
