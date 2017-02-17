@@ -169,7 +169,8 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
 
   // Number of members is the number of operands of the instruction minus 1.
   // One operand is the result ID.
-  const uint16_t limit = 0x3fff;
+  const uint16_t limit = static_cast<uint16_t>(
+      spvValidatorOptionsGetMaxStructMembers(_.options()));
   if (inst->num_operands - 1 > limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Number of OpTypeStruct members (" << inst->num_operands - 1

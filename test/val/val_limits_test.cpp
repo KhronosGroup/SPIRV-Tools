@@ -105,6 +105,35 @@ TEST_F(ValidateLimits, StructNumMembersExceededBad) {
                         "the limit (16383)."));
 }
 
+TEST_F(ValidateLimits, CustomizedStructNumMembersGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 32000; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLimits, CustomizedStructNumMembersBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct)";
+  for (int i = 0; i < 32001; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of OpTypeStruct members (32001) has exceeded "
+                        "the limit (32000)."));
+}
+
 // Valid: Switch statement has 16,383 branches.
 TEST_F(ValidateLimits, SwitchNumBranchesGood) {
   std::ostringstream spirv;

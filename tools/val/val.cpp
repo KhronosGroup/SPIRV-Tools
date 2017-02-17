@@ -24,10 +24,14 @@
 void print_usage(char* argv0) {
   printf(
       R"(%s - Validate a SPIR-V binary file.
+
 USAGE: %s [options] [<filename>]
+
 The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
+
 NOTE: The validator is a work in progress.
+
 Options:
   -h, --help             Print this help.
   --max_struct_members   <maximum number of structure members allowed>
@@ -118,4 +122,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-

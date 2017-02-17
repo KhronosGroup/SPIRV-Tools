@@ -427,8 +427,9 @@ spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* diagnostic);
 
-// Validates a SPIR-V binary for correctness. Any errors will be written into
-// *diagnostic if diagnostic is non-null.
+// Validates a SPIR-V binary for correctness. Uses the provided Validator
+// options. Any errors will be written into *diagnostic if diagnostic is
+// non-null.
 spv_result_t spvValidateWithOptions(const spv_const_context context,
                                     const spv_const_validator_options options,
                                     const spv_const_binary binary,
