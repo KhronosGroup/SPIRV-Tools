@@ -103,4 +103,9 @@ TEST_F(ValidationStateTest, CheckEntryPoints) {
             vstate_->FindDef(vstate_->entry_points()[0])->opcode());
 }
 
+TEST_F(ValidationStateTest, CheckStructMemberLimitOption) {
+  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
+  EXPECT_EQ(32000, spvValidatorOptionsGetMaxStructMembers(options_));
+}
+
 }  // anonymous namespace
