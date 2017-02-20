@@ -15,7 +15,6 @@
 #include "table.h"
 
 #include <cassert>
-#include <string>
 #include <utility>
 
 spv_context spvContextCreate(spv_target_env env) {
@@ -61,8 +60,13 @@ void spvValidatorOptionsSetMaxStructMembers(spv_validator_options options,
                                             const char* limit) {
   assert(options && "Validator options object may not be Null");
   if (limit) {
-    std::string limit_str = limit;
-    options->max_struct_members = std::stoi(limit_str);
+    int limit_int;
+    int success = sscanf(limit, "%d", &limit_int);
+    // The Minimum limits are specified in the SPIR-V Spec, so we only apply an
+    // increase in the limit.
+    if (success && limit_int > options->max_struct_members) {
+      options->max_struct_members = limit_int;
+    }
   }
 }
 
