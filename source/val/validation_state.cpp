@@ -341,6 +341,12 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     case SpvCapabilityFloat16Buffer:
       features_.declare_float16_type = true;
       break;
+    case SpvCapabilityStorageUniformBufferBlock16:
+    case SpvCapabilityStorageUniform16:
+    case SpvCapabilityStoragePushConstant16:
+    case SpvCapabilityStorageInputOutput16:
+      features_.declare_int16_type = true;
+      features_.declare_float16_type = true;
     default:
       break;
   }
