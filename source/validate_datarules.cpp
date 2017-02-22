@@ -69,8 +69,7 @@ spv_result_t ValidateFloatSize(ValidationState_t& _,
     return SPV_SUCCESS;
   }
   if (num_bits == 16) {
-    if (_.HasCapability(SpvCapabilityFloat16) ||
-        _.HasCapability(SpvCapabilityFloat16Buffer)) {
+    if (_.features().declare_float16_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
@@ -108,7 +107,7 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
            << "Using an 8-bit integer type requires the Int8 capability.";
   }
   if (num_bits == 16) {
-    if (_.HasCapability(SpvCapabilityInt16)) {
+    if (_.features().declare_int16_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
