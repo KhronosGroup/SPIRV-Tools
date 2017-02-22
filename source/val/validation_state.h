@@ -54,6 +54,12 @@ enum ModuleLayoutSection {
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
  public:
+  // Features that can optionally be turned on by a capability.
+  struct Feature {
+    bool declare_int16_type = false;    // Allow OpTypeInt with 16 bit width?
+    bool declare_float16_type = false;  // Allow OpTypeFloat with 16 bit width?
+  };
+
   ValidationState_t(const spv_const_context context);
 
   /// Returns the context
@@ -290,6 +296,10 @@ class ValidationState_t {
   bool IsStructTypeWithBuiltInMember(uint32_t id) const {
     return (builtin_structs_.find(id) != builtin_structs_.end());
   }
+
+  // Returns the state of optional features.
+  const Feature& features() { return features_; }
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -359,8 +369,17 @@ class ValidationState_t {
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
 
+  // Is OpTypeInt allowed with 16 bit width?
+  bool permit_int16_type_;
+  // Is OpTypeFloat allowed with 16 bit width?
+  bool permit_float16_type_;
+
   /// NOTE: See correspoding getter functions
   bool in_function_;
+
+  // The state of optional features.  These are determined by capabilities
+  // declared by the module.
+  Feature features_;
 };
 
 }  /// namespace libspirv

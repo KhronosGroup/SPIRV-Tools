@@ -332,6 +332,18 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     desc->capabilities.ForEach(
         [this](SpvCapability c) { RegisterCapability(c); });
   }
+
+  switch (cap) {
+    case SpvCapabilityInt16:
+      features_.declare_int16_type = true;
+      break;
+    case SpvCapabilityFloat16:
+    case SpvCapabilityFloat16Buffer:
+      features_.declare_float16_type = true;
+      break;
+    default:
+      break;
+  }
 }
 
 bool ValidationState_t::HasAnyOf(const CapabilitySet& capabilities) const {
