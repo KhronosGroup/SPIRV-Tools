@@ -33,6 +33,11 @@ using std::stringstream;
 
 using ValidateData = spvtest::ValidateBase<pair<string, bool>>;
 
+string HeaderWith(std::string cap) {
+  return std::string("OpCapability Shader OpCapability Linkage OpCapability ") +
+         cap + " OpMemoryModel Logical GLSL450 ";
+}
+
 string header = R"(
      OpCapability Shader
      OpCapability Linkage
@@ -92,10 +97,13 @@ string header_with_float64 = R"(
 string invalid_comp_error = "Illegal number of components";
 string missing_cap_error = "requires the Vector16 capability";
 string missing_int8_cap_error = "requires the Int8 capability";
-string missing_int16_cap_error = "requires the Int16 capability";
+string missing_int16_cap_error =
+    "requires the Int16 capability,"
+    " or an extension that explicitly enables 16-bit integers.";
 string missing_int64_cap_error = "requires the Int64 capability";
 string missing_float16_cap_error =
-    "requires the Float16 or Float16Buffer capability.";
+    "requires the Float16 or Float16Buffer capability,"
+    " or an extension that explicitly enables 16-bit floating point.";
 string missing_float64_cap_error = "requires the Float64 capability";
 string invalid_num_bits_error = "Invalid number of bits";
 
@@ -186,6 +194,34 @@ TEST_F(ValidateData, int8_bad) {
 
 TEST_F(ValidateData, int16_good) {
   string str = header_with_int16 + "%2 = OpTypeInt 16 1";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, storage_uniform_buffer_block_16_good) {
+  string str =
+      HeaderWith("StorageUniformBufferBlock16") + "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, storage_uniform_16_good) {
+  string str = HeaderWith("StorageUniform16") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, storage_push_constant_16_good) {
+  string str = HeaderWith("StoragePushConstant16") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, storage_input_output_16_good) {
+  string str = HeaderWith("StorageInputOutput16") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
