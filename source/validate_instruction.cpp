@@ -196,7 +196,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
     }
   }
 
-  const uint32_t depth_limit = 255;
+  const uint32_t depth_limit = _.options()->universalLimits.max_struct_depth;
   const uint32_t cur_depth = 1 + max_member_depth;
   _.set_struct_nesting_depth(inst->result_id, cur_depth);
   if (cur_depth > depth_limit) {

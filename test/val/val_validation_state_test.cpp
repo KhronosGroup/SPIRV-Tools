@@ -122,4 +122,10 @@ TEST_F(ValidationStateTest, CheckNumLocalVarsLimitOption) {
   EXPECT_EQ(100u, options_->universalLimits.max_local_variables);
 }
 
+TEST_F(ValidationStateTest, CheckStructDepthLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_depth, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_struct_depth);
+}
+
 }  // anonymous namespace

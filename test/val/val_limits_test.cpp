@@ -454,6 +454,44 @@ TEST_F(ValidateLimits, StructNestingDepthBad) {
           "Structure Nesting Depth may not be larger than 255. Found 256."));
 }
 
+// Valid: Structure nesting depth of 100 (limit is 100).
+TEST_F(ValidateLimits, CustomizedStructNestingDepthGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+    %int = OpTypeInt 32 0
+    %s_depth_1  = OpTypeStruct %int
+  )";
+  for (auto i = 2; i <= 100; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
+    spirv << "\n";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_depth, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Structure nesting depth of 101 (limit is 100).
+TEST_F(ValidateLimits, CustomizedStructNestingDepthBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+    %int = OpTypeInt 32 0
+    %s_depth_1  = OpTypeStruct %int
+  )";
+  for (auto i = 2; i <= 101; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
+    spirv << "\n";
+  }
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_depth, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure Nesting Depth may not be larger than 100. Found 101."));
+}
+
 // clang-format off
 // Generates an SPIRV program with the given control flow nesting depth
 void GenerateSpirvProgramWithCfgNestingDepth(std::string& str, int depth) {

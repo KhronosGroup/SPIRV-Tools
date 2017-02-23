@@ -373,6 +373,7 @@ typedef enum {
 // SPIR-V Validator can be parameterized with the following Universal Limits.
 typedef enum {
   validator_limit_max_struct_members,
+  validator_limit_max_struct_depth,
   validator_limit_max_local_variables,
   validator_limit_max_global_variables,
 } spv_validator_limit;

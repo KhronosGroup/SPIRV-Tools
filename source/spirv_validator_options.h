@@ -23,6 +23,7 @@ bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* limit);
 
 struct validator_universal_limits_t {
   uint32_t max_struct_members;
+  uint32_t max_struct_depth;
   uint32_t max_local_variables;
   uint32_t max_global_variables;
   // ...
@@ -32,6 +33,7 @@ struct validator_universal_limits_t {
 
 const validator_universal_limits_t kDefaultValidatorUniversalLimits = {
     /* max_struct_members */ 16383,
+    /* max_struct_depth */ 255,
     /* max_local_variables */ 524287,
     /* max_global_variables */ 65535,
     // ...

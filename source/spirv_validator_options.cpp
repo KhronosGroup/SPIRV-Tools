@@ -23,6 +23,8 @@ bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* type) {
   };
   if (match("--max-struct-members")) {
     *type = validator_limit_max_struct_members;
+  } else if (match("--max-struct_depth")) {
+    *type = validator_limit_max_struct_depth;
   } else if (match("--max-local-variables")) {
     *type = validator_limit_max_local_variables;
   } else if (match("--max-global-variables")) {
@@ -54,6 +56,7 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
       options->universalLimits.FIELD = limit; \
       break;
   LIMIT(validator_limit_max_struct_members, max_struct_members)
+  LIMIT(validator_limit_max_struct_depth, max_struct_depth)
   LIMIT(validator_limit_max_local_variables, max_local_variables)
   LIMIT(validator_limit_max_global_variables, max_global_variables)
 #undef LIMIT
