@@ -34,13 +34,18 @@ or if the filename is "-", then the binary is read from standard input.
 NOTE: The validator is a work in progress.
 
 Options:
-  -h, --help             Print this help.
-  --max-struct-members   <maximum number of structure members allowed>
-  --max-local-variables  <maximum number of local variables allowed>
-  --max-global-variables <maximum number of global variables allowed>
-  --version              Display validator version information.
-  --target-env           {vulkan1.0|spv1.0|spv1.1}
-                         Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
+  -h, --help                       Print this help.
+  --max-struct-members             <maximum number of structure members allowed>
+  --max-struct-depth               <maximum allowed nesting depth of structures>
+  --max-local-variables            <maximum number of local variables allowed>
+  --max-global-variables           <maximum number of global variables allowed>
+  --max-switch-branches            <maximum number of branches allowed in switch statements>
+  --max-function-args              <maximum number arguments allowed per function>
+  --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
+  --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
+  --version                        Display validator version information.
+  --target-env                     {vulkan1.0|spv1.0|spv1.1}
+                                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
 )",
       argv0, argv0);
 }

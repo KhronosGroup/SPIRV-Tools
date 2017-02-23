@@ -30,9 +30,6 @@ struct validator_universal_limits_t {
   uint32_t max_function_args;
   uint32_t max_control_flow_nesting_depth;
   uint32_t max_access_chain_indexes;
-  // ...
-  // TODO: Add more limits here
-  // ...
 };
 
 const validator_universal_limits_t kDefaultValidatorUniversalLimits = {
@@ -44,9 +41,6 @@ const validator_universal_limits_t kDefaultValidatorUniversalLimits = {
     /* max_function_args */ 255,
     /* max_control_flow_netsting_depth */ 1023,
     /* max_access_chain_indexes */ 255,
-    // ...
-    // TODO: Add more default values here
-    // ...
 };
 
 // Manages command line options passed to the SPIR-V Validator. New struct
