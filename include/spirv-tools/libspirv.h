@@ -394,9 +394,8 @@ spv_validator_options spvValidatorOptionsCreate();
 // Destroys the given Validator options object.
 void spvValidatorOptionsDestroy(spv_validator_options options);
 
-// Records the maximum number of structure members that is considered valid in
-// the given Validator options object. <options> argument must be a valid
-// options object.
+// Records the maximum Universal Limit that is considered valid in the given
+// Validator options object. <options> argument must be a valid options object.
 void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
                                           spv_validator_limit limit_type,
                                           uint32_t limit);
