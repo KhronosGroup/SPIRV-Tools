@@ -140,5 +140,16 @@ TEST_F(ValidationStateTest, CheckFunctionArgsLimitOption) {
   EXPECT_EQ(100u, options_->universalLimits.max_function_args);
 }
 
+TEST_F(ValidationStateTest, CheckCFGDepthLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_control_flow_nesting_depth, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_control_flow_nesting_depth);
+}
+
+TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_access_chain_indexes, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_access_chain_indexes);
+}
 
 }  // anonymous namespace

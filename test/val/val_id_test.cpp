@@ -2387,6 +2387,74 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesBad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
 }
 
+// Valid: 10 indexes passed to the access chain instruction. (Custom limit: 10)
+TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesGood) {
+  const std::string instr = GetParam();
+  const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
+  int depth = 10;
+  std::string header = kGLSL450MemoryModel + kDeeplyNestedStructureSetup;
+  header.erase(header.find("%func"));
+  std::ostringstream spirv;
+  spirv << header << "\n";
+
+  // Build nested structures. Struct 'i' contains struct 'i-1'
+  spirv << "%s_depth_1 = OpTypeStruct %float\n";
+  for (int i = 2; i <= depth; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %s_depth_" << i - 1 << "\n";
+  }
+
+  // Define Pointer and Variable to use for the AccessChain instruction.
+  spirv << "%_ptr_Uniform_deep_struct = OpTypePointer Uniform %s_depth_"
+        << depth << "\n";
+  spirv << "%deep_var = OpVariable %_ptr_Uniform_deep_struct Uniform\n";
+
+  // Function Start
+  spirv << R"(
+  %func = OpFunction %void None %void_f
+  %my_label = OpLabel
+  )";
+
+  // AccessChain with 'n' indexes (n = depth)
+  spirv << "%entry = " << instr << " %_ptr_Uniform_float %deep_var" << elem;
+  for (int i = 0; i < depth; ++i) {
+    spirv << " %int_0";
+  }
+
+  // Function end
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_access_chain_indexes, 10u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: 11 indexes passed to the access chain instruction. Custom Limit:10
+TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
+  const std::string instr = GetParam();
+  const std::string elem = AccessChainRequiresElemId(instr) ? " %int_0 " : "";
+  std::ostringstream spirv;
+  spirv << kGLSL450MemoryModel << kDeeplyNestedStructureSetup;
+  spirv << "%entry = " << instr << " %_ptr_Private_float %my_matrix" << elem;
+  for (int i = 0; i < 11; ++i) {
+    spirv << " %int_0";
+  }
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+  const std::string expected_err = "The number of indexes in " + instr +
+                                   " may not exceed 10. Found 11 indexes.";
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_access_chain_indexes, 10u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
+}
+
 // Invalid: Index passed to the access chain instruction is float (must be
 // integer).
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {

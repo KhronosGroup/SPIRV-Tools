@@ -35,6 +35,8 @@ bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* type) {
     *type = validator_limit_max_function_args;
   } else if (match("--max-control-flow-nesting-depth")) {
     *type = validator_limit_max_control_flow_nesting_depth;
+  } else if (match("--max-access-chain-indexes")) {
+    *type = validator_limit_max_access_chain_indexes;
   } else {
     // The command line option for this validator limit has not been added.
     // Therefore we return false.
@@ -69,6 +71,7 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
   LIMIT(validator_limit_max_function_args, max_function_args)
   LIMIT(validator_limit_max_control_flow_nesting_depth,
         max_control_flow_nesting_depth)
+  LIMIT(validator_limit_max_access_chain_indexes, max_access_chain_indexes)
 #undef LIMIT
   }
 }

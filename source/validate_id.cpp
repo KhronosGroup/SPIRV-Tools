@@ -1314,7 +1314,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   // The number of indexes passed to OpAccessChain may not exceed 255
   // The instruction includes 4 words + N words (for N indexes)
   const size_t num_indexes = inst->words.size() - 4;
-  const size_t num_indexes_limit = 255;
+  const size_t num_indexes_limit =
+      module_.options()->universalLimits.max_access_chain_indexes;
   if (num_indexes > num_indexes_limit) {
     DIAG(resultTypeIndex) << "The number of indexes in " << instr_name
                           << " may not exceed " << num_indexes_limit
