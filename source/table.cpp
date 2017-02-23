@@ -14,7 +14,6 @@
 
 #include "table.h"
 
-#include <cassert>
 #include <utility>
 
 spv_context spvContextCreate(spv_target_env env) {
