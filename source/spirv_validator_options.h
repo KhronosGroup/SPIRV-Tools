@@ -28,6 +28,7 @@ struct validator_universal_limits_t {
   uint32_t max_global_variables;
   uint32_t max_switch_branches;
   uint32_t max_function_args;
+  uint32_t max_control_flow_nesting_depth;
   // ...
   // TODO: Add more limits here
   // ...
@@ -40,6 +41,7 @@ const validator_universal_limits_t kDefaultValidatorUniversalLimits = {
     /* max_global_variables */ 65535,
     /* max_switch_branches */ 16383,
     /* max_function_args */ 255,
+    /* max_control_flow_netsting_depth */ 1023,
     // ...
     // TODO: Add more default values here
     // ...

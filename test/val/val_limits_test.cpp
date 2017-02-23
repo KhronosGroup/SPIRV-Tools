@@ -657,6 +657,28 @@ TEST_F(ValidateLimits, ControlFlowDepthBad) {
               HasSubstr("Maximum Control Flow nesting depth exceeded."));
 }
 
+// Valid: Control Flow Nesting depth is 10 (custom limit: 10).
+TEST_F(ValidateLimits, CustomizedControlFlowDepthGood) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 10);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_control_flow_nesting_depth, 10u);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Control Flow Nesting depth is 11. (custom limit: 10).
+TEST_F(ValidateLimits, CustomizedControlFlowDepthBad) {
+  std::string spirv;
+  GenerateSpirvProgramWithCfgNestingDepth(spirv, 11);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_control_flow_nesting_depth, 10u);
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Maximum Control Flow nesting depth exceeded."));
+}
+
 // Valid. The purpose here is to test the CFG depth calculation code when a loop
 // continue target is the loop iteself. It also exercises the case where a loop
 // is unreachable.
