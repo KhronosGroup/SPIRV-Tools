@@ -128,4 +128,17 @@ TEST_F(ValidationStateTest, CheckStructDepthLimitOption) {
   EXPECT_EQ(100u, options_->universalLimits.max_struct_depth);
 }
 
+TEST_F(ValidationStateTest, CheckSwitchBranchesLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_switch_branches, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_switch_branches);
+}
+
+TEST_F(ValidationStateTest, CheckFunctionArgsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_function_args, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_function_args);
+}
+
+
 }  // anonymous namespace

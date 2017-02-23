@@ -291,6 +291,42 @@ TEST_F(ValidateLimits, OpTypeFunctionBad) {
                         "OpTypeFunction <id> '2' has 256 arguments."));
 }
 
+// Valid: OpTypeFunction with 100 arguments (Custom limit: 100)
+TEST_F(ValidateLimits, CustomizedOpTypeFunctionGood) {
+  int num_args = 100;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  // add parameters
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(options_,
+                                       validator_limit_max_function_args, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: OpTypeFunction with 101 arguments. (Custom limit: 100)
+TEST_F(ValidateLimits, CustomizedOpTypeFunctionBad) {
+  int num_args = 101;
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFunction %1)";
+  for (int i = 0; i < num_args; ++i) {
+    spirv << " %1";
+  }
+  spvValidatorOptionsSetUniversalLimit(options_,
+                                       validator_limit_max_function_args, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeFunction may not take more than 100 arguments. "
+                        "OpTypeFunction <id> '2' has 101 arguments."));
+}
+
 // Valid: module has 65,535 global variables.
 TEST_F(ValidateLimits, NumGlobalVarsGood) {
   int num_globals = 65535;

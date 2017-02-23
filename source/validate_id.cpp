@@ -26,6 +26,7 @@
 #include "instruction.h"
 #include "message.h"
 #include "opcode.h"
+#include "spirv_validator_options.h"
 #include "spirv-tools/libspirv.h"
 #include "val/function.h"
 #include "val/validation_state.h"
@@ -488,9 +489,12 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
       return false;
     }
   }
-  if (num_args > 255) {
-    DIAG(returnTypeIndex) << "OpTypeFunction may not take more than 255 "
-                             "arguments. OpTypeFunction <id> '"
+  const uint32_t num_function_args_limit =
+      module_.options()->universalLimits.max_function_args;
+  if (num_args > num_function_args_limit) {
+    DIAG(returnTypeIndex) << "OpTypeFunction may not take more than "
+                          << num_function_args_limit
+                          << " arguments. OpTypeFunction <id> '"
                           << inst->words[1] << "' has " << num_args
                           << " arguments.";
     return false;
