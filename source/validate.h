@@ -154,6 +154,11 @@ spv_result_t InstructionPass(ValidationState_t& _,
 /// Performs decoration validation.
 spv_result_t ValidateDecorations(ValidationState_t& _);
 
+/// Validates that type declarations are unique, unless multiple declarations
+/// of the same data type are allowed by the specification.
+/// (see section 2.8 Types and Variables)
+spv_result_t TypeUniquePass(ValidationState_t& _,
+                            const spv_parsed_instruction_t* inst);
 }  // namespace libspirv
 
 /// @brief Validate the ID usage of the instruction stream

@@ -42,7 +42,6 @@ string header = R"(
      OpCapability Shader
      OpCapability Linkage
      OpMemoryModel Logical GLSL450
-%1 = OpTypeFloat 32
 )";
 string header_with_addresses = R"(
      OpCapability Addresses
@@ -56,7 +55,6 @@ string header_with_vec16_cap = R"(
      OpCapability Vector16
      OpCapability Linkage
      OpMemoryModel Logical GLSL450
-%1 = OpTypeFloat 32
 )";
 string header_with_int8 = R"(
      OpCapability Shader
@@ -108,72 +106,105 @@ string missing_float64_cap_error = "requires the Float64 capability";
 string invalid_num_bits_error = "Invalid number of bits";
 
 TEST_F(ValidateData, vec0) {
-  string str = header + "%2 = OpTypeVector %1 0";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 0
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(invalid_comp_error));
 }
 
 TEST_F(ValidateData, vec1) {
-  string str = header + "%2 = OpTypeVector %1 1";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 1
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(invalid_comp_error));
 }
 
 TEST_F(ValidateData, vec2) {
-  string str = header + "%2 = OpTypeVector %1 2";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 2
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, vec3) {
-  string str = header + "%2 = OpTypeVector %1 3";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 3
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, vec4) {
-  string str = header + "%2 = OpTypeVector %1 4";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 4
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, vec5) {
-  string str = header + "%2 = OpTypeVector %1 5";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 5
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(invalid_comp_error));
 }
 
 TEST_F(ValidateData, vec8) {
-  string str = header + "%2 = OpTypeVector %1 8";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_cap_error));
 }
 
 TEST_F(ValidateData, vec8_with_capability) {
-  string str = header_with_vec16_cap + "%2 = OpTypeVector %1 8";
+  string str = header_with_vec16_cap + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, vec16) {
-  string str = header + "%2 = OpTypeVector %1 16";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 8
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_cap_error));
 }
 
 TEST_F(ValidateData, vec16_with_capability) {
-  string str = header_with_vec16_cap + "%2 = OpTypeVector %1 16";
+  string str = header_with_vec16_cap + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 16
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, vec15) {
-  string str = header + "%2 = OpTypeVector %1 15";
+  string str = header + R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeVector %1 15
+)";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(invalid_comp_error));
