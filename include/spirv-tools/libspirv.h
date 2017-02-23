@@ -370,6 +370,13 @@ typedef enum {
   SPV_ENV_OPENGL_4_5,  // OpenGL 4.5 plus GL_ARB_gl_spirv, latest revisions.
 } spv_target_env;
 
+// SPIR-V Validator can be parameterized with the following Universal Limits.
+typedef enum {
+  validator_limit_max_struct_members,
+  validator_limit_max_local_variables,
+  validator_limit_max_global_variables,
+} spv_validator_limit;
+
 // Returns a string describing the given SPIR-V target environment.
 const char* spvTargetEnvDescription(spv_target_env env);
 
@@ -379,20 +386,20 @@ spv_context spvContextCreate(spv_target_env env);
 // Destroys the given context object.
 void spvContextDestroy(spv_context context);
 
-// Creates a Validator options object with default options.
+// Creates a Validator options object with default options. Returns a valid
+// options object. The object remains valid until it is passed into
+// spvValidatorOptionsDestroy.
 spv_validator_options spvValidatorOptionsCreate();
 
 // Destroys the given Validator options object.
 void spvValidatorOptionsDestroy(spv_validator_options options);
 
 // Records the maximum number of structure members that is considered valid in
-// the given Validator options object. <options> argument must be non-null.
-void spvValidatorOptionsSetMaxStructMembers(spv_validator_options options,
-                                            const char* limit);
-
-// Returns the maximum number of structure members that is considered valid in
-// the given Validator options object. <options> argument must be non-null.
-int spvValidatorOptionsGetMaxStructMembers(spv_const_validator_options options);
+// the given Validator options object. <options> argument must be a valid
+// options object.
+void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
+                                          spv_validator_limit limit_type,
+                                          uint32_t limit);
 
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will

@@ -17,6 +17,7 @@
 #include <string>
 
 #include "gmock/gmock.h"
+#include "spirv_validator_options.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
@@ -104,8 +105,21 @@ TEST_F(ValidationStateTest, CheckEntryPoints) {
 }
 
 TEST_F(ValidationStateTest, CheckStructMemberLimitOption) {
-  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
-  EXPECT_EQ(32000, spvValidatorOptionsGetMaxStructMembers(options_));
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_members, 32000u);
+  EXPECT_EQ(32000u, options_->universalLimits.max_struct_members);
+}
+
+TEST_F(ValidationStateTest, CheckNumGlobalVarsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_global_variables, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_global_variables);
+}
+
+TEST_F(ValidationStateTest, CheckNumLocalVarsLimitOption) {
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_local_variables, 100u);
+  EXPECT_EQ(100u, options_->universalLimits.max_local_variables);
 }
 
 }  // anonymous namespace

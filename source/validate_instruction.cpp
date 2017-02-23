@@ -27,6 +27,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
+#include "spirv_validator_options.h"
 #include "val/function.h"
 #include "val/validation_state.h"
 
@@ -169,8 +170,8 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
 
   // Number of members is the number of operands of the instruction minus 1.
   // One operand is the result ID.
-  const uint16_t limit = static_cast<uint16_t>(
-      spvValidatorOptionsGetMaxStructMembers(_.options()));
+  const uint16_t limit =
+      static_cast<uint16_t>(_.options()->universalLimits.max_struct_members);
   if (inst->num_operands - 1 > limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Number of OpTypeStruct members (" << inst->num_operands - 1
@@ -231,7 +232,8 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
                                const SpvStorageClass storage_class) {
   if (SpvStorageClassFunction == storage_class) {
     _.registerLocalVariable(var_id);
-    const uint32_t num_local_vars_limit = 0x7FFFF;
+    const uint32_t num_local_vars_limit =
+        _.options()->universalLimits.max_local_variables;
     if (_.num_local_vars() > num_local_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of local variables ('Function' Storage Class) "
@@ -240,7 +242,8 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
     }
   } else {
     _.registerGlobalVariable(var_id);
-    const uint32_t num_global_vars_limit = 0xFFFF;
+    const uint32_t num_global_vars_limit =
+        _.options()->universalLimits.max_global_variables;
     if (_.num_global_vars() > num_global_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of Global Variables (Storage Class other than "

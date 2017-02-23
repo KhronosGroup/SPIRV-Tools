@@ -165,6 +165,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_definition.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.h
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_validator_options.h
   ${CMAKE_CURRENT_SOURCE_DIR}/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h
@@ -186,6 +187,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_endian.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/spirv_target_env.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spirv_validator_options.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp

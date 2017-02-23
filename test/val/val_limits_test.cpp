@@ -113,7 +113,8 @@ TEST_F(ValidateLimits, CustomizedStructNumMembersGood) {
   for (int i = 0; i < 32000; ++i) {
     spirv << " %1";
   }
-  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_members, 32000u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -126,7 +127,8 @@ TEST_F(ValidateLimits, CustomizedStructNumMembersBad) {
   for (int i = 0; i < 32001; ++i) {
     spirv << " %1";
   }
-  spvValidatorOptionsSetMaxStructMembers(options_, "32000");
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_struct_members, 32000u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -263,6 +265,47 @@ TEST_F(ValidateLimits, NumGlobalVarsBad) {
                         "'Function') exceeded the valid limit (65535)."));
 }
 
+// Valid: module has 50 global variables (limit is 50)
+TEST_F(ValidateLimits, CustomizedNumGlobalVarsGood) {
+  int num_globals = 50;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_global_variables, 50u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 51 global variables (limit is 50).
+TEST_F(ValidateLimits, CustomizedNumGlobalVarsBad) {
+  int num_globals = 51;
+  std::ostringstream spirv;
+  spirv << header << R"(
+     %int = OpTypeInt 32 0
+%_ptr_int = OpTypePointer Input %int
+  )";
+
+  for (int i = 0; i < num_globals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Input\n";
+  }
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_global_variables, 50u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of Global Variables (Storage Class other than "
+                        "'Function') exceeded the valid limit (50)."));
+}
+
 // Valid: module has 524,287 local variables.
 TEST_F(ValidateLimits, NumLocalVarsGood) {
   int num_locals = 524287;
@@ -316,6 +359,65 @@ TEST_F(ValidateLimits, NumLocalVarsBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Number of local variables ('Function' Storage Class) "
                         "exceeded the valid limit (524287)."));
+}
+
+// Valid: module has 100 local variables (limit is 100).
+TEST_F(ValidateLimits, CustomizedNumLocalVarsGood) {
+  int num_locals = 100;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_local_variables, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: module has 101 local variables (limit is 100).
+TEST_F(ValidateLimits, CustomizedNumLocalVarsBad) {
+  int num_locals = 101;
+  std::ostringstream spirv;
+  spirv << header << R"(
+ %int      = OpTypeInt 32 0
+ %_ptr_int = OpTypePointer Function %int
+ %voidt    = OpTypeVoid
+ %funct    = OpTypeFunction %voidt
+ %main     = OpFunction %voidt None %funct
+ %entry    = OpLabel
+  )";
+
+  for (int i = 0; i < num_locals; ++i) {
+    spirv << "%var_" << i << " = OpVariable %_ptr_int Function\n";
+  }
+
+  spirv << R"(
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_local_variables, 100u);
+  CompileSuccessfully(spirv.str());
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of local variables ('Function' Storage Class) "
+                        "exceeded the valid limit (100)."));
 }
 
 // Valid: Structure nesting depth of 255.

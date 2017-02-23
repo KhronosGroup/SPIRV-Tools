@@ -109,17 +109,6 @@ struct spv_context_t {
   spvtools::MessageConsumer consumer;
 };
 
-// Manages command line options passed to the SPIR-V Validator.
-// New struct members may be added for any new option. The option's default
-// value should be added to the default constructor.
-struct spv_validator_options_t {
-  spv_validator_options_t() : max_struct_members(16383) {}
-
-  // Maximum number of structure members. The default value is described in the
-  // Universal Limits section of the SPIR-V spec.
-  int max_struct_members;
-};
-
 // Sets the message consumer to |consumer| in the given |context|. The original
 // message consumer will be overwritten.
 void SetContextMessageConsumer(spv_context context,

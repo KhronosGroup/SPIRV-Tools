@@ -32,6 +32,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"
 #include "val/validation_state.h"
@@ -298,12 +299,17 @@ spv_result_t spvValidateBinary(const spv_const_context context,
     libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  // Create the ValidationState using the context.
   // This interface is used for default command line options.
-  ValidationState_t vstate(&hijack_context, nullptr);
+  spv_validator_options default_options = spvValidatorOptionsCreate();
 
-  return ValidateBinaryUsingContextAndValidationState(
+  // Create the ValidationState using the context and default options.
+  ValidationState_t vstate(&hijack_context, default_options);
+
+  spv_result_t result = ValidateBinaryUsingContextAndValidationState(
       hijack_context, words, num_words, pDiagnostic, &vstate);
+
+  spvValidatorOptionsDestroy(default_options);
+  return result;
 }
 
 spv_result_t spvValidateWithOptions(const spv_const_context context,

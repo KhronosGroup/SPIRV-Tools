@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "source/spirv_target_env.h"
+#include "source/spirv_validator_options.h"
 #include "spirv-tools/libspirv.h"
 #include "tools/io.h"
 
@@ -34,7 +35,9 @@ NOTE: The validator is a work in progress.
 
 Options:
   -h, --help             Print this help.
-  --max_struct_members   <maximum number of structure members allowed>
+  --max-struct-members   <maximum number of structure members allowed>
+  --max-local-variables  <maximum number of local variables allowed>
+  --max-global-variables <maximum number of global variables allowed>
   --version              Display validator version information.
   --target-env           {vulkan1.0|spv1.0|spv1.1}
                          Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
@@ -44,38 +47,59 @@ Options:
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  const char* max_struct_members = nullptr;
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
+  spv_validator_options options = spvValidatorOptionsCreate();
+  bool continue_processing = true;
+  int return_code = 0;
 
-  for (int argi = 1; argi < argc; ++argi) {
+  for (int argi = 1; continue_processing && argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
-      if (0 == strcmp(cur_arg, "--max_struct_members")) {
+      if (0 == strncmp(cur_arg, "--max-", 6)) {
         if (argi + 1 < argc) {
-          max_struct_members = argv[++argi];
+          spv_validator_limit limit_type;
+          if (spvParseUniversalLimitsOptions(cur_arg, &limit_type)) {
+            uint32_t limit = 0;
+            if (sscanf(argv[++argi], "%d", &limit)) {
+              spvValidatorOptionsSetUniversalLimit(options, limit_type, limit);
+            } else {
+              fprintf(stderr, "error: missing argument to %s\n", cur_arg);
+              continue_processing = false;
+              return_code = 1;
+            }
+          } else {
+            fprintf(stderr, "error: unrecognized option: %s\n", cur_arg);
+            continue_processing = false;
+            return_code = 1;
+          }
         } else {
-          fprintf(stderr, "error: Missing argument to --max_struct_members\n");
-          return 1;
+          fprintf(stderr, "error: Missing argument to %s\n", cur_arg);
+          continue_processing = false;
+          return_code = 1;
         }
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         printf("Targets:\n  %s\n  %s\n",
                spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
                spvTargetEnvDescription(SPV_ENV_VULKAN_1_0));
-        return 0;
+        continue_processing = false;
+        return_code = 0;
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);
-        return 0;
+        continue_processing = false;
+        return_code = 0;
       } else if (0 == strcmp(cur_arg, "--target-env")) {
         if (argi + 1 < argc) {
           const auto env_str = argv[++argi];
           if (!spvParseTargetEnv(env_str, &target_env)) {
             fprintf(stderr, "error: Unrecognized target env: %s\n", env_str);
-            return 1;
+            continue_processing = false;
+            return_code = 1;
           }
         } else {
           fprintf(stderr, "error: Missing argument to --target-env\n");
-          return 1;
+          continue_processing = false;
+          return_code = 1;
         }
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
@@ -83,20 +107,29 @@ int main(int argc, char** argv) {
           inFile = cur_arg;
         } else {
           fprintf(stderr, "error: More than one input file specified\n");
-          return 1;
+          continue_processing = false;
+          return_code = 1;
         }
       } else {
         print_usage(argv[0]);
-        return 1;
+        continue_processing = false;
+        return_code = 1;
       }
     } else {
       if (!inFile) {
         inFile = cur_arg;
       } else {
         fprintf(stderr, "error: More than one input file specified\n");
-        return 1;
+        continue_processing = false;
+        return_code = 1;
       }
     }
+  }
+
+  // Exit if command line parsing was not successful.
+  if (!continue_processing) {
+    spvValidatorOptionsDestroy(options);
+    return return_code;
   }
 
   std::vector<uint32_t> contents;
@@ -106,8 +139,6 @@ int main(int argc, char** argv) {
 
   spv_diagnostic diagnostic = nullptr;
   spv_context context = spvContextCreate(target_env);
-  spv_validator_options options = spvValidatorOptionsCreate();
-  spvValidatorOptionsSetMaxStructMembers(options, max_struct_members);
 
   spv_result_t error =
       spvValidateWithOptions(context, options, &binary, &diagnostic);

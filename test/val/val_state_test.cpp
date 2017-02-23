@@ -21,6 +21,7 @@
 #include "spirv/1.1/spirv.h"
 
 #include "enum_set.h"
+#include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"
 #include "val/validation_state.h"
@@ -36,10 +37,12 @@ class ValidationStateTest : public testing::Test {
  public:
   ValidationStateTest()
       : context_(spvContextCreate(SPV_ENV_UNIVERSAL_1_0)),
-        state_(context_, nullptr) {}
+        options_(spvValidatorOptionsCreate()),
+        state_(context_, options_) {}
 
  protected:
   spv_context context_;
+  spv_validator_options options_;
   ValidationState_t state_;
 };
 

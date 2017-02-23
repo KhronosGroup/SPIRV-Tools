@@ -48,34 +48,6 @@ spv_context spvContextCreate(spv_target_env env) {
 
 void spvContextDestroy(spv_context context) { delete context; }
 
-spv_validator_options spvValidatorOptionsCreate() {
-  return new spv_validator_options_t;
-}
-
-void spvValidatorOptionsDestroy(spv_validator_options options) {
-  delete options;
-}
-
-void spvValidatorOptionsSetMaxStructMembers(spv_validator_options options,
-                                            const char* limit) {
-  assert(options && "Validator options object may not be Null");
-  if (limit) {
-    int limit_int;
-    int success = sscanf(limit, "%d", &limit_int);
-    // The Minimum limits are specified in the SPIR-V Spec, so we only apply an
-    // increase in the limit.
-    if (success && limit_int > options->max_struct_members) {
-      options->max_struct_members = limit_int;
-    }
-  }
-}
-
-int spvValidatorOptionsGetMaxStructMembers(
-    spv_const_validator_options options) {
-  assert(options && "Validator options object may not be Null");
-  return options->max_struct_members;
-}
-
 void SetContextMessageConsumer(spv_context context,
                                spvtools::MessageConsumer consumer) {
   context->consumer = std::move(consumer);

@@ -309,6 +309,7 @@ class ValidationState_t {
 
   const spv_const_context context_;
 
+  /// Stores the Validator command line options. Must be a valid options object.
   const spv_const_validator_options options_;
 
   /// Tracks the number of instructions evaluated by the validator
