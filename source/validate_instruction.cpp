@@ -217,7 +217,8 @@ spv_result_t LimitCheckSwitch(ValidationState_t& _,
     // literal,label pairs come after the first 2 operands.
     // It is guaranteed at this point that num_operands is an even numner.
     unsigned int num_pairs = (inst->num_operands - 2) / 2;
-    const unsigned int num_pairs_limit = 16383;
+    const unsigned int num_pairs_limit =
+        _.options()->universalLimits.max_switch_branches;
     if (num_pairs > num_pairs_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of (literal, label) pairs in OpSwitch (" << num_pairs

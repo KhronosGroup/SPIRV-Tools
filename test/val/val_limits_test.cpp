@@ -195,6 +195,69 @@ OpFunctionEnd
                         "exceeds the limit (16383)."));
 }
 
+// Valid: Switch statement has 10 branches (limit is 10)
+TEST_F(ValidateLimits, CustomizedSwitchNumBranchesGood) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 10; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_switch_branches, 10u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Invalid: Switch statement has 11 branches (limit is 10)
+TEST_F(ValidateLimits, CustomizedSwitchNumBranchesBad) {
+  std::ostringstream spirv;
+  spirv << header << R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpConstant %3 1234
+%5 = OpFunction %1 None %2
+%7 = OpLabel
+%8 = OpIAdd %3 %4 %4
+%9 = OpSwitch %4 %10)";
+
+  // Now add the (literal, label) pairs
+  for (int i = 0; i < 11; ++i) {
+    spirv << " 1 %10";
+  }
+
+  spirv << R"(
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  spvValidatorOptionsSetUniversalLimit(
+      options_, validator_limit_max_switch_branches, 10u);
+  CompileSuccessfully(spirv.str());
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Number of (literal, label) pairs in OpSwitch (11) "
+                        "exceeds the limit (10)."));
+}
+
 // Valid: OpTypeFunction with 255 arguments.
 TEST_F(ValidateLimits, OpTypeFunctionGood) {
   int num_args = 255;

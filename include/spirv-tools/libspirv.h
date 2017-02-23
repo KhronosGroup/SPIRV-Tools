@@ -376,6 +376,7 @@ typedef enum {
   validator_limit_max_struct_depth,
   validator_limit_max_local_variables,
   validator_limit_max_global_variables,
+  validator_limit_max_switch_branches,
 } spv_validator_limit;
 
 // Returns a string describing the given SPIR-V target environment.
