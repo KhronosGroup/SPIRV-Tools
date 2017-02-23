@@ -16,6 +16,7 @@
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
 #include <deque>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -304,6 +305,10 @@ class ValidationState_t {
   // Returns the state of optional features.
   const Feature& features() const { return features_; }
 
+  /// Adds the instruction data to unique_type_declarations_.
+  /// Returns false if an identical type declaration already exists.
+  bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -370,6 +375,12 @@ class ValidationState_t {
 
   /// Stores the list of decorations for a given <id>
   std::unordered_map<uint32_t, std::vector<Decoration>> id_decorations_;
+
+  /// Stores type declarations which need to be unique (i.e. non-aggregates),
+  /// in the form [opcode, operand words], result_id is not stored.
+  /// Using ordered set to avoid the need for a vector hash function.
+  /// The size of this container is expected not to exceed double-digits.
+  std::set<std::vector<uint32_t>> unique_type_declarations_;
 
   AssemblyGrammar grammar_;
 
