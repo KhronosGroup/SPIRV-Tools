@@ -68,6 +68,9 @@ int32_t spvOpcodeIsConstant(const SpvOp opcode);
 // Returns true if the given opcode is a constant or undef.
 bool spvOpcodeIsConstantOrUndef(const SpvOp opcode);
 
+// Returns true if the given opcode is a scalar specialization constant.
+bool spvOpcodeIsScalarSpecConstant(const SpvOp opcode);
+
 // Determines if the given opcode is a composite type. Returns zero if false,
 // non-zero otherwise.
 int32_t spvOpcodeIsComposite(const SpvOp opcode);
