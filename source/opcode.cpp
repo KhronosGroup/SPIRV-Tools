@@ -207,6 +207,17 @@ bool spvOpcodeIsConstantOrUndef(const SpvOp opcode) {
   return opcode == SpvOpUndef || spvOpcodeIsConstant(opcode);
 }
 
+int32_t spvOpcodeIsScalarSpecConstant(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
+    case SpvOpSpecConstant:
+      return true;
+    default:
+      return false;
+  }
+}
+
 int32_t spvOpcodeIsComposite(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeVector:
