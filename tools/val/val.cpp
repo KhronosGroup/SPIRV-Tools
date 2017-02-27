@@ -34,6 +34,7 @@ NOTE: The validator is a work in progress.
 
 Options:
   -h, --help   Print this help.
+  --permissive Validation should pass if an unrecognized extension is used by the module.
   --version    Display validator version information.
   --target-env {vulkan1.0|spv1.0|spv1.1}
                Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
@@ -43,12 +44,18 @@ Options:
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
+  bool permissive = false;
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
-      if (0 == strcmp(cur_arg, "--version")) {
+      if (0 == strcmp(cur_arg, "--permissive")) {
+        printf(
+            "Info: Permissive mode is enabled. If any unrecognized extension "
+            "is used, the validator will accept the input as valid.\n");
+        permissive = true;
+      } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         printf("Targets:\n  %s\n  %s\n",
                spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
@@ -97,7 +104,7 @@ int main(int argc, char** argv) {
   spv_const_binary_t binary = {contents.data(), contents.size()};
 
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate(target_env);
+  spv_context context = spvContextCreate(target_env, permissive);
   spv_result_t error = spvValidate(context, &binary, &diagnostic);
   spvContextDestroy(context);
   if (error) {

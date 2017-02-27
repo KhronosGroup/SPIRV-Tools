@@ -22,6 +22,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "binary.h"
@@ -32,6 +33,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
+#include "table.h"
 #include "val/construct.h"
 #include "val/function.h"
 #include "val/validation_state.h"
@@ -64,6 +66,14 @@ spv_result_t spvValidateIDs(const spv_instruction_t* pInsts,
                                     extInstTable, state, position))
     return error;
   return SPV_SUCCESS;
+}
+
+// Returns true if the input is a known extension.
+// TODO: The list of recognized extensions should be populated atuomatically.
+bool libspirv::isValidExtensionName(std::string ext_name) {
+  std::unordered_set<std::string> known_extensions = {
+      "SPV_KHR_shader_ballot", "SPV_KHR_shader_draw_parameters"};
+  return (known_extensions.find(ext_name) != known_extensions.end());
 }
 
 namespace {
@@ -184,6 +194,7 @@ UNUSED(void PrintDotGraph(ValidationState_t& _, libspirv::Function func)) {
     printf("}\n");
   }
 }
+
 }  // anonymous namespace
 
 spv_result_t spvValidate(const spv_const_context context,
@@ -215,13 +226,52 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
-  if (auto error = spvBinaryParse(&context, vstate, words, num_words,
-                                  setHeader, ProcessInstruction, pDiagnostic))
+  if (auto error = spvBinaryParse(&context, vstate, words, num_words, setHeader,
+                                  ProcessInstruction, pDiagnostic)) {
     return error;
+  }
 
-  if (vstate->in_function_body())
+  // NOTE: Copy each instruction for easier processing
+  std::vector<spv_instruction_t> instructions;
+  uint64_t index = SPV_INDEX_INSTRUCTION;
+  while (index < binary->wordCount) {
+    uint16_t wordCount;
+    uint16_t opcode;
+    spvOpcodeSplit(spvFixWord(binary->code[index], endian), &wordCount,
+                   &opcode);
+    spv_instruction_t inst;
+    spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
+                       wordCount, endian, &inst);
+    instructions.push_back(inst);
+    index += wordCount;
+  }
+
+  // If unrecognized extensions are used and 'permissive' mode is enabled,
+  // consider the module valid.
+  if (context.permissive) {
+    for (uint64_t instIndex = 0;
+         instIndex < instructions.size() &&
+         SpvOpMemoryModel != instructions[instIndex].opcode;
+         ++instIndex) {
+      auto instr = instructions[instIndex];
+      if (SpvOpExtension == instr.opcode) {
+        std::string extension_name =
+            reinterpret_cast<const char*>(instr.words.data() + 1);
+        if (!libspirv::isValidExtensionName(extension_name)) {
+          printf(
+              "Info: Validation was skipped because an unrecognized extension "
+              "was found: %s.\n",
+              extension_name.c_str());
+          return SPV_SUCCESS;
+        }
+      }
+    }
+  }
+
+  if (vstate->in_function_body()) {
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT)
            << "Missing OpFunctionEnd at end of module.";
+  }
 
   // TODO(umar): Add validation checks which require the parsing of the entire
   // module. Use the information from the ProcessInstruction pass to make the
@@ -265,21 +315,6 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
              << ") may not be targeted by both an OpEntryPoint instruction and "
                 "an OpFunctionCall instruction.";
     }
-  }
-
-  // NOTE: Copy each instruction for easier processing
-  std::vector<spv_instruction_t> instructions;
-  uint64_t index = SPV_INDEX_INSTRUCTION;
-  while (index < binary->wordCount) {
-    uint16_t wordCount;
-    uint16_t opcode;
-    spvOpcodeSplit(spvFixWord(binary->code[index], endian), &wordCount,
-                   &opcode);
-    spv_instruction_t inst;
-    spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
-                       wordCount, endian, &inst);
-    instructions.push_back(inst);
-    index += wordCount;
   }
 
   position.index = SPV_INDEX_INSTRUCTION;

@@ -17,8 +17,11 @@
 
 #include <vector>
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "spirv/1.1/spirv.h"
+#include "unit_spirv.h"
+#include "val_fixtures.h"
 
 #include "enum_set.h"
 #include "val/construct.h"
@@ -27,6 +30,7 @@
 #include "validate.h"
 
 namespace {
+using ::testing::HasSubstr;
 using libspirv::CapabilitySet;
 using libspirv::ValidationState_t;
 using std::vector;
@@ -84,4 +88,30 @@ TEST_F(ValidationState_HasAnyOfTest, MultiCapMask) {
   EXPECT_TRUE(state_.HasAnyOf(set1));
   EXPECT_FALSE(state_.HasAnyOf(set2));
 }
+
+using ValidatePermissive = spvtest::ValidateBase<bool>;
+TEST_F(ValidatePermissive, properlyChecksPermissiveModeGood) {
+  const std::string spirv = R"(
+    OpCapability Shader
+    OpExtension "unrecognized_extension"
+    OpMemoryModel Logical GLSL450
+    %int = OpTypeInt 32 0
+  )";
+  CompileSuccessfully(spirv);
+
+  // This should fail because the above SPIR-V module is missing an
+  // OpEntryPoint.
+  bool permissive = false;
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0, permissive));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("No OpEntryPoint instruction was found."));
+
+  // This should pass because we are using the permissive mode, and we are using
+  // an unrecognized extension.
+  permissive = true;
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0, permissive));
 }
+
+}  // anonymous namespace

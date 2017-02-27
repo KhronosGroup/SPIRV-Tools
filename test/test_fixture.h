@@ -21,8 +21,9 @@ namespace spvtest {
 
 // RAII for spv_context.
 struct ScopedContext {
-  ScopedContext(spv_target_env env = SPV_ENV_UNIVERSAL_1_0)
-      : context(spvContextCreate(env)) {}
+  ScopedContext(spv_target_env env = SPV_ENV_UNIVERSAL_1_0,
+                bool permissive = false)
+      : context(spvContextCreate(env, permissive)) {}
   ~ScopedContext() { spvContextDestroy(context); }
   spv_context context;
 };
