@@ -298,7 +298,7 @@ class ValidationState_t {
   }
 
   // Returns the state of optional features.
-  const Feature& features() { return features_; }
+  const Feature& features() const { return features_; }
 
  private:
   ValidationState_t(const ValidationState_t&);
