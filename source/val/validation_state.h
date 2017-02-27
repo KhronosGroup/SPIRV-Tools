@@ -369,11 +369,6 @@ class ValidationState_t {
   SpvAddressingModel addressing_model_;
   SpvMemoryModel memory_model_;
 
-  // Is OpTypeInt allowed with 16 bit width?
-  bool permit_int16_type_;
-  // Is OpTypeFloat allowed with 16 bit width?
-  bool permit_float16_type_;
-
   /// NOTE: See correspoding getter functions
   bool in_function_;
 
