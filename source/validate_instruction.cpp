@@ -171,7 +171,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
   // Number of members is the number of operands of the instruction minus 1.
   // One operand is the result ID.
   const uint16_t limit =
-      static_cast<uint16_t>(_.options()->universalLimits.max_struct_members);
+      static_cast<uint16_t>(_.options()->universal_limits_.max_struct_members);
   if (inst->num_operands - 1 > limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Number of OpTypeStruct members (" << inst->num_operands - 1
@@ -196,7 +196,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
     }
   }
 
-  const uint32_t depth_limit = _.options()->universalLimits.max_struct_depth;
+  const uint32_t depth_limit = _.options()->universal_limits_.max_struct_depth;
   const uint32_t cur_depth = 1 + max_member_depth;
   _.set_struct_nesting_depth(inst->result_id, cur_depth);
   if (cur_depth > depth_limit) {
@@ -218,7 +218,7 @@ spv_result_t LimitCheckSwitch(ValidationState_t& _,
     // It is guaranteed at this point that num_operands is an even numner.
     unsigned int num_pairs = (inst->num_operands - 2) / 2;
     const unsigned int num_pairs_limit =
-        _.options()->universalLimits.max_switch_branches;
+        _.options()->universal_limits_.max_switch_branches;
     if (num_pairs > num_pairs_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of (literal, label) pairs in OpSwitch (" << num_pairs
@@ -234,7 +234,7 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
   if (SpvStorageClassFunction == storage_class) {
     _.registerLocalVariable(var_id);
     const uint32_t num_local_vars_limit =
-        _.options()->universalLimits.max_local_variables;
+        _.options()->universal_limits_.max_local_variables;
     if (_.num_local_vars() > num_local_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of local variables ('Function' Storage Class) "
@@ -244,7 +244,7 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
   } else {
     _.registerGlobalVariable(var_id);
     const uint32_t num_global_vars_limit =
-        _.options()->universalLimits.max_global_variables;
+        _.options()->universal_limits_.max_global_variables;
     if (_.num_global_vars() > num_global_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of Global Variables (Storage Class other than "

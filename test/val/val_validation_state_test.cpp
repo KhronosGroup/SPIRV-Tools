@@ -106,50 +106,50 @@ TEST_F(ValidationStateTest, CheckEntryPoints) {
 
 TEST_F(ValidationStateTest, CheckStructMemberLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_members, 32000u);
-  EXPECT_EQ(32000u, options_->universalLimits.max_struct_members);
+      options_, spv_validator_limit_max_struct_members, 32000u);
+  EXPECT_EQ(32000u, options_->universal_limits_.max_struct_members);
 }
 
 TEST_F(ValidationStateTest, CheckNumGlobalVarsLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_global_variables, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_global_variables);
+      options_, spv_validator_limit_max_global_variables, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_global_variables);
 }
 
 TEST_F(ValidationStateTest, CheckNumLocalVarsLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_local_variables, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_local_variables);
+      options_, spv_validator_limit_max_local_variables, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_local_variables);
 }
 
 TEST_F(ValidationStateTest, CheckStructDepthLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_depth, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_struct_depth);
+      options_, spv_validator_limit_max_struct_depth, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_struct_depth);
 }
 
 TEST_F(ValidationStateTest, CheckSwitchBranchesLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_switch_branches, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_switch_branches);
+      options_, spv_validator_limit_max_switch_branches, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_switch_branches);
 }
 
 TEST_F(ValidationStateTest, CheckFunctionArgsLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_function_args, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_function_args);
+      options_, spv_validator_limit_max_function_args, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_function_args);
 }
 
 TEST_F(ValidationStateTest, CheckCFGDepthLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_control_flow_nesting_depth, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_control_flow_nesting_depth);
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_control_flow_nesting_depth);
 }
 
 TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_access_chain_indexes, 100u);
-  EXPECT_EQ(100u, options_->universalLimits.max_access_chain_indexes);
+      options_, spv_validator_limit_max_access_chain_indexes, 100u);
+  EXPECT_EQ(100u, options_->universal_limits_.max_access_chain_indexes);
 }
 
 }  // anonymous namespace

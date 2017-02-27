@@ -490,7 +490,7 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
     }
   }
   const uint32_t num_function_args_limit =
-      module_.options()->universalLimits.max_function_args;
+      module_.options()->universal_limits_.max_function_args;
   if (num_args > num_function_args_limit) {
     DIAG(returnTypeIndex) << "OpTypeFunction may not take more than "
                           << num_function_args_limit
@@ -1315,7 +1315,7 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   // The instruction includes 4 words + N words (for N indexes)
   const size_t num_indexes = inst->words.size() - 4;
   const size_t num_indexes_limit =
-      module_.options()->universalLimits.max_access_chain_indexes;
+      module_.options()->universal_limits_.max_access_chain_indexes;
   if (num_indexes > num_indexes_limit) {
     DIAG(resultTypeIndex) << "The number of indexes in " << instr_name
                           << " may not exceed " << num_indexes_limit

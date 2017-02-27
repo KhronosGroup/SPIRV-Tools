@@ -40,6 +40,10 @@ class ValidationStateTest : public testing::Test {
         options_(spvValidatorOptionsCreate()),
         state_(context_, options_) {}
 
+  ~ValidationStateTest() {
+    spvContextDestroy(context_);
+    spvValidatorOptionsDestroy(options_);
+  }
  protected:
   spv_context context_;
   spv_validator_options options_;

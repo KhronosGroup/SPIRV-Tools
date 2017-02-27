@@ -114,7 +114,7 @@ TEST_F(ValidateLimits, CustomizedStructNumMembersGood) {
     spirv << " %1";
   }
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_members, 32000u);
+      options_, spv_validator_limit_max_struct_members, 32000u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -128,7 +128,7 @@ TEST_F(ValidateLimits, CustomizedStructNumMembersBad) {
     spirv << " %1";
   }
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_members, 32000u);
+      options_, spv_validator_limit_max_struct_members, 32000u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -220,7 +220,7 @@ OpFunctionEnd
   )";
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_switch_branches, 10u);
+      options_, spv_validator_limit_max_switch_branches, 10u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -250,7 +250,7 @@ OpFunctionEnd
   )";
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_switch_branches, 10u);
+      options_, spv_validator_limit_max_switch_branches, 10u);
   CompileSuccessfully(spirv.str());
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -303,7 +303,7 @@ TEST_F(ValidateLimits, CustomizedOpTypeFunctionGood) {
     spirv << " %1";
   }
   spvValidatorOptionsSetUniversalLimit(options_,
-                                       validator_limit_max_function_args, 100u);
+                                       spv_validator_limit_max_function_args, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -319,7 +319,7 @@ TEST_F(ValidateLimits, CustomizedOpTypeFunctionBad) {
     spirv << " %1";
   }
   spvValidatorOptionsSetUniversalLimit(options_,
-                                       validator_limit_max_function_args, 100u);
+                                       spv_validator_limit_max_function_args, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -378,7 +378,7 @@ TEST_F(ValidateLimits, CustomizedNumGlobalVarsGood) {
   }
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_global_variables, 50u);
+      options_, spv_validator_limit_max_global_variables, 50u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -397,7 +397,7 @@ TEST_F(ValidateLimits, CustomizedNumGlobalVarsBad) {
   }
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_global_variables, 50u);
+      options_, spv_validator_limit_max_global_variables, 50u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -483,7 +483,7 @@ TEST_F(ValidateLimits, CustomizedNumLocalVarsGood) {
   )";
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_local_variables, 100u);
+      options_, spv_validator_limit_max_local_variables, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -511,7 +511,7 @@ TEST_F(ValidateLimits, CustomizedNumLocalVarsBad) {
   )";
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_local_variables, 100u);
+      options_, spv_validator_limit_max_local_variables, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -565,7 +565,7 @@ TEST_F(ValidateLimits, CustomizedStructNestingDepthGood) {
     spirv << "\n";
   }
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_depth, 100u);
+      options_, spv_validator_limit_max_struct_depth, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -582,7 +582,7 @@ TEST_F(ValidateLimits, CustomizedStructNestingDepthBad) {
     spirv << "\n";
   }
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_struct_depth, 100u);
+      options_, spv_validator_limit_max_struct_depth, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(
@@ -662,7 +662,7 @@ TEST_F(ValidateLimits, CustomizedControlFlowDepthGood) {
   std::string spirv;
   GenerateSpirvProgramWithCfgNestingDepth(spirv, 10);
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_control_flow_nesting_depth, 10u);
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 10u);
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -672,7 +672,7 @@ TEST_F(ValidateLimits, CustomizedControlFlowDepthBad) {
   std::string spirv;
   GenerateSpirvProgramWithCfgNestingDepth(spirv, 11);
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_control_flow_nesting_depth, 10u);
+      options_, spv_validator_limit_max_control_flow_nesting_depth, 10u);
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),

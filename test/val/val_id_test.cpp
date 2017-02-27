@@ -2427,7 +2427,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesGood) {
   )";
 
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_access_chain_indexes, 10u);
+      options_, spv_validator_limit_max_access_chain_indexes, 10u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -2449,7 +2449,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
   const std::string expected_err = "The number of indexes in " + instr +
                                    " may not exceed 10. Found 11 indexes.";
   spvValidatorOptionsSetUniversalLimit(
-      options_, validator_limit_max_access_chain_indexes, 10u);
+      options_, spv_validator_limit_max_access_chain_indexes, 10u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));

@@ -21,35 +21,26 @@
 // returns the Enum for option in this case). Returns false otherwise.
 bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* limit);
 
+// Default initialization of this structure is to the default Universal Limits
+// described in the SPIR-V Spec.
 struct validator_universal_limits_t {
-  uint32_t max_struct_members;
-  uint32_t max_struct_depth;
-  uint32_t max_local_variables;
-  uint32_t max_global_variables;
-  uint32_t max_switch_branches;
-  uint32_t max_function_args;
-  uint32_t max_control_flow_nesting_depth;
-  uint32_t max_access_chain_indexes;
-};
-
-const validator_universal_limits_t kDefaultValidatorUniversalLimits = {
-    /* max_struct_members */ 16383,
-    /* max_struct_depth */ 255,
-    /* max_local_variables */ 524287,
-    /* max_global_variables */ 65535,
-    /* max_switch_branches */ 16383,
-    /* max_function_args */ 255,
-    /* max_control_flow_netsting_depth */ 1023,
-    /* max_access_chain_indexes */ 255,
+  uint32_t max_struct_members{16383};
+  uint32_t max_struct_depth{255};
+  uint32_t max_local_variables{524287};
+  uint32_t max_global_variables{65535};
+  uint32_t max_switch_branches{16383};
+  uint32_t max_function_args{255};
+  uint32_t max_control_flow_nesting_depth{1023};
+  uint32_t max_access_chain_indexes{255};
 };
 
 // Manages command line options passed to the SPIR-V Validator. New struct
 // members may be added for any new option.
 struct spv_validator_options_t {
   spv_validator_options_t()
-      : universalLimits(kDefaultValidatorUniversalLimits) {}
+      : universal_limits_() {}
 
-  validator_universal_limits_t universalLimits;
+  validator_universal_limits_t universal_limits_;
 };
 
 #endif  // LIBSPIRV_SPIRV_VALIDATOR_OPTIONS_H_

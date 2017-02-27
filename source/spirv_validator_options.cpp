@@ -22,21 +22,21 @@ bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* type) {
     return s && (0 == strncmp(s, b, strlen(b)));
   };
   if (match("--max-struct-members")) {
-    *type = validator_limit_max_struct_members;
+    *type = spv_validator_limit_max_struct_members;
   } else if (match("--max-struct_depth")) {
-    *type = validator_limit_max_struct_depth;
+    *type = spv_validator_limit_max_struct_depth;
   } else if (match("--max-local-variables")) {
-    *type = validator_limit_max_local_variables;
+    *type = spv_validator_limit_max_local_variables;
   } else if (match("--max-global-variables")) {
-    *type = validator_limit_max_global_variables;
+    *type = spv_validator_limit_max_global_variables;
   } else if (match("--max-switch-branches")) {
-    *type = validator_limit_max_global_variables;
+    *type = spv_validator_limit_max_global_variables;
   } else if (match("--max-function-args")) {
-    *type = validator_limit_max_function_args;
+    *type = spv_validator_limit_max_function_args;
   } else if (match("--max-control-flow-nesting-depth")) {
-    *type = validator_limit_max_control_flow_nesting_depth;
+    *type = spv_validator_limit_max_control_flow_nesting_depth;
   } else if (match("--max-access-chain-indexes")) {
-    *type = validator_limit_max_access_chain_indexes;
+    *type = spv_validator_limit_max_access_chain_indexes;
   } else {
     // The command line option for this validator limit has not been added.
     // Therefore we return false.
@@ -61,17 +61,17 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
   switch(limit_type) {
 #define LIMIT(TYPE, FIELD)                    \
     case TYPE:                                \
-      options->universalLimits.FIELD = limit; \
+      options->universal_limits_.FIELD = limit; \
       break;
-  LIMIT(validator_limit_max_struct_members, max_struct_members)
-  LIMIT(validator_limit_max_struct_depth, max_struct_depth)
-  LIMIT(validator_limit_max_local_variables, max_local_variables)
-  LIMIT(validator_limit_max_global_variables, max_global_variables)
-  LIMIT(validator_limit_max_switch_branches, max_switch_branches)
-  LIMIT(validator_limit_max_function_args, max_function_args)
-  LIMIT(validator_limit_max_control_flow_nesting_depth,
+  LIMIT(spv_validator_limit_max_struct_members, max_struct_members)
+  LIMIT(spv_validator_limit_max_struct_depth, max_struct_depth)
+  LIMIT(spv_validator_limit_max_local_variables, max_local_variables)
+  LIMIT(spv_validator_limit_max_global_variables, max_global_variables)
+  LIMIT(spv_validator_limit_max_switch_branches, max_switch_branches)
+  LIMIT(spv_validator_limit_max_function_args, max_function_args)
+  LIMIT(spv_validator_limit_max_control_flow_nesting_depth,
         max_control_flow_nesting_depth)
-  LIMIT(validator_limit_max_access_chain_indexes, max_access_chain_indexes)
+  LIMIT(spv_validator_limit_max_access_chain_indexes, max_access_chain_indexes)
 #undef LIMIT
   }
 }
