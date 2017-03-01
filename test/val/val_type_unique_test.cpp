@@ -29,9 +29,9 @@ using std::string;
 using ValidateTypeUnique = spvtest::ValidateBase<bool>;
 
 // TODO(atgoo@github) Error logging temporarily disabled because it's failing
-// vulkancts tests.
-// const spv_result_t g_duplicate_type_error = SPV_ERROR_INVALID_DATA;
-const spv_result_t g_duplicate_type_error = SPV_SUCCESS;
+// vulkancts tests. See https://github.com/KhronosGroup/SPIRV-Tools/issues/559
+// const spv_result_t kDuplicateTypeError = SPV_ERROR_INVALID_DATA;
+const spv_result_t kDuplicateTypeError = SPV_SUCCESS;
 
 const string& GetHeader() {
   static const string header = R"(
@@ -106,7 +106,7 @@ TEST_F(ValidateTypeUnique, duplicate_void) {
 %boolt2 = OpTypeVoid
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(SpvOpTypeVoid)));
 }
 
@@ -115,7 +115,7 @@ TEST_F(ValidateTypeUnique, duplicate_bool) {
 %boolt2 = OpTypeBool
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(SpvOpTypeBool)));
 }
 
@@ -124,7 +124,7 @@ TEST_F(ValidateTypeUnique, duplicate_int) {
 %uintt2 = OpTypeInt 32 0
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(SpvOpTypeInt)));
 }
 
@@ -133,7 +133,7 @@ TEST_F(ValidateTypeUnique, duplicate_float) {
 %floatt2 = OpTypeFloat 32
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(SpvOpTypeFloat)));
 }
 
@@ -142,7 +142,7 @@ TEST_F(ValidateTypeUnique, duplicate_vec3) {
 %vec3t2 = OpTypeVector %floatt 3
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypeVector)));
 }
@@ -152,7 +152,7 @@ TEST_F(ValidateTypeUnique, duplicate_mat33) {
 %mat33t2 = OpTypeMatrix %vec3t 3
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypeMatrix)));
 }
@@ -162,7 +162,7 @@ TEST_F(ValidateTypeUnique, duplicate_vfunc) {
 %vfunct2 = OpTypeFunction %voidt
 )" + GetBody();
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(g_duplicate_type_error, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypeFunction)));
 }
@@ -179,8 +179,7 @@ OpMemoryModel Physical32 OpenCL
 %ps2 = OpTypePipeStorage
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(g_duplicate_type_error,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypePipeStorage)));
 }
@@ -196,8 +195,7 @@ OpMemoryModel Physical32 OpenCL
 %nb2 = OpTypeNamedBarrier
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(g_duplicate_type_error,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypeNamedBarrier)));
 }
