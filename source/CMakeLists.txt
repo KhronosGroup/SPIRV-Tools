@@ -38,7 +38,7 @@ endmacro(spvtools_core_tables)
 macro(spvtools_vimsyntax VERSION CLVERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
   set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.glsl.std.450.grammar.json")
-  set(OPENCL_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst-1.0.opencl.std.grammar.json")
+  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.opencl.std.100.grammar.json")
   set(VIMSYNTAX_FILE "${spirv-tools_BINARY_DIR}/spvasm.vim")
   add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
       COMMAND ${PYTHON_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
@@ -67,7 +67,7 @@ endmacro(spvtools_glsl_tables)
 
 macro(spvtools_opencl_tables VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/spirv.core.grammar.json")
-  set(OPENCL_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst-${VERSION}.opencl.std.grammar.json")
+  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${VERSION}/extinst.opencl.std.100.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts-${VERSION}.inc")
   add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
