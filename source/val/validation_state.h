@@ -57,8 +57,11 @@ class ValidationState_t {
  public:
   // Features that can optionally be turned on by a capability.
   struct Feature {
-    bool declare_int16_type = false;    // Allow OpTypeInt with 16 bit width?
-    bool declare_float16_type = false;  // Allow OpTypeFloat with 16 bit width?
+    bool declare_int16_type = false;     // Allow OpTypeInt with 16 bit width?
+    bool declare_float16_type = false;   // Allow OpTypeFloat with 16 bit width?
+    bool free_fp_rounding_mode = false;  // Allow the FPRoundingMode decoration
+                                         // and its vaules to be used without
+                                         // requiring any capability
   };
 
   ValidationState_t(const spv_const_context context,
@@ -202,7 +205,7 @@ class ValidationState_t {
   /// Returns the memory model of this module, or Simple if uninitialized.
   SpvMemoryModel memory_model() const;
 
-  AssemblyGrammar& grammar() { return grammar_; }
+  const AssemblyGrammar& grammar() const { return grammar_; }
 
   /// Registers the instruction
   void RegisterInstruction(const spv_parsed_instruction_t& inst);
