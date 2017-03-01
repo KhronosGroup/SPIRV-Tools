@@ -63,7 +63,7 @@ spv_result_t CapabilityError(ValidationState_t& _, int which_operand,
 }
 
 // Returns an operand's required capabilities.
-CapabilitySet RequiredCapabilities(const AssemblyGrammar& grammar,
+CapabilitySet RequiredCapabilities(const ValidationState_t& state,
                                    spv_operand_type_t type, uint32_t operand) {
   // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
   // decoration does not require the associated capability.  The use of such
@@ -79,11 +79,25 @@ CapabilitySet RequiredCapabilities(const AssemblyGrammar& grammar,
       default:
         break;
     }
+  } else if (type == SPV_OPERAND_TYPE_FP_ROUNDING_MODE) {
+    // Allow all FP rounding modes if requested
+    if (state.features().free_fp_rounding_mode) {
+      return CapabilitySet();
+    }
   }
 
   spv_operand_desc operand_desc;
-  if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc)) {
-    return operand_desc->capabilities;
+  const auto ret = state.grammar().lookupOperand(type, operand, &operand_desc);
+  if (ret == SPV_SUCCESS) {
+    CapabilitySet result = operand_desc->capabilities;
+
+    // Allow FPRoundingMode decoration if requested
+    if (state.features().free_fp_rounding_mode &&
+        type == SPV_OPERAND_TYPE_DECORATION &&
+        operand_desc->value == SpvDecorationFPRoundingMode) {
+      return CapabilitySet();
+    }
+    return result;
   }
 
   return CapabilitySet();
@@ -110,8 +124,7 @@ spv_result_t CapCheck(ValidationState_t& _,
       // Check for required capabilities for each bit position of the mask.
       for (uint32_t mask_bit = 0x80000000; mask_bit; mask_bit >>= 1) {
         if (word & mask_bit) {
-          const auto caps =
-              RequiredCapabilities(_.grammar(), operand.type, mask_bit);
+          const auto caps = RequiredCapabilities(_, operand.type, mask_bit);
           if (!_.HasAnyOf(caps)) {
             return CapabilityError(_, i + 1, opcode,
                                    ToString(caps, _.grammar()));
@@ -124,7 +137,7 @@ spv_result_t CapCheck(ValidationState_t& _,
       // https://github.com/KhronosGroup/SPIRV-Tools/issues/248
     } else {
       // Check the operand word as a whole.
-      const auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
+      const auto caps = RequiredCapabilities(_, operand.type, word);
       if (!_.HasAnyOf(caps)) {
         return CapabilityError(_, i + 1, opcode, ToString(caps, _.grammar()));
       }
@@ -142,9 +155,8 @@ spv_result_t ReservedCheck(ValidationState_t& _,
     case SpvOpImageSparseSampleProjExplicitLod:
     case SpvOpImageSparseSampleProjDrefImplicitLod:
     case SpvOpImageSparseSampleProjDrefExplicitLod:
-      return _.diag(SPV_ERROR_INVALID_VALUE)
-             << spvOpcodeString(opcode)
-             << " is reserved for future use.";
+      return _.diag(SPV_ERROR_INVALID_VALUE) << spvOpcodeString(opcode)
+                                             << " is reserved for future use.";
     default:
       return SPV_SUCCESS;
   }

@@ -298,6 +298,7 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     case SpvCapabilityStorageInputOutput16:
       features_.declare_int16_type = true;
       features_.declare_float16_type = true;
+      features_.free_fp_rounding_mode = true;
     default:
       break;
   }
