@@ -14,8 +14,6 @@
 
 // Ensures type declarations are unique unless allowed by the specification.
 
-#include <cstdio>
-
 #include "validate.h"
 
 #include "diagnostic.h"
