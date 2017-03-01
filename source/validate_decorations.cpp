@@ -45,7 +45,8 @@ bool hasImportLinkageAttribute(uint32_t id, ValidationState_t& vstate) {
   return std::any_of(decorations.begin(), decorations.end(),
                      [](const Decoration& d) {
                        return SpvDecorationLinkageAttributes == d.dec_type() &&
-                              d.params().size() >= 2u && d.params().back() == 1;
+                              d.params().size() >= 2u &&
+                              d.params().back() == SpvLinkageTypeImport;
                      });
 }
 
