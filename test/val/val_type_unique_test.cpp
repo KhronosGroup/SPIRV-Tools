@@ -59,6 +59,8 @@ OpMemoryModel Logical GLSL450
 %struct2 = OpTypeStruct %floatt %floatt %vec3t
 %false = OpConstantFalse %boolt
 %true = OpConstantTrue %boolt
+%runtime_arrayt = OpTypeRuntimeArray %floatt
+%runtime_arrayt2 = OpTypeRuntimeArray %floatt
 )";
 
   return header;

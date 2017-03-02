@@ -30,7 +30,8 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   if (spvOpcodeGeneratesType(opcode)) {
-    if (opcode == SpvOpTypeArray || opcode == SpvOpTypeStruct) {
+    if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
+        opcode == SpvOpTypeStruct) {
       // Duplicate declarations of aggregates are allowed.
       return SPV_SUCCESS;
     }
