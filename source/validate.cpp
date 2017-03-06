@@ -171,6 +171,7 @@ spv_result_t ProcessInstruction(void* user_data,
   }
 
   DebugInstructionPass(_, inst);
+  if (auto error = CapabilityPass(_, inst)) return error;
   if (auto error = DataRulesPass(_, inst)) return error;
   if (auto error = IdPass(_, inst)) return error;
   if (auto error = ModuleLayoutPass(_, inst)) return error;
