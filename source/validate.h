@@ -159,6 +159,12 @@ spv_result_t ValidateDecorations(ValidationState_t& _);
 /// (see section 2.8 Types and Variables)
 spv_result_t TypeUniquePass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
+
+// Validates that capability declarations use operands allowed in the current
+// context.
+spv_result_t CapabilityPass(ValidationState_t& _,
+                            const spv_parsed_instruction_t* inst);
+
 }  // namespace libspirv
 
 /// @brief Validate the ID usage of the instruction stream

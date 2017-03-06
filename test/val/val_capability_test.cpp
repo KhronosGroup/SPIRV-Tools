@@ -191,7 +191,7 @@ const vector<string>& AllCapabilities() {
   return *r;
 }
 
-const vector<string>& AllV10Capabilities() {
+const vector<string>& AllSpirV10Capabilities() {
   static const auto r = new vector<string>{
     "",
     "Matrix",
@@ -247,6 +247,47 @@ const vector<string>& AllV10Capabilities() {
     "InterpolationFunction",
     "TransformFeedback",
     "GeometryStreams",
+    "StorageImageReadWithoutFormat",
+    "StorageImageWriteWithoutFormat",
+    "MultiViewport"};
+  return *r;
+}
+
+const vector<string>& AllVulkan10Capabilities() {
+  static const auto r = new vector<string>{
+    "",
+    "Matrix",
+    "Shader",
+    "InputAttachment",
+    "Sampled1D",
+    "Image1D",
+    "SampledBuffer",
+    "ImageBuffer",
+    "ImageQuery",
+    "DerivativeControl",
+    "Geometry",
+    "Tessellation",
+    "Float64",
+    "Int64",
+    "Int16",
+    "TessellationPointSize",
+    "GeometryPointSize",
+    "ImageGatherExtended",
+    "StorageImageMultisample",
+    "UniformBufferArrayDynamicIndexing",
+    "SampledImageArrayDynamicIndexing",
+    "StorageBufferArrayDynamicIndexing",
+    "StorageImageArrayDynamicIndexing",
+    "ClipDistance",
+    "CullDistance",
+    "ImageCubeArray",
+    "SampleRateShading",
+    "SparseResidency",
+    "MinLod",
+    "SampledCubeArray",
+    "ImageMSArray",
+    "StorageImageExtendedFormats",
+    "InterpolationFunction",
     "StorageImageReadWithoutFormat",
     "StorageImageWriteWithoutFormat",
     "MultiViewport"};
@@ -1027,7 +1068,7 @@ make_pair(string(kGLSL450MemoryModel) +
 // clang-format on
 INSTANTIATE_TEST_CASE_P(
     DecorationSpecId, ValidateCapability,
-    Combine(ValuesIn(AllV10Capabilities()),
+    Combine(ValuesIn(AllSpirV10Capabilities()),
             Values(make_pair(string(kOpenCLMemoryModel) +
                                  "OpEntryPoint Vertex %func \"shader\" \n" +
                                  "OpDecorate %1 SpecId 1\n"
@@ -1296,46 +1337,47 @@ make_pair(string(kOpenCLMemoryModel) +
 // See https://github.com/KhronosGroup/SPIRV-Tools/issues/365
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityVulkan10,
                         Combine(
-                            // Vulkan 1.0 is based on SPIR-V 1.0
-                            ValuesIn(AllV10Capabilities()),
+                            // All capabilities to try.
+                            ValuesIn(AllSpirV10Capabilities()),
                             Values(
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn PointSize\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities()),
+          // Capabilities which should succeed.
+          AllVulkan10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn ClipDistance\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities()),
+          AllVulkan10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn CullDistance\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities())
+          AllVulkan10Capabilities())
 )),);
 
 INSTANTIATE_TEST_CASE_P(BuiltIn, ValidateCapabilityOpenGL40,
                         Combine(
                             // OpenGL 4.0 is based on SPIR-V 1.0
-                            ValuesIn(AllV10Capabilities()),
+                            ValuesIn(AllSpirV10Capabilities()),
                             Values(
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn PointSize\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities()),
+          AllSpirV10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn ClipDistance\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities()),
+          AllSpirV10Capabilities()),
 make_pair(string(kGLSL450MemoryModel) +
           "OpEntryPoint Vertex %func \"shader\" \n" +
           "OpDecorate %intt BuiltIn CullDistance\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          AllV10Capabilities())
+          AllSpirV10Capabilities())
 )),);
 
 // TODO(umar): Selection Control
@@ -1530,6 +1572,53 @@ OpMemoryModel Logical GLSL450
 )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCapability, NonVulkan10Capability) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%u32    = OpTypeInt 32 0
+%i32    = OpTypeInt 32 1
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability value 5 is not allowed by Vulkan 1.0"));
+}
+
+TEST_F(ValidateCapability, Vulkan10EnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DrawParameters
+OpExtension "SPV_KHR_shader_draw_parameters"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "shader"
+OpDecorate %intt BuiltIn PointSize
+%intt = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateCapability, Vulkan10NotEnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DrawParameters
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "shader"
+OpDecorate %intt BuiltIn PointSize
+%intt = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability value 4427 is not allowed by Vulkan 1.0"));
 }
 
 }  // namespace anonymous
