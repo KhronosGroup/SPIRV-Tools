@@ -360,5 +360,93 @@ TEST_F(ValidateDecorations, EntryPointFunctionHasLinkageAttributeBad) {
                 "an OpEntryPoint instruction."));
 }
 
+TEST_F(ValidateDecorations, FunctionDeclarationWithoutImportLinkageBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Function declaration (id 3) must have a LinkageAttributes "
+                "decoration with the Import Linkage type."));
+}
+
+TEST_F(ValidateDecorations, FunctionDeclarationWithImportLinkageGood) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %main LinkageAttributes "link_fn" Import
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateDecorations, FunctionDeclarationWithExportLinkageBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %main LinkageAttributes "link_fn" Export
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Function declaration (id 1) must have a LinkageAttributes "
+                "decoration with the Import Linkage type."));
+}
+
+TEST_F(ValidateDecorations, FunctionDefinitionWithImportLinkageBad) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+               OpDecorate %main LinkageAttributes "link_fn" Import
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Function definition (id 1) may not be decorated with "
+                        "Import Linkage type."));
+}
+
+TEST_F(ValidateDecorations, FunctionDefinitionWithoutImportLinkageGood) {
+  string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+     %void = OpTypeVoid
+     %func = OpTypeFunction %void
+       %main = OpFunction %void None %func
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
 }  // anonymous namespace
 

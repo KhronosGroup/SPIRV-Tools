@@ -266,6 +266,8 @@ int32_t spvOpcodeGeneratesType(SpvOp op) {
     case SpvOpTypeReserveId:
     case SpvOpTypeQueue:
     case SpvOpTypePipe:
+    case SpvOpTypePipeStorage:
+    case SpvOpTypeNamedBarrier:
       return true;
     default:
       // In particular, OpTypeForwardPointer does not generate a type,

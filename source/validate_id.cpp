@@ -26,6 +26,7 @@
 #include "instruction.h"
 #include "message.h"
 #include "opcode.h"
+#include "spirv_validator_options.h"
 #include "spirv-tools/libspirv.h"
 #include "val/function.h"
 #include "val/validation_state.h"
@@ -506,9 +507,12 @@ bool idUsage::isValid<SpvOpTypeFunction>(const spv_instruction_t* inst,
       return false;
     }
   }
-  if (num_args > 255) {
-    DIAG(returnTypeIndex) << "OpTypeFunction may not take more than 255 "
-                             "arguments. OpTypeFunction <id> '"
+  const uint32_t num_function_args_limit =
+      module_.options()->universal_limits_.max_function_args;
+  if (num_args > num_function_args_limit) {
+    DIAG(returnTypeIndex) << "OpTypeFunction may not take more than "
+                          << num_function_args_limit
+                          << " arguments. OpTypeFunction <id> '"
                           << inst->words[1] << "' has " << num_args
                           << " arguments.";
     return false;
@@ -1328,7 +1332,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
   // The number of indexes passed to OpAccessChain may not exceed 255
   // The instruction includes 4 words + N words (for N indexes)
   const size_t num_indexes = inst->words.size() - 4;
-  const size_t num_indexes_limit = 255;
+  const size_t num_indexes_limit =
+      module_.options()->universal_limits_.max_access_chain_indexes;
   if (num_indexes > num_indexes_limit) {
     DIAG(resultTypeIndex) << "The number of indexes in " << instr_name
                           << " may not exceed " << num_indexes_limit

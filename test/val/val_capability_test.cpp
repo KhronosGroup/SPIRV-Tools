@@ -419,6 +419,13 @@ const char kVoidFVoid[] = \
   "           OpReturn"
   "           OpFunctionEnd ";
 
+const char kVoidFVoid2[] = \
+  " %void_f = OpTypeFunction %voidt"
+  " %func   = OpFunction %voidt None %void_f"
+  " %label  = OpLabel"
+  "           OpReturn"
+  "           OpFunctionEnd ";
+
 INSTANTIATE_TEST_CASE_P(ExecutionModel, ValidateCapability,
                         Combine(
                             ValuesIn(AllCapabilities()),
@@ -717,43 +724,43 @@ make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt 1D 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt 1D 0 0 0 0 Unknown" + string(kVoidFVoid2),
           Sampled1DDependencies()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt 2D 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt 2D 0 0 0 0 Unknown" + string(kVoidFVoid2),
           AllCapabilities()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt 3D 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt 3D 0 0 0 0 Unknown" + string(kVoidFVoid2),
           AllCapabilities()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt Cube 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt Cube 0 0 0 0 Unknown" + string(kVoidFVoid2),
           ShaderDependencies()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt Rect 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt Rect 0 0 0 0 Unknown" + string(kVoidFVoid2),
           SampledRectDependencies()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt Buffer 0 0 0 0 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt Buffer 0 0 0 0 Unknown" + string(kVoidFVoid2),
           SampledBufferDependencies()),
 make_pair(" OpCapability ImageBasic" +
           string(kOpenCLMemoryModel) +
           string(" OpEntryPoint Kernel %func \"compute\"") +
           " %voidt = OpTypeVoid"
-          " %imgt = OpTypeImage %voidt SubpassData 0 0 0 2 Unknown" + string(kVoidFVoid),
+          " %imgt = OpTypeImage %voidt SubpassData 0 0 0 2 Unknown" + string(kVoidFVoid2),
           vector<string>{"InputAttachment"})
 )),);
 

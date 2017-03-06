@@ -16,6 +16,7 @@
 #define LIBSPIRV_VAL_VALIDATIONSTATE_H_
 
 #include <deque>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -54,10 +55,23 @@ enum ModuleLayoutSection {
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
  public:
-  ValidationState_t(const spv_const_context context);
+  // Features that can optionally be turned on by a capability.
+  struct Feature {
+    bool declare_int16_type = false;     // Allow OpTypeInt with 16 bit width?
+    bool declare_float16_type = false;   // Allow OpTypeFloat with 16 bit width?
+    bool free_fp_rounding_mode = false;  // Allow the FPRoundingMode decoration
+                                         // and its vaules to be used without
+                                         // requiring any capability
+  };
+
+  ValidationState_t(const spv_const_context context,
+                    const spv_const_validator_options opt);
 
   /// Returns the context
   spv_const_context context() const { return context_; }
+
+  /// Returns the command line options
+  spv_const_validator_options options() const { return options_; }
 
   /// Forward declares the id in the module
   spv_result_t ForwardDeclareId(uint32_t id);
@@ -191,7 +205,7 @@ class ValidationState_t {
   /// Returns the memory model of this module, or Simple if uninitialized.
   SpvMemoryModel memory_model() const;
 
-  AssemblyGrammar& grammar() { return grammar_; }
+  const AssemblyGrammar& grammar() const { return grammar_; }
 
   /// Registers the instruction
   void RegisterInstruction(const spv_parsed_instruction_t& inst);
@@ -290,10 +304,21 @@ class ValidationState_t {
   bool IsStructTypeWithBuiltInMember(uint32_t id) const {
     return (builtin_structs_.find(id) != builtin_structs_.end());
   }
+
+  // Returns the state of optional features.
+  const Feature& features() const { return features_; }
+
+  /// Adds the instruction data to unique_type_declarations_.
+  /// Returns false if an identical type declaration already exists.
+  bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
   const spv_const_context context_;
+
+  /// Stores the Validator command line options. Must be a valid options object.
+  const spv_const_validator_options options_;
 
   /// Tracks the number of instructions evaluated by the validator
   int instruction_counter_;
@@ -354,6 +379,12 @@ class ValidationState_t {
   /// Stores the list of decorations for a given <id>
   std::unordered_map<uint32_t, std::vector<Decoration>> id_decorations_;
 
+  /// Stores type declarations which need to be unique (i.e. non-aggregates),
+  /// in the form [opcode, operand words], result_id is not stored.
+  /// Using ordered set to avoid the need for a vector hash function.
+  /// The size of this container is expected not to exceed double-digits.
+  std::set<std::vector<uint32_t>> unique_type_declarations_;
+
   AssemblyGrammar grammar_;
 
   SpvAddressingModel addressing_model_;
@@ -361,6 +392,10 @@ class ValidationState_t {
 
   /// NOTE: See correspoding getter functions
   bool in_function_;
+
+  // The state of optional features.  These are determined by capabilities
+  // declared by the module.
+  Feature features_;
 };
 
 }  /// namespace libspirv

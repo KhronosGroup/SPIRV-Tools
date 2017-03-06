@@ -154,6 +154,11 @@ spv_result_t InstructionPass(ValidationState_t& _,
 /// Performs decoration validation.
 spv_result_t ValidateDecorations(ValidationState_t& _);
 
+/// Validates that type declarations are unique, unless multiple declarations
+/// of the same data type are allowed by the specification.
+/// (see section 2.8 Types and Variables)
+spv_result_t TypeUniquePass(ValidationState_t& _,
+                            const spv_parsed_instruction_t* inst);
 }  // namespace libspirv
 
 /// @brief Validate the ID usage of the instruction stream
@@ -199,8 +204,8 @@ namespace spvtools {
 // "Validation State" is not destroyed upon function return; it lives on and is
 // pointed to by the vstate unique_ptr.
 spv_result_t ValidateBinaryAndKeepValidationState(
-    const spv_const_context context, const uint32_t* words,
-    const size_t num_words, spv_diagnostic* pDiagnostic,
+    const spv_const_context context, spv_const_validator_options options,
+    const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<libspirv::ValidationState_t>* vstate);
 }  // namespace spvtools
 

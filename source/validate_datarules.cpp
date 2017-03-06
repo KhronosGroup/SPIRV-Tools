@@ -69,13 +69,13 @@ spv_result_t ValidateFloatSize(ValidationState_t& _,
     return SPV_SUCCESS;
   }
   if (num_bits == 16) {
-    if (_.HasCapability(SpvCapabilityFloat16) ||
-        _.HasCapability(SpvCapabilityFloat16Buffer)) {
+    if (_.features().declare_float16_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Using a 16-bit floating point "
-           << "type requires the Float16 or Float16Buffer capability.";
+           << "type requires the Float16 or Float16Buffer capability,"
+              " or an extension that explicitly enables 16-bit floating point.";
   }
   if (num_bits == 64) {
     if (_.HasCapability(SpvCapabilityFloat64)) {
@@ -108,11 +108,12 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
            << "Using an 8-bit integer type requires the Int8 capability.";
   }
   if (num_bits == 16) {
-    if (_.HasCapability(SpvCapabilityInt16)) {
+    if (_.features().declare_int16_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA)
-           << "Using a 16-bit integer type requires the Int16 capability.";
+           << "Using a 16-bit integer type requires the Int16 capability,"
+              " or an extension that explicitly enables 16-bit integers.";
   }
   if (num_bits == 64) {
     if (_.HasCapability(SpvCapabilityInt64)) {

@@ -44,6 +44,9 @@ class Pass {
   // one if messages are of concern.
   Pass() : consumer_(nullptr) {}
 
+  // Destructs the pass.
+  virtual ~Pass() = default;
+
   // Returns a descriptive name for this pass.
   virtual const char* name() const = 0;
 

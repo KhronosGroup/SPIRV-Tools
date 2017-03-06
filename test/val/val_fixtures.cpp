@@ -25,7 +25,11 @@
 namespace spvtest {
 
 template <typename T>
-ValidateBase<T>::ValidateBase() : binary_(), diagnostic_() {}
+ValidateBase<T>::ValidateBase() : binary_(), diagnostic_() {
+  // Initialize to default command line options. Different tests can then
+  // specialize specific options as necessary.
+  options_ = spvValidatorOptionsCreate();
+}
 
 template <typename T>
 spv_const_binary ValidateBase<T>::get_const_binary() {
@@ -39,6 +43,7 @@ void ValidateBase<T>::TearDown() {
   }
   spvDiagnosticDestroy(diagnostic_);
   spvBinaryDestroy(binary_);
+  spvValidatorOptionsDestroy(options_);
 }
 
 template <typename T>
@@ -63,21 +68,26 @@ void ValidateBase<T>::OverwriteAssembledBinary(uint32_t index, uint32_t word) {
 
 template <typename T>
 spv_result_t ValidateBase<T>::ValidateInstructions(spv_target_env env) {
-  return spvValidate(ScopedContext(env).context, get_const_binary(),
-                     &diagnostic_);
+  return spvValidateWithOptions(ScopedContext(env).context, options_,
+                                get_const_binary(), &diagnostic_);
 }
 
 template <typename T>
 spv_result_t ValidateBase<T>::ValidateAndRetrieveValidationState(
     spv_target_env env) {
   return spvtools::ValidateBinaryAndKeepValidationState(
-      ScopedContext(env).context, get_const_binary()->code,
+      ScopedContext(env).context, options_, get_const_binary()->code,
       get_const_binary()->wordCount, &diagnostic_, &vstate_);
 }
 
 template <typename T>
 std::string ValidateBase<T>::getDiagnosticString() {
   return std::string(diagnostic_->error);
+}
+
+template <typename T>
+spv_validator_options ValidateBase<T>::getValidatorOptions() {
+  return options_;
 }
 
 template <typename T>

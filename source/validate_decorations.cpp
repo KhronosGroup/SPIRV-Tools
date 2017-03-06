@@ -23,6 +23,7 @@
 
 using libspirv::Decoration;
 using libspirv::DiagnosticStream;
+using libspirv::Instruction;
 using libspirv::ValidationState_t;
 
 namespace {
@@ -38,12 +39,41 @@ bool isBuiltInStruct(uint32_t struct_id, ValidationState_t& vstate) {
       });
 }
 
-}  // anonymous namespace
+// Returns true if the given ID has the Import LinkageAttributes decoration.
+bool hasImportLinkageAttribute(uint32_t id, ValidationState_t& vstate) {
+  const auto& decorations = vstate.id_decorations(id);
+  return std::any_of(decorations.begin(), decorations.end(),
+                     [](const Decoration& d) {
+                       return SpvDecorationLinkageAttributes == d.dec_type() &&
+                              d.params().size() >= 2u &&
+                              d.params().back() == SpvLinkageTypeImport;
+                     });
+}
 
-namespace libspirv {
+spv_result_t CheckLinkageAttrOfFunctions(ValidationState_t& vstate) {
+  for (const auto& function : vstate.functions()) {
+    if (function.block_count() == 0u) {
+      // A function declaration (an OpFunction with no basic blocks), must have
+      // a Linkage Attributes Decoration with the Import Linkage Type.
+      if (!hasImportLinkageAttribute(function.id(), vstate)) {
+        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+               << "Function declaration (id " << function.id()
+               << ") must have a LinkageAttributes decoration with the Import "
+                  "Linkage type.";
+      }
+    } else {
+      if (hasImportLinkageAttribute(function.id(), vstate)) {
+        return vstate.diag(SPV_ERROR_INVALID_BINARY)
+               << "Function definition (id " << function.id()
+               << ") may not be decorated with Import Linkage type.";
+      }
+    }
+  }
+  return SPV_SUCCESS;
+}
 
-// Validates that decorations have been applied properly.
-spv_result_t ValidateDecorations(ValidationState_t& vstate) {
+// Checks whether an imported variable is initialized by this module.
+spv_result_t CheckImportedVariableInitialization(ValidationState_t& vstate) {
   // According the SPIR-V Spec 2.16.1, it is illegal to initialize an imported
   // variable. This means that a module-scope OpVariable with initialization
   // value cannot be marked with the Import Linkage Type (import type id = 1).
@@ -51,20 +81,18 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
     // Initializer <id> is an optional argument for OpVariable. If initializer
     // <id> is present, the instruction will have 5 words.
     auto variable_instr = vstate.FindDef(global_var_id);
-    if (variable_instr->words().size() == 5u) {
-      for (const auto& decoration : vstate.id_decorations(global_var_id)) {
-        // the Linkage Type is the last parameter of the decoration.
-        if (SpvDecorationLinkageAttributes == decoration.dec_type() &&
-            decoration.params().size() >= 2u &&
-            decoration.params().back() == 1) {
-          return vstate.diag(SPV_ERROR_INVALID_ID)
-                 << "A module-scope OpVariable with initialization value "
-                    "cannot be marked with the Import Linkage Type.";
-        }
-      }
+    if (variable_instr->words().size() == 5u &&
+        hasImportLinkageAttribute(global_var_id, vstate)) {
+      return vstate.diag(SPV_ERROR_INVALID_ID)
+             << "A module-scope OpVariable with initialization value "
+                "cannot be marked with the Import Linkage Type.";
     }
   }
+  return SPV_SUCCESS;
+}
 
+// Checks whether proper decorations have been appied to the entry points.
+spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
   for (uint32_t entry_point : vstate.entry_points()) {
     const auto& interfaces = vstate.entry_point_interfaces(entry_point);
     int num_builtin_inputs = 0;
@@ -121,9 +149,18 @@ spv_result_t ValidateDecorations(ValidationState_t& vstate) {
       }
     }
   }
+  return SPV_SUCCESS;
+}
 
-  // TODO: Refactor this function into smaller pieces.
+}  // anonymous namespace
 
+namespace libspirv {
+
+// Validates that decorations have been applied properly.
+spv_result_t ValidateDecorations(ValidationState_t& vstate) {
+  if (auto error = CheckImportedVariableInitialization(vstate)) return error;
+  if (auto error = CheckDecorationsOfEntryPoints(vstate)) return error;
+  if (auto error = CheckLinkageAttrOfFunctions(vstate)) return error;
   return SPV_SUCCESS;
 }
 

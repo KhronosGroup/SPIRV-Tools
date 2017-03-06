@@ -27,6 +27,7 @@
 #include "opcode.h"
 #include "operand.h"
 #include "spirv_definition.h"
+#include "spirv_validator_options.h"
 #include "val/function.h"
 #include "val/validation_state.h"
 
@@ -62,7 +63,7 @@ spv_result_t CapabilityError(ValidationState_t& _, int which_operand,
 }
 
 // Returns an operand's required capabilities.
-CapabilitySet RequiredCapabilities(const AssemblyGrammar& grammar,
+CapabilitySet RequiredCapabilities(const ValidationState_t& state,
                                    spv_operand_type_t type, uint32_t operand) {
   // Mere mention of PointSize, ClipDistance, or CullDistance in a Builtin
   // decoration does not require the associated capability.  The use of such
@@ -78,11 +79,25 @@ CapabilitySet RequiredCapabilities(const AssemblyGrammar& grammar,
       default:
         break;
     }
+  } else if (type == SPV_OPERAND_TYPE_FP_ROUNDING_MODE) {
+    // Allow all FP rounding modes if requested
+    if (state.features().free_fp_rounding_mode) {
+      return CapabilitySet();
+    }
   }
 
   spv_operand_desc operand_desc;
-  if (SPV_SUCCESS == grammar.lookupOperand(type, operand, &operand_desc)) {
-    return operand_desc->capabilities;
+  const auto ret = state.grammar().lookupOperand(type, operand, &operand_desc);
+  if (ret == SPV_SUCCESS) {
+    CapabilitySet result = operand_desc->capabilities;
+
+    // Allow FPRoundingMode decoration if requested
+    if (state.features().free_fp_rounding_mode &&
+        type == SPV_OPERAND_TYPE_DECORATION &&
+        operand_desc->value == SpvDecorationFPRoundingMode) {
+      return CapabilitySet();
+    }
+    return result;
   }
 
   return CapabilitySet();
@@ -109,8 +124,7 @@ spv_result_t CapCheck(ValidationState_t& _,
       // Check for required capabilities for each bit position of the mask.
       for (uint32_t mask_bit = 0x80000000; mask_bit; mask_bit >>= 1) {
         if (word & mask_bit) {
-          const auto caps =
-              RequiredCapabilities(_.grammar(), operand.type, mask_bit);
+          const auto caps = RequiredCapabilities(_, operand.type, mask_bit);
           if (!_.HasAnyOf(caps)) {
             return CapabilityError(_, i + 1, opcode,
                                    ToString(caps, _.grammar()));
@@ -123,7 +137,7 @@ spv_result_t CapCheck(ValidationState_t& _,
       // https://github.com/KhronosGroup/SPIRV-Tools/issues/248
     } else {
       // Check the operand word as a whole.
-      const auto caps = RequiredCapabilities(_.grammar(), operand.type, word);
+      const auto caps = RequiredCapabilities(_, operand.type, word);
       if (!_.HasAnyOf(caps)) {
         return CapabilityError(_, i + 1, opcode, ToString(caps, _.grammar()));
       }
@@ -141,9 +155,8 @@ spv_result_t ReservedCheck(ValidationState_t& _,
     case SpvOpImageSparseSampleProjExplicitLod:
     case SpvOpImageSparseSampleProjDrefImplicitLod:
     case SpvOpImageSparseSampleProjDrefExplicitLod:
-      return _.diag(SPV_ERROR_INVALID_VALUE)
-             << spvOpcodeString(opcode)
-             << " is reserved for future use.";
+      return _.diag(SPV_ERROR_INVALID_VALUE) << spvOpcodeString(opcode)
+                                             << " is reserved for future use.";
     default:
       return SPV_SUCCESS;
   }
@@ -169,7 +182,8 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
 
   // Number of members is the number of operands of the instruction minus 1.
   // One operand is the result ID.
-  const uint16_t limit = 0x3fff;
+  const uint16_t limit =
+      static_cast<uint16_t>(_.options()->universal_limits_.max_struct_members);
   if (inst->num_operands - 1 > limit) {
     return _.diag(SPV_ERROR_INVALID_BINARY)
            << "Number of OpTypeStruct members (" << inst->num_operands - 1
@@ -194,7 +208,7 @@ spv_result_t LimitCheckStruct(ValidationState_t& _,
     }
   }
 
-  const uint32_t depth_limit = 255;
+  const uint32_t depth_limit = _.options()->universal_limits_.max_struct_depth;
   const uint32_t cur_depth = 1 + max_member_depth;
   _.set_struct_nesting_depth(inst->result_id, cur_depth);
   if (cur_depth > depth_limit) {
@@ -215,7 +229,8 @@ spv_result_t LimitCheckSwitch(ValidationState_t& _,
     // literal,label pairs come after the first 2 operands.
     // It is guaranteed at this point that num_operands is an even numner.
     unsigned int num_pairs = (inst->num_operands - 2) / 2;
-    const unsigned int num_pairs_limit = 16383;
+    const unsigned int num_pairs_limit =
+        _.options()->universal_limits_.max_switch_branches;
     if (num_pairs > num_pairs_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of (literal, label) pairs in OpSwitch (" << num_pairs
@@ -230,7 +245,8 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
                                const SpvStorageClass storage_class) {
   if (SpvStorageClassFunction == storage_class) {
     _.registerLocalVariable(var_id);
-    const uint32_t num_local_vars_limit = 0x7FFFF;
+    const uint32_t num_local_vars_limit =
+        _.options()->universal_limits_.max_local_variables;
     if (_.num_local_vars() > num_local_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of local variables ('Function' Storage Class) "
@@ -239,7 +255,8 @@ spv_result_t LimitCheckNumVars(ValidationState_t& _, const uint32_t var_id,
     }
   } else {
     _.registerGlobalVariable(var_id);
-    const uint32_t num_global_vars_limit = 0xFFFF;
+    const uint32_t num_global_vars_limit =
+        _.options()->universal_limits_.max_global_variables;
     if (_.num_global_vars() > num_global_vars_limit) {
       return _.diag(SPV_ERROR_INVALID_BINARY)
              << "Number of Global Variables (Storage Class other than "
