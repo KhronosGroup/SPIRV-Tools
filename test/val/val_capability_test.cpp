@@ -1029,9 +1029,11 @@ INSTANTIATE_TEST_CASE_P(
     DecorationSpecId, ValidateCapability,
     Combine(ValuesIn(AllV10Capabilities()),
             Values(make_pair(string(kOpenCLMemoryModel) +
-                             "OpEntryPoint Vertex %func \"shader\" \n" +
-                             "OpDecorate %intt SpecId 1\n"
-                             "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
+                                 "OpEntryPoint Vertex %func \"shader\" \n" +
+                                 "OpDecorate %1 SpecId 1\n"
+                                 "%intt = OpTypeInt 32 0\n"
+                                 "%1 = OpSpecConstant %intt 0\n" +
+                                 string(kVoidFVoid),
                              ShaderDependencies()))), );
 
 INSTANTIATE_TEST_CASE_P(
@@ -1050,14 +1052,16 @@ INSTANTIATE_TEST_CASE_P(
                    // fixed.
                    make_pair(string("OpMemoryModel Logical OpenCL "
                                     "OpEntryPoint Kernel %func \"compute\" \n"
-                                    "OpDecorate %intt SpecId 1 "
-                                    "%intt = OpTypeInt 32 0 ") +
+                                    "OpDecorate %1 SpecId 1 "
+                                    "%intt = OpTypeInt 32 0 "
+                                    "%1 = OpSpecConstant %intt 0") +
                                  string(kVoidFVoid),
                              KernelDependencies()),
                    make_pair(string("OpMemoryModel Logical Simple "
                                     "OpEntryPoint Vertex %func \"shader\" \n"
-                                    "OpDecorate %intt SpecId 1 "
-                                    "%intt = OpTypeInt 32 0 ") +
+                                    "OpDecorate %1 SpecId 1 "
+                                    "%intt = OpTypeInt 32 0 "
+                                    "%1 = OpSpecConstant %intt 0") +
                                  string(kVoidFVoid),
                              ShaderDependencies()))), );
 // clang-format off

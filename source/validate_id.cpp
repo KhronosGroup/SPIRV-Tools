@@ -135,6 +135,25 @@ bool idUsage::isValid<SpvOpLine>(const spv_instruction_t* inst,
 }
 
 template <>
+bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t* inst,
+                                     const spv_opcode_desc) {
+  auto decorationIndex = 2;
+  auto decoration = inst->words[decorationIndex];
+  if (decoration == SpvDecorationSpecId) {
+    auto targetIndex = 1;
+    auto target = module_.FindDef(inst->words[targetIndex]);
+    if (!target || !spvOpcodeIsScalarSpecConstant(target->opcode())) {
+      DIAG(targetIndex) << "OpDecorate SpectId decoration target <id> '"
+                        << inst->words[decorationIndex]
+                        << "' is not a scalar specialization constant.";
+      return false;
+    }
+  }
+  // TODO: Add validations for all decorations.
+  return true;
+}
+
+template <>
 bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
                                            const spv_opcode_desc) {
   auto structTypeIndex = 1;
@@ -2808,6 +2827,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     TODO(OpUndef)
     CASE(OpMemberName)
     CASE(OpLine)
+    CASE(OpDecorate)
     CASE(OpMemberDecorate)
     CASE(OpGroupDecorate)
     CASE(OpGroupMemberDecorate)
