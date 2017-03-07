@@ -3828,7 +3828,7 @@ OpDecorate %5 SpecId 200
 %4 = OpConstant %int 2
 %5 = OpSpecConstantOp %int IAdd %3 %4
 %main = OpFunction %1 None %2
-%4 = OpLabel
+%6 = OpLabel
 OpReturn
 OpFunctionEnd
   )";
