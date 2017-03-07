@@ -3818,18 +3818,62 @@ OpFunctionEnd
                 "scalar specialization constant."));
 }
 
+TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+OpDecorate %5 SpecId 200
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%int = OpTypeInt 32 0
+%3 = OpConstant %int 1
+%4 = OpConstant %int 2
+%5 = OpSpecConstantOp %int IAdd %3 %4
+%main = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpDecorate SpectId decoration target <id> '1' is not a "
+                "scalar specialization constant."));
+}
+
+TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantCompositeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+OpDecorate %3 SpecId 200
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%int = OpTypeInt 32 0
+%3 = OpSpecConstantComposite %int
+%main = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpDecorate SpectId decoration target <id> '1' is not a "
+                "scalar specialization constant."));
+}
+
 TEST_F(ValidateIdWithMessage, SpecIdTargetGood) {
   string spirv = kGLSL450MemoryModel + R"(
 OpDecorate %3 SpecId 200
 OpDecorate %4 SpecId 201
+OpDecorate %5 SpecId 202
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %int = OpTypeInt 32 0
 %bool = OpTypeBool
 %3 = OpSpecConstant %int 3
 %4 = OpSpecConstantTrue %bool
+%5 = OpSpecConstantFalse %bool
 %main = OpFunction %1 None %2
-%5 = OpLabel
+%6 = OpLabel
 OpReturn
 OpFunctionEnd
   )";

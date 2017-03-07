@@ -149,6 +149,7 @@ bool idUsage::isValid<SpvOpDecorate>(const spv_instruction_t* inst,
       return false;
     }
   }
+  // TODO: Add validations for all decorations.
   return true;
 }
 
