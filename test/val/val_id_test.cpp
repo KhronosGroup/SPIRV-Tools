@@ -125,9 +125,9 @@ TEST_F(ValidateIdWithMessage, OpMemberNameTypeBad) {
 }
 TEST_F(ValidateIdWithMessage, OpMemberNameMemberBad) {
   string spirv = kGLSL450MemoryModel + R"(
-     OpMemberName %2 1 "foo"
-%1 = OpTypeInt 32 0
-%2 = OpTypeStruct %1)";
+     OpMemberName %1 1 "foo"
+%2 = OpTypeInt 32 0
+%1 = OpTypeStruct %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -145,6 +145,7 @@ TEST_F(ValidateIdWithMessage, OpLineGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
 TEST_F(ValidateIdWithMessage, OpLineFileBad) {
   string spirv = kGLSL450MemoryModel + R"(
   %1 = OpTypeInt 32 0
@@ -3800,11 +3801,11 @@ OpFunctionEnd
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetNotSpecializationConstant) {
   string spirv = kGLSL450MemoryModel + R"(
-OpDecorate %3 SpecId 200
-%1 = OpTypeVoid
-%2 = OpTypeFunction %1
+OpDecorate %1 SpecId 200
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
 %int = OpTypeInt 32 0
-%3 = OpConstant %int 3
+%1 = OpConstant %int 3
 %main = OpFunction %1 None %2
 %4 = OpLabel
 OpReturn
@@ -3820,13 +3821,13 @@ OpFunctionEnd
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
   string spirv = kGLSL450MemoryModel + R"(
-OpDecorate %5 SpecId 200
-%1 = OpTypeVoid
-%2 = OpTypeFunction %1
+OpDecorate %1 SpecId 200
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
 %int = OpTypeInt 32 0
 %3 = OpConstant %int 1
 %4 = OpConstant %int 2
-%5 = OpSpecConstantOp %int IAdd %3 %4
+%1 = OpSpecConstantOp %int IAdd %3 %4
 %main = OpFunction %1 None %2
 %6 = OpLabel
 OpReturn
@@ -3842,11 +3843,11 @@ OpFunctionEnd
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetOpSpecConstantCompositeBad) {
   string spirv = kGLSL450MemoryModel + R"(
-OpDecorate %3 SpecId 200
-%1 = OpTypeVoid
-%2 = OpTypeFunction %1
+OpDecorate %1 SpecId 200
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
 %int = OpTypeInt 32 0
-%3 = OpSpecConstantComposite %int
+%1 = OpSpecConstantComposite %int
 %main = OpFunction %1 None %2
 %4 = OpLabel
 OpReturn
