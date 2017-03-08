@@ -243,6 +243,7 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInViewIndex})},
             })), );
 
+
 // SPV_AMD_gcn_shader
 
 #define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_gcn_shader\"\n"
@@ -267,5 +268,24 @@ INSTANTIATE_TEST_CASE_P(
                               MakeInstruction(SpvOpExtInst, {2, 3, 1, 3})})},
             })), );
 #undef PREAMBLE
+
+
+// SPV_KHR_variable_pointers
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_variable_pointers, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpCapability VariablePointers\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityVariablePointers})},
+                {"OpCapability VariablePointersUniformBufferBlock\n",
+                 MakeInstruction(
+                     SpvOpCapability,
+                     {SpvCapabilityVariablePointersUniformBufferBlock})},
+            })), );
 
 }  // anonymous namespace
