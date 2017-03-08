@@ -60,7 +60,7 @@ def compose_extension_list(exts):
       - exts: a sequence of extension names
 
     Returns:
-      a string containing the braced list of SpvCapability* enums named by caps.
+      a string containing the braced list of extensions named by exts.
     """
     return "{" + ", ".join(['libspirv::Extension::k{}'.format(e) for e in exts]) + "}"
 
@@ -287,7 +287,7 @@ def generate_enum_operand_kind_entry(entry):
     enumerant = entry.get('enumerant')
     value = entry.get('value')
     caps = entry.get('capabilities', [])
-    exts = entry.get('exts', [])
+    exts = entry.get('extensions', [])
     params = entry.get('parameters', [])
     params = [p.get('kind') for p in params]
     params = zip(params, [''] * len(params))
