@@ -139,6 +139,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       current_layout_section_(kLayoutCapabilities),
       module_functions_(),
       module_capabilities_(),
+      module_extensions_(),
       ordered_instructions_(),
       all_definitions_(),
       global_vars_(),
@@ -302,6 +303,12 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
     default:
       break;
   }
+}
+
+void ValidationState_t::RegisterExtension(Extension ext) {
+  if (module_extensions_.Contains(ext)) return;
+
+  module_extensions_.Add(ext);
 }
 
 bool ValidationState_t::HasAnyOf(const CapabilitySet& capabilities) const {

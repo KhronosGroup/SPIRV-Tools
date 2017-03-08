@@ -15,6 +15,8 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
+#include <string>
+
 #include "spirv/1.1/spirv.h"
 
 #include "enum_set.h"
@@ -25,11 +27,24 @@ namespace libspirv {
 
 // The known SPIR-V extensions.
 // TODO(dneto): Consider auto-generating this list?
+// When updating this list, consider also updating ParseSpvExtensionFromString.
 enum class Extension {
   kSPV_KHR_shader_ballot,
+  kSPV_KHR_shader_draw_parameters,
+  kSPV_KHR_subgroup_vote,
+  kSPV_KHR_16bit_storage,
+  kSPV_KHR_device_group,
+  kSPV_KHR_multiview,
+  kSPV_NV_sample_mask_override_coverage,
+  kSPV_NV_geometry_shader_passthrough,
+  kSPV_NV_viewport_array2,
+  kSPV_NV_stereo_view_rendering,
+  kSPV_NVX_multiview_per_view_attributes,
 };
 
 using ExtensionSet = EnumSet<Extension>;
+
+bool ParseSpvExtensionFromString(const std::string& str, Extension* extension);
 
 }  // namespace libspirv
 
