@@ -22,6 +22,7 @@
 #include <sstream>
 #include <string>
 
+#include "binary.h"
 #include "diagnostic.h"
 #include "enum_set.h"
 #include "opcode.h"
@@ -340,9 +341,33 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+// Parses OpExtension instruction and registers extension.
+void RegisterExtension(ValidationState_t& _,
+                       const spv_parsed_instruction_t* inst) {
+  assert(inst->opcode == SpvOpExtension);
+  assert(inst->num_operands == 1);
+
+  const auto& operand = inst->operands[0];
+  assert(operand.type == SPV_OPERAND_TYPE_LITERAL_STRING);
+  assert(inst->num_words > operand.offset);
+
+  const char* extension_str =
+      reinterpret_cast<const char*>(inst->words + operand.offset);
+
+  Extension extension;
+  if (!ParseSpvExtensionFromString(extension_str, &extension)) {
+    _.diag(SPV_SUCCESS) << "Failed to parse OpExtension " << extension_str;
+    return;
+  }
+
+  _.RegisterExtension(extension);
+}
+
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  if (opcode == SpvOpExtension)
+    RegisterExtension(_, inst);
   if (opcode == SpvOpCapability)
     _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));

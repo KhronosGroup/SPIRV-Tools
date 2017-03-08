@@ -175,6 +175,9 @@ class ValidationState_t {
   /// Registers the capability and its dependent capabilities
   void RegisterCapability(SpvCapability cap);
 
+  /// Registers the extension.
+  void RegisterExtension(Extension ext);
+
   /// Registers the function in the module. Subsequent instructions will be
   /// called against this function
   spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
@@ -342,9 +345,11 @@ class ValidationState_t {
   /// A list of functions in the module
   std::deque<Function> module_functions_;
 
-  /// The capabilities available in the module
-  libspirv::CapabilitySet
-      module_capabilities_;  /// Module's declared capabilities.
+  /// Capabilities declared in the module
+  libspirv::CapabilitySet module_capabilities_;
+
+  /// Extensions declared in the module
+  libspirv::ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
   std::deque<Instruction> ordered_instructions_;

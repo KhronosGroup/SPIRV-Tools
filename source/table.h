@@ -15,23 +15,13 @@
 #ifndef LIBSPIRV_TABLE_H_
 #define LIBSPIRV_TABLE_H_
 
+#include <string>
+
 #include "spirv/1.1/spirv.h"
 
-#include "enum_set.h"
+#include "extensions.h"
 #include "message.h"
 #include "spirv-tools/libspirv.hpp"
-
-namespace libspirv {
-
-// The known SPIR-V extensions.
-// TODO(dneto): Consider auto-generating this list?
-enum class Extension {
-  kSPV_KHR_shader_ballot,
-};
-
-using ExtensionSet = EnumSet<Extension>;
-
-}  // namespace libspirv
 
 typedef struct spv_opcode_desc_t {
   const char* name;
