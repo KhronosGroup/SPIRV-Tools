@@ -58,7 +58,7 @@ TEST_P(ValidateKnownExtensions, ExpectSuccess) {
       "\"\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-  // TODO: Reanable once https://github.com/KhronosGroup/SPIRV-Tools/pull/577
+  // TODO: Reenable once https://github.com/KhronosGroup/SPIRV-Tools/pull/577
   // is merged.
   // EXPECT_THAT(getDiagnosticString(), Not(HasSubstr(GetErrorString(extension))));
 }
