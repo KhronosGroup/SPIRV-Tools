@@ -342,8 +342,8 @@ spv_result_t RegisterDecorations(ValidationState_t& _,
 }
 
 // Parses OpExtension instruction and registers extension.
-spv_result_t RegisterExtension(ValidationState_t& _,
-                               const spv_parsed_instruction_t* inst) {
+void RegisterExtension(ValidationState_t& _,
+                       const spv_parsed_instruction_t* inst) {
   assert(inst->opcode == SpvOpExtension);
   assert(inst->num_operands == 1);
 
@@ -351,34 +351,23 @@ spv_result_t RegisterExtension(ValidationState_t& _,
   assert(operand.type == SPV_OPERAND_TYPE_LITERAL_STRING);
   assert(inst->num_words > operand.offset);
 
-  const size_t max_length =
-      sizeof(*inst->words) * (inst->num_words - operand.offset);
-
-  const char* extension_sz =
+  const char* extension_str =
       reinterpret_cast<const char*>(inst->words + operand.offset);
-
-  const size_t length = spv_strnlen_s(extension_sz, max_length);
-
-  const std::string extension_str(extension_sz, length);
 
   Extension extension;
   if (!ParseSpvExtensionFromString(extension_str, &extension)) {
-    return _.diag(SPV_SUCCESS)
-        << "Failed to parse OpExtension " << extension_str;
+    _.diag(SPV_SUCCESS) << "Failed to parse OpExtension " << extension_str;
+    return;
   }
 
   _.RegisterExtension(extension);
-
-  return SPV_SUCCESS;
 }
 
 spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  if (opcode == SpvOpExtension) {
-    const spv_result_t result = RegisterExtension(_, inst);
-    if (result != SPV_SUCCESS) return result;
-  }
+  if (opcode == SpvOpExtension)
+    RegisterExtension(_, inst);
   if (opcode == SpvOpCapability)
     _.RegisterCapability(
         static_cast<SpvCapability>(inst->words[inst->operands[0].offset]));

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ enum class Extension {
 
 using ExtensionSet = EnumSet<Extension>;
 
+// Finds Extension enum corresponding to |str|. Returns false if not found.
 bool ParseSpvExtensionFromString(const std::string& str, Extension* extension);
 
 }  // namespace libspirv

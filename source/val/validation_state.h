@@ -345,13 +345,11 @@ class ValidationState_t {
   /// A list of functions in the module
   std::deque<Function> module_functions_;
 
-  /// The capabilities available in the module
-  libspirv::CapabilitySet
-      module_capabilities_;  /// Module's declared capabilities.
+  /// Capabilities declared in the module
+  libspirv::CapabilitySet module_capabilities_;
 
-  /// The extensions available in the module
-  libspirv::ExtensionSet
-      module_extensions_;  /// Module's declared extensions.
+  /// Extensions declared in the module
+  libspirv::ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
   std::deque<Instruction> ordered_instructions_;
