@@ -82,7 +82,8 @@ spv_result_t ValidateBase<T>::ValidateAndRetrieveValidationState(
 
 template <typename T>
 std::string ValidateBase<T>::getDiagnosticString() {
-  return std::string(diagnostic_->error);
+  return diagnostic_ == nullptr ?
+      std::string() : std::string(diagnostic_->error);
 }
 
 template <typename T>
@@ -92,7 +93,7 @@ spv_validator_options ValidateBase<T>::getValidatorOptions() {
 
 template <typename T>
 spv_position_t ValidateBase<T>::getErrorPosition() {
-  return diagnostic_->position;
+  return diagnostic_ == nullptr ? spv_position_t() : diagnostic_->position;
 }
 
 template class spvtest::ValidateBase<bool>;
