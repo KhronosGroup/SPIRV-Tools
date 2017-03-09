@@ -92,6 +92,11 @@ spv_validator_options ValidateBase<T>::getValidatorOptions() {
 }
 
 template <typename T>
+spv_validator_options ValidateBase<T>::getValidatorOptions() {
+  return options_;
+}
+
+template <typename T>
 spv_position_t ValidateBase<T>::getErrorPosition() {
   return diagnostic_ == nullptr ? spv_position_t() : diagnostic_->position;
 }
