@@ -20,16 +20,71 @@
 
 namespace {
 
+using libspirv::EnumSet;
 using libspirv::CapabilitySet;
 using spvtest::ElementsIn;
 using ::testing::Eq;
 using ::testing::ValuesIn;
 
-TEST(CapabilitySet, DefaultIsEmpty) {
-  CapabilitySet c;
+TEST(EnumSet, IsEmpty1) {
+  EnumSet<uint32_t> set;
+  EXPECT_TRUE(set.IsEmpty());
+  set.Add(0);
+  EXPECT_FALSE(set.IsEmpty());
+}
+
+TEST(EnumSet, IsEmpty2) {
+  EnumSet<uint32_t> set;
+  EXPECT_TRUE(set.IsEmpty());
+  set.Add(150);
+  EXPECT_FALSE(set.IsEmpty());
+}
+
+TEST(EnumSet, IsEmpty3) {
+  EnumSet<uint32_t> set(4);
+  EXPECT_FALSE(set.IsEmpty());
+}
+
+TEST(EnumSet, IsEmpty4) {
+  EnumSet<uint32_t> set(300);
+  EXPECT_FALSE(set.IsEmpty());
+}
+
+TEST(EnumSet, HasAnyOf) {
+  EnumSet<uint32_t> set;
+  EnumSet<uint32_t> items;
+  const EnumSet<uint32_t> empty;
+
+  EXPECT_TRUE(set.HasAnyOf(empty));
+  set.Add(5);
+  EXPECT_TRUE(set.HasAnyOf(empty));
+  EXPECT_FALSE(empty.HasAnyOf(set));
+
+  items.Add(3);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  items.Add(100);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(500);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(21);
+  set.Add(0);
+  set.Add(400);
+  EXPECT_FALSE(set.HasAnyOf(items));
+
+  items.Add(0);
+  EXPECT_TRUE(set.HasAnyOf(items));
+
+  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(400)));
+  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(500)));
+  EXPECT_FALSE(set.HasAnyOf(EnumSet<uint32_t>(100)));
+
+  EXPECT_TRUE(set.HasAnyOf(set));
+}
+
+TEST(EnumSet, DefaultIsEmpty) {
+  EnumSet<uint32_t> set;
   for (uint32_t i = 0; i < 1000; ++i) {
-    EXPECT_FALSE(c.Contains(i));
-    EXPECT_FALSE(c.Contains(static_cast<SpvCapability>(i)));
+    EXPECT_FALSE(set.Contains(i));
   }
 }
 
@@ -37,16 +92,16 @@ TEST(CapabilitySet, ConstructSingleMemberMatrix) {
   CapabilitySet s(SpvCapabilityMatrix);
   EXPECT_TRUE(s.Contains(SpvCapabilityMatrix));
   EXPECT_FALSE(s.Contains(SpvCapabilityShader));
-  EXPECT_FALSE(s.Contains(1000));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMaxInMask) {
   CapabilitySet s(static_cast<SpvCapability>(63));
   EXPECT_FALSE(s.Contains(SpvCapabilityMatrix));
   EXPECT_FALSE(s.Contains(SpvCapabilityShader));
-  EXPECT_TRUE(s.Contains(63));
-  EXPECT_FALSE(s.Contains(64));
-  EXPECT_FALSE(s.Contains(1000));
+  EXPECT_TRUE(s.Contains(static_cast<SpvCapability>(63)));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(64)));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMinOverflow) {
@@ -54,41 +109,34 @@ TEST(CapabilitySet, ConstructSingleMemberMinOverflow) {
   CapabilitySet s(static_cast<SpvCapability>(64));
   EXPECT_FALSE(s.Contains(SpvCapabilityMatrix));
   EXPECT_FALSE(s.Contains(SpvCapabilityShader));
-  EXPECT_FALSE(s.Contains(63));
-  EXPECT_TRUE(s.Contains(64));
-  EXPECT_FALSE(s.Contains(1000));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(63)));
+  EXPECT_TRUE(s.Contains(static_cast<SpvCapability>(64)));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMaxOverflow) {
   // Check the max 32-bit signed int.
-  CapabilitySet s(SpvCapability(0x7fffffffu));
+  CapabilitySet s(static_cast<SpvCapability>(0x7fffffffu));
   EXPECT_FALSE(s.Contains(SpvCapabilityMatrix));
   EXPECT_FALSE(s.Contains(SpvCapabilityShader));
-  EXPECT_FALSE(s.Contains(1000));
-  EXPECT_TRUE(s.Contains(0x7fffffffu));
+  EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(1000)));
+  EXPECT_TRUE(s.Contains(static_cast<SpvCapability>(0x7fffffffu)));
 }
 
 TEST(CapabilitySet, AddEnum) {
   CapabilitySet s(SpvCapabilityShader);
   s.Add(SpvCapabilityKernel);
+  s.Add(static_cast<SpvCapability>(42));
   EXPECT_FALSE(s.Contains(SpvCapabilityMatrix));
   EXPECT_TRUE(s.Contains(SpvCapabilityShader));
   EXPECT_TRUE(s.Contains(SpvCapabilityKernel));
-}
-
-TEST(CapabilitySet, AddInt) {
-  CapabilitySet s(SpvCapabilityShader);
-  s.Add(42);
-  EXPECT_FALSE(s.Contains(SpvCapabilityMatrix));
-  EXPECT_TRUE(s.Contains(SpvCapabilityShader));
-  EXPECT_TRUE(s.Contains(42));
   EXPECT_TRUE(s.Contains(static_cast<SpvCapability>(42)));
 }
 
 TEST(CapabilitySet, InitializerListEmpty) {
   CapabilitySet s{};
   for (uint32_t i = 0; i < 1000; i++) {
-    EXPECT_FALSE(s.Contains(i));
+    EXPECT_FALSE(s.Contains(static_cast<SpvCapability>(i)));
   }
 }
 
