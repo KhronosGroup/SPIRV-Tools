@@ -39,7 +39,7 @@ class EnumSet {
 
  public:
   // Construct an empty set.
-  EnumSet() = default;
+  EnumSet() {}
   // Construct an set with just the given enum value.
   explicit EnumSet(EnumType c) { Add(c); }
   // Construct an set from an initializer list of enum values.
@@ -67,31 +67,10 @@ class EnumSet {
 
   // Adds the given enum value to the set.  This has no effect if the
   // enum value is already in the set.
-  void Add(EnumType c) { Add(ToWord(c)); }
-  // Adds the given enum value (as a 32-bit word) to the set.  This has no
-  // effect if the enum value is already in the set.
-  void Add(uint32_t word) {
-    if (auto new_bits = AsMask(word)) {
-      mask_ |= new_bits;
-    } else {
-      Overflow().insert(word);
-    }
-  }
+  void Add(EnumType c) { AddWord(ToWord(c)); }
 
   // Returns true if this enum value is in the set.
-  bool Contains(EnumType c) const { return Contains(ToWord(c)); }
-  // Returns true if the enum represented as a 32-bit word is in the set.
-  bool Contains(uint32_t word) const {
-    // We shouldn't call Overflow() since this is a const method.
-    if (auto bits = AsMask(word)) {
-      return (mask_ & bits) != 0;
-    } else if (auto overflow = overflow_.get()) {
-      return overflow->find(word) != overflow->end();
-    }
-    // The word is large, but the set doesn't have large members, so
-    // it doesn't have an overflow set.
-    return false;
-  }
+  bool Contains(EnumType c) const { return ContainsWord(ToWord(c)); }
 
   // Applies f to each enum in the set, in order from smallest enum
   // value to largest.
@@ -104,7 +83,56 @@ class EnumSet {
     }
   }
 
+  // Returns true if the set is empty.
+  bool IsEmpty() const {
+    if (mask_) return false;
+    if (overflow_ && !overflow_->empty()) return false;
+    return true;
+  }
+
+  // Returns true if the set contains ANY of the elements of |in_set|,
+  // or if |in_set| is empty.
+  bool HasAnyOf(const EnumSet<EnumType>& in_set) const {
+    if (in_set.IsEmpty()) return true;
+
+    if (mask_ & in_set.mask_)
+      return true;
+
+    if (!overflow_ || !in_set.overflow_)
+      return false;
+
+    for (uint32_t item : *in_set.overflow_) {
+      if (overflow_->find(item) != overflow_->end())
+        return true;
+    }
+
+    return false;
+  }
+
  private:
+  // Adds the given enum value (as a 32-bit word) to the set.  This has no
+  // effect if the enum value is already in the set.
+  void AddWord(uint32_t word) {
+    if (auto new_bits = AsMask(word)) {
+      mask_ |= new_bits;
+    } else {
+      Overflow().insert(word);
+    }
+  }
+
+  // Returns true if the enum represented as a 32-bit word is in the set.
+  bool ContainsWord(uint32_t word) const {
+    // We shouldn't call Overflow() since this is a const method.
+    if (auto bits = AsMask(word)) {
+      return (mask_ & bits) != 0;
+    } else if (auto overflow = overflow_.get()) {
+      return overflow->find(word) != overflow->end();
+    }
+    // The word is large, but the set doesn't have large members, so
+    // it doesn't have an overflow set.
+    return false;
+  }
+
   // Returns the enum value as a uint32_t.
   uint32_t ToWord(EnumType value) const {
     static_assert(sizeof(EnumType) <= sizeof(uint32_t),

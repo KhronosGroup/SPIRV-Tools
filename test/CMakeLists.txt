@@ -74,8 +74,8 @@ set(TEST_SOURCES
   binary_strnlen_s_test.cpp
   binary_to_text_test.cpp
   binary_to_text.literal_test.cpp
-  capability_set_test.cpp
   comment_test.cpp
+  enum_set_test.cpp
   ext_inst.glsl_test.cpp
   ext_inst.opencl_test.cpp
   fix_word_test.cpp
