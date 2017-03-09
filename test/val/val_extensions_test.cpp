@@ -30,9 +30,9 @@ using ::testing::Values;
 using std::string;
 
 using ValidateKnownExtensions = spvtest::ValidateBase<string>;
-using ValidateUnknownExtension = spvtest::ValidateBase<bool>;
+using ValidateUnknownExtensions = spvtest::ValidateBase<string>;
 
-// Returns expected error string if |extensions| is not recognized.
+// Returns expected error string if |extension| is not recognized.
 string GetErrorString(const std::string& extension) {
   return "Failed to parse OpExtension " + extension;
 }
@@ -51,6 +51,12 @@ INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
     "SPV_NVX_multiview_per_view_attributes"
     ));
 
+INSTANTIATE_TEST_CASE_P(FailSilently, ValidateUnknownExtensions, Values(
+    "ERROR_unknown_extension",
+    "SPV_KHR_",
+    "SPV_KHR_shader_ballot_ERROR"
+    ));
+
 TEST_P(ValidateKnownExtensions, ExpectSuccess) {
   const std::string extension = GetParam();
   const string str =
@@ -58,13 +64,11 @@ TEST_P(ValidateKnownExtensions, ExpectSuccess) {
       "\"\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-  // TODO: Reenable once https://github.com/KhronosGroup/SPIRV-Tools/pull/577
-  // is merged.
-  // EXPECT_THAT(getDiagnosticString(), Not(HasSubstr(GetErrorString(extension))));
+  EXPECT_THAT(getDiagnosticString(), Not(HasSubstr(GetErrorString(extension))));
 }
 
-TEST_F(ValidateUnknownExtension, FailSilently) {
-  const std::string extension = "ERROR_unknown_extension";
+TEST_P(ValidateUnknownExtensions, FailSilently) {
+  const std::string extension = GetParam();
   const string str =
       "OpCapability Shader\nOpCapability Linkage\nOpExtension \"" + extension +
       "\"\nOpMemoryModel Logical GLSL450";
