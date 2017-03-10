@@ -231,29 +231,33 @@ TEST_F(ValidateData, int16_good) {
 }
 
 TEST_F(ValidateData, storage_uniform_buffer_block_16_good) {
-  string str = HeaderWith("StorageUniformBufferBlock16") +
-               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith("StorageUniformBufferBlock16 "
+                          "OpExtension \"SPV_KHR_16bit_storage\"") +
+      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, storage_uniform_16_good) {
-  string str = HeaderWith("StorageUniform16") +
-               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str =
+      HeaderWith("StorageUniform16 OpExtension \"SPV_KHR_16bit_storage\"") +
+      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, storage_push_constant_16_good) {
-  string str = HeaderWith("StoragePushConstant16") +
-               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith("StoragePushConstant16 "
+                          "OpExtension \"SPV_KHR_16bit_storage\"") +
+      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, storage_input_output_16_good) {
-  string str = HeaderWith("StorageInputOutput16") +
-               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith("StorageInputOutput16 "
+                          "OpExtension \"SPV_KHR_16bit_storage\"") +
+      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -550,6 +554,7 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
         OpCapability Linkage
         OpCapability )") +
                    cap + R"(
+        OpExtension "SPV_KHR_16bit_storage"
         OpMemoryModel Logical GLSL450
         OpDecorate %2 FPRoundingMode )" +
                    mode + R"(

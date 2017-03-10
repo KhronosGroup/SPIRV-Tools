@@ -21,6 +21,7 @@
 #include "spirv/1.1/spirv.h"
 
 #include "enum_set.h"
+#include "extensions.h"
 #include "spirv_validator_options.h"
 #include "val/construct.h"
 #include "val/function.h"
@@ -29,6 +30,8 @@
 
 namespace {
 using libspirv::CapabilitySet;
+using libspirv::Extension;
+using libspirv::ExtensionSet;
 using libspirv::ValidationState_t;
 using std::vector;
 
@@ -50,46 +53,88 @@ class ValidationStateTest : public testing::Test {
   ValidationState_t state_;
 };
 
-// A test of ValidationState_t::HasAnyOf().
-using ValidationState_HasAnyOfTest = ValidationStateTest;
+// A test of ValidationState_t::HasAnyOfCapabilities().
+using ValidationState_HasAnyOfCapabilities = ValidationStateTest;
 
-TEST_F(ValidationState_HasAnyOfTest, EmptyMask) {
-  EXPECT_TRUE(state_.HasAnyOf({}));
+TEST_F(ValidationState_HasAnyOfCapabilities, EmptyMask) {
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityMatrix);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityImageMipmap);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityPipes);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityStorageImageArrayDynamicIndexing);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityClipDistance);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
   state_.RegisterCapability(SpvCapabilityStorageImageWriteWithoutFormat);
-  EXPECT_TRUE(state_.HasAnyOf({}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({}));
 }
 
-TEST_F(ValidationState_HasAnyOfTest, SingleCapMask) {
-  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityMatrix}));
-  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
+TEST_F(ValidationState_HasAnyOfCapabilities, SingleCapMask) {
+  EXPECT_FALSE(state_.HasAnyOfCapabilities({SpvCapabilityMatrix}));
+  EXPECT_FALSE(state_.HasAnyOfCapabilities({SpvCapabilityImageMipmap}));
   state_.RegisterCapability(SpvCapabilityMatrix);
-  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityMatrix}));
-  EXPECT_FALSE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({SpvCapabilityMatrix}));
+  EXPECT_FALSE(state_.HasAnyOfCapabilities({SpvCapabilityImageMipmap}));
   state_.RegisterCapability(SpvCapabilityImageMipmap);
-  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityMatrix}));
-  EXPECT_TRUE(state_.HasAnyOf({SpvCapabilityImageMipmap}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({SpvCapabilityMatrix}));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities({SpvCapabilityImageMipmap}));
 }
 
-TEST_F(ValidationState_HasAnyOfTest, MultiCapMask) {
+TEST_F(ValidationState_HasAnyOfCapabilities, MultiCapMask) {
   const auto set1 =
       CapabilitySet{SpvCapabilitySampledRect, SpvCapabilityImageBuffer};
   const auto set2 = CapabilitySet{SpvCapabilityStorageImageWriteWithoutFormat,
                                   SpvCapabilityStorageImageReadWithoutFormat,
                                   SpvCapabilityGeometryStreams};
-  EXPECT_FALSE(state_.HasAnyOf(set1));
-  EXPECT_FALSE(state_.HasAnyOf(set2));
+  EXPECT_FALSE(state_.HasAnyOfCapabilities(set1));
+  EXPECT_FALSE(state_.HasAnyOfCapabilities(set2));
   state_.RegisterCapability(SpvCapabilityImageBuffer);
-  EXPECT_TRUE(state_.HasAnyOf(set1));
-  EXPECT_FALSE(state_.HasAnyOf(set2));
+  EXPECT_TRUE(state_.HasAnyOfCapabilities(set1));
+  EXPECT_FALSE(state_.HasAnyOfCapabilities(set2));
 }
+
+// A test of ValidationState_t::HasAnyOfExtensions().
+using ValidationState_HasAnyOfExtensions = ValidationStateTest;
+
+TEST_F(ValidationState_HasAnyOfExtensions, EmptyMask) {
+  EXPECT_TRUE(state_.HasAnyOfExtensions({}));
+  state_.RegisterExtension(Extension::kSPV_KHR_shader_ballot);
+  EXPECT_TRUE(state_.HasAnyOfExtensions({}));
+  state_.RegisterExtension(Extension::kSPV_KHR_16bit_storage);
+  EXPECT_TRUE(state_.HasAnyOfExtensions({}));
+  state_.RegisterExtension(Extension::kSPV_NV_viewport_array2);
+  EXPECT_TRUE(state_.HasAnyOfExtensions({}));
+}
+
+TEST_F(ValidationState_HasAnyOfExtensions, SingleCapMask) {
+  EXPECT_FALSE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_shader_ballot}));
+  EXPECT_FALSE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_16bit_storage}));
+  state_.RegisterExtension(Extension::kSPV_KHR_shader_ballot);
+  EXPECT_TRUE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_shader_ballot}));
+  EXPECT_FALSE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_16bit_storage}));
+  state_.RegisterExtension(Extension::kSPV_KHR_16bit_storage);
+  EXPECT_TRUE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_shader_ballot}));
+  EXPECT_TRUE(state_.HasAnyOfExtensions({Extension::kSPV_KHR_16bit_storage}));
+}
+
+TEST_F(ValidationState_HasAnyOfExtensions, MultiCapMask) {
+  const auto set1 = ExtensionSet {
+    Extension::kSPV_KHR_multiview,
+    Extension::kSPV_KHR_16bit_storage
+  };
+  const auto set2 = ExtensionSet {
+    Extension::kSPV_KHR_shader_draw_parameters,
+    Extension::kSPV_NV_stereo_view_rendering,
+    Extension::kSPV_KHR_shader_ballot
+  };
+  EXPECT_FALSE(state_.HasAnyOfExtensions(set1));
+  EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
+  state_.RegisterExtension(Extension::kSPV_KHR_multiview);
+  EXPECT_TRUE(state_.HasAnyOfExtensions(set1));
+  EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
+}
+
 }
