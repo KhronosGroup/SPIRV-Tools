@@ -39,7 +39,7 @@ class EnumSet {
 
  public:
   // Construct an empty set.
-  EnumSet() {};
+  EnumSet() {}
   // Construct an set with just the given enum value.
   explicit EnumSet(EnumType c) { Add(c); }
   // Construct an set from an initializer list of enum values.
