@@ -16,12 +16,15 @@
 
 #include <string>
 
+#include "extensions.h"
 #include "gmock/gmock.h"
 #include "test_fixture.h"
 #include "unit_spirv.h"
 #include "val_fixtures.h"
 
 namespace {
+
+using ::libspirv::Extension;
 
 using ::testing::HasSubstr;
 using ::testing::Not;
@@ -31,10 +34,11 @@ using std::string;
 
 using ValidateKnownExtensions = spvtest::ValidateBase<string>;
 using ValidateUnknownExtensions = spvtest::ValidateBase<string>;
+using ValidateExtensionCapabilities = spvtest::ValidateBase<bool>;
 
 // Returns expected error string if |extension| is not recognized.
 string GetErrorString(const std::string& extension) {
-  return "Failed to parse OpExtension " + extension;
+  return "Found unrecognized extension " + extension;
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
@@ -75,6 +79,34 @@ TEST_P(ValidateUnknownExtensions, FailSilently) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(extension)));
+}
+
+TEST_P(ValidateKnownExtensions, ToAndFromString) {
+  const std::string extension_str = GetParam();
+  Extension extension;
+  ASSERT_TRUE(ParseSpvExtensionFromString(extension_str, &extension));
+  const std::string result_str = ExtensionToString(extension);
+  EXPECT_EQ(extension_str, result_str);
+}
+
+TEST_F(ValidateExtensionCapabilities, DeclCapabilitySuccess) {
+  const string str =
+      "OpCapability Shader\nOpCapability Linkage\nOpCapability DeviceGroup\n"
+      "OpExtension \"SPV_KHR_device_group\""
+      "\nOpMemoryModel Logical GLSL450";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
+  const string str =
+      "OpCapability Shader\nOpCapability Linkage\nOpCapability DeviceGroup\n"
+      "\nOpMemoryModel Logical GLSL450";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("1st operand of Capability"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("requires one of these extensions"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_KHR_device_group"));
 }
 
 }  // anonymous namespace

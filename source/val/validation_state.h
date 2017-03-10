@@ -192,9 +192,18 @@ class ValidationState_t {
     return module_capabilities_.Contains(cap);
   }
 
-  /// Returns true if any of the capabilities are enabled, or if the given
-  /// capabilities is the empty set.
-  bool HasAnyOf(const libspirv::CapabilitySet& capabilities) const;
+  /// Returns true if the extension is enabled in the module.
+  bool HasExtension(Extension ext) const {
+    return module_extensions_.Contains(ext);
+  }
+
+  /// Returns true if any of the capabilities is enabled, or if |capabilities|
+  /// is an empty set.
+  bool HasAnyOfCapabilities(const libspirv::CapabilitySet& capabilities) const;
+
+  /// Returns true if any of the extensions is enabled, or if |extensions|
+  /// is an empty set.
+  bool HasAnyOfExtensions(const libspirv::ExtensionSet& extensions) const;
 
   /// Sets the addressing model of this module (logical/physical).
   void set_addressing_model(SpvAddressingModel am);

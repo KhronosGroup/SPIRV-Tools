@@ -18,14 +18,14 @@
 #include <string>
 
 #include "enum_set.h"
-#include "message.h"
-#include "spirv-tools/libspirv.hpp"
+#include "spirv-tools/libspirv.h"
 
 namespace libspirv {
 
 // The known SPIR-V extensions.
 // TODO(dneto): Consider auto-generating this list?
-// When updating this list, consider also updating ParseSpvExtensionFromString.
+// When updating this list, consider also updating ParseSpvExtensionFromString
+// and SpvExtensionToString.
 enum class Extension {
   kSPV_KHR_shader_ballot,
   kSPV_KHR_shader_draw_parameters,
@@ -42,8 +42,17 @@ enum class Extension {
 
 using ExtensionSet = EnumSet<Extension>;
 
+// Returns literal string operand of OpExtension instruction.
+std::string GetExtensionString(const spv_parsed_instruction_t* inst);
+
 // Finds Extension enum corresponding to |str|. Returns false if not found.
 bool ParseSpvExtensionFromString(const std::string& str, Extension* extension);
+
+// Returns text string corresponding to |extension|.
+std::string ExtensionToString(Extension extension);
+
+// Returns text string listing |extensions| separated by whitespace.
+std::string ExtensionSetToString(const ExtensionSet& extensions);
 
 }  // namespace libspirv
 
