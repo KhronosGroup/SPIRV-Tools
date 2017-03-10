@@ -50,35 +50,124 @@ TEST(EnumSet, IsEmpty4) {
   EXPECT_FALSE(set.IsEmpty());
 }
 
-TEST(EnumSet, HasAnyOf) {
-  EnumSet<uint32_t> set;
-  EnumSet<uint32_t> items;
+TEST(EnumSetHasAnyOf, EmptySetEmptyQuery) {
+  const EnumSet<uint32_t> set;
   const EnumSet<uint32_t> empty;
+  EXPECT_TRUE(set.HasAnyOf(empty));
+  EXPECT_TRUE(EnumSet<uint32_t>().HasAnyOf(EnumSet<uint32_t>()));
+}
 
+TEST(EnumSetHasAnyOf, MaskSetEmptyQuery) {
+  EnumSet<uint32_t> set;
+  const EnumSet<uint32_t> empty;
+  set.Add(5);
+  set.Add(8);
+  EXPECT_TRUE(set.HasAnyOf(empty));
+}
+
+TEST(EnumSetHasAnyOf, OverflowSetEmptyQuery) {
+  EnumSet<uint32_t> set;
+  const EnumSet<uint32_t> empty;
+  set.Add(200);
+  set.Add(300);
+  EXPECT_TRUE(set.HasAnyOf(empty));
+}
+
+TEST(EnumSetHasAnyOf, EmptyQuery) {
+  EnumSet<uint32_t> set;
+  const EnumSet<uint32_t> empty;
+  set.Add(5);
+  set.Add(8);
+  set.Add(200);
+  set.Add(300);
+  EXPECT_TRUE(set.HasAnyOf(empty));
+}
+
+TEST(EnumSetHasAnyOf, EmptyQueryAlwaysTrue) {
+  EnumSet<uint32_t> set;
+  const EnumSet<uint32_t> empty;
   EXPECT_TRUE(set.HasAnyOf(empty));
   set.Add(5);
   EXPECT_TRUE(set.HasAnyOf(empty));
-  EXPECT_FALSE(empty.HasAnyOf(set));
 
+  EXPECT_TRUE(EnumSet<uint32_t>(100).HasAnyOf(EnumSet<uint32_t>()));
+}
+
+TEST(EnumSetHasAnyOf, ReflexiveMask) {
+  EnumSet<uint32_t> set(3);
+  set.Add(24);
+  set.Add(30);
+  EXPECT_TRUE(set.HasAnyOf(set));
+}
+
+TEST(EnumSetHasAnyOf, ReflexiveOverflow) {
+  EnumSet<uint32_t> set(200);
+  set.Add(300);
+  set.Add(400);
+  EXPECT_TRUE(set.HasAnyOf(set));
+}
+
+TEST(EnumSetHasAnyOf, Reflexive) {
+  EnumSet<uint32_t> set(3);
+  set.Add(24);
+  set.Add(300);
+  set.Add(400);
+  EXPECT_TRUE(set.HasAnyOf(set));
+}
+
+TEST(EnumSetHasAnyOf, EmptySetHasNone) {
+  EnumSet<uint32_t> set;
+  EnumSet<uint32_t> items;
+  for (uint32_t i = 0; i < 200; ++i) {
+    items.Add(i);
+    EXPECT_FALSE(set.HasAnyOf(items));
+    EXPECT_FALSE(set.HasAnyOf(EnumSet<uint32_t>(i)));
+  }
+}
+
+TEST(EnumSetHasAnyOf, MaskSetMaskQuery) {
+  EnumSet<uint32_t> set(0);
+  EnumSet<uint32_t> items(1);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(2);
   items.Add(3);
   EXPECT_FALSE(set.HasAnyOf(items));
-  items.Add(100);
+  set.Add(3);
+  EXPECT_TRUE(set.HasAnyOf(items));
+  set.Add(4);
+  EXPECT_TRUE(set.HasAnyOf(items));
+}
+
+TEST(EnumSetHasAnyOf, OverflowSetOverflowQuery) {
+  EnumSet<uint32_t> set(100);
+  EnumSet<uint32_t> items(200);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(300);
+  items.Add(400);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(200);
+  EXPECT_TRUE(set.HasAnyOf(items));
+  set.Add(500);
+  EXPECT_TRUE(set.HasAnyOf(items));
+}
+
+TEST(EnumSetHasAnyOf, GeneralCase) {
+  EnumSet<uint32_t> set(0);
+  EnumSet<uint32_t> items(100);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(300);
+  items.Add(4);
+  EXPECT_FALSE(set.HasAnyOf(items));
+  set.Add(5);
+  items.Add(500);
   EXPECT_FALSE(set.HasAnyOf(items));
   set.Add(500);
-  EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(21);
-  set.Add(0);
-  set.Add(400);
-  EXPECT_FALSE(set.HasAnyOf(items));
-
-  items.Add(0);
   EXPECT_TRUE(set.HasAnyOf(items));
-
-  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(400)));
-  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(500)));
-  EXPECT_FALSE(set.HasAnyOf(EnumSet<uint32_t>(100)));
-
-  EXPECT_TRUE(set.HasAnyOf(set));
+  EXPECT_FALSE(set.HasAnyOf(EnumSet<uint32_t>(20)));
+  EXPECT_FALSE(set.HasAnyOf(EnumSet<uint32_t>(600)));
+  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(5)));
+  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(300)));
+  EXPECT_TRUE(set.HasAnyOf(EnumSet<uint32_t>(0)));
 }
 
 TEST(EnumSet, DefaultIsEmpty) {
