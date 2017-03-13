@@ -125,13 +125,18 @@ void RegisterExtension(ValidationState_t& _,
   const std::string extension_str = libspirv::GetExtensionString(inst);
   Extension extension;
   if (!ParseSpvExtensionFromString(extension_str, &extension)) {
-    _.diag(SPV_SUCCESS) << "Failed to parse OpExtension " << extension_str;
+    // The error will be logged in the ProcessInstruction pass.
     return;
   }
 
   _.RegisterExtension(extension);
 }
 
+// Parses the beginning of the module searching for OpExtension instructions.
+// Registers extensions if recognized. Returns SPV_REQUESTED_TERMINATION
+// once an instruction which is not SpvOpCapability and SpvOpExtension is
+// encountered (according to the SPIR-V spec extensions are declared after
+// capabilities and before everything else).
 spv_result_t ProcessExtensions(
     void* user_data, const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
@@ -144,6 +149,7 @@ spv_result_t ProcessExtensions(
     return SPV_SUCCESS;
   }
 
+  // OpExtension block is finished, requesting termination.
   return SPV_REQUESTED_TERMINATION;
 }
 
@@ -245,15 +251,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
            << "Invalid SPIR-V header.";
   }
 
-
   // Look for OpExtension instructions and register extensions.
   // Diagnostics if any will be produced in the next pass (ProcessInstruction).
-  if (auto error = spvBinaryParse(&context, vstate, words, num_words,
-                                  setHeader, ProcessExtensions,
-                                  /* diagnostic = */ nullptr)) {
-    if (error != SPV_REQUESTED_TERMINATION)
-      return error;
-  }
+  spvBinaryParse(&context, vstate, words, num_words,
+                 /* parsed_header = */ nullptr, ProcessExtensions,
+                 /* diagnostic = */ nullptr);
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.

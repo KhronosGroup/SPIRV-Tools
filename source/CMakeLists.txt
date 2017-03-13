@@ -149,11 +149,13 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.h
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.h
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_set.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/macro.h
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.h

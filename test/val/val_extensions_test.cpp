@@ -38,7 +38,7 @@ using ValidateExtensionCapabilities = spvtest::ValidateBase<bool>;
 
 // Returns expected error string if |extension| is not recognized.
 string GetErrorString(const std::string& extension) {
-  return "Failed to parse OpExtension " + extension;
+  return "Found unrecognized extension " + extension;
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
@@ -104,8 +104,8 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
       "\nOpMemoryModel Logical GLSL450";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability requires one of these extensions"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("1st operand of Capability"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("requires one of these extensions"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_KHR_device_group"));
 }
 

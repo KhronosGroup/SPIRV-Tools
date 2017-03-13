@@ -30,6 +30,7 @@
 #include "operand.h"
 #include "spirv_definition.h"
 #include "spirv_validator_options.h"
+#include "util/string_utils.h"
 #include "val/function.h"
 #include "val/validation_state.h"
 
@@ -166,14 +167,16 @@ spv_result_t CapabilityCheck(ValidationState_t& _,
 spv_result_t ExtensionCheck(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  for (int i = 0; i < inst->num_operands; ++i) {
-    const auto& operand = inst->operands[i];
+  for (size_t operand_index = 0; operand_index < inst->num_operands;
+       ++operand_index) {
+    const auto& operand = inst->operands[operand_index];
     const uint32_t word = inst->words[operand.offset];
     const ExtensionSet required_extensions =
         RequiredExtensions(_, operand.type, word);
     if (!_.HasAnyOfExtensions(required_extensions)) {
       return _.diag(SPV_ERROR_MISSING_EXTENSION)
-          << "Operand " << word << " of " << spvOpcodeString(opcode)
+          << spvutils::CardinalToOrdinal(operand_index + 1) << " operand of "
+          << spvOpcodeString(opcode) << ": operand " << word
           << " requires one of these extensions: "
           << ExtensionSetToString(required_extensions);
     }
@@ -381,7 +384,7 @@ void CheckIfKnownExtension(ValidationState_t& _,
   const std::string extension_str = GetExtensionString(inst);
   Extension extension;
   if (!ParseSpvExtensionFromString(extension_str, &extension)) {
-    _.diag(SPV_SUCCESS) << "Failed to parse OpExtension " << extension_str;
+    _.diag(SPV_SUCCESS) << "Found unrecognized extension " << extension_str;
     return;
   }
 }
