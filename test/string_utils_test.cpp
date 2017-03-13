@@ -21,6 +21,35 @@
 namespace {
 
 using ::spvutils::CardinalToOrdinal;
+using ::spvutils::ToString;
+
+TEST(ToString, Int) {
+  EXPECT_EQ("0", ToString(0));
+  EXPECT_EQ("1000", ToString(1000));
+  EXPECT_EQ("-1", ToString(-1));
+  EXPECT_EQ("0", ToString(0LL));
+  EXPECT_EQ("1000", ToString(1000LL));
+  EXPECT_EQ("-1", ToString(-1LL));
+}
+
+TEST(ToString, Uint) {
+  EXPECT_EQ("0", ToString(0U));
+  EXPECT_EQ("1000", ToString(1000U));
+  EXPECT_EQ("0", ToString(0ULL));
+  EXPECT_EQ("1000", ToString(1000ULL));
+}
+
+TEST(ToString, Float) {
+  EXPECT_EQ("0", ToString(0.f));
+  EXPECT_EQ("1000", ToString(1000.f));
+  EXPECT_EQ("-1.44", ToString(-1.44f));
+}
+
+TEST(ToString, Double) {
+  EXPECT_EQ("0", ToString(0.));
+  EXPECT_EQ("1000", ToString(1000.));
+  EXPECT_EQ("-1.44", ToString(-1.44));
+}
 
 TEST(CardinalToOrdinal, Test) {
   EXPECT_EQ("1st", CardinalToOrdinal(1));

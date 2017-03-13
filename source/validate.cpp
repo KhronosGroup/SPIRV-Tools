@@ -135,8 +135,8 @@ void RegisterExtension(ValidationState_t& _,
 // Parses the beginning of the module searching for OpExtension instructions.
 // Registers extensions if recognized. Returns SPV_REQUESTED_TERMINATION
 // once an instruction which is not SpvOpCapability and SpvOpExtension is
-// encountered (according to the SPIR-V spec extensions are declared after
-// capabilities and before everything else).
+// encountered. According to the SPIR-V spec extensions are declared after
+// capabilities and before everything else.
 spv_result_t ProcessExtensions(
     void* user_data, const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);

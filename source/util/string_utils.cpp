@@ -12,29 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_UTIL_STRING_UTILS_H_
-#define LIBSPIRV_UTIL_STRING_UTILS_H_
-
-#include <sstream>
-#include <string>
+#include <cstdint>
+#include <type_traits>
 
 #include "util/string_utils.h"
 
 namespace spvutils {
 
-// Converts arithmetic value |val| to its default string representation.
-template <class T>
-std::string ToString(T val) {
-  static_assert(std::is_arithmetic<T>::value,
-                "spvutils::ToString is restricted to only arithmetic values");
-  std::stringstream os;
-  os << val;
-  return os.str();
-}
+std::string CardinalToOrdinal(size_t cardinal) {
+  const size_t mod10 = cardinal % 10;
+  const size_t mod100 = cardinal % 100;
+  std::string suffix;
+  if (mod10 == 1 && mod100 != 11)
+    suffix = "st";
+  else if (mod10 == 2 && mod100 != 12)
+    suffix = "nd";
+  else if (mod10 == 3 && mod100 != 13)
+    suffix = "rd";
+  else
+    suffix = "th";
 
-// Converts cardinal number to ordinal number string.
-std::string CardinalToOrdinal(size_t cardinal);
+  return ToString(cardinal) + suffix;
+}
 
 }  // namespace spvutils
 
-#endif  // LIBSPIRV_UTIL_STRING_UTILS_H_
