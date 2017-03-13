@@ -42,13 +42,13 @@ TEST(ToString, Uint) {
 TEST(ToString, Float) {
   EXPECT_EQ("0", ToString(0.f));
   EXPECT_EQ("1000", ToString(1000.f));
-  EXPECT_EQ("-1.44", ToString(-1.44f));
+  EXPECT_EQ("-1.5", ToString(-1.5f));
 }
 
 TEST(ToString, Double) {
   EXPECT_EQ("0", ToString(0.));
   EXPECT_EQ("1000", ToString(1000.));
-  EXPECT_EQ("-1.44", ToString(-1.44));
+  EXPECT_EQ("-1.5", ToString(-1.5));
 }
 
 TEST(CardinalToOrdinal, Test) {
