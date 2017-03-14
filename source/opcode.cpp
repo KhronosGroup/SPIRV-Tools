@@ -36,6 +36,9 @@ const spv_opcode_desc_t opcodeTableEntries_1_0[] = {
 const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
 #include "core.insts-1.1.inc"
 };
+const spv_opcode_desc_t opcodeTableEntries_1_2[] = {
+#include "core.insts-1.2.inc"
+};
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
 struct VendorTool {
@@ -83,6 +86,8 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
       ARRAY_SIZE(opcodeTableEntries_1_0), opcodeTableEntries_1_0};
   static const spv_opcode_table_t table_1_1 = {
       ARRAY_SIZE(opcodeTableEntries_1_1), opcodeTableEntries_1_1};
+  static const spv_opcode_table_t table_1_2 = {
+      ARRAY_SIZE(opcodeTableEntries_1_2), opcodeTableEntries_1_2};
 
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
@@ -96,8 +101,11 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
       *pInstTable = &table_1_0;
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_1:
-    case SPV_ENV_OPENCL_2_2:
       *pInstTable = &table_1_1;
+      return SPV_SUCCESS;
+    case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_OPENCL_2_2:
+      *pInstTable = &table_1_2;
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOpcodeTableGet()");
@@ -165,9 +173,9 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
-  for (uint32_t i = 0; i < ARRAY_SIZE(opcodeTableEntries_1_1); ++i) {
-    if (opcodeTableEntries_1_1[i].opcode == opcode)
-      return opcodeTableEntries_1_1[i].name;
+  for (uint32_t i = 0; i < ARRAY_SIZE(opcodeTableEntries_1_2); ++i) {
+    if (opcodeTableEntries_1_2[i].opcode == opcode)
+      return opcodeTableEntries_1_2[i].name;
   }
   assert(0 && "Unreachable!");
   return "unknown";

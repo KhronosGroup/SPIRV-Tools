@@ -26,6 +26,9 @@ namespace v1_0 {
 namespace v1_1 {
 #include "operand.kinds-1.1.inc"
 }  // namespace v1_1
+namespace v1_2 {
+#include "operand.kinds-1.2.inc"
+}  // namespace v1_2
 
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
                                 spv_target_env env) {
@@ -37,6 +40,9 @@ spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
   static const spv_operand_table_t table_1_1 = {
       ARRAY_SIZE(v1_1::pygen_variable_OperandInfoTable),
       v1_1::pygen_variable_OperandInfoTable};
+  static const spv_operand_table_t table_1_2 = {
+      ARRAY_SIZE(v1_2::pygen_variable_OperandInfoTable),
+      v1_2::pygen_variable_OperandInfoTable};
 
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
@@ -50,8 +56,11 @@ spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
       *pOperandTable = &table_1_0;
       return SPV_SUCCESS;
     case SPV_ENV_UNIVERSAL_1_1:
-    case SPV_ENV_OPENCL_2_2:
       *pOperandTable = &table_1_1;
+      return SPV_SUCCESS;
+    case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_OPENCL_2_2:
+      *pOperandTable = &table_1_2;
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOperandTableGet()");

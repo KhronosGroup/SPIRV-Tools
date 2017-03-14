@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-#include "spirv/1.1/spirv.h"
+#include "spirv/1.2/spirv.h"
 
 #define spvIsInBitfield(value, bitfield) ((value) == ((value)&bitfield))
 

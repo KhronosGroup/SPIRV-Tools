@@ -27,7 +27,7 @@
 #include "ext_inst.h"
 #include "opcode.h"
 #include "operand.h"
-#include "spirv/1.1/spirv.h"
+#include "spirv/1.2/spirv.h"
 #include "spirv_constant.h"
 #include "spirv_endian.h"
 

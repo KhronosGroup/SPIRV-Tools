@@ -52,6 +52,8 @@ Options:
       argv0, argv0);
 }
 
+static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_2;
+
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr;
@@ -97,7 +99,7 @@ int main(int argc, char** argv) {
           } else if (0 == strcmp(argv[argi], "--version")) {
             printf("%s\n", spvSoftwareVersionDetailsString());
             printf("Target: %s\n",
-                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1));
+                   spvTargetEnvDescription(kDefaultEnvironment));
             return 0;
           } else {
             print_usage(argv[0]);
@@ -160,7 +162,7 @@ int main(int argc, char** argv) {
   spv_text text = nullptr;
   spv_text* textOrNull = print_to_stdout ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  spv_context context = spvContextCreate(kDefaultEnvironment);
   spv_result_t error =
       spvBinaryToText(context, contents.data(), contents.size(), options,
                       textOrNull, &diagnostic);

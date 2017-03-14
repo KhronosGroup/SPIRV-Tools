@@ -45,15 +45,15 @@ Options:
   --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
   --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
   --version                        Display validator version information.
-  --target-env                     {vulkan1.0|spv1.0|spv1.1}
-                                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
+  --target-env                     {vulkan1.0|spv1.0|spv1.1|spv1.2}
+                                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2 validation rules.
 )",
       argv0, argv0);
 }
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
   spvtools::ValidatorOptions options;
   bool continue_processing = true;
   int return_code = 0;
@@ -85,9 +85,11 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
-        printf("Targets:\n  %s\n  %s\n",
+        // TODO(dneto): Add OpenCL 2.2 at least.
+        printf("Targets:\n  %s\n  %s\n  %s\n",
                spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0));
+               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
+               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2));
         continue_processing = false;
         return_code = 0;
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {

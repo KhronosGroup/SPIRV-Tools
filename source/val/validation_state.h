@@ -27,7 +27,7 @@
 #include "diagnostic.h"
 #include "enum_set.h"
 #include "spirv-tools/libspirv.h"
-#include "spirv/1.1/spirv.h"
+#include "spirv/1.2/spirv.h"
 #include "spirv_definition.h"
 #include "val/function.h"
 #include "val/instruction.h"

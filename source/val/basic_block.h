@@ -15,7 +15,7 @@
 #ifndef LIBSPIRV_VAL_BASICBLOCK_H_
 #define LIBSPIRV_VAL_BASICBLOCK_H_
 
-#include "spirv/1.1/spirv.h"
+#include "spirv/1.2/spirv.h"
 
 #include <cstdint>
 

@@ -41,14 +41,15 @@ TEST_P(TargetEnvTest, ValidDescription) {
 
 TEST_P(TargetEnvTest, ValidSpirvVersion) {
   auto spirv_version = spvVersionForTargetEnv(GetParam());
-  ASSERT_THAT(spirv_version, AnyOf(0x10000, 0x10100));
+  ASSERT_THAT(spirv_version, AnyOf(0x10000, 0x10100, 0x10200));
 }
 
 INSTANTIATE_TEST_CASE_P(AllTargetEnvs, TargetEnvTest,
                         ValuesIn(spvtest::AllTargetEnvironments()));
 
 TEST(GetContextTest, InvalidTargetEnvProducesNull) {
-  spv_context context = spvContextCreate((spv_target_env)10);
+  // Use a value beyond the last valid enum value.
+  spv_context context = spvContextCreate(static_cast<spv_target_env>(15));
   EXPECT_EQ(context, nullptr);
 }
 
@@ -72,6 +73,7 @@ INSTANTIATE_TEST_CASE_P(TargetParsing, TargetParseTest,
                         ValuesIn(std::vector<ParseCase>{
                             {"spv1.0", true, SPV_ENV_UNIVERSAL_1_0},
                             {"spv1.1", true, SPV_ENV_UNIVERSAL_1_1},
+                            {"spv1.2", true, SPV_ENV_UNIVERSAL_1_2},
                             {"vulkan1.0", true, SPV_ENV_VULKAN_1_0},
                             {"opencl2.1", true, SPV_ENV_OPENCL_2_1},
                             {"opencl2.2", true, SPV_ENV_OPENCL_2_2},

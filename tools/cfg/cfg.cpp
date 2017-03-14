@@ -45,6 +45,8 @@ Options:
       argv0, argv0);
 }
 
+static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_2;
+
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
   const char* outFile = nullptr; // Stays nullptr if printing to stdout.
@@ -71,7 +73,7 @@ int main(int argc, char** argv) {
           } else if (0 == strcmp(argv[argi], "--version")) {
             printf("%s EXPERIMENTAL\n", spvSoftwareVersionDetailsString());
             printf("Target: %s\n",
-                   spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1));
+                   spvTargetEnvDescription(kDefaultEnvironment));
             return 0;
           } else {
             print_usage(argv[0]);
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
   // Read the input binary.
   std::vector<uint32_t> contents;
   if (!ReadFile<uint32_t>(inFile, "rb", &contents)) return 1;
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  spv_context context = spvContextCreate(kDefaultEnvironment);
   spv_diagnostic diagnostic = nullptr;
 
   std::stringstream ss;

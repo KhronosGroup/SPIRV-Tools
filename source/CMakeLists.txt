@@ -111,12 +111,13 @@ endmacro(spvtools_vendor_tables)
 
 spvtools_core_tables("1.0")
 spvtools_core_tables("1.1")
-spvtools_enum_string_mapping("1.1")
+spvtools_core_tables("1.2")
+spvtools_enum_string_mapping("1.2")
 spvtools_opencl_tables("1.0")
 spvtools_glsl_tables("1.0")
 spvtools_vendor_tables("spv-amd-gcn-shader")
 
-spvtools_vimsyntax("1.1" "1.0")
+spvtools_vimsyntax("1.2" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})
 set_property(TARGET spirv-tools-vimsyntax PROPERTY FOLDER "SPIRV-Tools utilities")
 

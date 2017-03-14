@@ -96,6 +96,17 @@ struct AssemblyCase {
   std::vector<uint32_t> expected;
 };
 
+using ExtensionAssemblyTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<std::tuple<spv_target_env, AssemblyCase>>>;
+
+TEST_P(ExtensionAssemblyTest, Samples) {
+  const spv_target_env& env = std::get<0>(GetParam());
+  const AssemblyCase& ac = std::get<1>(GetParam());
+
+  // Check that it assembles correctly.
+  EXPECT_THAT(CompiledInstructions(ac.input, env), Eq(ac.expected));
+}
+
 using ExtensionRoundTripTest = spvtest::TextToBinaryTestBase<
     ::testing::TestWithParam<std::tuple<spv_target_env, AssemblyCase>>>;
 
@@ -216,6 +227,22 @@ INSTANTIATE_TEST_CASE_P(
                 {"OpCapability StorageInputOutput16\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageInputOutput16})},
+            })), );
+
+INSTANTIATE_TEST_CASE_P(
+    SPV_KHR_16bit_storage_alias_check, ExtensionAssemblyTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                // The old name maps to the new enum.
+                {"OpCapability StorageUniformBufferBlock16\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageBuffer16BitAccess})},
+                // The old name maps to the new enum.
+                {"OpCapability StorageUniform16\n",
+                 MakeInstruction(
+                     SpvOpCapability,
+                     {SpvCapabilityUniformAndStorageBuffer16BitAccess})},
             })), );
 
 // SPV_KHR_device_group
