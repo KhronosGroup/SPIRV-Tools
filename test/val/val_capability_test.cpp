@@ -1586,7 +1586,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability operand not allowed by Vulkan 1.0"));
+              HasSubstr("Capability value 5 is not allowed by Vulkan 1.0"));
 }
 
 TEST_F(ValidateCapability, Vulkan10EnabledByExtension) {
@@ -1618,7 +1618,7 @@ OpDecorate %intt BuiltIn PointSize
   EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
             ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability operand not allowed by Vulkan 1.0"));
+              HasSubstr("Capability value 4427 is not allowed by Vulkan 1.0"));
 }
 
 }  // namespace anonymous

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Ensures type declarations are unique unless allowed by the specification.
+// Validates OpCapability instruction.
 
 #include "validate.h"
 
@@ -117,8 +117,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsSupportOptionalVulkan_1_0(capability) &&
         !IsEnabledByExtension(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-          << "Capability operand not allowed by Vulkan 1.0 specification "
-          << "(or requires extension): SpvCapability " << capability;
+          << "Capability value " << capability
+          << " is not allowed by Vulkan 1.0 specification"
+          << " (or requires extension)";
     }
   }
 
