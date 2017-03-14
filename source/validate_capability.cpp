@@ -77,28 +77,36 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
   return false;
 }
 
+// Checks if |capability| was enabled by extension.
+bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
+  spv_operand_desc operand_desc;
+  const spv_result_t lookup_result = _.grammar().lookupOperand(
+      SPV_OPERAND_TYPE_CAPABILITY, capability, &operand_desc);
+
+  assert(lookup_result == SPV_SUCCESS);
+  assert(operand_desc);
+
+  if (operand_desc->extensions.IsEmpty())
+    return false;
+
+  return _.HasAnyOfExtensions(operand_desc->extensions);
+}
+
 }  // namespace
 
 // Validates that capability declarations use operands allowed in the current
 // context.
 spv_result_t CapabilityPass(ValidationState_t& _,
-                           const spv_parsed_instruction_t* inst) {
+                            const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   if (opcode != SpvOpCapability)
     return SPV_SUCCESS;
 
-  if (inst->num_operands != 1) {
-    return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-        << "OpCapability must have exactly one operand.";
-  }
+  assert(inst->num_operands == 1);
 
   const spv_parsed_operand_t& operand = inst->operands[0];
 
-  if (operand.num_words != 1) {
-    return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-        << "OpCapability operand must consist of exactly one word.";
-  }
-
+  assert(operand.num_words == 1);
   assert(operand.offset < inst->num_words);
 
   const uint32_t capability = inst->words[operand.offset];
@@ -106,10 +114,11 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   const auto env = _.context()->target_env;
   if (env == SPV_ENV_VULKAN_1_0) {
     if (!IsSupportGuaranteedVulkan_1_0(capability) &&
-        !IsSupportOptionalVulkan_1_0(capability)) {
+        !IsSupportOptionalVulkan_1_0(capability) &&
+        !IsEnabledByExtension(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-          << "Capability operand not allowed by Vulkan specification"
-          << " (SpvCapability " << capability <<").";
+          << "Capability operand not allowed by Vulkan 1.0 specification "
+          << "(or requires extension): SpvCapability " << capability;
     }
   }
 

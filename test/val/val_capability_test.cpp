@@ -1574,4 +1574,51 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCapability, NonVulkan10Capability) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%u32    = OpTypeInt 32 0
+%i32    = OpTypeInt 32 1
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability operand not allowed by Vulkan 1.0"));
+}
+
+TEST_F(ValidateCapability, Vulkan10EnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DrawParameters
+OpExtension "SPV_KHR_shader_draw_parameters"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "shader"
+OpDecorate %intt BuiltIn PointSize
+%intt = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateCapability, Vulkan10NotEnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DrawParameters
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "shader"
+OpDecorate %intt BuiltIn PointSize
+%intt = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability operand not allowed by Vulkan 1.0"));
+}
+
 }  // namespace anonymous
