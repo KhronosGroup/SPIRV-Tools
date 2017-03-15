@@ -25,6 +25,7 @@
 #include "binary.h"
 #include "diagnostic.h"
 #include "enum_set.h"
+#include "enum_string_mapping.h"
 #include "extensions.h"
 #include "opcode.h"
 #include "operand.h"
@@ -383,7 +384,7 @@ void CheckIfKnownExtension(ValidationState_t& _,
                            const spv_parsed_instruction_t* inst) {
   const std::string extension_str = GetExtensionString(inst);
   Extension extension;
-  if (!ParseSpvExtensionFromString(extension_str, &extension)) {
+  if (!GetExtensionFromString(extension_str, &extension)) {
     _.diag(SPV_SUCCESS) << "Found unrecognized extension " << extension_str;
     return;
   }

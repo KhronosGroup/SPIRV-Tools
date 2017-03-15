@@ -12,29 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_EXTENSIONS_H_
-#define LIBSPIRV_EXTENSIONS_H_
+#ifndef LIBSPIRV_ENUM_STRING_MAPPING_H_
+#define LIBSPIRV_ENUM_STRING_MAPPING_H_
 
 #include <string>
 
-#include "enum_set.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv/1.1/spirv.h"
 
 namespace libspirv {
 
-// The known SPIR-V extensions.
-enum class Extension {
-#include "extension_enum.inc"
-};
+enum class Extension;
 
-using ExtensionSet = EnumSet<Extension>;
+// Finds Extension enum corresponding to |str|. Returns false if not found.
+bool GetExtensionFromString(const std::string& str, Extension* extension);
 
-// Returns literal string operand of OpExtension instruction.
-std::string GetExtensionString(const spv_parsed_instruction_t* inst);
+// Returns text string corresponding to |extension|.
+std::string ExtensionToString(Extension extension);
 
-// Returns text string listing |extensions| separated by whitespace.
-std::string ExtensionSetToString(const ExtensionSet& extensions);
+// Returns text string corresponding to |capability|.
+std::string CapabilityToString(SpvCapability capability);
 
 }  // namespace libspirv
 
-#endif  // LIBSPIRV_EXTENSIONS_H_
+#endif  // LIBSPIRV_ENUM_STRING_MAPPING_H_

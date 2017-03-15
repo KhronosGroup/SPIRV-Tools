@@ -348,6 +348,80 @@ def generate_operand_kind_table(enums):
     return '\n\n'.join(enum_entries + (table,))
 
 
+def get_extension_list(operands):
+    """Returns extensions as an alphabetically sorted list of strings."""
+    enumerants = sum([item.get('enumerants', []) for item in operands
+                      if item.get('category') in ['ValueEnum']], [])
+
+    extensions = sum([item.get('extensions', []) for item in enumerants
+                      if item.get('extensions')], [])
+
+    return sorted(set(extensions))
+
+
+def get_capability_list(operands):
+    """Returns capabilities as a list of strings in the order of appearance."""
+    enumerants = sum([item.get('enumerants', []) for item in operands
+                      if item.get('kind') in ['Capability']], [])
+    return [item.get('enumerant') for item in enumerants]
+
+
+def generate_extension_enum(operands):
+    """Returns enumeration containing extensions declared in the grammar."""
+    extensions = get_extension_list(operands)
+    return ',\n'.join(['k' + extension for extension in extensions])
+
+
+def generate_extension_to_string_mapping(operands):
+    """Returns mapping function from extensions to corresponding strings."""
+    extensions = get_extension_list(operands)
+    function = 'std::string ExtensionToString(Extension extension) {\n'
+    function += '  switch (extension) {\n'
+    template = '    case Extension::k{extension}:\n' \
+        '      return "{extension}";\n'
+    function += ''.join([template.format(extension=extension)
+                         for extension in extensions])
+    function += '  };\n\n  return "";\n}'
+    return function
+
+
+def generate_string_to_extension_mapping(operands):
+    """Returns mapping function from strings to corresponding extensions."""
+    extensions = get_extension_list(operands)
+    function = 'bool GetExtensionFromString(' \
+        'const std::string& str, Extension* extension) {\n '
+    template = ' if (str == "{extension}")\n' \
+    '    *extension = Extension::k{extension};\n  else'
+    function += ''.join([template.format(extension=extension)
+                         for extension in extensions])
+    function += '\n    return false;\n\n  return true;\n}'
+    return function
+
+
+def generate_capability_to_string_mapping(operands):
+    """Returns mapping function from capabilities to corresponding strings."""
+    capabilities = get_capability_list(operands)
+    function = 'std::string CapabilityToString(SpvCapability capability) {\n'
+    function += '  switch (capability) {\n'
+    template = '    case SpvCapability{capability}:\n' \
+        '      return "{capability}";\n'
+    function += ''.join([template.format(capability=capability)
+                         for capability in capabilities])
+    function += '    default:\n' \
+        '      return "";\n'
+    function += '  };\n\n  return "";\n}'
+    return function
+
+
+def generate_all_string_enum_mappings(operands):
+    """Returns all string-to-enum / enum-to-string mapping tables."""
+    tables = []
+    tables.append(generate_extension_to_string_mapping(operands))
+    tables.append(generate_string_to_extension_mapping(operands))
+    tables.append(generate_capability_to_string_mapping(operands))
+    return '\n\n'.join(tables)
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Generate SPIR-V info tables')
@@ -375,6 +449,12 @@ def main():
     parser.add_argument('--operand-kinds-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for operand kinds')
+    parser.add_argument('--extension-enum-output', metavar='<path>',
+                        type=str, required=False, default=None,
+                        help='output file for extension enumeration')
+    parser.add_argument('--enum-string-mapping-output', metavar='<path>',
+                        type=str, required=False, default=None,
+                        help='output file for enum-string mappings')
     args = parser.parse_args()
 
     if (args.core_insts_output is None) != \
@@ -394,7 +474,9 @@ def main():
         exit(1)
     if all([args.core_insts_output is None,
             args.glsl_insts_output is None,
-            args.opencl_insts_output is None]):
+            args.opencl_insts_output is None,
+            args.extension_enum_output is None,
+            args.enum_string_mapping_output is None]):
         print('error: at least one output should be specified.')
         exit(1)
 
@@ -407,6 +489,15 @@ def main():
                   file=open(args.core_insts_output, 'w'))
             print(generate_operand_kind_table(grammar['operand_kinds']),
                   file=open(args.operand_kinds_output, 'w'))
+        if args.extension_enum_output is not None:
+            make_path_to_file(args.extension_enum_output)
+            print(generate_extension_enum(grammar['operand_kinds']),
+                  file=open(args.extension_enum_output, 'w'))
+        if args.enum_string_mapping_output is not None:
+            make_path_to_file(args.enum_string_mapping_output)
+            print(generate_all_string_enum_mappings(
+                      grammar['operand_kinds']),
+                  file=open(args.enum_string_mapping_output, 'w'))
 
     if args.extinst_glsl_grammar is not None:
         with open(args.extinst_glsl_grammar) as json_file:

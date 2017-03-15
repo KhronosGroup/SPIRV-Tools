@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include "enum_string_mapping.h"
 #include "extensions.h"
 #include "gmock/gmock.h"
 #include "test_fixture.h"
@@ -79,14 +80,6 @@ TEST_P(ValidateUnknownExtensions, FailSilently) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(GetErrorString(extension)));
-}
-
-TEST_P(ValidateKnownExtensions, ToAndFromString) {
-  const std::string extension_str = GetParam();
-  Extension extension;
-  ASSERT_TRUE(ParseSpvExtensionFromString(extension_str, &extension));
-  const std::string result_str = ExtensionToString(extension);
-  EXPECT_EQ(extension_str, result_str);
 }
 
 TEST_F(ValidateExtensionCapabilities, DeclCapabilitySuccess) {

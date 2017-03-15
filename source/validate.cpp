@@ -26,6 +26,7 @@
 
 #include "binary.h"
 #include "diagnostic.h"
+#include "enum_string_mapping.h"
 #include "extensions.h"
 #include "instruction.h"
 #include "opcode.h"
@@ -124,7 +125,7 @@ void RegisterExtension(ValidationState_t& _,
                        const spv_parsed_instruction_t* inst) {
   const std::string extension_str = libspirv::GetExtensionString(inst);
   Extension extension;
-  if (!ParseSpvExtensionFromString(extension_str, &extension)) {
+  if (!GetExtensionFromString(extension_str, &extension)) {
     // The error will be logged in the ProcessInstruction pass.
     return;
   }

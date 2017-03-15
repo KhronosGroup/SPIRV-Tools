@@ -52,6 +52,7 @@ function(add_spvtools_unittest)
       ${spirv-tools_SOURCE_DIR}
       ${spirv-tools_SOURCE_DIR}/include
       ${spirv-tools_SOURCE_DIR}/test
+      ${spirv-tools_BINARY_DIR}
       ${gtest_SOURCE_DIR}/include
       ${gmock_SOURCE_DIR}/include
     )
@@ -75,6 +76,7 @@ set(TEST_SOURCES
   binary_to_text_test.cpp
   binary_to_text.literal_test.cpp
   comment_test.cpp
+  enum_string_mapping_test.cpp
   enum_set_test.cpp
   ext_inst.glsl_test.cpp
   ext_inst.opencl_test.cpp
