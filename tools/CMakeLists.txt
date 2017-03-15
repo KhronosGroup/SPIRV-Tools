@@ -30,7 +30,10 @@ function(add_spvtools_tool)
   add_executable(${ARG_TARGET} ${ARG_SRCS})
   spvtools_default_compile_options(${ARG_TARGET})
   target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
-  target_include_directories(${ARG_TARGET} PRIVATE ${spirv-tools_SOURCE_DIR})
+  target_include_directories(${ARG_TARGET} PRIVATE
+    ${spirv-tools_SOURCE_DIR}
+    ${spirv-tools_BINARY_DIR}
+)
 endfunction()
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
