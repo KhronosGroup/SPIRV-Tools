@@ -407,10 +407,21 @@ def generate_capability_to_string_mapping(operands):
         '      return "{capability}";\n'
     function += ''.join([template.format(capability=capability)
                          for capability in capabilities])
-    function += '    default:\n' \
+    function += '    case SpvCapabilityMax:\n' \
+        '      assert(0 && "Attempting to convert SpvCapabilityMax to string");\n' \
         '      return "";\n'
     function += '  };\n\n  return "";\n}'
     return function
+
+
+def generate_capability_to_string_table(operands):
+    """Returns capability to string mapping table."""
+    capabilities = get_capability_list(operands)
+    entry_template = '  {{SpvCapability{capability},\n   "{capability}"}}'
+    table_entries = [entry_template.format(capability=capability)
+                     for capability in capabilities]
+    table_template = '{{\n{enums}\n}};'
+    return table_template.format(enums=',\n'.join(table_entries))
 
 
 def generate_all_string_enum_mappings(operands):
