@@ -31,6 +31,23 @@ using MessageConsumer = std::function<void(
     const spv_position_t& /* position */, const char* /* message */
     )>;
 
+// A RAII wrapper around a validator options object.
+class ValidatorOptions {
+ public:
+  ValidatorOptions() : options_(spvValidatorOptionsCreate()) {}
+  ~ValidatorOptions() { spvValidatorOptionsDestroy(options_); }
+  // Allow implicit conversion to the underlying object.
+  operator spv_validator_options() const { return options_; }
+
+  // Sets a limit.
+  void SetUniversalLimit(spv_validator_limit limit_type, uint32_t limit) {
+    spvValidatorOptionsSetUniversalLimit(options_, limit_type, limit);
+  }
+
+ private:
+  spv_validator_options options_;
+};
+
 // C++ interface for SPIRV-Tools functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for assembling, disassembling, and validating.
@@ -91,6 +108,8 @@ class SpirvTools {
   bool Validate(const std::vector<uint32_t>& binary) const;
   // |binary_size| specifies the number of words in |binary|.
   bool Validate(const uint32_t* binary, size_t binary_size) const;
+  // Like the previous overload, but takes an options object.
+  bool Validate(const uint32_t* binary, size_t binary_size, const ValidatorOptions& options) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.

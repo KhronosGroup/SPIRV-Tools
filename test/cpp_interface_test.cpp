@@ -22,6 +22,7 @@ namespace {
 
 using namespace spvtools;
 using ::testing::ContainerEq;
+using ::testing::HasSubstr;
 
 TEST(CppInterface, SuccessfulRoundTrip) {
   const std::string input_text = "%2 = OpSizeOf %1 %3\n";
@@ -219,6 +220,46 @@ TEST(CppInterface, ValidateEmptyModule) {
       });
   EXPECT_FALSE(t.Validate({}));
   EXPECT_EQ(1, invocation_count);
+}
+
+// Returns the assembly for a SPIR-V module with a struct declaration
+// with the given number of members.
+std::string MakeModuleHavingStruct(int num_members) {
+  std::stringstream os;
+  os << R"(OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+      %1 = OpTypeInt 32 0
+      %2 = OpTypeStruct)";
+  for (int i = 0; i < num_members; i++) os << " %1";
+  return os.str();
+}
+
+TEST(CppInterface, ValidateWithOptionsPass) {
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary;
+  EXPECT_TRUE(t.Assemble(MakeModuleHavingStruct(10), &binary));
+  const spvtools::ValidatorOptions opts;
+
+  EXPECT_TRUE(t.Validate(binary.data(), binary.size(), opts));
+}
+
+TEST(CppInterface, ValidateWithOptionsFail) {
+  SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
+  std::vector<uint32_t> binary;
+  EXPECT_TRUE(t.Assemble(MakeModuleHavingStruct(10), &binary));
+  spvtools::ValidatorOptions opts;
+  opts.SetUniversalLimit(spv_validator_limit_max_struct_members, 9);
+  std::stringstream os;
+  t.SetMessageConsumer([&os](spv_message_level_t, const char*,
+                             const spv_position_t&,
+                             const char* message) { os << message; });
+
+  EXPECT_FALSE(t.Validate(binary.data(), binary.size(), opts));
+  EXPECT_THAT(
+      os.str(),
+      HasSubstr(
+          "Number of OpTypeStruct members (10) has exceeded the limit (9)"));
 }
 
 // Checks that after running the given optimizer |opt| on the given |original|

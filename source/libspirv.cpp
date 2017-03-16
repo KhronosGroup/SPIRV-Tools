@@ -82,4 +82,11 @@ bool SpirvTools::Validate(const uint32_t* binary,
          SPV_SUCCESS;
 }
 
+bool SpirvTools::Validate(const uint32_t* binary, const size_t binary_size,
+                          const spvtools::ValidatorOptions& options) const {
+  spv_const_binary_t the_binary{binary, binary_size};
+  return spvValidateWithOptions(impl_->context, options, &the_binary,
+                                nullptr) == SPV_SUCCESS;
+}
+
 }  // namespace spvtools
