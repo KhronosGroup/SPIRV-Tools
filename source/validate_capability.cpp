@@ -79,14 +79,12 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
 
 // Checks if |capability| was enabled by extension.
 bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
-  spv_operand_desc operand_desc;
-  const spv_result_t lookup_result = _.grammar().lookupOperand(
+  spv_operand_desc operand_desc = nullptr;
+  _.grammar().lookupOperand(
       SPV_OPERAND_TYPE_CAPABILITY, capability, &operand_desc);
 
-  assert(lookup_result == SPV_SUCCESS);
-  if (lookup_result != SPV_SUCCESS)
-    return false;
-
+  // operand_desc is expected to be not null, otherwise validator would have
+  // failed at an earlier stage. This 'assert' is 'just in case'.
   assert(operand_desc);
 
   if (operand_desc->extensions.IsEmpty())
