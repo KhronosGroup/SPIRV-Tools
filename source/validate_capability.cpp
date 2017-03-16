@@ -84,7 +84,7 @@ bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
       SPV_OPERAND_TYPE_CAPABILITY, capability, &operand_desc);
 
   assert(lookup_result == SPV_SUCCESS);
-  if (!lookup_result)
+  if (lookup_result != SPV_SUCCESS)
     return false;
 
   assert(operand_desc);
