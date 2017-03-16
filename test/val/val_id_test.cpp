@@ -1824,23 +1824,50 @@ TEST_F(ValidateIdWithMessage, OpLoadResultTypeBad) {
               HasSubstr("OpLoad Result Type <id> '3' does not match Pointer "
                         "<id> '5's type."));
 }
+
 TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%9 = OpTypeFloat 32
 %3 = OpTypePointer UniformConstant %2
 %4 = OpTypeFunction %1
-%6 = OpFunction %1 None %4
-%7 = OpLabel
-%8 = OpLoad %9 %3
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+%7 = OpLoad %2 %8
      OpReturn
      OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // Prove that SSA checks trigger for a bad Id value.
+  // The next test case show the not-a-logical-pointer case.
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpLoad Pointer <id> '4' is not a pointer."));
+              HasSubstr("ID 8 has not been defined"));
+}
+
+TEST_F(ValidateIdWithMessage, OpLoadLogicalPointerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFloat 32
+%4 = OpTypePointer UniformConstant %2
+%5 = OpTypePointer UniformConstant %3
+%6 = OpTypeFunction %1
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%9 = OpBitcast %5 %4 ; Not valid in logical addressing
+%10 = OpLoad %3 %9 ; Should trigger message
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // Once we start checking bitcasts, we might catch that
+  // as the error first, instead of catching it here.
+  // I don't know if it's possible to generate a bad case
+  // if/when the validator is complete.
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpLoad Pointer <id> '9' is not a logical pointer."));
 }
 
 TEST_F(ValidateIdWithMessage, OpStoreGood) {
@@ -1875,8 +1902,31 @@ TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Pointer <id> '3' is not a pointer."));
+              HasSubstr("OpStore Pointer <id> '3' is not a logical pointer."));
 }
+
+TEST_F(ValidateIdWithMessage, OpStoreLogicalPointerBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeInt 32 0
+%3 = OpTypeFloat 32
+%4 = OpTypePointer UniformConstant %2
+%5 = OpTypePointer UniformConstant %3
+%6 = OpTypeFunction %1
+%7 = OpConstantNull %5
+%8 = OpFunction %1 None %6
+%9 = OpLabel
+%10 = OpBitcast %5 %4 ; Not valid in logical addressing
+%11 = OpStore %10 %7 ; Should trigger message
+     OpReturn
+     OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpStore Pointer <id> '10' is not a logical pointer."));
+}
+
 TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
