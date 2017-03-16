@@ -68,7 +68,7 @@ typedef enum spv_message_level_t {
                            // Will exit the program immediately. E.g.,
                            // unimplemented feature.
   SPV_MSG_ERROR,           // Normal error due to user input.
-  SPV_MSG_WARNINING,       // Warning information.
+  SPV_MSG_WARNING,         // Warning information.
   SPV_MSG_INFO,            // General information.
   SPV_MSG_DEBUG,           // Debug information.
 } spv_message_level_t;

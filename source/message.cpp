@@ -32,7 +32,7 @@ std::string StringifyMessage(spv_message_level_t level, const char* source,
     case SPV_MSG_ERROR:
       level_string = "error";
       break;
-    case SPV_MSG_WARNINING:
+    case SPV_MSG_WARNING:
       level_string = "warning";
       break;
     case SPV_MSG_INFO:

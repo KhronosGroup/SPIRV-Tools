@@ -15,11 +15,12 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 #include <vector>
 
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 #include "tools/io.h"
 
 void print_usage(char* argv0) {
@@ -53,7 +54,7 @@ Options:
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
-  spv_validator_options options = spvValidatorOptionsCreate();
+  spvtools::ValidatorOptions options;
   bool continue_processing = true;
   int return_code = 0;
 
@@ -66,7 +67,7 @@ int main(int argc, char** argv) {
           if (spvParseUniversalLimitsOptions(cur_arg, &limit_type)) {
             uint32_t limit = 0;
             if (sscanf(argv[++argi], "%d", &limit)) {
-              spvValidatorOptionsSetUniversalLimit(options, limit_type, limit);
+              options.SetUniversalLimit(limit_type, limit);
             } else {
               fprintf(stderr, "error: missing argument to %s\n", cur_arg);
               continue_processing = false;
@@ -133,28 +134,36 @@ int main(int argc, char** argv) {
 
   // Exit if command line parsing was not successful.
   if (!continue_processing) {
-    spvValidatorOptionsDestroy(options);
     return return_code;
   }
 
   std::vector<uint32_t> contents;
   if (!ReadFile<uint32_t>(inFile, "rb", &contents)) return 1;
 
-  spv_const_binary_t binary = {contents.data(), contents.size()};
+  spvtools::SpirvTools tools(target_env);
+  tools.SetMessageConsumer([](spv_message_level_t level, const char*,
+                              const spv_position_t& position,
+                              const char* message) {
+    switch (level) {
+      case SPV_MSG_FATAL:
+      case SPV_MSG_INTERNAL_ERROR:
+      case SPV_MSG_ERROR:
+        std::cerr << "error: " << position.index << ": " << message
+                  << std::endl;
+        break;
+      case SPV_MSG_WARNING:
+        std::cout << "warning: " << position.index << ": " << message
+                  << std::endl;
+        break;
+      case SPV_MSG_INFO:
+        std::cout << "info: " << position.index << ": " << message << std::endl;
+        break;
+      default:
+        break;
+    }
+  });
 
-  spv_diagnostic diagnostic = nullptr;
-  spv_context context = spvContextCreate(target_env);
+  bool succeed = tools.Validate(contents.data(), contents.size(), options);
 
-  spv_result_t error =
-      spvValidateWithOptions(context, options, &binary, &diagnostic);
-
-  spvContextDestroy(context);
-  spvValidatorOptionsDestroy(options);
-  if (error) {
-    spvDiagnosticPrint(diagnostic);
-    spvDiagnosticDestroy(diagnostic);
-    return error;
-  }
-
-  return 0;
+  return !succeed;
 }

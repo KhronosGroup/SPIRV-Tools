@@ -75,7 +75,7 @@ DiagnosticStream::~DiagnosticStream() {
         level = SPV_MSG_INFO;
         break;
       case SPV_WARNING:
-        level = SPV_MSG_WARNINING;
+        level = SPV_MSG_WARNING;
         break;
       case SPV_UNSUPPORTED:
       case SPV_ERROR_INTERNAL:
