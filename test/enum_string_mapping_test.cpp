@@ -28,7 +28,38 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 using ExtensionTest = ::testing::TestWithParam<std::pair<Extension, std::string>>;
+using UnknownExtensionTest = ::testing::TestWithParam<std::string>;
 using CapabilityTest = ::testing::TestWithParam<std::pair<SpvCapability, std::string>>;
+
+TEST_P(ExtensionTest, TestExtensionFromString) {
+  const std::pair<Extension, std::string>& param = GetParam();
+  const Extension extension = param.first;
+  const std::string extension_str = param.second;
+  Extension result_extension;
+  ASSERT_TRUE(libspirv::GetExtensionFromString(extension_str, &result_extension));
+  EXPECT_EQ(extension, result_extension);
+}
+
+TEST_P(ExtensionTest, TestExtensionToString) {
+  const std::pair<Extension, std::string>& param = GetParam();
+  const Extension extension = param.first;
+  const std::string extension_str = param.second;
+  const std::string result_str = libspirv::ExtensionToString(extension);
+  EXPECT_EQ(extension_str, result_str);
+}
+
+TEST_P(UnknownExtensionTest, TestExtensionFromStringFails) {
+  Extension result_extension;
+  ASSERT_FALSE(libspirv::GetExtensionFromString(GetParam(), &result_extension));
+}
+
+TEST_P(CapabilityTest, TestCapabilityToString) {
+  const std::pair<SpvCapability, std::string>& param = GetParam();
+  const SpvCapability capability = param.first;
+  const std::string capability_str = param.second;
+  const std::string result_str = libspirv::CapabilityToString(capability);
+  EXPECT_EQ(capability_str, result_str);
+}
 
 INSTANTIATE_TEST_CASE_P(AllExtensions, ExtensionTest,
     ValuesIn(std::vector<std::pair<Extension, std::string>>({
@@ -55,6 +86,13 @@ INSTANTIATE_TEST_CASE_P(AllExtensions, ExtensionTest,
       {Extension::kSPV_NV_viewport_array2,
         "SPV_NV_viewport_array2"}
     })));
+
+INSTANTIATE_TEST_CASE_P(UnknownExtensions, UnknownExtensionTest, Values(
+      "",
+      "SPV_KHR_",
+      "SPV_KHR_device_group_ERROR",
+      "SPV_ERROR_random_string_hfsdklhlktherh"
+    ));
 
 INSTANTIATE_TEST_CASE_P(AllCapabilities, CapabilityTest,
     ValuesIn(std::vector<std::pair<SpvCapability, std::string>>({
@@ -207,30 +245,5 @@ INSTANTIATE_TEST_CASE_P(AllCapabilities, CapabilityTest,
       {SpvCapabilityPerViewAttributesNV,
        "PerViewAttributesNV"}
     })));
-
-TEST_P(ExtensionTest, TestExtensionFromString) {
-  const std::pair<Extension, std::string> param = GetParam();
-  const Extension extension = param.first;
-  const std::string extension_str = param.second;
-  Extension result_extension;
-  ASSERT_TRUE(libspirv::GetExtensionFromString(extension_str, &result_extension));
-  EXPECT_EQ(extension, result_extension);
-}
-
-TEST_P(ExtensionTest, TestExtensionToString) {
-  const std::pair<Extension, std::string> param = GetParam();
-  const Extension extension = param.first;
-  const std::string extension_str = param.second;
-  const std::string result_str = libspirv::ExtensionToString(extension);
-  EXPECT_EQ(extension_str, result_str);
-}
-
-TEST_P(CapabilityTest, TestCapabilityToString) {
-  const std::pair<SpvCapability, std::string> param = GetParam();
-  const SpvCapability capability = param.first;
-  const std::string capability_str = param.second;
-  const std::string result_str = libspirv::CapabilityToString(capability);
-  EXPECT_EQ(capability_str, result_str);
-}
 
 }  // anonymous namespace

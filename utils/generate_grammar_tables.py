@@ -372,6 +372,36 @@ def generate_extension_enum(operands):
     return ',\n'.join(['k' + extension for extension in extensions])
 
 
+def generate_extension_to_string_table(operands):
+    """Returns extension to string mapping table."""
+    extensions = get_extension_list(operands)
+    entry_template = '  {{Extension::k{extension},\n   "{extension}"}}'
+    table_entries = [entry_template.format(extension=extension)
+                     for extension in extensions]
+    table_template = '{{\n{enums}\n}}'
+    return table_template.format(enums=',\n'.join(table_entries))
+
+
+def generate_string_to_extension_table(operands):
+    """Returns string to extension mapping table."""
+    extensions = get_extension_list(operands)
+    entry_template = '  {{"{extension}",\n   Extension::k{extension}}}'
+    table_entries = [entry_template.format(extension=extension)
+                     for extension in extensions]
+    table_template = '{{\n{enums}\n}}'
+    return table_template.format(enums=',\n'.join(table_entries))
+
+
+def generate_capability_to_string_table(operands):
+    """Returns capability to string mapping table."""
+    capabilities = get_capability_list(operands)
+    entry_template = '  {{SpvCapability{capability},\n   "{capability}"}}'
+    table_entries = [entry_template.format(capability=capability)
+                     for capability in capabilities]
+    table_template = '{{\n{enums}\n}}'
+    return table_template.format(enums=',\n'.join(table_entries))
+
+
 def generate_extension_to_string_mapping(operands):
     """Returns mapping function from extensions to corresponding strings."""
     extensions = get_extension_list(operands)
@@ -387,14 +417,14 @@ def generate_extension_to_string_mapping(operands):
 
 def generate_string_to_extension_mapping(operands):
     """Returns mapping function from strings to corresponding extensions."""
-    extensions = get_extension_list(operands)
     function = 'bool GetExtensionFromString(' \
-        'const std::string& str, Extension* extension) {\n '
-    template = ' if (str == "{extension}")\n' \
-    '    *extension = Extension::k{extension};\n  else'
-    function += ''.join([template.format(extension=extension)
-                         for extension in extensions])
-    function += '\n    return false;\n\n  return true;\n}'
+        'const std::string& str, Extension* extension) {\n ' \
+        'static const std::unordered_map<std::string, Extension> mapping =\n'
+    function += generate_string_to_extension_table(operands)
+    function += ';\n\n'
+    function += '  const auto it = mapping.find(str);\n\n' \
+        '  if (it == mapping.end()) return false;\n\n' \
+        '  *extension = it->second;\n  return true;\n}'
     return function
 
 
@@ -412,16 +442,6 @@ def generate_capability_to_string_mapping(operands):
         '      return "";\n'
     function += '  };\n\n  return "";\n}'
     return function
-
-
-def generate_capability_to_string_table(operands):
-    """Returns capability to string mapping table."""
-    capabilities = get_capability_list(operands)
-    entry_template = '  {{SpvCapability{capability},\n   "{capability}"}}'
-    table_entries = [entry_template.format(capability=capability)
-                     for capability in capabilities]
-    table_template = '{{\n{enums}\n}};'
-    return table_template.format(enums=',\n'.join(table_entries))
 
 
 def generate_all_string_enum_mappings(operands):

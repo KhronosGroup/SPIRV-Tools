@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <string>
+#include <unordered_map>
 
 #include "extensions.h"
 
