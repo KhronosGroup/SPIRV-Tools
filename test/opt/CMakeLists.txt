@@ -98,3 +98,8 @@ add_spvtools_unittest(TARGET line_debug_info
   SRCS line_debug_info_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET module
+  SRCS test_module.cpp
+  LIBS SPIRV-Tools-opt ${SPIRV_TOOLS}
+)
