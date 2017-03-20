@@ -52,7 +52,8 @@ TEST_P(EnumCapabilityTest, Sample) {
             spvOperandTableValueLookup(operandTable, get<1>(GetParam()).type,
                                        get<1>(GetParam()).value, &entry));
   EXPECT_THAT(ElementsIn(entry->capabilities),
-              Eq(ElementsIn(get<1>(GetParam()).expected_capabilities)));
+              Eq(ElementsIn(get<1>(GetParam()).expected_capabilities)))
+      << " capability value " << get<1>(GetParam()).value;
 }
 
 #define CASE0(TYPE, VALUE)                            \
