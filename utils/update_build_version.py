@@ -45,6 +45,10 @@ def mkdir_p(directory):
     """Make the directory, and all its ancestors as required.  Any of the
     directories are allowed to already exist."""
 
+    if directory == "":
+        # We're being asked to make the current directory.
+        return
+
     try:
         os.makedirs(directory)
     except OSError as e:
