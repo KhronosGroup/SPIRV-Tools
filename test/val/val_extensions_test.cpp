@@ -43,6 +43,7 @@ string GetErrorString(const std::string& extension) {
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
+    "SPV_AMD_gcn_shader",
     "SPV_KHR_shader_ballot",
     "SPV_KHR_shader_draw_parameters",
     "SPV_KHR_subgroup_vote",

@@ -227,6 +227,7 @@ typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_NONE = 0,
   SPV_EXT_INST_TYPE_GLSL_STD_450,
   SPV_EXT_INST_TYPE_OPENCL_STD,
+  SPV_EXT_INST_TYPE_SPV_AMD_GCN_SHADER,
 
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;

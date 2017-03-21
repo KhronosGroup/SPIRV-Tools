@@ -95,11 +95,25 @@ macro(spvtools_opencl_tables VERSION)
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_opencl_tables)
 
+macro(spvtools_vendor_tables VENDOR_TABLE)
+  set(INSTS_FILE "${spirv-tools_BINARY_DIR}/${VENDOR_TABLE}.insts.inc")
+  set(GRAMMAR_FILE "${spirv-tools_SOURCE_DIR}/source/extinst.${VENDOR_TABLE}.grammar.json")
+  add_custom_command(OUTPUT ${INSTS_FILE}
+    COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+      --extinst-vendor-grammar=${GRAMMAR_FILE}
+      --vendor-insts-output=${INSTS_FILE}
+    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
+    COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
+  list(APPEND EXTINST_CPP_DEPENDS ${INSTS_FILE})
+  add_custom_target(spirv-tools-${VENDOR_TABLE} DEPENDS ${INSTS_FILE})
+endmacro(spvtools_vendor_tables)
+
 spvtools_core_tables("1.0")
 spvtools_core_tables("1.1")
 spvtools_enum_string_mapping("1.1")
 spvtools_opencl_tables("1.0")
 spvtools_glsl_tables("1.0")
+spvtools_vendor_tables("amd-gcn-shader")
 
 spvtools_vimsyntax("1.1" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})

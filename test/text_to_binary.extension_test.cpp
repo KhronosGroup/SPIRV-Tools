@@ -243,4 +243,29 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInViewIndex})},
             })), );
 
+// SPV_AMD_gcn_shader
+
+#define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_gcn_shader\"\n"
+INSTANTIATE_TEST_CASE_P(
+    SPV_AMD_gcn_shader, ExtensionRoundTripTest,
+    // We'll get coverage over operand tables by trying the universal
+    // environments, and at least one specific environment.
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {PREAMBLE "%3 = OpExtInst %2 %1 CubeFaceCoordAMD %4\n",
+                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                              MakeVector("SPV_AMD_gcn_shader")),
+                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 2, 4})})},
+                {PREAMBLE "%3 = OpExtInst %2 %1 CubeFaceIndexAMD %4\n",
+                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                              MakeVector("SPV_AMD_gcn_shader")),
+                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4})})},
+                {PREAMBLE "%3 = OpExtInst %2 %1 TimeAMD\n",
+                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                              MakeVector("SPV_AMD_gcn_shader")),
+                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 3})})},
+            })), );
+#undef PREAMBLE
+
 }  // anonymous namespace
