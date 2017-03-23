@@ -71,6 +71,13 @@ TEST_P(EnumCapabilityTest, Sample) {
       SpvCapability##CAP1, SpvCapability##CAP2                     \
     }                                                              \
   }
+#define CASE5(TYPE, VALUE, CAP1, CAP2, CAP3, CAP4, CAP5)             \
+  {                                                                  \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), CapabilitySet {   \
+      SpvCapability##CAP1, SpvCapability##CAP2, SpvCapability##CAP3, \
+          SpvCapability##CAP4, SpvCapability##CAP5                   \
+    }                                                                \
+  }
 
 // See SPIR-V Section 3.3 Execution Model
 INSTANTIATE_TEST_CASE_P(
@@ -358,10 +365,18 @@ INSTANTIATE_TEST_CASE_P(
     FPRoundingMode, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCapabilityCase>{
-                CASE1(FP_ROUNDING_MODE, FPRoundingModeRTE, Kernel),
-                CASE1(FP_ROUNDING_MODE, FPRoundingModeRTZ, Kernel),
-                CASE1(FP_ROUNDING_MODE, FPRoundingModeRTP, Kernel),
-                CASE1(FP_ROUNDING_MODE, FPRoundingModeRTN, Kernel),
+                CASE5(FP_ROUNDING_MODE, FPRoundingModeRTE, Kernel,
+                      StorageUniformBufferBlock16, StorageUniform16,
+                      StoragePushConstant16, StorageInputOutput16),
+                CASE5(FP_ROUNDING_MODE, FPRoundingModeRTZ, Kernel,
+                      StorageUniformBufferBlock16, StorageUniform16,
+                      StoragePushConstant16, StorageInputOutput16),
+                CASE5(FP_ROUNDING_MODE, FPRoundingModeRTP, Kernel,
+                      StorageUniformBufferBlock16, StorageUniform16,
+                      StoragePushConstant16, StorageInputOutput16),
+                CASE5(FP_ROUNDING_MODE, FPRoundingModeRTN, Kernel,
+                      StorageUniformBufferBlock16, StorageUniform16,
+                      StoragePushConstant16, StorageInputOutput16),
             })), );
 
 // See SPIR-V Section 3.17 Linkage Type
@@ -445,7 +460,9 @@ INSTANTIATE_TEST_CASE_P(
                 CASE1(DECORATION, DecorationXfbBuffer, TransformFeedback),
                 CASE1(DECORATION, DecorationXfbStride, TransformFeedback),
                 CASE1(DECORATION, DecorationFuncParamAttr, Kernel),
-                CASE1(DECORATION, DecorationFPRoundingMode, Kernel),
+                CASE5(DECORATION, DecorationFPRoundingMode, Kernel,
+                      StorageUniformBufferBlock16, StorageUniform16,
+                      StoragePushConstant16, StorageInputOutput16),
                 CASE1(DECORATION, DecorationFPFastMathMode, Kernel),
                 CASE1(DECORATION, DecorationLinkageAttributes, Linkage),
                 CASE1(DECORATION, DecorationNoContraction, Shader),
