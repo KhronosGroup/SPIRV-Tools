@@ -44,6 +44,8 @@ class BasicBlock {
   void SetParent(Function* function) { function_ = function; }
   // Appends an instruction to this basic block.
   inline void AddInstruction(std::unique_ptr<Instruction> i);
+  // The label starting this basic block.
+  Instruction& Label() { return *label_; }
 
   iterator begin() { return iterator(&insts_, insts_.begin()); }
   iterator end() { return iterator(&insts_, insts_.end()); }

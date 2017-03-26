@@ -38,6 +38,8 @@ class Function {
   // Creates a function instance declared by the given OpFunction instruction
   // |def_inst|.
   inline explicit Function(std::unique_ptr<Instruction> def_inst);
+  // The OpFunction instruction that begins the definition of this function.
+  Instruction& DefInst() { return *def_inst_; }
 
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }

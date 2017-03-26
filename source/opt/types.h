@@ -231,6 +231,7 @@ class Array : public Type {
   bool IsSame(Type* that) const override;
   std::string str() const override;
   const Type* element_type() const { return element_type_; }
+  uint32_t LengthId() const { return length_id_; }
 
   Array* AsArray() override { return this; }
   const Array* AsArray() const override { return this; }
@@ -265,6 +266,7 @@ class Struct : public Type {
 
   bool IsSame(Type* that) const override;
   std::string str() const override;
+  const std::vector<Type*>& element_types() const { return element_types_; }
   bool decoration_empty() const override {
     return decorations_.empty() && element_decorations_.empty();
   }
