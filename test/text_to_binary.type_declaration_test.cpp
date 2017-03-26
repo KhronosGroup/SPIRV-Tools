@@ -213,6 +213,7 @@ TEST_F(OpTypeForwardPointerTest, ValidStorageClass) {
   CASE(PushConstant);
   CASE(AtomicCounter);
   CASE(Image);
+  CASE(StorageBuffer);
 }
 
 #undef CASE

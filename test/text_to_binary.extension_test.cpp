@@ -197,10 +197,17 @@ INSTANTIATE_TEST_CASE_P(
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
                    SPV_ENV_VULKAN_1_0),
             ValuesIn(std::vector<AssemblyCase>{
-                {"OpCapability StorageUniformBufferBlock16\n",
+                {"OpCapability StorageBuffer16BitAccess\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageUniformBufferBlock16})},
-                {"OpCapability StorageUniform16\n",
+                {"OpCapability StorageBuffer16BitAccess\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityStorageBuffer16BitAccess})},
+                {"OpCapability UniformAndStorageBuffer16BitAccess\n",
+                 MakeInstruction(
+                     SpvOpCapability,
+                     {SpvCapabilityUniformAndStorageBuffer16BitAccess})},
+                {"OpCapability UniformAndStorageBuffer16BitAccess\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityStorageUniform16})},
                 {"OpCapability StoragePushConstant16\n",
@@ -282,10 +289,10 @@ INSTANTIATE_TEST_CASE_P(
                 {"OpCapability VariablePointers\n",
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityVariablePointers})},
-                {"OpCapability VariablePointersUniformBufferBlock\n",
+                {"OpCapability VariablePointersStorageBuffer\n",
                  MakeInstruction(
                      SpvOpCapability,
-                     {SpvCapabilityVariablePointersUniformBufferBlock})},
+                     {SpvCapabilityVariablePointersStorageBuffer})},
             })), );
 
 }  // anonymous namespace

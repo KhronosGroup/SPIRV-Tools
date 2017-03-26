@@ -1806,7 +1806,7 @@ TEST_F(ValidateIdWithMessage, OpLoadGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// TODO: Add tests that exercise VariablePointersUniformBufferBlock instead of
+// TODO: Add tests that exercise VariablePointersStorageBuffer instead of
 // VariablePointers.
 void createVariablePointerSpirvProgram(std::ostringstream* spirv,
                                        std::string result_strategy,

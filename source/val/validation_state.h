@@ -65,9 +65,9 @@ class ValidationState_t {
 
     // Allow functionalities enabled by VariablePointers capability.
     bool variable_pointers = false;
-    // Allow functionalities enabled by VariablePointersUniformBufferBlock
+    // Allow functionalities enabled by VariablePointersStorageBuffer
     // capability.
-    bool variable_pointers_uniform_buffer_block = false;
+    bool variable_pointers_storage_buffer = false;
   };
 
   ValidationState_t(const spv_const_context context,

@@ -364,11 +364,13 @@ def get_extension_list(operands):
     return sorted(set(extensions))
 
 
-def get_capability_list(operands):
-    """Returns capabilities as a list of strings in the order of appearance."""
+def get_capabilities(operands):
+    """Returns capabilities as a list of JSON objects, in order of
+    appearance.
+    """
     enumerants = sum([item.get('enumerants', []) for item in operands
                       if item.get('kind') in ['Capability']], [])
-    return [item.get('enumerant') for item in enumerants]
+    return enumerants
 
 
 def generate_extension_enum(operands):
@@ -399,7 +401,8 @@ def generate_string_to_extension_table(operands):
 
 def generate_capability_to_string_table(operands):
     """Returns capability to string mapping table."""
-    capabilities = get_capability_list(operands)
+    capabilities = [item.get('enumerant')
+                    for item in get_capabilities(operands)]
     entry_template = '  {{SpvCapability{capability},\n   "{capability}"}}'
     table_entries = [entry_template.format(capability=capability)
                      for capability in capabilities]
@@ -434,14 +437,19 @@ def generate_string_to_extension_mapping(operands):
 
 
 def generate_capability_to_string_mapping(operands):
-    """Returns mapping function from capabilities to corresponding strings."""
-    capabilities = get_capability_list(operands)
+    """Returns mapping function from capabilities to corresponding strings.
+    We take care to avoid emitting duplicate values.
+    """
     function = 'std::string CapabilityToString(SpvCapability capability) {\n'
     function += '  switch (capability) {\n'
     template = '    case SpvCapability{capability}:\n' \
         '      return "{capability}";\n'
-    function += ''.join([template.format(capability=capability)
-                         for capability in capabilities])
+    emitted = set() # The values of capabilities we already have emitted
+    for capability in get_capabilities(operands):
+        value = capability.get('value')
+        if value not in emitted:
+            emitted.add(value)
+            function += template.format(capability=capability.get('enumerant'))
     function += '    case SpvCapabilityMax:\n' \
         '      assert(0 && "Attempting to convert SpvCapabilityMax to string");\n' \
         '      return "";\n'

@@ -1118,7 +1118,7 @@ bool idUsage::isValid<SpvOpLoad>(const spv_instruction_t* inst,
   }
   const bool uses_variable_pointer =
       module_.features().variable_pointers ||
-      module_.features().variable_pointers_uniform_buffer_block;
+      module_.features().variable_pointers_storage_buffer;
   auto pointerIndex = 3;
   auto pointer = module_.FindDef(inst->words[pointerIndex]);
   if (!pointer ||
@@ -1154,7 +1154,7 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
                                   const spv_opcode_desc) {
   const bool uses_variable_pointer =
       module_.features().variable_pointers ||
-      module_.features().variable_pointers_uniform_buffer_block;
+      module_.features().variable_pointers_storage_buffer;
   const auto pointerIndex = 1;
   auto pointer = module_.FindDef(inst->words[pointerIndex]);
   if (!pointer ||
@@ -2420,7 +2420,7 @@ bool idUsage::isValid<SpvOpReturnValue>(const spv_instruction_t* inst,
   }
   const bool uses_variable_pointer =
       module_.features().variable_pointers ||
-      module_.features().variable_pointers_uniform_buffer_block;
+      module_.features().variable_pointers_storage_buffer;
   if (addressingModel == SpvAddressingModelLogical &&
       SpvOpTypePointer == valueType->opcode() && !uses_variable_pointer) {
     DIAG(valueIndex)

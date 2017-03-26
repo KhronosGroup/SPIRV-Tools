@@ -303,10 +303,10 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
       break;
     case SpvCapabilityVariablePointers:
       features_.variable_pointers = true;
-      features_.variable_pointers_uniform_buffer_block = true;
+      features_.variable_pointers_storage_buffer = true;
       break;
-    case SpvCapabilityVariablePointersUniformBufferBlock:
-      features_.variable_pointers_uniform_buffer_block = true;
+    case SpvCapabilityVariablePointersStorageBuffer:
+      features_.variable_pointers_storage_buffer = true;
       break;
     default:
       break;
