@@ -41,6 +41,11 @@ class InlinePass : public Pass {
   // Return the next available Id and increment it.
   inline uint32_t TakeNextId() { return next_id_++; }
 
+  // Write the next available Id back to the module.
+  inline void FinalizeNextId(ir::Module* module) {
+    module->SetIdBound(next_id_);
+  }
+
   // Find pointer to type and storage in module, return its resultId,
   // 0 if not found. TODO(greg-lunarg): Move this into type manager.
   uint32_t FindPointerToType(uint32_t type_id, uint32_t storage_id);

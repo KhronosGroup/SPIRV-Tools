@@ -45,28 +45,36 @@ class PassTest : public TestT {
         tools_(SPV_ENV_UNIVERSAL_1_1),
         manager_(new opt::PassManager()) {}
 
-  // Runs the given |pass| on the binary assembled from the |assembly|, and
-  // disassebles the optimized binary. Returns a tuple of disassembly string
-  // and the boolean value returned from pass Process() function.
-  std::tuple<std::string, opt::Pass::Status> OptimizeAndDisassemble(
+  // Runs the given |pass| on the binary assembled from the |original|.
+  // Returns a tuple of the optimized binary and the boolean value returned 
+  // from pass Process() function.
+  std::tuple<std::vector<uint32_t>, opt::Pass::Status> OptimizeToBinary(
       opt::Pass* pass, const std::string& original, bool skip_nop) {
     std::unique_ptr<ir::Module> module =
         BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original);
     EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                                << original << std::endl;
     if (!module) {
-      return std::make_tuple(std::string(), opt::Pass::Status::Failure);
+      return std::make_tuple(std::vector<uint32_t>(), 
+          opt::Pass::Status::Failure);
     }
 
     const auto status = pass->Process(module.get());
 
     std::vector<uint32_t> binary;
     module->ToBinary(&binary, skip_nop);
-    std::string optimized;
-    EXPECT_TRUE(tools_.Disassemble(binary, &optimized))
-        << "Disassembling failed for shader:\n"
-        << original << std::endl;
-    return std::make_tuple(optimized, status);
+    return std::make_tuple(binary, status);
+  }
+
+  // Runs a single pass of class |PassT| on the binary assembled from the
+  // |assembly|. Returns a tuple of the optimized binary and the boolean value 
+  // from the pass Process() function.
+  template <typename PassT, typename... Args>
+  std::tuple<std::vector<uint32_t>, opt::Pass::Status> SinglePassRunToBinary(
+      const std::string& assembly, bool skip_nop, Args&&... args) {
+    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
+    pass->SetMessageConsumer(consumer_);
+    return OptimizeToBinary(pass.get(), assembly, skip_nop);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
@@ -75,9 +83,52 @@ class PassTest : public TestT {
   template <typename PassT, typename... Args>
   std::tuple<std::string, opt::Pass::Status> SinglePassRunAndDisassemble(
       const std::string& assembly, bool skip_nop, Args&&... args) {
-    auto pass = MakeUnique<PassT>(std::forward<Args>(args)...);
-    pass->SetMessageConsumer(consumer_);
-    return OptimizeAndDisassemble(pass.get(), assembly, skip_nop);
+    std::vector<uint32_t> optimized_bin;
+    auto status = opt::Pass::Status::SuccessWithoutChange;
+    std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
+        assembly, skip_nop, std::forward<Args>(args)...);
+    std::string optimized_asm;
+    EXPECT_TRUE(tools_.Disassemble(optimized_bin, &optimized_asm))
+        << "Disassembling failed for shader:\n"
+        << assembly << std::endl;
+    return std::make_tuple(optimized_asm, status);
+  }
+
+  // Runs a single pass of class |PassT| on the binary assembled from the
+  // |original| assembly, and checks whether the optimized binary can be
+  // disassembled to the |expected| assembly. Optionally will also validate
+  // the optimized binary. This does *not* involve pass manager. Callers 
+  // are suggested to use SCOPED_TRACE() for better messages.
+  template <typename PassT, typename... Args>
+  void SinglePassRunAndCheck(const std::string& original,
+                             const std::string& expected, bool skip_nop,
+                             bool do_validation, Args&&... args) {
+    std::vector<uint32_t> optimized_bin;
+    auto status = opt::Pass::Status::SuccessWithoutChange;
+    std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
+        original, skip_nop, std::forward<Args>(args)...);
+    // Check whether the pass returns the correct modification indication.
+    EXPECT_NE(opt::Pass::Status::Failure, status);
+    EXPECT_EQ(original == expected,
+              status == opt::Pass::Status::SuccessWithoutChange);
+    if (do_validation) {
+      spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
+      spv_context context = spvContextCreate(target_env);
+      spv_diagnostic diagnostic = nullptr;
+      spv_const_binary_t binary = {optimized_bin.data(),
+          optimized_bin.size()};
+      spv_result_t error = spvValidate(context, &binary, &diagnostic);
+      EXPECT_EQ(error, 0);
+      if (error != 0)
+        spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+      spvContextDestroy(context);
+    }
+    std::string optimized_asm;
+    EXPECT_TRUE(tools_.Disassemble(optimized_bin, &optimized_asm))
+        << "Disassembling failed for shader:\n"
+        << original << std::endl;
+    EXPECT_EQ(expected, optimized_asm);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
@@ -88,15 +139,8 @@ class PassTest : public TestT {
   void SinglePassRunAndCheck(const std::string& original,
                              const std::string& expected, bool skip_nop,
                              Args&&... args) {
-    std::string optimized;
-    auto status = opt::Pass::Status::SuccessWithoutChange;
-    std::tie(optimized, status) = SinglePassRunAndDisassemble<PassT>(
-        original, skip_nop, std::forward<Args>(args)...);
-    // Check whether the pass returns the correct modification indication.
-    EXPECT_NE(opt::Pass::Status::Failure, status);
-    EXPECT_EQ(original == expected,
-              status == opt::Pass::Status::SuccessWithoutChange);
-    EXPECT_EQ(expected, optimized);
+    SinglePassRunAndCheck<PassT>(original, expected, skip_nop, false,
+      std::forward<Args>(args)...);
   }
 
   // Adds a pass to be run.

@@ -135,7 +135,7 @@ TEST_F(InlineTest, Simple) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 TEST_F(InlineTest, Nested) {
@@ -285,7 +285,7 @@ TEST_F(InlineTest, Nested) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 TEST_F(InlineTest, InOutParameter) {
@@ -414,7 +414,7 @@ TEST_F(InlineTest, InOutParameter) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 TEST_F(InlineTest, BranchInCallee) {
@@ -550,7 +550,7 @@ TEST_F(InlineTest, BranchInCallee) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 TEST_F(InlineTest, PhiAfterCall) {
@@ -745,7 +745,7 @@ TEST_F(InlineTest, PhiAfterCall) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 TEST_F(InlineTest, OpSampledImageOutOfBlock) {
@@ -942,7 +942,7 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
   SinglePassRunAndCheck<opt::InlinePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
-                                                 /* skip_nop = */ false);
+      /* skip_nop = */ false, /* do_validate = */ true);
 }
 
 }  // anonymous namespace
