@@ -101,7 +101,9 @@ class InlinePass : public Pass {
   // instructions. Early returns are replaced by a store to a local return
   // variable and a branch to a (created) exit block where the local variable
   // is returned. Formal parameters are trivially mapped to their actual
-  // parameters.
+  // parameters. Note that the first block in new_blocks retains the label
+  // of the original calling block. Also note that if an exit block is
+  // created, it is the last block of new_blocks. 
   //
   // Also return in new_vars additional OpVariable instructions required by
   // and to be inserted into the caller function after the block at
