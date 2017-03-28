@@ -20,7 +20,7 @@
 
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvFunctionCallFunctionId = 2;
-static const int kSpvFuncitonCallArgumentId = 3;
+static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
 static const int kSpvTypePointerStorageClass = 1;
 static const int kSpvTypePointerTypeId = 2;
@@ -92,7 +92,7 @@ void InlinePass::MapParams(
       [&call_inst_itr, &param_idx, &callee2caller](const ir::Instruction* cpi) {
         const uint32_t pid = cpi->result_id();
         (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
-            kSpvFuncitonCallArgumentId + param_idx);
+            kSpvFunctionCallArgumentId + param_idx);
         param_idx++;
       });
 }
