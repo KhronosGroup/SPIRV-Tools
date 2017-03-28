@@ -29,6 +29,20 @@ using namespace spvtools;
 using InlineTest = PassTest<::testing::Test>;
 
 TEST_F(InlineTest, Simple) {
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     return bar.x + bar.y;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color;
+  // }
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
@@ -125,6 +139,25 @@ TEST_F(InlineTest, Simple) {
 }
 
 TEST_F(InlineTest, Nested) {
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo2(float f, float f2)
+  // {
+  //     return f * f2;
+  // }
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     return foo2(bar.x + bar.y, bar.z);
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color; 
+  // }
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
@@ -255,7 +288,23 @@ TEST_F(InlineTest, Nested) {
                                                  /* skip_nop = */ false);
 }
 
-TEST_F(InlineTest, InOut) {
+TEST_F(InlineTest, InOutParameter) {
+  // #version 400
+  // 
+  // in vec4 Basecolor;
+  // 
+  // void foo(inout vec4 bar)
+  // {
+  //     bar.z = bar.x + bar.y;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 b = Basecolor;
+  //     foo(b);
+  //     vec4 color = vec4(b.z);
+  //     gl_FragColor = color; 
+  // }
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
@@ -369,6 +418,24 @@ TEST_F(InlineTest, InOut) {
 }
 
 TEST_F(InlineTest, BranchInCallee) {
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     float r = bar.x;
+  //     if (r < 0.0)
+  //         r = -r;
+  //     return r;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  // 
+  //     gl_FragColor = color; 
+  // }
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
@@ -487,6 +554,25 @@ TEST_F(InlineTest, BranchInCallee) {
 }
 
 TEST_F(InlineTest, PhiAfterCall) {
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(float bar)
+  // {
+  //     float r = bar;
+  //     if (r < 0.0)
+  //         r = -r;
+  //     return r;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color = BaseColor;
+  //     if (foo(color.x) > 2.0 && foo(color.y) > 2.0)
+  //         color = vec4(0.0);
+  //     gl_FragColor = color; 
+  // }
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
@@ -663,6 +749,31 @@ TEST_F(InlineTest, PhiAfterCall) {
 }
 
 TEST_F(InlineTest, OpSampledImageOutOfBlock) {
+  // #version 450
+  // 
+  // uniform texture2D t2D;
+  // uniform sampler samp;
+  // out vec4 FragColor;
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     float r = bar.x;
+  //     if (r < 0.0)
+  //         r = -r;
+  //     return r;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color1 = texture(sampler2D(t2D, samp), vec2(1.0));
+  //     vec4 color2 = vec4(foo(BaseColor));
+  //     vec4 color3 = texture(sampler2D(t2D, samp), vec2(0.5));
+  //     FragColor = (color1 + color2 + color3)/3; 
+  // }
+  //
+  // Note: the before SPIR-V will need to be edited to create a use of
+  // the OpSampledImage across the function call.
   const std::vector<const char*> predefs = {
       // clang-format off
                "OpCapability Shader",
