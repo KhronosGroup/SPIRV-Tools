@@ -28,24 +28,26 @@ static const int kSpvTypePointerTypeId = 2;
 namespace spvtools {
 namespace opt {
 
-uint32_t InlinePass::FindPointerToType(uint32_t type_id, uint32_t storage_id) {
+uint32_t InlinePass::FindPointerToType(uint32_t type_id,
+                                       SpvStorageClass storage_class) {
   ir::Module::inst_iterator type_itr = module_->types_values_begin();
   for (; type_itr != module_->types_values_end(); ++type_itr) {
     const ir::Instruction* type_inst = &*type_itr;
     if (type_inst->opcode() == SpvOpTypePointer &&
         type_inst->GetSingleWordOperand(kSpvTypePointerTypeId) == type_id &&
         type_inst->GetSingleWordOperand(kSpvTypePointerStorageClass) ==
-            storage_id)
+            storage_class)
       return type_inst->result_id();
   }
   return 0;
 }
 
-uint32_t InlinePass::AddPointerToType(uint32_t type_id, uint32_t storage_id) {
+uint32_t InlinePass::AddPointerToType(uint32_t type_id,
+                                      SpvStorageClass storage_class) {
   uint32_t resultId = TakeNextId();
   std::unique_ptr<ir::Instruction> type_inst(new ir::Instruction(
       SpvOpTypePointer, 0, resultId,
-      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_id}},
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_class}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
   module_->AddType(std::move(type_inst));
   return resultId;

@@ -48,10 +48,10 @@ class InlinePass : public Pass {
 
   // Find pointer to type and storage in module, return its resultId,
   // 0 if not found. TODO(greg-lunarg): Move this into type manager.
-  uint32_t FindPointerToType(uint32_t type_id, uint32_t storage_id);
+  uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add pointer to type to module and return resultId.
-  uint32_t AddPointerToType(uint32_t type_id, uint32_t storage_id);
+  uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add unconditional branch to labelId to end of block block_ptr.
   void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
