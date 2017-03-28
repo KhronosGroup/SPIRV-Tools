@@ -61,8 +61,8 @@ Options:
                e.g.: --set-spec-const-default-value "1:100 2:400"
   --unify-const
                Remove the duplicated constants.
-  --inline
-               Exhaustively inline all function calls
+  --inline-entry-points-all
+               Exhaustively inline all function calls in entry points
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
         pass_manager.AddPass<opt::FreezeSpecConstantValuePass>();
-      } else if (0 == strcmp(cur_arg, "--inline")) {
+      } else if (0 == strcmp(cur_arg, "--inline-entry-points-all")) {
         pass_manager.AddPass<opt::InlinePass>();
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         pass_manager.AddPass<opt::EliminateDeadConstantPass>();
