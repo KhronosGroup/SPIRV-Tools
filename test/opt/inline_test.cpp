@@ -945,4 +945,14 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
+// TODO(greg-lunarg): Add tests to verify handling of these cases:
+//
+//    Empty modules
+//    Modules without function definitions
+//    Modules in which all functions do not call other functions
+//    Recursive functions (calling self & calling each other) 
+//    Caller and callee both accessing the same global variable
+//    Functions with OpLine & OpNoLine
+//    Others?
+
 }  // anonymous namespace
