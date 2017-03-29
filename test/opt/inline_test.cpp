@@ -946,6 +946,418 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
+TEST_F(InlineTest, OpImageOutOfBlock) {
+  // #version 450
+  // 
+  // uniform texture2D t2D;
+  // uniform sampler samp;
+  // uniform sampler samp2;
+  // 
+  // out vec4 FragColor;
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     float r = bar.x;
+  //     if (r < 0.0)
+  //         r = -r;
+  //     return r;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color1 = texture(sampler2D(t2D, samp), vec2(1.0));
+  //     vec4 color2 = vec4(foo(BaseColor));
+  //     vec4 color3 = texture(sampler2D(t2D, samp2), vec2(0.5));
+  //     FragColor = (color1 + color2 + color3)/3; 
+  // }
+  // Note: the before SPIR-V will need to be edited to create an OpImage
+  // from the first OpSampledImage, place it before the call and use it
+  // in the second OpSampledImage following the call.
+  const std::vector<const char*> predefs = {
+      // clang-format off
+               "OpCapability Shader",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\" %BaseColor %FragColor",
+               "OpExecutionMode %main OriginUpperLeft",
+               "OpSource GLSL 450",
+               "OpName %main \"main\"",
+               "OpName %foo_vf4_ \"foo(vf4;\"",
+               "OpName %bar \"bar\"",
+               "OpName %r \"r\"",
+               "OpName %color1 \"color1\"",
+               "OpName %t2D \"t2D\"",
+               "OpName %samp \"samp\"",
+               "OpName %color2 \"color2\"",
+               "OpName %BaseColor \"BaseColor\"",
+               "OpName %param \"param\"",
+               "OpName %color3 \"color3\"",
+               "OpName %samp2 \"samp2\"",
+               "OpName %FragColor \"FragColor\"",
+               "OpDecorate %t2D DescriptorSet 0",
+               "OpDecorate %samp DescriptorSet 0",
+               "OpDecorate %samp2 DescriptorSet 0",
+       "%void = OpTypeVoid",
+         "%16 = OpTypeFunction %void",
+      "%float = OpTypeFloat 32",
+    "%v4float = OpTypeVector %float 4",
+"%_ptr_Function_v4float = OpTypePointer Function %v4float",
+         "%20 = OpTypeFunction %float %_ptr_Function_v4float",
+"%_ptr_Function_float = OpTypePointer Function %float",
+       "%uint = OpTypeInt 32 0",
+     "%uint_0 = OpConstant %uint 0",
+    "%float_0 = OpConstant %float 0",
+       "%bool = OpTypeBool",
+         "%26 = OpTypeImage %float 2D 0 0 0 1 Unknown",
+"%_ptr_UniformConstant_26 = OpTypePointer UniformConstant %26",
+        "%t2D = OpVariable %_ptr_UniformConstant_26 UniformConstant",
+         "%28 = OpTypeSampler",
+"%_ptr_UniformConstant_28 = OpTypePointer UniformConstant %28",
+       "%samp = OpVariable %_ptr_UniformConstant_28 UniformConstant",
+         "%30 = OpTypeSampledImage %26",
+    "%v2float = OpTypeVector %float 2",
+    "%float_1 = OpConstant %float 1",
+         "%33 = OpConstantComposite %v2float %float_1 %float_1",
+"%_ptr_Input_v4float = OpTypePointer Input %v4float",
+  "%BaseColor = OpVariable %_ptr_Input_v4float Input",
+      "%samp2 = OpVariable %_ptr_UniformConstant_28 UniformConstant",
+  "%float_0_5 = OpConstant %float 0.5",
+         "%36 = OpConstantComposite %v2float %float_0_5 %float_0_5",
+"%_ptr_Output_v4float = OpTypePointer Output %v4float",
+  "%FragColor = OpVariable %_ptr_Output_v4float Output",
+    "%float_3 = OpConstant %float 3",
+      // clang-format on
+  };
+
+  const std::vector<const char*> nonEntryFuncs = {
+      // clang-format off
+   "%foo_vf4_ = OpFunction %float None %20",
+        "%bar = OpFunctionParameter %_ptr_Function_v4float",
+         "%58 = OpLabel",
+          "%r = OpVariable %_ptr_Function_float Function",
+         "%59 = OpAccessChain %_ptr_Function_float %bar %uint_0",
+         "%60 = OpLoad %float %59",
+               "OpStore %r %60",
+         "%61 = OpLoad %float %r",
+         "%62 = OpFOrdLessThan %bool %61 %float_0",
+               "OpSelectionMerge %63 None",
+               "OpBranchConditional %62 %64 %63",
+         "%64 = OpLabel",
+         "%65 = OpLoad %float %r",
+         "%66 = OpFNegate %float %65",
+               "OpStore %r %66",
+               "OpBranch %63",
+         "%63 = OpLabel",
+         "%67 = OpLoad %float %r",
+               "OpReturnValue %67",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  const std::vector<const char*> before = {
+      // clang-format off
+       "%main = OpFunction %void None %16",
+         "%39 = OpLabel",
+     "%color1 = OpVariable %_ptr_Function_v4float Function",
+     "%color2 = OpVariable %_ptr_Function_v4float Function",
+      "%param = OpVariable %_ptr_Function_v4float Function",
+     "%color3 = OpVariable %_ptr_Function_v4float Function",
+         "%40 = OpLoad %26 %t2D",
+         "%41 = OpLoad %28 %samp",
+         "%42 = OpSampledImage %30 %40 %41",
+         "%43 = OpImageSampleImplicitLod %v4float %42 %33",
+         "%44 = OpImage %26 %42",
+         "%45 = OpLoad %28 %samp2",
+               "OpStore %color1 %43",
+         "%46 = OpLoad %v4float %BaseColor",
+               "OpStore %param %46",
+         "%47 = OpFunctionCall %float %foo_vf4_ %param",
+         "%48 = OpCompositeConstruct %v4float %47 %47 %47 %47",
+               "OpStore %color2 %48",
+         "%49 = OpSampledImage %30 %44 %45",
+         "%50 = OpImageSampleImplicitLod %v4float %49 %36",
+               "OpStore %color3 %50",
+         "%51 = OpLoad %v4float %color1",
+         "%52 = OpLoad %v4float %color2",
+         "%53 = OpFAdd %v4float %51 %52",
+         "%54 = OpLoad %v4float %color3",
+         "%55 = OpFAdd %v4float %53 %54",
+         "%56 = OpCompositeConstruct %v4float %float_3 %float_3 %float_3 %float_3",
+         "%57 = OpFDiv %v4float %55 %56",
+               "OpStore %FragColor %57",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  const std::vector<const char*> after = {
+      // clang-format off
+       "%main = OpFunction %void None %16",
+         "%39 = OpLabel",
+         "%68 = OpVariable %_ptr_Function_float Function",
+         "%69 = OpVariable %_ptr_Function_float Function",
+     "%color1 = OpVariable %_ptr_Function_v4float Function",
+     "%color2 = OpVariable %_ptr_Function_v4float Function",
+      "%param = OpVariable %_ptr_Function_v4float Function",
+     "%color3 = OpVariable %_ptr_Function_v4float Function",
+         "%40 = OpLoad %26 %t2D",
+         "%41 = OpLoad %28 %samp",
+         "%42 = OpSampledImage %30 %40 %41",
+         "%43 = OpImageSampleImplicitLod %v4float %42 %33",
+         "%44 = OpImage %26 %42",
+         "%45 = OpLoad %28 %samp2",
+               "OpStore %color1 %43",
+         "%46 = OpLoad %v4float %BaseColor",
+               "OpStore %param %46",
+         "%70 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%71 = OpLoad %float %70",
+               "OpStore %68 %71",
+         "%72 = OpLoad %float %68",
+         "%73 = OpFOrdLessThan %bool %72 %float_0",
+               "OpSelectionMerge %74 None",
+               "OpBranchConditional %73 %75 %74",
+         "%75 = OpLabel",
+         "%76 = OpLoad %float %68",
+         "%77 = OpFNegate %float %76",
+               "OpStore %68 %77",
+               "OpBranch %74",
+         "%74 = OpLabel",
+         "%78 = OpLoad %float %68",
+               "OpStore %69 %78",
+         "%47 = OpLoad %float %69",
+         "%48 = OpCompositeConstruct %v4float %47 %47 %47 %47",
+               "OpStore %color2 %48",
+         "%79 = OpSampledImage %30 %40 %41",
+         "%80 = OpImage %26 %79",
+         "%49 = OpSampledImage %30 %80 %45",
+         "%50 = OpImageSampleImplicitLod %v4float %49 %36",
+               "OpStore %color3 %50",
+         "%51 = OpLoad %v4float %color1",
+         "%52 = OpLoad %v4float %color2",
+         "%53 = OpFAdd %v4float %51 %52",
+         "%54 = OpLoad %v4float %color3",
+         "%55 = OpFAdd %v4float %53 %54",
+         "%56 = OpCompositeConstruct %v4float %float_3 %float_3 %float_3 %float_3",
+         "%57 = OpFDiv %v4float %55 %56",
+               "OpStore %FragColor %57",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+  SinglePassRunAndCheck<opt::InlinePass>(
+      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      /* skip_nop = */ false, /* do_validate = */ true);
+}
+
+TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
+  // #version 450
+  // 
+  // uniform texture2D t2D;
+  // uniform sampler samp;
+  // uniform sampler samp2;
+  // 
+  // out vec4 FragColor;
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     float r = bar.x;
+  //     if (r < 0.0)
+  //         r = -r;
+  //     return r;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color1 = texture(sampler2D(t2D, samp), vec2(1.0));
+  //     vec4 color2 = vec4(foo(BaseColor));
+  //     vec4 color3 = texture(sampler2D(t2D, samp2), vec2(0.5));
+  //     FragColor = (color1 + color2 + color3)/3; 
+  // }
+  // Note: the before SPIR-V will need to be edited to create an OpImage
+  // and subsequent OpSampledImage that is used across the function call.
+  const std::vector<const char*> predefs = {
+      // clang-format off
+               "OpCapability Shader",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\" %BaseColor %FragColor",
+               "OpExecutionMode %main OriginUpperLeft",
+               "OpSource GLSL 450",
+               "OpName %main \"main\"",
+               "OpName %foo_vf4_ \"foo(vf4;\"",
+               "OpName %bar \"bar\"",
+               "OpName %r \"r\"",
+               "OpName %color1 \"color1\"",
+               "OpName %t2D \"t2D\"",
+               "OpName %samp \"samp\"",
+               "OpName %color2 \"color2\"",
+               "OpName %BaseColor \"BaseColor\"",
+               "OpName %param \"param\"",
+               "OpName %color3 \"color3\"",
+               "OpName %samp2 \"samp2\"",
+               "OpName %FragColor \"FragColor\"",
+               "OpDecorate %t2D DescriptorSet 0",
+               "OpDecorate %samp DescriptorSet 0",
+               "OpDecorate %samp2 DescriptorSet 0",
+       "%void = OpTypeVoid",
+         "%16 = OpTypeFunction %void",
+      "%float = OpTypeFloat 32",
+    "%v4float = OpTypeVector %float 4",
+"%_ptr_Function_v4float = OpTypePointer Function %v4float",
+         "%20 = OpTypeFunction %float %_ptr_Function_v4float",
+"%_ptr_Function_float = OpTypePointer Function %float",
+       "%uint = OpTypeInt 32 0",
+     "%uint_0 = OpConstant %uint 0",
+    "%float_0 = OpConstant %float 0",
+       "%bool = OpTypeBool", 
+         "%26 = OpTypeImage %float 2D 0 0 0 1 Unknown",
+"%_ptr_UniformConstant_26 = OpTypePointer UniformConstant %26",
+        "%t2D = OpVariable %_ptr_UniformConstant_26 UniformConstant",
+         "%28 = OpTypeSampler",
+"%_ptr_UniformConstant_28 = OpTypePointer UniformConstant %28",
+       "%samp = OpVariable %_ptr_UniformConstant_28 UniformConstant",
+         "%30 = OpTypeSampledImage %26",
+    "%v2float = OpTypeVector %float 2",
+    "%float_1 = OpConstant %float 1",
+         "%33 = OpConstantComposite %v2float %float_1 %float_1",
+"%_ptr_Input_v4float = OpTypePointer Input %v4float",
+  "%BaseColor = OpVariable %_ptr_Input_v4float Input",
+      "%samp2 = OpVariable %_ptr_UniformConstant_28 UniformConstant",
+  "%float_0_5 = OpConstant %float 0.5", 
+         "%36 = OpConstantComposite %v2float %float_0_5 %float_0_5",
+"%_ptr_Output_v4float = OpTypePointer Output %v4float",
+  "%FragColor = OpVariable %_ptr_Output_v4float Output",
+    "%float_3 = OpConstant %float 3",
+      // clang-format on
+  };
+
+  const std::vector<const char*> nonEntryFuncs = {
+      // clang-format off
+   "%foo_vf4_ = OpFunction %float None %20",
+        "%bar = OpFunctionParameter %_ptr_Function_v4float",
+         "%58 = OpLabel",
+          "%r = OpVariable %_ptr_Function_float Function",
+         "%59 = OpAccessChain %_ptr_Function_float %bar %uint_0",
+         "%60 = OpLoad %float %59",
+               "OpStore %r %60",
+         "%61 = OpLoad %float %r",
+         "%62 = OpFOrdLessThan %bool %61 %float_0",
+               "OpSelectionMerge %63 None",
+               "OpBranchConditional %62 %64 %63",
+         "%64 = OpLabel",
+         "%65 = OpLoad %float %r",
+         "%66 = OpFNegate %float %65",
+               "OpStore %r %66",
+               "OpBranch %63",
+         "%63 = OpLabel",
+         "%67 = OpLoad %float %r",
+               "OpReturnValue %67",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  const std::vector<const char*> before = {
+      // clang-format off
+       "%main = OpFunction %void None %16",
+         "%39 = OpLabel",
+     "%color1 = OpVariable %_ptr_Function_v4float Function",
+     "%color2 = OpVariable %_ptr_Function_v4float Function",
+      "%param = OpVariable %_ptr_Function_v4float Function",
+     "%color3 = OpVariable %_ptr_Function_v4float Function",
+         "%40 = OpLoad %26 %t2D",
+         "%41 = OpLoad %28 %samp",
+         "%42 = OpSampledImage %30 %40 %41",
+         "%43 = OpImageSampleImplicitLod %v4float %42 %33",
+         "%44 = OpImage %26 %42",
+         "%45 = OpLoad %28 %samp2",
+         "%46 = OpSampledImage %30 %44 %45",
+               "OpStore %color1 %43",
+         "%47 = OpLoad %v4float %BaseColor",
+               "OpStore %param %47",
+         "%48 = OpFunctionCall %float %foo_vf4_ %param",
+         "%49 = OpCompositeConstruct %v4float %48 %48 %48 %48",
+               "OpStore %color2 %49",
+         "%50 = OpImageSampleImplicitLod %v4float %46 %36",
+               "OpStore %color3 %50",
+         "%51 = OpLoad %v4float %color1",
+         "%52 = OpLoad %v4float %color2",
+         "%53 = OpFAdd %v4float %51 %52",
+         "%54 = OpLoad %v4float %color3",
+         "%55 = OpFAdd %v4float %53 %54",
+         "%56 = OpCompositeConstruct %v4float %float_3 %float_3 %float_3 %float_3",
+         "%57 = OpFDiv %v4float %55 %56",
+               "OpStore %FragColor %57",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  const std::vector<const char*> after = {
+      // clang-format off
+       "%main = OpFunction %void None %16",
+         "%39 = OpLabel",
+         "%68 = OpVariable %_ptr_Function_float Function",
+         "%69 = OpVariable %_ptr_Function_float Function",
+     "%color1 = OpVariable %_ptr_Function_v4float Function",
+     "%color2 = OpVariable %_ptr_Function_v4float Function",
+      "%param = OpVariable %_ptr_Function_v4float Function",
+     "%color3 = OpVariable %_ptr_Function_v4float Function",
+         "%40 = OpLoad %26 %t2D",
+         "%41 = OpLoad %28 %samp",
+         "%42 = OpSampledImage %30 %40 %41",
+         "%43 = OpImageSampleImplicitLod %v4float %42 %33",
+         "%44 = OpImage %26 %42",
+         "%45 = OpLoad %28 %samp2",
+         "%46 = OpSampledImage %30 %44 %45",
+               "OpStore %color1 %43",
+         "%47 = OpLoad %v4float %BaseColor",
+               "OpStore %param %47",
+         "%70 = OpAccessChain %_ptr_Function_float %param %uint_0",
+         "%71 = OpLoad %float %70",
+               "OpStore %68 %71",
+         "%72 = OpLoad %float %68",
+         "%73 = OpFOrdLessThan %bool %72 %float_0",
+               "OpSelectionMerge %74 None",
+               "OpBranchConditional %73 %75 %74",
+         "%75 = OpLabel",
+         "%76 = OpLoad %float %68",
+         "%77 = OpFNegate %float %76",
+               "OpStore %68 %77",
+               "OpBranch %74",
+         "%74 = OpLabel",
+         "%78 = OpLoad %float %68",
+               "OpStore %69 %78",
+         "%48 = OpLoad %float %69",
+         "%49 = OpCompositeConstruct %v4float %48 %48 %48 %48",
+               "OpStore %color2 %49",
+         "%79 = OpSampledImage %30 %40 %41",
+         "%80 = OpImage %26 %79",
+         "%81 = OpSampledImage %30 %80 %45",
+         "%50 = OpImageSampleImplicitLod %v4float %81 %36",
+               "OpStore %color3 %50",
+         "%51 = OpLoad %v4float %color1",
+         "%52 = OpLoad %v4float %color2",
+         "%53 = OpFAdd %v4float %51 %52",
+         "%54 = OpLoad %v4float %color3",
+         "%55 = OpFAdd %v4float %53 %54",
+         "%56 = OpCompositeConstruct %v4float %float_3 %float_3 %float_3 %float_3",
+         "%57 = OpFDiv %v4float %55 %56",
+               "OpStore %FragColor %57",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+  SinglePassRunAndCheck<opt::InlinePass>(
+      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      /* skip_nop = */ false, /* do_validate = */ true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules

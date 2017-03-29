@@ -138,6 +138,10 @@ uint32_t InlinePass::CreateReturnVar(
   return returnVarId;
 }
 
+bool InlinePass::IsSameBlockOp(const ir::Instruction* inst) const {
+  return inst->opcode() == SpvOpSampledImage || inst->opcode() == SpvOpImage;
+}
+
 void InlinePass::CloneSameBlockOps(
     std::unique_ptr<ir::Instruction>* inst,
     std::unordered_map<uint32_t, uint32_t>* postCallSB,
@@ -151,14 +155,15 @@ void InlinePass::CloneSameBlockOps(
           if (mapItr2 != (*preCallSB).end()) {
             // Clone pre-call same-block ops, map result id.
             const ir::Instruction* inInst = mapItr2->second;
-            std::unique_ptr<ir::Instruction> samp_inst(
+            std::unique_ptr<ir::Instruction> sb_inst(
                 new ir::Instruction(*inInst));
-            const uint32_t rid = samp_inst->result_id();
+            CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr);
+            const uint32_t rid = sb_inst->result_id();
             const uint32_t nid = this->TakeNextId();
-            samp_inst->SetResultId(nid);
+            sb_inst->SetResultId(nid);
             (*postCallSB)[rid] = nid;
             *iid = nid;
-            (*block_ptr)->AddInstruction(std::move(samp_inst));
+            (*block_ptr)->AddInstruction(std::move(sb_inst));
           }
         } else {
           // Reset same-block op operand.
@@ -245,9 +250,9 @@ void InlinePass::GenInlineCode(
                cii++) {
             std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
             // Remember same-block ops for possible regeneration.
-            if (cp_inst->opcode() == SpvOpSampledImage) {
-              auto* samp_inst_ptr = cp_inst.get();
-              preCallSB[cp_inst->result_id()] = samp_inst_ptr;
+            if (IsSameBlockOp(&*cp_inst)) {
+              auto* sb_inst_ptr = cp_inst.get();
+              preCallSB[cp_inst->result_id()] = sb_inst_ptr;
             }
             new_blk_ptr->AddInstruction(std::move(cp_inst));
           }
@@ -299,7 +304,7 @@ void InlinePass::GenInlineCode(
           if (multiBlocks) {
             CloneSameBlockOps(&cp_inst, &postCallSB, &preCallSB, &new_blk_ptr);
             // Remember same-block ops in this block.
-            if (cp_inst->opcode() == SpvOpSampledImage) {
+            if (IsSameBlockOp(&*cp_inst)) {
               const uint32_t rid = cp_inst->result_id();
               postCallSB[rid] = rid;
             }

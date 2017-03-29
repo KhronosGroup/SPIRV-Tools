@@ -84,6 +84,10 @@ class InlinePass : public Pass {
       ir::Function* calleeFn,
       std::vector<std::unique_ptr<ir::Instruction>>* new_vars);
 
+  // Return true if instruction must be in the same block that its result
+  // is used.
+  bool IsSameBlockOp(const ir::Instruction* inst) const;
+
   // Clone operands which must be in same block as consumer instructions.
   // Look in preCallSB for instructions that need cloning. Look in
   // postCallSB for instructions already cloned. Add cloned instruction
