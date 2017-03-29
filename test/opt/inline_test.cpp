@@ -1363,9 +1363,21 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
 //    Empty modules
 //    Modules without function definitions
 //    Modules in which all functions do not call other functions
-//    Recursive functions (calling self & calling each other) 
+//    Recursive functions (calling self & calling each other)
 //    Caller and callee both accessing the same global variable
 //    Functions with OpLine & OpNoLine
 //    Others?
+
+// TODO(dneto): Test suggestions from code review
+// https://github.com/KhronosGroup/SPIRV-Tools/pull/534
+//
+//    Callee function returns a value generated outside the callee,
+//      e.g. a constant value. This might exercise some logic not yet
+//      exercised by the current tests: the false branch in the "if"
+//      inside the SpvOpReturnValue case in InlinePass::GenInlineCode?
+//    SampledImage before function call, but callee is only single block.
+//      Then the SampledImage instruction is not cloned. Documents existing
+//      behaviour.
+//    SampledImage after function call. It is not cloned or changed.
 
 }  // anonymous namespace
