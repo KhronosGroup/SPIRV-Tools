@@ -34,7 +34,7 @@ bool CompareTwoVectors(const U32VecVec a, const U32VecVec b) {
   if (size == 0) return true;
   if (size == 1) return a.front() == b.front();
 
-  std::vector<const std::vector<uint32_t> *> a_ptrs, b_ptrs;
+  std::vector<const std::vector<uint32_t>*> a_ptrs, b_ptrs;
   a_ptrs.reserve(size);
   a_ptrs.reserve(size);
   for (uint32_t i = 0; i < size; ++i) {
@@ -42,10 +42,10 @@ bool CompareTwoVectors(const U32VecVec a, const U32VecVec b) {
     b_ptrs.push_back(&b[i]);
   }
 
-  const auto cmp = [](const std::vector<uint32_t>* m,
-                      const std::vector<uint32_t>* n) {
-    return m->front() < n->front();
-  };
+  const auto cmp =
+      [](const std::vector<uint32_t>* m, const std::vector<uint32_t>* n) {
+        return m->front() < n->front();
+      };
 
   std::sort(a_ptrs.begin(), a_ptrs.end(), cmp);
   std::sort(b_ptrs.begin(), b_ptrs.end(), cmp);

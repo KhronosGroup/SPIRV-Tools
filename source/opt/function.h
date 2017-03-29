@@ -51,6 +51,12 @@ class Function {
   // Saves the given function end instruction.
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
+  // Returns function's id
+  inline uint32_t result_id() const { return def_inst_->result_id(); }
+
+  // Returns function's type id
+  inline uint32_t type_id() const { return def_inst_->type_id(); }
+
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
   const_iterator cbegin() { return const_iterator(&blocks_, blocks_.cbegin()); }
@@ -62,6 +68,11 @@ class Function {
                    bool run_on_debug_line_insts = false);
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
+
+  // Runs the given function |f| on each parameter instruction in this function,
+  // and optionally on debug line instructions that might precede them.
+  void ForEachParam(const std::function<void(const Instruction*)>& f,
+                    bool run_on_debug_line_insts = false) const;
 
  private:
   // The enclosing module.

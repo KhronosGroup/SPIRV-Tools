@@ -76,9 +76,9 @@ void Module::ForEachInst(const std::function<void(Instruction*)>& f,
 
 void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
                          bool run_on_debug_line_insts) const {
-#define DELEGATE(i)                                      \
-  static_cast<const Instruction*>(i.get())->ForEachInst( \
-      f, run_on_debug_line_insts)
+#define DELEGATE(i)                        \
+  static_cast<const Instruction*>(i.get()) \
+      ->ForEachInst(f, run_on_debug_line_insts)
   for (auto& i : capabilities_) DELEGATE(i);
   for (auto& i : extensions_) DELEGATE(i);
   for (auto& i : ext_inst_imports_) DELEGATE(i);
@@ -89,8 +89,8 @@ void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
   for (auto& i : annotations_) DELEGATE(i);
   for (auto& i : types_values_) DELEGATE(i);
   for (auto& i : functions_) {
-    static_cast<const Function*>(i.get())->ForEachInst(f,
-                                                       run_on_debug_line_insts);
+    static_cast<const Function*>(i.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
   }
 #undef DELEGATE
 }
@@ -112,15 +112,13 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 uint32_t Module::ComputeIdBound() const {
   uint32_t highest = 0;
 
-  ForEachInst(
-      [&highest](const Instruction* inst) {
-        for (const auto& operand : *inst) {
-          if (spvIsIdType(operand.type)) {
-            highest = std::max(highest, operand.words[0]);
-          }
-        }
-      },
-      true /* scan debug line insts as well */);
+  ForEachInst([&highest](const Instruction* inst) {
+    for (const auto& operand : *inst) {
+      if (spvIsIdType(operand.type)) {
+        highest = std::max(highest, operand.words[0]);
+      }
+    }
+  }, true /* scan debug line insts as well */);
 
   return highest + 1;
 }
