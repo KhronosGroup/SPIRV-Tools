@@ -1,6 +1,7 @@
 Revision history for SPIRV-Tools
 
 v2016.7-dev 2017-01-06
+ - Optimizer: Add inlining of all function calls in entry points
  - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
    assembly syntax file for Vim.
  - Version string: Allow overriding of wall clock timestamp with contents
