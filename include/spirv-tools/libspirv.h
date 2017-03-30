@@ -383,6 +383,8 @@ typedef enum {
   // There is no variant for OpenGL 4.4.
   SPV_ENV_OPENGL_4_5,     // OpenGL 4.5 plus GL_ARB_gl_spirv, latest revisions.
   SPV_ENV_UNIVERSAL_1_2,  // SPIR-V 1.2, latest revision, no other restrictions.
+  SPV_ENV_UNIVERSAL_1_3,  // SPIR-V 1.3, latest revision, no other restrictions.
+  SPV_ENV_VULKAN_1_1,     // Vulkan 1.1 latest revision.
 } spv_target_env;
 
 // SPIR-V Validator can be parameterized with the following Universal Limits.

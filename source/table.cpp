@@ -20,6 +20,7 @@ spv_context spvContextCreate(spv_target_env env) {
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_VULKAN_1_1:
     case SPV_ENV_UNIVERSAL_1_1:
     case SPV_ENV_OPENCL_2_1:
     case SPV_ENV_OPENCL_2_2:
@@ -29,6 +30,7 @@ spv_context spvContextCreate(spv_target_env env) {
     case SPV_ENV_OPENGL_4_3:
     case SPV_ENV_OPENGL_4_5:
     case SPV_ENV_UNIVERSAL_1_2:
+    case SPV_ENV_UNIVERSAL_1_3:
       break;
     default:
       return nullptr;

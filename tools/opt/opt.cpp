@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
   const char* in_file = nullptr;
   const char* out_file = nullptr;
 
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_3;
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer([](spv_message_level_t level, const char* source,

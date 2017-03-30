@@ -42,6 +42,10 @@ const char* spvTargetEnvDescription(spv_target_env env) {
       return "SPIR-V 1.0 (under OpenCL 4.5 semantics)";
     case SPV_ENV_UNIVERSAL_1_2:
       return "SPIR-V 1.2";
+    case SPV_ENV_UNIVERSAL_1_3:
+      return "SPIR-V 1.3";
+    case SPV_ENV_VULKAN_1_1:
+      return "SPIR-V 1.3 (under Vulkan 1.1 semantics)";
   }
   assert(0 && "Unhandled SPIR-V target environment");
   return "";
@@ -63,6 +67,9 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
     case SPV_ENV_UNIVERSAL_1_2:
     case SPV_ENV_OPENCL_2_2:
       return SPV_SPIRV_VERSION_WORD(1, 2);
+    case SPV_ENV_UNIVERSAL_1_3:
+    case SPV_ENV_VULKAN_1_1:
+      return SPV_SPIRV_VERSION_WORD(1, 3);
   }
   assert(0 && "Unhandled SPIR-V target environment");
   return SPV_SPIRV_VERSION_WORD(0, 0);
@@ -75,6 +82,9 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
   if (match("vulkan1.0")) {
     if (env) *env = SPV_ENV_VULKAN_1_0;
     return true;
+  } else if (match("vulkan1.1")) {
+    if (env) *env = SPV_ENV_VULKAN_1_1;
+    return true;
   } else if (match("spv1.0")) {
     if (env) *env = SPV_ENV_UNIVERSAL_1_0;
     return true;
@@ -83,6 +93,9 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
     return true;
   } else if (match("spv1.2")) {
     if (env) *env = SPV_ENV_UNIVERSAL_1_2;
+    return true;
+  } else if (match("spv1.3")) {
+    if (env) *env = SPV_ENV_UNIVERSAL_1_3;
     return true;
   } else if (match("opencl2.1")) {
     if (env) *env = SPV_ENV_OPENCL_2_1;

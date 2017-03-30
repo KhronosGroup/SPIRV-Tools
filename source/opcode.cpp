@@ -32,12 +32,12 @@ struct OpcodeDescPtrLen {
   uint32_t len;
 };
 
-OpcodeDescPtrLen getOpcodeTableEntries_1_2() {
-  static const spv_opcode_desc_t opcodeTableEntries_1_2[] = {
-#include "core.insts-1.2.inc"
+OpcodeDescPtrLen getOpcodeTableEntries_1_3() {
+  static const spv_opcode_desc_t opcodeTableEntries_1_3[] = {
+#include "core.insts-1.3.inc"
   };
 
-  return {opcodeTableEntries_1_2, ARRAY_SIZE(opcodeTableEntries_1_2)};
+  return {opcodeTableEntries_1_3, ARRAY_SIZE(opcodeTableEntries_1_3)};
 }
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
@@ -90,14 +90,19 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
   static const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
 #include "core.insts-1.1.inc"
   };
+  static const spv_opcode_desc_t opcodeTableEntries_1_2[] = {
+#include "core.insts-1.2.inc"
+  };
 
-  const auto ptr_len = getOpcodeTableEntries_1_2();
+  const auto ptr_len = getOpcodeTableEntries_1_3();
 
   static const spv_opcode_table_t table_1_0 = {
       ARRAY_SIZE(opcodeTableEntries_1_0), opcodeTableEntries_1_0};
   static const spv_opcode_table_t table_1_1 = {
       ARRAY_SIZE(opcodeTableEntries_1_1), opcodeTableEntries_1_1};
-  static const spv_opcode_table_t table_1_2 = {ptr_len.len, ptr_len.ptr};
+  static const spv_opcode_table_t table_1_2 = {
+      ARRAY_SIZE(opcodeTableEntries_1_2), opcodeTableEntries_1_2};
+  static const spv_opcode_table_t table_1_3 = {ptr_len.len, ptr_len.ptr};
 
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
@@ -116,6 +121,9 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
     case SPV_ENV_UNIVERSAL_1_2:
     case SPV_ENV_OPENCL_2_2:
       *pInstTable = &table_1_2;
+    case SPV_ENV_UNIVERSAL_1_3:
+    case SPV_ENV_VULKAN_1_1:
+      *pInstTable = &table_1_3;
       return SPV_SUCCESS;
   }
   assert(0 && "Unknown spv_target_env in spvOpcodeTableGet()");
@@ -183,7 +191,7 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
-  const auto entries = getOpcodeTableEntries_1_2();
+  const auto entries = getOpcodeTableEntries_1_3();
 
   for (uint32_t i = 0; i < entries.len; ++i) {
     if (entries.ptr[i].opcode == opcode) return entries.ptr[i].name;

@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "spirv/1.1/spirv.h"
+#include "spirv/1.3/spirv.h"
 
 namespace libspirv {
 

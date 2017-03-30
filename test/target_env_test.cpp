@@ -41,7 +41,7 @@ TEST_P(TargetEnvTest, ValidDescription) {
 
 TEST_P(TargetEnvTest, ValidSpirvVersion) {
   auto spirv_version = spvVersionForTargetEnv(GetParam());
-  ASSERT_THAT(spirv_version, AnyOf(0x10000, 0x10100, 0x10200));
+  ASSERT_THAT(spirv_version, AnyOf(0x10000, 0x10100, 0x10200, 0x10300));
 }
 
 INSTANTIATE_TEST_CASE_P(AllTargetEnvs, TargetEnvTest,
@@ -74,7 +74,9 @@ INSTANTIATE_TEST_CASE_P(TargetParsing, TargetParseTest,
                             {"spv1.0", true, SPV_ENV_UNIVERSAL_1_0},
                             {"spv1.1", true, SPV_ENV_UNIVERSAL_1_1},
                             {"spv1.2", true, SPV_ENV_UNIVERSAL_1_2},
+                            {"spv1.3", true, SPV_ENV_UNIVERSAL_1_3},
                             {"vulkan1.0", true, SPV_ENV_VULKAN_1_0},
+                            {"vulkan1.1", true, SPV_ENV_VULKAN_1_1},
                             {"opencl2.1", true, SPV_ENV_OPENCL_2_1},
                             {"opencl2.2", true, SPV_ENV_OPENCL_2_2},
                             {"opengl4.0", true, SPV_ENV_OPENGL_4_0},
@@ -82,6 +84,10 @@ INSTANTIATE_TEST_CASE_P(TargetParsing, TargetParseTest,
                             {"opengl4.2", true, SPV_ENV_OPENGL_4_2},
                             {"opengl4.3", true, SPV_ENV_OPENGL_4_3},
                             {"opengl4.5", true, SPV_ENV_OPENGL_4_5},
+                            {"opencl2.3", false, SPV_ENV_UNIVERSAL_1_0},
+                            {"opencl3.0", false, SPV_ENV_UNIVERSAL_1_0},
+                            {"vulkan1.2", false, SPV_ENV_UNIVERSAL_1_0},
+                            {"vulkan2.0", false, SPV_ENV_UNIVERSAL_1_0},
                             {nullptr, false, SPV_ENV_UNIVERSAL_1_0},
                             {"", false, SPV_ENV_UNIVERSAL_1_0},
                             {"abc", false, SPV_ENV_UNIVERSAL_1_0},

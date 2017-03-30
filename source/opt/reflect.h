@@ -15,7 +15,7 @@
 #ifndef LIBSPIRV_OPT_REFLECT_H_
 #define LIBSPIRV_OPT_REFLECT_H_
 
-#include "spirv/1.2/spirv.h"
+#include "spirv/1.3/spirv.h"
 
 namespace spvtools {
 namespace ir {
