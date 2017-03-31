@@ -107,7 +107,7 @@ class InlinePass : public Pass {
   // is returned. Formal parameters are trivially mapped to their actual
   // parameters. Note that the first block in new_blocks retains the label
   // of the original calling block. Also note that if an exit block is
-  // created, it is the last block of new_blocks. 
+  // created, it is the last block of new_blocks.
   //
   // Also return in new_vars additional OpVariable instructions required by
   // and to be inserted into the caller function after the block at
@@ -116,6 +116,9 @@ class InlinePass : public Pass {
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
                      ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
                      ir::UptrVectorIterator<ir::BasicBlock> call_block_itr);
+
+  // Returns true if |inst| is a function call that can be inlined.
+  bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Return true if func is modified.

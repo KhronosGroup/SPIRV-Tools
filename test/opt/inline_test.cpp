@@ -1358,6 +1358,30 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
+TEST_F(InlineTest, ExternalFunctionIsNotInlined) {
+  // In particular, don't crash.
+  // See report https://github.com/KhronosGroup/SPIRV-Tools/issues/605
+  const std::string assembly =
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %1 "entry_pt"
+OpDecorate %2 LinkageAttributes "external" Import
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%2 = OpFunction %void None %4
+OpFunctionEnd
+%1 = OpFunction %void None %4
+%5 = OpLabel
+%6 = OpFunctionCall %void %2
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlinePass>(assembly, assembly, false, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules

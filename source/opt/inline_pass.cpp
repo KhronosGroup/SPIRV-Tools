@@ -351,12 +351,20 @@ void InlinePass::GenInlineCode(
   }
 }
 
+bool InlinePass::IsInlinableFunctionCall(const ir::Instruction* inst) {
+  if (inst->opcode() != SpvOp::SpvOpFunctionCall) return false;
+  const ir::Function* calleeFn =
+      id2function_[inst->GetSingleWordOperand(kSpvFunctionCallFunctionId)];
+  // We can only inline a function if it has blocks.
+  return calleeFn->cbegin() != calleeFn->cend();
+}
+
 bool InlinePass::Inline(ir::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.
   for (auto bi = func->begin(); bi != func->end(); bi++) {
     for (auto ii = bi->begin(); ii != bi->end();) {
-      if (ii->opcode() == SpvOp::SpvOpFunctionCall) {
+      if (IsInlinableFunctionCall(&*ii)) {
         // Inline call.
         std::vector<std::unique_ptr<ir::BasicBlock>> newBlocks;
         std::vector<std::unique_ptr<ir::Instruction>> newVars;
@@ -368,8 +376,8 @@ bool InlinePass::Inline(ir::Function* func) {
           const auto lastBlk = newBlocks.end() - 1;
           const uint32_t firstId = (*firstBlk)->label_id();
           const uint32_t lastId = (*lastBlk)->label_id();
-          (*lastBlk)
-              ->ForEachSuccessorLabel([&firstId, &lastId, this](uint32_t succ) {
+          (*lastBlk)->ForEachSuccessorLabel(
+              [&firstId, &lastId, this](uint32_t succ) {
                 ir::BasicBlock* sbp = this->id2block_[succ];
                 sbp->ForEachPhiInst([&firstId, &lastId](ir::Instruction* phi) {
                   phi->ForEachInId([&firstId, &lastId](uint32_t* id) {
