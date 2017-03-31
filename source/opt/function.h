@@ -59,8 +59,12 @@ class Function {
 
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
-  const_iterator cbegin() { return const_iterator(&blocks_, blocks_.cbegin()); }
-  const_iterator cend() { return const_iterator(&blocks_, blocks_.cend()); }
+  const_iterator cbegin() const {
+    return const_iterator(&blocks_, blocks_.cbegin());
+  }
+  const_iterator cend() const {
+    return const_iterator(&blocks_, blocks_.cend());
+  }
 
   // Runs the given function |f| on each instruction in this function, and
   // optionally on debug line instructions that might precede them.
