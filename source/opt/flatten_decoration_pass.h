@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Google Inc.
+// Copyright (c) 2017 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_PASSES_H_
-#define LIBSPIRV_OPT_PASSES_H_
+#ifndef LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_
+#define LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_
 
-// A single header to include all passes.
+#include "module.h"
+#include "pass.h"
 
-#include "eliminate_dead_constant_pass.h"
-#include "flatten_decoration_pass.h"
-#include "fold_spec_constant_op_and_composite_pass.h"
-#include "inline_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "null_pass.h"
-#include "set_spec_constant_default_value_pass.h"
-#include "strip_debug_info_pass.h"
-#include "unify_const_pass.h"
+namespace spvtools {
+namespace opt {
 
-#endif  // LIBSPIRV_OPT_PASSES_H_
+// See optimizer.hpp for documentation.
+class FlattenDecorationPass : public Pass {
+ public:
+  const char* name() const override { return "flatten-decoration"; }
+  Status Process(ir::Module*) override;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_

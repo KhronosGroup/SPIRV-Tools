@@ -63,6 +63,9 @@ Options:
                Remove the duplicated constants.
   --inline-entry-points-all
                Exhaustively inline all function calls in entry points
+  --flatten-decorations
+               Replace decoration groups with repeated OpDecorate and
+               OpMemberDecorate instructions.
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",
@@ -131,6 +134,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {
         optimizer.RegisterPass(CreateUnifyConstantPass());
+      } else if (0 == strcmp(cur_arg, "--flatten-decorations")) {
+        optimizer.RegisterPass(CreateFlattenDecorationPass());
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {

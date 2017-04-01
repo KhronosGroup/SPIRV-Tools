@@ -101,6 +101,11 @@ Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
       MakeUnique<opt::SetSpecConstantDefaultValuePass>(id_value_map));
 }
 
+Optimizer::PassToken CreateFlattenDecorationPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FlattenDecorationPass>());
+}
+
 Optimizer::PassToken CreateFreezeSpecConstantValuePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FreezeSpecConstantValuePass>());

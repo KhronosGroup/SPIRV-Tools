@@ -109,6 +109,15 @@ Optimizer::PassToken CreateStripDebugInfoPass();
 Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::string>& id_value_map);
 
+// Creates a flatten-decoration pass.
+// A flatten-decoration pass replaces grouped decorations with equivalent
+// ungrouped decorations.  That is, it replaces each OpDecorationGroup
+// instruction and associated OpGroupDecorate and OpGroupMemberDecorate
+// instructions with equivalent OpDecorate and OpMemberDecorate instructions.
+// The pass does not attempt to preserve debug information for instructions
+// it removes.
+Optimizer::PassToken CreateFlattenDecorationPass();
+
 // Creates a freeze-spec-constant-value pass.
 // A freeze-spec-constant pass specializes the value of spec constants to
 // their default values. This pass only processes the spec constants that have

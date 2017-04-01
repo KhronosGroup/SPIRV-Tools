@@ -38,6 +38,11 @@ add_spvtools_unittest(TARGET pass_strip_debug_info
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_flatten_decoration
+  SRCS flatten_decoration_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_freeze_spec_const
   SRCS freeze_spec_const_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
