@@ -220,8 +220,8 @@ Struct::Struct(const std::vector<Type*>& types) : element_types_(types) {
   }
 }
 
-void Struct::AddMemeberDecoration(uint32_t index,
-                                  std::vector<uint32_t>&& decoration) {
+void Struct::AddMemberDecoration(uint32_t index,
+                                 std::vector<uint32_t>&& decoration) {
   if (index >= element_types_.size()) {
     assert(0 && "index out of bound");
     return;

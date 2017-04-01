@@ -204,7 +204,7 @@ void TypeManager::AttachIfTypeDecoration(const ir::Instruction& inst) {
         data.push_back(inst.GetSingleWordOperand(i));
       }
       if (Struct* st = target_type->AsStruct()) {
-        st->AddMemeberDecoration(index, std::move(data));
+        st->AddMemberDecoration(index, std::move(data));
       } else {
         SPIRV_UNIMPLEMENTED(consumer_, "OpMemberDecorate non-struct type");
       }
