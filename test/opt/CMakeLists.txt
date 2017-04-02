@@ -28,6 +28,11 @@ add_spvtools_unittest(TARGET pass_manager
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET optimizer
+  SRCS optimizer_test.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_strip_debug_info
   SRCS strip_debug_info_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

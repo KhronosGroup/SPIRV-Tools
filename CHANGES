@@ -16,6 +16,8 @@ v2016.7-dev 2017-01-06
      header.
    #548: Validator: Error when the reserved OpImageSparseSampleProj* opcodes
      are used.
+   #611: spvtools::Optimizer was failing to save the module to the output
+     binary vector when all passes succeded without changes.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and

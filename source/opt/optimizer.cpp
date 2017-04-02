@@ -75,7 +75,10 @@ bool Optimizer::Run(const uint32_t* original_binary,
   if (module == nullptr) return false;
 
   auto status = impl_->pass_manager.Run(module.get());
-  if (status == opt::Pass::Status::SuccessWithChange) {
+  if (status == opt::Pass::Status::SuccessWithChange ||
+      (status == opt::Pass::Status::SuccessWithoutChange &&
+       (optimized_binary->data() != original_binary ||
+        optimized_binary->size() != original_binary_size))) {
     optimized_binary->clear();
     module->ToBinary(optimized_binary, /* skip_nop = */ true);
   }
