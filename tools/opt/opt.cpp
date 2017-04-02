@@ -13,16 +13,16 @@
 // limitations under the License.
 
 #include <cstring>
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <vector>
 
+#include "opt/set_spec_constant_default_value_pass.h"
+#include "spirv-tools/optimizer.hpp"
+
 #include "message.h"
-#include "source/opt/build_module.h"
-#include "source/opt/ir_loader.h"
-#include "source/opt/pass_manager.h"
-#include "source/opt/passes.h"
 #include "tools/io.h"
 
 using namespace spvtools;
@@ -75,13 +75,13 @@ int main(int argc, char** argv) {
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
 
-  opt::PassManager pass_manager;
-  pass_manager.SetMessageConsumer(
-      [](spv_message_level_t level, const char* source,
-         const spv_position_t& position, const char* message) {
-        std::cerr << StringifyMessage(level, source, position, message)
-                  << std::endl;
-      });
+  spvtools::Optimizer optimizer(target_env);
+  optimizer.SetMessageConsumer([](spv_message_level_t level, const char* source,
+                                  const spv_position_t& position,
+                                  const char* message) {
+    std::cerr << StringifyMessage(level, source, position, message)
+              << std::endl;
+  });
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
           return 1;
         }
       } else if (0 == strcmp(cur_arg, "--strip-debug")) {
-        pass_manager.AddPass<opt::StripDebugInfoPass>();
+        optimizer.RegisterPass(CreateStripDebugInfoPass());
       } else if (0 == strcmp(cur_arg, "--set-spec-const-default-value")) {
         if (++argi < argc) {
           auto spec_ids_vals =
@@ -113,8 +113,8 @@ int main(int argc, char** argv) {
                     argv[argi]);
             return 1;
           }
-          pass_manager.AddPass<opt::SetSpecConstantDefaultValuePass>(
-              std::move(*spec_ids_vals));
+          optimizer.RegisterPass(
+              CreateSetSpecConstantDefaultValuePass(std::move(*spec_ids_vals)));
         } else {
           fprintf(
               stderr,
@@ -122,15 +122,15 @@ int main(int argc, char** argv) {
           return 1;
         }
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
-        pass_manager.AddPass<opt::FreezeSpecConstantValuePass>();
+        optimizer.RegisterPass(CreateFreezeSpecConstantValuePass());
       } else if (0 == strcmp(cur_arg, "--inline-entry-points-all")) {
-        pass_manager.AddPass<opt::InlinePass>();
+        optimizer.RegisterPass(CreateInlinePass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
-        pass_manager.AddPass<opt::EliminateDeadConstantPass>();
+        optimizer.RegisterPass(CreateEliminateDeadConstantPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
-        pass_manager.AddPass<opt::FoldSpecConstantOpAndCompositePass>();
+        optimizer.RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {
-        pass_manager.AddPass<opt::UnifyConstantPass>();
+        optimizer.RegisterPass(CreateUnifyConstantPass());
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!in_file) {
@@ -158,14 +158,14 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  std::vector<uint32_t> source;
-  if (!ReadFile<uint32_t>(in_file, "rb", &source)) return 1;
+  std::vector<uint32_t> binary;
+  if (!ReadFile<uint32_t>(in_file, "rb", &binary)) return 1;
 
   // Let's do validation first.
   spv_context context = spvContextCreate(target_env);
   spv_diagnostic diagnostic = nullptr;
-  spv_const_binary_t binary = {source.data(), source.size()};
-  spv_result_t error = spvValidate(context, &binary, &diagnostic);
+  spv_const_binary_t binary_struct = {binary.data(), binary.size()};
+  spv_result_t error = spvValidate(context, &binary_struct, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
@@ -175,16 +175,13 @@ int main(int argc, char** argv) {
   spvDiagnosticDestroy(diagnostic);
   spvContextDestroy(context);
 
-  std::unique_ptr<ir::Module> module = BuildModule(
-      target_env, pass_manager.consumer(), source.data(), source.size());
-  pass_manager.Run(module.get());
+  // By using the same vector as input and output, we save time in the case
+  // that there was no change.
+  bool ok = optimizer.Run(binary.data(), binary.size(), &binary);
 
-  std::vector<uint32_t> target;
-  module->ToBinary(&target, /* skip_nop = */ true);
-
-  if (!WriteFile<uint32_t>(out_file, "wb", target.data(), target.size())) {
+  if (!WriteFile<uint32_t>(out_file, "wb", binary.data(), binary.size())) {
     return 1;
   }
 
-  return 0;
+  return ok ? 0 : 1;
 }
