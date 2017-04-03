@@ -114,6 +114,12 @@ function(spvtools_default_compile_options TARGET)
     endif()
   endif()
 
+  if (MSVC)
+    # Specify /EHs for exception handling. This makes using SPIRV-Tools as
+    # dependencies in other projects easier.
+    target_compile_options(${TARGET} PRIVATE /EHs)
+  endif()
+
   # For MinGW cross compile, statically link to the C++ runtime.
   # But it still depends on MSVCRT.dll.
   if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
