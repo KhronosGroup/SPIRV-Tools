@@ -7,7 +7,7 @@
       "operands" : [
         { "kind" : "IdRef", "name" : "'P'" }
       ],
-      "extensions" : [ "SPV_KHR_gcn_shader" ]
+      "extensions" : [ "SPV_AMD_gcn_shader" ]
     },
     {
       "opname" : "CubeFaceCoordAMD",
@@ -15,12 +15,12 @@
       "operands" : [
         { "kind" : "IdRef", "name" : "'P'" }
       ],
-      "extensions" : [ "SPV_KHR_gcn_shader" ]
+      "extensions" : [ "SPV_AMD_gcn_shader" ]
     },
     {
       "opname" : "TimeAMD",
       "opcode" : 3,
-      "extensions" : [ "SPV_KHR_gcn_shader" ]
+      "extensions" : [ "SPV_AMD_gcn_shader" ]
     }
   ]
 }
