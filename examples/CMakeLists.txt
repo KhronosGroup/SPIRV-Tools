@@ -12,4 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Add a SPIR-V Tools example. Signature:
+#   add_spvtools_example(
+#     TARGET target_name
+#     SRCS   src_file1.cpp src_file2.cpp
+#     LIBS   lib_target1 lib_target2
+#   )
+function(add_spvtools_example)
+  if (NOT ${SPIRV_SKIP_EXECUTABLES})
+    set(one_value_args TARGET)
+    set(multi_value_args SRCS LIBS)
+    cmake_parse_arguments(
+        ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
+
+    add_executable(${ARG_TARGET} ${ARG_SRCS})
+    spvtools_default_compile_options(${ARG_TARGET})
+    target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
+    set_property(TARGET ${ARG_TARGET} PROPERTY FOLDER "SPIRV-Tools examples")
+  endif()
+endfunction()
+
 add_subdirectory(cpp-interface)

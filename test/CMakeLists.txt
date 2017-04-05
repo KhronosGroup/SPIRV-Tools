@@ -59,6 +59,7 @@ function(add_spvtools_unittest)
     target_link_libraries(${target} PRIVATE ${ARG_LIBS})
     target_link_libraries(${target} PRIVATE gmock_main)
     add_test(NAME spirv-tools-${target} COMMAND ${target})
+    set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools tests")
   endif()
 endfunction()
 

@@ -33,7 +33,8 @@ function(add_spvtools_tool)
   target_include_directories(${ARG_TARGET} PRIVATE
     ${spirv-tools_SOURCE_DIR}
     ${spirv-tools_BINARY_DIR}
-)
+  )
+  set_property(TARGET ${ARG_TARGET} PROPERTY FOLDER "SPIRV-Tools executables")
 endfunction()
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})

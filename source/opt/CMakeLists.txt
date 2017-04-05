@@ -66,6 +66,8 @@ target_include_directories(SPIRV-Tools-opt
 target_link_libraries(SPIRV-Tools-opt
   PUBLIC ${SPIRV_TOOLS})
 
+set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
+
 install(TARGETS SPIRV-Tools-opt
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
