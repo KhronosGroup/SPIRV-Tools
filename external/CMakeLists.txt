@@ -43,4 +43,15 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       add_subdirectory(${GMOCK_DIR})
     endif()
   endif()
+  if (TARGET gmock)
+    set(GTEST_TARGETS
+      gtest
+      gtest_main
+      gmock
+      gmock_main
+    )
+    foreach(target ${GTEST_TARGETS})
+      set_property(TARGET ${target} PROPERTY FOLDER GoogleTest)
+    endforeach()
+  endif()
 endif()

@@ -106,6 +106,7 @@ macro(spvtools_vendor_tables VENDOR_TABLE)
     COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
   list(APPEND EXTINST_CPP_DEPENDS ${INSTS_FILE})
   add_custom_target(spirv-tools-${VENDOR_TABLE} DEPENDS ${INSTS_FILE})
+  set_property(TARGET spirv-tools-${VENDOR_TABLE} PROPERTY FOLDER "SPIRV-Tools build")
 endmacro(spvtools_vendor_tables)
 
 spvtools_core_tables("1.0")
@@ -117,7 +118,7 @@ spvtools_vendor_tables("spv-amd-gcn-shader")
 
 spvtools_vimsyntax("1.1" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})
-
+set_property(TARGET spirv-tools-vimsyntax PROPERTY FOLDER "SPIRV-Tools utilities")
 
 # Extract the list of known generators from the SPIR-V XML registry file.
 set(GENERATOR_INC_FILE ${spirv-tools_BINARY_DIR}/generators.inc)
@@ -181,6 +182,7 @@ add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
 # This is not required for any dependence chain.
 add_custom_target(spirv-tools-build-version
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
+set_property(TARGET spirv-tools-build-version PROPERTY FOLDER "SPIRV-Tools build")
 
 add_subdirectory(opt)
 
@@ -276,6 +278,7 @@ target_include_directories(${SPIRV_TOOLS}
   PRIVATE ${spirv-tools_BINARY_DIR}
   PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
   )
+set_property(TARGET ${SPIRV_TOOLS} PROPERTY FOLDER "SPIRV-Tools libraries")
 
 install(TARGETS ${SPIRV_TOOLS}
   RUNTIME DESTINATION bin

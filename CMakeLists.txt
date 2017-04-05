@@ -19,6 +19,7 @@ if (POLICY CMP0054)
   # https://cmake.org/cmake/help/v3.1/policy/CMP0054.html
   cmake_policy(SET CMP0054 NEW)
 endif()
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(spirv-tools)
 enable_testing()

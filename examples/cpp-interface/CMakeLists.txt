@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (NOT ${SPIRV_SKIP_EXECUTABLES})
-  add_executable(spirv-tools-cpp-example main.cpp)
-  spvtools_default_compile_options(spirv-tools-cpp-example)
-  target_link_libraries(spirv-tools-cpp-example PRIVATE SPIRV-Tools-opt)
-endif()
+add_spvtools_example(
+  TARGET spirv-tools-cpp-example
+  SRCS main.cpp
+  LIBS SPIRV-Tools-opt
+)
