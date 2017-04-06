@@ -42,6 +42,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_spvtools_tool(TARGET spirv-dis SRCS dis/dis.cpp LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-val SRCS val/val.cpp LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-opt SRCS opt/opt.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-stats
+	            SRCS stats/stats.cpp
+		         stats/stats_analyzer.cpp
+		    LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
                          cfg/bin_to_dot.h
@@ -49,8 +53,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                     LIBS ${SPIRV_TOOLS})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
+  target_include_directories(spirv-stats PRIVATE ${spirv-tools_SOURCE_DIR}
+                                                 ${SPIRV_HEADER_INCLUDE_DIR})
 
-  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-cfg)
+  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-stats spirv-cfg)
   install(TARGETS ${SPIRV_INSTALL_TARGETS}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
