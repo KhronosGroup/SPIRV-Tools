@@ -22,6 +22,12 @@
 
 #include "spirv-tools/libspirv.h"
 
+namespace libspirv {
+
+struct SpirvStats;
+
+}  // namespace libspirv
+
 namespace spvtools {
 
 // Message consumer. The C strings for source and message are only alive for the
@@ -110,6 +116,9 @@ class SpirvTools {
   bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
   bool Validate(const uint32_t* binary, size_t binary_size, const ValidatorOptions& options) const;
+
+  bool AggregateStats(const uint32_t* binary, size_t binary_size,
+                      libspirv::SpirvStats* stats) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.
