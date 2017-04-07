@@ -24,6 +24,25 @@ Here is an example:
      OpFunctionEnd
 ```
 
+## Instruction set depends on target environment
+
+The instruction set understood by the assembler is determined by two factors:
+the version of the SPIRV-Headers compiled with SPIRV-Tools, and the target
+environment selected, e.g. SPIR-V 1.0 or SPIR-V 1.1.
+
+The instruction syntax is determined by the `spirv.core.grammar.json` file
+in the version-specific directory of SPIRV-Headers.  For example, if
+a target environment of SPIR-V 1.1 is selected, then we will use the
+instructions listed in SPIRV-Headers file
+`include/spirv/1.1/spirv.core.grammar.json`.
+
+A target environment may correspond to a client API.  In that case the
+environment specification for that client API version will determine the
+underying version of SPIR-V to use.  For example, Vulkan 1.0 specifies
+that SPIR-V 1.0 should be used.
+
+## Instruction syntax
+
 A module is a sequence of instructions, separated by whitespace.
 An instruction is an opcode name followed by operands, separated by
 whitespace.  Typically each instruction is presented on its own line,
@@ -61,6 +80,29 @@ the SPIR-V specification.  An operand is one of:
   is removed.  For example, the following indicates the use of an integer
   addition in a specialization constant computation:
   `%sum = OpSpecConstantOp %i32 IAdd %a %b`
+
+## Unknown instructions
+
+In addition to the standard instructions, the assembler can also process
+unknown instructions, with some restrictions.
+
+For example, the syntax for an unknown instruction with opcode 999 and no
+operands would be:
+
+```
+  Op999
+```
+
+One or more operands can be specified as literal numbers.  For example:
+
+```
+  Op1000 21 123 141
+```
+
+In general, the syntax for an unknown instruction is `Op` immediately
+followed by the opcode integer in decimal.  The opcode must be between 1
+and 65535.  Also, zero or more literal number operands may be specified.
+
 
 ## ID Definitions & Usage
 <a name="id"></a>

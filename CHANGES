@@ -6,6 +6,7 @@ v2016.7-dev 2017-01-06
      flow.
  - Optimizer: Add flattening of decoration groups.  Fixes #602
  - Optimizer: Add Id compaction (minimize Id bound).  Fixes #624
+ - Assembler: Support assembly of unknown instructions
  - Assembler: Add option to preserve numeric ids. Fixes #625
  - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
    assembly syntax file for Vim.

@@ -266,4 +266,45 @@ TEST(CreateContext, VulkanEnvironment) {
   spvContextDestroy(c);
 }
 
+
+// Assembly of unknown instructions
+
+TEST_F(TextToBinaryTest, CanAssembleUnknownInstructions) {
+  const std::string input = "Op999 Op1000 12 13 14";
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(Concatenate({MakeInstruction(SpvOp(999), {}),
+                              MakeInstruction(SpvOp(1000), {12, 13, 14})})));
+}
+
+TEST_F(TextToBinaryTest, CanAssembleUnknownInstructionsInContext) {
+  const std::string input = R"(
+    %void = OpTypeVoid
+            Op999
+            Op65535
+            Op1000 12 13 14
+       %2 = OpTypeInt 32 1)";  // Make sure we parse the %2 as part of OpTypeInt
+  EXPECT_THAT(CompiledInstructions(input),
+              Eq(Concatenate({MakeInstruction(SpvOpTypeVoid, {1}),
+                              MakeInstruction(SpvOp(999), {}),
+                              MakeInstruction(SpvOp(65535), {}),
+                              MakeInstruction(SpvOp(1000), {12, 13, 14}),
+                              MakeInstruction(SpvOpTypeInt, {2, 32, 1})})));
+}
+
+TEST_F(TextToBinaryTest, FailOnOpcodeWithLeadingDigitButLetterAfter) {
+  EXPECT_EQ("Invalid Opcode name 'Op9x'", CompileFailure("Op9x"));
+}
+
+TEST_F(TextToBinaryTest, FailOnOpcodeWithLeadingDigitButPunctuationAfter) {
+  EXPECT_EQ("Invalid Opcode name 'Op9<'", CompileFailure("Op9<"));
+}
+
+TEST_F(TextToBinaryTest, FailOnOpcodeWithTooBigNumber) {
+  EXPECT_EQ("Invalid Opcode name 'Op65536'", CompileFailure("Op65536"));
+}
+
+TEST_F(TextToBinaryTest, FailOnOpcodeWithExplicitZero) {
+  EXPECT_EQ("Invalid Opcode name 'Op0'", CompileFailure("Op0"));
+}
+
 }  // anonymous namespace

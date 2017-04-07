@@ -135,13 +135,15 @@ spv_result_t getWord(spv_text text, spv_position position, std::string* word) {
 }
 
 // Returns true if the characters in the text as position represent
-// the start of an Opcode.
+// the start of an Opcode or Op followed by digits.  The latter case
+// supports assembly of unknown instructions.
 bool startsWithOp(spv_text text, spv_position position) {
   if (text->length < position->index + 3) return false;
   char ch0 = text->str[position->index];
   char ch1 = text->str[position->index + 1];
   char ch2 = text->str[position->index + 2];
-  return ('O' == ch0 && 'p' == ch1 && ('A' <= ch2 && ch2 <= 'Z'));
+  return ('O' == ch0 && 'p' == ch1 &&
+          (('A' <= ch2 && ch2 <= 'Z') || ('0' <= ch2 && ch2 <= '9')));
 }
 
 }  // anonymous namespace

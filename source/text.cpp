@@ -469,6 +469,18 @@ spv_result_t encodeInstructionStartingWithImmediate(
   return SPV_SUCCESS;
 }
 
+// If |str| denotes a number between 0 and 65535, then return that number.
+// Otherwise return 0.
+static int As16BitNumber(const char* str) {
+  int result = 0;
+  char c;
+  // Succeed only if we parse one parameter
+  if ((1 == std::sscanf(str, "%u%c", &result, &c)) && result <= 0xffff)
+    return result;
+  // Failure case.
+  return 0;
+}
+
 /// @brief Translate single Opcode and operands to binary form
 ///
 /// @param[in] grammar the grammar to use for compilation
@@ -530,11 +542,35 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   // NOTE: The table contains Opcode names without the "Op" prefix.
   const char* pInstName = opcodeName.data() + 2;
 
-  spv_opcode_desc opcodeEntry;
-  error = grammar.lookupOpcode(pInstName, &opcodeEntry);
-  if (error) {
-    return context->diagnostic(error) << "Invalid Opcode name '" << opcodeName
-                                      << "'";
+  spv_opcode_desc opcodeEntry = nullptr;
+
+  // If it's an unknown opcode, then store its description the object
+  // owned by this unique pointer.  It's ok for the object to be deleted at the
+  // end of this scope since we won't need it any more.
+  std::unique_ptr<spv_opcode_desc_t> unknown_opcode_desc = nullptr;
+  // First see if it's parseable as a non-zero 16 bit number. OpNop has
+  // opcode zero, and if you want that then just say OpNop instead of Op0.
+  if (auto unknown_opcode = As16BitNumber(pInstName)) {
+    // Support this as an unknown instruction.  Don't make an opcode name
+    // for it.  Assume it:
+    //  - does not have a type
+    //  - does not generate a result Id
+    //  - has zero or more literal number operands.
+    unknown_opcode_desc.reset(
+        new spv_opcode_desc_t{"",
+                              SpvOp(unknown_opcode),
+                              {},
+                              1,
+                              {SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER},
+                              false,
+                              false});
+    opcodeEntry = unknown_opcode_desc.get();
+  } else {
+    error = grammar.lookupOpcode(pInstName, &opcodeEntry);
+    if (error) {
+      return context->diagnostic(error)
+             << "Invalid Opcode name '" << opcodeName << "'";
+    }
   }
   if (opcodeEntry->hasResult && result_id.empty()) {
     return context->diagnostic()

@@ -138,6 +138,9 @@ class AssemblyContext {
   spv_result_t getWord(std::string* word, spv_position next_position);
 
   // Returns true if the next word in the input is the start of a new Opcode.
+  // This permits both known instructions such as "OpTypeVoid" and also
+  // special syntax for an unknown opcode such as "Op999" for an opcode with
+  // numeric value 999.
   bool startsWithOp();
 
   // Returns true if the next word in the input is the start of a new
