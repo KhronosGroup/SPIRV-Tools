@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "source/spirv_stats.h"
+#include "source/table.h"
 #include "spirv-tools/libspirv.h"
 #include "stats_analyzer.h"
 #include "tools/io.h"
@@ -108,7 +109,7 @@ int main(int argc, char** argv) {
             << " files..." << std::endl;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
-  //tools.SetMessageConsumer(DiagnosticsMessageHandler);
+  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   libspirv::SpirvStats stats;
 
