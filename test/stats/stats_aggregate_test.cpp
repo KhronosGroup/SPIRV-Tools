@@ -25,7 +25,8 @@ namespace {
 using libspirv::SpirvStats;
 using spvtest::ScopedContext;
 
-void AggregateStats(const std::string& code, SpirvStats* stats,
+// Calls libspirv::AggregateStats for binary compiled from |code|.
+void CompileAndAggregateStats(const std::string& code, SpirvStats* stats,
                     spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
   ScopedContext ctx(env);
   spv_binary binary;
@@ -37,7 +38,7 @@ void AggregateStats(const std::string& code, SpirvStats* stats,
   spvBinaryDestroy(binary);
 }
 
-TEST(AggregateStats, Capability) {
+TEST(AggregateStats, CapabilityHistogram) {
   const std::string code1 = R"(
 OpCapability Addresses
 OpCapability Kernel
@@ -54,7 +55,7 @@ OpMemoryModel Logical GLSL450
 
   SpirvStats stats;
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(4, stats.capability_hist.size());
   EXPECT_EQ(0, stats.capability_hist.count(SpvCapabilityShader));
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityAddresses));
@@ -62,7 +63,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityGenericPointer));
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityLinkage));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(5, stats.capability_hist.size());
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityShader));
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityAddresses));
@@ -70,7 +71,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityGenericPointer));
   EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityLinkage));
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(5, stats.capability_hist.size());
   EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityShader));
   EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityAddresses));
@@ -78,7 +79,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityGenericPointer));
   EXPECT_EQ(3, stats.capability_hist.at(SpvCapabilityLinkage));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(5, stats.capability_hist.size());
   EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityShader));
   EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityAddresses));
@@ -87,7 +88,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(4, stats.capability_hist.at(SpvCapabilityLinkage));
 }
 
-TEST(AggregateStats, Extension) {
+TEST(AggregateStats, ExtensionHistogram) {
   const std::string code1 = R"(
 OpCapability Addresses
 OpCapability Kernel
@@ -107,31 +108,31 @@ OpMemoryModel Logical GLSL450
 
   SpirvStats stats;
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(1, stats.extension_hist.size());
   EXPECT_EQ(0, stats.extension_hist.count("SPV_NV_viewport_array2"));
   EXPECT_EQ(1, stats.extension_hist.at("SPV_KHR_16bit_storage"));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(3, stats.extension_hist.size());
   EXPECT_EQ(1, stats.extension_hist.at("SPV_NV_viewport_array2"));
   EXPECT_EQ(1, stats.extension_hist.at("SPV_KHR_16bit_storage"));
   EXPECT_EQ(1, stats.extension_hist.at("greatest_extension_ever"));
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(3, stats.extension_hist.size());
   EXPECT_EQ(1, stats.extension_hist.at("SPV_NV_viewport_array2"));
   EXPECT_EQ(2, stats.extension_hist.at("SPV_KHR_16bit_storage"));
   EXPECT_EQ(1, stats.extension_hist.at("greatest_extension_ever"));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(3, stats.extension_hist.size());
   EXPECT_EQ(2, stats.extension_hist.at("SPV_NV_viewport_array2"));
   EXPECT_EQ(2, stats.extension_hist.at("SPV_KHR_16bit_storage"));
   EXPECT_EQ(2, stats.extension_hist.at("greatest_extension_ever"));
 }
 
-TEST(AggregateStats, Version) {
+TEST(AggregateStats, VersionHistogram) {
   const std::string code1 = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -140,27 +141,27 @@ OpMemoryModel Logical GLSL450
 
   SpirvStats stats;
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(1, stats.version_hist.size());
   EXPECT_EQ(1, stats.version_hist.at(0x00010100));
 
-  AggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
+  CompileAndAggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
   EXPECT_EQ(2, stats.version_hist.size());
   EXPECT_EQ(1, stats.version_hist.at(0x00010100));
   EXPECT_EQ(1, stats.version_hist.at(0x00010000));
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(2, stats.version_hist.size());
   EXPECT_EQ(2, stats.version_hist.at(0x00010100));
   EXPECT_EQ(1, stats.version_hist.at(0x00010000));
 
-  AggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
+  CompileAndAggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
   EXPECT_EQ(2, stats.version_hist.size());
   EXPECT_EQ(2, stats.version_hist.at(0x00010100));
   EXPECT_EQ(2, stats.version_hist.at(0x00010000));
 }
 
-TEST(AggregateStats, Generator) {
+TEST(AggregateStats, GeneratorHistogram) {
   const std::string code1 = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -172,16 +173,16 @@ OpMemoryModel Logical GLSL450
 
   SpirvStats stats;
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(1, stats.generator_hist.size());
   EXPECT_EQ(1, stats.generator_hist.at(kGeneratorKhronosAssembler));
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(1, stats.generator_hist.size());
   EXPECT_EQ(2, stats.generator_hist.at(kGeneratorKhronosAssembler));
 }
 
-TEST(AggregateStats, Opcode) {
+TEST(AggregateStats, OpcodeHistogram) {
   const std::string code1 = R"(
 OpCapability Addresses
 OpCapability Kernel
@@ -202,14 +203,14 @@ OpMemoryModel Logical GLSL450
 
   SpirvStats stats;
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(4, stats.opcode_hist.size());
   EXPECT_EQ(4, stats.opcode_hist.at(SpvOpCapability));
   EXPECT_EQ(1, stats.opcode_hist.at(SpvOpMemoryModel));
   EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeInt));
   EXPECT_EQ(1, stats.opcode_hist.at(SpvOpTypeFloat));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(5, stats.opcode_hist.size());
   EXPECT_EQ(6, stats.opcode_hist.at(SpvOpCapability));
   EXPECT_EQ(2, stats.opcode_hist.at(SpvOpMemoryModel));
@@ -217,7 +218,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(1, stats.opcode_hist.at(SpvOpTypeFloat));
   EXPECT_EQ(1, stats.opcode_hist.at(SpvOpExtension));
 
-  AggregateStats(code1, &stats);
+  CompileAndAggregateStats(code1, &stats);
   EXPECT_EQ(5, stats.opcode_hist.size());
   EXPECT_EQ(10, stats.opcode_hist.at(SpvOpCapability));
   EXPECT_EQ(3, stats.opcode_hist.at(SpvOpMemoryModel));
@@ -225,7 +226,7 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeFloat));
   EXPECT_EQ(1, stats.opcode_hist.at(SpvOpExtension));
 
-  AggregateStats(code2, &stats);
+  CompileAndAggregateStats(code2, &stats);
   EXPECT_EQ(5, stats.opcode_hist.size());
   EXPECT_EQ(12, stats.opcode_hist.at(SpvOpCapability));
   EXPECT_EQ(4, stats.opcode_hist.at(SpvOpMemoryModel));

@@ -25,7 +25,10 @@ namespace {
 
 using libspirv::SpirvStats;
 
+// Fills |stats| with some synthetic header stats, as if aggregated from 100
+// modules (100 used for simpler percentage evaluation).
 void FillDefaultStats(SpirvStats* stats) {
+  *stats = SpirvStats();
   stats->version_hist[0x00010000] = 40;
   stats->version_hist[0x00010100] = 60;
   stats->generator_hist[0x00000000] = 64;

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "spirv-tools/libspirv.hpp"
-#include "spirv_stats.h"
 
 #include "table.h"
 
@@ -88,12 +87,6 @@ bool SpirvTools::Validate(const uint32_t* binary, const size_t binary_size,
   spv_const_binary_t the_binary{binary, binary_size};
   return spvValidateWithOptions(impl_->context, options, &the_binary,
                                 nullptr) == SPV_SUCCESS;
-}
-
-bool SpirvTools::AggregateStats(const uint32_t* binary, const size_t binary_size,
-                                libspirv::SpirvStats* stats) const {
-  return libspirv::AggregateStats(
-      *impl_->context, binary, binary_size, nullptr, stats) == SPV_SUCCESS;
 }
 
 }  // namespace spvtools

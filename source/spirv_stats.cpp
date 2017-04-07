@@ -34,6 +34,7 @@ using libspirv::SpirvStats;
 
 namespace {
 
+// Collects statistics from SPIR-V header (version, generator).
 spv_result_t ProcessHeader(
     void* user_data, spv_endianness_t /* endian */, uint32_t /* magic */,
     uint32_t version, uint32_t generator, uint32_t /* id_bound */,
@@ -45,6 +46,7 @@ spv_result_t ProcessHeader(
   return SPV_SUCCESS;
 }
 
+// Collects OpCapability statistics.
 void ProcessCapability(SpirvStats* stats,
                        const spv_parsed_instruction_t* inst) {
   if (static_cast<SpvOp>(inst->opcode) != SpvOpCapability) return;
@@ -56,6 +58,7 @@ void ProcessCapability(SpirvStats* stats,
   ++stats->capability_hist[capability];
 }
 
+// Collects OpExtension statistics.
 void ProcessExtension(SpirvStats* stats,
                       const spv_parsed_instruction_t* inst) {
   if (static_cast<SpvOp>(inst->opcode) != SpvOpExtension) return;
@@ -63,6 +66,7 @@ void ProcessExtension(SpirvStats* stats,
   ++stats->extension_hist[extension];
 }
 
+// Collects opcode usage statistics and calls other collectors.
 spv_result_t ProcessInstruction(
     void* user_data, const spv_parsed_instruction_t* inst) {
   SpirvStats* stats =
@@ -101,12 +105,9 @@ spv_result_t AggregateStats(
         << "Invalid SPIR-V header.";
   }
 
-  if (auto error = spvBinaryParse(&context, stats, words, num_words,
+  return spvBinaryParse(&context, stats, words, num_words,
                                   ProcessHeader, ProcessInstruction,
-                                  pDiagnostic)) {
-    return error;
-  }
-  return SPV_SUCCESS;
+                                  pDiagnostic);
 }
 
 }  // namespace libspirv

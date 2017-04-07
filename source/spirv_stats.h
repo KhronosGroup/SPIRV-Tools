@@ -24,13 +24,23 @@
 namespace libspirv {
 
 struct SpirvStats {
+  // Version histogram, version_word -> count.
   std::unordered_map<uint32_t, uint32_t> version_hist;
+
+  // Generator histogram, generator_word -> count.
   std::unordered_map<uint32_t, uint32_t> generator_hist;
+
+  // Capability histogram, SpvCapabilityXXX -> count.
   std::unordered_map<uint32_t, uint32_t> capability_hist;
+
+  // Extension histogram, extension_string -> count.
   std::unordered_map<std::string, uint32_t> extension_hist;
+
+  // Opcode histogram, SpvOpXXX -> count.
   std::unordered_map<uint32_t, uint32_t> opcode_hist;
 };
 
+// Aggregates existing |stats| with new stats extracted from |binary|.
 spv_result_t AggregateStats(
     const spv_context_t& context, const uint32_t* words, const size_t num_words,
     spv_diagnostic* pDiagnostic, SpirvStats* stats);
