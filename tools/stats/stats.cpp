@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
   libspirv::SpirvStats stats;
 
   for (size_t index = 0; index < paths.size(); ++index) {
-    constexpr size_t kMilestonePeriod = 1000;
+    const size_t kMilestonePeriod = 1000;
     if (verbose) {
       if (index % kMilestonePeriod == kMilestonePeriod - 1)
         std::cerr << "Processed " << index + 1 << " files..." << std::endl;

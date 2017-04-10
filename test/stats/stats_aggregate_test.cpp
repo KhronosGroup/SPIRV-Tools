@@ -168,7 +168,7 @@ OpCapability Linkage
 OpMemoryModel Logical GLSL450
 )";
 
-  constexpr uint32_t kGeneratorKhronosAssembler =
+  const uint32_t kGeneratorKhronosAssembler =
       SPV_GENERATOR_KHRONOS_ASSEMBLER << 16;
 
   SpirvStats stats;
