@@ -30,8 +30,8 @@ namespace {
 
 std::string GetVersionString(uint32_t word) {
   std::stringstream ss;
-  ss << "Version " << std::to_string(SPV_SPIRV_VERSION_MAJOR_PART(word))
-     << "." << std::to_string(SPV_SPIRV_VERSION_MINOR_PART(word));
+  ss << "Version " << SPV_SPIRV_VERSION_MAJOR_PART(word)
+     << "." << SPV_SPIRV_VERSION_MINOR_PART(word);
   return ss.str();
 }
 
