@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "source/enum_string_mapping.h"
@@ -28,8 +29,10 @@ using libspirv::SpirvStats;
 namespace {
 
 std::string GetVersionString(uint32_t word) {
-  return "Version " + std::to_string(SPV_SPIRV_VERSION_MAJOR_PART(word))
-      + "." + std::to_string(SPV_SPIRV_VERSION_MINOR_PART(word));
+  std::stringstream ss;
+  ss << "Version " << std::to_string(SPV_SPIRV_VERSION_MAJOR_PART(word))
+     << "." << std::to_string(SPV_SPIRV_VERSION_MINOR_PART(word));
+  return ss.str();
 }
 
 std::string GetGeneratorString(uint32_t word) {
