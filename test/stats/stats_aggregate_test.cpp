@@ -56,36 +56,36 @@ OpMemoryModel Logical GLSL450
   SpirvStats stats;
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(4, stats.capability_hist.size());
-  EXPECT_EQ(0, stats.capability_hist.count(SpvCapabilityShader));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityAddresses));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityKernel));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityGenericPointer));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityLinkage));
+  EXPECT_EQ(4u, stats.capability_hist.size());
+  EXPECT_EQ(0u, stats.capability_hist.count(SpvCapabilityShader));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityAddresses));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityKernel));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityGenericPointer));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityLinkage));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(5, stats.capability_hist.size());
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityShader));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityAddresses));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityKernel));
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityGenericPointer));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityLinkage));
+  EXPECT_EQ(5u, stats.capability_hist.size());
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityShader));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityAddresses));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityKernel));
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityGenericPointer));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityLinkage));
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(5, stats.capability_hist.size());
-  EXPECT_EQ(1, stats.capability_hist.at(SpvCapabilityShader));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityAddresses));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityKernel));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityGenericPointer));
-  EXPECT_EQ(3, stats.capability_hist.at(SpvCapabilityLinkage));
+  EXPECT_EQ(5u, stats.capability_hist.size());
+  EXPECT_EQ(1u, stats.capability_hist.at(SpvCapabilityShader));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityAddresses));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityKernel));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityGenericPointer));
+  EXPECT_EQ(3u, stats.capability_hist.at(SpvCapabilityLinkage));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(5, stats.capability_hist.size());
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityShader));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityAddresses));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityKernel));
-  EXPECT_EQ(2, stats.capability_hist.at(SpvCapabilityGenericPointer));
-  EXPECT_EQ(4, stats.capability_hist.at(SpvCapabilityLinkage));
+  EXPECT_EQ(5u, stats.capability_hist.size());
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityShader));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityAddresses));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityKernel));
+  EXPECT_EQ(2u, stats.capability_hist.at(SpvCapabilityGenericPointer));
+  EXPECT_EQ(4u, stats.capability_hist.at(SpvCapabilityLinkage));
 }
 
 TEST(AggregateStats, ExtensionHistogram) {
@@ -109,27 +109,27 @@ OpMemoryModel Logical GLSL450
   SpirvStats stats;
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(1, stats.extension_hist.size());
-  EXPECT_EQ(0, stats.extension_hist.count("SPV_NV_viewport_array2"));
-  EXPECT_EQ(1, stats.extension_hist.at("SPV_KHR_16bit_storage"));
+  EXPECT_EQ(1u, stats.extension_hist.size());
+  EXPECT_EQ(0u, stats.extension_hist.count("SPV_NV_viewport_array2"));
+  EXPECT_EQ(1u, stats.extension_hist.at("SPV_KHR_16bit_storage"));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(3, stats.extension_hist.size());
-  EXPECT_EQ(1, stats.extension_hist.at("SPV_NV_viewport_array2"));
-  EXPECT_EQ(1, stats.extension_hist.at("SPV_KHR_16bit_storage"));
-  EXPECT_EQ(1, stats.extension_hist.at("greatest_extension_ever"));
+  EXPECT_EQ(3u, stats.extension_hist.size());
+  EXPECT_EQ(1u, stats.extension_hist.at("SPV_NV_viewport_array2"));
+  EXPECT_EQ(1u, stats.extension_hist.at("SPV_KHR_16bit_storage"));
+  EXPECT_EQ(1u, stats.extension_hist.at("greatest_extension_ever"));
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(3, stats.extension_hist.size());
-  EXPECT_EQ(1, stats.extension_hist.at("SPV_NV_viewport_array2"));
-  EXPECT_EQ(2, stats.extension_hist.at("SPV_KHR_16bit_storage"));
-  EXPECT_EQ(1, stats.extension_hist.at("greatest_extension_ever"));
+  EXPECT_EQ(3u, stats.extension_hist.size());
+  EXPECT_EQ(1u, stats.extension_hist.at("SPV_NV_viewport_array2"));
+  EXPECT_EQ(2u, stats.extension_hist.at("SPV_KHR_16bit_storage"));
+  EXPECT_EQ(1u, stats.extension_hist.at("greatest_extension_ever"));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(3, stats.extension_hist.size());
-  EXPECT_EQ(2, stats.extension_hist.at("SPV_NV_viewport_array2"));
-  EXPECT_EQ(2, stats.extension_hist.at("SPV_KHR_16bit_storage"));
-  EXPECT_EQ(2, stats.extension_hist.at("greatest_extension_ever"));
+  EXPECT_EQ(3u, stats.extension_hist.size());
+  EXPECT_EQ(2u, stats.extension_hist.at("SPV_NV_viewport_array2"));
+  EXPECT_EQ(2u, stats.extension_hist.at("SPV_KHR_16bit_storage"));
+  EXPECT_EQ(2u, stats.extension_hist.at("greatest_extension_ever"));
 }
 
 TEST(AggregateStats, VersionHistogram) {
@@ -142,23 +142,23 @@ OpMemoryModel Logical GLSL450
   SpirvStats stats;
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(1, stats.version_hist.size());
-  EXPECT_EQ(1, stats.version_hist.at(0x00010100));
+  EXPECT_EQ(1u, stats.version_hist.size());
+  EXPECT_EQ(1u, stats.version_hist.at(0x00010100));
 
   CompileAndAggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
-  EXPECT_EQ(2, stats.version_hist.size());
-  EXPECT_EQ(1, stats.version_hist.at(0x00010100));
-  EXPECT_EQ(1, stats.version_hist.at(0x00010000));
+  EXPECT_EQ(2u, stats.version_hist.size());
+  EXPECT_EQ(1u, stats.version_hist.at(0x00010100));
+  EXPECT_EQ(1u, stats.version_hist.at(0x00010000));
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(2, stats.version_hist.size());
-  EXPECT_EQ(2, stats.version_hist.at(0x00010100));
-  EXPECT_EQ(1, stats.version_hist.at(0x00010000));
+  EXPECT_EQ(2u, stats.version_hist.size());
+  EXPECT_EQ(2u, stats.version_hist.at(0x00010100));
+  EXPECT_EQ(1u, stats.version_hist.at(0x00010000));
 
   CompileAndAggregateStats(code1, &stats, SPV_ENV_UNIVERSAL_1_0);
-  EXPECT_EQ(2, stats.version_hist.size());
-  EXPECT_EQ(2, stats.version_hist.at(0x00010100));
-  EXPECT_EQ(2, stats.version_hist.at(0x00010000));
+  EXPECT_EQ(2u, stats.version_hist.size());
+  EXPECT_EQ(2u, stats.version_hist.at(0x00010100));
+  EXPECT_EQ(2u, stats.version_hist.at(0x00010000));
 }
 
 TEST(AggregateStats, GeneratorHistogram) {
@@ -174,12 +174,12 @@ OpMemoryModel Logical GLSL450
   SpirvStats stats;
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(1, stats.generator_hist.size());
-  EXPECT_EQ(1, stats.generator_hist.at(kGeneratorKhronosAssembler));
+  EXPECT_EQ(1u, stats.generator_hist.size());
+  EXPECT_EQ(1u, stats.generator_hist.at(kGeneratorKhronosAssembler));
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(1, stats.generator_hist.size());
-  EXPECT_EQ(2, stats.generator_hist.at(kGeneratorKhronosAssembler));
+  EXPECT_EQ(1u, stats.generator_hist.size());
+  EXPECT_EQ(2u, stats.generator_hist.at(kGeneratorKhronosAssembler));
 }
 
 TEST(AggregateStats, OpcodeHistogram) {
@@ -204,35 +204,35 @@ OpMemoryModel Logical GLSL450
   SpirvStats stats;
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(4, stats.opcode_hist.size());
-  EXPECT_EQ(4, stats.opcode_hist.at(SpvOpCapability));
-  EXPECT_EQ(1, stats.opcode_hist.at(SpvOpMemoryModel));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeInt));
-  EXPECT_EQ(1, stats.opcode_hist.at(SpvOpTypeFloat));
+  EXPECT_EQ(4u, stats.opcode_hist.size());
+  EXPECT_EQ(4u, stats.opcode_hist.at(SpvOpCapability));
+  EXPECT_EQ(1u, stats.opcode_hist.at(SpvOpMemoryModel));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpTypeInt));
+  EXPECT_EQ(1u, stats.opcode_hist.at(SpvOpTypeFloat));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(5, stats.opcode_hist.size());
-  EXPECT_EQ(6, stats.opcode_hist.at(SpvOpCapability));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpMemoryModel));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeInt));
-  EXPECT_EQ(1, stats.opcode_hist.at(SpvOpTypeFloat));
-  EXPECT_EQ(1, stats.opcode_hist.at(SpvOpExtension));
+  EXPECT_EQ(5u, stats.opcode_hist.size());
+  EXPECT_EQ(6u, stats.opcode_hist.at(SpvOpCapability));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpMemoryModel));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpTypeInt));
+  EXPECT_EQ(1u, stats.opcode_hist.at(SpvOpTypeFloat));
+  EXPECT_EQ(1u, stats.opcode_hist.at(SpvOpExtension));
 
   CompileAndAggregateStats(code1, &stats);
-  EXPECT_EQ(5, stats.opcode_hist.size());
-  EXPECT_EQ(10, stats.opcode_hist.at(SpvOpCapability));
-  EXPECT_EQ(3, stats.opcode_hist.at(SpvOpMemoryModel));
-  EXPECT_EQ(4, stats.opcode_hist.at(SpvOpTypeInt));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeFloat));
-  EXPECT_EQ(1, stats.opcode_hist.at(SpvOpExtension));
+  EXPECT_EQ(5u, stats.opcode_hist.size());
+  EXPECT_EQ(10u, stats.opcode_hist.at(SpvOpCapability));
+  EXPECT_EQ(3u, stats.opcode_hist.at(SpvOpMemoryModel));
+  EXPECT_EQ(4u, stats.opcode_hist.at(SpvOpTypeInt));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpTypeFloat));
+  EXPECT_EQ(1u, stats.opcode_hist.at(SpvOpExtension));
 
   CompileAndAggregateStats(code2, &stats);
-  EXPECT_EQ(5, stats.opcode_hist.size());
-  EXPECT_EQ(12, stats.opcode_hist.at(SpvOpCapability));
-  EXPECT_EQ(4, stats.opcode_hist.at(SpvOpMemoryModel));
-  EXPECT_EQ(4, stats.opcode_hist.at(SpvOpTypeInt));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpTypeFloat));
-  EXPECT_EQ(2, stats.opcode_hist.at(SpvOpExtension));
+  EXPECT_EQ(5u, stats.opcode_hist.size());
+  EXPECT_EQ(12u, stats.opcode_hist.at(SpvOpCapability));
+  EXPECT_EQ(4u, stats.opcode_hist.at(SpvOpMemoryModel));
+  EXPECT_EQ(4u, stats.opcode_hist.at(SpvOpTypeInt));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpTypeFloat));
+  EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpExtension));
 }
 
 }  // namespace
