@@ -14,6 +14,7 @@
 
 #include "text_handler.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -154,11 +155,33 @@ const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
 // This represents all of the data that is only valid for the duration of
 // a single compilation.
 uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
-  if (named_ids_.end() == named_ids_.find(textValue)) {
-    named_ids_[std::string(textValue)] = bound_++;
+  if (!ids_to_preserve_.empty()) {
+    uint32_t id = 0;
+    if (spvutils::ParseNumber(textValue, &id)) {
+      if (ids_to_preserve_.find(id) != ids_to_preserve_.end()) {
+        bound_ = std::max(bound_, id + 1);
+        return id;
+      }
+    }
   }
-  return named_ids_[textValue];
+
+  const auto it = named_ids_.find(textValue);
+  if (it == named_ids_.end()) {
+    uint32_t id = next_id_++;
+    if (!ids_to_preserve_.empty()) {
+      while (ids_to_preserve_.find(id) != ids_to_preserve_.end()) {
+        id = next_id_++;
+      }
+    }
+
+    named_ids_.emplace(textValue, id);
+    bound_ = std::max(bound_, id + 1);
+    return id;
+  }
+
+  return it->second;
 }
+
 uint32_t AssemblyContext::getBound() const { return bound_; }
 
 spv_result_t AssemblyContext::advance() {
@@ -360,6 +383,16 @@ spv_ext_inst_type_t AssemblyContext::getExtInstTypeForId(uint32_t id) const {
     return SPV_EXT_INST_TYPE_NONE;
   }
   return std::get<1>(*type);
+}
+
+std::set<uint32_t> AssemblyContext::GetNumericIds() const {
+  std::set<uint32_t> ids;
+  for (const auto& kv : named_ids_) {
+    uint32_t id;
+    if (spvutils::ParseNumber(kv.first.c_str(), &id))
+      ids.insert(id);
+  }
+  return ids;
 }
 
 }  // namespace libspirv

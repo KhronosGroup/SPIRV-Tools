@@ -56,6 +56,9 @@ class ValidatorOptions {
 class SpirvTools {
  public:
   enum {
+    // Default assembling option used by assemble():
+    kDefaultAssembleOption = SPV_TEXT_TO_BINARY_OPTION_NONE,
+
     // Default disassembling option used by Disassemble():
     // * Avoid prefix comments from decoding the SPIR-V module header, and
     // * Use friendly names for variables.
@@ -86,11 +89,13 @@ class SpirvTools {
   // Assembles the given assembly |text| and writes the result to |binary|.
   // Returns true on successful assembling. |binary| will be kept untouched if
   // assembling is unsuccessful.
-  bool Assemble(const std::string& text, std::vector<uint32_t>* binary) const;
+  bool Assemble(const std::string& text, std::vector<uint32_t>* binary,
+                uint32_t options = kDefaultAssembleOption) const;
   // |text_size| specifies the number of bytes in |text|. A terminating null
   // character is not required to present in |text| as long as |text| is valid.
   bool Assemble(const char* text, size_t text_size,
-                std::vector<uint32_t>* binary) const;
+                std::vector<uint32_t>* binary,
+                uint32_t options = kDefaultAssembleOption) const;
 
   // Disassembles the given SPIR-V |binary| with the given |options| and writes
   // the assembly to |text|. Returns ture on successful disassembling. |text|
@@ -109,7 +114,8 @@ class SpirvTools {
   // |binary_size| specifies the number of words in |binary|.
   bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
-  bool Validate(const uint32_t* binary, size_t binary_size, const ValidatorOptions& options) const;
+  bool Validate(const uint32_t* binary, size_t binary_size,
+                const ValidatorOptions& options) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.
