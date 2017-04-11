@@ -185,6 +185,10 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
 
+// Creates a compact ids pass.
+// The pass remaps result ids to a compact and gapless range starting from %1.
+Optimizer::PassToken CreateCompactIdsPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
