@@ -14,6 +14,7 @@
 add_library(SPIRV-Tools-opt
   basic_block.h
   build_module.h
+  compact_ids_pass.h
   constants.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
@@ -39,6 +40,7 @@ add_library(SPIRV-Tools-opt
 
   basic_block.cpp
   build_module.cpp
+  compact_ids_pass.cpp
   def_use_manager.cpp
   eliminate_dead_constant_pass.cpp
   flatten_decoration_pass.cpp
