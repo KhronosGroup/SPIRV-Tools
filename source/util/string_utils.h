@@ -32,6 +32,9 @@ std::string ToString(T val) {
   return os.str();
 }
 
+// Converts |str| to uint32_t or returns false if not a non-negative integer.
+bool StringToU32(const std::string& str, uint32_t* val);
+
 // Converts cardinal number to ordinal number string.
 std::string CardinalToOrdinal(size_t cardinal);
 

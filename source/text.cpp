@@ -659,13 +659,52 @@ spv_result_t SetHeader(spv_target_env env, const uint32_t bound,
   return SPV_SUCCESS;
 }
 
+spv_result_t spvTextGetNumericIds(const libspirv::AssemblyGrammar& grammar,
+                                  const spvtools::MessageConsumer& consumer,
+                                  const spv_text text,
+                                  std::set<uint32_t>* numeric_ids) {
+  libspirv::AssemblyContext context(text, consumer);
+
+  if (!text->str) return context.diagnostic() << "Missing assembly text.";
+
+  if (!grammar.isValid()) {
+    return SPV_ERROR_INVALID_TABLE;
+  }
+
+  // Skip past whitespace and comments.
+  context.advance();
+
+  while (context.hasText()) {
+    spv_instruction_t inst;
+
+    if (spvTextEncodeOpcode(grammar, &context, &inst)) {
+      return SPV_ERROR_INVALID_TEXT;
+    }
+
+    if (context.advance()) break;
+  }
+
+  *numeric_ids = context.GetNumericIds();
+  return SPV_SUCCESS;
+}
+
 // Translates a given assembly language module into binary form.
 // If a diagnostic is generated, it is not yet marked as being
 // for a text-based input.
-spv_result_t spvTextToBinaryInternal(const libspirv::AssemblyGrammar& grammar,
-                                     const spvtools::MessageConsumer& consumer,
-                                     const spv_text text, spv_binary* pBinary) {
-  libspirv::AssemblyContext context(text, consumer);
+spv_result_t spvTextToBinaryInternal(
+    const libspirv::AssemblyGrammar& grammar,
+    const spvtools::MessageConsumer& consumer, const spv_text text,
+    const uint32_t options, spv_binary* pBinary) {
+  const bool keep_raw_ids = options & SPV_TEXT_TO_BINARY_OPTION_RAW_IDS;
+  std::set<uint32_t> ids_to_preserve;
+  if (keep_raw_ids) {
+    const spv_result_t result =
+        spvTextGetNumericIds(grammar, consumer, text, &ids_to_preserve);
+    if (result != SPV_SUCCESS) return result;
+  }
+
+  libspirv::AssemblyContext context(text, consumer, std::move(ids_to_preserve));
+
   if (!text->str) return context.diagnostic() << "Missing assembly text.";
 
   if (!grammar.isValid()) {
@@ -725,6 +764,15 @@ spv_result_t spvTextToBinary(const spv_const_context context,
                              const char* input_text,
                              const size_t input_text_size, spv_binary* pBinary,
                              spv_diagnostic* pDiagnostic) {
+  return spvTextToBinaryWithOptions(
+      context, input_text, input_text_size, SPV_BINARY_TO_TEXT_OPTION_NONE,
+      pBinary, pDiagnostic);
+}
+
+spv_result_t spvTextToBinaryWithOptions(
+    const spv_const_context context, const char* input_text,
+    const size_t input_text_size, const uint32_t options, spv_binary* pBinary,
+    spv_diagnostic* pDiagnostic) {
   spv_context_t hijack_context = *context;
   if (pDiagnostic) {
     *pDiagnostic = nullptr;
@@ -734,8 +782,8 @@ spv_result_t spvTextToBinary(const spv_const_context context,
   spv_text_t text = {input_text, input_text_size};
   libspirv::AssemblyGrammar grammar(&hijack_context);
 
-  spv_result_t result =
-      spvTextToBinaryInternal(grammar, hijack_context.consumer, &text, pBinary);
+  spv_result_t result = spvTextToBinaryInternal(
+      grammar, hijack_context.consumer, &text, options, pBinary);
   if (pDiagnostic && *pDiagnostic) (*pDiagnostic)->isTextSource = true;
 
   return result;

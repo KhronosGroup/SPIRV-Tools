@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <cstdint>
 #include <type_traits>
 
@@ -35,5 +36,18 @@ std::string CardinalToOrdinal(size_t cardinal) {
   return ToString(cardinal) + suffix;
 }
 
-}  // namespace spvutils
+bool StringToU32(const std::string& str, uint32_t* val) {
+  if (str.empty()) {
+    return false;
+  }
 
+  if (std::find_if(str.begin(), str.end(),
+                   [](char x) { return !std::isdigit(x); }) != str.end()) {
+    return false;
+  }
+
+  *val = static_cast<uint32_t>(std::stoul(str));
+  return true;
+}
+
+}  // namespace spvutils
