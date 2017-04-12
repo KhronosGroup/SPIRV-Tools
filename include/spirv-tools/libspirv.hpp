@@ -55,13 +55,16 @@ class ValidatorOptions {
 // Instances of this class provide basic thread-safety guarantee.
 class SpirvTools {
  public:
-  enum {
-    // Default disassembling option used by Disassemble():
-    // * Avoid prefix comments from decoding the SPIR-V module header, and
-    // * Use friendly names for variables.
-    kDefaultDisassembleOption = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
-                                SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES
-  };
+  // Default assembling option used by assemble():
+  static const uint32_t kDefaultAssembleOption =
+      SPV_TEXT_TO_BINARY_OPTION_NONE;
+
+  // Default disassembling option used by Disassemble():
+  // * Avoid prefix comments from decoding the SPIR-V module header, and
+  // * Use friendly names for variables.
+  static const uint32_t kDefaultDisassembleOption =
+      SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+      SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
 
   // Constructs an instance targeting the given environment |env|.
   //
@@ -86,11 +89,13 @@ class SpirvTools {
   // Assembles the given assembly |text| and writes the result to |binary|.
   // Returns true on successful assembling. |binary| will be kept untouched if
   // assembling is unsuccessful.
-  bool Assemble(const std::string& text, std::vector<uint32_t>* binary) const;
+  bool Assemble(const std::string& text, std::vector<uint32_t>* binary,
+                uint32_t options = kDefaultAssembleOption) const;
   // |text_size| specifies the number of bytes in |text|. A terminating null
   // character is not required to present in |text| as long as |text| is valid.
   bool Assemble(const char* text, size_t text_size,
-                std::vector<uint32_t>* binary) const;
+                std::vector<uint32_t>* binary,
+                uint32_t options = kDefaultAssembleOption) const;
 
   // Disassembles the given SPIR-V |binary| with the given |options| and writes
   // the assembly to |text|. Returns ture on successful disassembling. |text|
