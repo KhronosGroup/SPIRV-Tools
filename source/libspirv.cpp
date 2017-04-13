@@ -39,15 +39,17 @@ void SpirvTools::SetMessageConsumer(MessageConsumer consumer) {
 }
 
 bool SpirvTools::Assemble(const std::string& text,
-                          std::vector<uint32_t>* binary) const {
-  return Assemble(text.data(), text.size(), binary);
+                          std::vector<uint32_t>* binary,
+                          uint32_t options) const {
+  return Assemble(text.data(), text.size(), binary, options);
 }
 
 bool SpirvTools::Assemble(const char* text, const size_t text_size,
-                          std::vector<uint32_t>* binary) const {
+                          std::vector<uint32_t>* binary,
+                          uint32_t options) const {
   spv_binary spvbinary = nullptr;
-  spv_result_t status =
-      spvTextToBinary(impl_->context, text, text_size, &spvbinary, nullptr);
+  spv_result_t status = spvTextToBinaryWithOptions(
+      impl_->context, text, text_size, options, &spvbinary, nullptr);
   if (status == SPV_SUCCESS) {
     binary->assign(spvbinary->code, spvbinary->code + spvbinary->wordCount);
   }
