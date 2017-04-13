@@ -39,8 +39,10 @@ Options:
   --version       Display assembler version information.
   --target-env {vulkan1.0|spv1.0|spv1.1}
                   Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1 validation rules.
-  --raw-ids
-                  Use numeric ids from the input.
+  --preserve-numeric-ids
+                  Numeric IDs in the binary will have the same values as in the
+                  source. Non-numeric IDs are allocated by filling in the gaps,
+                  starting with 1 and going up.
 )",
       argv0, argv0);
 }
@@ -86,8 +88,8 @@ int main(int argc, char** argv) {
             print_usage(argv[0]);
             return 0;
           }
-          if (0 == strcmp(argv[argi], "--raw-ids")) {
-            options |= SPV_TEXT_TO_BINARY_OPTION_RAW_IDS;
+          if (0 == strcmp(argv[argi], "--preserve-numeric-ids")) {
+            options |= SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
           }
           if (0 == strcmp(argv[argi], "--target-env")) {
             if (argi + 1 < argc) {

@@ -246,7 +246,10 @@ typedef enum spv_number_kind_t {
 
 typedef enum spv_text_to_binary_options_t {
   SPV_TEXT_TO_BINARY_OPTION_NONE = SPV_BIT(0),
-  SPV_TEXT_TO_BINARY_OPTION_RAW_IDS = SPV_BIT(1),
+  // Numeric IDs in the binary will have the same values as in the source.
+  // Non-numeric IDs are allocated by filling in the gaps, starting with 1
+  // and going up.
+  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS = SPV_BIT(1),
   SPV_FORCE_32_BIT_ENUM(spv_text_to_binary_options_t)
 } spv_text_to_binary_options_t;
 

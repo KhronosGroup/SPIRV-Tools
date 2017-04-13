@@ -36,18 +36,4 @@ std::string CardinalToOrdinal(size_t cardinal) {
   return ToString(cardinal) + suffix;
 }
 
-bool StringToU32(const std::string& str, uint32_t* val) {
-  if (str.empty()) {
-    return false;
-  }
-
-  if (std::find_if(str.begin(), str.end(),
-                   [](char x) { return !std::isdigit(x); }) != str.end()) {
-    return false;
-  }
-
-  *val = static_cast<uint32_t>(std::stoul(str));
-  return true;
-}
-
 }  // namespace spvutils

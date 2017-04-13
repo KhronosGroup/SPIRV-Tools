@@ -55,16 +55,16 @@ class ValidatorOptions {
 // Instances of this class provide basic thread-safety guarantee.
 class SpirvTools {
  public:
-  // Default assembling option used by assemble():
-  static const uint32_t kDefaultAssembleOption =
-      SPV_TEXT_TO_BINARY_OPTION_NONE;
+  enum {
+    // Default assembling option used by assemble():
+    kDefaultAssembleOption = SPV_TEXT_TO_BINARY_OPTION_NONE,
 
-  // Default disassembling option used by Disassemble():
-  // * Avoid prefix comments from decoding the SPIR-V module header, and
-  // * Use friendly names for variables.
-  static const uint32_t kDefaultDisassembleOption =
-      SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
-      SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
+    // Default disassembling option used by Disassemble():
+    // * Avoid prefix comments from decoding the SPIR-V module header, and
+    // * Use friendly names for variables.
+    kDefaultDisassembleOption = SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                                SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES
+  };
 
   // Constructs an instance targeting the given environment |env|.
   //
@@ -114,7 +114,8 @@ class SpirvTools {
   // |binary_size| specifies the number of words in |binary|.
   bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
-  bool Validate(const uint32_t* binary, size_t binary_size, const ValidatorOptions& options) const;
+  bool Validate(const uint32_t* binary, size_t binary_size,
+                const ValidatorOptions& options) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.

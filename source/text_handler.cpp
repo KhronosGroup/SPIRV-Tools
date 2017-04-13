@@ -14,6 +14,7 @@
 
 #include "text_handler.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -28,7 +29,6 @@
 #include "util/bitutils.h"
 #include "util/hex_float.h"
 #include "util/parse_number.h"
-#include "util/string_utils.h"
 
 namespace {
 // Advances |text| to the start of the next line and writes the new position to
@@ -155,10 +155,9 @@ const IdType kUnknownType = {0, false, IdTypeClass::kBottom};
 // This represents all of the data that is only valid for the duration of
 // a single compilation.
 uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
-  const std::string str(textValue);
   if (!ids_to_preserve_.empty()) {
     uint32_t id = 0;
-    if (spvutils::StringToU32(str, &id)) {
+    if (spvutils::ParseNumber(textValue, &id)) {
       if (ids_to_preserve_.find(id) != ids_to_preserve_.end()) {
         bound_ = std::max(bound_, id + 1);
         return id;
@@ -166,7 +165,7 @@ uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
     }
   }
 
-  const auto it = named_ids_.find(str);
+  const auto it = named_ids_.find(textValue);
   if (it == named_ids_.end()) {
     uint32_t id = next_id_++;
     if (!ids_to_preserve_.empty()) {
@@ -175,7 +174,7 @@ uint32_t AssemblyContext::spvNamedIdAssignOrGet(const char* textValue) {
       }
     }
 
-    named_ids_.emplace(str, id);
+    named_ids_.emplace(textValue, id);
     bound_ = std::max(bound_, id + 1);
     return id;
   }
@@ -390,7 +389,7 @@ std::set<uint32_t> AssemblyContext::GetNumericIds() const {
   std::set<uint32_t> ids;
   for (const auto& kv : named_ids_) {
     uint32_t id;
-    if (spvutils::StringToU32(kv.first, &id))
+    if (spvutils::ParseNumber(kv.first.c_str(), &id))
       ids.insert(id);
   }
   return ids;

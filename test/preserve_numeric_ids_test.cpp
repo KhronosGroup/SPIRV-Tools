@@ -56,7 +56,7 @@ spv_result_t ToBinaryAndBack(
   return SPV_SUCCESS;
 }
 
-TEST(ToBinaryAndBack, NotRawIds) {
+TEST(ToBinaryAndBack, DontPreserveNumericIds) {
   const std::string before =
 R"(OpCapability Addresses
 OpCapability Kernel
@@ -105,7 +105,7 @@ OpFunctionEnd
   EXPECT_EQ(expected, after);
 }
 
-TEST(ToBinaryAndBack, RawIds) {
+TEST(TextHandler, PreserveNumericIds) {
   const std::string before =
 R"(OpCapability Addresses
 OpCapability Kernel
@@ -147,58 +147,10 @@ OpFunctionEnd
 )";
 
   std::string after;
-  EXPECT_EQ(SPV_SUCCESS, ToBinaryAndBack(before, &after,
-                                         SPV_TEXT_TO_BINARY_OPTION_RAW_IDS,
-                                         SPV_BINARY_TO_TEXT_OPTION_NO_HEADER));
-
-  EXPECT_EQ(expected, after);
-}
-
-TEST(TextHandler, NumericIds) {
-  const std::string before =
-R"(OpCapability Addresses
-OpCapability Kernel
-OpCapability GenericPointer
-OpCapability Linkage
-OpMemoryModel Physical32 OpenCL
-%i32 = OpTypeInt 32 1
-%u32 = OpTypeInt 32 0
-%f32 = OpTypeFloat 32
-%200 = OpTypeVoid
-%300 = OpTypeFunction %200
-%main = OpFunction %200 None %300
-%entry = OpLabel
-%100 = OpConstant %u32 100
-%1 = OpConstant %u32 200
-%2 = OpConstant %u32 300
-OpReturn
-OpFunctionEnd
-)";
-
-  const std::string expected =
-R"(OpCapability Addresses
-OpCapability Kernel
-OpCapability GenericPointer
-OpCapability Linkage
-OpMemoryModel Physical32 OpenCL
-%3 = OpTypeInt 32 1
-%4 = OpTypeInt 32 0
-%5 = OpTypeFloat 32
-%200 = OpTypeVoid
-%300 = OpTypeFunction %200
-%6 = OpFunction %200 None %300
-%7 = OpLabel
-%100 = OpConstant %4 100
-%1 = OpConstant %4 200
-%2 = OpConstant %4 300
-OpReturn
-OpFunctionEnd
-)";
-
-  std::string after;
-  EXPECT_EQ(SPV_SUCCESS, ToBinaryAndBack(before, &after,
-                                         SPV_TEXT_TO_BINARY_OPTION_RAW_IDS,
-                                         SPV_BINARY_TO_TEXT_OPTION_NO_HEADER));
+  EXPECT_EQ(SPV_SUCCESS,
+            ToBinaryAndBack(before, &after,
+                            SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS,
+                            SPV_BINARY_TO_TEXT_OPTION_NO_HEADER));
 
   EXPECT_EQ(expected, after);
 }
