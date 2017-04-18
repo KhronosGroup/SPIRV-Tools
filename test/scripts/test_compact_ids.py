@@ -18,30 +18,29 @@ from __future__ import print_function
 
 import os.path
 import sys
+import tempfile
 
-TEST_HOME_PATH = '/tmp/test_compact_ids'
-OPTIMIZED_SPV_PATH = TEST_HOME_PATH + '/optimized.spv'
-OPTIMIZED_DIS_PATH = TEST_HOME_PATH + '/optimized.dis'
-CONVERTED_SPV_PATH = TEST_HOME_PATH + '/converted.spv'
-CONVERTED_DIS_PATH = TEST_HOME_PATH + '/converted.dis'
+def test_spirv_file(path, temp_dir):
+  optimized_spv_path = os.path.join(temp_dir, 'optimized.spv')
+  optimized_dis_path = os.path.join(temp_dir, 'optimized.dis')
+  converted_spv_path = os.path.join(temp_dir, 'converted.spv')
+  converted_dis_path = os.path.join(temp_dir, 'converted.dis')
 
-def test_spirv_file(path):
-  os.system('tools/spirv-opt ' + path + ' -o ' + OPTIMIZED_SPV_PATH +
+  os.system('tools/spirv-opt ' + path + ' -o ' + optimized_spv_path +
             ' --compact-ids')
-  os.system('tools/spirv-dis ' + OPTIMIZED_SPV_PATH + ' -o ' +
-            OPTIMIZED_DIS_PATH)
+  os.system('tools/spirv-dis ' + optimized_spv_path + ' -o ' +
+            optimized_dis_path)
 
-  os.system('tools/spirv-dis ' + path + ' -o ' + CONVERTED_DIS_PATH)
-  os.system('tools/spirv-as ' + CONVERTED_DIS_PATH + ' -o ' +
-            CONVERTED_SPV_PATH)
-  os.system('tools/spirv-dis ' + CONVERTED_SPV_PATH + ' -o ' +
-            CONVERTED_DIS_PATH)
+  os.system('tools/spirv-dis ' + path + ' -o ' + converted_dis_path)
+  os.system('tools/spirv-as ' + converted_dis_path + ' -o ' +
+            converted_spv_path)
+  os.system('tools/spirv-dis ' + converted_spv_path + ' -o ' +
+            converted_dis_path)
 
-  #os.system('diff ' + CONVERTED_DIS_PATH + ' ' + OPTIMIZED_DIS_PATH)
-  with open(CONVERTED_DIS_PATH, 'r') as f:
+  with open(converted_dis_path, 'r') as f:
     converted_dis = f.readlines()[3:]
 
-  with open(OPTIMIZED_DIS_PATH, 'r') as f:
+  with open(optimized_dis_path, 'r') as f:
     optimized_dis = f.readlines()[3:]
 
   return converted_dis == optimized_dis
@@ -80,13 +79,12 @@ def main():
   if not paths:
       print_usage()
 
-  os.system('rm -rf ' + TEST_HOME_PATH)
-  os.system('mkdir ' + TEST_HOME_PATH)
-
   num_failed = 0
 
+  temp_dir = tempfile.mkdtemp()
+
   for path in paths:
-    success = test_spirv_file(path)
+    success = test_spirv_file(path, temp_dir)
     if not success:
       print('Test failed for ' + path)
       num_failed += 1

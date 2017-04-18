@@ -186,8 +186,7 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 Optimizer::PassToken CreateInlinePass();
 
 // Creates a compact ids pass.
-// The pass remaps result ids to a compact set which starts from %1 and doesn't
-// have any gaps.
+// The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
 
 }  // namespace spvtools

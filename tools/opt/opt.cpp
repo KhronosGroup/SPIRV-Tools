@@ -67,7 +67,7 @@ Options:
                Replace decoration groups with repeated OpDecorate and
                OpMemberDecorate instructions.
   --compact-ids
-               Remap result ids to a compact set starting from %%1 and without
+               Remap result ids to a compact range starting from %%1 and without
                any gaps.
   -h, --help   Print this help.
   --version    Display optimizer version information.

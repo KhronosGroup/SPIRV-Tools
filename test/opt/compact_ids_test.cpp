@@ -50,10 +50,17 @@ OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %3 "simple_kernel"
 %99 = OpTypeInt 32 0
 %10 = OpTypeVector %99 2
 %20 = OpConstant %99 2
 %30 = OpTypeArray %99 %20
+%40 = OpTypeVoid
+%50 = OpTypeFunction %40
+ %3 = OpFunction %40 None %50
+%70 = OpLabel
+OpReturn
+OpFunctionEnd
 )";
 
   const std::string after =
@@ -62,10 +69,17 @@ OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-%1 = OpTypeInt 32 0
-%2 = OpTypeVector %1 2
-%3 = OpConstant %1 2
-%4 = OpTypeArray %1 %3
+OpEntryPoint Kernel %1 "simple_kernel"
+%2 = OpTypeInt 32 0
+%3 = OpTypeVector %2 2
+%4 = OpConstant %2 2
+%5 = OpTypeArray %2 %4
+%6 = OpTypeVoid
+%7 = OpTypeFunction %6
+%1 = OpFunction %6 None %7
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
 )";
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);

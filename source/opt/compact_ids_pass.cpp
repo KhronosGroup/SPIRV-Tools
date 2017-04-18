@@ -30,31 +30,22 @@ Pass::Status CompactIdsPass::Process(ir::Module* module) {
   module->ForEachInst([&result_id_mapping, &modified] (Instruction* inst) {
     auto operand = inst->begin();
     while (operand != inst->end()) {
-      switch (operand->type) {
-        case SPV_OPERAND_TYPE_ID:
-        case SPV_OPERAND_TYPE_TYPE_ID:
-        case SPV_OPERAND_TYPE_RESULT_ID:
-        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-        case SPV_OPERAND_TYPE_SCOPE_ID: {
-          assert(operand->words.size() == 1);
-          uint32_t& id = operand->words[0];
-          auto it = result_id_mapping.find(id);
-          if (it == result_id_mapping.end()) {
-            const uint32_t new_id =
-                static_cast<uint32_t>(result_id_mapping.size()) + 1;
-            const auto insertion_result = result_id_mapping.emplace(id, new_id);
-            it = insertion_result.first;
-            assert(insertion_result.second);
-          }
-          if (id != it->second) {
-            modified = true;
-            id = it->second;
-          }
-          break;
+      if (spvIsIdType(operand->type)) {
+        assert(operand->words.size() == 1);
+        uint32_t& id = operand->words[0];
+        auto it = result_id_mapping.find(id);
+        if (it == result_id_mapping.end()) {
+          const uint32_t new_id =
+              static_cast<uint32_t>(result_id_mapping.size()) + 1;
+          const auto insertion_result = result_id_mapping.emplace(id, new_id);
+          it = insertion_result.first;
+          assert(insertion_result.second);
         }
-        default:
-          break;
-      };
+        if (id != it->second) {
+          modified = true;
+          id = it->second;
+        }
+      }
       ++operand;
     }
   }, true);
