@@ -14,6 +14,7 @@
 
 #include "set_spec_constant_default_value_pass.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <tuple>
@@ -44,9 +45,9 @@ using spvutils::ParseAndEncodeNumber;
 std::vector<uint32_t> ParseDefaultValueStr(const char* text,
                                            const analysis::Type* type) {
   std::vector<uint32_t> result;
-  if (!strcmp(text, "true")) {
+  if (!strcmp(text, "true") && type->AsBool()) {
     result.push_back(1u);
-  } else if (!strcmp(text, "false")) {
+  } else if (!strcmp(text, "false") && type->AsBool()) {
     result.push_back(0u);
   } else {
     NumberType number_type = {32, SPV_NUMBER_UNSIGNED_INT};
@@ -57,6 +58,11 @@ std::vector<uint32_t> ParseDefaultValueStr(const char* text,
     } else if (const auto* FT = type->AsFloat()) {
       number_type.bitwidth = FT->width();
       number_type.kind = SPV_NUMBER_FLOATING;
+    } else {
+      // Does not handle types other then boolean, integer or float. Returns
+      // empty vector.
+      result.clear();
+      return result;
     }
     EncodeNumberStatus rc = ParseAndEncodeNumber(
         text, number_type, [&result](uint32_t word) { result.push_back(word); },
@@ -66,6 +72,40 @@ std::vector<uint32_t> ParseDefaultValueStr(const char* text,
       result.clear();
     }
   }
+  return result;
+}
+
+// Given a bit pattern and a type, checks if the bit pattern is compatible
+// with the type. If so, returns the bit pattern, otherwise returns an empty
+// bit pattern. If the given bit pattern is empty, returns an empty bit
+// pattern. If the given type represents a SPIR-V Boolean type, the bit pattern
+// to be returned is determined with the following standard:
+//   If any words in the input bit pattern are non zero, returns a bit pattern
+//   with 0x1, which represents a 'true'.
+//   If all words in the bit pattern are zero, returns a bit pattern with 0x0,
+//   which represents a 'false'.
+std::vector<uint32_t> ParseDefaultValueBitPattern(
+    const std::vector<uint32_t>& input_bit_pattern,
+    const analysis::Type* type) {
+  std::vector<uint32_t> result;
+  if (type->AsBool()) {
+    if (std::any_of(input_bit_pattern.begin(), input_bit_pattern.end(),
+                    [](uint32_t i) { return i != 0; })) {
+      result.push_back(1u);
+    } else {
+      result.push_back(0u);
+    }
+    return result;
+  } else if (const auto* IT = type->AsInteger()) {
+    if (IT->width() == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
+      return std::vector<uint32_t>(input_bit_pattern);
+    }
+  } else if (const auto* FT = type->AsFloat()) {
+    if (FT->width() == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
+      return std::vector<uint32_t>(input_bit_pattern);
+    }
+  }
+  result.clear();
   return result;
 }
 
@@ -200,15 +240,34 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
     }
     if (!spec_inst) continue;
 
-    // Search for the new default value for this spec id.
-    auto iter = spec_id_to_value_.find(spec_id);
-    if (iter == spec_id_to_value_.end()) continue;
+    // Get the default value bit pattern for this spec id.
+    std::vector<uint32_t> bit_pattern;
 
-    // Gets the string of the default value and parses it to bit pattern
-    // with the type of the spec constant.
-    const std::string& default_value_str = iter->second;
-    std::vector<uint32_t> bit_pattern = ParseDefaultValueStr(
-        default_value_str.c_str(), type_mgr.GetType(spec_inst->type_id()));
+    if (spec_id_to_value_str_.size() != 0) {
+      // Search for the new string-form default value for this spec id.
+      auto iter = spec_id_to_value_str_.find(spec_id);
+      if (iter == spec_id_to_value_str_.end()) {
+        continue;
+      }
+
+      // Gets the string of the default value and parses it to bit pattern
+      // with the type of the spec constant.
+      const std::string& default_value_str = iter->second;
+      bit_pattern = ParseDefaultValueStr(default_value_str.c_str(),
+                                  type_mgr.GetType(spec_inst->type_id()));
+
+    } else {
+      // Search for the new bit-pattern-form default value for this spec id.
+      auto iter = spec_id_to_value_bit_pattern_.find(spec_id);
+      if (iter == spec_id_to_value_bit_pattern_.end()) {
+        continue;
+      }
+
+      // Gets the bit-pattern of the default value from the map directly.
+      bit_pattern = ParseDefaultValueBitPattern(
+          iter->second, type_mgr.GetType(spec_inst->type_id()));
+    }
+
     if (bit_pattern.empty()) continue;
 
     // Update the operand bit patterns of the spec constant defining

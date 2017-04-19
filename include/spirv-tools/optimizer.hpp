@@ -102,12 +102,21 @@ Optimizer::PassToken CreateNullPass();
 // Section 3.32.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
 Optimizer::PassToken CreateStripDebugInfoPass();
 
-// Creates a set-spec-constant-default-value pass.
+// Creates a set-spec-constant-default-value pass from a mapping from spec-ids
+// to the default values in the form of string.
 // A set-spec-constant-default-value pass sets the default values for the
 // spec constants that have SpecId decorations (i.e., those defined by
 // OpSpecConstant{|True|False} instructions).
 Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::string>& id_value_map);
+
+// Creates a set-spec-constant-default-value pass from a mapping from spec-ids
+// to the default values in the form of bit pattern.
+// A set-spec-constant-default-value pass sets the default values for the
+// spec constants that have SpecId decorations (i.e., those defined by
+// OpSpecConstant{|True|False} instructions).
+Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& id_value_map);
 
 // Creates a flatten-decoration pass.
 // A flatten-decoration pass replaces grouped decorations with equivalent
