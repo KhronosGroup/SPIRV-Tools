@@ -101,6 +101,12 @@ Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
       MakeUnique<opt::SetSpecConstantDefaultValuePass>(id_value_map));
 }
 
+Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
+    const std::unordered_map<uint32_t, std::vector<uint32_t>>& id_value_map) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::SetSpecConstantDefaultValuePass>(id_value_map));
+}
+
 Optimizer::PassToken CreateFlattenDecorationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FlattenDecorationPass>());
