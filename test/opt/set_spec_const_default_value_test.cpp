@@ -867,18 +867,18 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %2 SpecId 202\n"
             "%float = OpTypeFloat 32\n"
             "%double = OpTypeFloat 64\n"
-            "%1 = OpSpecConstant %float 3.25\n"
-            "%2 = OpSpecConstant %double 1.25\n",
+            "%1 = OpSpecConstant %float 3.14159\n"
+            "%2 = OpSpecConstant %double 0.142857\n",
             // default values
-            SpecIdToValueBitPatternMap{{201, {0x40500000}},
-                                       {202, {0x00000000, 0x3ff40000}}},
+            SpecIdToValueBitPatternMap{{201, {0x40490fd0}},
+                                       {202, {0x5f809918, 0x3fc24923}}},
             // expected
             "OpDecorate %1 SpecId 201\n"
             "OpDecorate %2 SpecId 202\n"
             "%float = OpTypeFloat 32\n"
             "%double = OpTypeFloat 64\n"
-            "%1 = OpSpecConstant %float 3.25\n"
-            "%2 = OpSpecConstant %double 1.25\n",
+            "%1 = OpSpecConstant %float 3.14159\n"
+            "%2 = OpSpecConstant %double 0.142857\n",
         },
         // 17. OpGroupDecorate may have multiple target ids defined by the same
         // eligible spec constant
