@@ -140,4 +140,33 @@ TEST(StatsAnalyzer, Opcode) {
   EXPECT_EQ(expected_output, output);
 }
 
+TEST(StatsAnalyzer, OpcodeMarkov) {
+  SpirvStats stats;
+  FillDefaultStats(&stats);
+
+  stats.opcode_hist[SpvOpFMul] = 400;
+  stats.opcode_hist[SpvOpFAdd] = 200;
+  stats.opcode_hist[SpvOpFSub] = 400;
+
+  stats.opcode_markov_hist.resize(1);
+  auto& hist = stats.opcode_markov_hist[0];
+  hist[SpvOpFMul][SpvOpFAdd] = 100;
+  hist[SpvOpFMul][SpvOpFSub] = 300;
+  hist[SpvOpFAdd][SpvOpFMul] = 100;
+  hist[SpvOpFAdd][SpvOpFAdd] = 100;
+
+  StatsAnalyzer analyzer(stats);
+
+  std::stringstream ss;
+  analyzer.WriteOpcodeMarkov(ss);
+  const std::string output = ss.str();
+  const std::string expected_output =
+      "FAdd -> FAdd 50% (base rate 20%, pair occurances 100)\n"
+      "FAdd -> FMul 50% (base rate 40%, pair occurances 100)\n"
+      "FMul -> FSub 75% (base rate 40%, pair occurances 300)\n"
+      "FMul -> FAdd 25% (base rate 20%, pair occurances 100)\n";
+
+  EXPECT_EQ(expected_output, output);
+}
+
 }  // namespace

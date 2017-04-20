@@ -90,6 +90,21 @@ void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
   }
 }
 
+template <class Key>
+void WriteHist(std::ostream& out, const std::unordered_map<Key, uint32_t>& hist,
+               std::string (*label_from_key)(Key)) {
+  std::vector<std::pair<Key, uint32_t>> sorted_hist(hist.begin(), hist.end());
+  std::sort(sorted_hist.begin(), sorted_hist.end(),
+            [](const std::pair<Key, uint32_t>& left,
+               const std::pair<Key, uint32_t>& right) {
+              return left.second > right.second;
+            });
+
+  for (const auto& pair : sorted_hist) {
+    out << label_from_key(pair.first) << " " << pair.second << std::endl;
+  }
+}
+
 }  // namespace
 
 StatsAnalyzer::StatsAnalyzer(const SpirvStats& stats) : stats_(stats) {
@@ -124,4 +139,44 @@ void StatsAnalyzer::WriteExtension(std::ostream& out) {
 void StatsAnalyzer::WriteOpcode(std::ostream& out) {
   out << "Total unique opcodes used: " << opcode_freq_.size() << std::endl;
   WriteFreq(out, opcode_freq_, GetOpcodeString);
+}
+
+void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
+  if (stats_.opcode_markov_hist.empty())
+    return;
+
+  const std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>&
+      cue_to_hist = stats_.opcode_markov_hist[0];
+
+  for (const auto& kv : cue_to_hist) {
+    const uint32_t cue = kv.first;
+    const double kFrequentEnoughToAnalyze = 0.001;
+    if (opcode_freq_[cue] < kFrequentEnoughToAnalyze) continue;
+
+    const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
+    uint32_t total = 0;
+    for (const auto& pair : hist) {
+      total += pair.second;
+    }
+
+    std::vector<std::pair<uint32_t, uint32_t>>
+        sorted_hist(hist.begin(), hist.end());
+    std::sort(sorted_hist.begin(), sorted_hist.end(),
+              [](const std::pair<uint32_t, uint32_t>& left,
+                 const std::pair<uint32_t, uint32_t>& right) {
+                return left.second > right.second;
+              });
+
+    for (const auto& pair : sorted_hist) {
+      const uint32_t kStatisticallySignificant = 10;
+      if (pair.second < kStatisticallySignificant) continue;
+
+      const double prior = opcode_freq_[pair.first];
+      const double posterior =
+          static_cast<double>(pair.second) / static_cast<double>(total);
+      out << GetOpcodeString(cue) << " -> " << GetOpcodeString(pair.first)
+          << " " << posterior * 100 << "% (base rate " << prior * 100
+          << "%, pair occurances " << pair.second << ")" << std::endl;
+    }
+  }
 }

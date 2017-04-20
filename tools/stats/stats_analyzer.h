@@ -28,6 +28,7 @@ class StatsAnalyzer {
   void WriteCapability(std::ostream& out);
   void WriteExtension(std::ostream& out);
   void WriteOpcode(std::ostream& out);
+  void WriteOpcodeMarkov(std::ostream& out);
 
  private:
   const libspirv::SpirvStats& stats_;

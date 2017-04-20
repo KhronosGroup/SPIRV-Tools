@@ -34,20 +34,27 @@ using libspirv::SpirvStats;
 
 namespace {
 
+struct StatsContext {
+  SpirvStats* stats;
+
+  // Opcodes of already processed instructions. Used and updated in
+  // ProcessOpcode.
+  std::vector<uint32_t> opcodes;
+};
+
 // Collects statistics from SPIR-V header (version, generator).
 spv_result_t ProcessHeader(
     void* user_data, spv_endianness_t /* endian */, uint32_t /* magic */,
     uint32_t version, uint32_t generator, uint32_t /* id_bound */,
     uint32_t /* schema */) {
-  SpirvStats* stats =
-      reinterpret_cast<libspirv::SpirvStats*>(user_data);
-  ++stats->version_hist[version];
-  ++stats->generator_hist[generator];
+  StatsContext* ctx = reinterpret_cast<StatsContext*>(user_data);
+  ++ctx->stats->version_hist[version];
+  ++ctx->stats->generator_hist[generator];
   return SPV_SUCCESS;
 }
 
 // Collects OpCapability statistics.
-void ProcessCapability(SpirvStats* stats,
+void ProcessCapability(StatsContext* ctx,
                        const spv_parsed_instruction_t* inst) {
   if (static_cast<SpvOp>(inst->opcode) != SpvOpCapability) return;
   assert(inst->num_operands == 1);
@@ -55,28 +62,43 @@ void ProcessCapability(SpirvStats* stats,
   assert(operand.num_words == 1);
   assert(operand.offset < inst->num_words);
   const uint32_t capability = inst->words[operand.offset];
-  ++stats->capability_hist[capability];
+  ++ctx->stats->capability_hist[capability];
 }
 
 // Collects OpExtension statistics.
-void ProcessExtension(SpirvStats* stats,
+void ProcessExtension(StatsContext* ctx,
                       const spv_parsed_instruction_t* inst) {
   if (static_cast<SpvOp>(inst->opcode) != SpvOpExtension) return;
   const std::string extension = libspirv::GetExtensionString(inst);
-  ++stats->extension_hist[extension];
+  ++ctx->stats->extension_hist[extension];
+}
+
+// Collects OpCode statistics.
+void ProcessOpcode(StatsContext* ctx,
+                   const spv_parsed_instruction_t* inst) {
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  ++ctx->stats->opcode_hist[opcode];
+
+  auto opcode_it = ctx->opcodes.rbegin();
+  auto step_it = ctx->stats->opcode_markov_hist.begin();
+  for (; opcode_it != ctx->opcodes.rend() &&
+       step_it != ctx->stats->opcode_markov_hist.end();
+       ++opcode_it, ++step_it) {
+    auto& hist = (*step_it)[*opcode_it];
+    ++hist[opcode];
+  }
+
+  ctx->opcodes.push_back(opcode);
 }
 
 // Collects opcode usage statistics and calls other collectors.
 spv_result_t ProcessInstruction(
     void* user_data, const spv_parsed_instruction_t* inst) {
-  SpirvStats* stats =
-      reinterpret_cast<libspirv::SpirvStats*>(user_data);
+  StatsContext* ctx = reinterpret_cast<StatsContext*>(user_data);
 
-  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  ++stats->opcode_hist[opcode];
-
-  ProcessCapability(stats, inst);
-  ProcessExtension(stats, inst);
+  ProcessOpcode(ctx, inst);
+  ProcessCapability(ctx, inst);
+  ProcessExtension(ctx, inst);
 
   return SPV_SUCCESS;
 }
@@ -86,28 +108,30 @@ spv_result_t ProcessInstruction(
 namespace libspirv {
 
 spv_result_t AggregateStats(
-    const spv_context_t& context, const uint32_t* words, const size_t num_words,
+    const spv_context_t& spv_context, const uint32_t* words, const size_t num_words,
     spv_diagnostic* pDiagnostic, SpirvStats* stats) {
   spv_const_binary_t binary = {words, num_words};
 
   spv_endianness_t endian;
   spv_position_t position = {};
   if (spvBinaryEndianness(&binary, &endian)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, spv_context.consumer,
                                       SPV_ERROR_INVALID_BINARY)
         << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(&binary, endian, &header)) {
-    return libspirv::DiagnosticStream(position, context.consumer,
+    return libspirv::DiagnosticStream(position, spv_context.consumer,
                                       SPV_ERROR_INVALID_BINARY)
         << "Invalid SPIR-V header.";
   }
 
-  return spvBinaryParse(&context, stats, words, num_words,
-                                  ProcessHeader, ProcessInstruction,
-                                  pDiagnostic);
+  StatsContext stats_context;
+  stats_context.stats = stats;
+
+  return spvBinaryParse(&spv_context, &stats_context, words, num_words,
+                        ProcessHeader, ProcessInstruction, pDiagnostic);
 }
 
 }  // namespace libspirv
