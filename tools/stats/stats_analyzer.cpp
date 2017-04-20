@@ -148,12 +148,22 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
   const std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>&
       cue_to_hist = stats_.opcode_markov_hist[0];
 
-  for (const auto& kv : cue_to_hist) {
-    const uint32_t cue = kv.first;
-    const double kFrequentEnoughToAnalyze = 0.001;
-    if (opcode_freq_[cue] < kFrequentEnoughToAnalyze) continue;
+  // Sort by prevalence of the opcodes in opcode_freq_ (descending).
+  std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
+      sorted_cue_to_hist(cue_to_hist.begin(), cue_to_hist.end());
+  std::sort(sorted_cue_to_hist.begin(), sorted_cue_to_hist.end(),
+            [this](
+                const std::pair<uint32_t,
+                std::unordered_map<uint32_t, uint32_t>>& left,
+                const std::pair<uint32_t,
+                std::unordered_map<uint32_t, uint32_t>>& right) {
+              return opcode_freq_[left.first] > opcode_freq_[right.first];
+            });
 
+  for (const auto& kv : sorted_cue_to_hist) {
+    const uint32_t cue = kv.first;
     const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
+
     uint32_t total = 0;
     for (const auto& pair : hist) {
       total += pair.second;
@@ -168,9 +178,6 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
               });
 
     for (const auto& pair : sorted_hist) {
-      const uint32_t kStatisticallySignificant = 10;
-      if (pair.second < kStatisticallySignificant) continue;
-
       const double prior = opcode_freq_[pair.first];
       const double posterior =
           static_cast<double>(pair.second) / static_cast<double>(total);
