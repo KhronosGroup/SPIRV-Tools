@@ -161,10 +161,10 @@ TEST(StatsAnalyzer, OpcodeMarkov) {
   analyzer.WriteOpcodeMarkov(ss);
   const std::string output = ss.str();
   const std::string expected_output =
-      "FMul -> FSub 75% (base rate 40%, pair occurances 300)\n"
-      "FMul -> FAdd 25% (base rate 20%, pair occurances 100)\n"
-      "FAdd -> FAdd 50% (base rate 20%, pair occurances 100)\n"
-      "FAdd -> FMul 50% (base rate 40%, pair occurances 100)\n";
+      "FMul -> FSub 75% (base rate 40%, pair occurrences 300)\n"
+      "FMul -> FAdd 25% (base rate 20%, pair occurrences 100)\n"
+      "FAdd -> FAdd 50% (base rate 20%, pair occurrences 100)\n"
+      "FAdd -> FMul 50% (base rate 40%, pair occurrences 100)\n";
 
   EXPECT_EQ(expected_output, output);
 }

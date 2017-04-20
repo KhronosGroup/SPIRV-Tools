@@ -23,11 +23,16 @@ class StatsAnalyzer {
  public:
   explicit StatsAnalyzer(const libspirv::SpirvStats& stats);
 
+  // Writes respective histograms to |out|.
   void WriteVersion(std::ostream& out);
   void WriteGenerator(std::ostream& out);
   void WriteCapability(std::ostream& out);
   void WriteExtension(std::ostream& out);
   void WriteOpcode(std::ostream& out);
+
+  // Writes first order Markov analysis to |out|.
+  // stats_.opcode_markov_hist needs to contain raw data for at least one
+  // level.
   void WriteOpcodeMarkov(std::ostream& out);
 
  private:

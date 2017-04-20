@@ -74,6 +74,11 @@ std::unordered_map<Key, double> GetPrevalence(
   return GetRecall(hist, total);
 }
 
+// Writes |freq| to |out| sorted by frequency in the following format:
+// LABEL3 70%
+// LABEL1 20%
+// LABEL2 10%
+// |label_from_key| is used to convert |Key| to label.
 template <class Key>
 void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
                std::string (*label_from_key)(Key)) {
@@ -90,6 +95,11 @@ void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
   }
 }
 
+// Writes |hist| to |out| sorted by count in the following format:
+// LABEL3 100
+// LABEL1 50
+// LABEL2 10
+// |label_from_key| is used to convert |Key| to label.
 template <class Key>
 void WriteHist(std::ostream& out, const std::unordered_map<Key, uint32_t>& hist,
                std::string (*label_from_key)(Key)) {
@@ -157,11 +167,18 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
                 std::unordered_map<uint32_t, uint32_t>>& left,
                 const std::pair<uint32_t,
                 std::unordered_map<uint32_t, uint32_t>>& right) {
-              return opcode_freq_[left.first] > opcode_freq_[right.first];
+              const double lf = opcode_freq_[left.first];
+              const double rf = opcode_freq_[right.first];
+              if (lf == rf)
+                return right.first > left.first;
+              return lf > rf;
             });
 
   for (const auto& kv : sorted_cue_to_hist) {
     const uint32_t cue = kv.first;
+    const double kFrequentEnoughToAnalyze = 0.0001;
+    if (opcode_freq_[cue] < kFrequentEnoughToAnalyze) continue;
+
     const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
 
     uint32_t total = 0;
@@ -174,6 +191,8 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
     std::sort(sorted_hist.begin(), sorted_hist.end(),
               [](const std::pair<uint32_t, uint32_t>& left,
                  const std::pair<uint32_t, uint32_t>& right) {
+                if (left.second == right.second)
+                  return right.first > left.first;
                 return left.second > right.second;
               });
 
@@ -183,7 +202,7 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
           static_cast<double>(pair.second) / static_cast<double>(total);
       out << GetOpcodeString(cue) << " -> " << GetOpcodeString(pair.first)
           << " " << posterior * 100 << "% (base rate " << prior * 100
-          << "%, pair occurances " << pair.second << ")" << std::endl;
+          << "%, pair occurrences " << pair.second << ")" << std::endl;
     }
   }
 }

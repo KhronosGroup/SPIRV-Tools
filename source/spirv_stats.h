@@ -40,11 +40,13 @@ struct SpirvStats {
   std::unordered_map<uint32_t, uint32_t> opcode_hist;
 
   // Used to collect statistics on opcodes triggering other opcodes.
-  // Container scheme: leap -> cue_opcode -> finding_opcode -> count.
+  // Container scheme: gap between instructions -> cue opcode -> later opcode
+  // -> count.
   // For example opcode_markov_hist[2][OpFMul][OpFAdd] corresponds to
-  // the number of time OpFAdd has appered 2 instructions after OpFMul.
+  // the number of times an OpMul appears, followed by 2 other instructions,
+  // followed by OpFAdd.
   // opcode_markov_hist[0][OpFMul][OpFAdd] corresponds to how many times
-  // OpFAdd has appeared immediately after OpFMul.
+  // OpFMul appears, directly followed by OpFAdd.
   // The size of the outer std::vector also serves as an input parameter,
   // determining how many steps will be collected.
   // I.e. do opcode_markov_hist.resize(1) to collect data for one step only.

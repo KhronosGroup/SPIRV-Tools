@@ -37,8 +37,8 @@ namespace {
 struct StatsContext {
   SpirvStats* stats;
 
-  // Opcodes of already processed instructions. Used and updated in
-  // ProcessOpcode.
+  // Opcodes of already processed instructions in the order as they appear in
+  // the module.
   std::vector<uint32_t> opcodes;
 };
 
@@ -87,8 +87,6 @@ void ProcessOpcode(StatsContext* ctx,
     auto& hist = (*step_it)[*opcode_it];
     ++hist[opcode];
   }
-
-  ctx->opcodes.push_back(opcode);
 }
 
 // Collects opcode usage statistics and calls other collectors.
@@ -99,6 +97,9 @@ spv_result_t ProcessInstruction(
   ProcessOpcode(ctx, inst);
   ProcessCapability(ctx, inst);
   ProcessExtension(ctx, inst);
+
+  const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+  ctx->opcodes.push_back(opcode);
 
   return SPV_SUCCESS;
 }
