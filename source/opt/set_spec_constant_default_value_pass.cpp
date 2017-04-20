@@ -74,6 +74,7 @@ std::vector<uint32_t> ParseDefaultValueStr(const char* text,
   }
   return result;
 }
+
 // Given a bit pattern and a type, checks if the bit pattern is compatible
 // with the type. If so, returns the bit pattern, otherwise returns an empty
 // bit pattern. If the given bit pattern is empty, returns an empty bit
