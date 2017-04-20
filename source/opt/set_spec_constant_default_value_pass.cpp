@@ -241,34 +241,32 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
     if (!spec_inst) continue;
 
     // Get the default value bit pattern for this spec id.
-    std::vector<uint32_t> bit_pattern = [this, &spec_inst, &spec_id,
-                                         &type_mgr]() {
-      std::vector<uint32_t> empty_bit_pattern;
-      if (spec_id_to_value_str_.size() != 0) {
-        // Search for the new string-form default value for this spec id.
-        auto iter = spec_id_to_value_str_.find(spec_id);
-        if (iter == spec_id_to_value_str_.end()) {
-          return empty_bit_pattern;
-        }
+    std::vector<uint32_t> bit_pattern;
 
-        // Gets the string of the default value and parses it to bit pattern
-        // with the type of the spec constant.
-        const std::string& default_value_str = iter->second;
-        return ParseDefaultValueStr(default_value_str.c_str(),
-                                    type_mgr.GetType(spec_inst->type_id()));
-
-      } else {
-        // Search for the new bit-pattern-form default value for this spec id.
-        auto iter = spec_id_to_value_bit_pattern_.find(spec_id);
-        if (iter == spec_id_to_value_bit_pattern_.end()) {
-          return empty_bit_pattern;
-        }
-
-        // Gets the bit-pattern of the default value from the map directly.
-        return ParseDefaultValueBitPattern(
-            iter->second, type_mgr.GetType(spec_inst->type_id()));
+    if (spec_id_to_value_str_.size() != 0) {
+      // Search for the new string-form default value for this spec id.
+      auto iter = spec_id_to_value_str_.find(spec_id);
+      if (iter == spec_id_to_value_str_.end()) {
+        continue;
       }
-    }();
+
+      // Gets the string of the default value and parses it to bit pattern
+      // with the type of the spec constant.
+      const std::string& default_value_str = iter->second;
+      bit_pattern = ParseDefaultValueStr(default_value_str.c_str(),
+                                  type_mgr.GetType(spec_inst->type_id()));
+
+    } else {
+      // Search for the new bit-pattern-form default value for this spec id.
+      auto iter = spec_id_to_value_bit_pattern_.find(spec_id);
+      if (iter == spec_id_to_value_bit_pattern_.end()) {
+        continue;
+      }
+
+      // Gets the bit-pattern of the default value from the map directly.
+      bit_pattern = ParseDefaultValueBitPattern(
+          iter->second, type_mgr.GetType(spec_inst->type_id()));
+    }
 
     if (bit_pattern.empty()) continue;
 

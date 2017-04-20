@@ -472,7 +472,7 @@ INSTANTIATE_TEST_CASE_P(
             "%int = OpTypeInt 32 1\n",
         },
         // 2. Do nothing when SpecId decoration is not attached to a
-        // non-spec-contant instruction.
+        // non-spec-constant instruction.
         {
             // code
             "OpDecorate %1 SpecId 100\n"
@@ -958,7 +958,7 @@ INSTANTIATE_TEST_CASE_P(
             "%int = OpTypeInt 32 1\n",
         },
         // 2. Do nothing when SpecId decoration is not attached to a
-        // non-spec-contant instruction.
+        // non-spec-constant instruction.
         {
             // code
             "OpDecorate %1 SpecId 100\n"

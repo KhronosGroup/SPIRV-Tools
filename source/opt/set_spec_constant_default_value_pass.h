@@ -89,6 +89,10 @@ class SetSpecConstantDefaultValuePass : public Pass {
       const char* str);
 
  private:
+  // The mappings from spec ids to default values. Two maps are defined here,
+  // each to be used for one specific form of the default values. Only one of
+  // them will be populated in practice.
+
   // The mapping from spec ids to their string-form default values to be set.
   const SpecIdToValueStrMap spec_id_to_value_str_;
   // The mapping from spec ids to their bitpattern-form default values to be set.
