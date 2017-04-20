@@ -235,4 +235,85 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(2u, stats.opcode_hist.at(SpvOpExtension));
 }
 
+TEST(AggregateStats, OpcodeMarkovHistogram) {
+  const std::string code1 = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_NV_viewport_array2"
+OpMemoryModel Logical GLSL450
+)";
+
+  const std::string code2 = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+%i32 = OpTypeInt 32 1
+%u32 = OpTypeInt 32 0
+%f32 = OpTypeFloat 32
+)";
+
+  SpirvStats stats;
+  stats.opcode_markov_hist.resize(2);
+
+  CompileAndAggregateStats(code1, &stats);
+  ASSERT_EQ(2u, stats.opcode_markov_hist.size());
+  EXPECT_EQ(2u, stats.opcode_markov_hist[0].size());
+  EXPECT_EQ(2u, stats.opcode_markov_hist[0].at(SpvOpCapability).size());
+  EXPECT_EQ(1u, stats.opcode_markov_hist[0].at(SpvOpExtension).size());
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpCapability).at(SpvOpCapability));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpCapability).at(SpvOpExtension));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpExtension).at(SpvOpMemoryModel));
+
+  EXPECT_EQ(1u, stats.opcode_markov_hist[1].size());
+  EXPECT_EQ(2u, stats.opcode_markov_hist[1].at(SpvOpCapability).size());
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpExtension));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpMemoryModel));
+
+  CompileAndAggregateStats(code2, &stats);
+  ASSERT_EQ(2u, stats.opcode_markov_hist.size());
+  EXPECT_EQ(4u, stats.opcode_markov_hist[0].size());
+  EXPECT_EQ(3u, stats.opcode_markov_hist[0].at(SpvOpCapability).size());
+  EXPECT_EQ(1u, stats.opcode_markov_hist[0].at(SpvOpExtension).size());
+  EXPECT_EQ(1u, stats.opcode_markov_hist[0].at(SpvOpMemoryModel).size());
+  EXPECT_EQ(2u, stats.opcode_markov_hist[0].at(SpvOpTypeInt).size());
+  EXPECT_EQ(
+      4u, stats.opcode_markov_hist[0].at(SpvOpCapability).at(SpvOpCapability));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpCapability).at(SpvOpExtension));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpCapability).at(SpvOpMemoryModel));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpExtension).at(SpvOpMemoryModel));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpMemoryModel).at(SpvOpTypeInt));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpTypeInt).at(SpvOpTypeInt));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[0].at(SpvOpTypeInt).at(SpvOpTypeFloat));
+
+  EXPECT_EQ(3u, stats.opcode_markov_hist[1].size());
+  EXPECT_EQ(4u, stats.opcode_markov_hist[1].at(SpvOpCapability).size());
+  EXPECT_EQ(1u, stats.opcode_markov_hist[1].at(SpvOpMemoryModel).size());
+  EXPECT_EQ(1u, stats.opcode_markov_hist[1].at(SpvOpTypeInt).size());
+  EXPECT_EQ(
+      2u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpCapability));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpExtension));
+  EXPECT_EQ(
+      2u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpMemoryModel));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpCapability).at(SpvOpTypeInt));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpMemoryModel).at(SpvOpTypeInt));
+  EXPECT_EQ(
+      1u, stats.opcode_markov_hist[1].at(SpvOpTypeInt).at(SpvOpTypeFloat));
+}
+
 }  // namespace

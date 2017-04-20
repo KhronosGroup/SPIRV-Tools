@@ -105,13 +105,13 @@ int main(int argc, char** argv) {
     return return_code;
   }
 
-  std::cerr << "Processing " << paths.size()
-            << " files..." << std::endl;
+  std::cerr << "Processing " << paths.size() << " files..." << std::endl;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   libspirv::SpirvStats stats;
+  stats.opcode_markov_hist.resize(1);
 
   for (size_t index = 0; index < paths.size(); ++index) {
     const size_t kMilestonePeriod = 1000;
@@ -147,6 +147,9 @@ int main(int argc, char** argv) {
 
   out << std::endl;
   analyzer.WriteOpcode(out);
+
+  out << std::endl;
+  analyzer.WriteOpcodeMarkov(out);
 
   return 0;
 }
