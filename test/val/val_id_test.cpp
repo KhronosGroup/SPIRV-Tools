@@ -4151,6 +4151,33 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
+// Result <id> resulting from an instruction within a function may not be used
+// outside that function.
+TEST_F(ValidateIdWithMessage, ResultIdUsedOutsideOfFunctionBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpTypeInt 32 0
+%4 = OpTypePointer Function %3
+%5 = OpFunction %1 None %2
+%6 = OpLabel
+%7 = OpVariable %4 Function
+OpReturn
+OpFunctionEnd
+%8 = OpFunction %1 None %2
+%9 = OpLabel
+%10 = OpLoad %3 %7
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "ID 7 defined in block 6 does not dominate its use in block 9"));
+}
+
 // TODO: OpLifetimeStart
 // TODO: OpLifetimeStop
 // TODO: OpAtomicInit
