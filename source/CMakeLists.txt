@@ -190,6 +190,7 @@ set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/hex_float.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.h
@@ -218,6 +219,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h
   ${CMAKE_CURRENT_SOURCE_DIR}/validate.h
 
+  ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
