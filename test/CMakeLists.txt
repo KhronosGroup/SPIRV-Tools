@@ -164,6 +164,11 @@ add_spvtools_unittest(
   SRCS preserve_numeric_ids_test.cpp
   LIBS ${SPIRV_TOOLS})
 
+add_spvtools_unittest(
+  TARGET bit_stream
+  SRCS bit_stream.cpp
+  LIBS ${SPIRV_TOOLS})
+
 add_subdirectory(opt)
 add_subdirectory(val)
 add_subdirectory(stats)
