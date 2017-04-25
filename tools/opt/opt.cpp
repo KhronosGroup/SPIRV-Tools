@@ -62,7 +62,9 @@ Options:
   --unify-const
                Remove the duplicated constants.
   --inline-entry-points-all
-               Exhaustively inline all function calls in entry points
+               Exhaustively inline all function calls in entry point functions.
+               Currently does not inline calls to functions with multiple
+               returns.
   --flatten-decorations
                Replace decoration groups with repeated OpDecorate and
                OpMemberDecorate instructions.
