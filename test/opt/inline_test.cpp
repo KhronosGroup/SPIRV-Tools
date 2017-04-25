@@ -1358,6 +1358,86 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
+TEST_F(InlineTest, EarlyReturnFunctionIsNotInlined) {
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // float foo(vec4 bar)
+  // {
+  //     if (bar.x < 0.0)
+  //         return 0.0;
+  //     return bar.x;
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color; 
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %bar "bar"
+OpName %color "color"
+OpName %BaseColor "BaseColor"
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%14 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %10
+%22 = OpLabel
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %param %23
+%24 = OpFunctionCall %float %foo_vf4_ %param
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %color %25
+%26 = OpLoad %v4float %color
+OpStore %gl_FragColor %26
+OpReturn
+OpFunctionEnd
+%foo_vf4_ = OpFunction %float None %14
+%bar = OpFunctionParameter %_ptr_Function_v4float
+%27 = OpLabel
+%28 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%29 = OpLoad %float %28
+%30 = OpFOrdLessThan %bool %29 %float_0
+OpSelectionMerge %31 None
+OpBranchConditional %30 %32 %31
+%32 = OpLabel
+OpReturnValue %float_0
+%31 = OpLabel
+%33 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%34 = OpLoad %float %33
+OpReturnValue %34
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlinePass>(assembly, assembly, false, true);
+}
+
 TEST_F(InlineTest, ExternalFunctionIsNotInlined) {
   // In particular, don't crash.
   // See report https://github.com/KhronosGroup/SPIRV-Tools/issues/605

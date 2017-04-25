@@ -120,6 +120,9 @@ class InlinePass : public Pass {
   // Returns true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
+  // Returns true if |func| is a function that can be inlined.
+  bool IsInlinableFunction(const ir::Function* func);
+
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Return true if func is modified.
   bool Inline(ir::Function* func);
@@ -135,6 +138,9 @@ class InlinePass : public Pass {
 
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
+
+  // Set of ids of inlinable function 
+  std::set<uint32_t> inlinable_;
 
   // Next unused ID
   uint32_t next_id_;

@@ -52,8 +52,12 @@ class BasicBlock {
 
   iterator begin() { return iterator(&insts_, insts_.begin()); }
   iterator end() { return iterator(&insts_, insts_.end()); }
-  const_iterator cbegin() { return const_iterator(&insts_, insts_.cbegin()); }
-  const_iterator cend() { return const_iterator(&insts_, insts_.cend()); }
+  const_iterator cbegin() const {
+    return const_iterator(&insts_, insts_.cbegin());
+  }
+  const_iterator cend() const {
+    return const_iterator(&insts_, insts_.cend());
+  }
 
   // Runs the given function |f| on each instruction in this basic block, and
   // optionally on the debug line instructions that might precede them.

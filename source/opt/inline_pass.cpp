@@ -353,10 +353,10 @@ void InlinePass::GenInlineCode(
 
 bool InlinePass::IsInlinableFunctionCall(const ir::Instruction* inst) {
   if (inst->opcode() != SpvOp::SpvOpFunctionCall) return false;
-  const ir::Function* calleeFn =
-      id2function_[inst->GetSingleWordOperand(kSpvFunctionCallFunctionId)];
-  // We can only inline a function if it has blocks.
-  return calleeFn->cbegin() != calleeFn->cend();
+  const uint32_t calleeFnId =
+      inst->GetSingleWordOperand(kSpvFunctionCallFunctionId);
+  const auto ci = inlinable_.find(calleeFnId);
+  return ci != inlinable_.cend();
 }
 
 bool InlinePass::Inline(ir::Function* func) {
@@ -402,6 +402,25 @@ bool InlinePass::Inline(ir::Function* func) {
   return modified;
 }
 
+bool InlinePass::IsInlinableFunction(const ir::Function* func) {
+  // We can only inline a function if it has blocks.
+  if (func->cbegin() == func->cend())
+    return false;
+  // Do not inline functions with multiple returns
+  // TODO(greg-lunarg): Enable inlining if no return is in loop
+  int returnCnt = 0;
+  for (auto bi = func->cbegin(); bi != func->cend(); bi++) {
+    auto li = bi->cend();
+    li--;
+    if (li->opcode() == SpvOpReturn || li->opcode() == SpvOpReturnValue) {
+      if (returnCnt > 0)
+        return false;
+      returnCnt++;
+    }
+  }
+  return true;
+}
+
 void InlinePass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
 
@@ -414,11 +433,14 @@ void InlinePass::Initialize(ir::Module* module) {
   // Initialize function and block maps.
   id2function_.clear();
   id2block_.clear();
+  inlinable_.clear();
   for (auto& fn : *module_) {
     id2function_[fn.result_id()] = &fn;
     for (auto& blk : fn) {
       id2block_[blk.label_id()] = &blk;
     }
+    if (IsInlinableFunction(&fn))
+      inlinable_.insert(fn.result_id());
   }
 };
 
