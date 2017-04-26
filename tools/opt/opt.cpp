@@ -61,7 +61,7 @@ Options:
                e.g.: --set-spec-const-default-value "1:100 2:400"
   --unify-const
                Remove the duplicated constants.
-  --inline-entry-points-all
+  --inline-entry-points-exhaustive
                Exhaustively inline all function calls in entry points
   --flatten-decorations
                Replace decoration groups with repeated OpDecorate and
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
         }
       } else if (0 == strcmp(cur_arg, "--freeze-spec-const")) {
         optimizer.RegisterPass(CreateFreezeSpecConstantValuePass());
-      } else if (0 == strcmp(cur_arg, "--inline-entry-points-all")) {
+      } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {
         optimizer.RegisterPass(CreateInlinePass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         optimizer.RegisterPass(CreateEliminateDeadConstantPass());
