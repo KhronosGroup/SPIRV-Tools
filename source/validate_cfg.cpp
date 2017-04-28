@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "validate.h"
+#include "cfa.h"
 
 #include <algorithm>
 #include <cassert>
@@ -58,63 +59,7 @@ using bb_ptr = BasicBlock*;
 using cbb_ptr = const BasicBlock*;
 using bb_iter = vector<BasicBlock*>::const_iterator;
 
-struct block_info {
-  cbb_ptr block;  ///< pointer to the block
-  bb_iter iter;   ///< Iterator to the current child node being processed
-};
-
-/// Returns true if a block with @p id is found in the @p work_list vector
-///
-/// @param[in] work_list  Set of blocks visited in the the depth first traversal
-///                       of the CFG
-/// @param[in] id         The ID of the block being checked
-///
-/// @return true if the edge work_list.back().block->id() => id is a back-edge
-bool FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
-  for (const auto b : work_list) {
-    if (b.block->id() == id) return true;
-  }
-  return false;
-}
-
 }  // namespace
-
-void DepthFirstTraversal(const BasicBlock* entry,
-                         get_blocks_func successor_func,
-                         function<void(cbb_ptr)> preorder,
-                         function<void(cbb_ptr)> postorder,
-                         function<void(cbb_ptr, cbb_ptr)> backedge) {
-  unordered_set<uint32_t> processed;
-
-  /// NOTE: work_list is the sequence of nodes from the root node to the node
-  /// being processed in the traversal
-  vector<block_info> work_list;
-  work_list.reserve(10);
-
-  work_list.push_back({entry, begin(*successor_func(entry))});
-  preorder(entry);
-  processed.insert(entry->id());
-
-  while (!work_list.empty()) {
-    block_info& top = work_list.back();
-    if (top.iter == end(*successor_func(top.block))) {
-      postorder(top.block);
-      work_list.pop_back();
-    } else {
-      BasicBlock* child = *top.iter;
-      top.iter++;
-      if (FindInWorkList(work_list, child->id())) {
-        backedge(top.block, child);
-      }
-      if (processed.count(child->id()) == 0) {
-        preorder(child);
-        work_list.emplace_back(
-            block_info{child, begin(*successor_func(child))});
-        processed.insert(child->id());
-      }
-    }
-  }
-}
 
 vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
     const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
@@ -380,6 +325,7 @@ spv_result_t StructuredControlFlowChecks(
 }
 
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
+  spvtools::CFA<BasicBlock> cfa;
   for (auto& function : _.functions()) {
     // Check all referenced blocks are defined within a function
     if (function.undefined_block_count() != 0) {
@@ -406,7 +352,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      DepthFirstTraversal(
+      cfa.DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
           ignore_edge);
@@ -417,7 +363,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
 
       /// calculate post dominators
-      DepthFirstTraversal(
+      cfa.DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
@@ -427,7 +373,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
       /// calculate back edges.
-      DepthFirstTraversal(
+      cfa.DepthFirstTraversal(
           function.pseudo_entry_block(),
           function
               .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),

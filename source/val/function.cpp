@@ -24,6 +24,7 @@
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "validate.h"
+#include "cfa.h"
 
 using std::ignore;
 using std::list;
@@ -51,9 +52,11 @@ std::vector<BasicBlock*> TraversalRoots(const std::vector<BasicBlock*>& blocks,
   auto ignore_block = [](const BasicBlock*) {};
   auto ignore_blocks = [](const BasicBlock*, const BasicBlock*) {};
 
+
+  spvtools::CFA<libspirv::BasicBlock> cfa;
   auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
-                             &ignore_blocks](const BasicBlock* entry) {
-    DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
+                             &ignore_blocks, &cfa](const BasicBlock* entry) {
+    cfa.DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
                         ignore_blocks);
   };
 
