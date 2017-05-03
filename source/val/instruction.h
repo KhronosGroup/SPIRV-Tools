@@ -71,6 +71,11 @@ class Instruction {
     return operands_;
   }
 
+  /// Provides direct access to the stored C instruction object.
+  const spv_parsed_instruction_t& c_inst() const {
+    return inst_;
+  }
+
  private:
   const std::vector<uint32_t> words_;
   const std::vector<spv_parsed_operand_t> operands_;
