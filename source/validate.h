@@ -188,6 +188,12 @@ spv_result_t ValidateBinaryAndKeepValidationState(
     const spv_const_context context, spv_const_validator_options options,
     const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<libspirv::ValidationState_t>* vstate);
+
+// Performs validation for a single instruction and updates given validation
+// state.
+spv_result_t ValidateInstructionAndUpdateValidationState(
+    libspirv::ValidationState_t* vstate, const spv_parsed_instruction_t* inst);
+
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_VALIDATE_H_

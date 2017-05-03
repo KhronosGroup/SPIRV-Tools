@@ -25,10 +25,33 @@ namespace {
 using libspirv::SpirvStats;
 using spvtest::ScopedContext;
 
+void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
+                               const spv_position_t& position,
+                               const char* message) {
+  switch (level) {
+    case SPV_MSG_FATAL:
+    case SPV_MSG_INTERNAL_ERROR:
+    case SPV_MSG_ERROR:
+      std::cerr << "error: " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_WARNING:
+      std::cout << "warning: " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_INFO:
+      std::cout << "info: " << position.index << ": " << message << std::endl;
+      break;
+    default:
+      break;
+  }
+}
+
 // Calls libspirv::AggregateStats for binary compiled from |code|.
 void CompileAndAggregateStats(const std::string& code, SpirvStats* stats,
                     spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
   ScopedContext ctx(env);
+  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
   spv_binary binary;
   ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(
       ctx.context, code.c_str(), code.size(), &binary, nullptr));
@@ -186,10 +209,10 @@ TEST(AggregateStats, OpcodeHistogram) {
   const std::string code1 = R"(
 OpCapability Addresses
 OpCapability Kernel
-OpCapability GenericPointer
+OpCapability Int64
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-%i32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
 %u32 = OpTypeInt 32 0
 %f32 = OpTypeFloat 32
 )";
@@ -246,10 +269,10 @@ OpMemoryModel Logical GLSL450
   const std::string code2 = R"(
 OpCapability Addresses
 OpCapability Kernel
-OpCapability GenericPointer
+OpCapability Int64
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-%i32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
 %u32 = OpTypeInt 32 0
 %f32 = OpTypeFloat 32
 )";
