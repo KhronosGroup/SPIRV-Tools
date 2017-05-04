@@ -101,7 +101,7 @@ class BitReaderFromString : public BitReaderInterface {
   size_t pos_;
 };
 
-TEST(ZigZag, Encode) {
+TEST(ZigZagCoding, Encode) {
   EXPECT_EQ(0, EncodeZigZag(0));
   EXPECT_EQ(1, EncodeZigZag(-1));
   EXPECT_EQ(2, EncodeZigZag(1));
@@ -111,7 +111,7 @@ TEST(ZigZag, Encode) {
   EXPECT_EQ(6, EncodeZigZag(3));
 }
 
-TEST(ZigZag, Decode) {
+TEST(ZigZagCoding, Decode) {
   EXPECT_EQ(0, DecodeZigZag(0));
   EXPECT_EQ(-1, DecodeZigZag(1));
   EXPECT_EQ(1, DecodeZigZag(2));
@@ -119,6 +119,92 @@ TEST(ZigZag, Decode) {
   EXPECT_EQ(2, DecodeZigZag(4));
   EXPECT_EQ(-3, DecodeZigZag(5));
   EXPECT_EQ(3, DecodeZigZag(6));
+}
+
+TEST(ZigZagCoding, Encode0) {
+  EXPECT_EQ(0, EncodeZigZag(0, 0));
+  EXPECT_EQ(1, EncodeZigZag(-1, 0));
+  EXPECT_EQ(2, EncodeZigZag(1, 0));
+  EXPECT_EQ(3, EncodeZigZag(-2, 0));
+}
+
+TEST(ZigZagCoding, Decode0) {
+  EXPECT_EQ(0, DecodeZigZag(0, 0));
+  EXPECT_EQ(-1, DecodeZigZag(1, 0));
+  EXPECT_EQ(1, DecodeZigZag(2, 0));
+  EXPECT_EQ(-2, DecodeZigZag(3, 0));
+}
+
+TEST(ZigZagCoding, Decode0SameAsNormalZigZag) {
+  for (int32_t i = -10000; i < 10000; i += 123) {
+    ASSERT_EQ(DecodeZigZag(i), DecodeZigZag(i, 0));
+  }
+}
+
+TEST(ZigZagCoding, Encode0SameAsNormalZigZag) {
+  for (uint32_t i = 0; i < 10000; i += 123) {
+    ASSERT_EQ(EncodeZigZag(i), EncodeZigZag(i, 0));
+  }
+}
+
+TEST(ZigZagCoding, Encode1) {
+  EXPECT_EQ(0, EncodeZigZag(0, 1));
+  EXPECT_EQ(1, EncodeZigZag(1, 1));
+  EXPECT_EQ(2, EncodeZigZag(-1, 1));
+  EXPECT_EQ(3, EncodeZigZag(-2, 1));
+  EXPECT_EQ(4, EncodeZigZag(2, 1));
+  EXPECT_EQ(5, EncodeZigZag(3, 1));
+  EXPECT_EQ(6, EncodeZigZag(-3, 1));
+  EXPECT_EQ(7, EncodeZigZag(-4, 1));
+}
+
+TEST(ZigZagCoding, Decode1) {
+  EXPECT_EQ(0, DecodeZigZag(0, 1));
+  EXPECT_EQ(1, DecodeZigZag(1, 1));
+  EXPECT_EQ(-1, DecodeZigZag(2, 1));
+  EXPECT_EQ(-2, DecodeZigZag(3, 1));
+  EXPECT_EQ(2, DecodeZigZag(4, 1));
+  EXPECT_EQ(3, DecodeZigZag(5, 1));
+  EXPECT_EQ(-3, DecodeZigZag(6, 1));
+  EXPECT_EQ(-4, DecodeZigZag(7, 1));
+}
+
+TEST(ZigZagCoding, Encode2) {
+  EXPECT_EQ(0, EncodeZigZag(0, 2));
+  EXPECT_EQ(1, EncodeZigZag(1, 2));
+  EXPECT_EQ(2, EncodeZigZag(2, 2));
+  EXPECT_EQ(3, EncodeZigZag(3, 2));
+  EXPECT_EQ(4, EncodeZigZag(-1, 2));
+  EXPECT_EQ(5, EncodeZigZag(-2, 2));
+  EXPECT_EQ(6, EncodeZigZag(-3, 2));
+  EXPECT_EQ(7, EncodeZigZag(-4, 2));
+  EXPECT_EQ(8, EncodeZigZag(4, 2));
+  EXPECT_EQ(9, EncodeZigZag(5, 2));
+  EXPECT_EQ(10, EncodeZigZag(6, 2));
+  EXPECT_EQ(11, EncodeZigZag(7, 2));
+  EXPECT_EQ(12, EncodeZigZag(-5, 2));
+  EXPECT_EQ(13, EncodeZigZag(-6, 2));
+  EXPECT_EQ(14, EncodeZigZag(-7, 2));
+  EXPECT_EQ(15, EncodeZigZag(-8, 2));
+}
+
+TEST(ZigZagCoding, Decode2) {
+  EXPECT_EQ(0, DecodeZigZag(0, 2));
+  EXPECT_EQ(1, DecodeZigZag(1, 2));
+  EXPECT_EQ(2, DecodeZigZag(2, 2));
+  EXPECT_EQ(3, DecodeZigZag(3, 2));
+  EXPECT_EQ(-1, DecodeZigZag(4, 2));
+  EXPECT_EQ(-2, DecodeZigZag(5, 2));
+  EXPECT_EQ(-3, DecodeZigZag(6, 2));
+  EXPECT_EQ(-4, DecodeZigZag(7, 2));
+  EXPECT_EQ(4, DecodeZigZag(8, 2));
+  EXPECT_EQ(5, DecodeZigZag(9, 2));
+  EXPECT_EQ(6, DecodeZigZag(10, 2));
+  EXPECT_EQ(7, DecodeZigZag(11, 2));
+  EXPECT_EQ(-5, DecodeZigZag(12, 2));
+  EXPECT_EQ(-6, DecodeZigZag(13, 2));
+  EXPECT_EQ(-7, DecodeZigZag(14, 2));
+  EXPECT_EQ(-8, DecodeZigZag(15, 2));
 }
 
 TEST(BufToStream, UInt8_Empty) {
@@ -638,13 +724,13 @@ TEST(VariableWidthWrite, Write0U) {
 
 TEST(VariableWidthWrite, Write0S) {
   BitWriterStringStream writer;
-  writer.WriteVariableWidthS64(0, 2);
+  writer.WriteVariableWidthS64(0, 2, 0);
   EXPECT_EQ("000", writer.GetStreamRaw ());
-  writer.WriteVariableWidthS32(0, 2);
+  writer.WriteVariableWidthS32(0, 2, 0);
   EXPECT_EQ("000""000", writer.GetStreamRaw());
-  writer.WriteVariableWidthS16(0, 2);
+  writer.WriteVariableWidthS16(0, 2, 0);
   EXPECT_EQ("000""000""000", writer.GetStreamRaw());
-  writer.WriteVariableWidthS8(0, 2);
+  writer.WriteVariableWidthS8(0, 2, 0);
   EXPECT_EQ("000""000""000""000", writer.GetStreamRaw());
 }
 
@@ -662,14 +748,13 @@ TEST(VariableWidthWrite, WriteSmallUnsigned) {
 
 TEST(VariableWidthWrite, WriteSmallSigned) {
   BitWriterStringStream writer;
-  writer.WriteVariableWidthS64(1, 2);
+  writer.WriteVariableWidthS64(1, 2, 0);
   EXPECT_EQ("010", writer.GetStreamRaw ());
-  writer.WriteVariableWidthS64(-1, 2);
+  writer.WriteVariableWidthS64(-1, 2, 0);
   EXPECT_EQ("010""100", writer.GetStreamRaw());
-  EXPECT_EQ("010""100", writer.GetStreamRaw());
-  writer.WriteVariableWidthS16(3, 2);
+  writer.WriteVariableWidthS16(3, 2, 0);
   EXPECT_EQ("010""100""011100", writer.GetStreamRaw());
-  writer.WriteVariableWidthS8(-4, 2);
+  writer.WriteVariableWidthS8(-4, 2, 0);
   EXPECT_EQ("010""100""011100""111100", writer.GetStreamRaw());
 }
 
@@ -706,7 +791,7 @@ TEST(VariableWidthWrite, U64ValAAAAChunkLength2) {
 
 TEST(VariableWidthWrite, S8ValM128ChunkLength7) {
   BitWriterStringStream writer;
-  writer.WriteVariableWidthS8(-128, 7);
+  writer.WriteVariableWidthS8(-128, 7, 0);
   EXPECT_EQ("1111111""1""1", writer.GetStreamRaw());
 }
 
@@ -749,7 +834,7 @@ TEST(VariableWidthRead, U64ValAAAAChunkLength2) {
 TEST(VariableWidthRead, S8ValM128ChunkLength7) {
   BitReaderFromString reader("1111111""1""1");
   int8_t val = 0;
-  ASSERT_TRUE(reader.ReadVariableWidthS8(&val, 7));
+  ASSERT_TRUE(reader.ReadVariableWidthS8(&val, 7, 0));
   EXPECT_EQ(-128, val);
 }
 
@@ -779,13 +864,15 @@ TEST(VariableWidthWriteRead, SingleWriteReadS64) {
   for (int64_t i = 0; i < 1000000; i += 4321) {
     const int64_t val = i * i * (i % 2 ? -i : i);
     const size_t chunk_length = i % 16 + 1;
+    const size_t zigzag_exponent = i % 13;
 
     BitWriterWord64 writer;
-    writer.WriteVariableWidthS64(val, chunk_length);
+    writer.WriteVariableWidthS64(val, chunk_length, zigzag_exponent);
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int64_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS64(&read_val, chunk_length));
+    ASSERT_TRUE(reader.ReadVariableWidthS64(&read_val, chunk_length,
+                                            zigzag_exponent));
 
     EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -811,13 +898,15 @@ TEST(VariableWidthWriteRead, SingleWriteReadS32) {
   for (int32_t i = 0; i < 100000; i += 123) {
     const int32_t val = i * (i % 2 ? -i : i);
     const size_t chunk_length = i % 16 + 1;
+    const size_t zigzag_exponent = i % 11;
 
     BitWriterWord64 writer;
-    writer.WriteVariableWidthS32(val, chunk_length);
+    writer.WriteVariableWidthS32(val, chunk_length, zigzag_exponent);
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int32_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS32(&read_val, chunk_length));
+    ASSERT_TRUE(reader.ReadVariableWidthS32(
+        &read_val, chunk_length, zigzag_exponent));
 
     EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -843,14 +932,15 @@ TEST(VariableWidthWriteRead, SingleWriteReadS16) {
   for (int i = -32768; i < 32768; i += 123) {
     const int16_t val = static_cast<int16_t>(i);
     const size_t chunk_length = std::abs(i) % 10 + 1;
-
+    const size_t zigzag_exponent = std::abs(i) % 7;
 
     BitWriterWord64 writer;
-    writer.WriteVariableWidthS16(val, chunk_length);
+    writer.WriteVariableWidthS16(val, chunk_length, zigzag_exponent);
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int16_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS16(&read_val, chunk_length));
+    ASSERT_TRUE(reader.ReadVariableWidthS16(&read_val, chunk_length,
+                                            zigzag_exponent));
 
     EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -876,13 +966,15 @@ TEST(VariableWidthWriteRead, SingleWriteReadS8) {
   for (int i = -128; i < 128; ++i) {
     const int8_t val = static_cast<int8_t>(i);
     const size_t chunk_length = std::abs(i) % 5 + 1;
+    const size_t zigzag_exponent = std::abs(i) % 3;
 
     BitWriterWord64 writer;
-    writer.WriteVariableWidthS8(val, chunk_length);
+    writer.WriteVariableWidthS8(val, chunk_length, zigzag_exponent);
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int8_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS8(&read_val, chunk_length));
+    ASSERT_TRUE(reader.ReadVariableWidthS8(&read_val, chunk_length,
+                                           zigzag_exponent));
 
     EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }

@@ -18,6 +18,7 @@
 #define LIBSPIRV_UTIL_BIT_STREAM_H_
 
 #include <bitset>
+#include <cstdint>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -37,6 +38,13 @@ namespace spvutils {
 template <size_t N>
 inline size_t NumBitsToNumWords(size_t num_bits) {
   return num_bits % N == 0 ? num_bits / N : num_bits / N + 1;
+}
+
+// Returns value of the same type as |in|, where all but the first |num_bits|
+// are set to zero.
+template <typename T>
+inline T GetLowerBits(T in, size_t num_bits) {
+  return sizeof(T) * 8 == num_bits ? in : in & T((T(1) << num_bits) - T(1));
 }
 
 // Encodes signed integer as unsigned in zigzag order:
@@ -65,6 +73,35 @@ inline int64_t DecodeZigZag(uint64_t val) {
     // 2 -> 1
     // 4 -> 2
     return val >> 1;
+  }
+}
+
+// Encodes signed integer as unsigned. This is a generalized version of
+// EncodeZigZag, designed to favor small positive numbers.
+// Values are transformed in blocks of 2^|block_exponent|.
+// If |block_exponent| is zero, then this degenerates into normal EncodeZigZag.
+// Example when |block_exponent| is 1:
+// 0, 1, -1, -2, 2, 3, -3, -4, 4, 5, -5, -6, 6, 7, -7, -8
+// Example when |block_exponent| is 2:
+// 0, 1, 2, 3, -1, -2, -3, -4, 4, 5, 6, 7, -5, -6, -7, -8
+inline uint64_t EncodeZigZag(int64_t val, size_t block_exponent) {
+  const uint64_t uval = static_cast<uint64_t>(val >= 0 ? val : -val - 1);
+  const size_t block_num = ((uval >> block_exponent) << 1) + (val >= 0 ? 0 : 1);
+  const size_t pos = GetLowerBits(uval, block_exponent);
+  return (block_num << block_exponent) + pos;
+}
+
+// Decodes signed integer encoded with EncodeZigZag. |block_exponent| must be
+// the same.
+inline int64_t DecodeZigZag(uint64_t val, size_t block_exponent) {
+  const size_t block_num = val >> block_exponent;
+  const size_t pos = GetLowerBits(val, block_exponent);
+  if (block_num & 1) {
+    // Negative.
+    return -1LL - ((block_num >> 1) << block_exponent) - pos;
+  } else {
+    // Positive.
+    return ((block_num >> 1) << block_exponent) + pos;
   }
 }
 
@@ -147,15 +184,6 @@ inline std::string BitsToStream(uint64_t bits, size_t num_bits = 64) {
   return BitsetToStream(bitset, num_bits);
 }
 
-// Returns value of the same type as |in|, where all but the first |num_bits|
-// are set to zero.
-template <typename T>
-T GetLowerBits(T in, size_t num_bits) {
-  if (sizeof(T) * 8 == num_bits)
-    return in;
-  return in & T((T(1) << num_bits) - T(1));
-}
-
 // Base class for bit stream writers.
 class BitWriterInterface {
  public:
@@ -191,10 +219,14 @@ class BitWriterInterface {
   void WriteVariableWidthU32(uint32_t val, size_t chunk_length);
   void WriteVariableWidthU16(uint16_t val, size_t chunk_length);
   void WriteVariableWidthU8(uint8_t val, size_t chunk_length);
-  void WriteVariableWidthS64(int64_t val, size_t chunk_length);
-  void WriteVariableWidthS32(int32_t val, size_t chunk_length);
-  void WriteVariableWidthS16(int16_t val, size_t chunk_length);
-  void WriteVariableWidthS8(int8_t val, size_t chunk_length);
+  void WriteVariableWidthS64(
+      int64_t val, size_t chunk_length, size_t zigzag_exponent);
+  void WriteVariableWidthS32(
+      int32_t val, size_t chunk_length, size_t zigzag_exponent);
+  void WriteVariableWidthS16(
+      int16_t val, size_t chunk_length, size_t zigzag_exponent);
+  void WriteVariableWidthS8(
+      int8_t val, size_t chunk_length, size_t zigzag_exponent);
 
   // Returns number of bits written.
   virtual size_t GetNumBits() const = 0;
@@ -298,10 +330,14 @@ class BitReaderInterface {
   bool ReadVariableWidthU32(uint32_t* val, size_t chunk_length);
   bool ReadVariableWidthU16(uint16_t* val, size_t chunk_length);
   bool ReadVariableWidthU8(uint8_t* val, size_t chunk_length);
-  bool ReadVariableWidthS64(int64_t* val, size_t chunk_length);
-  bool ReadVariableWidthS32(int32_t* val, size_t chunk_length);
-  bool ReadVariableWidthS16(int16_t* val, size_t chunk_length);
-  bool ReadVariableWidthS8(int8_t* val, size_t chunk_length);
+  bool ReadVariableWidthS64(
+      int64_t* val, size_t chunk_length, size_t zigzag_exponent);
+  bool ReadVariableWidthS32(
+      int32_t* val, size_t chunk_length, size_t zigzag_exponent);
+  bool ReadVariableWidthS16(
+      int16_t* val, size_t chunk_length, size_t zigzag_exponent);
+  bool ReadVariableWidthS8(
+      int8_t* val, size_t chunk_length, size_t zigzag_exponent);
 
   BitReaderInterface(const BitReaderInterface&) = delete;
   BitReaderInterface& operator=(const BitReaderInterface&) = delete;
