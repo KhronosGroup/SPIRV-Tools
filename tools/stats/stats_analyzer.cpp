@@ -47,8 +47,11 @@ std::string GetCapabilityString(uint32_t word) {
   return libspirv::CapabilityToString(static_cast<SpvCapability>(word));
 }
 
-std::string KeyIsLabel(std::string key) {
-  return key;
+template <class T>
+std::string KeyIsLabel(T key) {
+  std::stringstream ss;
+  ss << key;
+  return ss.str();
 }
 
 template <class Key>
@@ -81,7 +84,7 @@ std::unordered_map<Key, double> GetPrevalence(
 // |label_from_key| is used to convert |Key| to label.
 template <class Key>
 void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
-               std::string (*label_from_key)(Key)) {
+               std::string (*label_from_key)(Key), double threshold = 0.001) {
   std::vector<std::pair<Key, double>> sorted_freq(freq.begin(), freq.end());
   std::sort(sorted_freq.begin(), sorted_freq.end(),
             [](const std::pair<Key, double>& left,
@@ -90,6 +93,8 @@ void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
             });
 
   for (const auto& pair : sorted_freq) {
+    if (pair.second < threshold)
+      break;
     out << label_from_key(pair.first) << " " << pair.second * 100.0
         << "%" << std::endl;
   }
@@ -149,6 +154,34 @@ void StatsAnalyzer::WriteExtension(std::ostream& out) {
 void StatsAnalyzer::WriteOpcode(std::ostream& out) {
   out << "Total unique opcodes used: " << opcode_freq_.size() << std::endl;
   WriteFreq(out, opcode_freq_, GetOpcodeString);
+}
+
+void StatsAnalyzer::WriteConstantLiterals(std::ostream& out) {
+  out << "Constant literals" << std::endl;
+
+  out << "Float 32" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.f32_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Float 64" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.f64_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Unsigned int 16" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.u16_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Signed int 16" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.s16_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Unsigned int 32" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.u32_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Signed int 32" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.s32_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Unsigned int 64" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.u64_constant_hist), KeyIsLabel);
+
+  out << std::endl << "Signed int 64" << std::endl;
+  WriteFreq(out, GetPrevalence(stats_.s64_constant_hist), KeyIsLabel);
 }
 
 void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {

@@ -29,6 +29,7 @@ class StatsAnalyzer {
   void WriteCapability(std::ostream& out);
   void WriteExtension(std::ostream& out);
   void WriteOpcode(std::ostream& out);
+  void WriteConstantLiterals(std::ostream& out);
 
   // Writes first order Markov analysis to |out|.
   // stats_.opcode_markov_hist needs to contain raw data for at least one

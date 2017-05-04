@@ -39,6 +39,30 @@ struct SpirvStats {
   // Opcode histogram, SpvOpXXX -> count.
   std::unordered_map<uint32_t, uint32_t> opcode_hist;
 
+  // OpConstant u16 histogram, value -> count.
+  std::unordered_map<uint16_t, uint32_t> u16_constant_hist;
+
+  // OpConstant u32 histogram, value -> count.
+  std::unordered_map<uint32_t, uint32_t> u32_constant_hist;
+
+  // OpConstant u64 histogram, value -> count.
+  std::unordered_map<uint64_t, uint32_t> u64_constant_hist;
+
+  // OpConstant s16 histogram, value -> count.
+  std::unordered_map<int16_t, uint32_t> s16_constant_hist;
+
+  // OpConstant s32 histogram, value -> count.
+  std::unordered_map<int32_t, uint32_t> s32_constant_hist;
+
+  // OpConstant s64 histogram, value -> count.
+  std::unordered_map<int64_t, uint32_t> s64_constant_hist;
+
+  // OpConstant f32 histogram, value -> count.
+  std::unordered_map<float, uint32_t> f32_constant_hist;
+
+  // OpConstant f64 histogram, value -> count.
+  std::unordered_map<double, uint32_t> f64_constant_hist;
+
   // Used to collect statistics on opcodes triggering other opcodes.
   // Container scheme: gap between instructions -> cue opcode -> later opcode
   // -> count.

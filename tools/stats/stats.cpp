@@ -151,5 +151,8 @@ int main(int argc, char** argv) {
   out << std::endl;
   analyzer.WriteOpcodeMarkov(out);
 
+  out << std::endl;
+  analyzer.WriteConstantLiterals(out);
+
   return 0;
 }

@@ -73,6 +73,7 @@ class StatsAggregator {
     ProcessOpcode();
     ProcessCapability();
     ProcessExtension();
+    ProcessConstant();
 
     return SPV_SUCCESS;
   }
@@ -105,6 +106,49 @@ class StatsAggregator {
          step_it != stats_->opcode_markov_hist.end(); ++inst_it, ++step_it) {
       auto& hist = (*step_it)[inst_it->opcode()];
       ++hist[opcode];
+    }
+  }
+
+  // Collects OpConstant statistics.
+  void ProcessConstant() {
+    const Instruction& inst = GetCurrentInstruction();
+    if (inst.opcode() != SpvOpConstant) return;
+    const uint32_t type_id = inst.GetOperandAs<uint32_t>(0);
+    const auto type_decl_it = vstate_->all_definitions().find(type_id);
+    assert(type_decl_it != vstate_->all_definitions().end());
+    const Instruction& type_decl_inst = *type_decl_it->second;
+    const SpvOp type_op = type_decl_inst.opcode();
+    if (type_op == SpvOpTypeInt) {
+      const uint32_t bit_width = type_decl_inst.GetOperandAs<uint32_t>(1);
+      const uint32_t is_signed = type_decl_inst.GetOperandAs<uint32_t>(2);
+      assert(is_signed == 0 || is_signed == 1);
+      if (bit_width == 16) {
+        if (is_signed)
+          ++stats_->s16_constant_hist[inst.GetOperandAs<int16_t>(2)];
+        else
+          ++stats_->u16_constant_hist[inst.GetOperandAs<uint16_t>(2)];
+      } else if (bit_width == 32) {
+        if (is_signed)
+          ++stats_->s32_constant_hist[inst.GetOperandAs<int32_t>(2)];
+        else
+          ++stats_->u32_constant_hist[inst.GetOperandAs<uint32_t>(2)];
+      } else if (bit_width == 64) {
+        if (is_signed)
+          ++stats_->s64_constant_hist[inst.GetOperandAs<int64_t>(2)];
+        else
+          ++stats_->u64_constant_hist[inst.GetOperandAs<uint64_t>(2)];
+      } else {
+        assert(false && "TypeInt bit width is not 16, 32 or 64");
+      }
+    } else if (type_op == SpvOpTypeFloat) {
+      const uint32_t bit_width = type_decl_inst.GetOperandAs<uint32_t>(1);
+      if (bit_width == 32) {
+        ++stats_->f32_constant_hist[inst.GetOperandAs<float>(2)];
+      } else if (bit_width == 64) {
+        ++stats_->f64_constant_hist[inst.GetOperandAs<double>(2)];
+      } else {
+        assert(bit_width == 16);
+      }
     }
   }
 

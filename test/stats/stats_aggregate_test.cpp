@@ -339,4 +339,98 @@ OpMemoryModel Physical32 OpenCL
       1u, stats.opcode_markov_hist[1].at(SpvOpTypeInt).at(SpvOpTypeFloat));
 }
 
+TEST(AggregateStats, ConstantLiteralsHistogram) {
+  const std::string code1 = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpCapability Float64
+OpCapability Int16
+OpCapability Int64
+OpMemoryModel Physical32 OpenCL
+%u16 = OpTypeInt 16 0
+%u32 = OpTypeInt 32 0
+%u64 = OpTypeInt 64 0
+%f32 = OpTypeFloat 32
+%f64 = OpTypeFloat 64
+%1 = OpConstant %f32 0.1
+%2 = OpConstant %f32 -2
+%3 = OpConstant %f64 -2
+%4 = OpConstant %u16 16
+%5 = OpConstant %u16 2
+%6 = OpConstant %u32 32
+%7 = OpConstant %u64 64
+)";
+
+  const std::string code2 = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Int16
+OpCapability Int64
+OpMemoryModel Logical GLSL450
+%f32 = OpTypeFloat 32
+%u16 = OpTypeInt 16 0
+%s16 = OpTypeInt 16 1
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
+%1 = OpConstant %f32 0.1
+%2 = OpConstant %f32 -2
+%3 = OpConstant %u16 1
+%4 = OpConstant %u16 16
+%5 = OpConstant %u16 2
+%6 = OpConstant %s16 -16
+%7 = OpConstant %u32 32
+%8 = OpConstant %s32 2
+%9 = OpConstant %s32 -32
+%10 = OpConstant %u64 64
+%11 = OpConstant %s64 -64
+)";
+
+  SpirvStats stats;
+
+  CompileAndAggregateStats(code1, &stats);
+  EXPECT_EQ(2u, stats.f32_constant_hist.size());
+  EXPECT_EQ(1u, stats.f64_constant_hist.size());
+  EXPECT_EQ(1u, stats.f32_constant_hist.at(0.1f));
+  EXPECT_EQ(1u, stats.f32_constant_hist.at(-2.f));
+  EXPECT_EQ(1u, stats.f64_constant_hist.at(-2));
+
+  EXPECT_EQ(2u, stats.u16_constant_hist.size());
+  EXPECT_EQ(0u, stats.s16_constant_hist.size());
+  EXPECT_EQ(1u, stats.u32_constant_hist.size());
+  EXPECT_EQ(0u, stats.s32_constant_hist.size());
+  EXPECT_EQ(1u, stats.u64_constant_hist.size());
+  EXPECT_EQ(0u, stats.s64_constant_hist.size());
+  EXPECT_EQ(1u, stats.u16_constant_hist.at(16));
+  EXPECT_EQ(1u, stats.u16_constant_hist.at(2));
+  EXPECT_EQ(1u, stats.u32_constant_hist.at(32));
+  EXPECT_EQ(1u, stats.u64_constant_hist.at(64));
+
+  CompileAndAggregateStats(code2, &stats);
+  EXPECT_EQ(2u, stats.f32_constant_hist.size());
+  EXPECT_EQ(1u, stats.f64_constant_hist.size());
+  EXPECT_EQ(2u, stats.f32_constant_hist.at(0.1f));
+  EXPECT_EQ(2u, stats.f32_constant_hist.at(-2.f));
+  EXPECT_EQ(1u, stats.f64_constant_hist.at(-2));
+
+  EXPECT_EQ(3u, stats.u16_constant_hist.size());
+  EXPECT_EQ(1u, stats.s16_constant_hist.size());
+  EXPECT_EQ(1u, stats.u32_constant_hist.size());
+  EXPECT_EQ(2u, stats.s32_constant_hist.size());
+  EXPECT_EQ(1u, stats.u64_constant_hist.size());
+  EXPECT_EQ(1u, stats.s64_constant_hist.size());
+  EXPECT_EQ(2u, stats.u16_constant_hist.at(16));
+  EXPECT_EQ(2u, stats.u16_constant_hist.at(2));
+  EXPECT_EQ(1u, stats.u16_constant_hist.at(1));
+  EXPECT_EQ(1u, stats.s16_constant_hist.at(-16));
+  EXPECT_EQ(2u, stats.u32_constant_hist.at(32));
+  EXPECT_EQ(1u, stats.s32_constant_hist.at(2));
+  EXPECT_EQ(1u, stats.s32_constant_hist.at(-32));
+  EXPECT_EQ(2u, stats.u64_constant_hist.at(64));
+  EXPECT_EQ(1u, stats.s64_constant_hist.at(-64));
+}
+
 }  // namespace
