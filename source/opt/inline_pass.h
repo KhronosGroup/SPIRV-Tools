@@ -21,6 +21,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <list>
 
 #include "def_use_manager.h"
 #include "module.h"
@@ -31,7 +32,13 @@ namespace opt {
 
 // See optimizer.hpp for documentation.
 class InlinePass : public Pass {
+
+  using cbb_ptr = const ir::BasicBlock*;
+
  public:
+   using GetBlocksFunction =
+     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+
   InlinePass();
   Status Process(ir::Module*) override;
 
@@ -56,6 +63,14 @@ class InlinePass : public Pass {
   // Add unconditional branch to labelId to end of block block_ptr.
   void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
+  // Add conditional branch to end of block |block_ptr|.
+  void AddBranchCond(uint32_t cond_id, uint32_t true_id,
+    uint32_t false_id, std::unique_ptr<ir::BasicBlock>* block_ptr);
+
+  // Add unconditional branch to labelId to end of block block_ptr.
+  void AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
+                    std::unique_ptr<ir::BasicBlock>* block_ptr);
+
   // Add store of valId to ptrId to end of block block_ptr.
   void AddStore(uint32_t ptrId, uint32_t valId,
                 std::unique_ptr<ir::BasicBlock>* block_ptr);
@@ -66,6 +81,8 @@ class InlinePass : public Pass {
 
   // Return new label.
   std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
+
+  uint32_t GetFalseId();
 
   // Map callee params to caller args
   void MapParams(ir::Function* calleeFn,
@@ -117,11 +134,31 @@ class InlinePass : public Pass {
                      ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
                      ir::UptrVectorIterator<ir::BasicBlock> call_block_itr);
 
-  // Returns true if |inst| is a function call that can be inlined.
+  // Return true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
-  // Returns true if |func| is a function that can be inlined.
-  bool IsInlinableFunction(const ir::Function* func);
+  // Compute structured successors for function |func|.
+  // A block's structured successors are preceded by its
+  // merge block if its a header. This assures correct depth
+  // first search in the presence of early returns and kills.
+  void ComputeStructuredSuccessors(ir::Function* func);
+  
+  // Return function to return successors for a given block
+  GetBlocksFunction SuccessorsFunction();
+
+  // Return true if |func| has multiple returns
+  bool hasMultipleReturns(ir::Function* func);
+
+  // Return true if |func| has no return in a loop. The current analysis
+  // requires structured control flow, so return false if control flow not
+  // structured ie. module is not a shader.
+  bool hasNoReturnInLoop(ir::Function* func);
+
+  // Find all functions with multiple returns and no returns in loops
+  void ReturnAnalysis(ir::Function* func);
+
+  // Return true if |func| is a function that can be inlined.
+  bool IsInlinableFunction(ir::Function* func);
 
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Return true if func is modified.
@@ -139,8 +176,20 @@ class InlinePass : public Pass {
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 
-  // Set of ids of inlinable function 
+  // Set of ids of functions with early returns
+  std::set<uint32_t> early_return_;
+
+  // Set of ids of functions with no returns in loop
+  std::set<uint32_t> no_return_in_loop_;
+
+  // Set of ids of inlinable functions
   std::set<uint32_t> inlinable_;
+
+  // Map from block to its structured successor blocks
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>> block2structuredSuccs_;
+
+  // result id for OpConstantFalse
+  uint32_t falseId;
 
   // Next unused ID
   uint32_t next_id_;

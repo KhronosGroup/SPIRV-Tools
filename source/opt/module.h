@@ -86,6 +86,12 @@ class Module {
   std::vector<Instruction*> GetConstants();
   std::vector<const Instruction*> GetConstants() const;
 
+  // Return result id of global value with |opcode|, 0 if not present.
+  uint32_t GetGlobalValue(SpvOp opcode) const;
+
+  // Add global value with |opcode|, |result_id| and |type_id|
+  void AddGlobalValue(SpvOp opcode, uint32_t result_id, uint32_t type_id);
+
   inline uint32_t id_bound() const { return header_.bound; }
 
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
@@ -98,6 +104,10 @@ class Module {
   // Iterators for entry point instructions contained in this module
   inline IteratorRange<inst_iterator> entry_points();
   inline IteratorRange<const_inst_iterator> entry_points() const;
+
+  // Iterators for capability instructions contained in this module
+  //inline IteratorRange<inst_iterator> capabilities();
+  //inline IteratorRange<const_inst_iterator> capabilities() const;
 
   // Clears all debug instructions (excluding OpLine & OpNoLine).
   void debug_clear() { debugs_.clear(); }
@@ -131,6 +141,9 @@ class Module {
 
   // Returns 1 more than the maximum Id value mentioned in the module.
   uint32_t ComputeIdBound() const;
+
+  // Returns true if module has capability |cap|
+  bool hasCapability(uint32_t cap);
 
  private:
   ModuleHeader header_;  // Module header

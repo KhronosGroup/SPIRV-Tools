@@ -48,7 +48,7 @@ class BasicBlock {
   Instruction& Label() { return *label_; }
 
   // Returns the id of the label at the top of this block
-  inline uint32_t label_id() const { return label_->result_id(); }
+  inline uint32_t id() const { return label_->result_id(); }
 
   iterator begin() { return iterator(&insts_, insts_.begin()); }
   iterator end() { return iterator(&insts_, insts_.end()); }
