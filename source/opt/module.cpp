@@ -58,6 +58,21 @@ std::vector<const Instruction*> Module::GetConstants() const {
   return insts;
 };
 
+uint32_t Module::GetGlobalValue(SpvOp opcode) const {
+  for (uint32_t i = 0; i < types_values_.size(); ++i) {
+    if (types_values_[i]->opcode() == opcode)
+      return types_values_[i]->result_id();
+  }
+  return 0;
+}
+
+void Module::AddGlobalValue(SpvOp opcode, uint32_t result_id,
+                            uint32_t type_id) {
+  std::unique_ptr<ir::Instruction> newGlobal(new ir::Instruction(
+    opcode, type_id, result_id, {}));
+  AddGlobalValue(std::move(newGlobal));
+}
+
 void Module::ForEachInst(const std::function<void(Instruction*)>& f,
                          bool run_on_debug_line_insts) {
 #define DELEGATE(i) i->ForEachInst(f, run_on_debug_line_insts)
@@ -121,6 +136,16 @@ uint32_t Module::ComputeIdBound() const {
   }, true /* scan debug line insts as well */);
 
   return highest + 1;
+}
+
+bool Module::HasCapability(uint32_t cap) {
+  for (auto& ci : capabilities_) {
+    uint32_t tcap = ci->GetSingleWordOperand(0);
+    if (tcap == cap) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace ir

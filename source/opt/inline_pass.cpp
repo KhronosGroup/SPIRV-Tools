@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include "inline_pass.h"
+#include "cfa.h"
 
 // Indices of operands in SPIR-V instructions
 
@@ -24,6 +25,8 @@ static const int kSpvFunctionCallArgumentId = 3;
 static const int kSpvReturnValueId = 0;
 static const int kSpvTypePointerStorageClass = 1;
 static const int kSpvTypePointerTypeId = 2;
+static const int kSpvLoopMergeMergeBlockId = 0;
+static const int kSpvSelectionMergeMergeBlockId = 0;
 
 namespace spvtools {
 namespace opt {
@@ -55,11 +58,31 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id,
 }
 
 void InlinePass::AddBranch(uint32_t label_id,
-                           std::unique_ptr<ir::BasicBlock>* block_ptr) {
+  std::unique_ptr<ir::BasicBlock>* block_ptr) {
   std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
-      SpvOpBranch, 0, 0,
-      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {label_id}}}));
+    SpvOpBranch, 0, 0,
+    {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {label_id}}}));
   (*block_ptr)->AddInstruction(std::move(newBranch));
+}
+
+void InlinePass::AddBranchCond(uint32_t cond_id, uint32_t true_id,
+  uint32_t false_id, std::unique_ptr<ir::BasicBlock>* block_ptr) {
+  std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
+    SpvOpBranchConditional, 0, 0,
+    {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {cond_id}},
+     {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {true_id}},
+     {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {false_id}}}));
+  (*block_ptr)->AddInstruction(std::move(newBranch));
+}
+
+void InlinePass::AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
+                           std::unique_ptr<ir::BasicBlock>* block_ptr) {
+  std::unique_ptr<ir::Instruction> newLoopMerge(new ir::Instruction(
+      SpvOpLoopMerge, 0, 0,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {merge_id}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {continue_id}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LOOP_CONTROL, {0}}}));
+  (*block_ptr)->AddInstruction(std::move(newLoopMerge));
 }
 
 void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
@@ -84,6 +107,22 @@ std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
   return newLabel;
 }
 
+uint32_t InlinePass::GetFalseId() {
+  if (false_id_ != 0)
+    return false_id_;
+  false_id_ = module_->GetGlobalValue(SpvOpConstantFalse);
+  if (false_id_ != 0)
+    return false_id_;
+  uint32_t boolId = module_->GetGlobalValue(SpvOpTypeBool);
+  if (boolId == 0) {
+    boolId = TakeNextId();
+    module_->AddGlobalValue(SpvOpTypeBool, boolId, 0);
+  }
+  false_id_ = TakeNextId();
+  module_->AddGlobalValue(SpvOpConstantFalse, false_id_, boolId);
+  return false_id_;
+}
+
 void InlinePass::MapParams(
     ir::Function* calleeFn,
     ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
@@ -94,7 +133,7 @@ void InlinePass::MapParams(
         const uint32_t pid = cpi->result_id();
         (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
             kSpvFunctionCallArgumentId + param_idx);
-        param_idx++;
+        ++param_idx;
       });
 }
 
@@ -111,7 +150,7 @@ void InlinePass::CloneAndMapLocals(
     var_inst->SetResultId(newId);
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
-    callee_var_itr++;
+    ++callee_var_itr;
   }
 }
 
@@ -189,6 +228,10 @@ void InlinePass::GenInlineCode(
   ir::Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
+  // Check for early returns
+  auto fi = early_return_.find(calleeFn->result_id());
+  bool earlyReturn = fi != early_return_.end();
+
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, &callee2caller);
 
@@ -202,6 +245,8 @@ void InlinePass::GenInlineCode(
   // Clone and map callee code. Copy caller block code to beginning of
   // first block and end of last block.
   bool prevInstWasReturn = false;
+  uint32_t singleTripLoopHeaderId = 0;
+  uint32_t singleTripLoopContinueId = 0;
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
   const uint32_t calleeTypeId = calleeFn->type_id();
@@ -209,7 +254,9 @@ void InlinePass::GenInlineCode(
   calleeFn->ForEachInst([&new_blocks, &callee2caller, &call_block_itr,
                          &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
                          &returnLabelId, &returnVarId, &calleeTypeId,
-                         &multiBlocks, &postCallSB, &preCallSB, this](
+                         &multiBlocks, &postCallSB, &preCallSB, &earlyReturn,
+                         &singleTripLoopHeaderId, &singleTripLoopContinueId,
+                         this](
       const ir::Instruction* cpi) {
     switch (cpi->opcode()) {
       case SpvOpFunction:
@@ -239,7 +286,7 @@ void InlinePass::GenInlineCode(
         } else {
           // First block needs to use label of original block
           // but map callee label in case of phi reference.
-          labelId = call_block_itr->label_id();
+          labelId = call_block_itr->id();
           callee2caller[cpi->result_id()] = labelId;
           firstBlock = true;
         }
@@ -248,7 +295,7 @@ void InlinePass::GenInlineCode(
         if (firstBlock) {
           // Copy contents of original caller block up to call instruction.
           for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
-               cii++) {
+               ++cii) {
             std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
             // Remember same-block ops for possible regeneration.
             if (IsSameBlockOp(&*cp_inst)) {
@@ -256,6 +303,24 @@ void InlinePass::GenInlineCode(
               preCallSB[cp_inst->result_id()] = sb_inst_ptr;
             }
             new_blk_ptr->AddInstruction(std::move(cp_inst));
+          }
+          // If callee is early return function, insert header block for
+          // one-trip loop that will encompass callee code. Start postheader
+          // block.
+          if (earlyReturn) {
+            singleTripLoopHeaderId = this->TakeNextId();
+            AddBranch(singleTripLoopHeaderId, &new_blk_ptr);
+            new_blocks->push_back(std::move(new_blk_ptr));
+            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(
+                singleTripLoopHeaderId)));
+            returnLabelId = this->TakeNextId();
+            singleTripLoopContinueId = this->TakeNextId();
+            AddLoopMerge(returnLabelId, singleTripLoopContinueId, &new_blk_ptr);
+            uint32_t postHeaderId = this->TakeNextId();
+            AddBranch(postHeaderId, &new_blk_ptr);
+            new_blocks->push_back(std::move(new_blk_ptr));
+            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(postHeaderId)));
+            multiBlocks = true;
           }
         } else {
           multiBlocks = true;
@@ -281,11 +346,16 @@ void InlinePass::GenInlineCode(
         prevInstWasReturn = true;
       } break;
       case SpvOpFunctionEnd: {
-        // If there was an early return, create return label/block.
+        // If there was an early return, insert continue and return blocks.
         // If previous instruction was return, insert branch instruction
         // to return block.
         if (returnLabelId != 0) {
           if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
+          new_blocks->push_back(std::move(new_blk_ptr));
+          new_blk_ptr.reset(new ir::BasicBlock(NewLabel(
+              singleTripLoopContinueId)));
+          AddBranchCond(GetFalseId(), singleTripLoopHeaderId, returnLabelId, 
+              &new_blk_ptr);
           new_blocks->push_back(std::move(new_blk_ptr));
           new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
           multiBlocks = true;
@@ -298,7 +368,7 @@ void InlinePass::GenInlineCode(
         }
         // Copy remaining instructions from caller block.
         auto cii = call_inst_itr;
-        for (cii++; cii != call_block_itr->end(); cii++) {
+        for (++cii; cii != call_block_itr->end(); ++cii) {
           std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
           // If multiple blocks generated, regenerate any same-block
           // instruction that has not been seen in this last block.
@@ -322,7 +392,7 @@ void InlinePass::GenInlineCode(
           const auto mapItr = callee2caller.find(*iid);
           if (mapItr != callee2caller.end()) {
             *iid = mapItr->second;
-          } else if (cpi->has_labels()) {
+          } else if (cpi->HasLabels()) {
             const ir::Instruction* inst =
                 def_use_mgr_->id_to_defs().find(*iid)->second;
             if (inst->opcode() == SpvOpLabel) {
@@ -347,7 +417,7 @@ void InlinePass::GenInlineCode(
   });
   // Update block map given replacement blocks.
   for (auto& blk : *new_blocks) {
-    id2block_[blk->label_id()] = &*blk;
+    id2block_[blk->id()] = &*blk;
   }
 }
 
@@ -362,7 +432,7 @@ bool InlinePass::IsInlinableFunctionCall(const ir::Instruction* inst) {
 bool InlinePass::Inline(ir::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.
-  for (auto bi = func->begin(); bi != func->end(); bi++) {
+  for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end();) {
       if (IsInlinableFunctionCall(&*ii)) {
         // Inline call.
@@ -374,8 +444,8 @@ bool InlinePass::Inline(ir::Function* func) {
         if (newBlocks.size() > 1) {
           const auto firstBlk = newBlocks.begin();
           const auto lastBlk = newBlocks.end() - 1;
-          const uint32_t firstId = (*firstBlk)->label_id();
-          const uint32_t lastId = (*lastBlk)->label_id();
+          const uint32_t firstId = (*firstBlk)->id();
+          const uint32_t lastId = (*lastBlk)->id();
           (*lastBlk)->ForEachSuccessorLabel(
               [&firstId, &lastId, this](uint32_t succ) {
                 ir::BasicBlock* sbp = this->id2block_[succ];
@@ -395,30 +465,132 @@ bool InlinePass::Inline(ir::Function* func) {
         ii = bi->begin();
         modified = true;
       } else {
-        ii++;
+        ++ii;
       }
     }
   }
   return modified;
 }
 
-bool InlinePass::IsInlinableFunction(const ir::Function* func) {
+bool InlinePass::HasMultipleReturns(ir::Function* func) {
+  bool seenReturn = false;
+  bool multipleReturns = false;
+  for (auto& blk : *func) {
+    auto terminal_ii = blk.cend();
+    --terminal_ii;
+    if (terminal_ii->opcode() == SpvOpReturn || 
+        terminal_ii->opcode() == SpvOpReturnValue) {
+      if (seenReturn) {
+        multipleReturns = true;
+        break;
+      }
+      seenReturn = true;
+    }
+  }
+  return multipleReturns;
+}
+
+uint32_t InlinePass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
+  auto merge_ii = blk.cend();
+  --merge_ii;
+  uint32_t mbid = 0;
+  if (merge_ii != blk.cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge)
+      mbid = merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+    else if (merge_ii->opcode() == SpvOpSelectionMerge)
+      mbid = merge_ii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
+  }
+  return mbid;
+}
+
+void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
+  // If header, make merge block first successor.
+  for (auto& blk : *func) {
+    uint32_t mbid = MergeBlockIdIfAny(blk);
+    if (mbid != 0)
+      block2structured_succs_[&blk].push_back(id2block_[mbid]);
+    // add true successors
+    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
+      block2structured_succs_[&blk].push_back(id2block_[sbid]);
+    });
+  }
+}
+
+InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
+  return [this](const ir::BasicBlock* block) {
+    return &(block2structured_succs_[block]);
+  };
+}
+
+bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
+  // If control not structured, do not do loop/return analysis
+  // TODO: Analyze returns in non-structured control flow
+  if (!module_->HasCapability(SpvCapabilityShader))
+    return false;
+  // Compute structured block order. This order has the property
+  // that dominators are before all blocks they dominate and merge blocks
+  // are after all blocks that are in the control constructs of their header.
+  ComputeStructuredSuccessors(func);
+  auto ignore_block = [](cbb_ptr) {};
+  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+  std::list<const ir::BasicBlock*> structuredOrder;
+  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
+    &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
+    [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
+  // Search for returns in loops. Only need to track outermost loop
+  bool return_in_loop = false;
+  uint32_t outerLoopMergeId = 0;
+  for (auto& blk : structuredOrder) {
+    // Exiting current outer loop
+    if (blk->id() == outerLoopMergeId)
+      outerLoopMergeId = 0;
+    // Return block
+    auto terminal_ii = blk->cend();
+    --terminal_ii;
+    if (terminal_ii->opcode() == SpvOpReturn || 
+        terminal_ii->opcode() == SpvOpReturnValue) {
+      if (outerLoopMergeId != 0) {
+        return_in_loop = true;
+        break;
+      }
+    }
+    else if (terminal_ii != blk->cbegin()) {
+      auto merge_ii = terminal_ii;
+      --merge_ii;
+      // Entering outermost loop
+      if (merge_ii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
+        outerLoopMergeId = merge_ii->GetSingleWordOperand(
+            kSpvLoopMergeMergeBlockId);
+    }
+  }
+  return !return_in_loop;
+}
+
+void InlinePass::AnalyzeReturns(ir::Function* func) {
+  // Look for multiple returns
+  if (!HasMultipleReturns(func)) {
+    no_return_in_loop_.insert(func->result_id());
+    return;
+  }
+  early_return_.insert(func->result_id());
+  // If multiple returns, see if any are in a loop
+  if (HasNoReturnInLoop(func))
+    no_return_in_loop_.insert(func->result_id());
+}
+
+bool InlinePass::IsInlinableFunction(ir::Function* func) {
   // We can only inline a function if it has blocks.
   if (func->cbegin() == func->cend())
     return false;
-  // Do not inline functions with multiple returns
-  // TODO(greg-lunarg): Enable inlining if no return is in loop
-  int returnCnt = 0;
-  for (auto bi = func->cbegin(); bi != func->cend(); bi++) {
-    auto li = bi->cend();
-    li--;
-    if (li->opcode() == SpvOpReturn || li->opcode() == SpvOpReturnValue) {
-      if (returnCnt > 0)
-        return false;
-      returnCnt++;
-    }
-  }
-  return true;
+  // Do not inline functions with returns in loops. Currently early return
+  // functions are inlined by wrapping them in a one trip loop and implementing
+  // the returns as a branch to the loop's merge block. However, this can only
+  // done validly if the return was not in a loop in the original function.
+  // Also remember functions with multiple (early) returns.
+  AnalyzeReturns(func);
+  const auto ci = no_return_in_loop_.find(func->result_id());
+  return ci != no_return_in_loop_.cend();
 }
 
 void InlinePass::Initialize(ir::Module* module) {
@@ -430,15 +602,19 @@ void InlinePass::Initialize(ir::Module* module) {
   // Save module.
   module_ = module;
 
-  // Initialize function and block maps.
+  false_id_ = 0;
+
   id2function_.clear();
   id2block_.clear();
+  block2structured_succs_.clear();
   inlinable_.clear();
   for (auto& fn : *module_) {
+    // Initialize function and block maps.
     id2function_[fn.result_id()] = &fn;
     for (auto& blk : fn) {
-      id2block_[blk.label_id()] = &blk;
+      id2block_[blk.id()] = &blk;
     }
+    // Compute inlinability
     if (IsInlinableFunction(&fn))
       inlinable_.insert(fn.result_id());
   }
