@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #ifndef SPVTOOLS_CFA_H_
-#define SPVTOOLS_CFA_H
+#define SPVTOOLS_CFA_H_
 
 #include <algorithm>
 #include <cassert>
@@ -34,6 +34,7 @@ using std::vector;
 
 namespace spvtools {
 
+// Control Flow Analysis of control flow graphs of basic block nodes |BB|.
 template<class BB> class CFA {
   using bb_ptr = BB*;
   using cbb_ptr = const BB*;
