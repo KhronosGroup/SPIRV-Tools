@@ -42,7 +42,7 @@ TEST_P(DefaultValuesStringParsingTest, TestCase) {
           tc.default_values_str);
   if (tc.expect_success) {
     EXPECT_NE(nullptr, actual_map);
-    if (actual_map) EXPECT_THAT(*actual_map, Eq(tc.expected_map));
+    if (actual_map) { EXPECT_THAT(*actual_map, Eq(tc.expected_map)); }
   } else {
     EXPECT_EQ(nullptr, actual_map);
   }
