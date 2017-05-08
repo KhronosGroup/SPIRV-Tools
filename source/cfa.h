@@ -54,7 +54,8 @@ template<class BB> class CFA {
   /// @param[in] id         The ID of the block being checked
   ///
   /// @return true if the edge work_list.back().block->id() => id is a back-edge
-  bool FindInWorkList(const std::vector<block_info>& work_list, uint32_t id);
+  static bool FindInWorkList(
+      const std::vector<block_info>& work_list, uint32_t id);
 
 public:
   /// @brief Depth first traversal starting from the \p entry BasicBlock
@@ -76,7 +77,7 @@ public:
   /// NOTE: The @p successor_func and predecessor_func each return a pointer to a
   /// collection such that iterators to that collection remain valid for the
   /// lifetime of the algorithm.
-  void DepthFirstTraversal(const BB* entry,
+  static void DepthFirstTraversal(const BB* entry,
     get_blocks_func successor_func,
     std::function<void(cbb_ptr)> preorder,
     std::function<void(cbb_ptr)> postorder,

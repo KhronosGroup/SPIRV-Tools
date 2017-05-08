@@ -325,7 +325,6 @@ spv_result_t StructuredControlFlowChecks(
 }
 
 spv_result_t PerformCfgChecks(ValidationState_t& _) {
-  spvtools::CFA<BasicBlock> cfa;
   for (auto& function : _.functions()) {
     // Check all referenced blocks are defined within a function
     if (function.undefined_block_count() != 0) {
@@ -352,7 +351,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
-      cfa.DepthFirstTraversal(
+      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
           ignore_edge);
@@ -363,7 +362,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
       }
 
       /// calculate post dominators
-      cfa.DepthFirstTraversal(
+      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
@@ -373,7 +372,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         edge.first->SetImmediatePostDominator(edge.second);
       }
       /// calculate back edges.
-      cfa.DepthFirstTraversal(
+      spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
           function.pseudo_entry_block(),
           function
               .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),

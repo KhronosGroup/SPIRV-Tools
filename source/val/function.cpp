@@ -53,11 +53,10 @@ std::vector<BasicBlock*> TraversalRoots(const std::vector<BasicBlock*>& blocks,
   auto ignore_blocks = [](const BasicBlock*, const BasicBlock*) {};
 
 
-  spvtools::CFA<libspirv::BasicBlock> cfa;
   auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
-                             &ignore_blocks, &cfa](const BasicBlock* entry) {
-    cfa.DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
-                        ignore_blocks);
+                             &ignore_blocks](const BasicBlock* entry) {
+    spvtools::CFA<libspirv::BasicBlock>::DepthFirstTraversal(
+        entry, succ_func, mark_visited, ignore_block, ignore_blocks);
   };
 
   std::vector<BasicBlock*> result;
