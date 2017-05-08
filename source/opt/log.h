@@ -108,8 +108,11 @@ void Logf(const MessageConsumer& consumer, spv_message_level_t level,
     return;
   }
 
-  if (size >= 0) {  // The initial buffer is insufficient.
-    std::vector<char> longer_message(size + 1);
+  if (size >= 0) {
+    // The initial buffer is insufficient.  Allocate a buffer of a larger size,
+    // and write to it instead.  Force the size to be unsigned to avoid a
+    // warning in GCC 7.1.
+    std::vector<char> longer_message(size + 1u);
     snprintf(longer_message.data(), longer_message.size(), format,
              std::forward<Args>(args)...);
     Log(consumer, level, source, position, longer_message.data());
