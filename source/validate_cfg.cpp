@@ -61,74 +61,6 @@ using bb_iter = vector<BasicBlock*>::const_iterator;
 
 }  // namespace
 
-vector<pair<BasicBlock*, BasicBlock*>> CalculateDominators(
-    const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
-  struct block_detail {
-    size_t dominator;  ///< The index of blocks's dominator in post order array
-    size_t postorder_index;  ///< The index of the block in the post order array
-  };
-  const size_t undefined_dom = postorder.size();
-
-  unordered_map<cbb_ptr, block_detail> idoms;
-  for (size_t i = 0; i < postorder.size(); i++) {
-    idoms[postorder[i]] = {undefined_dom, i};
-  }
-  idoms[postorder.back()].dominator = idoms[postorder.back()].postorder_index;
-
-  bool changed = true;
-  while (changed) {
-    changed = false;
-    for (auto b = postorder.rbegin() + 1; b != postorder.rend(); ++b) {
-      const vector<BasicBlock*>& predecessors = *predecessor_func(*b);
-      // Find the first processed/reachable predecessor that is reachable
-      // in the forward traversal.
-      auto res = find_if(begin(predecessors), end(predecessors),
-                         [&idoms, undefined_dom](BasicBlock* pred) {
-                           return idoms.count(pred) &&
-                                  idoms[pred].dominator != undefined_dom;
-                         });
-      if (res == end(predecessors)) continue;
-      const BasicBlock* idom = *res;
-      size_t idom_idx = idoms[idom].postorder_index;
-
-      // all other predecessors
-      for (const auto* p : predecessors) {
-        if (idom == p) continue;
-        // Only consider nodes reachable in the forward traversal.
-        // Otherwise the intersection doesn't make sense and will never
-        // terminate.
-        if (!idoms.count(p)) continue;
-        if (idoms[p].dominator != undefined_dom) {
-          size_t finger1 = idoms[p].postorder_index;
-          size_t finger2 = idom_idx;
-          while (finger1 != finger2) {
-            while (finger1 < finger2) {
-              finger1 = idoms[postorder[finger1]].dominator;
-            }
-            while (finger2 < finger1) {
-              finger2 = idoms[postorder[finger2]].dominator;
-            }
-          }
-          idom_idx = finger1;
-        }
-      }
-      if (idoms[*b].dominator != idom_idx) {
-        idoms[*b].dominator = idom_idx;
-        changed = true;
-      }
-    }
-  }
-
-  vector<pair<bb_ptr, bb_ptr>> out;
-  for (auto idom : idoms) {
-    // NOTE: performing a const cast for convenient usage with
-    // UpdateImmediateDominators
-    out.push_back({const_cast<BasicBlock*>(get<0>(idom)),
-                   const_cast<BasicBlock*>(postorder[get<1>(idom).dominator])});
-  }
-  return out;
-}
-
 void printDominatorList(const BasicBlock& b) {
   std::cout << b.id() << " is dominated by: ";
   const BasicBlock* bb = &b;
@@ -355,7 +287,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](cbb_ptr b) { postorder.push_back(b); },
           ignore_edge);
-      auto edges = libspirv::CalculateDominators(
+      auto edges = spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
         edge.first->SetImmediateDominator(edge.second);
@@ -366,7 +298,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](cbb_ptr b) { postdom_postorder.push_back(b); }, ignore_edge);
-      auto postdom_edges = libspirv::CalculateDominators(
+      auto postdom_edges = spvtools::CFA<libspirv::BasicBlock>::CalculateDominators(
           postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
         edge.first->SetImmediatePostDominator(edge.second);

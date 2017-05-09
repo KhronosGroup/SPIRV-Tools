@@ -82,6 +82,29 @@ public:
     std::function<void(cbb_ptr)> preorder,
     std::function<void(cbb_ptr)> postorder,
     std::function<void(cbb_ptr, cbb_ptr)> backedge);
+  
+  /// @brief Calculates dominator edges for a set of blocks
+  ///
+  /// Computes dominators using the algorithm of Cooper, Harvey, and Kennedy
+  /// "A Simple, Fast Dominance Algorithm", 2001.
+  ///
+  /// The algorithm assumes there is a unique root node (a node without
+  /// predecessors), and it is therefore at the end of the postorder vector.
+  ///
+  /// This function calculates the dominator edges for a set of blocks in the CFG.
+  /// Uses the dominator algorithm by Cooper et al.
+  ///
+  /// @param[in] postorder        A vector of blocks in post order traversal order
+  ///                             in a CFG
+  /// @param[in] predecessor_func Function used to get the predecessor nodes of a
+  ///                             block
+  ///
+  /// @return the dominator tree of the graph, as a vector of pairs of nodes.
+  /// The first node in the pair is a node in the graph. The second node in the
+  /// pair is its immediate dominator in the sense of Cooper et.al., where a block
+  /// without predecessors (such as the root node) is its own immediate dominator.
+  static vector<pair<BB*, BB*>> CalculateDominators(
+    const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func);
 };
 
 template<class BB> bool CFA<BB>::FindInWorkList(const vector<block_info>& work_list,
@@ -128,6 +151,75 @@ template<class BB> void CFA<BB>::DepthFirstTraversal(const BB* entry,
       }
     }
   }
+}
+
+template<class BB>
+vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
+  const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
+  struct block_detail {
+    size_t dominator;  ///< The index of blocks's dominator in post order array
+    size_t postorder_index;  ///< The index of the block in the post order array
+  };
+  const size_t undefined_dom = postorder.size();
+
+  unordered_map<cbb_ptr, block_detail> idoms;
+  for (size_t i = 0; i < postorder.size(); i++) {
+    idoms[postorder[i]] = { undefined_dom, i };
+  }
+  idoms[postorder.back()].dominator = idoms[postorder.back()].postorder_index;
+
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (auto b = postorder.rbegin() + 1; b != postorder.rend(); ++b) {
+      const vector<BB*>& predecessors = *predecessor_func(*b);
+      // Find the first processed/reachable predecessor that is reachable
+      // in the forward traversal.
+      auto res = find_if(begin(predecessors), end(predecessors),
+        [&idoms, undefined_dom](BB* pred) {
+        return idoms.count(pred) &&
+          idoms[pred].dominator != undefined_dom;
+      });
+      if (res == end(predecessors)) continue;
+      const BB* idom = *res;
+      size_t idom_idx = idoms[idom].postorder_index;
+
+      // all other predecessors
+      for (const auto* p : predecessors) {
+        if (idom == p) continue;
+        // Only consider nodes reachable in the forward traversal.
+        // Otherwise the intersection doesn't make sense and will never
+        // terminate.
+        if (!idoms.count(p)) continue;
+        if (idoms[p].dominator != undefined_dom) {
+          size_t finger1 = idoms[p].postorder_index;
+          size_t finger2 = idom_idx;
+          while (finger1 != finger2) {
+            while (finger1 < finger2) {
+              finger1 = idoms[postorder[finger1]].dominator;
+            }
+            while (finger2 < finger1) {
+              finger2 = idoms[postorder[finger2]].dominator;
+            }
+          }
+          idom_idx = finger1;
+        }
+      }
+      if (idoms[*b].dominator != idom_idx) {
+        idoms[*b].dominator = idom_idx;
+        changed = true;
+      }
+    }
+  }
+
+  vector<pair<bb_ptr, bb_ptr>> out;
+  for (auto idom : idoms) {
+    // NOTE: performing a const cast for convenient usage with
+    // UpdateImmediateDominators
+    out.push_back({ const_cast<BB*>(get<0>(idom)),
+      const_cast<BB*>(postorder[get<1>(idom).dominator]) });
+  }
+  return out;
 }
 
 } // namespace spvtools
