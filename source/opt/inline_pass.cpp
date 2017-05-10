@@ -507,7 +507,7 @@ void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
   }
 }
 
-InlinePass::GetBlocksFunction InlinePass::SuccessorsFunction() {
+InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   return [this](const ir::BasicBlock* block) {
     return &(block2structuredSuccs_[block]);
   };
@@ -526,7 +526,7 @@ bool InlinePass::hasNoReturnInLoop(ir::Function* func) {
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
   std::list<const ir::BasicBlock*> structuredOrder;
   spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-    &*func->begin(), SuccessorsFunction(), ignore_block,
+    &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
     [&](cbb_ptr b) { structuredOrder.push_front(b); }, ignore_edge);
   // Search for returns in loops. Only need to track outermost loop
   bool return_in_loop = false;

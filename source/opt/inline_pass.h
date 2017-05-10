@@ -140,13 +140,16 @@ class InlinePass : public Pass {
   bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
   // Compute structured successors for function |func|.
-  // A block's structured successors are preceded by its
-  // merge block if its a header. This assures correct depth
-  // first search in the presence of early returns and kills.
+  // A block's structured successors are the blocks it branches to
+  // together with its declared merge block if it has one.
+  // When order matters, the merge block always appears first.
+  // This assures correct depth first search in the presence of early 
+  // returns and kills.
   void ComputeStructuredSuccessors(ir::Function* func);
   
-  // Return function to return successors for a given block
-  GetBlocksFunction SuccessorsFunction();
+  // Return function to return ordered structure successors for a given block
+  // Assumes ComputeStructuredSuccessors() has been called.
+  GetBlocksFunction StructuredSuccessorsFunction();
 
   // Return true if |func| has multiple returns
   bool hasMultipleReturns(ir::Function* func);
