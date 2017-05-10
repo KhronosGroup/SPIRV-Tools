@@ -131,7 +131,9 @@ def main():
         sys.exit(1)
 
     output_file = sys.argv[2]
-    mkdir_p(os.path.dirname(output_file))
+    output_path = os.path.dirname(output_file)
+    if output_path:
+        mkdir_p(output_path)
 
     software_version = deduce_software_version(sys.argv[1])
     new_content = '"{}", "SPIRV-Tools {} {}"\n'.format(
