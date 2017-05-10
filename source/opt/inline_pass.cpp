@@ -108,19 +108,19 @@ std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
 }
 
 uint32_t InlinePass::GetFalseId() {
-  if (falseId != 0)
-    return falseId;
-  falseId = module_->GetGlobalValue(SpvOpConstantFalse);
-  if (falseId != 0)
-    return falseId;
+  if (false_id_ != 0)
+    return false_id_;
+  false_id_ = module_->GetGlobalValue(SpvOpConstantFalse);
+  if (false_id_ != 0)
+    return false_id_;
   uint32_t boolId = module_->GetGlobalValue(SpvOpTypeBool);
   if (boolId == 0) {
     boolId = TakeNextId();
     module_->AddGlobalValue(SpvOpTypeBool, boolId, 0);
   }
-  falseId = TakeNextId();
-  module_->AddGlobalValue(SpvOpConstantFalse, falseId, boolId);
-  return falseId;
+  false_id_ = TakeNextId();
+  module_->AddGlobalValue(SpvOpConstantFalse, false_id_, boolId);
+  return false_id_;
 }
 
 void InlinePass::MapParams(
@@ -590,7 +590,7 @@ void InlinePass::Initialize(ir::Module* module) {
   // Save module.
   module_ = module;
 
-  falseId = 0;
+  false_id_ = 0;
 
   id2function_.clear();
   id2block_.clear();

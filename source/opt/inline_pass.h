@@ -82,6 +82,8 @@ class InlinePass : public Pass {
   // Return new label.
   std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
 
+  // Returns the id for the boolean false value. Looks in the module first
+  // and creates it if not found. Remembers it for future calls.
   uint32_t GetFalseId();
 
   // Map callee params to caller args
@@ -189,7 +191,7 @@ class InlinePass : public Pass {
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>> block2structuredSuccs_;
 
   // result id for OpConstantFalse
-  uint32_t falseId;
+  uint32_t false_id_;
 
   // Next unused ID
   uint32_t next_id_;
