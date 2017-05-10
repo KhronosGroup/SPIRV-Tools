@@ -27,8 +27,11 @@ namespace {
 // Returns if the system is little-endian. Unfortunately only works during
 // runtime.
 bool IsLittleEndian() {
+  // This constant value allows the detection of the host machine's endianness.
+  // Accessing it as an array of bytes is valid due to C++11 section 3.10
+  // paragraph 10.
   static const uint16_t kFF00 = 0xff00;
-  return reinterpret_cast<const uint8_t*>(&kFF00)[0] == 0;
+  return reinterpret_cast<const unsigned char*>(&kFF00)[0] == 0;
 }
 
 // Copies uint8_t buffer to a uint64_t buffer.
@@ -36,7 +39,7 @@ bool IsLittleEndian() {
 // direction is only advisable if uint8_t* is aligned to 64-bit word boundary.
 std::vector<uint64_t> ToBuffer64(const std::vector<uint8_t>& in) {
   std::vector<uint64_t> out;
-  out.resize(in.size() % 8 == 0 ? in.size() / 8 : in.size() / 8 + 1, 0);
+  out.resize((in.size() + 7) / 8, 0);
   std::copy(in.begin(), in.end(), reinterpret_cast<uint8_t*>(out.data()));
   return out;
 }
@@ -102,6 +105,7 @@ void WriteVariableWidthInternal(BitWriterInterface* writer, uint64_t val,
 
 // Reads data written with WriteVariableWidthInternal. |chunk_length| and
 // |max_payload| should be identical to those used to write the data.
+// Returns false if the stream ends prematurely.
 bool ReadVariableWidthInternal(BitReaderInterface* reader, uint64_t* val,
                                size_t chunk_length, size_t max_payload) {
   assert(chunk_length > 0);

@@ -37,7 +37,7 @@ namespace spvutils {
 // |num_bits|.
 template <size_t N>
 inline size_t NumBitsToNumWords(size_t num_bits) {
-  return num_bits % N == 0 ? num_bits / N : num_bits / N + 1;
+  return (num_bits + (N - 1)) / N;
 }
 
 // Returns value of the same type as |in|, where all but the first |num_bits|
@@ -80,22 +80,24 @@ inline int64_t DecodeZigZag(uint64_t val) {
 // EncodeZigZag, designed to favor small positive numbers.
 // Values are transformed in blocks of 2^|block_exponent|.
 // If |block_exponent| is zero, then this degenerates into normal EncodeZigZag.
-// Example when |block_exponent| is 1:
+// Example when |block_exponent| is 1 (return value is the index):
 // 0, 1, -1, -2, 2, 3, -3, -4, 4, 5, -5, -6, 6, 7, -7, -8
 // Example when |block_exponent| is 2:
 // 0, 1, 2, 3, -1, -2, -3, -4, 4, 5, 6, 7, -5, -6, -7, -8
 inline uint64_t EncodeZigZag(int64_t val, size_t block_exponent) {
+  assert(block_exponent < 64);
   const uint64_t uval = static_cast<uint64_t>(val >= 0 ? val : -val - 1);
-  const size_t block_num = ((uval >> block_exponent) << 1) + (val >= 0 ? 0 : 1);
-  const size_t pos = GetLowerBits(uval, block_exponent);
+  const uint64_t block_num = ((uval >> block_exponent) << 1) + (val >= 0 ? 0 : 1);
+  const uint64_t pos = GetLowerBits(uval, block_exponent);
   return (block_num << block_exponent) + pos;
 }
 
 // Decodes signed integer encoded with EncodeZigZag. |block_exponent| must be
 // the same.
 inline int64_t DecodeZigZag(uint64_t val, size_t block_exponent) {
-  const size_t block_num = val >> block_exponent;
-  const size_t pos = GetLowerBits(val, block_exponent);
+  assert(block_exponent < 64);
+  const uint64_t block_num = val >> block_exponent;
+  const uint64_t pos = GetLowerBits(val, block_exponent);
   if (block_num & 1) {
     // Negative.
     return -1LL - ((block_num >> 1) << block_exponent) - pos;
@@ -105,7 +107,7 @@ inline int64_t DecodeZigZag(uint64_t val, size_t block_exponent) {
   }
 }
 
-// Converts |buffer| to a stream of zeroes and ones.
+// Converts |buffer| to a stream of '0' and '1'.
 template <typename T>
 std::string BufferToStream(const std::vector<T>& buffer) {
   std::stringstream ss;
@@ -119,7 +121,8 @@ std::string BufferToStream(const std::vector<T>& buffer) {
   return ss.str();
 }
 
-// Converts a left-to-right input string to a buffer of |T| words.
+// Converts a left-to-right input string of '0' and '1' to a buffer of |T|
+// words.
 template <typename T>
 std::vector<T> StreamToBuffer(std::string str) {
   // The input string is left-to-right, the input argument of std::bitset needs
@@ -184,7 +187,7 @@ inline std::string BitsToStream(uint64_t bits, size_t num_bits = 64) {
   return BitsetToStream(bitset, num_bits);
 }
 
-// Base class for bit stream writers.
+// Base class for writing sequences of bits.
 class BitWriterInterface {
  public:
   BitWriterInterface() {}
@@ -276,10 +279,11 @@ class BitWriterWord64 : public BitWriterInterface {
 
  private:
   std::vector<uint64_t> buffer_;
+  // Total number of bits written so far. Named 'end' as analogy to std::end().
   size_t end_;
 };
 
-// Base class for bit stream readers.
+// Base class for reading sequences of bits.
 class BitReaderInterface {
  public:
   BitReaderInterface() {}
@@ -315,7 +319,10 @@ class BitReaderInterface {
   // Returns true if the end of the buffer was reached.
   virtual bool ReachedEnd() const = 0;
   // Returns true if we reached the end of the buffer or are nearing it and only
-  // zero bits are left to read. It is assumed that the consumer expects that
+  // zero bits are left to read. Implementations of this function are allowed to
+  // commit a "false negative" error if the end of the buffer was not reached,
+  // i.e. it can return false even if indeed only zeroes are left.
+  // It is assumed that the consumer expects that
   // the buffer stream ends with padding zeroes, and would accept this as a
   // 'soft' EOF. Implementations of this class do not necessarily need to
   // implement this, default behavior can simply delegate to ReachedEnd().

@@ -101,6 +101,28 @@ class BitReaderFromString : public BitReaderInterface {
   size_t pos_;
 };
 
+TEST(NumBitsToNumWords, Word8) {
+  EXPECT_EQ(0, NumBitsToNumWords<8>(0));
+  EXPECT_EQ(1, NumBitsToNumWords<8>(1));
+  EXPECT_EQ(1, NumBitsToNumWords<8>(7));
+  EXPECT_EQ(1, NumBitsToNumWords<8>(8));
+  EXPECT_EQ(2, NumBitsToNumWords<8>(9));
+  EXPECT_EQ(2, NumBitsToNumWords<8>(16));
+  EXPECT_EQ(3, NumBitsToNumWords<8>(17));
+  EXPECT_EQ(3, NumBitsToNumWords<8>(23));
+  EXPECT_EQ(3, NumBitsToNumWords<8>(24));
+  EXPECT_EQ(4, NumBitsToNumWords<8>(25));
+}
+
+TEST(NumBitsToNumWords, Word64) {
+  EXPECT_EQ(0, NumBitsToNumWords<64>(0));
+  EXPECT_EQ(1, NumBitsToNumWords<64>(1));
+  EXPECT_EQ(1, NumBitsToNumWords<64>(64));
+  EXPECT_EQ(2, NumBitsToNumWords<64>(65));
+  EXPECT_EQ(2, NumBitsToNumWords<64>(128));
+  EXPECT_EQ(3, NumBitsToNumWords<64>(129));
+}
+
 TEST(ZigZagCoding, Encode) {
   EXPECT_EQ(0, EncodeZigZag(0));
   EXPECT_EQ(1, EncodeZigZag(-1));
@@ -109,6 +131,10 @@ TEST(ZigZagCoding, Encode) {
   EXPECT_EQ(4, EncodeZigZag(2));
   EXPECT_EQ(5, EncodeZigZag(-3));
   EXPECT_EQ(6, EncodeZigZag(3));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::max()));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
+            EncodeZigZag(std::numeric_limits<int64_t>::min()));
 }
 
 TEST(ZigZagCoding, Decode) {
@@ -119,6 +145,10 @@ TEST(ZigZagCoding, Decode) {
   EXPECT_EQ(2, DecodeZigZag(4));
   EXPECT_EQ(-3, DecodeZigZag(5));
   EXPECT_EQ(3, DecodeZigZag(6));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max()));
+  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 1));
 }
 
 TEST(ZigZagCoding, Encode0) {
@@ -126,6 +156,10 @@ TEST(ZigZagCoding, Encode0) {
   EXPECT_EQ(1, EncodeZigZag(-1, 0));
   EXPECT_EQ(2, EncodeZigZag(1, 0));
   EXPECT_EQ(3, EncodeZigZag(-2, 0));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::max(), 0));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
+            EncodeZigZag(std::numeric_limits<int64_t>::min(), 0));
 }
 
 TEST(ZigZagCoding, Decode0) {
@@ -133,6 +167,10 @@ TEST(ZigZagCoding, Decode0) {
   EXPECT_EQ(-1, DecodeZigZag(1, 0));
   EXPECT_EQ(1, DecodeZigZag(2, 0));
   EXPECT_EQ(-2, DecodeZigZag(3, 0));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max(), 0));
+  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 1, 0));
 }
 
 TEST(ZigZagCoding, Decode0SameAsNormalZigZag) {
@@ -156,6 +194,12 @@ TEST(ZigZagCoding, Encode1) {
   EXPECT_EQ(5, EncodeZigZag(3, 1));
   EXPECT_EQ(6, EncodeZigZag(-3, 1));
   EXPECT_EQ(7, EncodeZigZag(-4, 1));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 2,
+            EncodeZigZag(std::numeric_limits<int64_t>::max(), 1));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::min() + 1, 1));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
+            EncodeZigZag(std::numeric_limits<int64_t>::min(), 1));
 }
 
 TEST(ZigZagCoding, Decode1) {
@@ -167,6 +211,12 @@ TEST(ZigZagCoding, Decode1) {
   EXPECT_EQ(3, DecodeZigZag(5, 1));
   EXPECT_EQ(-3, DecodeZigZag(6, 1));
   EXPECT_EQ(-4, DecodeZigZag(7, 1));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max(), 1));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 1,
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 1, 1));
+  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 2, 1));
 }
 
 TEST(ZigZagCoding, Encode2) {
@@ -186,6 +236,16 @@ TEST(ZigZagCoding, Encode2) {
   EXPECT_EQ(13, EncodeZigZag(-6, 2));
   EXPECT_EQ(14, EncodeZigZag(-7, 2));
   EXPECT_EQ(15, EncodeZigZag(-8, 2));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 4,
+            EncodeZigZag(std::numeric_limits<int64_t>::max(), 2));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 3,
+            EncodeZigZag(std::numeric_limits<int64_t>::min() + 3, 2));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 2,
+            EncodeZigZag(std::numeric_limits<int64_t>::min() + 2, 2));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::min() + 1, 2));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
+            EncodeZigZag(std::numeric_limits<int64_t>::min(), 2));
 }
 
 TEST(ZigZagCoding, Decode2) {
@@ -205,11 +265,39 @@ TEST(ZigZagCoding, Decode2) {
   EXPECT_EQ(-6, DecodeZigZag(13, 2));
   EXPECT_EQ(-7, DecodeZigZag(14, 2));
   EXPECT_EQ(-8, DecodeZigZag(15, 2));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max(), 2));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 1,
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 1, 2));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 2,
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 2, 2));
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 3,
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 3, 2));
+  EXPECT_EQ(std::numeric_limits<int64_t>::max(),
+            DecodeZigZag(std::numeric_limits<uint64_t>::max() - 4, 2));
+}
+
+TEST(ZigZagCoding, Encode63) {
+  EXPECT_EQ(0, EncodeZigZag(0, 63));
+
+  for (int64_t i = 0; i < 0xFFFFFFFF; i += 1234567) {
+    const int64_t positive_val = GetLowerBits(i * i  * i + i * i, 63) | 1UL;
+    ASSERT_EQ(positive_val, EncodeZigZag(positive_val, 63));
+    ASSERT_EQ((1ULL << 63) - 1 + positive_val, EncodeZigZag(-positive_val, 63));
+  }
+
+  EXPECT_EQ((1ULL << 63) - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::max(), 63));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
+            EncodeZigZag(std::numeric_limits<int64_t>::min() + 1, 63));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
+            EncodeZigZag(std::numeric_limits<int64_t>::min(), 63));
 }
 
 TEST(BufToStream, UInt8_Empty) {
   const std::string expected_bits = "";
   std::vector<uint8_t> buffer = StreamToBuffer<uint8_t>(expected_bits);
+  EXPECT_TRUE(buffer.empty());
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -217,13 +305,24 @@ TEST(BufToStream, UInt8_Empty) {
 TEST(BufToStream, UInt8_OneWord) {
   const std::string expected_bits = "00101100";
   std::vector<uint8_t> buffer = StreamToBuffer<uint8_t>(expected_bits);
+  EXPECT_EQ(
+      std::vector<uint8_t>(
+          {static_cast<uint8_t>(StreamToBitset<8>(expected_bits).to_ulong())}),
+      buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
 
 TEST(BufToStream, UInt8_MultipleWords) {
-  const std::string expected_bits = "00100010011010100111110100100010";
+  const std::string expected_bits = "00100010""01101010""01111101""00100010";
   std::vector<uint8_t> buffer = StreamToBuffer<uint8_t>(expected_bits);
+  EXPECT_EQ(
+      std::vector<uint8_t>({
+            static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
+            static_cast<uint8_t>(StreamToBitset<8>("01101010").to_ulong()),
+            static_cast<uint8_t>(StreamToBitset<8>("01111101").to_ulong()),
+            static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
+      }), buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -231,6 +330,7 @@ TEST(BufToStream, UInt8_MultipleWords) {
 TEST(BufToStream, UInt64_Empty) {
   const std::string expected_bits = "";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
+  EXPECT_TRUE(buffer.empty());
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -239,6 +339,7 @@ TEST(BufToStream, UInt64_OneWord) {
   const std::string expected_bits =
       "0010001001101010011111010010001001001010000111110010010010010101";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
+  EXPECT_EQ(std::vector<uint64_t>({StreamToBits(expected_bits)}), buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -248,6 +349,10 @@ TEST(BufToStream, UInt64_Unaligned) {
       "0010001001101010011111010010001001001010000111110010010010010101"
       "0010001001101010011111111111111111111111";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
+  EXPECT_EQ(std::vector<uint64_t>({
+    StreamToBits(expected_bits.substr(0, 64)),
+    StreamToBits(expected_bits.substr(64, 64)),
+  }), buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(PadToWord<64>(expected_bits), result_bits);
 }
@@ -258,6 +363,11 @@ TEST(BufToStream, UInt64_MultipleWords) {
       "0010001001101010011111111111111111111111000111110010010010010111"
       "0000000000000000000000000000000000000000000000000010010011111111";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
+  EXPECT_EQ(std::vector<uint64_t>({
+    StreamToBits(expected_bits.substr(0, 64)),
+    StreamToBits(expected_bits.substr(64, 64)),
+    StreamToBits(expected_bits.substr(128, 64)),
+  }), buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -399,7 +509,7 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfBits) {
   for (uint64_t i = 0; i < 65000; i += 25) {
     writer1.WriteBits(i, 16);
     writer2.WriteBits(i, 16);
-    EXPECT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
+    ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
   EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
@@ -420,7 +530,7 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfStreams) {
       bits += "1110100111111111111";
     writer1.WriteStream(bits);
     writer2.WriteStream(bits);
-    EXPECT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
+    ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
   EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
@@ -438,7 +548,7 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfBitsets) {
     writer1.WriteBitset(bits2);
     writer2.WriteBitset(bits1);
     writer2.WriteBitset(bits2);
-    EXPECT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
+    ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
   EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
@@ -856,7 +966,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadU64) {
     uint64_t read_val = 0;
     ASSERT_TRUE(reader.ReadVariableWidthU64(&read_val, chunk_length));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -874,7 +984,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadS64) {
     ASSERT_TRUE(reader.ReadVariableWidthS64(&read_val, chunk_length,
                                             zigzag_exponent));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -890,7 +1000,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadU32) {
     uint32_t read_val = 0;
     ASSERT_TRUE(reader.ReadVariableWidthU32(&read_val, chunk_length));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -908,7 +1018,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadS32) {
     ASSERT_TRUE(reader.ReadVariableWidthS32(
         &read_val, chunk_length, zigzag_exponent));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -924,7 +1034,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadU16) {
     uint16_t read_val = 0;
     ASSERT_TRUE(reader.ReadVariableWidthU16(&read_val, chunk_length));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -942,7 +1052,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadS16) {
     ASSERT_TRUE(reader.ReadVariableWidthS16(&read_val, chunk_length,
                                             zigzag_exponent));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -958,7 +1068,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadU8) {
     uint8_t read_val = 0;
     ASSERT_TRUE(reader.ReadVariableWidthU8(&read_val, chunk_length));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
@@ -976,7 +1086,7 @@ TEST(VariableWidthWriteRead, SingleWriteReadS8) {
     ASSERT_TRUE(reader.ReadVariableWidthS8(&read_val, chunk_length,
                                            zigzag_exponent));
 
-    EXPECT_EQ(val, read_val) << "Chunk length " << chunk_length;
+    ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
 }
 
