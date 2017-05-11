@@ -245,8 +245,8 @@ void InlinePass::GenInlineCode(
   // Clone and map callee code. Copy caller block code to beginning of
   // first block and end of last block.
   bool prevInstWasReturn = false;
-  uint32_t headerId = 0;
-  uint32_t continueId = 0;
+  uint32_t singleTripLoopHeaderId = 0;
+  uint32_t singleTripLoopContinueId = 0;
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
   const uint32_t calleeTypeId = calleeFn->type_id();
@@ -255,7 +255,8 @@ void InlinePass::GenInlineCode(
                          &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
                          &returnLabelId, &returnVarId, &calleeTypeId,
                          &multiBlocks, &postCallSB, &preCallSB, &earlyReturn,
-                         &headerId, &continueId, this](
+                         &singleTripLoopHeaderId, &singleTripLoopContinueId,
+                         this](
       const ir::Instruction* cpi) {
     switch (cpi->opcode()) {
       case SpvOpFunction:
@@ -307,13 +308,14 @@ void InlinePass::GenInlineCode(
           // one-trip loop that will encompass callee code. Start postheader
           // block.
           if (earlyReturn) {
-            headerId = this->TakeNextId();
-            AddBranch(headerId, &new_blk_ptr);
+            singleTripLoopHeaderId = this->TakeNextId();
+            AddBranch(singleTripLoopHeaderId, &new_blk_ptr);
             new_blocks->push_back(std::move(new_blk_ptr));
-            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(headerId)));
+            new_blk_ptr.reset(new ir::BasicBlock(NewLabel(
+                singleTripLoopHeaderId)));
             returnLabelId = this->TakeNextId();
-            continueId = this->TakeNextId();
-            AddLoopMerge(returnLabelId, continueId, &new_blk_ptr);
+            singleTripLoopContinueId = this->TakeNextId();
+            AddLoopMerge(returnLabelId, singleTripLoopContinueId, &new_blk_ptr);
             uint32_t postHeaderId = this->TakeNextId();
             AddBranch(postHeaderId, &new_blk_ptr);
             new_blocks->push_back(std::move(new_blk_ptr));
@@ -350,8 +352,10 @@ void InlinePass::GenInlineCode(
         if (returnLabelId != 0) {
           if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
           new_blocks->push_back(std::move(new_blk_ptr));
-          new_blk_ptr.reset(new ir::BasicBlock(NewLabel(continueId)));
-          AddBranchCond(GetFalseId(), headerId, returnLabelId, &new_blk_ptr);
+          new_blk_ptr.reset(new ir::BasicBlock(NewLabel(
+              singleTripLoopContinueId)));
+          AddBranchCond(GetFalseId(), singleTripLoopHeaderId, returnLabelId, 
+              &new_blk_ptr);
           new_blocks->push_back(std::move(new_blk_ptr));
           new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
           multiBlocks = true;
