@@ -138,7 +138,7 @@ uint32_t Module::ComputeIdBound() const {
   return highest + 1;
 }
 
-bool Module::hasCapability(uint32_t cap) {
+bool Module::HasCapability(uint32_t cap) {
   for (auto& ci : capabilities_) {
     uint32_t tcap = ci->GetSingleWordOperand(0);
     if (tcap == cap) {

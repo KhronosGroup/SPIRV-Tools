@@ -152,12 +152,12 @@ class InlinePass : public Pass {
   GetBlocksFunction StructuredSuccessorsFunction();
 
   // Return true if |func| has multiple returns
-  bool hasMultipleReturns(ir::Function* func);
+  bool HasMultipleReturns(ir::Function* func);
 
   // Return true if |func| has no return in a loop. The current analysis
   // requires structured control flow, so return false if control flow not
   // structured ie. module is not a shader.
-  bool hasNoReturnInLoop(ir::Function* func);
+  bool HasNoReturnInLoop(ir::Function* func);
 
   // Find all functions with multiple returns and no returns in loops
   void ReturnAnalysis(ir::Function* func);

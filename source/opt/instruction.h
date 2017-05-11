@@ -171,7 +171,7 @@ class Instruction {
   inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
 
   // Returns true if any operands can be labels
-  inline bool has_labels() const;
+  inline bool HasLabels() const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
@@ -257,7 +257,7 @@ inline void Instruction::ForEachInId(
     if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
 }
 
-inline bool Instruction::has_labels() const {
+inline bool Instruction::HasLabels() const {
   switch (opcode_) {
     case SpvOpSelectionMerge:
     case SpvOpBranch:

@@ -388,7 +388,7 @@ void InlinePass::GenInlineCode(
           const auto mapItr = callee2caller.find(*iid);
           if (mapItr != callee2caller.end()) {
             *iid = mapItr->second;
-          } else if (cpi->has_labels()) {
+          } else if (cpi->HasLabels()) {
             const ir::Instruction* inst =
                 def_use_mgr_->id_to_defs().find(*iid)->second;
             if (inst->opcode() == SpvOpLabel) {
@@ -468,7 +468,7 @@ bool InlinePass::Inline(ir::Function* func) {
   return modified;
 }
 
-bool InlinePass::hasMultipleReturns(ir::Function* func) {
+bool InlinePass::HasMultipleReturns(ir::Function* func) {
   bool seenReturn = false;
   bool multipleReturns = false;
   for (auto& blk : *func) {
@@ -513,10 +513,10 @@ InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   };
 }
 
-bool InlinePass::hasNoReturnInLoop(ir::Function* func) {
+bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
   // If control not structured, do not do loop/return analysis
   // TODO: Analyze returns in non-structured control flow
-  if (!module_->hasCapability(SpvCapabilityShader))
+  if (!module_->HasCapability(SpvCapabilityShader))
     return false;
   // Compute structured block order. This order has the property
   // that dominators are before all blocks they dominate and merge blocks
@@ -557,13 +557,13 @@ bool InlinePass::hasNoReturnInLoop(ir::Function* func) {
 
 void InlinePass::ReturnAnalysis(ir::Function* func) {
   // Look for multiple returns
-  if (!hasMultipleReturns(func)) {
+  if (!HasMultipleReturns(func)) {
     no_return_in_loop_.insert(func->result_id());
     return;
   }
   early_return_.insert(func->result_id());
   // If multiple returns, see if any are in a loop
-  if (hasNoReturnInLoop(func))
+  if (HasNoReturnInLoop(func))
     no_return_in_loop_.insert(func->result_id());
 }
 

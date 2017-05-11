@@ -143,7 +143,7 @@ class Module {
   uint32_t ComputeIdBound() const;
 
   // Returns true if module has capability |cap|
-  bool hasCapability(uint32_t cap);
+  bool HasCapability(uint32_t cap);
 
  private:
   ModuleHeader header_;  // Module header
