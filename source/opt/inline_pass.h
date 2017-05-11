@@ -139,6 +139,10 @@ class InlinePass : public Pass {
   // Return true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
+  // Returns the id of the merge block declared by a merge instruction in 
+  // this block, if any.  If none, returns zero.
+  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk);
+
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.

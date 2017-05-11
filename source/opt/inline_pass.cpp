@@ -485,19 +485,24 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
   return multipleReturns;
 }
 
+uint32_t InlinePass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
+  auto mii = blk.cend();
+  mii--;
+  uint32_t mbid = 0;
+  if (mii != blk.cbegin()) {
+    mii--;
+    if (mii->opcode() == SpvOpLoopMerge)
+      mbid = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+    else if (mii->opcode() == SpvOpSelectionMerge)
+      mbid = mii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
+  }
+  return mbid;
+}
+
 void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
   // If header, make merge block first successor.
   for (auto& blk : *func) {
-    auto mii = blk.end();
-    mii--;
-    uint32_t mbid = 0;
-    if (mii != blk.begin()) {
-      mii--;
-      if (mii->opcode() == SpvOpLoopMerge)
-        mbid = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
-      else if (mii->opcode() == SpvOpSelectionMerge)
-        mbid = mii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
-    }
+    uint32_t mbid = MergeBlockIdIfAny(blk);
     if (mbid != 0)
       block2structuredSuccs_[&blk].push_back(id2block_[mbid]);
     // add true successors
