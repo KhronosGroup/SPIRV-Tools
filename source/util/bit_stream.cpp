@@ -244,7 +244,9 @@ BitWriterWord64::BitWriterWord64(size_t reserve_bits) : end_(0) {
 void BitWriterWord64::WriteBits(uint64_t bits, size_t num_bits) {
   // Check that |bits| and |num_bits| are valid and consistent.
   assert(num_bits <= 64);
-  assert(IsLittleEndian() && "Big-endian architecture support not implemented");
+  const bool is_little_endian = IsLittleEndian();
+  assert(is_little_endian && "Big-endian architecture support not implemented");
+  if (!is_little_endian) return;
 
   bits = GetLowerBits(bits, num_bits);
 
@@ -326,7 +328,9 @@ BitReaderWord64::BitReaderWord64(const std::vector<uint8_t>& buffer)
 
 size_t BitReaderWord64::ReadBits(uint64_t* bits, size_t num_bits) {
   assert(num_bits <= 64);
-  assert(IsLittleEndian() && "Big-endian architecture support not implemented");
+  const bool is_little_endian = IsLittleEndian();
+  assert(is_little_endian && "Big-endian architecture support not implemented");
+  if (!is_little_endian) return 0;
 
   if (ReachedEnd())
     return 0;
