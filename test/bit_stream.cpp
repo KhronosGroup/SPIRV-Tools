@@ -629,7 +629,7 @@ TEST(BitReaderFromString, FromU64) {
 }
 
 TEST(BitReaderWord64, ReadBitsSingleByte) {
-  BitReaderWord64 reader(std::vector<uint8_t>({0xF0}));
+  BitReaderWord64 reader(std::vector<uint8_t>({uint8_t(0xF0)}));
   EXPECT_FALSE(reader.ReachedEnd());
 
   uint64_t bits = 0;
@@ -653,7 +653,7 @@ TEST(BitReaderWord64, ReadBitsSingleByte) {
 }
 
 TEST(BitReaderWord64, ReadBitsetSingleByte) {
-  BitReaderWord64 reader(std::vector<uint8_t>({0xCC}));
+  BitReaderWord64 reader(std::vector<uint8_t>({uint8_t(0xCC)}));
   std::bitset<4> bits;
   EXPECT_EQ(2, reader.ReadBitset(&bits, 2));
   EXPECT_EQ(0, bits.to_ullong());
@@ -666,7 +666,7 @@ TEST(BitReaderWord64, ReadBitsetSingleByte) {
 }
 
 TEST(BitReaderWord64, ReadStreamSingleByte) {
-  BitReaderWord64 reader(std::vector<uint8_t>({0xAA}));
+  BitReaderWord64 reader(std::vector<uint8_t>({uint8_t(0xAA)}));
   EXPECT_EQ("", reader.ReadStream(0));
   EXPECT_EQ("0", reader.ReadStream(1));
   EXPECT_EQ("101", reader.ReadStream(3));
@@ -803,14 +803,14 @@ TEST(BitReaderWord64, ComparisonLotsOfU64) {
 TEST(ReadWriteWord64, ReadWriteLotsOfBits) {
   BitWriterWord64 writer(16384);
   for (uint64_t i = 0; i < 65000; i += 25) {
-    const uint64_t num_bits = i % 64 + 1;
+    const size_t num_bits = i % 64 + 1;
     const uint64_t bits = i >> (64 - num_bits);
     writer.WriteBits(bits, num_bits);
   }
 
   BitReaderWord64 reader(writer.GetDataCopy());
   for (uint64_t i = 0; i < 65000; i += 25) {
-    const uint64_t num_bits = i % 64 + 1;
+    const size_t num_bits = i % 64 + 1;
     const uint64_t expected_bits = i >> (64 - num_bits);
     uint64_t bits = 0;
     reader.ReadBits(&bits, num_bits);
