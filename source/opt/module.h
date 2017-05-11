@@ -105,10 +105,6 @@ class Module {
   inline IteratorRange<inst_iterator> entry_points();
   inline IteratorRange<const_inst_iterator> entry_points() const;
 
-  // Iterators for capability instructions contained in this module
-  //inline IteratorRange<inst_iterator> capabilities();
-  //inline IteratorRange<const_inst_iterator> capabilities() const;
-
   // Clears all debug instructions (excluding OpLine & OpNoLine).
   void debug_clear() { debugs_.clear(); }
 
