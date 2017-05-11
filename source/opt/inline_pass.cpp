@@ -133,7 +133,7 @@ void InlinePass::MapParams(
         const uint32_t pid = cpi->result_id();
         (*callee2caller)[pid] = call_inst_itr->GetSingleWordOperand(
             kSpvFunctionCallArgumentId + param_idx);
-        param_idx++;
+        ++param_idx;
       });
 }
 
@@ -150,7 +150,7 @@ void InlinePass::CloneAndMapLocals(
     var_inst->SetResultId(newId);
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
-    callee_var_itr++;
+    ++callee_var_itr;
   }
 }
 
@@ -294,7 +294,7 @@ void InlinePass::GenInlineCode(
         if (firstBlock) {
           // Copy contents of original caller block up to call instruction.
           for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
-               cii++) {
+               ++cii) {
             std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
             // Remember same-block ops for possible regeneration.
             if (IsSameBlockOp(&*cp_inst)) {
@@ -364,7 +364,7 @@ void InlinePass::GenInlineCode(
         }
         // Copy remaining instructions from caller block.
         auto cii = call_inst_itr;
-        for (cii++; cii != call_block_itr->end(); cii++) {
+        for (++cii; cii != call_block_itr->end(); ++cii) {
           std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cii));
           // If multiple blocks generated, regenerate any same-block
           // instruction that has not been seen in this last block.
@@ -428,7 +428,7 @@ bool InlinePass::IsInlinableFunctionCall(const ir::Instruction* inst) {
 bool InlinePass::Inline(ir::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.
-  for (auto bi = func->begin(); bi != func->end(); bi++) {
+  for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end();) {
       if (IsInlinableFunctionCall(&*ii)) {
         // Inline call.
@@ -461,7 +461,7 @@ bool InlinePass::Inline(ir::Function* func) {
         ii = bi->begin();
         modified = true;
       } else {
-        ii++;
+        ++ii;
       }
     }
   }
@@ -473,7 +473,7 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
   bool multipleReturns = false;
   for (auto& blk : *func) {
     auto lii = blk.cend();
-    lii--;
+    --lii;
     if (lii->opcode() == SpvOpReturn || lii->opcode() == SpvOpReturnValue) {
       if (seenReturn) {
         multipleReturns = true;
@@ -487,10 +487,10 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
 
 uint32_t InlinePass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
   auto mii = blk.cend();
-  mii--;
+  --mii;
   uint32_t mbid = 0;
   if (mii != blk.cbegin()) {
-    mii--;
+    --mii;
     if (mii->opcode() == SpvOpLoopMerge)
       mbid = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
     else if (mii->opcode() == SpvOpSelectionMerge)
@@ -542,7 +542,7 @@ bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
       outerLoopMergeId = 0;
     // Return block
     auto lii = blk->cend();
-    lii--;
+    --lii;
     if (lii->opcode() == SpvOpReturn || lii->opcode() == SpvOpReturnValue) {
       if (outerLoopMergeId != 0) {
         return_in_loop = true;
@@ -551,7 +551,7 @@ bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
     }
     else if (lii != blk->cbegin()) {
       auto mii = lii;
-      mii--;
+      --mii;
       // Entering outermost loop
       if (mii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
         outerLoopMergeId = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
