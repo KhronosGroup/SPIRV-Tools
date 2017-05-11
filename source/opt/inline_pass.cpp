@@ -555,7 +555,7 @@ bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
   return !return_in_loop;
 }
 
-void InlinePass::ReturnAnalysis(ir::Function* func) {
+void InlinePass::AnalyzeReturns(ir::Function* func) {
   // Look for multiple returns
   if (!HasMultipleReturns(func)) {
     no_return_in_loop_.insert(func->result_id());
@@ -576,7 +576,7 @@ bool InlinePass::IsInlinableFunction(ir::Function* func) {
   // the returns as a branch to the loop's merge block. However, this can only
   // done validly if the return was not in a loop in the original function.
   // Also remember functions with multiple (early) returns.
-  ReturnAnalysis(func);
+  AnalyzeReturns(func);
   const auto ci = no_return_in_loop_.find(func->result_id());
   return ci != no_return_in_loop_.cend();
 }

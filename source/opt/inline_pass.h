@@ -160,7 +160,7 @@ class InlinePass : public Pass {
   bool HasNoReturnInLoop(ir::Function* func);
 
   // Find all functions with multiple returns and no returns in loops
-  void ReturnAnalysis(ir::Function* func);
+  void AnalyzeReturns(ir::Function* func);
 
   // Return true if |func| is a function that can be inlined.
   bool IsInlinableFunction(ir::Function* func);
