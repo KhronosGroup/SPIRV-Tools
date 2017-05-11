@@ -135,12 +135,12 @@ std::vector<T> StreamToBuffer(std::string str) {
   buffer.reserve(NumBitsToNumWords<sizeof(T)>(str.length()));
   for (int index = str_length - word_size; index >= 0; index -= word_size) {
     buffer.push_back(static_cast<T>(std::bitset<sizeof(T) * 8>(
-        str, index, word_size).to_ulong()));
+        str, index, word_size).to_ullong()));
   }
   const size_t suffix_length = str.length() % word_size;
   if (suffix_length != 0) {
     buffer.push_back(static_cast<T>(std::bitset<sizeof(T) * 8>(
-        str, 0, suffix_length).to_ulong()));
+        str, 0, suffix_length).to_ullong()));
   }
   return buffer;
 }

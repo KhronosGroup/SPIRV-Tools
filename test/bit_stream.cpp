@@ -337,9 +337,10 @@ TEST(BufToStream, UInt64_Empty) {
 
 TEST(BufToStream, UInt64_OneWord) {
   const std::string expected_bits =
-      "0010001001101010011111010010001001001010000111110010010010010101";
+      "0001000111101110011001101010101000100010110011000100010010001000";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
-  EXPECT_EQ(std::vector<uint64_t>({StreamToBits(expected_bits)}), buffer);
+  ASSERT_EQ(1, buffer.size());
+  EXPECT_EQ(0x1122334455667788, buffer[0]);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
