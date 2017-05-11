@@ -102,35 +102,35 @@ class BitReaderFromString : public BitReaderInterface {
 };
 
 TEST(NumBitsToNumWords, Word8) {
-  EXPECT_EQ(0, NumBitsToNumWords<8>(0));
-  EXPECT_EQ(1, NumBitsToNumWords<8>(1));
-  EXPECT_EQ(1, NumBitsToNumWords<8>(7));
-  EXPECT_EQ(1, NumBitsToNumWords<8>(8));
-  EXPECT_EQ(2, NumBitsToNumWords<8>(9));
-  EXPECT_EQ(2, NumBitsToNumWords<8>(16));
-  EXPECT_EQ(3, NumBitsToNumWords<8>(17));
-  EXPECT_EQ(3, NumBitsToNumWords<8>(23));
-  EXPECT_EQ(3, NumBitsToNumWords<8>(24));
-  EXPECT_EQ(4, NumBitsToNumWords<8>(25));
+  EXPECT_EQ(0u, NumBitsToNumWords<8>(0));
+  EXPECT_EQ(1u, NumBitsToNumWords<8>(1));
+  EXPECT_EQ(1u, NumBitsToNumWords<8>(7));
+  EXPECT_EQ(1u, NumBitsToNumWords<8>(8));
+  EXPECT_EQ(2u, NumBitsToNumWords<8>(9));
+  EXPECT_EQ(2u, NumBitsToNumWords<8>(16));
+  EXPECT_EQ(3u, NumBitsToNumWords<8>(17));
+  EXPECT_EQ(3u, NumBitsToNumWords<8>(23));
+  EXPECT_EQ(3u, NumBitsToNumWords<8>(24));
+  EXPECT_EQ(4u, NumBitsToNumWords<8>(25));
 }
 
 TEST(NumBitsToNumWords, Word64) {
-  EXPECT_EQ(0, NumBitsToNumWords<64>(0));
-  EXPECT_EQ(1, NumBitsToNumWords<64>(1));
-  EXPECT_EQ(1, NumBitsToNumWords<64>(64));
-  EXPECT_EQ(2, NumBitsToNumWords<64>(65));
-  EXPECT_EQ(2, NumBitsToNumWords<64>(128));
-  EXPECT_EQ(3, NumBitsToNumWords<64>(129));
+  EXPECT_EQ(0u, NumBitsToNumWords<64>(0));
+  EXPECT_EQ(1u, NumBitsToNumWords<64>(1));
+  EXPECT_EQ(1u, NumBitsToNumWords<64>(64));
+  EXPECT_EQ(2u, NumBitsToNumWords<64>(65));
+  EXPECT_EQ(2u, NumBitsToNumWords<64>(128));
+  EXPECT_EQ(3u, NumBitsToNumWords<64>(129));
 }
 
 TEST(ZigZagCoding, Encode) {
-  EXPECT_EQ(0, EncodeZigZag(0));
-  EXPECT_EQ(1, EncodeZigZag(-1));
-  EXPECT_EQ(2, EncodeZigZag(1));
-  EXPECT_EQ(3, EncodeZigZag(-2));
-  EXPECT_EQ(4, EncodeZigZag(2));
-  EXPECT_EQ(5, EncodeZigZag(-3));
-  EXPECT_EQ(6, EncodeZigZag(3));
+  EXPECT_EQ(0u, EncodeZigZag(0));
+  EXPECT_EQ(1u, EncodeZigZag(-1));
+  EXPECT_EQ(2u, EncodeZigZag(1));
+  EXPECT_EQ(3u, EncodeZigZag(-2));
+  EXPECT_EQ(4u, EncodeZigZag(2));
+  EXPECT_EQ(5u, EncodeZigZag(-3));
+  EXPECT_EQ(6u, EncodeZigZag(3));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
             EncodeZigZag(std::numeric_limits<int64_t>::max()));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
@@ -152,10 +152,10 @@ TEST(ZigZagCoding, Decode) {
 }
 
 TEST(ZigZagCoding, Encode0) {
-  EXPECT_EQ(0, EncodeZigZag(0, 0));
-  EXPECT_EQ(1, EncodeZigZag(-1, 0));
-  EXPECT_EQ(2, EncodeZigZag(1, 0));
-  EXPECT_EQ(3, EncodeZigZag(-2, 0));
+  EXPECT_EQ(0u, EncodeZigZag(0, 0));
+  EXPECT_EQ(1u, EncodeZigZag(-1, 0));
+  EXPECT_EQ(2u, EncodeZigZag(1, 0));
+  EXPECT_EQ(3u, EncodeZigZag(-2, 0));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
             EncodeZigZag(std::numeric_limits<int64_t>::max(), 0));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max(),
@@ -186,14 +186,14 @@ TEST(ZigZagCoding, Encode0SameAsNormalZigZag) {
 }
 
 TEST(ZigZagCoding, Encode1) {
-  EXPECT_EQ(0, EncodeZigZag(0, 1));
-  EXPECT_EQ(1, EncodeZigZag(1, 1));
-  EXPECT_EQ(2, EncodeZigZag(-1, 1));
-  EXPECT_EQ(3, EncodeZigZag(-2, 1));
-  EXPECT_EQ(4, EncodeZigZag(2, 1));
-  EXPECT_EQ(5, EncodeZigZag(3, 1));
-  EXPECT_EQ(6, EncodeZigZag(-3, 1));
-  EXPECT_EQ(7, EncodeZigZag(-4, 1));
+  EXPECT_EQ(0u, EncodeZigZag(0, 1));
+  EXPECT_EQ(1u, EncodeZigZag(1, 1));
+  EXPECT_EQ(2u, EncodeZigZag(-1, 1));
+  EXPECT_EQ(3u, EncodeZigZag(-2, 1));
+  EXPECT_EQ(4u, EncodeZigZag(2, 1));
+  EXPECT_EQ(5u, EncodeZigZag(3, 1));
+  EXPECT_EQ(6u, EncodeZigZag(-3, 1));
+  EXPECT_EQ(7u, EncodeZigZag(-4, 1));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 2,
             EncodeZigZag(std::numeric_limits<int64_t>::max(), 1));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1,
@@ -220,22 +220,22 @@ TEST(ZigZagCoding, Decode1) {
 }
 
 TEST(ZigZagCoding, Encode2) {
-  EXPECT_EQ(0, EncodeZigZag(0, 2));
-  EXPECT_EQ(1, EncodeZigZag(1, 2));
-  EXPECT_EQ(2, EncodeZigZag(2, 2));
-  EXPECT_EQ(3, EncodeZigZag(3, 2));
-  EXPECT_EQ(4, EncodeZigZag(-1, 2));
-  EXPECT_EQ(5, EncodeZigZag(-2, 2));
-  EXPECT_EQ(6, EncodeZigZag(-3, 2));
-  EXPECT_EQ(7, EncodeZigZag(-4, 2));
-  EXPECT_EQ(8, EncodeZigZag(4, 2));
-  EXPECT_EQ(9, EncodeZigZag(5, 2));
-  EXPECT_EQ(10, EncodeZigZag(6, 2));
-  EXPECT_EQ(11, EncodeZigZag(7, 2));
-  EXPECT_EQ(12, EncodeZigZag(-5, 2));
-  EXPECT_EQ(13, EncodeZigZag(-6, 2));
-  EXPECT_EQ(14, EncodeZigZag(-7, 2));
-  EXPECT_EQ(15, EncodeZigZag(-8, 2));
+  EXPECT_EQ(0u, EncodeZigZag(0, 2));
+  EXPECT_EQ(1u, EncodeZigZag(1, 2));
+  EXPECT_EQ(2u, EncodeZigZag(2, 2));
+  EXPECT_EQ(3u, EncodeZigZag(3, 2));
+  EXPECT_EQ(4u, EncodeZigZag(-1, 2));
+  EXPECT_EQ(5u, EncodeZigZag(-2, 2));
+  EXPECT_EQ(6u, EncodeZigZag(-3, 2));
+  EXPECT_EQ(7u, EncodeZigZag(-4, 2));
+  EXPECT_EQ(8u, EncodeZigZag(4, 2));
+  EXPECT_EQ(9u, EncodeZigZag(5, 2));
+  EXPECT_EQ(10u, EncodeZigZag(6, 2));
+  EXPECT_EQ(11u, EncodeZigZag(7, 2));
+  EXPECT_EQ(12u, EncodeZigZag(-5, 2));
+  EXPECT_EQ(13u, EncodeZigZag(-6, 2));
+  EXPECT_EQ(14u, EncodeZigZag(-7, 2));
+  EXPECT_EQ(15u, EncodeZigZag(-8, 2));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 4,
             EncodeZigZag(std::numeric_limits<int64_t>::max(), 2));
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 3,
@@ -339,7 +339,7 @@ TEST(BufToStream, UInt64_OneWord) {
   const std::string expected_bits =
       "0001000111101110011001101010101000100010110011000100010010001000";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
-  ASSERT_EQ(1, buffer.size());
+  ASSERT_EQ(1u, buffer.size());
   EXPECT_EQ(0x1122334455667788, buffer[0]);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
@@ -385,8 +385,8 @@ TEST(PadToWord, Test) {
 
 TEST(BitWriterStringStream, Empty) {
   BitWriterStringStream writer;
-  EXPECT_EQ(0, writer.GetNumBits());
-  EXPECT_EQ(0, writer.GetDataSizeBytes());
+  EXPECT_EQ(0u, writer.GetNumBits());
+  EXPECT_EQ(0u, writer.GetDataSizeBytes());
   EXPECT_EQ("", writer.GetStreamRaw());
 }
 
@@ -394,14 +394,14 @@ TEST(BitWriterStringStream, WriteStream) {
   BitWriterStringStream writer;
   const std::string bits1 = "1011111111111111111";
   writer.WriteStream(bits1);
-  EXPECT_EQ(19, writer.GetNumBits());
-  EXPECT_EQ(3, writer.GetDataSizeBytes());
+  EXPECT_EQ(19u, writer.GetNumBits());
+  EXPECT_EQ(3u, writer.GetDataSizeBytes());
   EXPECT_EQ(bits1, writer.GetStreamRaw());
 
   const std::string bits2 = "10100001010101010000111111111111111111111111111";
   writer.WriteStream(bits2);
-  EXPECT_EQ(66, writer.GetNumBits());
-  EXPECT_EQ(9, writer.GetDataSizeBytes());
+  EXPECT_EQ(66u, writer.GetNumBits());
+  EXPECT_EQ(9u, writer.GetDataSizeBytes());
   EXPECT_EQ(bits1 + bits2, writer.GetStreamRaw());
 }
 
@@ -409,8 +409,8 @@ TEST(BitWriterStringStream, WriteBitSet) {
   BitWriterStringStream writer;
   const std::string bits1 = "10101";
   writer.WriteBitset(StreamToBitset<16>(bits1));
-  EXPECT_EQ(16, writer.GetNumBits());
-  EXPECT_EQ(2, writer.GetDataSizeBytes());
+  EXPECT_EQ(16u, writer.GetNumBits());
+  EXPECT_EQ(2u, writer.GetDataSizeBytes());
   EXPECT_EQ(PadToWord<16>(bits1), writer.GetStreamRaw());
 }
 
@@ -418,8 +418,8 @@ TEST(BitWriterStringStream, WriteBits) {
   BitWriterStringStream writer;
   const uint64_t bits1 = 0x1 | 0x2 | 0x10;
   writer.WriteBits(bits1, 5);
-  EXPECT_EQ(5, writer.GetNumBits());
-  EXPECT_EQ(1, writer.GetDataSizeBytes());
+  EXPECT_EQ(5u, writer.GetNumBits());
+  EXPECT_EQ(1u, writer.GetDataSizeBytes());
   EXPECT_EQ("11001", writer.GetStreamRaw());
 }
 
@@ -440,7 +440,7 @@ TEST(BitWriterStringStream, WriteMultiple) {
   const std::string expected = bits1 + bits2 + bits3;
 
   EXPECT_EQ(expected.length(), writer.GetNumBits());
-  EXPECT_EQ(9, writer.GetDataSizeBytes());
+  EXPECT_EQ(9u, writer.GetDataSizeBytes());
   EXPECT_EQ(expected, writer.GetStreamRaw());
 
   EXPECT_EQ(PadToWord<8>(expected), BufferToStream(writer.GetDataCopy()));
@@ -448,8 +448,8 @@ TEST(BitWriterStringStream, WriteMultiple) {
 
 TEST(BitWriterWord64, Empty) {
   BitWriterWord64 writer;
-  EXPECT_EQ(0, writer.GetNumBits());
-  EXPECT_EQ(0, writer.GetDataSizeBytes());
+  EXPECT_EQ(0u, writer.GetNumBits());
+  EXPECT_EQ(0u, writer.GetDataSizeBytes());
   EXPECT_EQ("", writer.GetStreamPadded64());
 }
 
@@ -462,7 +462,7 @@ TEST(BitWriterWord64, WriteStream) {
     expected += bits;
     writer.WriteStream(bits);
     EXPECT_EQ(expected.length(), writer.GetNumBits());
-    EXPECT_EQ(1, writer.GetDataSizeBytes());
+    EXPECT_EQ(1u, writer.GetDataSizeBytes());
     EXPECT_EQ(PadToWord<64>(expected), writer.GetStreamPadded64());
   }
 
@@ -487,8 +487,8 @@ TEST(BitWriterWord64, WriteBitset) {
   BitWriterWord64 writer;
   const std::string bits1 = "10101";
   writer.WriteBitset(StreamToBitset<16>(bits1), 12);
-  EXPECT_EQ(12, writer.GetNumBits());
-  EXPECT_EQ(2, writer.GetDataSizeBytes());
+  EXPECT_EQ(12u, writer.GetNumBits());
+  EXPECT_EQ(2u, writer.GetDataSizeBytes());
   EXPECT_EQ(PadToWord<64>(bits1), writer.GetStreamPadded64());
 }
 
@@ -498,8 +498,8 @@ TEST(BitWriterWord64, WriteBits) {
   writer.WriteBits(bits1, 5);
   writer.WriteBits(bits1, 5);
   writer.WriteBits(bits1, 5);
-  EXPECT_EQ(15, writer.GetNumBits());
-  EXPECT_EQ(2, writer.GetDataSizeBytes());
+  EXPECT_EQ(15u, writer.GetNumBits());
+  EXPECT_EQ(2u, writer.GetDataSizeBytes());
   EXPECT_EQ(PadToWord<64>("110011100111001"), writer.GetStreamPadded64());
 }
 
@@ -557,21 +557,21 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfBitsets) {
 }
 
 TEST(GetLowerBits, Test) {
-  EXPECT_EQ(0, GetLowerBits<uint8_t>(255, 0));
-  EXPECT_EQ(1, GetLowerBits<uint8_t>(255, 1));
-  EXPECT_EQ(3, GetLowerBits<uint8_t>(255, 2));
-  EXPECT_EQ(7, GetLowerBits<uint8_t>(255, 3));
-  EXPECT_EQ(15, GetLowerBits<uint8_t>(255, 4));
-  EXPECT_EQ(31, GetLowerBits<uint8_t>(255, 5));
-  EXPECT_EQ(63, GetLowerBits<uint8_t>(255, 6));
-  EXPECT_EQ(127, GetLowerBits<uint8_t>(255, 7));
-  EXPECT_EQ(255, GetLowerBits<uint8_t>(255, 8));
-  EXPECT_EQ(0xFF, GetLowerBits<uint32_t>(0xFFFFFFFF, 8));
-  EXPECT_EQ(0xFFFF, GetLowerBits<uint32_t>(0xFFFFFFFF, 16));
-  EXPECT_EQ(0xFFFFFF, GetLowerBits<uint32_t>(0xFFFFFFFF, 24));
-  EXPECT_EQ(0xFFFFFF, GetLowerBits<uint64_t>(0xFFFFFFFFFFFF, 24));
-  EXPECT_EQ(0xFFFFFFFFFFFFFFFF,
-            GetLowerBits<uint64_t>(0xFFFFFFFFFFFFFFFF, 64));
+  EXPECT_EQ(0u, GetLowerBits<uint8_t>(255, 0));
+  EXPECT_EQ(1u, GetLowerBits<uint8_t>(255, 1));
+  EXPECT_EQ(3u, GetLowerBits<uint8_t>(255, 2));
+  EXPECT_EQ(7u, GetLowerBits<uint8_t>(255, 3));
+  EXPECT_EQ(15u, GetLowerBits<uint8_t>(255, 4));
+  EXPECT_EQ(31u, GetLowerBits<uint8_t>(255, 5));
+  EXPECT_EQ(63u, GetLowerBits<uint8_t>(255, 6));
+  EXPECT_EQ(127u, GetLowerBits<uint8_t>(255, 7));
+  EXPECT_EQ(255u, GetLowerBits<uint8_t>(255, 8));
+  EXPECT_EQ(0xFFu, GetLowerBits<uint32_t>(0xFFFFFFFF, 8));
+  EXPECT_EQ(0xFFFFu, GetLowerBits<uint32_t>(0xFFFFFFFF, 16));
+  EXPECT_EQ(0xFFFFFFu, GetLowerBits<uint32_t>(0xFFFFFFFF, 24));
+  EXPECT_EQ(0xFFFFFFu, GetLowerBits<uint64_t>(0xFFFFFFFFFFFF, 24));
+  EXPECT_EQ(0xFFFFFFFFFFFFFFFFu,
+            GetLowerBits<uint64_t>(0xFFFFFFFFFFFFFFFFu, 64));
   EXPECT_EQ(StreamToBits("1010001110"),
             GetLowerBits<uint64_t>(
                 StreamToBits("1010001110111101111111"), 10));
@@ -589,13 +589,13 @@ TEST(BitReaderFromString, FromU8) {
   EXPECT_EQ(PadToWord<64>(total_stream), reader.GetStreamPadded64());
 
   uint64_t bits = 0;
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
   EXPECT_EQ(PadToWord<64>("01"), BitsToStream(bits));
-  EXPECT_EQ(20, reader.ReadBits(&bits, 20));
+  EXPECT_EQ(20u, reader.ReadBits(&bits, 20));
   EXPECT_EQ(PadToWord<64>("01010111011101001100"), BitsToStream(bits));
-  EXPECT_EQ(20, reader.ReadBits(&bits, 20));
+  EXPECT_EQ(20u, reader.ReadBits(&bits, 20));
   EXPECT_EQ(PadToWord<64>("11101110110000000000"), BitsToStream(bits));
-  EXPECT_EQ(22, reader.ReadBits(&bits, 30));
+  EXPECT_EQ(22u, reader.ReadBits(&bits, 30));
   EXPECT_EQ(PadToWord<64>("0000000000000000000000"), BitsToStream(bits));
   EXPECT_TRUE(reader.ReachedEnd());
 }
@@ -634,35 +634,35 @@ TEST(BitReaderWord64, ReadBitsSingleByte) {
   EXPECT_FALSE(reader.ReachedEnd());
 
   uint64_t bits = 0;
-  EXPECT_EQ(1, reader.ReadBits(&bits, 1));
-  EXPECT_EQ(0, bits);
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
-  EXPECT_EQ(0, bits);
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
-  EXPECT_EQ(2, bits);
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
-  EXPECT_EQ(3, bits);
+  EXPECT_EQ(1u, reader.ReadBits(&bits, 1));
+  EXPECT_EQ(0u, bits);
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(0u, bits);
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(2u, bits);
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(3u, bits);
   EXPECT_FALSE(reader.OnlyZeroesLeft());
   EXPECT_FALSE(reader.ReachedEnd());
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
-  EXPECT_EQ(1, bits);
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(1u, bits);
   EXPECT_TRUE(reader.OnlyZeroesLeft());
   EXPECT_FALSE(reader.ReachedEnd());
-  EXPECT_EQ(55, reader.ReadBits(&bits, 64));
-  EXPECT_EQ(0, bits);
+  EXPECT_EQ(55u, reader.ReadBits(&bits, 64));
+  EXPECT_EQ(0u, bits);
   EXPECT_TRUE(reader.ReachedEnd());
 }
 
 TEST(BitReaderWord64, ReadBitsetSingleByte) {
   BitReaderWord64 reader(std::vector<uint8_t>({uint8_t(0xCC)}));
   std::bitset<4> bits;
-  EXPECT_EQ(2, reader.ReadBitset(&bits, 2));
-  EXPECT_EQ(0, bits.to_ullong());
-  EXPECT_EQ(2, reader.ReadBitset(&bits, 2));
-  EXPECT_EQ(3, bits.to_ullong());
+  EXPECT_EQ(2u, reader.ReadBitset(&bits, 2));
+  EXPECT_EQ(0u, bits.to_ullong());
+  EXPECT_EQ(2u, reader.ReadBitset(&bits, 2));
+  EXPECT_EQ(3u, bits.to_ullong());
   EXPECT_FALSE(reader.OnlyZeroesLeft());
-  EXPECT_EQ(4, reader.ReadBitset(&bits, 4));
-  EXPECT_EQ(12, bits.to_ullong());
+  EXPECT_EQ(4u, reader.ReadBitset(&bits, 4));
+  EXPECT_EQ(12u, bits.to_ullong());
   EXPECT_TRUE(reader.OnlyZeroesLeft());
 }
 
@@ -696,21 +696,21 @@ TEST(BitReaderWord64, ReadBitsTwoWords) {
   BitReaderWord64 reader(std::move(buffer));
 
   uint64_t bits = 0;
-  EXPECT_EQ(1, reader.ReadBits(&bits, 1));
-  EXPECT_EQ(1, bits);
-  EXPECT_EQ(62, reader.ReadBits(&bits, 62));
-  EXPECT_EQ(0, bits);
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
-  EXPECT_EQ(2, bits);
-  EXPECT_EQ(3, reader.ReadBits(&bits, 3));
-  EXPECT_EQ(7, bits);
+  EXPECT_EQ(1u, reader.ReadBits(&bits, 1));
+  EXPECT_EQ(1u, bits);
+  EXPECT_EQ(62u, reader.ReadBits(&bits, 62));
+  EXPECT_EQ(0u, bits);
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(2u, bits);
+  EXPECT_EQ(3u, reader.ReadBits(&bits, 3));
+  EXPECT_EQ(7u, bits);
   EXPECT_FALSE(reader.OnlyZeroesLeft());
-  EXPECT_EQ(32, reader.ReadBits(&bits, 32));
-  EXPECT_EQ(0xFFFFF, bits);
+  EXPECT_EQ(32u, reader.ReadBits(&bits, 32));
+  EXPECT_EQ(0xFFFFFu, bits);
   EXPECT_TRUE(reader.OnlyZeroesLeft());
   EXPECT_FALSE(reader.ReachedEnd());
-  EXPECT_EQ(28, reader.ReadBits(&bits, 32));
-  EXPECT_EQ(0, bits);
+  EXPECT_EQ(28u, reader.ReadBits(&bits, 32));
+  EXPECT_EQ(0u, bits);
   EXPECT_TRUE(reader.ReachedEnd());
 }
 
@@ -722,13 +722,13 @@ TEST(BitReaderWord64, FromU8) {
   BitReaderWord64 reader(std::move(buffer));
 
   uint64_t bits = 0;
-  EXPECT_EQ(2, reader.ReadBits(&bits, 2));
+  EXPECT_EQ(2u, reader.ReadBits(&bits, 2));
   EXPECT_EQ(PadToWord<64>("01"), BitsToStream(bits));
-  EXPECT_EQ(20, reader.ReadBits(&bits, 20));
+  EXPECT_EQ(20u, reader.ReadBits(&bits, 20));
   EXPECT_EQ(PadToWord<64>("01010111011101001100"), BitsToStream(bits));
-  EXPECT_EQ(20, reader.ReadBits(&bits, 20));
+  EXPECT_EQ(20u, reader.ReadBits(&bits, 20));
   EXPECT_EQ(PadToWord<64>("11101110110000000000"), BitsToStream(bits));
-  EXPECT_EQ(22, reader.ReadBits(&bits, 30));
+  EXPECT_EQ(22u, reader.ReadBits(&bits, 30));
   EXPECT_EQ(PadToWord<64>("0000000000000000000000"), BitsToStream(bits));
   EXPECT_TRUE(reader.ReachedEnd());
 }
@@ -778,7 +778,7 @@ TEST(BitReaderWord64, ComparisonLotsOfU8) {
     to_read = (to_read + 35) % 64 + 1;
   }
 
-  EXPECT_EQ(0, reader2.ReadBits(&bits2, 1));
+  EXPECT_EQ(0u, reader2.ReadBits(&bits2, 1));
 }
 
 TEST(BitReaderWord64, ComparisonLotsOfU64) {
@@ -798,7 +798,7 @@ TEST(BitReaderWord64, ComparisonLotsOfU64) {
     to_read = (to_read + 35) % 64 + 1;
   }
 
-  EXPECT_EQ(0, reader2.ReadBits(&bits2, 1));
+  EXPECT_EQ(0u, reader2.ReadBits(&bits2, 1));
 }
 
 TEST(ReadWriteWord64, ReadWriteLotsOfBits) {
@@ -910,28 +910,28 @@ TEST(VariableWidthRead, U64Val127ChunkLength7) {
   BitReaderFromString reader("1111111""0");
   uint64_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU64(&val, 7));
-  EXPECT_EQ(127, val);
+  EXPECT_EQ(127u, val);
 }
 
 TEST(VariableWidthRead, U32Val255ChunkLength7) {
   BitReaderFromString reader("1111111""1""1000000""0");
   uint32_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU32(&val, 7));
-  EXPECT_EQ(255, val);
+  EXPECT_EQ(255u, val);
 }
 
 TEST(VariableWidthRead, U16Val2ChunkLength4) {
   BitReaderFromString reader("0100""0");
   uint16_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU16(&val, 4));
-  EXPECT_EQ(2, val);
+  EXPECT_EQ(2u, val);
 }
 
 TEST(VariableWidthRead, U8Val128ChunkLength7) {
   BitReaderFromString reader("0000000""1""1");
   uint8_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU8(&val, 7));
-  EXPECT_EQ(128, val);
+  EXPECT_EQ(128u, val);
 }
 
 TEST(VariableWidthRead, U64ValAAAAChunkLength2) {
@@ -939,7 +939,7 @@ TEST(VariableWidthRead, U64ValAAAAChunkLength2) {
                              "01""1""01""1""01""1""01""0");
   uint64_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU64(&val, 2));
-  EXPECT_EQ(0xAAAA, val);
+  EXPECT_EQ(0xAAAAu, val);
 }
 
 TEST(VariableWidthRead, S8ValM128ChunkLength7) {
@@ -1099,7 +1099,7 @@ TEST(VariableWidthWriteRead, SmallNumbersChunkLength4) {
     writer.WriteVariableWidthU64(val, 4);
   }
 
-  EXPECT_EQ(50, writer.GetNumBits());
+  EXPECT_EQ(50u, writer.GetNumBits());
 
   std::vector<uint64_t> actual_values;
   BitReaderWord64 reader(writer.GetDataCopy());
