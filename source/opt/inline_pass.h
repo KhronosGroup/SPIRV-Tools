@@ -194,8 +194,10 @@ class InlinePass : public Pass {
   // Set of ids of inlinable functions
   std::set<uint32_t> inlinable_;
 
-  // Map from block to its structured successor blocks
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>> block2structuredSuccs_;
+  // Map from block to its structured successor blocks. See 
+  // ComputeStructuredSuccessors() for definition.
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+      block2structuredSuccs_;
 
   // result id for OpConstantFalse
   uint32_t false_id_;
