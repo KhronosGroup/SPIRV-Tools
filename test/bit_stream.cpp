@@ -278,11 +278,12 @@ TEST(ZigZagCoding, Decode2) {
 }
 
 TEST(ZigZagCoding, Encode63) {
-  EXPECT_EQ(0, EncodeZigZag(0, 63));
+  EXPECT_EQ(0u, EncodeZigZag(0, 63));
 
   for (int64_t i = 0; i < 0xFFFFFFFF; i += 1234567) {
     const int64_t positive_val = GetLowerBits(i * i  * i + i * i, 63) | 1UL;
-    ASSERT_EQ(positive_val, EncodeZigZag(positive_val, 63));
+    ASSERT_EQ(static_cast<uint64_t>(positive_val),
+              EncodeZigZag(positive_val, 63));
     ASSERT_EQ((1ULL << 63) - 1 + positive_val, EncodeZigZag(-positive_val, 63));
   }
 
