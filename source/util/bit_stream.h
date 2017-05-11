@@ -129,11 +129,11 @@ std::vector<T> StreamToBuffer(std::string str) {
   // to right-to-left. Instead of reversing tokens, reverse the entire string
   // and iterate tokens from end to begin.
   std::reverse(str.begin(), str.end());
-  const size_t word_size = sizeof(T) * 8;
+  const int word_size = static_cast<int>(sizeof(T) * 8);
+  const int str_length = static_cast<int>(str.length());
   std::vector<T> buffer;
   buffer.reserve(NumBitsToNumWords<sizeof(T)>(str.length()));
-  for (ssize_t index = str.length() - word_size; index >= 0;
-       index -= word_size) {
+  for (int index = str_length - word_size; index >= 0; index -= word_size) {
     buffer.push_back(static_cast<T>(std::bitset<sizeof(T) * 8>(
         str, index, word_size).to_ulong()));
   }
