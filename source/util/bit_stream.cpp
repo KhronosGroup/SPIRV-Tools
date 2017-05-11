@@ -40,7 +40,7 @@ bool IsLittleEndian() {
 std::vector<uint64_t> ToBuffer64(const std::vector<uint8_t>& in) {
   std::vector<uint64_t> out;
   out.resize((in.size() + 7) / 8, 0);
-  std::copy(in.begin(), in.end(), reinterpret_cast<uint8_t*>(out.data()));
+  memcpy(out.data(), in.data(), in.size());
   return out;
 }
 
