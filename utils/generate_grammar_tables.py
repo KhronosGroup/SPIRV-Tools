@@ -26,7 +26,9 @@ import re
 PYGEN_VARIABLE_PREFIX = 'pygen_variable'
 
 # Extensions to recognize, but which don't come from the SPIRV-V core grammar.
-NONSTANDARD_EXTENSIONS = ['SPV_AMD_gcn_shader',]
+NONSTANDARD_EXTENSIONS = ['SPV_AMD_gcn_shader',
+                          'SPV_VAL_ignore_type_decl_unique',
+                          ]
 
 def make_path_to_file(f):
     """Makes all ancestor directories to the given file, if they

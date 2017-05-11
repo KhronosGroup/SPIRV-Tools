@@ -23,6 +23,7 @@
 namespace {
 
 using ::testing::HasSubstr;
+using ::testing::Not;
 
 using std::string;
 
@@ -218,6 +219,23 @@ OpTypeForwardPointer %ptr2 Generic
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateTypeUnique, duplicate_void_with_extension) {
+  string str = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Linkage
+OpCapability Pipes
+OpExtension "SPV_VAL_ignore_type_decl_unique"
+OpMemoryModel Physical32 OpenCL
+%voidt = OpTypeVoid
+%voidt2 = OpTypeVoid
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              Not(HasSubstr(GetErrorString(SpvOpTypeVoid))));
 }
 
 }  // anonymous namespace

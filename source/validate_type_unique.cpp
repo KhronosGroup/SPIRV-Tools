@@ -26,9 +26,15 @@ namespace libspirv {
 // Validates that type declarations are unique, unless multiple declarations
 // of the same data type are allowed by the specification.
 // (see section 2.8 Types and Variables)
+// Doesn't do anything if SPV_VAL_ignore_type_decl_unique was declared in the
+// module.
 spv_result_t TypeUniquePass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
+  if (_.HasExtension(Extension::kSPV_VAL_ignore_type_decl_unique))
+    return SPV_SUCCESS;
+
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
+
   if (spvOpcodeGeneratesType(opcode)) {
     if (opcode == SpvOpTypeArray || opcode == SpvOpTypeRuntimeArray ||
         opcode == SpvOpTypeStruct) {
