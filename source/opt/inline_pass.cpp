@@ -504,17 +504,17 @@ void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
   for (auto& blk : *func) {
     uint32_t mbid = MergeBlockIdIfAny(blk);
     if (mbid != 0)
-      block2structuredSuccs_[&blk].push_back(id2block_[mbid]);
+      block2structured_succs_[&blk].push_back(id2block_[mbid]);
     // add true successors
     blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structuredSuccs_[&blk].push_back(id2block_[sbid]);
+      block2structured_succs_[&blk].push_back(id2block_[sbid]);
     });
   }
 }
 
 InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   return [this](const ir::BasicBlock* block) {
-    return &(block2structuredSuccs_[block]);
+    return &(block2structured_succs_[block]);
   };
 }
 
@@ -599,7 +599,7 @@ void InlinePass::Initialize(ir::Module* module) {
 
   id2function_.clear();
   id2block_.clear();
-  block2structuredSuccs_.clear();
+  block2structured_succs_.clear();
   inlinable_.clear();
   for (auto& fn : *module_) {
     // Initialize function and block maps.

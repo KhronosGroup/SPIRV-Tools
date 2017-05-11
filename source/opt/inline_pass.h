@@ -197,7 +197,7 @@ class InlinePass : public Pass {
   // Map from block to its structured successor blocks. See 
   // ComputeStructuredSuccessors() for definition.
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structuredSuccs_;
+      block2structured_succs_;
 
   // result id for OpConstantFalse
   uint32_t false_id_;
