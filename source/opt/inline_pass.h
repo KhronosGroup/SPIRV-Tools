@@ -148,7 +148,8 @@ class InlinePass : public Pass {
   // together with its declared merge block if it has one.
   // When order matters, the merge block always appears first.
   // This assures correct depth first search in the presence of early 
-  // returns and kills.
+  // returns and kills. If the successor vector contain duplicates
+  // if the merge block, they are safely ignored by DFS.
   void ComputeStructuredSuccessors(ir::Function* func);
   
   // Return function to return ordered structure successors for a given block
