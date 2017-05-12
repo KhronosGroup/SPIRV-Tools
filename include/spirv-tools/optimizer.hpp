@@ -194,6 +194,16 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
 
+// Creates a local access chain conversion pass.
+// A local access chain conversion pass identifies all function scope
+// variables which are accessed only with loads, stores and access chains
+// with constant indices. It then converts all loads and stores of such
+// variables into equivalent sequences of loads, stores, extracts and inserts.
+// This unifies access to these variables to a single mode and simplifies
+// subsequent analysis and elimination of these variables along with loads
+// and stores allowing values to propagate further.
+Optimizer::PassToken CreateLocalAccessChainConvertPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
