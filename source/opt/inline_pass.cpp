@@ -476,9 +476,10 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
   bool seenReturn = false;
   bool multipleReturns = false;
   for (auto& blk : *func) {
-    auto lii = blk.cend();
-    --lii;
-    if (lii->opcode() == SpvOpReturn || lii->opcode() == SpvOpReturnValue) {
+    auto terminal_ii = blk.cend();
+    --terminal_ii;
+    if (terminal_ii->opcode() == SpvOpReturn || 
+        terminal_ii->opcode() == SpvOpReturnValue) {
       if (seenReturn) {
         multipleReturns = true;
         break;
@@ -490,15 +491,15 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
 }
 
 uint32_t InlinePass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
-  auto mii = blk.cend();
-  --mii;
+  auto merge_ii = blk.cend();
+  --merge_ii;
   uint32_t mbid = 0;
-  if (mii != blk.cbegin()) {
-    --mii;
-    if (mii->opcode() == SpvOpLoopMerge)
-      mbid = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
-    else if (mii->opcode() == SpvOpSelectionMerge)
-      mbid = mii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
+  if (merge_ii != blk.cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge)
+      mbid = merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+    else if (merge_ii->opcode() == SpvOpSelectionMerge)
+      mbid = merge_ii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
   }
   return mbid;
 }
@@ -545,20 +546,22 @@ bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
     if (blk->id() == outerLoopMergeId)
       outerLoopMergeId = 0;
     // Return block
-    auto lii = blk->cend();
-    --lii;
-    if (lii->opcode() == SpvOpReturn || lii->opcode() == SpvOpReturnValue) {
+    auto terminal_ii = blk->cend();
+    --terminal_ii;
+    if (terminal_ii->opcode() == SpvOpReturn || 
+        terminal_ii->opcode() == SpvOpReturnValue) {
       if (outerLoopMergeId != 0) {
         return_in_loop = true;
         break;
       }
     }
-    else if (lii != blk->cbegin()) {
-      auto mii = lii;
-      --mii;
+    else if (terminal_ii != blk->cbegin()) {
+      auto merge_ii = terminal_ii;
+      --merge_ii;
       // Entering outermost loop
-      if (mii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
-        outerLoopMergeId = mii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+      if (merge_ii->opcode() == SpvOpLoopMerge && outerLoopMergeId == 0)
+        outerLoopMergeId = merge_ii->GetSingleWordOperand(
+            kSpvLoopMergeMergeBlockId);
     }
   }
   return !return_in_loop;
