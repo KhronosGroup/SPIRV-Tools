@@ -2,8 +2,6 @@ Revision history for SPIRV-Tools
 
 v2016.7-dev 2017-01-06
  - Optimizer: Add inlining of all function calls in entry points.
-     Caveat: See issue #629: problem inlining some cases of structured control
-     flow.
  - Optimizer: Add flattening of decoration groups.  Fixes #602
  - Optimizer: Add Id compaction (minimize Id bound).  Fixes #624
  - Assembler: Add option to preserve numeric ids. Fixes #625
@@ -23,6 +21,8 @@ v2016.7-dev 2017-01-06
      are used.
    #611: spvtools::Optimizer was failing to save the module to the output
      binary vector when all passes succeded without changes.
+   #629: The inline-entry-points-all optimization could generate invalidly
+     structured code when the inlined function had early returns.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
