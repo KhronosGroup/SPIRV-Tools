@@ -530,7 +530,7 @@ bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
     return false;
   // Compute structured block order. This order has the property
   // that dominators are before all blocks they dominate and merge blocks
-  // are after all blocks that are in the control construct their header.
+  // are after all blocks that are in the control constructs of their header.
   ComputeStructuredSuccessors(func);
   auto ignore_block = [](cbb_ptr) {};
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
