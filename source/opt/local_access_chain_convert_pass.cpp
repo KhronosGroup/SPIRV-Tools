@@ -29,10 +29,6 @@
 */
 
 static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvFunctionCallFunctionId = 0;
-static const int kSpvDecorationTargetId = 0;
-static const int kSpvDecorationDecoration = 1;
-static const int kSpvDecorationLinkageType = 3;
 static const int kSpvStorePtrId = 0;
 static const int kSpvStoreValId = 1;
 static const int kSpvLoadPtrId = 0;
@@ -40,18 +36,6 @@ static const int kSpvAccessChainPtrId = 0;
 static const int kSpvTypePointerStorageClass = 0;
 static const int kSpvTypePointerTypeId = 1;
 static const int kSpvConstantValue = 0;
-static const int kSpvExtractCompositeId = 0;
-static const int kSpvExtractIdx0 = 1;
-static const int kSpvInsertObjectId = 0;
-static const int kSpvInsertCompositeId = 1;
-static const int kSpvBranchCondConditionalId = 0;
-static const int kSpvBranchCondTrueLabId = 1;
-static const int kSpvBranchCondFalseLabId = 2;
-static const int kSpvSelectionMergeMergeBlockId = 0;
-static const int kSpvPhiVal0Id = 0;
-static const int kSpvPhiLab0Id = 1;
-static const int kSpvPhiVal1Id = 2;
-static const int kSpvLoopMergeMergeBlockId = 0;
 
 namespace spvtools {
 namespace opt {
