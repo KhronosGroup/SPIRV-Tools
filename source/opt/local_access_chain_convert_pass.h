@@ -71,16 +71,15 @@ class LocalAccessChainConvertPass : public Pass {
   // or a vector or matrix
   bool IsMathType(const ir::Instruction* typeInst);
 
-  // Returns true if type is a scalar, vector, matrix
-  // or struct of only those types
+  // Returns true if type is a math type or a struct or array
+  // of a math type.
   bool IsTargetType(const ir::Instruction* typeInst);
 
   // Given a load or store pointed at by |ip|, return the pointer
   // instruction. Also return the variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
-  // Return true if variable is math type, or vector or matrix
-  // of target type, or struct or array of target type
+  // Return true if variable is function scope variable of targeted type.
   bool IsTargetVar(uint32_t varId);
 
   // Delete inst if it has no uses. Assumes inst has a resultId.
@@ -110,11 +109,12 @@ class LocalAccessChainConvertPass : public Pass {
   // Return true if all indices are constant
   bool IsConstantIndexAccessChain(ir::Instruction* acp);
 
-  // Identify all function scope variables which are accessed only
-  // with loads, stores and access chains with constant indices.
-  // Convert all loads and stores of such variables into equivalent
+  // Identify all function scope variables of target type which are 
+  // accessed only with loads, stores and access chains with constant
+  // indices. Convert all loads and stores of such variables into equivalent
   // loads, stores, extracts and inserts. This unifies access to these
   // variables to a single mode and simplifies analysis and optimization.
+  // See IsTargetType() for targeted types.
   bool LocalAccessChainConvert(ir::Function* func);
 
   void Initialize(ir::Module* module);
