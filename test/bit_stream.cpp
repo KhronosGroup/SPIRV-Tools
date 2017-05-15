@@ -805,17 +805,17 @@ TEST(BitReaderWord64, ComparisonLotsOfU64) {
 TEST(ReadWriteWord64, ReadWriteLotsOfBits) {
   BitWriterWord64 writer(16384);
   for (uint64_t i = 0; i < 65000; i += 25) {
-    const size_t num_bits = i % 64 + 1;
+    const uint64_t num_bits = i % 64 + 1;
     const uint64_t bits = i >> (64 - num_bits);
-    writer.WriteBits(bits, num_bits);
+    writer.WriteBits(bits, size_t(num_bits));
   }
 
   BitReaderWord64 reader(writer.GetDataCopy());
   for (uint64_t i = 0; i < 65000; i += 25) {
-    const size_t num_bits = i % 64 + 1;
+    const uint64_t num_bits = i % 64 + 1;
     const uint64_t expected_bits = i >> (64 - num_bits);
     uint64_t bits = 0;
-    reader.ReadBits(&bits, num_bits);
+    reader.ReadBits(&bits, size_t(num_bits));
     EXPECT_EQ(expected_bits, bits);
   }
 
@@ -959,7 +959,7 @@ TEST(VariableWidthRead, FailTooShort) {
 TEST(VariableWidthWriteRead, SingleWriteReadU64) {
   for (uint64_t i = 0; i < 1000000; i += 1234) {
     const uint64_t val = i * i * i;
-    const size_t chunk_length = i % 16 + 1;
+    const size_t chunk_length = size_t(i % 16 + 1);
 
     BitWriterWord64 writer;
     writer.WriteVariableWidthU64(val, chunk_length);
@@ -975,8 +975,8 @@ TEST(VariableWidthWriteRead, SingleWriteReadU64) {
 TEST(VariableWidthWriteRead, SingleWriteReadS64) {
   for (int64_t i = 0; i < 1000000; i += 4321) {
     const int64_t val = i * i * (i % 2 ? -i : i);
-    const size_t chunk_length = i % 16 + 1;
-    const size_t zigzag_exponent = i % 13;
+    const size_t chunk_length = size_t(i % 16 + 1);
+    const size_t zigzag_exponent = size_t(i % 13);
 
     BitWriterWord64 writer;
     writer.WriteVariableWidthS64(val, chunk_length, zigzag_exponent);
