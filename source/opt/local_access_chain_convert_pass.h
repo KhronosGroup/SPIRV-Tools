@@ -59,39 +59,41 @@ class LocalAccessChainConvertPass : public Pass {
   // Next unused ID
   uint32_t next_id_;
 
+  // Save next available id into |module|.
   inline void FinalizeNextId(ir::Module* module) {
     module->SetIdBound(next_id_);
   }
 
+  // Return next available id and calculate next.
   inline uint32_t TakeNextId() {
     return next_id_++;
   }
 
-  // Returns true if type is a scalar type
+  // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsMathType(const ir::Instruction* typeInst);
 
-  // Returns true if type is a math type or a struct or array
+  // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.
   bool IsTargetType(const ir::Instruction* typeInst);
 
-  // Given a load or store pointed at by |ip|, return the pointer
-  // instruction. Also return the variable's id in |varId|.
+  // Given a load or store |ip|, return the pointer instruction.
+  // Also return the variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
-  // Return true if variable is function scope variable of targeted type.
+  // Return true if |varId| is function scope variable of targeted type.
   bool IsTargetVar(uint32_t varId);
 
-  // Delete inst if it has no uses. Assumes inst has a resultId.
+  // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.
   void DeleteIfUseless(ir::Instruction* inst);
 
-  // Replace all instances of load's id with replId and delete load
-  // and its access chain, if any
+  // Replace all instances of |loadInst|'s id with |replId| and delete
+  // |loadInst| and its pointer |ptrInst| if it is a useless access chain.
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst,
     uint32_t replId,
     ir::Instruction* ptrInst);
 
-  // Return type id for pointer's pointee
+  // Return type id for |ptrInst|'s pointee
   uint32_t GetPteTypeId(const ir::Instruction* ptrInst);
 
   // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
@@ -112,17 +114,18 @@ class LocalAccessChainConvertPass : public Pass {
     std::vector<ir::Operand>* in_opnds);
 
   // Create a load/insert/store equivalent to a store of
-  // valId through ptrInst.
+  // |valId| through (constant index) access chaing |ptrInst|.
+  // Append to |newInsts|.
   void GenAccessChainStoreReplacement(const ir::Instruction* ptrInst,
       uint32_t valId,
       std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
-  // For the (constant index) access chain ptrInst, create an
-  // equivalent load and extract
+  // For the (constant index) access chain |ptrInst|, create an
+  // equivalent load and extract. Append to |newInsts|.
   uint32_t GenAccessChainLoadReplacement(const ir::Instruction* ptrInst,
       std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
-  // Return true if all indices are constant
+  // Return true if all indices of access chain |acp| are constant
   bool IsConstantIndexAccessChain(ir::Instruction* acp);
 
   // Identify all function scope variables of target type which are 
