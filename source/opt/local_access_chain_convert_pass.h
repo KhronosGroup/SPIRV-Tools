@@ -94,6 +94,12 @@ class LocalAccessChainConvertPass : public Pass {
   // Return type id for pointer's pointee
   uint32_t GetPteTypeId(const ir::Instruction* ptrInst);
 
+  // Build load of variable in |ptrInst| and append to |newInsts|.
+  // Return var in |varId| and its pointee type in |varPteTypeId|.
+  uint32_t BuildAndAppendVarLoad(const ir::Instruction* ptrInst,
+    uint32_t* varId, uint32_t* varPteTypeId,
+    std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
+
   // Create a load/insert/store equivalent to a store of
   // valId through ptrInst.
   void GenAccessChainStoreReplacement(const ir::Instruction* ptrInst,
