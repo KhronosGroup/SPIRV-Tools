@@ -76,12 +76,12 @@ ir::Instruction* LocalAccessChainConvertPass::GetPtr(
     ir::Instruction* ip,
     uint32_t* varId) {
   const uint32_t ptrId = ip->opcode() == SpvOpStore ?
-      ip->GetInOperand(kSpvStorePtrId).words[0] :
-      ip->GetInOperand(kSpvLoadPtrId).words[0];
+      ip->GetSingleWordInOperand(kSpvStorePtrId) :
+      ip->GetSingleWordInOperand(kSpvLoadPtrId);
   ir::Instruction* ptrInst =
     def_use_mgr_->id_to_defs().find(ptrId)->second;
   *varId = ptrInst->opcode() == SpvOpAccessChain ?
-    ptrInst->GetInOperand(kSpvAccessChainPtrId).words[0] :
+    ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId) :
     ptrId;
   return ptrInst;
 }
@@ -97,13 +97,13 @@ bool LocalAccessChainConvertPass::IsTargetVar(uint32_t varId) {
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst =
     def_use_mgr_->id_to_defs().find(varTypeId)->second;
-  if (varTypeInst->GetInOperand(kSpvTypePointerStorageClass).words[0] !=
+  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   const uint32_t varPteTypeId =
-    varTypeInst->GetInOperand(kSpvTypePointerTypeId).words[0];
+    varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
   ir::Instruction* varPteTypeInst =
     def_use_mgr_->id_to_defs().find(varPteTypeId)->second;
   if (!IsTargetType(varPteTypeInst)) {
@@ -140,7 +140,7 @@ uint32_t LocalAccessChainConvertPass::GetPteTypeId(const ir::Instruction* ptrIns
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst =
       def_use_mgr_->id_to_defs().find(ptrTypeId)->second;
-  return ptrTypeInst->GetInOperand(kSpvTypePointerTypeId).words[0];
+  return ptrTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
 }
 
 uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
@@ -149,7 +149,7 @@ uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
     uint32_t* varPteTypeId,
     std::vector<std::unique_ptr<ir::Instruction>>& newInsts) {
   const uint32_t ldResultId = TakeNextId();
-  *varId = ptrInst->GetInOperand(kSpvAccessChainPtrId).words[0];
+  *varId = ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
   const ir::Instruction* varInst = def_use_mgr_->GetDef(*varId);
   assert(varInst->opcode() == SpvOpVariable);
   *varPteTypeId = GetPteTypeId(varInst);
@@ -186,7 +186,7 @@ void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   ptrInst->ForEachInId([&iidIdx, &ext_in_opnds, this](const uint32_t *iid) {
     if (iidIdx > 0) {
       const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
-      uint32_t val = cInst->GetInOperand(kSpvConstantValue).words[0];
+      uint32_t val = cInst->GetSingleWordInOperand(kSpvConstantValue);
       ext_in_opnds.push_back(
         ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
           std::initializer_list<uint32_t>{val}));
@@ -224,7 +224,7 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
   ptrInst->ForEachInId([&iidIdx, &ins_in_opnds, this](const uint32_t *iid) {
     if (iidIdx > 0) {
       const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
-      uint32_t val = cInst->GetInOperand(kSpvConstantValue).words[0];
+      uint32_t val = cInst->GetSingleWordInOperand(kSpvConstantValue);
       ins_in_opnds.push_back(
         ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
           std::initializer_list<uint32_t>{val}));
@@ -318,7 +318,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
         if (!IsTargetVar(varId))
           break;
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
-        uint32_t valId = ii->GetInOperand(kSpvStoreValId).words[0];
+        uint32_t valId = ii->GetSingleWordInOperand(kSpvStoreValId);
         GenAccessChainStoreReplacement(ptrInst, valId, newInsts);
         def_use_mgr_->KillInst(&*ii);
         DeleteIfUseless(ptrInst);
@@ -360,7 +360,7 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   // Process all entry point functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetOperand(kSpvEntryPointFunctionId).words[0]];
+        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
     modified = modified || LocalAccessChainConvert(fn);
   }
 
