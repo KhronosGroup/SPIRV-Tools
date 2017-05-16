@@ -94,6 +94,12 @@ class LocalAccessChainConvertPass : public Pass {
   // Return type id for pointer's pointee
   uint32_t GetPteTypeId(const ir::Instruction* ptrInst);
 
+  // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
+  // Append to |newInsts|.
+  void BuildAndAppendInst(SpvOp opcode, uint32_t typeId, uint32_t resultId,
+    const std::vector<ir::Operand>& in_opnds,
+    std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
+
   // Build load of variable in |ptrInst| and append to |newInsts|.
   // Return var in |varId| and its pointee type in |varPteTypeId|.
   uint32_t BuildAndAppendVarLoad(const ir::Instruction* ptrInst,

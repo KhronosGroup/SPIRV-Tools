@@ -143,6 +143,18 @@ uint32_t LocalAccessChainConvertPass::GetPteTypeId(const ir::Instruction* ptrIns
   return ptrTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
 }
 
+void LocalAccessChainConvertPass::BuildAndAppendInst(
+    SpvOp opcode,
+    uint32_t typeId,
+    uint32_t resultId,
+    const std::vector<ir::Operand>& in_opnds,
+    std::vector<std::unique_ptr<ir::Instruction>>& newInsts) {
+  std::unique_ptr<ir::Instruction> newInst(new ir::Instruction(
+      opcode, typeId, resultId, in_opnds));
+  def_use_mgr_->AnalyzeInstDefUse(&*newInst);
+  newInsts.emplace_back(std::move(newInst));
+}
+
 uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
     const ir::Instruction* ptrInst,
     uint32_t* varId,
@@ -153,11 +165,8 @@ uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
   const ir::Instruction* varInst = def_use_mgr_->GetDef(*varId);
   assert(varInst->opcode() == SpvOpVariable);
   *varPteTypeId = GetPteTypeId(varInst);
-  std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(SpvOpLoad,
-      *varPteTypeId, ldResultId,
-      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*varId}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newLoad);
-  newInsts.emplace_back(std::move(newLoad));
+  BuildAndAppendInst(SpvOpLoad, *varPteTypeId, ldResultId,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*varId}}}, newInsts);
   return ldResultId;
 }
 
@@ -193,10 +202,8 @@ void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   std::vector<ir::Operand> ext_in_opnds = 
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   AppendConstantOperands(ptrInst, &ext_in_opnds);
-  std::unique_ptr<ir::Instruction> newExt(new ir::Instruction(
-      SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
-  def_use_mgr_->AnalyzeInstDefUse(&*newExt);
-  newInsts.emplace_back(std::move(newExt));
+  BuildAndAppendInst(
+      SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds, newInsts);
   resultId = extResultId;
 }
 
@@ -217,17 +224,14 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}}, 
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   AppendConstantOperands(ptrInst, &ins_in_opnds);
-  std::unique_ptr<ir::Instruction> newIns(new ir::Instruction(
-      SpvOpCompositeInsert, varPteTypeId, insResultId, ins_in_opnds));
-  def_use_mgr_->AnalyzeInstDefUse(&*newIns);
-  newInsts.emplace_back(std::move(newIns));
+  BuildAndAppendInst(
+      SpvOpCompositeInsert, varPteTypeId, insResultId, ins_in_opnds, newInsts);
 
   // Build and append Store
-  std::unique_ptr<ir::Instruction> newStore(new ir::Instruction(SpvOpStore,
-      0, 0, {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}, 
-      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {insResultId}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newStore);
-  newInsts.emplace_back(std::move(newStore));
+  BuildAndAppendInst(SpvOpStore, 0, 0, 
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}, 
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {insResultId}}},
+      newInsts);
 }
 
 bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
