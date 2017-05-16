@@ -175,10 +175,8 @@ void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   // Build and append Extract
   const uint32_t extResultId = TakeNextId();
   const uint32_t ptrPteTypeId = GetPteTypeId(ptrInst);
-  std::vector<ir::Operand> ext_in_opnds;
-  ext_in_opnds.push_back(
-    ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{ldResultId}));
+  std::vector<ir::Operand> ext_in_opnds = 
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   uint32_t iidIdx = 0;
   ptrInst->ForEachInId([&iidIdx, &ext_in_opnds, this](const uint32_t *iid) {
     if (iidIdx > 0) {
@@ -210,13 +208,9 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
 
   // Build and append Insert
   const uint32_t insResultId = TakeNextId();
-  std::vector<ir::Operand> ins_in_opnds;
-  ins_in_opnds.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{valId}));
-  ins_in_opnds.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{ldResultId}));
+  std::vector<ir::Operand> ins_in_opnds = 
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}}, 
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   uint32_t iidIdx = 0;
   ptrInst->ForEachInId([&iidIdx, &ins_in_opnds, this](const uint32_t *iid) {
     if (iidIdx > 0) {
