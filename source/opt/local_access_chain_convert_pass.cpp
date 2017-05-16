@@ -153,12 +153,9 @@ uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
   const ir::Instruction* varInst = def_use_mgr_->GetDef(*varId);
   assert(varInst->opcode() == SpvOpVariable);
   *varPteTypeId = GetPteTypeId(varInst);
-  std::vector<ir::Operand> load_in_operands;
-  load_in_operands.push_back(
-      ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{*varId}));
   std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(SpvOpLoad,
-    *varPteTypeId, ldResultId, load_in_operands));
+      *varPteTypeId, ldResultId,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*varId}}}));
   def_use_mgr_->AnalyzeInstDefUse(&*newLoad);
   newInsts.emplace_back(std::move(newLoad));
   return ldResultId;
@@ -237,15 +234,9 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
   newInsts.emplace_back(std::move(newIns));
 
   // Build and append Store
-  std::vector<ir::Operand> store_in_operands;
-  store_in_operands.push_back(
-    ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{varId}));
-  store_in_operands.push_back(
-    ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-      std::initializer_list<uint32_t>{insResultId}));
   std::unique_ptr<ir::Instruction> newStore(new ir::Instruction(SpvOpStore,
-      0, 0, store_in_operands));
+      0, 0, {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}, 
+      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {insResultId}}}));
   def_use_mgr_->AnalyzeInstDefUse(&*newStore);
   newInsts.emplace_back(std::move(newStore));
 }
