@@ -136,7 +136,8 @@ void LocalAccessChainConvertPass::ReplaceAndDeleteLoad(
   }
 }
 
-uint32_t LocalAccessChainConvertPass::GetPteTypeId(const ir::Instruction* ptrInst) {
+uint32_t LocalAccessChainConvertPass::GetPteTypeId(
+    const ir::Instruction* ptrInst) {
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst =
       def_use_mgr_->id_to_defs().find(ptrTypeId)->second;
@@ -148,18 +149,18 @@ void LocalAccessChainConvertPass::BuildAndAppendInst(
     uint32_t typeId,
     uint32_t resultId,
     const std::vector<ir::Operand>& in_opnds,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts) {
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
   std::unique_ptr<ir::Instruction> newInst(new ir::Instruction(
       opcode, typeId, resultId, in_opnds));
   def_use_mgr_->AnalyzeInstDefUse(&*newInst);
-  newInsts.emplace_back(std::move(newInst));
+  newInsts->emplace_back(std::move(newInst));
 }
 
 uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
     const ir::Instruction* ptrInst,
     uint32_t* varId,
     uint32_t* varPteTypeId,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts) {
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
   const uint32_t ldResultId = TakeNextId();
   *varId = ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
   const ir::Instruction* varInst = def_use_mgr_->GetDef(*varId);
@@ -185,10 +186,9 @@ void LocalAccessChainConvertPass::AppendConstantOperands(
   });
 }
 
-void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
+uint32_t LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
     const ir::Instruction* ptrInst,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts,
-    uint32_t& resultId) {
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
 
   // Build and append load of variable in ptrInst
   uint32_t varId;
@@ -202,15 +202,15 @@ void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   std::vector<ir::Operand> ext_in_opnds = 
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   AppendConstantOperands(ptrInst, &ext_in_opnds);
-  BuildAndAppendInst(
-      SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds, newInsts);
-  resultId = extResultId;
+  BuildAndAppendInst(SpvOpCompositeExtract, ptrPteTypeId, extResultId, 
+                     ext_in_opnds, newInsts);
+  return extResultId;
 }
 
 void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
     const ir::Instruction* ptrInst,
     uint32_t valId,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts) {
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
 
   // Build and append load of variable in ptrInst
   uint32_t varId;
@@ -286,8 +286,8 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
         if (!IsTargetVar(varId))
           break;
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
-        uint32_t replId;
-        GenAccessChainLoadReplacement(ptrInst, newInsts, replId);
+        uint32_t replId =
+            GenAccessChainLoadReplacement(ptrInst, &newInsts);
         ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
         ++ii;
         ii = ii.InsertBefore(&newInsts);
@@ -303,7 +303,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
           break;
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
         uint32_t valId = ii->GetSingleWordInOperand(kSpvStoreValId);
-        GenAccessChainStoreReplacement(ptrInst, valId, newInsts);
+        GenAccessChainStoreReplacement(ptrInst, valId, &newInsts);
         def_use_mgr_->KillInst(&*ii);
         DeleteIfUseless(ptrInst);
         ++ii;

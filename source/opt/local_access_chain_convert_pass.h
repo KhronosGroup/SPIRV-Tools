@@ -98,13 +98,13 @@ class LocalAccessChainConvertPass : public Pass {
   // Append to |newInsts|.
   void BuildAndAppendInst(SpvOp opcode, uint32_t typeId, uint32_t resultId,
     const std::vector<ir::Operand>& in_opnds,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
   // Build load of variable in |ptrInst| and append to |newInsts|.
   // Return var in |varId| and its pointee type in |varPteTypeId|.
   uint32_t BuildAndAppendVarLoad(const ir::Instruction* ptrInst,
     uint32_t* varId, uint32_t* varPteTypeId,
-    std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
+    std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
   // Append constant operands from access chain |ptrInst| to
   // |in_opnds|. Assumes all indices in access chain are constants.
@@ -115,13 +115,12 @@ class LocalAccessChainConvertPass : public Pass {
   // valId through ptrInst.
   void GenAccessChainStoreReplacement(const ir::Instruction* ptrInst,
       uint32_t valId,
-      std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
+      std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
   // For the (constant index) access chain ptrInst, create an
   // equivalent load and extract
-  void GenAccessChainLoadReplacement(const ir::Instruction* ptrInst,
-      std::vector<std::unique_ptr<ir::Instruction>>& newInsts,
-      uint32_t& resultId);
+  uint32_t GenAccessChainLoadReplacement(const ir::Instruction* ptrInst,
+      std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
   // Return true if all indices are constant
   bool IsConstantIndexAccessChain(ir::Instruction* acp);
