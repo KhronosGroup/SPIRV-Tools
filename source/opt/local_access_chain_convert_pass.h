@@ -100,6 +100,11 @@ class LocalAccessChainConvertPass : public Pass {
     uint32_t* varId, uint32_t* varPteTypeId,
     std::vector<std::unique_ptr<ir::Instruction>>& newInsts);
 
+  // Append constant operands from access chain |ptrInst| to
+  // |in_opnds|. Assumes all indices in access chain are constants.
+  void AppendConstantOperands( const ir::Instruction* ptrInst,
+    std::vector<ir::Operand>* in_opnds);
+
   // Create a load/insert/store equivalent to a store of
   // valId through ptrInst.
   void GenAccessChainStoreReplacement(const ir::Instruction* ptrInst,

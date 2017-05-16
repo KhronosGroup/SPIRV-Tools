@@ -161,6 +161,21 @@ uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
   return ldResultId;
 }
 
+void LocalAccessChainConvertPass::AppendConstantOperands(
+    const ir::Instruction* ptrInst,
+    std::vector<ir::Operand>* in_opnds) {
+  uint32_t iidIdx = 0;
+  ptrInst->ForEachInId([&iidIdx, &in_opnds, this](const uint32_t *iid) {
+    if (iidIdx > 0) {
+      const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
+      uint32_t val = cInst->GetSingleWordInOperand(kSpvConstantValue);
+      in_opnds->push_back(
+        {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {val}});
+    }
+    ++iidIdx;
+  });
+}
+
 void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
     const ir::Instruction* ptrInst,
     std::vector<std::unique_ptr<ir::Instruction>>& newInsts,
@@ -177,19 +192,9 @@ void LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   const uint32_t ptrPteTypeId = GetPteTypeId(ptrInst);
   std::vector<ir::Operand> ext_in_opnds = 
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
-  uint32_t iidIdx = 0;
-  ptrInst->ForEachInId([&iidIdx, &ext_in_opnds, this](const uint32_t *iid) {
-    if (iidIdx > 0) {
-      const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
-      uint32_t val = cInst->GetSingleWordInOperand(kSpvConstantValue);
-      ext_in_opnds.push_back(
-        ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-          std::initializer_list<uint32_t>{val}));
-    }
-    ++iidIdx;
-  });
+  AppendConstantOperands(ptrInst, &ext_in_opnds);
   std::unique_ptr<ir::Instruction> newExt(new ir::Instruction(
-    SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
+      SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
   def_use_mgr_->AnalyzeInstDefUse(&*newExt);
   newInsts.emplace_back(std::move(newExt));
   resultId = extResultId;
@@ -211,19 +216,9 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
   std::vector<ir::Operand> ins_in_opnds = 
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}}, 
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
-  uint32_t iidIdx = 0;
-  ptrInst->ForEachInId([&iidIdx, &ins_in_opnds, this](const uint32_t *iid) {
-    if (iidIdx > 0) {
-      const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
-      uint32_t val = cInst->GetSingleWordInOperand(kSpvConstantValue);
-      ins_in_opnds.push_back(
-        ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-          std::initializer_list<uint32_t>{val}));
-    }
-    ++iidIdx;
-  });
+  AppendConstantOperands(ptrInst, &ins_in_opnds);
   std::unique_ptr<ir::Instruction> newIns(new ir::Instruction(
-    SpvOpCompositeInsert, varPteTypeId, insResultId, ins_in_opnds));
+      SpvOpCompositeInsert, varPteTypeId, insResultId, ins_in_opnds));
   def_use_mgr_->AnalyzeInstDefUse(&*newIns);
   newInsts.emplace_back(std::move(newIns));
 
