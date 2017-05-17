@@ -130,6 +130,11 @@ bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       // Make the modification in the instruction.
       it->inst->SetInOperand(in_operand_pos, {after});
     }
+    // Update inst to used ids map
+    auto iter = inst_to_used_ids_.find(it->inst);
+    if (iter != inst_to_used_ids_.end())
+      for (auto uit = iter->second.begin(); uit != iter->second.end(); uit++)
+        if (*uit == before) *uit = after;
     // Register the use of |after| id into id_to_uses_.
     // TODO(antiagainst): de-duplication.
     id_to_uses_[after].push_back({it->inst, it->operand_index});
