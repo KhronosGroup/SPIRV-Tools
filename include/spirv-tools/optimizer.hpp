@@ -199,9 +199,13 @@ Optimizer::PassToken CreateInlinePass();
 // variables which are accessed only with loads, stores and access chains
 // with constant indices. It then converts all loads and stores of such
 // variables into equivalent sequences of loads, stores, extracts and inserts.
-// This unifies access to these variables to a single mode and simplifies
-// subsequent analysis and elimination of these variables along with loads
-// and stores allowing values to propagate further.
+//
+// This pass only processes entry point functions.
+//
+// This pass unifies access to these variables to a single mode and simplifies
+// subsequent analysis and elimination of these variables along with their
+// loads and stores allowing values to propagate to their points of use where
+// possible.
 Optimizer::PassToken CreateLocalAccessChainConvertPass();
 
 // Creates a compact ids pass.
