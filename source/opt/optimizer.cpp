@@ -136,6 +136,11 @@ Optimizer::PassToken CreateInlinePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::InlinePass>());
 }
 
+Optimizer::PassToken CreateLocalSingleBlockElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LocalSingleBlockElimPass>());
+}
+
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());

@@ -133,6 +133,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateFreezeSpecConstantValuePass());
       } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {
         optimizer.RegisterPass(CreateInlinePass());
+      } else if (0 == strcmp(cur_arg, "--local-single-block-elim")) {
+        optimizer.RegisterPass(CreateLocalSingleBlockElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         optimizer.RegisterPass(CreateEliminateDeadConstantPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {

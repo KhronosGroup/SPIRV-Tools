@@ -194,6 +194,24 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
 
+// Creates a single-block local variable load/store elimination pass.
+// For every entry point function, do single block memory optimization of 
+// function variables referenced only with non-access-chain loads and stores.
+// For each targeted variable load, if previous store to that variable in the
+// block, replace the load's result id with the value id of the store.
+// If previous load within the block, replace the current load's result id
+// with the previous load's result id. In either case, delete the current
+// load. Finally, check if any remaining stores are useless, and delete store
+// and variable if possible.
+//
+// The presense of access chain references and function calls can inhibit
+// the above optimization.
+//
+// This pass is most effective if preceeded by Inlining and 
+// LocalAccessChainConvert. This pass will reduce the work needed to be done
+// by LocalSingleStoreElim and LocalSSARewrite.
+Optimizer::PassToken CreateLocalSingleBlockElimPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
