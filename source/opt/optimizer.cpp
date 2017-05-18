@@ -135,10 +135,15 @@ Optimizer::PassToken CreateEliminateDeadConstantPass() {
 Optimizer::PassToken CreateInlinePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::InlinePass>());
 }
-
+  
 Optimizer::PassToken CreateLocalAccessChainConvertPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LocalAccessChainConvertPass>());
+}
+  
+Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LocalSingleBlockLoadStoreElimPass>());
 }
 
 Optimizer::PassToken CreateCompactIdsPass() {
