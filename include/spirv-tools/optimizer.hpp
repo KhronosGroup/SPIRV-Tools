@@ -194,6 +194,22 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
 
+// Creates a local single store elimination pass.
+// For each entry point function, this pass eliminates loads and stores for 
+// function scope variable that are stored to only once, where possible. Only
+// whole variable loads and stores are eliminated; access-chain references are
+// not optimized. Replace all loads of such variables with the value that is
+// stored and eliminate any resulting dead code.
+//
+// Currently, the presence of access chains and function calls can inhibit this
+// pass, however the Inlining and LocalAccessChainConvert passes can make it
+// more effective.
+//
+// This pass will reduce the work needed to be done by LocalSingleBlockElim
+// and LocalSSARewrite and can improve the effectiveness of other passes such
+// as DeadBranchElimination which depend on values for their analysis.
+Optimizer::PassToken CreateLocalSingleStoreElimPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
