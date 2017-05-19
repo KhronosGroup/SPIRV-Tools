@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "opt/instruction.h"
+#include "opt/opt_instruction.h"
 
 #include "gmock/gmock.h"
 

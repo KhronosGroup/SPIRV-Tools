@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "instruction.h"
+#include "opt_instruction.h"
 
 #include <initializer_list>
 

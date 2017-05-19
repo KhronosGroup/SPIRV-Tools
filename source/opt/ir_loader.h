@@ -17,9 +17,9 @@
 
 #include <memory>
 
-#include "basic_block.h"
-#include "instruction.h"
-#include "module.h"
+#include "opt_basic_block.h"
+#include "opt_instruction.h"
+#include "opt_module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

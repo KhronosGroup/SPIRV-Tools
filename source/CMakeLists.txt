@@ -226,7 +226,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/disas.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.cpp

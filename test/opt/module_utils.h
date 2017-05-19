@@ -16,7 +16,7 @@
 #define LIBSPIRV_TEST_OPT_MODULE_UTILS_H_
 
 #include <vector>
-#include "opt/module.h"
+#include "opt/opt_module.h"
 
 namespace spvtest {
 

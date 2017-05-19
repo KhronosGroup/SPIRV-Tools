@@ -19,7 +19,7 @@
 
 #include "message.h"
 #include "opt/build_module.h"
-#include "opt/module.h"
+#include "opt/opt_module.h"
 #include "spirv-tools/libspirv.hpp"
 
 #include "module_utils.h"

@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 add_library(SPIRV-Tools-opt
-  basic_block.h
   build_module.h
   compact_ids_pass.h
   constants.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
   flatten_decoration_pass.h
-  function.h
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   inline_pass.h
-  instruction.h
   ir_loader.h
   log.h
-  module.h
   null_pass.h
   reflect.h
+  opt_basic_block.h
+  opt_function.h
+  opt_instruction.h
+  opt_module.h
   pass.h
   passes.h
   pass_manager.h
@@ -38,20 +38,20 @@ add_library(SPIRV-Tools-opt
   type_manager.h
   unify_const_pass.h
 
-  basic_block.cpp
   build_module.cpp
   compact_ids_pass.cpp
   def_use_manager.cpp
   eliminate_dead_constant_pass.cpp
   flatten_decoration_pass.cpp
-  function.cpp
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   inline_pass.cpp
-  instruction.cpp
   ir_loader.cpp
-  module.cpp
   set_spec_constant_default_value_pass.cpp
+  opt_basic_block.cpp
+  opt_function.cpp
+  opt_instruction.cpp
+  opt_module.cpp
   optimizer.cpp
   pass_manager.cpp
   strip_debug_info_pass.cpp

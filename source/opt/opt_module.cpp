@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "module.h"
+#include "opt_module.h"
 
 #include <algorithm>
 

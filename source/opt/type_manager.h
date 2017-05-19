@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "module.h"
+#include "opt_module.h"
 #include "spirv-tools/libspirv.hpp"
 #include "types.h"
 

@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "instruction.h"
+#include "opt_instruction.h"
 #include "iterator.h"
 
 namespace spvtools {
