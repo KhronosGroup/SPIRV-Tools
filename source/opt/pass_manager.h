@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "log.h"
-#include "module.h"
+#include "opt_module.h"
 #include "pass.h"
 
 #include "spirv-tools/libspirv.hpp"

@@ -15,7 +15,7 @@
 #ifndef LIBSPIRV_OPT_FREEZE_SPEC_CONSTANT_VALUE_PASS_H_
 #define LIBSPIRV_OPT_FREEZE_SPEC_CONSTANT_VALUE_PASS_H_
 
-#include "module.h"
+#include "opt_module.h"
 #include "pass.h"
 
 namespace spvtools {

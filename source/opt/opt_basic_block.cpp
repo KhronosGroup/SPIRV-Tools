@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "basic_block.h"
+#include "opt_basic_block.h"
 
 namespace spvtools {
 namespace ir {

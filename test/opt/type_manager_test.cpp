@@ -16,7 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "opt/build_module.h"
-#include "opt/instruction.h"
+#include "opt/opt_instruction.h"
 #include "opt/type_manager.h"
 
 namespace {

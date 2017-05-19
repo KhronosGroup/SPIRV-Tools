@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 
-#include "module.h"
+#include "opt_module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

@@ -17,7 +17,7 @@
 
 #include <utility>
 
-#include "module.h"
+#include "opt_module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {

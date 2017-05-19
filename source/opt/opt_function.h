@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "basic_block.h"
-#include "instruction.h"
+#include "opt_basic_block.h"
+#include "opt_instruction.h"
 #include "iterator.h"
 
 namespace spvtools {

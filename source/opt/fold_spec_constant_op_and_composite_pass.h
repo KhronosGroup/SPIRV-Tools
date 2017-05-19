@@ -21,7 +21,7 @@
 
 #include "constants.h"
 #include "def_use_manager.h"
-#include "module.h"
+#include "opt_module.h"
 #include "pass.h"
 #include "type_manager.h"
 

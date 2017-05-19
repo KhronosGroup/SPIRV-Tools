@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "function.h"
+#include "opt_function.h"
 
 namespace spvtools {
 namespace ir {

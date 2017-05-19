@@ -19,7 +19,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "module.h"
+#include "opt_module.h"
 #include "pass.h"
 
 namespace spvtools {

@@ -24,7 +24,7 @@
 #include <list>
 
 #include "def_use_manager.h"
-#include "module.h"
+#include "opt_module.h"
 #include "pass.h"
 
 namespace spvtools {
