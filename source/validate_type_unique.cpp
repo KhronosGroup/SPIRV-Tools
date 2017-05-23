@@ -30,7 +30,7 @@ namespace libspirv {
 // module.
 spv_result_t TypeUniquePass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
-  if (_.HasExtension(Extension::kSPV_VAL_ignore_type_decl_unique))
+  if (_.HasExtension(Extension::kSPV_VALIDATOR_ignore_type_decl_unique))
     return SPV_SUCCESS;
 
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);

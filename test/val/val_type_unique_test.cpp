@@ -227,7 +227,7 @@ OpCapability Addresses
 OpCapability Kernel
 OpCapability Linkage
 OpCapability Pipes
-OpExtension "SPV_VAL_ignore_type_decl_unique"
+OpExtension "SPV_VALIDATOR_ignore_type_decl_unique"
 OpMemoryModel Physical32 OpenCL
 %voidt = OpTypeVoid
 %voidt2 = OpTypeVoid
