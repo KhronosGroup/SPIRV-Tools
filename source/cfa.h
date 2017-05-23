@@ -105,6 +105,25 @@ public:
   /// without predecessors (such as the root node) is its own immediate dominator.
   static vector<pair<BB*, BB*>> CalculateDominators(
     const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func);
+
+  // Computes a minimal set of root nodes required to traverse, in the forward
+  // direction, the CFG represented by the given vector of blocks, and successor
+  // and predecessor functions.  When considering adding two nodes, each having
+  // predecessors, favour using the one that appears earlier on the input blocks
+  // list.
+  static std::vector<BB*> TraversalRoots(
+    const std::vector<BB*>& blocks,
+    get_blocks_func succ_func,
+    get_blocks_func pred_func);
+
+  static void ComputeAugmentedCFG(
+    std::vector<BB*>& ordered_blocks,
+    BB* pseudo_entry_block,
+    BB* pseudo_exit_block,
+    std::unordered_map<const BB*, std::vector<BB*>>* augmented_successors_map,
+    std::unordered_map<const BB*, std::vector<BB*>>* augmented_predecessors_map,
+    get_blocks_func succ_func,
+    get_blocks_func pred_func);
 };
 
 template<class BB> bool CFA<BB>::FindInWorkList(const vector<block_info>& work_list,
@@ -221,6 +240,96 @@ vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
   }
   return out;
 }
+
+template<class BB>
+std::vector<BB*> CFA<BB>::TraversalRoots(
+    const std::vector<BB*>& blocks,
+    get_blocks_func succ_func,
+    get_blocks_func pred_func) {
+  // The set of nodes which have been visited from any of the roots so far.
+  std::unordered_set<const BB*> visited;
+
+  auto mark_visited = [&visited](const BB* b) { visited.insert(b); };
+  auto ignore_block = [](const BB*) {};
+  auto ignore_blocks = [](const BB*, const BB*) {};
+
+
+  auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
+    &ignore_blocks](const BB* entry) {
+    DepthFirstTraversal(
+      entry, succ_func, mark_visited, ignore_block, ignore_blocks);
+  };
+
+  std::vector<BB*> result;
+
+  // First collect nodes without predecessors.
+  for (auto block : blocks) {
+    if (pred_func(block)->empty()) {
+      assert(visited.count(block) == 0 && "Malformed graph!");
+      result.push_back(block);
+      traverse_from_root(block);
+    }
+  }
+
+  // Now collect other stranded nodes.  These must be in unreachable cycles.
+  for (auto block : blocks) {
+    if (visited.count(block) == 0) {
+      result.push_back(block);
+      traverse_from_root(block);
+    }
+  }
+
+  return result;
+}
+
+template<class BB>
+void CFA<BB>::ComputeAugmentedCFG(
+    std::vector<BB*>& ordered_blocks,
+    BB* pseudo_entry_block, BB* pseudo_exit_block,
+    std::unordered_map<const BB*, std::vector<BB*>>* augmented_successors_map,
+    std::unordered_map<const BB*, std::vector<BB*>>* augmented_predecessors_map,
+    get_blocks_func succ_func,
+    get_blocks_func pred_func) {
+
+  // Compute the successors of the pseudo-entry block, and
+  // the predecessors of the pseudo exit block.
+  auto sources = TraversalRoots(ordered_blocks, succ_func, pred_func);
+
+  // For the predecessor traversals, reverse the order of blocks.  This
+  // will affect the post-dominance calculation as follows:
+  //  - Suppose you have blocks A and B, with A appearing before B in
+  //    the list of blocks.
+  //  - Also, A branches only to B, and B branches only to A.
+  //  - We want to compute A as dominating B, and B as post-dominating B.
+  // By using reversed blocks for predecessor traversal roots discovery,
+  // we'll add an edge from B to the pseudo-exit node, rather than from A.
+  // All this is needed to correctly process the dominance/post-dominance
+  // constraint when A is a loop header that points to itself as its
+  // own continue target, and B is the latch block for the loop.
+  std::vector<BB*> reversed_blocks(ordered_blocks.rbegin(),
+    ordered_blocks.rend());
+  auto sinks = TraversalRoots(reversed_blocks, pred_func, succ_func);
+
+  // Wire up the pseudo entry block.
+  (*augmented_successors_map)[pseudo_entry_block] = sources;
+  for (auto block : sources) {
+    auto& augmented_preds = (*augmented_predecessors_map)[block];
+    const auto preds = pred_func(block);
+    augmented_preds.reserve(1 + preds->size());
+    augmented_preds.push_back(pseudo_entry_block);
+    augmented_preds.insert(augmented_preds.end(), preds->begin(), preds->end());
+  }
+
+  // Wire up the pseudo exit block.
+  (*augmented_predecessors_map)[pseudo_exit_block] = sinks;
+  for (auto block : sinks) {
+    auto& augmented_succ = (*augmented_successors_map)[block];
+    const auto succ = succ_func(block);
+    augmented_succ.reserve(1 + succ->size());
+    augmented_succ.push_back(pseudo_exit_block);
+    augmented_succ.insert(augmented_succ.end(), succ->begin(), succ->end());
+  }
+};
 
 } // namespace spvtools
 
