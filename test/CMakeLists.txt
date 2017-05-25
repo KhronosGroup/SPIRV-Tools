@@ -169,6 +169,11 @@ add_spvtools_unittest(
   SRCS bit_stream.cpp
   LIBS ${SPIRV_TOOLS})
 
+add_spvtools_unittest(
+  TARGET huffman_codec
+  SRCS huffman_codec.cpp
+  LIBS ${SPIRV_TOOLS})
+
 add_subdirectory(opt)
 add_subdirectory(val)
 add_subdirectory(stats)
