@@ -17,6 +17,7 @@
 #ifndef LIBSPIRV_UTIL_BIT_STREAM_H_
 #define LIBSPIRV_UTIL_BIT_STREAM_H_
 
+#include <algorithm>
 #include <bitset>
 #include <cstdint>
 #include <string>
