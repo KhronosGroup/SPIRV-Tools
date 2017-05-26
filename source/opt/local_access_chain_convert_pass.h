@@ -41,34 +41,6 @@ class LocalAccessChainConvertPass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
-  // Set of verified target types
-  std::unordered_set<uint32_t> seen_target_vars_;
-
-  // Set of verified non-target types
-  std::unordered_set<uint32_t> seen_non_target_vars_;
-
-  // Next unused ID
-  uint32_t next_id_;
-
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   // Returns true if |opcode| is a non-pointer access chain op
   // TODO(): Support conversion of pointer access chains.
   bool IsNonPtrAccessChain(const SpvOp opcode);
@@ -143,8 +115,36 @@ class LocalAccessChainConvertPass : public Pass {
   // converted.
   bool LocalAccessChainConvert(ir::Function* func);
 
+  // Save next available id into |module|.
+  inline void FinalizeNextId(ir::Module* module) {
+    module->SetIdBound(next_id_);
+  }
+
+  // Return next available id and calculate next.
+  inline uint32_t TakeNextId() {
+    return next_id_++;
+  }
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
+
+  // Module this pass is processing
+  ir::Module* module_;
+
+  // Def-Uses for the module we are processing
+  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Cache of verified target vars
+  std::unordered_set<uint32_t> seen_target_vars_;
+
+  // Cache of verified non-target vars
+  std::unordered_set<uint32_t> seen_non_target_vars_;
+
+  // Next unused ID
+  uint32_t next_id_;
 };
 
 }  // namespace opt
