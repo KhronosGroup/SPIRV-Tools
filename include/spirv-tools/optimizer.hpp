@@ -200,7 +200,8 @@ Optimizer::PassToken CreateInlinePass();
 // with constant indices. It then converts all loads and stores of such
 // variables into equivalent sequences of loads, stores, extracts and inserts.
 //
-// This pass only processes entry point functions.
+// This pass only processes entry point functions. It currently only converts
+// non-ptr access chains.
 //
 // This pass unifies access to these variables to a single mode and simplifies
 // subsequent analysis and elimination of these variables along with their

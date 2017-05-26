@@ -69,7 +69,8 @@ class LocalAccessChainConvertPass : public Pass {
     return next_id_++;
   }
 
-  // Returns true if |opcode| is a non-ptr access chain op
+  // Returns true if |opcode| is a non-pointer access chain op
+  // TODO(): Support conversion of pointer access chains.
   bool IsNonPtrAccessChain(const SpvOp opcode);
 
   // Returns true if |typeInst| is a scalar type
