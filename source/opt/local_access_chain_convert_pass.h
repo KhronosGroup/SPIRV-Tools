@@ -37,7 +37,7 @@ namespace opt {
 class LocalAccessChainConvertPass : public Pass {
  public:
   LocalAccessChainConvertPass();
-  const char* name() const override { return "sroa"; }
+  const char* name() const override { return "convert-local-access-chains"; }
   Status Process(ir::Module*) override;
 
  private:
