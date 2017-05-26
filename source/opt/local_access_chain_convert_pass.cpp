@@ -51,14 +51,14 @@ bool LocalAccessChainConvertPass::IsTargetType(
     const ir::Instruction* typeInst) {
   if (IsMathType(typeInst))
     return true;
-  if (typeInst->opcode() != SpvOpTypeStruct &&
-      typeInst->opcode() != SpvOpTypeArray)
+  if (typeInst->opcode() == SpvOpTypeArray)
+    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
+  if (typeInst->opcode() != SpvOpTypeStruct)
     return false;
+  // All struct members must be math type
   int nonMathComp = 0;
   typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    // Ignore length operand in Array type
-    if (compTypeInst->opcode() == SpvOpConstant) return;
     if (!IsMathType(compTypeInst)) ++nonMathComp;
   });
   return nonMathComp == 0;
