@@ -138,6 +138,9 @@ class LocalAccessChainConvertPass : public Pass {
   // loads, stores, extracts and inserts. This unifies access to these
   // variables to a single mode and simplifies analysis and optimization.
   // See IsTargetType() for targeted types.
+  //
+  // Nested access chains and pointer access chains are not currently
+  // converted.
   bool LocalAccessChainConvert(ir::Function* func);
 
   void Initialize(ir::Module* module);

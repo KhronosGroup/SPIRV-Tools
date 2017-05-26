@@ -82,7 +82,8 @@ bool LocalAccessChainConvertPass::IsTargetVar(uint32_t varId) {
   if (seen_target_vars_.find(varId) != seen_target_vars_.end())
     return true;
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
+  if (varInst->opcode() != SpvOpVariable)
+    return false;;
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
@@ -243,8 +244,11 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
       case SpvOpLoad: {
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+        // For now, only convert non-ptr access chains
         if (!IsNonPtrAccessChain(ptrInst->opcode()))
           break;
+        // For now, only convert non-nested access chains
+        // TODO(): Convert nested access chains
         if (!IsTargetVar(varId))
           break;
         if (!IsConstantIndexAccessChain(ptrInst)) {
