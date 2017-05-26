@@ -25,6 +25,7 @@ static const int kSpvAccessChainPtrId = 0;
 static const int kSpvTypePointerStorageClass = 0;
 static const int kSpvTypePointerTypeId = 1;
 static const int kSpvConstantValue = 0;
+static const int kSpvTypeIntWidth = 0;
 
 namespace spvtools {
 namespace opt {
@@ -330,8 +331,14 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
 };
 
 Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
-  bool modified = false;
+  // If non-32-bit integer type in module, terminate processing
+  // TODO(): Handle non-32-bit integer constants in access chains
+  for (const ir::Instruction& inst : module_->types_values())
+    if (inst.opcode() == SpvOpTypeInt &&
+        inst.GetSingleWordInOperand(kSpvTypeIntWidth) != 32)
+      return Status::SuccessWithoutChange;
   // Process all entry point functions.
+  bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
