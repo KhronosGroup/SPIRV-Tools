@@ -1,6 +1,6 @@
-// Copyright (c) 2016 The Khronos Group Inc.
-// Copyright (c) 2016 Valve Corporation
-// Copyright (c) 2016 LunarG Inc.
+// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017 Valve Corporation
+// Copyright (c) 2017 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,17 +16,6 @@
 
 #include "local_access_chain_convert_pass.h"
 #include "iterator.h"
-
-/*
-#define SPV_FUNCTION_CALL_FUNCTION_ID 2
-#define SPV_FUNCTION_CALL_ARGUMENT_ID 3
-#define SPV_FUNCTION_PARAMETER_RESULT_ID 1
-#define SPV_STORE_POINTER_ID 0
-#define SPV_STORE_OBJECT_ID 1
-#define SPV_RETURN_VALUE_ID 0
-#define SPV_TYPE_POINTER_STORAGE_CLASS 1
-#define SPV_TYPE_POINTER_TYPE_ID 2
-*/
 
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvStorePtrId = 0;
@@ -63,8 +52,7 @@ bool LocalAccessChainConvertPass::IsTargetType(
     return false;
   int nonMathComp = 0;
   typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst =
-        def_use_mgr_->id_to_defs().find(*tid)->second;
+    ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
     // Ignore length operand in Array type
     if (compTypeInst->opcode() == SpvOpConstant) return;
     if (!IsMathType(compTypeInst)) ++nonMathComp;
@@ -78,8 +66,7 @@ ir::Instruction* LocalAccessChainConvertPass::GetPtr(
   const uint32_t ptrId = ip->opcode() == SpvOpStore ?
       ip->GetSingleWordInOperand(kSpvStorePtrId) :
       ip->GetSingleWordInOperand(kSpvLoadPtrId);
-  ir::Instruction* ptrInst =
-    def_use_mgr_->id_to_defs().find(ptrId)->second;
+  ir::Instruction* ptrInst = def_use_mgr_->GetDef(ptrId);
   *varId = ptrInst->opcode() == SpvOpAccessChain ?
     ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId) :
     ptrId;
@@ -91,12 +78,10 @@ bool LocalAccessChainConvertPass::IsTargetVar(uint32_t varId) {
     return false;
   if (seen_target_vars_.find(varId) != seen_target_vars_.end())
     return true;
-  const ir::Instruction* varInst =
-    def_use_mgr_->id_to_defs().find(varId)->second;
+  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst =
-    def_use_mgr_->id_to_defs().find(varTypeId)->second;
+  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
@@ -104,8 +89,7 @@ bool LocalAccessChainConvertPass::IsTargetVar(uint32_t varId) {
   }
   const uint32_t varPteTypeId =
     varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
-  ir::Instruction* varPteTypeInst =
-    def_use_mgr_->id_to_defs().find(varPteTypeId)->second;
+  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
@@ -139,8 +123,7 @@ void LocalAccessChainConvertPass::ReplaceAndDeleteLoad(
 uint32_t LocalAccessChainConvertPass::GetPteTypeId(
     const ir::Instruction* ptrInst) {
   const uint32_t ptrTypeId = ptrInst->type_id();
-  const ir::Instruction* ptrTypeInst =
-      def_use_mgr_->id_to_defs().find(ptrTypeId)->second;
+  const ir::Instruction* ptrTypeInst = def_use_mgr_->GetDef(ptrTypeId);
   return ptrTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
 }
 

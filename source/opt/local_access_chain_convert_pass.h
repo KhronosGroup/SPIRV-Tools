@@ -1,6 +1,6 @@
-// Copyright (c) 2016 The Khronos Group Inc.
-// Copyright (c) 2016 Valve Corporation
-// Copyright (c) 2016 LunarG Inc.
+// Copyright (c) 2017 The Khronos Group Inc.
+// Copyright (c) 2017 Valve Corporation
+// Copyright (c) 2017 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_SSAMEM_PASS_H_
-#define LIBSPIRV_OPT_SSAMEM_PASS_H_
+#ifndef LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
+#define LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
 
 
 #include <unordered_map>
@@ -143,5 +143,5 @@ class LocalAccessChainConvertPass : public Pass {
 }  // namespace opt
 }  // namespace spvtools
 
-#endif  // LIBSPIRV_OPT_SSAMEM_PASS_H_
+#endif  // LIBSPIRV_OPT_LOCAL_ACCESS_CHAIN_CONVERT_PASS_H_
 
