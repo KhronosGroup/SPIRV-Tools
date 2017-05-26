@@ -29,6 +29,10 @@ static const int kSpvConstantValue = 0;
 namespace spvtools {
 namespace opt {
 
+bool LocalAccessChainConvertPass::IsNonPtrAccessChain(const SpvOp opcode) {
+  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
+}
+
 bool LocalAccessChainConvertPass::IsMathType(const ir::Instruction* typeInst) {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
@@ -67,7 +71,7 @@ ir::Instruction* LocalAccessChainConvertPass::GetPtr(
       ip->GetSingleWordInOperand(kSpvStorePtrId) :
       ip->GetSingleWordInOperand(kSpvLoadPtrId);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(ptrId);
-  *varId = ptrInst->opcode() == SpvOpAccessChain ?
+  *varId = IsNonPtrAccessChain(ptrInst->opcode()) ?
     ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId) :
     ptrId;
   return ptrInst;
@@ -115,7 +119,7 @@ void LocalAccessChainConvertPass::ReplaceAndDeleteLoad(
   // remove load instruction
   def_use_mgr_->KillInst(loadInst);
   // if access chain, see if it can be removed as well
-  if (ptrInst->opcode() == SpvOpAccessChain) {
+  if (IsNonPtrAccessChain(ptrInst->opcode())) {
     DeleteIfUseless(ptrInst);
   }
 }
@@ -240,7 +244,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
       case SpvOpLoad: {
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-        if (ptrInst->opcode() != SpvOpAccessChain)
+        if (!IsNonPtrAccessChain(ptrInst->opcode()))
           break;
         if (!IsTargetVar(varId))
           break;
@@ -264,7 +268,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
       case SpvOpLoad: {
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-        if (ptrInst->opcode() != SpvOpAccessChain)
+        if (!IsNonPtrAccessChain(ptrInst->opcode()))
           break;
         if (!IsTargetVar(varId))
           break;
@@ -280,7 +284,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
       case SpvOpStore: {
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-        if (ptrInst->opcode() != SpvOpAccessChain)
+        if (!IsNonPtrAccessChain(ptrInst->opcode()))
           break;
         if (!IsTargetVar(varId))
           break;

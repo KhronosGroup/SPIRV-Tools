@@ -69,6 +69,9 @@ class LocalAccessChainConvertPass : public Pass {
     return next_id_++;
   }
 
+  // Returns true if |opcode| is a non-ptr access chain op
+  bool IsNonPtrAccessChain(const SpvOp opcode);
+
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsMathType(const ir::Instruction* typeInst);

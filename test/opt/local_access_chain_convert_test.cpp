@@ -257,6 +257,7 @@ OpFunctionEnd
 //    Assorted struct array types
 //    Assorted scalar types
 //    Assorted non-target types
+//    OpInBoundsAccessChain
 //    Others?
 
 }  // anonymous namespace
