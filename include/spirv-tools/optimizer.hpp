@@ -194,6 +194,14 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
 
+// Creates an insert/extract elimination pass.
+// This pass processes each entry point function in the module, searching for
+// extracts on a sequence of inserts. It further searches the sequence for an
+// insert with indices identical to the extract. If such an insert can be
+// found before hitting a conflicting insert, the extract's result id is
+// replaced with the id of the values from the insert.
+Optimizer::PassToken CreateInsertExtractElimPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();

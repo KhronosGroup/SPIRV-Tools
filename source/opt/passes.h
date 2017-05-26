@@ -22,6 +22,7 @@
 #include "flatten_decoration_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
 #include "inline_pass.h"
+#include "insert_extract_elim.h"
 #include "freeze_spec_constant_value_pass.h"
 #include "null_pass.h"
 #include "set_spec_constant_default_value_pass.h"
