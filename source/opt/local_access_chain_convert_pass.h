@@ -55,7 +55,8 @@ class LocalAccessChainConvertPass : public Pass {
   bool IsTargetType(const ir::Instruction* typeInst);
 
   // Given a load or store |ip|, return the pointer instruction.
-  // Also return the variable's id in |varId|.
+  // If the pointer is an access chain, |*varId| is its base id.
+  // Otherwise it is the id of the pointer of the load/store.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
   // Search |func| and cache function scope variables of target type that are
