@@ -96,8 +96,9 @@ class LocalAccessChainConvertPass : public Pass {
     uint32_t* varId, uint32_t* varPteTypeId,
     std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
-  // Append constant operands from access chain |ptrInst| to
-  // |in_opnds|. Assumes all indices in access chain are constants.
+  // Append literal integer operands to |in_opnds| corresponding to constant
+  // integer operands from access chain |ptrInst|. Assumes all indices in
+  // access chains are OpConstant.
   void AppendConstantOperands( const ir::Instruction* ptrInst,
     std::vector<ir::Operand>* in_opnds);
 
