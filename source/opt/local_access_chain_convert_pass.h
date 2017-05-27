@@ -51,13 +51,19 @@ class LocalAccessChainConvertPass : public Pass {
 
   // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.
+  // TODO(): Add more complex types to convert
   bool IsTargetType(const ir::Instruction* typeInst);
 
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
-  // Return true if |varId| is function scope variable of targeted type.
+  // Search |func| and cache function scope variables of target type that are
+  // not accessed with non-constant-index access chains.
+  void FindTargetVars(ir::Function* func);
+
+  // Return true if |varId| is a target variable. See FindTargetVars()
+  // for definition.
   bool IsTargetVar(uint32_t varId);
 
   // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.

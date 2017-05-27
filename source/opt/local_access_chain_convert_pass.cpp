@@ -236,8 +236,7 @@ bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
   return nonConstCnt == 0;
 }
 
-bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
-  // Rule out variables accessed with non-constant indices
+void LocalAccessChainConvertPass::FindTargetVars(ir::Function* func) {
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
@@ -252,6 +251,7 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
         // TODO(): Convert nested access chains
         if (!IsTargetVar(varId))
           break;
+        // Rule out variables accessed with non-constant indices
         if (!IsConstantIndexAccessChain(ptrInst)) {
           seen_non_target_vars_.insert(varId);
           seen_target_vars_.erase(varId);
@@ -263,6 +263,10 @@ bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
       }
     }
   }
+}
+
+bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
+  FindTargetVars(func);
   // Replace access chains of all targeted variables with equivalent
   // extract and insert sequences
   bool modified = false;
