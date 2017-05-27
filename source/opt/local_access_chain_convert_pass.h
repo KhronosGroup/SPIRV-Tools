@@ -59,11 +59,16 @@ class LocalAccessChainConvertPass : public Pass {
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
   // Search |func| and cache function scope variables of target type that are
-  // not accessed with non-constant-index access chains.
+  // not accessed with non-constant-index access chains. Also cache non-target
+  // variables.
   void FindTargetVars(ir::Function* func);
 
-  // Return true if |varId| is a target variable. See FindTargetVars()
-  // for definition.
+  // Return true if |varId| is a previously identified target variable.
+  // Return false if |varId| is a previously identified non-target variable.
+  // See FindTargetVars() for definition of target variable. If variable is
+  // not cached, return true if variable is a function scope variable of
+  // target type, false otherwise. Updates caches of target and non-target
+  // variables.
   bool IsTargetVar(uint32_t varId);
 
   // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.
