@@ -14,7 +14,7 @@
 
 #include "print.h"
 
-#if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) || defined(SPIRV_MAC)
+#if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) || defined(SPIRV_MAC) || defined(SPIRV_FREEBSD)
 namespace libspirv {
 
 clr::reset::operator const char*() { return "\x1b[0m"; }
