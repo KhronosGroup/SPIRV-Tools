@@ -43,16 +43,16 @@ class LocalAccessChainConvertPass : public Pass {
  private:
   // Returns true if |opcode| is a non-pointer access chain op
   // TODO(): Support conversion of pointer access chains.
-  bool IsNonPtrAccessChain(const SpvOp opcode);
+  bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst);
+  bool IsMathType(const ir::Instruction* typeInst) const;
 
   // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.
   // TODO(): Add more complex types to convert
-  bool IsTargetType(const ir::Instruction* typeInst);
+  bool IsTargetType(const ir::Instruction* typeInst) const;
 
   // Given a load or store |ip|, return the pointer instruction.
   // If the pointer is an access chain, |*varId| is its base id.
@@ -82,7 +82,7 @@ class LocalAccessChainConvertPass : public Pass {
     ir::Instruction* ptrInst);
 
   // Return type id for |ptrInst|'s pointee
-  uint32_t GetPteTypeId(const ir::Instruction* ptrInst);
+  uint32_t GetPteTypeId(const ir::Instruction* ptrInst) const;
 
   // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
   // Append to |newInsts|.
@@ -114,8 +114,8 @@ class LocalAccessChainConvertPass : public Pass {
   uint32_t GenAccessChainLoadReplacement(const ir::Instruction* ptrInst,
       std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
-  // Return true if all indices of access chain |acp| are constant
-  bool IsConstantIndexAccessChain(ir::Instruction* acp);
+  // Return true if all indices of access chain |acp| are OpConstant integers
+  bool IsConstantIndexAccessChain(ir::Instruction* acp) const;
 
   // Identify all function scope variables of target type which are 
   // accessed only with loads, stores and access chains with constant

@@ -30,11 +30,13 @@ static const int kSpvTypeIntWidth = 0;
 namespace spvtools {
 namespace opt {
 
-bool LocalAccessChainConvertPass::IsNonPtrAccessChain(const SpvOp opcode) {
+bool LocalAccessChainConvertPass::IsNonPtrAccessChain(
+    const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
-bool LocalAccessChainConvertPass::IsMathType(const ir::Instruction* typeInst) {
+bool LocalAccessChainConvertPass::IsMathType(
+    const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
   case SpvOpTypeFloat:
@@ -49,7 +51,7 @@ bool LocalAccessChainConvertPass::IsMathType(const ir::Instruction* typeInst) {
 }
 
 bool LocalAccessChainConvertPass::IsTargetType(
-    const ir::Instruction* typeInst) {
+    const ir::Instruction* typeInst) const {
   if (IsMathType(typeInst))
     return true;
   if (typeInst->opcode() == SpvOpTypeArray)
@@ -126,7 +128,7 @@ void LocalAccessChainConvertPass::ReplaceAndDeleteLoad(
 }
 
 uint32_t LocalAccessChainConvertPass::GetPteTypeId(
-    const ir::Instruction* ptrInst) {
+    const ir::Instruction* ptrInst) const {
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst = def_use_mgr_->GetDef(ptrTypeId);
   return ptrTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
@@ -223,7 +225,7 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
 }
 
 bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
-    ir::Instruction* acp) {
+    ir::Instruction* acp) const {
   uint32_t inIdx = 0;
   uint32_t nonConstCnt = 0;
   acp->ForEachInId([&inIdx, &nonConstCnt, this](uint32_t* tid) {
