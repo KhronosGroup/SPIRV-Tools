@@ -50,8 +50,7 @@ bool LocalSingleBlockElimPass::IsTargetType(const ir::Instruction* typeInst) {
     return false;
   int nonMathComp = 0;
   typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst =
-        def_use_mgr_->id_to_defs().find(*tid)->second;
+    ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
     // Ignore length operand in Array type
     if (compTypeInst->opcode() == SpvOpConstant) return;
     if (!IsMathType(compTypeInst)) ++nonMathComp;
@@ -64,8 +63,7 @@ ir::Instruction* LocalSingleBlockElimPass::GetPtr(
   const uint32_t ptrId = ip->opcode() == SpvOpStore ?
       ip->GetSingleWordInOperand(kSpvStorePtrId) :
       ip->GetSingleWordInOperand(kSpvLoadPtrId);
-  ir::Instruction* ptrInst =
-    def_use_mgr_->id_to_defs().find(ptrId)->second;
+  ir::Instruction* ptrInst = def_use_mgr_->GetDef(ptrId);
   *varId = ptrInst->opcode() == SpvOpAccessChain ?
     ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId) :
     ptrId;
@@ -77,12 +75,10 @@ bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
     return false;
   if (seen_target_vars_.find(varId) != seen_target_vars_.end())
     return true;
-  const ir::Instruction* varInst =
-    def_use_mgr_->id_to_defs().find(varId)->second;
+  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst =
-    def_use_mgr_->id_to_defs().find(varTypeId)->second;
+  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
@@ -90,8 +86,7 @@ bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
   }
   const uint32_t varPteTypeId =
     varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
-  ir::Instruction* varPteTypeInst =
-    def_use_mgr_->id_to_defs().find(varPteTypeId)->second;
+  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
@@ -143,12 +138,10 @@ bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
 
 bool LocalSingleBlockElimPass::IsLiveVar(uint32_t varId) {
   // non-function scope vars are live
-  const ir::Instruction* varInst =
-      def_use_mgr_->id_to_defs().find(varId)->second;
+  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst =
-      def_use_mgr_->id_to_defs().find(varTypeId)->second;
+  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
       SpvStorageClassFunction)
     return true;
