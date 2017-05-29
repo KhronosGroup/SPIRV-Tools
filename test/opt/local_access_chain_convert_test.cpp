@@ -102,6 +102,85 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
+TEST_F(LocalAccessChainConvertTest, TwoUsesofSingleChainConverted) {
+
+  //  #version 140
+  //  
+  //  in vec4 BaseColor;
+  //  
+  //  struct S_t {
+  //      vec4 v0;
+  //      vec4 v1;
+  //  };
+  //  
+  //  void main()
+  //  {
+  //      S_t s0;
+  //      s0.v1 = BaseColor;
+  //      gl_FragColor = s0.v1;
+  //  }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %S_t "S_t"
+OpMemberName %S_t 0 "v0"
+OpMemberName %S_t 1 "v1"
+OpName %s0 "s0"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%S_t = OpTypeStruct %v4float %v4float
+%_ptr_Function_S_t = OpTypePointer Function %S_t
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %8
+%17 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function
+%18 = OpLoad %v4float %BaseColor
+%19 = OpAccessChain %_ptr_Function_v4float %s0 %int_1
+OpStore %19 %18
+%20 = OpLoad %v4float %19
+OpStore %gl_FragColor %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%17 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function
+%18 = OpLoad %v4float %BaseColor
+%21 = OpLoad %S_t %s0
+%22 = OpCompositeInsert %S_t %18 %21 1
+OpStore %s0 %22
+%23 = OpLoad %S_t %s0
+%24 = OpCompositeExtract %v4float %23 1
+OpStore %gl_FragColor %24
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 TEST_F(LocalAccessChainConvertTest, 
        UntargetedTypeNotConverted) {
 
