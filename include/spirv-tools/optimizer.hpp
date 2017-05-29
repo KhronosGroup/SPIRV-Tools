@@ -201,8 +201,9 @@ Optimizer::PassToken CreateInlinePass();
 // variables into equivalent sequences of loads, stores, extracts and inserts.
 //
 // This pass only processes entry point functions. It currently only converts
-// non-nested, non-ptr access chains. It does process modules with non-32-bit
-// integer types present.
+// non-nested, non-ptr access chains. It does not process modules with
+// non-32-bit integer types present. Optional memory access options on loads
+// and stores are ignored as we are only processing function scope variables.
 //
 // This pass unifies access to these variables to a single mode and simplifies
 // subsequent analysis and elimination of these variables along with their
