@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <functional>
 #include <queue>
 #include <iomanip>
 #include <map>
