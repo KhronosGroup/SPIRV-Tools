@@ -17,9 +17,11 @@
 #ifndef LIBSPIRV_UTIL_HUFFMAN_CODEC_H_
 #define LIBSPIRV_UTIL_HUFFMAN_CODEC_H_
 
+#include <algorithm>
 #include <cassert>
 #include <queue>
 #include <iomanip>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <stack>
@@ -34,16 +36,18 @@ namespace spvutils {
 // literal).
 template <class Val>
 class HuffmanCodec {
+  struct Node;
+
  public:
   // Creates Huffman codec from a histogramm.
-  explicit HuffmanCodec(const std::unordered_map<Val, uint32_t>& hist) {
+  explicit HuffmanCodec(const std::map<Val, uint32_t>& hist) {
     if (hist.empty()) return;
 
     // Heuristic estimate.
     all_nodes_.reserve(3 * hist.size());
 
-
-    // The queue is sorted in ascending order by weight.
+    // The queue is sorted in ascending order by weight (or by node id if
+    // weights are equal).
     std::vector<Node*> queue_vector;
     queue_vector.reserve(hist.size());
     std::priority_queue<Node*, std::vector<Node*>,
@@ -52,12 +56,10 @@ class HuffmanCodec {
 
     // Put all leaves in the queue.
     for (const auto& pair : hist) {
-      std::unique_ptr<Node> node(new Node());
+      Node* node = CreateNode();
       node->val = pair.first;
       node->weight = pair.second;
-
-      queue.push(node.get());
-      all_nodes_.push_back(std::move(node));
+      queue.push(node);
     }
 
     // Form the tree by combining two subtrees with the least weight,
@@ -81,12 +83,11 @@ class HuffmanCodec {
       queue.pop();
 
       // Combile left and right into a new tree and push it into the queue.
-      std::unique_ptr<Node> parent(new Node());
+      Node* parent = CreateNode();
       parent->weight = right->weight + left->weight;
       parent->left = left;
       parent->right = right;
-      queue.push(parent.get());
-      all_nodes_.push_back(std::move(parent));
+      queue.push(parent);
     }
 
     // Traverse the tree and form encoding table.
@@ -171,13 +172,16 @@ class HuffmanCodec {
   struct Node {
     Val val = Val();
     uint32_t weight = 0;
+    uint32_t id = 0;
     Node* left = nullptr;
     Node* right = nullptr;
   };
 
   static bool LeftIsBigger(const Node* left, const Node* right) {
-    if (left->weight == right->weight)
-      return left->val > right->val;
+    if (left->weight == right->weight) {
+      assert (left->id != right->id);
+      return left->id > right->id;
+    }
     return left->weight > right->weight;
   }
 
@@ -228,6 +232,13 @@ class HuffmanCodec {
     }
   }
 
+  // Creates new Huffman tree node and stores it in the deleter array.
+  Node* CreateNode() {
+    all_nodes_.emplace_back(new Node());
+    all_nodes_.back()->id = next_node_id_++;
+    return all_nodes_.back().get();
+  }
+
   // Huffman tree root.
   Node* root_ = nullptr;
 
@@ -236,6 +247,9 @@ class HuffmanCodec {
 
   // Encoding table value -> {bits, num_bits}.
   std::unordered_map<Val, std::pair<uint64_t, size_t>> encoding_table_;
+
+  // Next node id issued by CreateNode();
+  uint32_t next_node_id_ = 1;
 };
 
 }  // namespace spvutils
