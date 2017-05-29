@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "local_access_chain_convert_pass.h"
 #include "iterator.h"
+#include "local_access_chain_convert_pass.h"
 
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvStorePtrId = 0;
