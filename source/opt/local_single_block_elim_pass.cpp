@@ -94,25 +94,12 @@ bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
   return true;
 }
 
-void LocalSingleBlockElimPass::DeleteIfUseless(ir::Instruction* inst) {
-  const uint32_t resId = inst->result_id();
-  assert(resId != 0);
-  analysis::UseList* uses = def_use_mgr_->GetUses(resId);
-  if (uses == nullptr)
-    def_use_mgr_->KillInst(inst);
-}
-
 void LocalSingleBlockElimPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst,
                                       uint32_t replId,
                                       ir::Instruction* ptrInst) {
   const uint32_t loadId = loadInst->result_id();
   (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
-  // remove load instruction
-  def_use_mgr_->KillInst(loadInst);
-  // if access chain, see if it can be removed as well
-  if (ptrInst->opcode() == SpvOpAccessChain) {
-    DeleteIfUseless(ptrInst);
-  }
+  DCEInst(loadInst);
 }
 
 bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
