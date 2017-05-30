@@ -28,6 +28,10 @@ static const int kSpvTypePointerTypeId = 1;
 namespace spvtools {
 namespace opt {
 
+bool LocalSingleBlockElimPass::IsNonPtrAccessChain(const SpvOp opcode) {
+  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
+}
+
 bool LocalSingleBlockElimPass::IsMathType(const ir::Instruction* typeInst) {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
@@ -64,7 +68,7 @@ ir::Instruction* LocalSingleBlockElimPass::GetPtr(
       ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
   ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() == SpvOpAccessChain) {
+  while (IsNonPtrAccessChain(varInst->opcode())) {
     *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
     varInst = def_use_mgr_->GetDef(*varId);
   }
@@ -108,7 +112,7 @@ bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
   if (uses == nullptr)
     return false;
   for (auto u : *uses) {
-    if (u.inst->opcode() == SpvOpAccessChain) {
+    if (IsNonPtrAccessChain(u.inst->opcode())) {
       if (HasLoads(u.inst->result_id()))
         return true;
     }
@@ -143,7 +147,7 @@ void LocalSingleBlockElimPass::AddStores(
   analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
   if (uses != nullptr) {
     for (auto u : *uses) {
-      if (u.inst->opcode() == SpvOpAccessChain)
+      if (IsNonPtrAccessChain(u.inst->opcode()))
         AddStores(u.inst->result_id(), insts);
       else if (u.inst->opcode() == SpvOpStore)
         insts->push(u.inst);
@@ -214,7 +218,7 @@ bool LocalSingleBlockElimPass::LocalSingleBlockElim(ir::Function* func) {
           var2store_[varId] = &*ii;
         }
         else {
-          assert(ptrInst->opcode() == SpvOpAccessChain);
+          assert(IsNonPtrAccessChain(ptrInst->opcode()));
           var2store_.erase(varId);
         }
         pinned_vars_.erase(varId);
