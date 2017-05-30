@@ -107,13 +107,8 @@ bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
     return false;
   for (auto u : *uses) {
     if (u.inst->opcode() == SpvOpAccessChain) {
-      uint32_t cid = u.inst->result_id();
-      analysis::UseList* cuses = def_use_mgr_->GetUses(cid);
-      if (cuses == nullptr)
-        continue;
-      for (auto cu : *cuses)
-        if (cu.inst->opcode() == SpvOpLoad)
-          return true;
+      if (HasLoads(u.inst->result_id()))
+        return true;
     }
     else if (u.inst->opcode() == SpvOpLoad)
       return true;
@@ -139,6 +134,19 @@ bool LocalSingleBlockElimPass::IsLiveStore(ir::Instruction* storeInst) {
   uint32_t varId;
   (void) GetPtr(storeInst, &varId);
   return IsLiveVar(varId);
+}
+
+void LocalSingleBlockElimPass::AddStores(
+    uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
+  analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
+  if (uses != nullptr) {
+    for (auto u : *uses) {
+      if (u.inst->opcode() == SpvOpAccessChain)
+        AddStores(u.inst->result_id(), insts);
+      else if (u.inst->opcode() == SpvOpStore)
+        insts->push(u.inst);
+    }
+  }
 }
 
 void LocalSingleBlockElimPass::DCEInst(ir::Instruction* inst) {
@@ -172,24 +180,8 @@ void LocalSingleBlockElimPass::DCEInst(ir::Instruction* inst) {
     }
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId)) {
-      analysis::UseList* uses = def_use_mgr_->GetUses(varId);
-      if (uses != nullptr) {
-        for (auto u : *uses) {
-          if (u.inst->opcode() == SpvOpAccessChain) {
-            uint32_t cid = u.inst->result_id();
-            analysis::UseList* cuses = def_use_mgr_->GetUses(cid);
-            if (cuses != nullptr) {
-              for (auto cu : *cuses)
-                if (cu.inst->opcode() == SpvOpStore)
-                  deadInsts.push(cu.inst);
-            }
-          }
-          else if (u.inst->opcode() == SpvOpStore)
-            deadInsts.push(u.inst);
-        }
-      }
-    }
+    if (varId != 0 && !IsLiveVar(varId)) 
+      AddStores(varId, &deadInsts);
     deadInsts.pop();
   }
 }
@@ -302,17 +294,17 @@ void LocalSingleBlockElimPass::Initialize(ir::Module* module) {
 };
 
 Pass::Status LocalSingleBlockElimPass::ProcessImpl() {
+  // Assumes logical addressing only
+  if (module_->HasCapability(SpvCapabilityAddresses))
+    return Status::SuccessWithoutChange;
   bool modified = false;
-
   // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
     modified = modified || LocalSingleBlockElim(fn);
   }
-
   FinalizeNextId(module_);
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

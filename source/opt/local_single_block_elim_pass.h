@@ -108,6 +108,9 @@ class LocalSingleBlockElimPass : public Pass {
   // base variable has a load
   bool IsLiveStore(ir::Instruction* storeInst);
 
+  // Add stores using |ptr_id| to |insts|
+  void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
+
   // Delete |inst| and iterate DCE on all its operands 
   void DCEInst(ir::Instruction* inst);
 
