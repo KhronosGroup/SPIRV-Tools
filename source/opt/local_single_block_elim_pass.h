@@ -41,11 +41,11 @@ class LocalSingleBlockElimPass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-   // Module this pass is processing
-   ir::Module* module_;
+  // Module this pass is processing
+  ir::Module* module_;
 
-   // Def-Uses for the module we are processing
-   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+  // Def-Uses for the module we are processing
+  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
