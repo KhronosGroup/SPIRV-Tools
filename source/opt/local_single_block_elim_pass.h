@@ -18,16 +18,16 @@
 #define LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 
 
+#include <algorithm>
+#include <map>
+#include <queue>
+#include <utility>
 #include <unordered_map>
 #include <unordered_set>
-#include <map>
-#include <algorithm>
-#include <utility>
-#include <queue>
 
+#include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "basic_block.h"
 #include "pass.h"
 
 namespace spvtools {
