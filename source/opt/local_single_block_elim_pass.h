@@ -37,7 +37,7 @@ namespace opt {
 class LocalSingleBlockElimPass : public Pass {
  public:
   LocalSingleBlockElimPass();
-  const char* name() const override { return "sroa"; }
+  const char* name() const override { return "eliminate-local-single-block"; }
   Status Process(ir::Module*) override;
 
  private:
