@@ -93,7 +93,11 @@ class LocalSingleBlockElimPass : public Pass {
   // Also return the base variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
-  // Return true if |varId| is function scope variable of targeted type.
+  // Return true if |varId| is a previously identified target variable.
+  // Return false if |varId| is a previously identified non-target variable.
+  // If variable is not cached, return true if variable is a function scope 
+  // variable of target type, false otherwise. Updates caches of target 
+  // and non-target variables.
   bool IsTargetVar(uint32_t varId);
 
   // Replace all instances of |loadInst|'s id with |replId| and delete
