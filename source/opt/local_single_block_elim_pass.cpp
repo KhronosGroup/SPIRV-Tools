@@ -94,9 +94,8 @@ bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
   return true;
 }
 
-void LocalSingleBlockElimPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst,
-                                      uint32_t replId,
-                                      ir::Instruction* ptrInst) {
+void LocalSingleBlockElimPass::ReplaceAndDeleteLoad(
+    ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
   (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
@@ -249,7 +248,7 @@ bool LocalSingleBlockElimPass::LocalSingleBlockElim(ir::Function* func) {
         }
         if (replId != 0) {
           // replace load's result id and delete load
-          ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
+          ReplaceAndDeleteLoad(&*ii, replId);
           modified = true;
         }
         else {
