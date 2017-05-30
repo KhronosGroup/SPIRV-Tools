@@ -391,6 +391,7 @@ OpFunctionEnd
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Other target variable types
+//    InBounds Access Chains
 //    Others?
 
 }  // anonymous namespace
