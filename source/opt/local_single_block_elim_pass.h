@@ -84,12 +84,12 @@ class LocalSingleBlockElimPass : public Pass {
   // Delete |inst| and iterate DCE on all its operands 
   void DCEInst(ir::Instruction* inst);
 
-  // On all entry point functions, within a single block, eliminate
+  // On all entry point functions, within each basic block, eliminate
   // loads and stores to function variables where possible. For
   // loads, if previous load or store to same variable, replace
   // load id with previous id and delete load. Finally, check if
   // remaining stores are useless, and delete store and variable
-  // where possible.
+  // where possible. Assumes logical addressing.
   bool LocalSingleBlockElim(ir::Function* func);
 
   // Save next available id into |module|.

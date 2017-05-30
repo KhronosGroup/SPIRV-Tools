@@ -207,6 +207,8 @@ Optimizer::PassToken CreateInlinePass();
 // The presense of access chain references and function calls can inhibit
 // the above optimization.
 //
+// Only modules with logical addressing are currently processed. 
+//
 // This pass is most effective if preceeded by Inlining and 
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
 // by LocalSingleStoreElim and LocalSSARewrite.
