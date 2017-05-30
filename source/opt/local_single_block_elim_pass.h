@@ -79,15 +79,15 @@ class LocalSingleBlockElimPass : public Pass {
   }
 
   // Returns true if |opcode| is a non-ptr access chain op
-  bool IsNonPtrAccessChain(const SpvOp opcode);
+  bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst);
+  bool IsMathType(const ir::Instruction* typeInst) const;
 
   // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.
-  bool IsTargetType(const ir::Instruction* typeInst);
+  bool IsTargetType(const ir::Instruction* typeInst) const;
 
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the base variable's id in |varId|.
@@ -101,11 +101,11 @@ class LocalSingleBlockElimPass : public Pass {
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
   // Return true if any instruction loads from |varId|
-  bool HasLoads(uint32_t varId);
+  bool HasLoads(uint32_t varId) const;
 
   // Return true if |varId| is not a function variable or if it has
   // a load
-  bool IsLiveVar(uint32_t varId);
+  bool IsLiveVar(uint32_t varId) const;
 
   // Return true if |storeInst| is not to function variable or if its
   // base variable has a load

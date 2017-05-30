@@ -28,11 +28,12 @@ static const int kSpvTypePointerTypeId = 1;
 namespace spvtools {
 namespace opt {
 
-bool LocalSingleBlockElimPass::IsNonPtrAccessChain(const SpvOp opcode) {
+bool LocalSingleBlockElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
-bool LocalSingleBlockElimPass::IsMathType(const ir::Instruction* typeInst) {
+bool LocalSingleBlockElimPass::IsMathType(
+    const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
   case SpvOpTypeFloat:
@@ -46,7 +47,8 @@ bool LocalSingleBlockElimPass::IsMathType(const ir::Instruction* typeInst) {
   return false;
 }
 
-bool LocalSingleBlockElimPass::IsTargetType(const ir::Instruction* typeInst) {
+bool LocalSingleBlockElimPass::IsTargetType(
+    const ir::Instruction* typeInst) const {
   if (IsMathType(typeInst))
     return true;
   if (typeInst->opcode() != SpvOpTypeStruct &&
@@ -107,7 +109,7 @@ void LocalSingleBlockElimPass::ReplaceAndDeleteLoad(
   DCEInst(loadInst);
 }
 
-bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
+bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(varId);
   if (uses == nullptr)
     return false;
@@ -122,7 +124,7 @@ bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) {
   return false;
 }
 
-bool LocalSingleBlockElimPass::IsLiveVar(uint32_t varId) {
+bool LocalSingleBlockElimPass::IsLiveVar(uint32_t varId) const {
   // non-function scope vars are live
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
