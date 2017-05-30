@@ -60,12 +60,14 @@ bool LocalSingleBlockElimPass::IsTargetType(const ir::Instruction* typeInst) {
 
 ir::Instruction* LocalSingleBlockElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
-  const uint32_t ptrId = ip->GetSingleWordInOperand(
-    ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(ptrId);
-  *varId = ptrInst->opcode() == SpvOpAccessChain ?
-    ptrInst->GetSingleWordInOperand(kSpvAccessChainPtrId) :
-    ptrId;
+  *varId = ip->GetSingleWordInOperand(
+      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
+  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  ir::Instruction* varInst = ptrInst;
+  while (varInst->opcode() == SpvOpAccessChain) {
+    *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
+    varInst = def_use_mgr_->GetDef(*varId);
+  }
   return ptrInst;
 }
 

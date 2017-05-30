@@ -87,7 +87,7 @@ class LocalSingleBlockElimPass : public Pass {
   bool IsTargetType(const ir::Instruction* typeInst);
 
   // Given a load or store |ip|, return the pointer instruction.
-  // Also return the variable's id in |varId|.
+  // Also return the base variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
 
   // Return true if |varId| is function scope variable of targeted type.
