@@ -41,43 +41,6 @@ class LocalSingleBlockElimPass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
-  // Set of verified target types
-  std::unordered_set<uint32_t> seen_target_vars_;
-
-  // Set of verified non-target types
-  std::unordered_set<uint32_t> seen_non_target_vars_;
-
-  // Map from variable to its live store in block
-  std::unordered_map<uint32_t, ir::Instruction*> var2store_;
-
-  // Map from variable to its live load in block
-  std::unordered_map<uint32_t, ir::Instruction*> var2load_;
-
-  // Set of undeletable variables
-  std::unordered_set<uint32_t> pinned_vars_;
-
-  // Next unused ID
-  uint32_t next_id_;
-
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   // Returns true if |opcode| is a non-ptr access chain op
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
@@ -129,8 +92,45 @@ class LocalSingleBlockElimPass : public Pass {
   // where possible.
   bool LocalSingleBlockElim(ir::Function* func);
 
+  // Save next available id into |module|.
+  inline void FinalizeNextId(ir::Module* module) {
+    module->SetIdBound(next_id_);
+  }
+
+  // Return next available id and calculate next.
+  inline uint32_t TakeNextId() {
+    return next_id_++;
+  }
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
+
+  // Module this pass is processing
+  ir::Module* module_;
+
+  // Def-Uses for the module we are processing
+  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Cache of previously seen target types
+  std::unordered_set<uint32_t> seen_target_vars_;
+
+  // Cache of previously seen non-target types
+  std::unordered_set<uint32_t> seen_non_target_vars_;
+
+  // Map from variable to its live store in block
+  std::unordered_map<uint32_t, ir::Instruction*> var2store_;
+
+  // Map from variable to its live load in block
+  std::unordered_map<uint32_t, ir::Instruction*> var2load_;
+
+  // Set of undeletable variables
+  std::unordered_set<uint32_t> pinned_vars_;
+
+  // Next unused ID
+  uint32_t next_id_;
 };
 
 }  // namespace opt
