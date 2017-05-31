@@ -1030,7 +1030,7 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
 
   // Only valid while spirv_ and parsed_operands_ remain unchanged.
   inst->words = &spirv_[first_operand_module_offset];
-  inst->operands = parsed_operands_.data();
+  inst->operands = parsed_operands_.empty() ? nullptr : parsed_operands_.data();
   inst->num_words = static_cast<uint16_t>(spirv_.size() - inst_module_offset);
   spirv_[inst_module_offset] =
       spvOpcodeMake(inst->num_words, SpvOp(inst->opcode));
