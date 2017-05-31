@@ -680,14 +680,11 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
     if (decode_result != SPV_SUCCESS)
       return decode_result;
 
-    std::cerr << "Instruction decoded, will attempt validation" << std::endl;
     const spv_result_t validation_result = UpdateValidationState(inst);
     if (validation_result != SPV_SUCCESS)
       return validation_result;
-    std::cerr << "Instruction validated successfully" << std::endl;
   }
 
-  std::cerr << "Instructions decoding complete" << std::endl;
 
   if (reader_.GetNumReadBits() != header_.markv_length_in_bits ||
       !reader_.OnlyZeroesLeft()) {
@@ -696,7 +693,6 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
         << reader_.GetNumReadBits() << " " << header_.markv_length_in_bits;
   }
 
-  std::cerr << "Setting id bound" << std::endl;
   spirv_[3] = vstate_.getIdBound();
 
   *spirv_binary = std::move(spirv_);
@@ -979,12 +975,8 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
 
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
 
-  std::cerr << "\nOpcode: " << spvOpcodeString(opcode) << std::endl;
-
   // Opcode/num_words placeholder, the word will be filled in later.
   spirv_.push_back(0);
-
-  const size_t first_operand_module_offset = spirv_.size();
 
   spv_opcode_desc opcode_desc;
   if (grammar_.lookupOpcode(opcode, &opcode_desc)
@@ -1005,8 +997,6 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
     inst->num_operands = static_cast<uint16_t>(expected_operands.size());
   }
 
-  std::cerr << "Num operands: " << inst->num_operands << std::endl;
-
   for (size_t operand_index = 0;
        operand_index < static_cast<size_t>(inst->num_operands);
        ++operand_index) {
@@ -1014,34 +1004,24 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
     const spv_operand_type_t type =
         spvTakeFirstMatchableOperand(&expected_operands);
 
-    const size_t operand_offset = spirv_.size() - first_operand_module_offset;
+    const size_t operand_offset = spirv_.size() - inst_module_offset;
 
     const spv_result_t decode_result =
         DecodeOperand(operand_offset, inst, type, &expected_operands);
-
-    std::cerr << "operand" << operand_index << ": "
-              << spvOperandTypeStr(parsed_operands_.back().type) << std::endl;
 
     if (decode_result != SPV_SUCCESS)
       return decode_result;
   }
 
-  std::cerr << "Operands decoded successfully" << std::endl;
-
   assert(inst->num_operands == parsed_operands_.size());
 
   // Only valid while spirv_ and parsed_operands_ remain unchanged.
-  std::cerr << "Setting inst->words" << std::endl;
-  inst->words = &spirv_[first_operand_module_offset];
-  std::cerr << "Setting inst->operands" << std::endl;
+  inst->words = &spirv_[inst_module_offset];
   inst->operands = parsed_operands_.empty() ? nullptr : parsed_operands_.data();
-  std::cerr << "Setting inst->num_words" << std::endl;
   inst->num_words = static_cast<uint16_t>(spirv_.size() - inst_module_offset);
-  std::cerr << "Writing to spirv_[inst_module_offset]" << std::endl;
   spirv_[inst_module_offset] =
       spvOpcodeMake(inst->num_words, SpvOp(inst->opcode));
 
-  std::cerr << "Parsed instruction created" << std::endl;
 
   assert(inst->num_words == std::accumulate(
       parsed_operands_.begin(), parsed_operands_.end(), 1,
@@ -1050,9 +1030,7 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
   }) && "num_words in instruction doesn't correspond to the sum of num_words"
         "in the operands");
 
-  std::cerr << "Calling Record number type" << std::endl;
   RecordNumberType(*inst);
-  std::cerr << "Exiting DecodeInstruction" << std::endl;
 
   return SPV_SUCCESS;
 }
@@ -1201,13 +1179,11 @@ spv_result_t spvMarkvToSpirv(spv_const_context context,
 
   assert(!words.empty());
 
-  std::cerr << "Creating spirv_binary" << std::endl;
   *spirv_binary = new spv_binary_t();
   (*spirv_binary)->code = new uint32_t[words.size()];
   (*spirv_binary)->wordCount = words.size();
   memcpy((*spirv_binary)->code, words.data(), 4 * words.size());
 
-  std::cerr << "spvMarkvToSpirv finished successfully" << std::endl;
   return SPV_SUCCESS;
 }
 
