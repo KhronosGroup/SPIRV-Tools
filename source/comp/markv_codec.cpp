@@ -1026,14 +1026,22 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
       return decode_result;
   }
 
+  std::cerr << "Operands decoded successfully" << std::endl;
+
   assert(inst->num_operands == parsed_operands_.size());
 
   // Only valid while spirv_ and parsed_operands_ remain unchanged.
+  std::cerr << "Setting inst->words" << std::endl;
   inst->words = &spirv_[first_operand_module_offset];
+  std::cerr << "Setting inst->operands" << std::endl;
   inst->operands = parsed_operands_.empty() ? nullptr : parsed_operands_.data();
+  std::cerr << "Setting inst->num_words" << std::endl;
   inst->num_words = static_cast<uint16_t>(spirv_.size() - inst_module_offset);
+  std::cerr << "Writing to spirv_[inst_module_offset]" << std::endl;
   spirv_[inst_module_offset] =
       spvOpcodeMake(inst->num_words, SpvOp(inst->opcode));
+
+  std::cerr << "Parsed instruction created" << std::endl;
 
   assert(inst->num_words == std::accumulate(
       parsed_operands_.begin(), parsed_operands_.end(), 1,
@@ -1042,7 +1050,9 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
   }) && "num_words in instruction doesn't correspond to the sum of num_words"
         "in the operands");
 
+  std::cerr << "Calling Record number type" << std::endl;
   RecordNumberType(*inst);
+  std::cerr << "Exiting DecodeInstruction" << std::endl;
 
   return SPV_SUCCESS;
 }
