@@ -188,6 +188,7 @@ add_custom_target(spirv-tools-build-version
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
 set_property(TARGET spirv-tools-build-version PROPERTY FOLDER "SPIRV-Tools build")
 
+add_subdirectory(comp)
 add_subdirectory(opt)
 
 set(SPIRV_SOURCES

@@ -88,6 +88,10 @@ class BitReaderFromString : public BitReaderInterface {
     return sub.length();
   }
 
+  size_t GetNumReadBits() const override {
+    return pos_;
+  }
+
   bool ReachedEnd() const override {
     return pos_ >= str_.length();
   }
@@ -424,6 +428,23 @@ TEST(BitWriterStringStream, WriteBits) {
   EXPECT_EQ("11001", writer.GetStreamRaw());
 }
 
+TEST(BitWriterStringStream, WriteUnencodedU8) {
+  BitWriterStringStream writer;
+  const uint8_t bits = 127;
+  writer.WriteUnencoded(bits);
+  EXPECT_EQ(8u, writer.GetNumBits());
+  EXPECT_EQ("11111110", writer.GetStreamRaw());
+}
+
+TEST(BitWriterStringStream, WriteUnencodedS64) {
+  BitWriterStringStream writer;
+  const int64_t bits = std::numeric_limits<int64_t>::min() + 7;
+  writer.WriteUnencoded(bits);
+  EXPECT_EQ(64u, writer.GetNumBits());
+  EXPECT_EQ("1110000000000000000000000000000000000000000000000000000000000001",
+            writer.GetStreamRaw());
+}
+
 TEST(BitWriterStringStream, WriteMultiple) {
   BitWriterStringStream writer;
 
@@ -713,6 +734,29 @@ TEST(BitReaderWord64, ReadBitsTwoWords) {
   EXPECT_EQ(28u, reader.ReadBits(&bits, 32));
   EXPECT_EQ(0u, bits);
   EXPECT_TRUE(reader.ReachedEnd());
+}
+
+TEST(BitReaderFromString, ReadUnencodedU8) {
+  BitReaderFromString reader("11111110");
+  uint8_t val = 0;
+  ASSERT_TRUE(reader.ReadUnencoded(&val));
+  EXPECT_EQ(8u, reader.GetNumReadBits());
+  EXPECT_EQ(127, val);
+}
+
+TEST(BitReaderFromString, ReadUnencodedU16Fail) {
+  BitReaderFromString reader("11111110");
+  uint16_t val = 0;
+  ASSERT_FALSE(reader.ReadUnencoded(&val));
+}
+
+TEST(BitReaderFromString, ReadUnencodedS64) {
+  BitReaderFromString reader(
+      "1110000000000000000000000000000000000000000000000000000000000001");
+  int64_t val = 0;
+  ASSERT_TRUE(reader.ReadUnencoded(&val));
+  EXPECT_EQ(64u, reader.GetNumReadBits());
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 7, val);
 }
 
 TEST(BitReaderWord64, FromU8) {

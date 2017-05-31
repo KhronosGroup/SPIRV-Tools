@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -213,6 +214,16 @@ class BitWriterInterface {
     WriteBits(bits.to_ullong(), num_bits);
   }
 
+  // Writes bits from value of type |T| to the stream. No encoding is done.
+  // Always writes 8 * sizeof(T) bits.
+  template <typename T>
+  void WriteUnencoded(T val) {
+    static_assert(sizeof(T) <= 64, "Type size too large");
+    uint64_t bits = 0;
+    memcpy(&bits, &val, sizeof(T));
+    WriteBits(bits, sizeof(T) * 8);
+  }
+
   // Writes |val| in chunks of size |chunk_length| followed by a signal bit:
   // 0 - no more chunks to follow
   // 1 - more chunks to follow
@@ -278,10 +289,26 @@ class BitWriterWord64 : public BitWriterInterface {
     return BufferToStream(buffer_);
   }
 
+  // Sets callback to emit bit sequences after every write.
+  void SetCallback(std::function<void(const std::string&)> callback) {
+    callback_ = callback;
+  }
+
+ protected:
+  // Sends string generated from arguments to callback_ if defined.
+  void EmitSequence(uint64_t bits, size_t num_bits) const {
+    if (callback_)
+      callback_(BitsToStream(bits, num_bits));
+  }
+
  private:
   std::vector<uint64_t> buffer_;
   // Total number of bits written so far. Named 'end' as analogy to std::end().
   size_t end_;
+
+  // If not null, the writer will use the callback to emit the written bit
+  // sequence as a string of '0' and '1'.
+  std::function<void(const std::string&)> callback_;
 };
 
 // Base class for reading sequences of bits.
@@ -314,6 +341,21 @@ class BitReaderInterface {
     size_t num_read = ReadBits(&bits, num_bits);
     return BitsToStream(bits, num_read);
   }
+
+  // Reads 8 * sizeof(T) bits and stores them in |val|.
+  template <typename T>
+  bool ReadUnencoded(T* val) {
+    static_assert(sizeof(T) <= 64, "Type size too large");
+    uint64_t bits = 0;
+    const size_t num_read = ReadBits(&bits, sizeof(T) * 8);
+    if (num_read != sizeof(T) * 8)
+      return false;
+    memcpy(val, &bits, sizeof(T));
+    return true;
+  }
+
+  // Returns number of bits already read.
+  virtual size_t GetNumReadBits() const = 0;
 
   // These two functions define 'hard' and 'soft' EOF.
   //
@@ -363,8 +405,14 @@ class BitReaderWord64 : public BitReaderInterface {
   // Consuming the original buffer and casting it to uint64 is difficult,
   // as it would potentially cause data misalignment and poor performance.
   explicit BitReaderWord64(const std::vector<uint8_t>& buffer);
+  BitReaderWord64(const void* buffer, size_t num_bytes);
 
   size_t ReadBits(uint64_t* bits, size_t num_bits) override;
+
+  size_t GetNumReadBits() const override {
+    return pos_;
+  }
+
   bool ReachedEnd() const override;
   bool OnlyZeroesLeft() const override;
 
