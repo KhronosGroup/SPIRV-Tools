@@ -680,10 +680,14 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
     if (decode_result != SPV_SUCCESS)
       return decode_result;
 
+    std::cerr << "Instruction decoded, will attempt validation" << std::endl;
     const spv_result_t validation_result = UpdateValidationState(inst);
     if (validation_result != SPV_SUCCESS)
       return validation_result;
+    std::cerr << "Instruction validated successfully" << std::endl;
   }
+
+  std::cerr << "Instructions decoding complete" << std::endl;
 
   if (reader_.GetNumReadBits() != header_.markv_length_in_bits ||
       !reader_.OnlyZeroesLeft()) {
@@ -692,6 +696,7 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
         << reader_.GetNumReadBits() << " " << header_.markv_length_in_bits;
   }
 
+  std::cerr << "Setting id bound" << std::endl;
   spirv_[3] = vstate_.getIdBound();
 
   *spirv_binary = std::move(spirv_);
@@ -1186,11 +1191,13 @@ spv_result_t spvMarkvToSpirv(spv_const_context context,
 
   assert(!words.empty());
 
+  std::cerr << "Creating spirv_binary" << std::endl;
   *spirv_binary = new spv_binary_t();
   (*spirv_binary)->code = new uint32_t[words.size()];
   (*spirv_binary)->wordCount = words.size();
   memcpy((*spirv_binary)->code, words.data(), 4 * words.size());
 
+  std::cerr << "spvMarkvToSpirv finished successfully" << std::endl;
   return SPV_SUCCESS;
 }
 
