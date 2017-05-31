@@ -141,11 +141,12 @@ void TestEncodeDecode(const std::string& original_text) {
   Decode(markv_binary, &decoded_binary);
   ASSERT_FALSE(decoded_binary.empty());
 
+  EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments;
+
   std::string decoded_text;
   Disassemble(decoded_binary, &decoded_text);
   ASSERT_FALSE(decoded_text.empty());
 
-  EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments;
   EXPECT_EQ(expected_text, decoded_text) << encoder_comments;
 
   spvMarkvBinaryDestroy(markv_binary);
