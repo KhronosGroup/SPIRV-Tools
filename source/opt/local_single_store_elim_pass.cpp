@@ -14,9 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "local_single_store_elim_pass.h"
+
 #include "cfa.h"
 #include "iterator.h"
-#include "local_single_store_elim_pass.h"
 
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvStorePtrId = 0;
