@@ -974,6 +974,8 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
 
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
 
+  std::cerr << "\nOpcode: " << spvOpcodeString(opcode) << std::endl;
+
   // Opcode/num_words placeholder, the word will be filled in later.
   spirv_.push_back(0);
 
@@ -998,6 +1000,8 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
     inst->num_operands = static_cast<uint16_t>(expected_operands.size());
   }
 
+  std::cerr << "Num operands: " << inst->num_operands << std::endl;
+
   for (size_t operand_index = 0;
        operand_index < static_cast<size_t>(inst->num_operands);
        ++operand_index) {
@@ -1009,6 +1013,9 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
 
     const spv_result_t decode_result =
         DecodeOperand(operand_offset, inst, type, &expected_operands);
+
+    std::cerr << "operand" << operand_index << ": "
+              << spvOperandTypeStr(parsed_operands_.back().type) << std::endl;
 
     if (decode_result != SPV_SUCCESS)
       return decode_result;
