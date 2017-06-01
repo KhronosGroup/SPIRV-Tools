@@ -82,7 +82,7 @@ class LocalAccessChainConvertPass : public Pass {
     ir::Instruction* ptrInst);
 
   // Return type id for |ptrInst|'s pointee
-  uint32_t GetPteTypeId(const ir::Instruction* ptrInst) const;
+  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
   // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
   // Append to |newInsts|.
