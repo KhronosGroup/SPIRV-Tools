@@ -225,10 +225,10 @@ void LocalAccessChainConvertPass::GenAccessChainStoreReplacement(
 }
 
 bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
-    ir::Instruction* acp) const {
+    const ir::Instruction* acp) const {
   uint32_t inIdx = 0;
   uint32_t nonConstCnt = 0;
-  acp->ForEachInId([&inIdx, &nonConstCnt, this](uint32_t* tid) {
+  acp->ForEachInId([&inIdx, &nonConstCnt, this](const uint32_t* tid) {
     if (inIdx > 0) {
       ir::Instruction* opInst = def_use_mgr_->GetDef(*tid);
       if (opInst->opcode() != SpvOpConstant) ++nonConstCnt;

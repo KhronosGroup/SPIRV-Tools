@@ -115,7 +115,7 @@ class LocalAccessChainConvertPass : public Pass {
       std::vector<std::unique_ptr<ir::Instruction>>* newInsts);
 
   // Return true if all indices of access chain |acp| are OpConstant integers
-  bool IsConstantIndexAccessChain(ir::Instruction* acp) const;
+  bool IsConstantIndexAccessChain(const ir::Instruction* acp) const;
 
   // Identify all function scope variables of target type which are 
   // accessed only with loads, stores and access chains with constant
