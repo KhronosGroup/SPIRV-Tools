@@ -126,7 +126,7 @@ class LocalAccessChainConvertPass : public Pass {
   //
   // Nested access chains and pointer access chains are not currently
   // converted.
-  bool LocalAccessChainConvert(ir::Function* func);
+  bool ConvertLocalAccessChains(ir::Function* func);
 
   // Save next available id into |module|.
   inline void FinalizeNextId(ir::Module* module) {

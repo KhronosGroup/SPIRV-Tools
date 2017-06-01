@@ -267,7 +267,7 @@ void LocalAccessChainConvertPass::FindTargetVars(ir::Function* func) {
   }
 }
 
-bool LocalAccessChainConvertPass::LocalAccessChainConvert(ir::Function* func) {
+bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
   FindTargetVars(func);
   // Replace access chains of all targeted variables with equivalent
   // extract and insert sequences
@@ -348,7 +348,7 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || LocalAccessChainConvert(fn);
+    modified = modified || ConvertLocalAccessChains(fn);
   }
 
   FinalizeNextId(module_);
