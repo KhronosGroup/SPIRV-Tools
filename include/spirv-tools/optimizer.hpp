@@ -200,6 +200,10 @@ Optimizer::PassToken CreateInlinePass();
 // insert with indices identical to the extract. If such an insert can be
 // found before hitting a conflicting insert, the extract's result id is
 // replaced with the id of the values from the insert.
+//
+// Besides removing extracts this pass enables subsequent dead code elimination
+// passes to delete the inserts. This pass performs best after access chains are
+// converted to inserts and extracts and local loads and stores are eliminated.
 Optimizer::PassToken CreateInsertExtractElimPass();
 
 // Creates a compact ids pass.
