@@ -15,7 +15,9 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 #include "source/spirv_target_env.h"
@@ -95,9 +97,26 @@ int main(int argc, char** argv) {
 
   Task task = kNoTask;
 
+  if (argc < 3) {
+    print_usage(argv[0]);
+    return 0;
+  }
+
+  const char* task_char = argv[1];
+  if (0 == strcmp("e", task_char)) {
+    task = kEncode;
+  } else if (0 == strcmp("d", task_char)) {
+    task = kDecode;
+  }
+
+  if (task == kNoTask) {
+    print_usage(argv[0]);
+    return 1;
+  }
+
   bool want_comments = false;
 
-  for (int argi = 1; argi < argc; ++argi) {
+  for (int argi = 2; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       switch (argv[argi][1]) {
         case 'h':
@@ -138,10 +157,6 @@ int main(int argc, char** argv) {
           print_usage(argv[0]);
           return 1;
       }
-    } else if (0 == strcmp("e", argv[argi])) {
-      task = kEncode;
-    } else if (0 == strcmp("d", argv[argi])) {
-      task = kDecode;
     } else {
       if (!input_filename) {
         input_filename = argv[argi];
@@ -150,11 +165,6 @@ int main(int argc, char** argv) {
         return 1;
       }
     }
-  }
-
-  if (task == kNoTask) {
-    print_usage(argv[0]);
-    return 1;
   }
 
   if (task == kDecode && want_comments) {
@@ -168,19 +178,21 @@ int main(int argc, char** argv) {
   spv_text comments = nullptr;
   spv_text* comments_ptr = want_comments ? &comments : nullptr;
 
-  ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
+  ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   if (task == kEncode) {
     std::vector<uint32_t> contents;
     if (!ReadFile<uint32_t>(input_filename, "rb", &contents)) return 1;
 
-    spv_markv_encoder_options_t options;
+    std::unique_ptr<spv_markv_encoder_options_t,
+        std::function<void(spv_markv_encoder_options_t*)>> options(
+            spvMarkvEncoderOptionsCreate(), &spvMarkvEncoderOptionsDestroy);
     spv_markv_binary markv_binary = nullptr;
 
     if (SPV_SUCCESS !=
         spvSpirvToMarkv(ctx.context, contents.data(), contents.size(),
-                        &options, &markv_binary, comments_ptr, nullptr)) {
+                        options.get(), &markv_binary, comments_ptr, nullptr)) {
       std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
                 << std::endl;
       return 1;
@@ -199,12 +211,14 @@ int main(int argc, char** argv) {
     std::vector<uint8_t> contents;
     if (!ReadFile<uint8_t>(input_filename, "rb", &contents)) return 1;
 
-    spv_markv_decoder_options_t options;
+    std::unique_ptr<spv_markv_decoder_options_t,
+        std::function<void(spv_markv_decoder_options_t*)>> options(
+            spvMarkvDecoderOptionsCreate(), &spvMarkvDecoderOptionsDestroy);
     spv_binary spirv_binary = nullptr;
 
     if (SPV_SUCCESS !=
         spvMarkvToSpirv(ctx.context, contents.data(), contents.size(),
-                        &options, &spirv_binary, comments_ptr, nullptr)) {
+                        options.get(), &spirv_binary, comments_ptr, nullptr)) {
       std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
                 << std::endl;
       return 1;

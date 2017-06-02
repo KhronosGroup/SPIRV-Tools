@@ -14,6 +14,8 @@
 
 // Tests for unique type declaration rules validator.
 
+#include <functional>
+#include <memory>
 #include <string>
 
 #include "gmock/gmock.h"
@@ -49,13 +51,14 @@ void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
 
 // Compiles |code| to SPIR-V |words|.
 void Compile(const std::string& code, std::vector<uint32_t>* words,
-             spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
+             uint32_t options = SPV_TEXT_TO_BINARY_OPTION_NONE,
+             spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
   ScopedContext ctx(env);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   spv_binary spirv_binary;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinary(
-      ctx.context, code.c_str(), code.size(), &spirv_binary, nullptr));
+  ASSERT_EQ(SPV_SUCCESS, spvTextToBinaryWithOptions(
+      ctx.context, code.c_str(), code.size(), options, &spirv_binary, nullptr));
 
   *words = std::vector<uint32_t>(
       spirv_binary->code, spirv_binary->code + spirv_binary->wordCount);
@@ -66,7 +69,7 @@ void Compile(const std::string& code, std::vector<uint32_t>* words,
 // Disassembles SPIR-V |words| to |out_text|.
 void Disassemble(const std::vector<uint32_t>& words,
                  std::string* out_text,
-                 spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
+                 spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
   ScopedContext ctx(env);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
@@ -84,15 +87,18 @@ void Disassemble(const std::vector<uint32_t>& words,
 void Encode(const std::vector<uint32_t>& words,
             spv_markv_binary* markv_binary,
             std::string* comments,
-            spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
+            spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
   ScopedContext ctx(env);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
-  spv_markv_encoder_options_t options;
+  std::unique_ptr<spv_markv_encoder_options_t,
+      std::function<void(spv_markv_encoder_options_t*)>> options(
+          spvMarkvEncoderOptionsCreate(), &spvMarkvEncoderOptionsDestroy);
   spv_text spv_text_comments;
   ASSERT_EQ(SPV_SUCCESS, spvSpirvToMarkv(ctx.context, words.data(),
-                                         words.size(), &options, markv_binary,
-                                         &spv_text_comments, nullptr));
+                                         words.size(), options.get(),
+                                         markv_binary, &spv_text_comments,
+                                         nullptr));
 
   *comments = std::string(spv_text_comments->str, spv_text_comments->length);
   spvTextDestroy(spv_text_comments);
@@ -101,14 +107,16 @@ void Encode(const std::vector<uint32_t>& words,
 // Decodes |markv_binary| to SPIR-V |words|.
 void Decode(const spv_markv_binary markv_binary,
             std::vector<uint32_t>* words,
-            spv_target_env env = SPV_ENV_UNIVERSAL_1_1) {
+            spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
   ScopedContext ctx(env);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   spv_binary spirv_binary = nullptr;
-  spv_markv_decoder_options_t options;
+  std::unique_ptr<spv_markv_decoder_options_t,
+      std::function<void(spv_markv_decoder_options_t*)>> options(
+          spvMarkvDecoderOptionsCreate(), &spvMarkvDecoderOptionsDestroy);
   ASSERT_EQ(SPV_SUCCESS, spvMarkvToSpirv(ctx.context, markv_binary->data,
-                                         markv_binary->length, &options,
+                                         markv_binary->length, options.get(),
                                          &spirv_binary, nullptr, nullptr));
 
   *words = std::vector<uint32_t>(
@@ -128,9 +136,14 @@ void TestEncodeDecode(const std::string& original_text) {
   Disassemble(expected_binary, &expected_text);
   ASSERT_FALSE(expected_text.empty());
 
+  std::vector<uint32_t> binary_to_encode;
+  Compile(original_text, &binary_to_encode,
+          SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_FALSE(binary_to_encode.empty());
+
   spv_markv_binary markv_binary = nullptr;
   std::string encoder_comments;
-  Encode(expected_binary, &markv_binary, &encoder_comments);
+  Encode(binary_to_encode, &markv_binary, &encoder_comments);
   ASSERT_NE(nullptr, markv_binary);
 
   // std::cerr << encoder_comments << std::endl;

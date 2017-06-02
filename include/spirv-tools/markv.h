@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// MARK-V is a compression format for SPIR-V binaries. It strips away
+// non-essential information (such as result ids which can be regenerated) and
+// uses various bit reduction techiniques to reduce the size of the binary.
+
 #ifndef SPIRV_TOOLS_MARKV_H_
 #define SPIRV_TOOLS_MARKV_H_
 
@@ -29,19 +33,29 @@ typedef struct spv_markv_binary_t {
 typedef spv_markv_binary_t* spv_markv_binary;
 typedef const spv_markv_binary_t* const_spv_markv_binary;
 
-typedef struct spv_markv_encoder_options_t {
-  uint32_t placeholder_;
-} spv_markv_encoder_options_t;
-
+typedef struct spv_markv_encoder_options_t spv_markv_encoder_options_t;
 typedef spv_markv_encoder_options_t* spv_markv_encoder_options;
 typedef const spv_markv_encoder_options_t* spv_const_markv_encoder_options;
 
-typedef struct spv_markv_decoder_options_t {
-  uint32_t placeholder_;
-} spv_markv_decoder_options_t;
-
+typedef struct spv_markv_decoder_options_t spv_markv_decoder_options_t;
 typedef spv_markv_decoder_options_t* spv_markv_decoder_options;
 typedef const spv_markv_decoder_options_t* spv_const_markv_decoder_options;
+
+// Creates spv_markv_encoder_options with default options. Returns a valid
+// options object. The object remains valid until it is passed into
+// spvMarkvEncoderOptionsDestroy.
+spv_markv_encoder_options spvMarkvEncoderOptionsCreate();
+
+// Destroys the given spv_markv_encoder_options object.
+void spvMarkvEncoderOptionsDestroy(spv_markv_encoder_options options);
+
+// Creates spv_markv_decoder_options with default options. Returns a valid
+// options object. The object remains valid until it is passed into
+// spvMarkvDecoderOptionsDestroy.
+spv_markv_decoder_options spvMarkvDecoderOptionsCreate();
+
+// Destroys the given spv_markv_decoder_options object.
+void spvMarkvDecoderOptionsDestroy(spv_markv_decoder_options options);
 
 // Encodes the given SPIR-V binary to MARK-V binary.
 // If |comments| is not nullptr, it would contain a textual description of
