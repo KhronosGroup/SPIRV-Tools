@@ -230,6 +230,20 @@ Optimizer::PassToken CreateInlinePass();
 // by LocalSingleStoreElim and LocalSSARewrite.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
+// Create dead branch elimination pass.
+// For each entry point function, this pass will look for SelectionMerge
+// BranchConditionals with constant condition and convert to a Branch to
+// the indicated label. It will delete resulting dead blocks.
+//
+// This pass only works on shaders (guaranteed to have structured control
+// flow). Note that some such branches and blocks may be left to avoid
+// creating invalid control flow. Improving this is left to future work.
+//
+// This pass is most effective when preceeded by passes which eliminate
+// local loads and stores, effectively propagating constant values where
+// possible.
+Optimizer::PassToken CreateDeadBranchElimPass();
+
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope
 // variables which are accessed only with loads, stores and access chains
@@ -276,6 +290,17 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass();
 // passes to delete the inserts. This pass performs best after access chains are
 // converted to inserts and extracts and local loads and stores are eliminated.
 Optimizer::PassToken CreateInsertExtractElimPass();
+
+// Create dead branch elimination pass.
+// For each entry point function, this pass will look for BranchConditionals
+// with constant condition and convert to a branch. The BranchConditional must
+// be preceeded by OpSelectionMerge. For all phi functions in merge block,
+// replace all uses with the id corresponding to the living predecessor.
+//
+// This pass is most effective when preceeded by passes which eliminate
+// local loads and stores, effectively propagating constant values where
+// possible.
+Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
