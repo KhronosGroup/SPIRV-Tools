@@ -18,6 +18,7 @@
 // A single header to include all passes.
 
 #include "compact_ids_pass.h"
+#include "dead_branch_elim_pass.h"
 #include "eliminate_dead_constant_pass.h"
 #include "flatten_decoration_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
