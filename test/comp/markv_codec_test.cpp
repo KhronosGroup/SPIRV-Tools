@@ -322,4 +322,25 @@ OpFunctionEnd
 )");
 }
 
+TEST(Markv, ForwardDeclaredId) {
+  TestEncodeDecode(R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %1 "simple_kernel"
+%2 = OpTypeInt 32 0
+%3 = OpTypeVector %2 2
+%4 = OpConstant %2 2
+%5 = OpTypeArray %2 %4
+%6 = OpTypeVoid
+%7 = OpTypeFunction %6
+%1 = OpFunction %6 None %7
+%8 = OpLabel
+OpReturn
+OpFunctionEnd
+)");
+}
+
 }  // namespace
