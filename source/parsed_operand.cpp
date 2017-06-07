@@ -32,10 +32,10 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
   if (operand.num_words == 1) {
     switch (operand.number_kind) {
       case SPV_NUMBER_SIGNED_INT:
-        *out << int32_t(word);
+        *out << (int32_t(word << (32 - operand.number_bit_width)) >> (32 - operand.number_bit_width));
         break;
       case SPV_NUMBER_UNSIGNED_INT:
-        *out << word;
+        *out << (uint32_t(word << (32 - operand.number_bit_width)) >> (32 - operand.number_bit_width));
         break;
       case SPV_NUMBER_FLOATING:
         if (operand.number_bit_width == 16) {
