@@ -13,6 +13,7 @@
 # limitations under the License.
 add_library(SPIRV-Tools-opt
   basic_block.h
+  block_merge_pass.h
   build_module.h
   compact_ids_pass.h
   constants.h
@@ -43,6 +44,7 @@ add_library(SPIRV-Tools-opt
   unify_const_pass.h
 
   basic_block.cpp
+  block_merge_pass.cpp
   build_module.cpp
   compact_ids_pass.cpp
   def_use_manager.cpp

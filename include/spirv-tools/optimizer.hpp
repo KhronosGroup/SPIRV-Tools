@@ -185,6 +185,22 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpSpecConstantOp.
 Optimizer::PassToken CreateEliminateDeadConstantPass();
 
+// Creates a block merge pass.
+// This pass searches for blocks with a single Branch to a block with no
+// other predecessors and merges the blocks into a single block. Continue
+// blocks and Merge blocks are not candidates for the second block.
+//
+// The pass is most useful after Dead Branch Elimination, which can leave
+// such sequences of blocks. Merging them makes subsequent passes more
+// effective, such as single block local store-load elimination.
+//
+// While this pass reduces the number of occurrences of this sequence, at
+// this time it does not guarantee all such sequences are eliminated.
+//
+// Presence of phi instructions can inhibit this optimization. Handling
+// these is left for future improvements. 
+Optimizer::PassToken CreateBlockMergePass();
+
 // Creates an inline pass.
 // An inline pass exhaustively inlines all function calls in all functions
 // designated as an entry point. The intent is to enable, albeit through
