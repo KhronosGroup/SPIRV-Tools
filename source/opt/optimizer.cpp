@@ -141,6 +141,11 @@ Optimizer::PassToken CreateDeadBranchElimPass() {
       MakeUnique<opt::DeadBranchElimPass>());
 }
 
+Optimizer::PassToken CreateLocalAccessChainConvertPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LocalAccessChainConvertPass>());
+}
+
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());
