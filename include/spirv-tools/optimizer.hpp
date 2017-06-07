@@ -196,9 +196,8 @@ Optimizer::PassToken CreateInlinePass();
 
 // Create dead branch elimination pass.
 // For each entry point function, this pass will look for BranchConditionals
-// with constant condition and convert to a branch. The BranchConditional must
-// be preceeded by OpSelectionMerge. For all phi functions in merge block,
-// replace all uses with the id corresponding to the living predecessor.
+// with constant condition and convert to a Branch to the indicated label. 
+// It will delete all resulting dead blocks. 
 //
 // This pass is most effective when preceeded by passes which eliminate
 // local loads and stores, effectively propagating constant values where
