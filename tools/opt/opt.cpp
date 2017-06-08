@@ -133,6 +133,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateFreezeSpecConstantValuePass());
       } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {
         optimizer.RegisterPass(CreateInlinePass());
+      } else if (0 == strcmp(cur_arg, "--convert-local-access-chains")) {
+        optimizer.RegisterPass(CreateLocalAccessChainConvertPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-local-single-block")) {
         optimizer.RegisterPass(CreateLocalSingleBlockElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
