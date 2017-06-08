@@ -28,6 +28,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -75,8 +76,9 @@ const size_t kCommentNumWhitespaces = 2;
 // containing MARK-V model for a specific dataset.
 class MarkvModel {
  public:
-  size_t opcode_chunk_length() const { return 8; }
+  size_t opcode_chunk_length() const { return 7; }
   size_t num_operands_chunk_length() const { return 3; }
+  size_t id_index_chunk_length() const { return 3; }
 
   size_t u16_chunk_length() const { return 4; }
   size_t s16_chunk_length() const { return 4; }
@@ -160,6 +162,15 @@ size_t GetOperandVariableWidthChunkLength(spv_operand_type_t type) {
       return 0;
   }
   return 0;
+}
+
+size_t GetNumBitsToNextByte(size_t bit_pos) {
+  return (8 - (bit_pos % 8)) % 8;
+}
+
+bool ShouldByteBreak(size_t bit_pos) {
+  const size_t num_bits_to_next_byte = GetNumBitsToNextByte(bit_pos);
+  return num_bits_to_next_byte > 0; // && num_bits_to_next_byte <= 2;
 }
 
 // Defines and returns current MARK-V version.
@@ -303,6 +314,10 @@ class MarkvCodecBase {
   const libspirv::AssemblyGrammar grammar_;
   MarkvHeader header_;
   const MarkvModel* model_;
+
+  // Move-to-front list of all ids.
+  // TODO(atgoo@github.com) Consider a better move-to-front implementation.
+  std::list<uint32_t> move_to_front_ids_;
 };
 
 // SPIR-V to MARK-V encoder. Exposes functions EncodeHeader and
@@ -409,16 +424,40 @@ class MarkvEncoder : public MarkvCodecBase {
     }
   }
 
-  // Returns saved regeneratable id or issues a new one.
-  uint32_t GetRegenId(uint32_t raw_id) {
-    auto it = id_mapping_.find(raw_id);
-    if (it == id_mapping_.end()) {
-      const uint32_t new_id = static_cast<uint32_t>(id_mapping_.size()) + 1;
-      const auto insertion_result = id_mapping_.emplace(raw_id, new_id);
-      it = insertion_result.first;
-      assert(insertion_result.second);
+  // Returns id index and updates move-to-front.
+  uint16_t GetIdIndex(uint32_t id) {
+    if (all_known_ids_.count(id)) {
+      uint16_t index = 0;
+      for (auto it = move_to_front_ids_.begin();
+           it != move_to_front_ids_.end(); ++it) {
+        if (*it == id) {
+          if (index != 0) {
+            move_to_front_ids_.erase(it);
+            move_to_front_ids_.push_front(id);
+          }
+          return index;
+        }
+        ++index;
+      }
+      assert(0 && "Id not found in move_to_front_ids_");
+      return 0;
+    } else {
+      all_known_ids_.insert(id);
+      move_to_front_ids_.push_front(id);
+      return 0;
     }
-    return it->second;
+  }
+
+  void AddByteBreakIfAgreed() {
+    if (!ShouldByteBreak(writer_.GetNumBits()))
+      return;
+
+    if (logger_) {
+      logger_->AppendWhitespaces(kCommentNumWhitespaces);
+      logger_->AppendText("ByteBreak:");
+    }
+
+    writer_.WriteBits(0, GetNumBitsToNextByte(writer_.GetNumBits()));
   }
 
   // Encodes a literal number operand and writes it to the bit stream.
@@ -437,8 +476,8 @@ class MarkvEncoder : public MarkvCodecBase {
   // Format: \n separated instruction lines, no header.
   std::unique_ptr<std::stringstream> disassembly_;
 
-  // Maps raw ids to regeneratable ids.
-  std::unordered_map<uint32_t, uint32_t> id_mapping_;
+  // All ids which were previosly encountered in the module.
+  std::unordered_set<uint32_t> all_known_ids_;
 };
 
 // Decodes MARK-V buffers written by MarkvEncoder.
@@ -482,6 +521,54 @@ class MarkvDecoder : public MarkvCodecBase {
     } else {
       return reader_.ReadUnencoded(word);
     }
+  }
+
+  // Fetches the id from the move-to-front list and moves it to front.
+  uint32_t GetIdAndMoveToFront(uint16_t index) {
+    if (index >= move_to_front_ids_.size()) {
+      // Issue new id.
+      const uint32_t id = vstate_.getIdBound();
+      move_to_front_ids_.push_front(id);
+      vstate_.setIdBound(id + 1);
+      return id;
+    } else {
+      if (index == 0)
+        return move_to_front_ids_.front();
+
+      // Iterate to index.
+      auto it = move_to_front_ids_.begin();
+      for (size_t i = 0; i < index; ++i)
+        ++it;
+      const uint32_t id = *it;
+      move_to_front_ids_.erase(it);
+      move_to_front_ids_.push_front(id);
+      return id;
+    }
+  }
+
+  // Decodes id index and fetches the id from move-to-front list.
+  bool DecodeId(uint32_t* id) {
+    uint16_t index = 0;
+    if (!reader_.ReadVariableWidthU16(&index, model_->id_index_chunk_length()))
+       return false;
+
+    *id = GetIdAndMoveToFront(index);
+    return true;
+  }
+
+  bool ReadToByteBreakIfAgreed() {
+    if (!ShouldByteBreak(reader_.GetNumReadBits()))
+      return true;
+
+    uint64_t bits = 0;
+    if (!reader_.ReadBits(&bits,
+                          GetNumBitsToNextByte(reader_.GetNumReadBits())))
+      return false;
+
+    if (bits != 0)
+      return false;
+
+    return true;
   }
 
   // Reads a literal number as it is described in |operand| from the bit stream,
@@ -592,7 +679,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
     return validation_result;
 
   bool result_id_was_forward_declared = false;
-  if (id_mapping_.count(inst.result_id)) {
+  if (all_known_ids_.count(inst.result_id)) {
     // Result id of the instruction was forward declared.
     // Write a service opcode to signal this to the decoder.
     writer_.WriteVariableWidthU16(kMarkvOpNextInstructionEncodesResultId,
@@ -624,7 +711,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
     if (operand.type == SPV_OPERAND_TYPE_RESULT_ID &&
         !result_id_was_forward_declared) {
       // Register the id, but don't encode it.
-      GetRegenId(instruction.word(operand.offset));
+      GetIdIndex(instruction.word(operand.offset));
       continue;
     }
 
@@ -643,8 +730,8 @@ spv_result_t MarkvEncoder::EncodeInstruction(
       for (size_t i = 0; i < length + 1; ++i)
         writer_.WriteUnencoded(src[i]);
     } else if (spvIsIdType(operand.type)) {
-      const uint32_t regen_id = GetRegenId(instruction.word(operand.offset));
-      EncodeOperandWord(operand.type, regen_id);
+      const uint16_t id_index = GetIdIndex(instruction.word(operand.offset));
+      writer_.WriteVariableWidthU16(id_index, model_->id_index_chunk_length());
     } else {
       for (int i = 0; i < operand.num_words; ++i) {
         const uint32_t word = instruction.word(operand.offset + i);
@@ -652,6 +739,8 @@ spv_result_t MarkvEncoder::EncodeInstruction(
       }
     }
   }
+
+  AddByteBreakIfAgreed();
 
   if (logger_) {
     logger_->NewLine();
@@ -822,9 +911,10 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID: {
-      if (!DecodeOperandWord(type, &inst->type_id))
+      if (!DecodeId(&inst->type_id)) {
         return vstate_.diag(SPV_ERROR_INVALID_BINARY)
             << "Failed to read type_id";
+      }
 
       if (inst->type_id == 0)
         return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Decoded type_id is 0";
@@ -836,12 +926,13 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
     case SPV_OPERAND_TYPE_RESULT_ID: {
       if (read_result_id) {
-        if (!DecodeOperandWord(type, &inst->result_id))
+        if (!DecodeId(&inst->result_id))
           return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-              << "Failed to read type_id";
+              << "Failed to read result_id";
       } else {
         inst->result_id = vstate_.getIdBound();
         vstate_.setIdBound(inst->result_id + 1);
+        move_to_front_ids_.push_front(inst->result_id);
       }
 
       spirv_.push_back(inst->result_id);
@@ -866,7 +957,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
     case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID: {
       uint32_t id = 0;
-      if (!DecodeOperandWord(type, &id))
+      if (!DecodeId(&id))
         return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Failed to read id";
 
       if (id == 0)
@@ -1154,6 +1245,10 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
         "in the operands");
 
   RecordNumberType(*inst);
+
+  if (!ReadToByteBreakIfAgreed())
+    return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+        << "Failed to read to byte break";
 
   return SPV_SUCCESS;
 }
