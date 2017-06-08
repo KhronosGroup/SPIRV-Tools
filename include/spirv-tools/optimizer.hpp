@@ -204,7 +204,7 @@ Optimizer::PassToken CreateInlinePass();
 // load. Finally, check if any remaining stores are useless, and delete store
 // and variable if possible.
 //
-// The presense of access chain references and function calls can inhibit
+// The presence of access chain references and function calls can inhibit
 // the above optimization.
 //
 // Only modules with logical addressing are currently processed. 
