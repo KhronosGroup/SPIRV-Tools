@@ -212,7 +212,7 @@ Optimizer::PassToken CreateInlinePass();
 // This pass is most effective if preceeded by Inlining and 
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
 // by LocalSingleStoreElim and LocalSSARewrite.
-Optimizer::PassToken CreateLocalSingleBlockElimPass();
+Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope

@@ -28,11 +28,12 @@ static const int kSpvTypePointerTypeId = 1;
 namespace spvtools {
 namespace opt {
 
-bool LocalSingleBlockElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
+bool LocalSingleBlockLoadStoreElimPass::IsNonPtrAccessChain(
+    const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
-bool LocalSingleBlockElimPass::IsMathType(
+bool LocalSingleBlockLoadStoreElimPass::IsMathType(
     const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
@@ -47,7 +48,7 @@ bool LocalSingleBlockElimPass::IsMathType(
   return false;
 }
 
-bool LocalSingleBlockElimPass::IsTargetType(
+bool LocalSingleBlockLoadStoreElimPass::IsTargetType(
     const ir::Instruction* typeInst) const {
   if (IsMathType(typeInst))
     return true;
@@ -64,7 +65,7 @@ bool LocalSingleBlockElimPass::IsTargetType(
   return nonMathComp == 0;
 }
 
-ir::Instruction* LocalSingleBlockElimPass::GetPtr(
+ir::Instruction* LocalSingleBlockLoadStoreElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
   *varId = ip->GetSingleWordInOperand(
       ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
@@ -77,7 +78,7 @@ ir::Instruction* LocalSingleBlockElimPass::GetPtr(
   return ptrInst;
 }
 
-bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
+bool LocalSingleBlockLoadStoreElimPass::IsTargetVar(uint32_t varId) {
   if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
     return false;
   if (seen_target_vars_.find(varId) != seen_target_vars_.end())
@@ -102,14 +103,14 @@ bool LocalSingleBlockElimPass::IsTargetVar(uint32_t varId) {
   return true;
 }
 
-void LocalSingleBlockElimPass::ReplaceAndDeleteLoad(
+void LocalSingleBlockLoadStoreElimPass::ReplaceAndDeleteLoad(
     ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
   (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
 }
 
-bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) const {
+bool LocalSingleBlockLoadStoreElimPass::HasLoads(uint32_t varId) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(varId);
   if (uses == nullptr)
     return false;
@@ -124,7 +125,7 @@ bool LocalSingleBlockElimPass::HasLoads(uint32_t varId) const {
   return false;
 }
 
-bool LocalSingleBlockElimPass::IsLiveVar(uint32_t varId) const {
+bool LocalSingleBlockLoadStoreElimPass::IsLiveVar(uint32_t varId) const {
   // non-function scope vars are live
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
@@ -137,14 +138,15 @@ bool LocalSingleBlockElimPass::IsLiveVar(uint32_t varId) const {
   return HasLoads(varId);
 }
 
-bool LocalSingleBlockElimPass::IsLiveStore(ir::Instruction* storeInst) {
+bool LocalSingleBlockLoadStoreElimPass::IsLiveStore(
+    ir::Instruction* storeInst) {
   // get store's variable
   uint32_t varId;
   (void) GetPtr(storeInst, &varId);
   return IsLiveVar(varId);
 }
 
-void LocalSingleBlockElimPass::AddStores(
+void LocalSingleBlockLoadStoreElimPass::AddStores(
     uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
   analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
   if (uses != nullptr) {
@@ -157,7 +159,7 @@ void LocalSingleBlockElimPass::AddStores(
   }
 }
 
-void LocalSingleBlockElimPass::DCEInst(ir::Instruction* inst) {
+void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
@@ -194,7 +196,8 @@ void LocalSingleBlockElimPass::DCEInst(ir::Instruction* inst) {
   }
 }
 
-bool LocalSingleBlockElimPass::LocalSingleBlockElim(ir::Function* func) {
+bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
+    ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
@@ -280,7 +283,7 @@ bool LocalSingleBlockElimPass::LocalSingleBlockElim(ir::Function* func) {
   return modified;
 }
 
-void LocalSingleBlockElimPass::Initialize(ir::Module* module) {
+void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
@@ -301,7 +304,7 @@ void LocalSingleBlockElimPass::Initialize(ir::Module* module) {
 
 };
 
-Pass::Status LocalSingleBlockElimPass::ProcessImpl() {
+Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
@@ -310,16 +313,16 @@ Pass::Status LocalSingleBlockElimPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || LocalSingleBlockElim(fn);
+    modified = modified || LocalSingleBlockLoadStoreElim(fn);
   }
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSingleBlockElimPass::LocalSingleBlockElimPass()
+LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass()
     : module_(nullptr), def_use_mgr_(nullptr), next_id_(0) {}
 
-Pass::Status LocalSingleBlockElimPass::Process(ir::Module* module) {
+Pass::Status LocalSingleBlockLoadStoreElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
 }

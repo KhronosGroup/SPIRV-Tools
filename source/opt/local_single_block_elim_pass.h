@@ -34,9 +34,9 @@ namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class LocalSingleBlockElimPass : public Pass {
+class LocalSingleBlockLoadStoreElimPass : public Pass {
  public:
-  LocalSingleBlockElimPass();
+  LocalSingleBlockLoadStoreElimPass();
   const char* name() const override { return "eliminate-local-single-block"; }
   Status Process(ir::Module*) override;
 
@@ -90,7 +90,7 @@ class LocalSingleBlockElimPass : public Pass {
   // load id with previous id and delete load. Finally, check if
   // remaining stores are useless, and delete store and variable
   // where possible. Assumes logical addressing.
-  bool LocalSingleBlockElim(ir::Function* func);
+  bool LocalSingleBlockLoadStoreElim(ir::Function* func);
 
   // Save next available id into |module|.
   inline void FinalizeNextId(ir::Module* module) {

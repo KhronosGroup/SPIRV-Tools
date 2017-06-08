@@ -27,9 +27,9 @@ namespace {
 
 using namespace spvtools;
 
-using LocalSingleBlockElimTest = PassTest<::testing::Test>;
+using LocalSingleBlockLoadStoreElimTest = PassTest<::testing::Test>;
 
-TEST_F(LocalSingleBlockElimTest, SimpleStoreLoadElim) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleStoreLoadElim) {
   // #version 140
   // 
   // in vec4 BaseColor;
@@ -84,11 +84,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
-TEST_F(LocalSingleBlockElimTest, SimpleLoadLoadElim) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleLoadLoadElim) {
   // #version 140
   // 
   // in vec4 BaseColor;
@@ -185,11 +185,12 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
-TEST_F(LocalSingleBlockElimTest, NoStoreElimIfInterveningAccessChainLoad) {
+TEST_F(LocalSingleBlockLoadStoreElimTest,
+    NoStoreElimIfInterveningAccessChainLoad) {
   //
   // Note that even though the Load to %v is eliminated, the Store to %v
   // is not eliminated due to the following access chain reference.
@@ -272,11 +273,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
-TEST_F(LocalSingleBlockElimTest, NoElimIfInterveningAccessChainStore) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningAccessChainStore) {
   // #version 140
   // 
   // in vec4 BaseColor;
@@ -330,10 +331,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockElimPass>(assembly, assembly, false, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+        assembly, assembly, false, true);
 }
 
-TEST_F(LocalSingleBlockElimTest, NoElimIfInterveningFunctionCall) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningFunctionCall) {
   // #version 140
   // 
   // in vec4 BaseColor;
@@ -385,7 +387,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleBlockElimPass>(assembly, assembly, false, true);
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+        assembly, assembly, false, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

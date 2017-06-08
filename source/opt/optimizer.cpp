@@ -141,9 +141,9 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass() {
       MakeUnique<opt::LocalAccessChainConvertPass>());
 }
   
-Optimizer::PassToken CreateLocalSingleBlockElimPass() {
+Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalSingleBlockElimPass>());
+      MakeUnique<opt::LocalSingleBlockLoadStoreElimPass>());
 }
 
 Optimizer::PassToken CreateCompactIdsPass() {
