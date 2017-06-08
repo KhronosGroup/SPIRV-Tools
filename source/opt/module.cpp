@@ -15,6 +15,7 @@
 #include "module.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "operand.h"
 #include "reflect.h"
@@ -148,6 +149,14 @@ bool Module::HasCapability(uint32_t cap) {
     }
   }
   return false;
+}
+
+uint32_t Module::GetExtInstImportId(const char* extstr) {
+  for (auto& ei : ext_inst_imports_)
+    if (!strcmp(extstr, reinterpret_cast<const char*>(
+        &ei->GetInOperand(0).words[0])))
+      return ei->result_id();
+  return 0;
 }
 
 }  // namespace ir

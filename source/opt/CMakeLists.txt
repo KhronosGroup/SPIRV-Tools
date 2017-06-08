@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 add_library(SPIRV-Tools-opt
+  aggressive_dead_code_elim_pass.h
   basic_block.h
   block_merge_pass.h
   build_module.h
@@ -45,6 +46,7 @@ add_library(SPIRV-Tools-opt
   type_manager.h
   unify_const_pass.h
 
+  aggressive_dead_code_elim_pass.cpp
   basic_block.cpp
   block_merge_pass.cpp
   build_module.cpp
