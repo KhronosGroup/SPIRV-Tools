@@ -67,8 +67,8 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // |loadInst|.
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
-  // Return true if any instruction loads from |varId|
-  bool HasLoads(uint32_t varId) const;
+  // Return true if any instruction loads from |ptrId|
+  bool HasLoads(uint32_t ptrId) const;
 
   // Return true if |varId| is not a function variable or if it has
   // a load

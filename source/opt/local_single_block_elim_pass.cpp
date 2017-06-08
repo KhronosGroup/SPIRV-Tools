@@ -110,17 +110,22 @@ void LocalSingleBlockLoadStoreElimPass::ReplaceAndDeleteLoad(
   DCEInst(loadInst);
 }
 
-bool LocalSingleBlockLoadStoreElimPass::HasLoads(uint32_t varId) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(varId);
+bool LocalSingleBlockLoadStoreElimPass::HasLoads(uint32_t ptrId) const {
+  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
   if (uses == nullptr)
     return false;
   for (auto u : *uses) {
-    if (IsNonPtrAccessChain(u.inst->opcode())) {
+    SpvOp op = u.inst->opcode();
+    if (IsNonPtrAccessChain(op)) {
       if (HasLoads(u.inst->result_id()))
         return true;
     }
-    else if (u.inst->opcode() == SpvOpLoad)
-      return true;
+    else {
+      // Conservatively assume that calls will do a load
+      // TODO(): Improve analysis around function calls
+      if (op == SpvOpLoad || op == SpvOpFunctionCall)
+        return true;
+    }
   }
   return false;
 }

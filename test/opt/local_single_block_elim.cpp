@@ -395,6 +395,7 @@ OpFunctionEnd
 //
 //    Other target variable types
 //    InBounds Access Chains
+//    Check for correctness in the presence of function calls
 //    Others?
 
 }  // anonymous namespace
