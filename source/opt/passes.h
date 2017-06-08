@@ -25,6 +25,7 @@
 #include "local_single_block_elim_pass.h"
 #include "freeze_spec_constant_value_pass.h"
 #include "local_access_chain_convert_pass.h"
+#include "aggressive_dead_code_elim_pass.h"
 #include "null_pass.h"
 #include "set_spec_constant_default_value_pass.h"
 #include "strip_debug_info_pass.h"

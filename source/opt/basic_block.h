@@ -45,7 +45,7 @@ class BasicBlock {
   // Appends an instruction to this basic block.
   inline void AddInstruction(std::unique_ptr<Instruction> i);
   // The label starting this basic block.
-  Instruction& Label() { return *label_; }
+  Instruction* GetLabelInst() { return &*label_; }
 
   // Returns the id of the label at the top of this block
   inline uint32_t id() const { return label_->result_id(); }

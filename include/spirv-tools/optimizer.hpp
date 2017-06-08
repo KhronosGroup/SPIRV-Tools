@@ -231,6 +231,27 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 // possible.
 Optimizer::PassToken CreateLocalAccessChainConvertPass();
 
+// Create aggressive dead code elimination pass
+// This pass eliminates unused code from functions. In addition,
+// it detects and eliminates code which may have spurious uses but which do
+// not contribute to the output of the function. The most common cause of
+// such code sequences is summations in loops whose result is no longer used
+// due to dead code elimination. This optimization has additional compile
+// time cost over standard dead code elimination.
+//
+// This pass only processes entry point functions. It also only processes
+// shaders with logical addressing. It currently will not process functions
+// with function calls.
+//
+// This pass will be made more effective by first running passes that remove
+// dead control flow and inlines function calls.
+//
+// This pass can be especially useful after running Local Access Chain
+// Conversion, which tends to cause cycles of dead code to be left after
+// Store/Load elimination passes are completed. These cycles cannot be
+// eliminated with standard dead code elimination.
+Optimizer::PassToken CreateAggressiveDCEPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
