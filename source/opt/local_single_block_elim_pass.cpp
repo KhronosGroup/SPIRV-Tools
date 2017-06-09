@@ -107,6 +107,7 @@ void LocalSingleBlockLoadStoreElimPass::ReplaceAndDeleteLoad(
     ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
   (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
+  // TODO(greg-lunarg): Consider moving DCE into separate pass
   DCEInst(loadInst);
 }
 
@@ -275,6 +276,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
       }
     }
     // Go back and delete useless stores in block
+    // TODO(greg-lunarg): Consider moving DCE into separate pass
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       if (ii->opcode() != SpvOpStore)
         continue;
