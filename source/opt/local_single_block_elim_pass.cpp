@@ -175,9 +175,9 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
       continue;
     }
     // Remember operands
-    std::queue<uint32_t> ids;
+    std::vector<uint32_t> ids;
     di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push(*iid);
+      ids.push_back(*iid);
     });
     uint32_t varId = 0;
     // Remember variable if dead load
@@ -186,12 +186,10 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
     def_use_mgr_->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
-    while (!ids.empty()) {
-      uint32_t id = ids.front();
+    for (auto id : ids) {
       analysis::UseList* uses = def_use_mgr_->GetUses(id);
       if (uses == nullptr)
         deadInsts.push(def_use_mgr_->GetDef(id));
-      ids.pop();
     }
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
