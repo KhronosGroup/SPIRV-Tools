@@ -81,7 +81,8 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // Add stores using |ptr_id| to |insts|
   void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
 
-  // Delete |inst| and iterate DCE on all its operands 
+  // Delete |inst| and iterate DCE on all its operands. Won't delete
+  // labels. 
   void DCEInst(ir::Instruction* inst);
 
   // On all entry point functions, within each basic block, eliminate
