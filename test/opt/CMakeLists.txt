@@ -58,8 +58,18 @@ add_spvtools_unittest(TARGET pass_inline
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_local_access_chain_convert
+  SRCS local_access_chain_convert_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_local_single_store_elim
   SRCS local_single_store_elim_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET pass_local_single_block_elim
+  SRCS local_single_block_elim.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
 
