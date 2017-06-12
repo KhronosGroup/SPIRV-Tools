@@ -202,6 +202,14 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
 
 bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     ir::Function* func) {
+  // Verify no CopyObject ops in function. This is a pre-SSA pass and
+  // is generally is not useful for code already in CSSA form.
+  for (auto bi = func->begin(); bi != func->end(); ++bi) {
+    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
+      if (ii->opcode() == SpvOpCopyObject)
+        return false;
+    }
+  }
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     var2store_.clear();
