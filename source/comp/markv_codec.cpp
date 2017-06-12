@@ -68,7 +68,10 @@ namespace {
 const uint32_t kSpirvMagicNumber = SpvMagicNumber;
 const uint32_t kMarkvMagicNumber = 0x07230303;
 
-const uint16_t kMarkvOpNextInstructionEncodesResultId = 12301;
+enum {
+  kMarkvFirstOpcode = 65536,
+  kMarkvOpNextInstructionEncodesResultId = 65536,
+};
 
 const size_t kCommentNumWhitespaces = 2;
 
@@ -104,7 +107,7 @@ const MarkvModel* GetDefaultModel() {
 // Chunk length is selected based on the size of expected value.
 // Most of these values will later be encoded with probability-based coding,
 // but variable width integer coding is a good quick solution.
-// TODO(atgoo@github.com): Put this in MarkvModel proto.
+// TODO(atgoo@github.com): Put this in MarkvModel flatbuffer.
 size_t GetOperandVariableWidthChunkLength(spv_operand_type_t type) {
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID:
@@ -296,6 +299,17 @@ class MarkvCodecBase {
 
   // Returns true if the opcode has a variable number of operands.
   bool OpcodeHasVariableNumberOfOperands(SpvOp opcode) const {
+    switch (opcode) {
+      case SpvOpLoopMerge:
+        // Opcodes which can have a variable number of operands, even if the
+        // last operand is not declares as  variable.
+        // TODO(atgoo@github.com) Add other such opcodes or find a better
+        // solution.
+        return true;
+      default:
+        break;
+    }
+
     spv_opcode_desc opcode_desc;
     if (grammar_.lookupOpcode(static_cast<SpvOp>(opcode), &opcode_desc)
         != SPV_SUCCESS) {
@@ -425,6 +439,8 @@ class MarkvEncoder : public MarkvCodecBase {
   }
 
   // Returns id index and updates move-to-front.
+  // Index is uint16 as SPIR-V module is guaranteed to have no more than 65535
+  // instructions.
   uint16_t GetIdIndex(uint32_t id) {
     if (all_known_ids_.count(id)) {
       uint16_t index = 0;
@@ -444,7 +460,7 @@ class MarkvEncoder : public MarkvCodecBase {
     } else {
       all_known_ids_.insert(id);
       move_to_front_ids_.push_front(id);
-      return 0;
+      return static_cast<uint16_t>(move_to_front_ids_.size() - 1);
     }
   }
 
@@ -580,7 +596,7 @@ class MarkvDecoder : public MarkvCodecBase {
   spv_result_t DecodeInstruction(spv_parsed_instruction_t* inst);
 
   // Read operand from the stream decodes and validates it.
-  spv_result_t DecodeOperand(size_t operand_offset,
+  spv_result_t DecodeOperand(size_t instruction_offset, size_t operand_offset,
                              spv_parsed_instruction_t* inst,
                              const spv_operand_type_t type,
                              spv_operand_pattern_t* expected_operands,
@@ -682,7 +698,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   if (all_known_ids_.count(inst.result_id)) {
     // Result id of the instruction was forward declared.
     // Write a service opcode to signal this to the decoder.
-    writer_.WriteVariableWidthU16(kMarkvOpNextInstructionEncodesResultId,
+    writer_.WriteVariableWidthU32(kMarkvOpNextInstructionEncodesResultId,
                                   model_->opcode_chunk_length());
     result_id_was_forward_declared = true;
   }
@@ -693,7 +709,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   LogDisassemblyInstruction();
 
   // Write opcode.
-  writer_.WriteVariableWidthU16(inst.opcode, model_->opcode_chunk_length());
+  writer_.WriteVariableWidthU32(inst.opcode, model_->opcode_chunk_length());
 
   if (OpcodeHasVariableNumberOfOperands(SpvOp(inst.opcode))) {
     // If the opcode has a variable number of operands, encode the number of
@@ -891,8 +907,9 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
 // For now it's better to keep the code independent for experimentation
 // purposes.
 spv_result_t MarkvDecoder::DecodeOperand(
-    size_t operand_offset, spv_parsed_instruction_t* inst,
-    const spv_operand_type_t type, spv_operand_pattern_t* expected_operands,
+    size_t instruction_offset, size_t operand_offset,
+    spv_parsed_instruction_t* inst, const spv_operand_type_t type,
+    spv_operand_pattern_t* expected_operands,
     bool read_result_id) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
 
@@ -1006,8 +1023,33 @@ spv_result_t MarkvDecoder::DecodeOperand(
     case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER:
       parsed_operand.type = SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
       if (opcode == SpvOpSwitch) {
-        // TODO(atgoo@github.com) Work in progress.
-        assert(0 && "Not implemented");
+        // The literal operands have the same type as the value
+        // referenced by the selector Id.
+        const uint32_t selector_id = spirv_.at(instruction_offset + 1);
+        const auto type_id_iter = id_to_type_id_.find(selector_id);
+        if (type_id_iter == id_to_type_id_.end() ||
+            type_id_iter->second == 0) {
+          return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+              << "Invalid OpSwitch: selector id " << selector_id
+              << " has no type";
+        }
+        uint32_t type_id = type_id_iter->second;
+
+        if (selector_id == type_id) {
+          // Recall that by convention, a result ID that is a type definition
+          // maps to itself.
+          return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+              << "Invalid OpSwitch: selector id " << selector_id
+              << " is a type, not a value";
+        }
+        if (auto error = SetNumericTypeInfoForType(&parsed_operand, type_id))
+          return error;
+        if (parsed_operand.number_kind != SPV_NUMBER_UNSIGNED_INT &&
+            parsed_operand.number_kind != SPV_NUMBER_SIGNED_INT) {
+          return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+              << "Invalid OpSwitch: selector id " << selector_id
+              << " is not a scalar integer";
+        }
       } else {
         assert(opcode == SpvOpConstant || opcode == SpvOpSpecConstant);
         // The literal number type is determined by the type Id for the
@@ -1016,16 +1058,19 @@ spv_result_t MarkvDecoder::DecodeOperand(
         if (auto error =
             SetNumericTypeInfoForType(&parsed_operand, inst->type_id))
           return error;
-
-        if (auto error = DecodeLiteralNumber(parsed_operand))
-          return error;
       }
+
+      if (auto error = DecodeLiteralNumber(parsed_operand))
+        return error;
+
       break;
 
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       parsed_operand.type = SPV_OPERAND_TYPE_LITERAL_STRING;
       std::vector<char> str;
+      // The loop is expected to terminate once we encounter '\0' or exhaust
+      // the bit stream.
       while (true) {
         char ch = 0;
         if (!reader_.ReadUnencoded(&ch))
@@ -1166,22 +1211,27 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
 spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
   parsed_operands_.clear();
-  const size_t inst_module_offset = spirv_.size();
+  const size_t instruction_offset = spirv_.size();
 
   bool read_result_id = false;
 
   while (true) {
-    uint16_t word16 = 0;
-    if (!reader_.ReadVariableWidthU16(&word16,
+    uint32_t word = 0;
+    if (!reader_.ReadVariableWidthU32(&word,
                                       model_->opcode_chunk_length())) {
       return vstate_.diag(SPV_ERROR_INVALID_BINARY)
           << "Failed to read opcode of instruction";
     }
 
-    if (word16 == kMarkvOpNextInstructionEncodesResultId) {
-      read_result_id = true;
+    if (word >= kMarkvFirstOpcode) {
+      if (word == kMarkvOpNextInstructionEncodesResultId) {
+        read_result_id = true;
+      } else {
+        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+            << "Encountered unknown MARK-V opcode";
+      }
     } else {
-      inst->opcode = word16;
+      inst->opcode = static_cast<uint16_t>(word);
       break;
     }
   }
@@ -1217,11 +1267,11 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
     const spv_operand_type_t type =
         spvTakeFirstMatchableOperand(&expected_operands);
 
-    const size_t operand_offset = spirv_.size() - inst_module_offset;
+    const size_t operand_offset = spirv_.size() - instruction_offset;
 
     const spv_result_t decode_result =
-        DecodeOperand(operand_offset, inst, type, &expected_operands,
-                      read_result_id);
+        DecodeOperand(instruction_offset, operand_offset, inst, type,
+                      &expected_operands, read_result_id);
 
     if (decode_result != SPV_SUCCESS)
       return decode_result;
@@ -1230,10 +1280,10 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
   assert(inst->num_operands == parsed_operands_.size());
 
   // Only valid while spirv_ and parsed_operands_ remain unchanged.
-  inst->words = &spirv_[inst_module_offset];
+  inst->words = &spirv_[instruction_offset];
   inst->operands = parsed_operands_.empty() ? nullptr : parsed_operands_.data();
-  inst->num_words = static_cast<uint16_t>(spirv_.size() - inst_module_offset);
-  spirv_[inst_module_offset] =
+  inst->num_words = static_cast<uint16_t>(spirv_.size() - instruction_offset);
+  spirv_[instruction_offset] =
       spvOpcodeMake(inst->num_words, SpvOp(inst->opcode));
 
 

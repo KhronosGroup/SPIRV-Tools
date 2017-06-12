@@ -147,8 +147,8 @@ void TestEncodeDecode(const std::string& original_text) {
   ASSERT_NE(nullptr, markv_binary);
 
   // std::cerr << encoder_comments << std::endl;
-  std::cerr << "SPIR-V size: " << expected_binary.size() * 4 << std::endl;
-  std::cerr << "MARK-V size: " << markv_binary->length << std::endl;
+  // std::cerr << "SPIR-V size: " << expected_binary.size() * 4 << std::endl;
+  // std::cerr << "MARK-V size: " << markv_binary->length << std::endl;
 
   std::vector<uint32_t> decoded_binary;
   Decode(markv_binary, &decoded_binary);
@@ -338,6 +338,61 @@ OpEntryPoint Kernel %1 "simple_kernel"
 %7 = OpTypeFunction %6
 %1 = OpFunction %6 None %7
 %8 = OpLabel
+OpReturn
+OpFunctionEnd
+)");
+}
+
+TEST(Markv, WithSwitch) {
+  TestEncodeDecode(R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Physical32 OpenCL
+%u64 = OpTypeInt 64 0
+%void = OpTypeVoid
+%void_func = OpTypeFunction %void
+%val = OpConstant %u64 1
+%main = OpFunction %void None %void_func
+%entry_main = OpLabel
+OpSwitch %val %default 1 %case1 1000000000000 %case2
+%case1 = OpLabel
+OpNop
+OpBranch %after_switch
+%case2 = OpLabel
+OpNop
+OpBranch %after_switch
+%default = OpLabel
+OpNop
+OpBranch %after_switch
+%after_switch = OpLabel
+OpReturn
+OpFunctionEnd
+)");
+}
+
+TEST(Markv, WithLoop) {
+  TestEncodeDecode(R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+%void = OpTypeVoid
+%void_func = OpTypeFunction %void
+%main = OpFunction %void None %void_func
+%entry_main = OpLabel
+OpLoopMerge %merge %continue DontUnroll|DependencyLength 10
+OpBranch %begin_loop
+%begin_loop = OpLabel
+OpNop
+OpBranch %continue
+%continue = OpLabel
+OpNop
+OpBranch %begin_loop
+%merge = OpLabel
 OpReturn
 OpFunctionEnd
 )");
