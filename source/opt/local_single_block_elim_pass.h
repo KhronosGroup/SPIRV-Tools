@@ -121,13 +121,25 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // Cache of previously seen non-target types
   std::unordered_set<uint32_t> seen_non_target_vars_;
 
-  // Map from variable to its live store in block
+  // Map from function scope variable to a store of that variable in the
+  // current block whose value is currently valid. This map is cleared
+  // at the start of each block and incrementally updated as the block
+  // is scanned. The stores are candidates for elimination. The map is
+  // conservatively cleared when a function call is encountered.
   std::unordered_map<uint32_t, ir::Instruction*> var2store_;
 
-  // Map from variable to its live load in block
+  // Map from function scope variable to a load of that variable in the
+  // current block whose value is currently valid. This map is cleared
+  // at the start of each block and incrementally updated as the block
+  // is scanned. The stores are candidates for elimination. The map is
+  // conservatively cleared when a function call is encountered.
   std::unordered_map<uint32_t, ir::Instruction*> var2load_;
 
-  // Set of undeletable variables
+  // Set of variables whose most recent store in the current block cannot be
+  // deleted, for example, if there is a load of the variable which is
+  // dependent on the store and is not replaced and deleted by this pass,
+  // for example, a load through an access chain. A variable is removed
+  // from this set each time a new store of that variable is encountered.
   std::unordered_set<uint32_t> pinned_vars_;
 
   // Next unused ID
