@@ -234,7 +234,7 @@ bool LocalSingleStoreElimPass::Dominates(
     ir::BasicBlock* blk0, uint32_t idx0,
     ir::BasicBlock* blk1, uint32_t idx1) {
   if (blk0 == blk1)
-    return idx0 < idx1;
+    return idx0 <= idx1;
   ir::BasicBlock* b = blk1;
   while (idom_[b] != b) {
     b = idom_[b];
