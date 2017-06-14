@@ -70,7 +70,7 @@ class LocalSingleStoreElimPass : public Pass {
   // variables of scalar, vector, matrix types and struct and array
   // types comprising only these types. Currently this analysis is
   // is not done in the presence of function calls. TODO(): Allow
-  // analysis in the prensence of function calls.
+  // analysis in the presence of function calls.
   void SingleStoreAnalyze(ir::Function* func);
 
   // Replace all instances of |loadInst|'s id with |replId| and delete

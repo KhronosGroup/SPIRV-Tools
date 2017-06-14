@@ -132,14 +132,14 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
           non_ssa_vars_.insert(varId);
           continue;
         }
-        // If already stored, disqualify it
+        // Ignore variables with multiple stores
         if (ssa_var2store_.find(varId) != ssa_var2store_.end()) {
           non_ssa_vars_.insert(varId);
           ssa_var2store_.erase(varId);
           continue;
         }
-        // Remember iterator of variable's store and it's
-        // ordinal position in function
+        // Remember pointer to variable's store and it's
+        // ordinal position in block
         ssa_var2store_[varId] = &*ii;
         store2idx_[&*ii] = instIdx;
         store2blk_[&*ii] = &*bi;
