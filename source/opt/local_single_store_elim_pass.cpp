@@ -257,7 +257,8 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       // Skip access chain loads
       if (IsNonPtrAccessChain(ptrInst->opcode()))
         continue;
-      assert(ptrInst->opcode() == SpvOpVariable);
+      if (ptrInst->opcode() != SpvOpVariable)
+        continue;
       const auto vsi = ssa_var2store_.find(varId);
       if (vsi == ssa_var2store_.end())
         continue;
