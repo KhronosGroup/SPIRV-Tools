@@ -26,6 +26,8 @@ add_library(SPIRV-Tools-opt
   insert_extract_elim.h
   instruction.h
   ir_loader.h
+  local_access_chain_convert_pass.h
+  local_single_block_elim_pass.h
   log.h
   module.h
   null_pass.h
@@ -52,6 +54,8 @@ add_library(SPIRV-Tools-opt
   insert_extract_elim.cpp
   instruction.cpp
   ir_loader.cpp
+  local_access_chain_convert_pass.cpp
+  local_single_block_elim_pass.cpp
   module.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
