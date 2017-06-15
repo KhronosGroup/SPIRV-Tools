@@ -18,6 +18,7 @@
 
 #include "cfa.h"
 #include "iterator.h"
+#include "spirv/1.0/GLSL.std.450.h"
 
 static const int kSpvEntryPointFunctionId = 1;
 static const int kSpvStorePtrId = 0;
@@ -26,6 +27,7 @@ static const int kSpvLoadPtrId = 0;
 static const int kSpvAccessChainPtrId = 0;
 static const int kSpvTypePointerStorageClass = 0;
 static const int kSpvTypePointerTypeId = 1;
+static const int kSpvExtInstInstruction = 0;
 
 // Universal Limit of ResultID + 1
 static const int kInvalidId = 0x400000;
@@ -143,12 +145,6 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
         ssa_var2store_[varId] = &*ii;
         store2idx_[&*ii] = instIdx;
         store2blk_[&*ii] = &*bi;
-      } break;
-      case SpvOpFunctionCall: {
-        // For now, empty SSA variable set and terminate analysis
-        // TODO(): Add logic to more optimally handle function calls.
-        ssa_var2store_.clear();
-        return;
       } break;
       default:
         break;
@@ -381,7 +377,56 @@ bool LocalSingleStoreElimPass::SingleStoreDCE() {
   return modified;
 }
 
+bool LocalSingleStoreElimPass::HasUnsupportedInst(ir::Function* func) {
+  // Currently this pass only supports optimization of store and load.
+  // The presence of other memory operations as well as function calls and
+  // non-access-chain pointer operations is not currently supported and
+  // will cause the function to return unmodified.
+  // TODO(): Handle more memory operations, pointer operations, function
+  // calls.
+  for (auto& blk : *func)
+    for (auto& inst : blk)
+      switch (inst.opcode()) {
+      case SpvOpAtomicLoad:
+      case SpvOpAtomicStore:
+      case SpvOpAtomicExchange:
+      case SpvOpAtomicCompareExchange:
+      case SpvOpAtomicCompareExchangeWeak:
+      case SpvOpAtomicIIncrement:
+      case SpvOpAtomicIDecrement:
+      case SpvOpAtomicIAdd:
+      case SpvOpAtomicISub:
+      case SpvOpAtomicSMin:
+      case SpvOpAtomicUMin:
+      case SpvOpAtomicSMax:
+      case SpvOpAtomicUMax:
+      case SpvOpAtomicAnd:
+      case SpvOpAtomicOr:
+      case SpvOpAtomicXor:
+      case SpvOpLifetimeStart:
+      case SpvOpLifetimeStop:
+      case SpvOpCopyMemory:
+      case SpvOpFunctionCall:
+        return true;
+      // This is a pre-SSA pass, so Conventional SSA form including
+      // OpCopyObject is not supported.
+      case SpvOpCopyObject:
+        return true;
+      // Frexp and Modf extended ops reference memory and are unsupported
+      case SpvOpExtInst: {
+        uint32_t op = inst.GetSingleWordInOperand(kSpvExtInstInstruction);
+        if (op == GLSLstd450Frexp || op == GLSLstd450Modf)
+          return true;
+      } break;
+      default:
+	break;
+      }
+  return false;
+}
+
 bool LocalSingleStoreElimPass::LocalSingleStoreElim(ir::Function* func) {
+  if (HasUnsupportedInst(func))
+    return false;
   bool modified = false;
   SingleStoreAnalyze(func);
   if (ssa_var2store_.empty())

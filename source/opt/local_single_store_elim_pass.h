@@ -125,6 +125,10 @@ class LocalSingleStoreElimPass : public Pass {
   // and SingleStoreProcess has been run.
   bool SingleStoreDCE();
 
+  // Return true if |func| contains an instruction not supported by this
+  // pass.
+  bool HasUnsupportedInst(ir::Function* func);
+
   // Do "single-store" optimization of function variables defined only
   // with a single non-access-chain store in |func|. Replace all their
   // non-access-chain loads with the value that is stored and eliminate
