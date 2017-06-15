@@ -283,6 +283,8 @@ bool LocalSingleStoreElimPass::HasLoads(uint32_t varId) const {
     return false;
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
+    // TODO(): The following is slightly conservative. Could be
+    // better handling of non-store/name.
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
       if (HasLoads(u.inst->result_id()))
         return true;
