@@ -30,6 +30,7 @@ add_library(SPIRV-Tools-opt
   local_access_chain_convert_pass.h
   local_single_block_elim_pass.h
   local_single_store_elim_pass.h
+  local_ssa_elim_pass.h
   log.h
   module.h
   null_pass.h
@@ -60,6 +61,7 @@ add_library(SPIRV-Tools-opt
   local_access_chain_convert_pass.cpp
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
+  local_ssa_elim_pass.cpp
   module.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp

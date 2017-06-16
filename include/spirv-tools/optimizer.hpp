@@ -230,6 +230,23 @@ Optimizer::PassToken CreateInlinePass();
 // by LocalSingleStoreElim and LocalSSARewrite.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
+// Creates an SSA local variable load/store elimination pass.
+// For every entry point function, eliminate all loads and stores of function
+// scope variables only referenced with non-access-chain loads and stores.
+// Eliminate the variables as well. 
+//
+// The presence of access chain references and function calls can inhibit
+// the above optimization.
+//
+// Only shader modules with logical addressing are currently processed.
+// Currently modules with any extensions enabled are not processed. This
+// is left for future work.
+//
+// This pass is most effective if preceeded by Inlining and 
+// LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
+// will reduce the work that this pass has to do.
+Optimizer::PassToken CreateLocalSSAElimPass();
+
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope
 // variables which are accessed only with loads, stores and access chains

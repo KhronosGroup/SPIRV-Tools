@@ -26,6 +26,7 @@
 #include "insert_extract_elim.h"
 #include "local_single_block_elim_pass.h"
 #include "local_single_store_elim_pass.h"
+#include "local_ssa_elim_pass.h"
 #include "freeze_spec_constant_value_pass.h"
 #include "local_access_chain_convert_pass.h"
 #include "null_pass.h"
