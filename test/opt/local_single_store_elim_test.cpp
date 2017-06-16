@@ -516,8 +516,6 @@ OpFunctionEnd
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Other types
-//    Multiple loads optimized
-//    Non-dominating store not optimized
 //    Others?
 
 }  // anonymous namespace
