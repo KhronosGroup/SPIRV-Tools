@@ -27,7 +27,6 @@ static const int kSpvLoadPtrId = 0;
 static const int kSpvAccessChainPtrId = 0;
 static const int kSpvTypePointerStorageClass = 0;
 static const int kSpvTypePointerTypeId = 1;
-static const int kSpvExtInstInstruction = 0;
 
 // Universal Limit of ResultID + 1
 static const int kInvalidId = 0x400000;
