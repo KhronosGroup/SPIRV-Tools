@@ -65,6 +65,10 @@ class LocalSingleStoreElimPass : public Pass {
   // and non-target variables.
   bool IsTargetVar(uint32_t varId);
 
+  // Return true if all refs through |ptrId| are only loads or stores and
+  // cache ptrId in supported_ref_ptrs_.
+  bool HasOnlySupportedRefs(uint32_t ptrId);
+
   // Find all function scope variables in |func| that are stored to
   // only once (SSA) and map to their stored value id. Only analyze
   // variables of scalar, vector, matrix types and struct and array
@@ -125,10 +129,6 @@ class LocalSingleStoreElimPass : public Pass {
   // and SingleStoreProcess has been run.
   bool SingleStoreDCE();
 
-  // Return true if |func| contains an instruction not supported by this
-  // pass.
-  bool HasUnsupportedInst(ir::Function* func);
-
   // Do "single-store" optimization of function variables defined only
   // with a single non-access-chain store in |func|. Replace all their
   // non-access-chain loads with the value that is stored and eliminate
@@ -177,6 +177,10 @@ class LocalSingleStoreElimPass : public Pass {
 
   // Cache of previously seen non-target types
   std::unordered_set<uint32_t> seen_non_target_vars_;
+
+  // Variables with only supported references, ie. loads and stores using
+  // variable directly or through non-ptr access chains.
+  std::unordered_set<uint32_t> supported_ref_ptrs_;
 
   // Augmented CFG Entry Block
   ir::BasicBlock pseudo_entry_block_;

@@ -109,6 +109,24 @@ bool LocalSingleStoreElimPass::IsTargetVar(uint32_t varId) {
   return true;
 }
 
+bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
+  if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
+    return true;
+  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  assert(uses != nullptr);
+  for (auto u : *uses) {
+    SpvOp op = u.inst->opcode();
+    if (IsNonPtrAccessChain(op)) {
+      if (!HasOnlySupportedRefs(u.inst->result_id()))
+        return false;
+    }
+    else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
+      return false;
+  }
+  supported_ref_ptrs_.insert(ptrId);
+  return true;
+}
+
 void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
   ssa_var2store_.clear();
   non_ssa_vars_.clear();
@@ -124,6 +142,10 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
         if (non_ssa_vars_.find(varId) != non_ssa_vars_.end())
           continue;
+        if (!HasOnlySupportedRefs(varId)) {
+          non_ssa_vars_.insert(varId);
+          continue;
+        }
         if (IsNonPtrAccessChain(ptrInst->opcode())) {
           non_ssa_vars_.insert(varId);
           ssa_var2store_.erase(varId);
@@ -377,56 +399,7 @@ bool LocalSingleStoreElimPass::SingleStoreDCE() {
   return modified;
 }
 
-bool LocalSingleStoreElimPass::HasUnsupportedInst(ir::Function* func) {
-  // Currently this pass only supports optimization of store and load.
-  // The presence of other memory operations as well as function calls and
-  // non-access-chain pointer operations is not currently supported and
-  // will cause the function to return unmodified.
-  // TODO(): Handle more memory operations, pointer operations, function
-  // calls.
-  for (auto& blk : *func)
-    for (auto& inst : blk)
-      switch (inst.opcode()) {
-      case SpvOpAtomicLoad:
-      case SpvOpAtomicStore:
-      case SpvOpAtomicExchange:
-      case SpvOpAtomicCompareExchange:
-      case SpvOpAtomicCompareExchangeWeak:
-      case SpvOpAtomicIIncrement:
-      case SpvOpAtomicIDecrement:
-      case SpvOpAtomicIAdd:
-      case SpvOpAtomicISub:
-      case SpvOpAtomicSMin:
-      case SpvOpAtomicUMin:
-      case SpvOpAtomicSMax:
-      case SpvOpAtomicUMax:
-      case SpvOpAtomicAnd:
-      case SpvOpAtomicOr:
-      case SpvOpAtomicXor:
-      case SpvOpLifetimeStart:
-      case SpvOpLifetimeStop:
-      case SpvOpCopyMemory:
-      case SpvOpFunctionCall:
-        return true;
-      // This is a pre-SSA pass, so Conventional SSA form including
-      // OpCopyObject is not supported.
-      case SpvOpCopyObject:
-        return true;
-      // Frexp and Modf extended ops reference memory and are unsupported
-      case SpvOpExtInst: {
-        uint32_t op = inst.GetSingleWordInOperand(kSpvExtInstInstruction);
-        if (op == GLSLstd450Frexp || op == GLSLstd450Modf)
-          return true;
-      } break;
-      default:
-	break;
-      }
-  return false;
-}
-
 bool LocalSingleStoreElimPass::LocalSingleStoreElim(ir::Function* func) {
-  if (HasUnsupportedInst(func))
-    return false;
   bool modified = false;
   SingleStoreAnalyze(func);
   if (ssa_var2store_.empty())
@@ -453,6 +426,9 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
   // Initialize Target Type Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
+
+  // Initialize Supported Ref Pointer Cache
+  supported_ref_ptrs_.clear();
 
   // TODO: Reuse def/use (and other state) from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
