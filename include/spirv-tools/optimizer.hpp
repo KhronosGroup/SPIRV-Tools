@@ -240,7 +240,9 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 //
 // Currently, the presence of access chains and function calls can inhibit this
 // pass, however the Inlining and LocalAccessChainConvert passes can make it
-// more effective.
+// more effective. In additional, many non-load/store memory operations are
+// not supported and will prohibit optimization of a function. Support of
+// these operations are future work.
 //
 // This pass will reduce the work needed to be done by LocalSingleBlockElim
 // and LocalSSARewrite and can improve the effectiveness of other passes such
