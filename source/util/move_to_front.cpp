@@ -14,6 +14,7 @@
 
 #include "move_to_front.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -317,6 +318,13 @@ uint16_t MoveToFront::RotateRight(const uint16_t node) {
   UpdateNode(pivot);
 
   return pivot;
+}
+
+void MoveToFront::UpdateNode(uint16_t handle) {
+  MutableSizeOf(handle) = uint16_t(
+      1 + SizeOf(LeftOf(handle)) + SizeOf(RightOf(handle)));
+  MutableHeightOf(handle) = uint8_t(
+      1 + std::max(HeightOf(LeftOf(handle)), HeightOf(RightOf(handle))));
 }
 
 }  // namespace spvutils

@@ -251,12 +251,7 @@ class MoveToFront {
 
   // Updates size and height of the node, assuming that the children have
   // correct values.
-  inline void UpdateNode(uint16_t handle) {
-    MutableSizeOf(handle) = uint16_t(
-        1 + SizeOf(LeftOf(handle)) + SizeOf(RightOf(handle)));
-    MutableHeightOf(handle) = uint8_t(1 +
-        std::max(HeightOf(LeftOf(handle)), HeightOf(RightOf(handle))));
-  }
+  void UpdateNode(uint16_t handle);
 
   // Returns the most LeftOf(LeftOf(... descendent which is not leaf.
   uint16_t LeftestDescendantOf(uint16_t handle) const {
