@@ -187,7 +187,8 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 
 // Creates a block merge pass.
 // This pass searches for blocks with a single Branch to a block with no
-// other predecessors. It merges the blocks into a single block.
+// other predecessors or reference (for example, by OpSelectionMerge or
+// OpLoopMerge). It merges the blocks into a single block. 
 //
 // The pass is most useful after Dead Branch Elimination, which can leave
 // such sequences of blocks. Merging them makes subsequent passes more

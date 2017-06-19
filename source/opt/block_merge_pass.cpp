@@ -66,6 +66,8 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
     for (; sbi != func->end(); ++sbi)
       if (sbi->id() == labId)
         break;
+    // If bi is sbi's only predecessor, it dominates sbi and thus
+    // sbi must follow bi in func's ordering.
     assert(sbi != func->end());
     bi->AddInstructions(&*sbi);
     def_use_mgr_->KillInst(sbi->GetLabelInst());
@@ -90,14 +92,11 @@ void BlockMergePass::Initialize(ir::Module* module) {
 
 Pass::Status BlockMergePass::ProcessImpl() {
   bool modified = false;
-
-  // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
     modified = modified || MergeBlocks(fn);
   }
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
