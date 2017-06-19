@@ -49,12 +49,14 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   uint32_t id = inst->result_id();
   if (id != 0) {
     analysis::UseList* uses = def_use_mgr_->GetUses(id);
-    ir::Instruction* ni = nullptr;
-    for (auto u : *uses)
-      if(u.inst->opcode() == SpvOpName)
-        ni = u.inst;
-    if (ni != nullptr)
-      def_use_mgr_->KillInst(ni);
+    if (uses != nullptr) {
+      ir::Instruction* ni = nullptr;
+      for (auto u : *uses)
+        if(u.inst->opcode() == SpvOpName)
+          ni = u.inst;
+      if (ni != nullptr)
+        def_use_mgr_->KillInst(ni);
+    }
   }
   def_use_mgr_->KillInst(inst);
 }
