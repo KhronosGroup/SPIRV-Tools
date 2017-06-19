@@ -16,6 +16,7 @@
 #define LIBSPIRV_UTIL_MOVE_TO_FRONT_H_
 
 #include <cassert>
+#include <cstdint>
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
