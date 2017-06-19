@@ -159,23 +159,18 @@ OpFunctionEnd
 }
 
 TEST_F(BlockMergeTest, NoOptOfMergeOrContinueBlock) {
-  // Note: SPIR-V hand edited to insert block boundary
-  // between OpFMul and OpStore in then-part.
+  // Note: SPIR-V hand edited remove dead branch and add block
+  // before continue block
   //
   // #version 140
   // in vec4 BaseColor;
   // 
-  // layout(std140) uniform U_t
-  // {
-  //     bool g_B ;
-  // } ;
-  // 
   // void main()
   // {
-  //     vec4 v = BaseColor;
-  //     if (g_B) 
-  //       vec4 v = v * 0.25;
-  //     gl_FragColor = v;
+  //     while (true) {
+  //         break;
+  //     }
+  //     gl_FragColor = BaseColor;
   // }
 
   const std::string assembly =
