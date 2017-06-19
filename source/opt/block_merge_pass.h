@@ -43,6 +43,13 @@ class BlockMergePass : public Pass {
   // Return true if |block_ptr| is loop header block
   bool IsLoopHeader(ir::BasicBlock* block_ptr);
 
+  // Return true if |labId| has multiple refs. Do not count OpPhi or
+  // OpName.
+  bool HasMultipleRefs(uint32_t labId);
+
+  // Kill any OpName instruction referencing |inst|, then kill |inst|.
+  void KillInstAndName(ir::Instruction* inst);
+
   // Search |func| for blocks which have a single Branch to a block
   // with no other predecessors. Merge these blocks into a single block.
   bool MergeBlocks(ir::Function* func);

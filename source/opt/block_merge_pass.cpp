@@ -32,6 +32,33 @@ bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
   return iItr->opcode() == SpvOpLoopMerge;
 }
 
+bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
+  analysis::UseList* uses = def_use_mgr_->GetUses(labId);
+  int rcnt = 0;
+  for (auto u : *uses) {
+    // Don't count OpPhi or OpName
+    SpvOp op = u.inst->opcode();
+    if (op == SpvOpPhi || op == SpvOpName)
+      continue;
+    ++rcnt;
+  }
+  return rcnt > 1;
+}
+
+void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
+  uint32_t id = inst->result_id();
+  if (id != 0) {
+    analysis::UseList* uses = def_use_mgr_->GetUses(id);
+    ir::Instruction* ni = nullptr;
+    for (auto u : *uses)
+      if(u.inst->opcode() == SpvOpName)
+        ni = u.inst;
+    if (ni != nullptr)
+      def_use_mgr_->KillInst(ni);
+  }
+  def_use_mgr_->KillInst(inst);
+}
+
 bool BlockMergePass::MergeBlocks(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ) {
@@ -44,9 +71,6 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
     // no other predecessors. Continue and Merge blocks
     // are ruled out as second blocks because their labels
     // always have >1 uses. 
-    // TODO(greg-lunarg): Phi function references to the label
-    // can create the illusion of a predecessor. Ignore these
-    // references.
     auto ii = bi->end();
     --ii;
     ir::Instruction* br = &*ii;
@@ -55,8 +79,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       continue;
     }
     uint32_t labId = br->GetSingleWordInOperand(0);
-    analysis::UseList* uses = def_use_mgr_->GetUses(labId);
-    if (uses->size() > 1) {
+    if (HasMultipleRefs(labId)) {
       ++bi;
       continue;
     }
@@ -70,7 +93,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
     // sbi must follow bi in func's ordering.
     assert(sbi != func->end());
     bi->AddInstructions(&*sbi);
-    def_use_mgr_->KillInst(sbi->GetLabelInst());
+    KillInstAndName(sbi->GetLabelInst());
     (void) sbi.Erase();
     // reprocess block
     modified = true;
