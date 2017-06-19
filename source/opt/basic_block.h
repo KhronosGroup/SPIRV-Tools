@@ -50,7 +50,7 @@ class BasicBlock {
   inline void AddInstructions(BasicBlock* bp);
 
   // The label starting this basic block.
-  Instruction* GetLabelInst() { return &*label_; }
+  Instruction* GetLabelInst() { return label_.get(); }
 
   // Returns the id of the label at the top of this block
   inline uint32_t id() const { return label_->result_id(); }
