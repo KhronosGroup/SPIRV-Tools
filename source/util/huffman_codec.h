@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <stack>
 #include <tuple>
 #include <unordered_map>
@@ -53,7 +54,7 @@ class HuffmanCodec {
     queue_vector.reserve(hist.size());
     std::priority_queue<Node*, std::vector<Node*>,
         std::function<bool(const Node*, const Node*)>>
-	    queue(LeftIsBigger, std::move(queue_vector));
+            queue(LeftIsBigger, std::move(queue_vector));
 
     // Put all leaves in the queue.
     for (const auto& pair : hist) {
@@ -73,7 +74,7 @@ class HuffmanCodec {
       Node* right = queue.top();
       queue.pop();
 
-      // If the queue is empty at this point, then the last node contains is
+      // If the queue is empty at this point, then the last node is
       // the root of the complete Huffman tree.
       if (queue.empty()) {
         root_ = right;
@@ -83,7 +84,7 @@ class HuffmanCodec {
       Node* left = queue.top();
       queue.pop();
 
-      // Combile left and right into a new tree and push it into the queue.
+      // Combine left and right into a new tree and push it into the queue.
       Node* parent = CreateNode();
       parent->weight = right->weight + left->weight;
       parent->left = left;
@@ -99,10 +100,14 @@ class HuffmanCodec {
   // w------w------'x'
   //        w------'y'
   // Where w stands for the weight of the node.
+  // Right tree branches appear above left branches. Taking the right path
+  // adds 1 to the code, taking the left adds 0.
   void PrintTree(std::ostream& out) {
     PrintTreeInternal(out, root_, 0);
   }
 
+  // Traverses the tree and prints the Huffman table: value, code
+  // and optionally node weight for every leaf.
   void PrintTable(std::ostream& out, bool print_weights = true) {
     std::queue<std::pair<Node*, std::string>> queue;
     queue.emplace(root_, "");
@@ -126,12 +131,15 @@ class HuffmanCodec {
     }
   }
 
+  // Returns the Huffman table. The table was built at at construction time,
+  // this function just returns a const reference.
   const std::unordered_map<Val, std::pair<uint64_t, size_t>>&
       GetEncodingTable() const {
     return encoding_table_;
   }
 
-  // Encodes |val| and stores the value in the lower |num_bits| of |bits|.
+  // Encodes |val| and stores its Huffman code in the lower |num_bits| of
+  // |bits|. Returns false of |val| is not in the Huffman table.
   bool Encode(const Val& val, uint64_t* bits, size_t* num_bits) {
     auto it = encoding_table_.find(val);
     if (it == encoding_table_.end())
@@ -142,7 +150,10 @@ class HuffmanCodec {
   }
 
   // Reads bits one-by-one using callback |read_bit| until a match is found.
-  // Matching value is stored in |val|. Returns false if the stream terminates
+  // Matching value is stored in |val|. Returns false if |read_bit| terminates
+  // before a code was mathced.
+  // |read_bit| has type bool func(bool* bit). When called, the next bit is
+  // stored in |bit|. |read_bit| returns false if the stream terminates
   // prematurely.
   bool DecodeFromStream(const std::function<bool(bool*)>& read_bit, Val* val) {
     Node* node = root_;
@@ -173,11 +184,16 @@ class HuffmanCodec {
   struct Node {
     Val val = Val();
     uint32_t weight = 0;
+    // Ids are issued sequentially starting from 1. Ids are used as an ordering
+    // tie-breaker, to make sure that the ordering (and resulting coding scheme)
+    // are consistent accross multiple platforms.
     uint32_t id = 0;
     Node* left = nullptr;
     Node* right = nullptr;
   };
 
+  // Returns true if |left| has bigger weight than |right|. Node ids are
+  // used as tie-breaker.
   static bool LeftIsBigger(const Node* left, const Node* right) {
     if (left->weight == right->weight) {
       assert (left->id != right->id);
@@ -191,17 +207,25 @@ class HuffmanCodec {
     if (!node)
       return;
 
+    const size_t kTextFieldWidth = 7;
+
     if (!node->right && !node->left) {
       out << node->val << std::endl;
     } else {
       if (node->right) {
-        out << std::setfill('-') << std::left << std::setw(7) << node->right->weight;
+        std::stringstream label;
+        label << std::setfill('-') << std::left << std::setw(kTextFieldWidth)
+              << node->right->weight;
+        out << label.str();
         PrintTreeInternal(out, node->right, depth + 1);
       }
 
       if (node->left) {
-        out << std::string(depth * 7, ' ');
-        out << std::setfill('-') << std::left << std::setw(7) << node->left->weight;
+        out << std::string(depth * kTextFieldWidth, ' ');
+        std::stringstream label;
+        label << std::setfill('-') << std::left << std::setw(kTextFieldWidth)
+              << node->left->weight;
+        out << label.str();
         PrintTreeInternal(out, node->left, depth + 1);
       }
     }
@@ -210,14 +234,24 @@ class HuffmanCodec {
   // Traverses the Huffman tree and saves paths to the leaves as bit
   // sequences to encoding_table_.
   void CreateEncodingTable() {
-    std::queue<std::tuple<Node*, uint64_t, size_t>> queue;
+    struct Context {
+      Context(Node* in_node, uint64_t in_bits, size_t in_depth)
+          :  node(in_node), bits(in_bits), depth(in_depth) {}
+      Node* node;
+      uint64_t bits;
+      size_t depth;
+    };
+
+    std::queue<Context> queue;
     queue.emplace(root_, 0, 0);
 
     while (!queue.empty()) {
-      const Node* node = std::get<0>(queue.front());
-      const uint64_t bits = std::get<1>(queue.front());
-      const size_t depth = std::get<2>(queue.front());
+      const Context& context = queue.front();
+      const Node* node = context.node;
+      const uint64_t bits = context.bits;
+      const size_t depth = context.depth;
       queue.pop();
+
       if (!node->right && !node->left) {
         auto insertion_result = encoding_table_.emplace(
             node->val, std::pair<uint64_t, size_t>(bits, depth));
@@ -247,6 +281,8 @@ class HuffmanCodec {
   std::vector<std::unique_ptr<Node>> all_nodes_;
 
   // Encoding table value -> {bits, num_bits}.
+  // Huffman codes are expected to never exceed 64 bit length (this is in fact
+  // impossible if frequencies are stored as uint32_t).
   std::unordered_map<Val, std::pair<uint64_t, size_t>> encoding_table_;
 
   // Next node id issued by CreateNode();
