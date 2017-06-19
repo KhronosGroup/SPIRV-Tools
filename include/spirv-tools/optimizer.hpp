@@ -206,6 +206,26 @@ Optimizer::PassToken CreateBlockMergePass();
 // size or runtime performance. Functions that are not designated as entry
 // points are not changed.
 Optimizer::PassToken CreateInlinePass();
+  
+// Creates a single-block local variable load/store elimination pass.
+// For every entry point function, do single block memory optimization of 
+// function variables referenced only with non-access-chain loads and stores.
+// For each targeted variable load, if previous store to that variable in the
+// block, replace the load's result id with the value id of the store.
+// If previous load within the block, replace the current load's result id
+// with the previous load's result id. In either case, delete the current
+// load. Finally, check if any remaining stores are useless, and delete store
+// and variable if possible.
+//
+// The presence of access chain references and function calls can inhibit
+// the above optimization.
+//
+// Only modules with logical addressing are currently processed. 
+//
+// This pass is most effective if preceeded by Inlining and 
+// LocalAccessChainConvert. This pass will reduce the work needed to be done
+// by LocalSingleStoreElim and LocalSSARewrite.
+Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope
@@ -223,6 +243,24 @@ Optimizer::PassToken CreateInlinePass();
 // loads and stores allowing values to propagate to their points of use where
 // possible.
 Optimizer::PassToken CreateLocalAccessChainConvertPass();
+
+// Creates a local single store elimination pass.
+// For each entry point function, this pass eliminates loads and stores for 
+// function scope variable that are stored to only once, where possible. Only
+// whole variable loads and stores are eliminated; access-chain references are
+// not optimized. Replace all loads of such variables with the value that is
+// stored and eliminate any resulting dead code.
+//
+// Currently, the presence of access chains and function calls can inhibit this
+// pass, however the Inlining and LocalAccessChainConvert passes can make it
+// more effective. In additional, many non-load/store memory operations are
+// not supported and will prohibit optimization of a function. Support of
+// these operations are future work.
+//
+// This pass will reduce the work needed to be done by LocalSingleBlockElim
+// and LocalSSARewrite and can improve the effectiveness of other passes such
+// as DeadBranchElimination which depend on values for their analysis.
+Optimizer::PassToken CreateLocalSingleStoreElimPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
