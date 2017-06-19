@@ -192,6 +192,9 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // The pass is most useful after Dead Branch Elimination, which can leave
 // such sequences of blocks. Merging them makes subsequent passes more
 // effective, such as single block local store-load elimination.
+//
+// While this pass reduces the number of occurrences of this sequence, at
+// this time it does not guarantee all such sequences are eliminated.
 Optimizer::PassToken CreateBlockMergePass();
 
 // Creates an inline pass.

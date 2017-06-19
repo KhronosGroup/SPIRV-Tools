@@ -41,7 +41,12 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       continue;
     }
     // Find block with single successor which has
-    // no other predecessors
+    // no other predecessors. Continue and Merge blocks
+    // are ruled out as second blocks because their labels
+    // always have >1 uses. 
+    // TODO(greg-lunarg): Phi function references to the label
+    // can create the illusion of a predecessor. Ignore these
+    // references.
     auto ii = bi->end();
     --ii;
     ir::Instruction* br = &*ii;
