@@ -36,9 +36,8 @@ bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
   analysis::UseList* uses = def_use_mgr_->GetUses(labId);
   int rcnt = 0;
   for (auto u : *uses) {
-    // Don't count OpPhi or OpName
-    SpvOp op = u.inst->opcode();
-    if (op == SpvOpPhi || op == SpvOpName)
+    // Don't count OpName
+    if (u.inst->opcode() == SpvOpName)
       continue;
     ++rcnt;
   }
@@ -69,10 +68,13 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       ++bi;
       continue;
     }
-    // Find block with single successor which has
-    // no other predecessors. Continue and Merge blocks
-    // are ruled out as second blocks because their labels
-    // always have >1 uses. 
+    // Find block with single successor which has no other predecessors.
+    // Continue and Merge blocks are currently ruled out as second blocks.
+    // Happily any such candidate blocks will have >1 uses due to their
+    // LoopMerge instruction.
+    // TODO(): Deal with phi instructions that reference the
+    // second block. Happily, these references currently inhibit
+    // the merge.
     auto ii = bi->end();
     --ii;
     ir::Instruction* br = &*ii;

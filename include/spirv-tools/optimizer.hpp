@@ -196,6 +196,9 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 //
 // While this pass reduces the number of occurrences of this sequence, at
 // this time it does not guarantee all such sequences are eliminated.
+//
+// Presence of phi instructions can inhibit this optimization. Handling
+// these is left for future improvements. 
 Optimizer::PassToken CreateBlockMergePass();
 
 // Creates an inline pass.
