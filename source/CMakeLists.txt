@@ -193,7 +193,6 @@ add_subdirectory(opt)
 
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
-  ${spirv-tools_SOURCE_DIR}/include/spirv-tools/markv.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.h
