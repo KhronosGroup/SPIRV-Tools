@@ -64,6 +64,11 @@ class BasicBlock {
     return const_iterator(&insts_, insts_.cend());
   }
 
+  iterator tail() {
+    assert(!insts_.empty());
+    return iterator(&insts_, std::prev(insts_.end()));
+  }
+
   // Runs the given function |f| on each instruction in this basic block, and
   // optionally on the debug line instructions that might precede them.
   inline void ForEachInst(const std::function<void(Instruction*)>& f,

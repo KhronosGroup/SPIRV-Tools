@@ -24,8 +24,7 @@ namespace spvtools {
 namespace opt {
 
 bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
-  auto iItr = block_ptr->end();
-  --iItr;
+  auto iItr = block_ptr->tail();
   if (iItr == block_ptr->begin())
     return false;
   --iItr;
@@ -122,7 +121,7 @@ Pass::Status BlockMergePass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || MergeBlocks(fn);
+    modified = MergeBlocks(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
