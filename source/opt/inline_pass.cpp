@@ -626,7 +626,7 @@ Pass::Status InlinePass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || Inline(fn);
+    modified = Inline(fn) || modified;
   }
 
   FinalizeNextId(module_);
