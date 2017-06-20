@@ -71,12 +71,12 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
           cid = cinst->GetSingleWordInOperand(kSpvInsertCompositeId);
           cinst = def_use_mgr_->GetDef(cid);
         }
-        if (replId == 0)
-          break;
-        const uint32_t extId = ii->result_id();
-        (void)def_use_mgr_->ReplaceAllUsesWith(extId, replId);
-        def_use_mgr_->KillInst(&*ii);
-        modified = true;
+        if (replId != 0) {
+          const uint32_t extId = ii->result_id();
+          (void)def_use_mgr_->ReplaceAllUsesWith(extId, replId);
+          def_use_mgr_->KillInst(&*ii);
+          modified = true;
+        }
       } break;
       default:
         break;
