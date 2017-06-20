@@ -181,7 +181,7 @@ OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
-OpName %gl_FragColor "gl_FragColor" 
+OpName %gl_FragColor "gl_FragColor"
 OpName %BaseColor "BaseColor"
 %void = OpTypeVoid
 %6 = OpTypeFunction %void
