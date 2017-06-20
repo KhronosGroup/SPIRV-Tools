@@ -57,29 +57,29 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
-      case SpvOpCompositeExtract: {
-        uint32_t cid = ii->GetSingleWordInOperand(kSpvExtractCompositeId);
-        ir::Instruction* cinst = def_use_mgr_->GetDef(cid);
-        uint32_t replId = 0;
-        while (cinst->opcode() == SpvOpCompositeInsert) {
-          if (ExtInsConflict(&*ii, cinst))
-            break;
-          if (ExtInsMatch(&*ii, cinst)) {
-            replId = cinst->GetSingleWordInOperand(kSpvInsertObjectId);
-            break;
+        case SpvOpCompositeExtract: {
+          uint32_t cid = ii->GetSingleWordInOperand(kSpvExtractCompositeId);
+          ir::Instruction* cinst = def_use_mgr_->GetDef(cid);
+          uint32_t replId = 0;
+          while (cinst->opcode() == SpvOpCompositeInsert) {
+            if (ExtInsConflict(&*ii, cinst))
+              break;
+            if (ExtInsMatch(&*ii, cinst)) {
+              replId = cinst->GetSingleWordInOperand(kSpvInsertObjectId);
+              break;
+            }
+            cid = cinst->GetSingleWordInOperand(kSpvInsertCompositeId);
+            cinst = def_use_mgr_->GetDef(cid);
           }
-          cid = cinst->GetSingleWordInOperand(kSpvInsertCompositeId);
-          cinst = def_use_mgr_->GetDef(cid);
-        }
-        if (replId != 0) {
-          const uint32_t extId = ii->result_id();
-          (void)def_use_mgr_->ReplaceAllUsesWith(extId, replId);
-          def_use_mgr_->KillInst(&*ii);
-          modified = true;
-        }
-      } break;
-      default:
-        break;
+          if (replId != 0) {
+            const uint32_t extId = ii->result_id();
+            (void)def_use_mgr_->ReplaceAllUsesWith(extId, replId);
+            def_use_mgr_->KillInst(&*ii);
+            modified = true;
+          }
+        } break;
+        default:
+          break;
       }
     }
   }
