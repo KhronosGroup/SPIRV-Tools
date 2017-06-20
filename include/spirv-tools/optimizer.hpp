@@ -231,6 +231,24 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 // possible.
 Optimizer::PassToken CreateLocalAccessChainConvertPass();
 
+// Creates a local single store elimination pass.
+// For each entry point function, this pass eliminates loads and stores for 
+// function scope variable that are stored to only once, where possible. Only
+// whole variable loads and stores are eliminated; access-chain references are
+// not optimized. Replace all loads of such variables with the value that is
+// stored and eliminate any resulting dead code.
+//
+// Currently, the presence of access chains and function calls can inhibit this
+// pass, however the Inlining and LocalAccessChainConvert passes can make it
+// more effective. In additional, many non-load/store memory operations are
+// not supported and will prohibit optimization of a function. Support of
+// these operations are future work.
+//
+// This pass will reduce the work needed to be done by LocalSingleBlockElim
+// and LocalSSARewrite and can improve the effectiveness of other passes such
+// as DeadBranchElimination which depend on values for their analysis.
+Optimizer::PassToken CreateLocalSingleStoreElimPass();
+
 // Creates an insert/extract elimination pass.
 // This pass processes each entry point function in the module, searching for
 // extracts on a sequence of inserts. It further searches the sequence for an

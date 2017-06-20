@@ -348,7 +348,7 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || ConvertLocalAccessChains(fn);
+    modified = ConvertLocalAccessChains(fn) || modified;
   }
 
   FinalizeNextId(module_);
