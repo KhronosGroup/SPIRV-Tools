@@ -44,7 +44,7 @@ bool InsertExtractElimPass::ExtInsConflict(const ir::Instruction* extInst,
     return false;
   uint32_t extNumIdx = extInst->NumInOperands() - 1;
   uint32_t insNumIdx = insInst->NumInOperands() - 2;
-  uint32_t numIdx = extNumIdx < insNumIdx ? extNumIdx : insNumIdx;
+  uint32_t numIdx = std::min(extNumIdx, insNumIdx);
   for (uint32_t i = 0; i < numIdx; ++i)
     if (extInst->GetSingleWordInOperand(i + 1) !=
         insInst->GetSingleWordInOperand(i + 2))
