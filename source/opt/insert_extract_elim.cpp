@@ -106,7 +106,7 @@ Pass::Status InsertExtractElimPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || EliminateInsertExtract(fn);
+    modified = EliminateInsertExtract(fn) || modified;
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
