@@ -82,23 +82,23 @@ void DeadBranchElimPass::GetConstCondition(
     uint32_t condId, bool* condVal, bool* condIsConst) {
   ir::Instruction* cInst = def_use_mgr_->GetDef(condId);
   switch (cInst->opcode()) {
-  case SpvOpConstantFalse: {
-    *condVal = false;
-    *condIsConst = true;
-  } break;
-  case SpvOpConstantTrue: {
-    *condVal = true;
-    *condIsConst = true;
-  } break;
-  case SpvOpLogicalNot: {
-    (void)GetConstCondition(cInst->GetSingleWordInOperand(0),
-        condVal, condIsConst);
-    if (*condIsConst)
-      *condVal = !*condVal;
-  } break;
-  default: {
-    *condIsConst = false;
-  } break;
+    case SpvOpConstantFalse: {
+      *condVal = false;
+      *condIsConst = true;
+    } break;
+    case SpvOpConstantTrue: {
+      *condVal = true;
+      *condIsConst = true;
+    } break;
+    case SpvOpLogicalNot: {
+      (void)GetConstCondition(cInst->GetSingleWordInOperand(0),
+          condVal, condIsConst);
+      if (*condIsConst)
+        *condVal = !*condVal;
+    } break;
+    default: {
+      *condIsConst = false;
+    } break;
   }
 }
 
