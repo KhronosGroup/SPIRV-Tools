@@ -18,16 +18,20 @@
 
 #include "iterator.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvStorePtrId = 0;
-static const int kSpvLoadPtrId = 0;
-static const int kSpvAccessChainPtrId = 0;
-static const int kSpvTypePointerStorageClass = 0;
-static const int kSpvCopyObjectOperand = 0;
-static const int kSpvNameTargetId = 0;
-
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kStorePtrIdInIdx = 0;
+const uint32_t kLoadPtrIdInIdx = 0;
+const uint32_t kAccessChainPtrIdInIdx = 0;
+const uint32_t kTypePointerStorageClassInIdx = 0;
+const uint32_t kCopyObjectOperandInIdx = 0;
+const uint32_t kNameTargetIdInIdx = 0;
+
+}  // namespace anonymous
 
 bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
@@ -36,16 +40,16 @@ bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 ir::Instruction* AggressiveDCEPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
   *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
+      ip->opcode() == SpvOpStore ?  kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
   ir::Instruction* varInst = ptrInst;
   while (varInst->opcode() != SpvOpVariable) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
+      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
     }
     else {
       assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kSpvCopyObjectOperand);
+      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
     }
     varInst = def_use_mgr_->GetDef(*varId);
   }
@@ -57,7 +61,7 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  return varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) ==
+  return varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) ==
       SpvStorageClassFunction;
 }
 
@@ -145,7 +149,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto& di : module_->debugs()) {
     if (di.opcode() != SpvOpName)
       continue;
-    uint32_t tId = di.GetSingleWordInOperand(kSpvNameTargetId);
+    uint32_t tId = di.GetSingleWordInOperand(kNameTargetIdInIdx);
     ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
     if (dead_insts_.find(tInst) == dead_insts_.end())
       continue;
@@ -188,10 +192,9 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
     return Status::SuccessWithoutChange;
 
   bool modified = false;
-  // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = modified || AggressiveDCE(fn);
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
