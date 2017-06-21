@@ -18,10 +18,14 @@
 
 #include "iterator.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const int kEntryPoint_FunctionId_InIdx = 1;
+
+} // anonymous namespace
 
 bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
   auto iItr = block_ptr->tail();
@@ -120,7 +124,7 @@ Pass::Status BlockMergePass::ProcessImpl() {
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPoint_FunctionId_InIdx)];
     modified = MergeBlocks(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
