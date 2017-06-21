@@ -43,7 +43,13 @@ string GetErrorString(const std::string& extension) {
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
     "SPV_AMD_gcn_shader",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_AMD_gpu_shader_int16",
     "SPV_KHR_shader_ballot",
     "SPV_KHR_shader_draw_parameters",
     "SPV_KHR_subgroup_vote",
