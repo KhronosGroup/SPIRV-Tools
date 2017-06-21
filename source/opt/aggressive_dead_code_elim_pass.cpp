@@ -82,7 +82,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
   // Add non-local stores, block terminating and merge instructions
   // to worklist. If function call encountered, return false, unmodified.
-  // TODO(): Improve in presence of function calls
+  // TODO(greg-lunarg): Improve in presence of function calls
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       switch (inst.opcode()) {
@@ -182,12 +182,12 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
   // Current functionality assumes structured control flow. 
-  // TODO(): Handle non-structured control-flow.
+  // TODO(greg-lunarg): Handle non-structured control-flow.
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
 
   // Current functionality assumes logical addressing only
-  // TODO(): Handle non-logical addressing
+  // TODO(greg-lunarg): Handle non-logical addressing
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
 
