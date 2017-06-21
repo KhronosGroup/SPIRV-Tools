@@ -197,7 +197,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = modified || AggressiveDCE(fn);
+    modified = AggressiveDCE(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
