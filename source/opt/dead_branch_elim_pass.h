@@ -67,10 +67,6 @@ class DeadBranchElimPass : public Pass {
   void ComputeStructuredOrder(
     ir::Function* func, std::list<ir::BasicBlock*>* order);
 
-  // Return function to return ordered structure successors for a given block
-  // Assumes ComputeStructuredSuccessors() has been called.
-  GetBlocksFunction StructuredSuccessorsFunction();
-
   // If |condId| is boolean constant, return value in |condVal| and
   // |condIsConst| as true, otherwise return |condIsConst| as false.
   void GetConstCondition(uint32_t condId, bool* condVal, bool* condIsConst);

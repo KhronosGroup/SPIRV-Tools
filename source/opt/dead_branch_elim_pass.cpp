@@ -60,22 +60,20 @@ void DeadBranchElimPass::ComputeStructuredSuccessors(ir::Function* func) {
   }
 }
 
-DeadBranchElimPass::GetBlocksFunction
-DeadBranchElimPass::StructuredSuccessorsFunction() {
-  return [this](const ir::BasicBlock* block) {
-    return &(block2structured_succs_[block]);
-  };
-}
-
 void DeadBranchElimPass::ComputeStructuredOrder(
     ir::Function* func, std::list<ir::BasicBlock*>* order) {
   // Compute structured successors and do DFS
   ComputeStructuredSuccessors(func);
   auto ignore_block = [](cbb_ptr) {};
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+  auto get_structured_successors = [this](const ir::BasicBlock* block) {
+      return &(block2structured_succs_[block]); };
+  auto post_order = [&](cbb_ptr b) {
+      order->push_front(const_cast<ir::BasicBlock*>(b)); };
+  
   spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-    &*func->begin(), StructuredSuccessorsFunction(), ignore_block,
-    [&](cbb_ptr b) { order->push_front(const_cast<ir::BasicBlock*>(b)); }, ignore_edge);
+      &*func->begin(), get_structured_successors, ignore_block, post_order,
+      ignore_edge);
 }
 
 void DeadBranchElimPass::GetConstCondition(
