@@ -46,7 +46,7 @@ bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
 }
 
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
-  uint32_t id = inst->result_id();
+  const uint32_t id = inst->result_id();
   if (id != 0) {
     analysis::UseList* uses = def_use_mgr_->GetUses(id);
     if (uses != nullptr)
@@ -81,7 +81,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       ++bi;
       continue;
     }
-    uint32_t labId = br->GetSingleWordInOperand(0);
+    const uint32_t labId = br->GetSingleWordInOperand(0);
     if (HasMultipleRefs(labId)) {
       ++bi;
       continue;
