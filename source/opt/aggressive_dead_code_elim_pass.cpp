@@ -39,8 +39,10 @@ bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 
 ir::Instruction* AggressiveDCEPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
+  SpvOp op = ip->opcode();
+  assert(op == SpvOpStore || op == SpvOpLoad);
   *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kStorePtrIdInIdx : kLoadPtrIdInIdx);
+      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
   ir::Instruction* varInst = ptrInst;
   while (varInst->opcode() != SpvOpVariable) {
