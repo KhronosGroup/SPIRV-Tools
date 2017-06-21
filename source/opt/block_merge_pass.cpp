@@ -32,29 +32,29 @@ bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
 }
 
 bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(labId);
+  const analysis::UseList* uses = def_use_mgr_->GetUses(labId);
   int rcnt = 0;
-  for (auto u : *uses) {
+  for (const auto u : *uses) {
     // Don't count OpName
     if (u.inst->opcode() == SpvOpName)
       continue;
+    if (rcnt == 1)
+      return true;
     ++rcnt;
   }
-  return rcnt > 1;
+  return false;
 }
 
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   uint32_t id = inst->result_id();
   if (id != 0) {
     analysis::UseList* uses = def_use_mgr_->GetUses(id);
-    if (uses != nullptr) {
-      ir::Instruction* ni = nullptr;
+    if (uses != nullptr)
       for (auto u : *uses)
-        if(u.inst->opcode() == SpvOpName)
-          ni = u.inst;
-      if (ni != nullptr)
-        def_use_mgr_->KillInst(ni);
-    }
+        if (u.inst->opcode() == SpvOpName) {
+          def_use_mgr_->KillInst(u.inst);
+          break;
+        }
   }
   def_use_mgr_->KillInst(inst);
 }
