@@ -68,6 +68,8 @@ void DeadBranchElimPass::ComputeStructuredOrder(
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
   auto get_structured_successors = [this](const ir::BasicBlock* block) {
       return &(block2structured_succs_[block]); };
+  // TODO(greg-lunarg): Get rid of const_cast by making moving const
+  // out of the cfa.h prototypes and into the invoking code.
   auto post_order = [&](cbb_ptr b) {
       order->push_front(const_cast<ir::BasicBlock*>(b)); };
   
