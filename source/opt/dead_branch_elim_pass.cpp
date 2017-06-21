@@ -19,18 +19,22 @@
 #include "cfa.h"
 #include "iterator.h"
 
-static const int kSpvEntryPoint_FunctionId = 1;
-static const int kSpvBranchCond_ConditionalId = 0;
-static const int kSpvBranchCond_TrueLabId = 1;
-static const int kSpvBranchCond_FalseLabId = 2;
-static const int kSpvSelectionMerge_MergeBlockId = 0;
-static const int kSpvPhi_Val0Id = 0;
-static const int kSpvPhi_Lab0Id = 1;
-static const int kSpvPhi_Val1Id = 2;
-static const int kSpvLoopMerge_MergeBlockId = 0;
-
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const int kSpvEntryPoint_FunctionId = 1;
+const int kSpvBranchCond_ConditionalId = 0;
+const int kSpvBranchCond_TrueLabId = 1;
+const int kSpvBranchCond_FalseLabId = 2;
+const int kSpvSelectionMerge_MergeBlockId = 0;
+const int kSpvPhi_Val0Id = 0;
+const int kSpvPhi_Lab0Id = 1;
+const int kSpvPhi_Val1Id = 2;
+const int kSpvLoopMerge_MergeBlockId = 0;
+
+} // anonymous namespace
 
 uint32_t DeadBranchElimPass::MergeBlockIdIfAny(
     const ir::BasicBlock& blk) const {
