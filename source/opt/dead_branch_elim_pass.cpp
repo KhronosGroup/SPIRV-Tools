@@ -241,11 +241,10 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
     return Status::SuccessWithoutChange;
 
   bool modified = false;
-  // Call Mem2Reg on all remaining functions.
-  for (auto& e : module_->entry_points()) {
+  for (const auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || EliminateDeadBranches(fn);
+    modified = EliminateDeadBranches(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
