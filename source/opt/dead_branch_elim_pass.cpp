@@ -91,10 +91,11 @@ void DeadBranchElimPass::GetConstCondition(
       *condIsConst = true;
     } break;
     case SpvOpLogicalNot: {
+      bool negVal;
       (void)GetConstCondition(cInst->GetSingleWordInOperand(0),
-          condVal, condIsConst);
+          &negVal, condIsConst);
       if (*condIsConst)
-        *condVal = !*condVal;
+        *condVal = !negVal;
     } break;
     default: {
       *condIsConst = false;
