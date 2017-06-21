@@ -92,27 +92,33 @@ uint32_t MoveToFront::IdFromRank(size_t rank) {
   return 0;
 }
 
-void MoveToFront::PrintTreeInternal(std::ostream& out, uint16_t node, size_t depth) const {
+void MoveToFront::PrintTreeInternal(std::ostream& out, uint16_t node,
+                                    size_t depth, bool print_timestamp) const {
   if (!node) {
     out << "D" << depth - 1 << std::endl;
     return;
   }
 
-  const size_t kTextFieldWidth = 10;
+  const size_t kTextFieldWidthWithoutTimestamp = 10;
+  const size_t kTextFieldWidthWithTimestamp = 14;
+  const size_t text_field_width = print_timestamp ?
+      kTextFieldWidthWithTimestamp : kTextFieldWidthWithoutTimestamp;
 
   std::stringstream label;
   label << IdOf(node) << "H" << HeightOf(node) << "S" << SizeOf(node);
+  if (print_timestamp)
+    label << "T" << TimestampOf(node);
   const size_t label_length = label.str().length();
-  if (label_length < kTextFieldWidth)
-    label << std::string(kTextFieldWidth - label_length, '-');
+  if (label_length < text_field_width)
+    label << std::string(text_field_width - label_length, '-');
 
   out << label.str();
 
-  PrintTreeInternal(out, RightOf(node), depth + 1);
+  PrintTreeInternal(out, RightOf(node), depth + 1, print_timestamp);
 
   if (LeftOf(node)) {
-    out << std::string(depth * kTextFieldWidth, ' ');
-    PrintTreeInternal(out, LeftOf(node), depth + 1);
+    out << std::string(depth * text_field_width, ' ');
+    PrintTreeInternal(out, LeftOf(node), depth + 1, print_timestamp);
   }
 }
 

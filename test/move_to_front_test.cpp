@@ -23,9 +23,10 @@ namespace {
 
 using spvutils::MoveToFront;
 
-void CheckTree(const MoveToFront& mft, const std::string& expected) {
+void CheckTree(const MoveToFront& mft, const std::string& expected,
+               bool print_timestamp = false) {
   std::stringstream ss;
-  mft.PrintTree(ss);
+  mft.PrintTree(ss, print_timestamp);
   EXPECT_EQ(expected, ss.str());
 }
 
@@ -212,7 +213,8 @@ TEST(MoveToFront, RemoveRightLeftRotation) {
 
 TEST(MoveToFront, MultipleOperations) {
   MoveToFront mft;
-  std::vector<uint32_t> vals = { 5, 11, 12, 16, 15, 6, 14, 2, 7, 10, 4, 8, 9, 3, 1, 13 };
+  std::vector<uint32_t> vals =
+      { 5, 11, 12, 16, 15, 6, 14, 2, 7, 10, 4, 8, 9, 3, 1, 13 };
 
   for (uint32_t i : vals) {
     mft.TestInsert(i);
@@ -360,16 +362,47 @@ TEST(MoveToFront, RankFromId) {
   EXPECT_EQ(1u, mft.RankFromId(1));
   EXPECT_EQ(2u, mft.RankFromId(2));
   EXPECT_EQ(3u, mft.RankFromId(3));
+  CheckTree(mft, std::string(R"(
+1H3S4T2-------20H1S1T1------D2
+              2H2S2T3-------D2
+                            3H1S1T4-------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(2u, mft.RankFromId(1));
+  CheckTree(mft, std::string(R"(
+2H3S4T3-------20H1S1T1------D2
+              1H2S2T5-------3H1S1T4-------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(0u, mft.RankFromId(1));
   EXPECT_EQ(1u, mft.RankFromId(3));
   EXPECT_EQ(2u, mft.RankFromId(2));
   EXPECT_EQ(4u, mft.RankFromId(4));
   EXPECT_EQ(3u, mft.RankFromId(1));
   EXPECT_EQ(5u, mft.RankFromId(5));
+  CheckTree(mft, std::string(R"(
+4H3S6T9-------3H2S3T7-------20H1S1T1------D3
+                            2H1S1T8-------D3
+              1H2S2T10------D2
+                            5H1S1T11------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(0u, mft.RankFromId(5));
   EXPECT_EQ(6u, mft.GetSize());
+  CheckTree(mft, std::string(R"(
+4H3S6T9-------3H2S3T7-------20H1S1T1------D3
+                            2H1S1T8-------D3
+              1H2S2T10------D2
+                            5H1S1T12------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(5u, mft.RankFromId(20));
+  CheckTree(mft, std::string(R"(
+4H3S6T9-------3H2S2T7-------D2
+                            2H1S1T8-------D3
+              5H2S3T12------1H1S1T10------D3
+                            20H1S1T13-----D3
+)").substr(1), /* print_timestamp = */ true);
 }
 
 TEST(MoveToFront, IdFromRank) {
@@ -381,11 +414,33 @@ TEST(MoveToFront, IdFromRank) {
   EXPECT_EQ(1u, mft.IdFromRank(1));
   EXPECT_EQ(3u, mft.IdFromRank(2));
   EXPECT_EQ(3u, mft.GetSize());
+  CheckTree(mft, std::string(R"(
+1H2S3T5-------2H1S1T4-------D2
+              3H1S1T6-------D2
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(4u, mft.IdFromRank(3));
+  CheckTree(mft, std::string(R"(
+1H3S4T5-------2H1S1T4-------D2
+              3H2S2T6-------D2
+                            4H1S1T7-------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(3u, mft.IdFromRank(1));
+  CheckTree(mft, std::string(R"(
+1H3S4T5-------2H1S1T4-------D2
+              4H2S2T7-------D2
+                            3H1S1T8-------D3
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(3u, mft.IdFromRank(0));
   EXPECT_EQ(3u, mft.IdFromRank(0));
   EXPECT_EQ(2u, mft.IdFromRank(3));
+  CheckTree(mft, std::string(R"(
+4H3S4T7-------1H1S1T5-------D2
+              3H2S2T10------D2
+                            2H1S1T11------D3
+)").substr(1), /* print_timestamp = */ true);
 }
 
 TEST(MoveToFront, DeprecateId) {
@@ -395,10 +450,31 @@ TEST(MoveToFront, DeprecateId) {
   EXPECT_EQ(2u, mft.RankFromId(2));
   EXPECT_EQ(3u, mft.RankFromId(3));
   EXPECT_EQ(4u, mft.GetSize());
+  CheckTree(mft, std::string(R"(
+1H3S4T2-------20H1S1T1------D2
+              2H2S2T3-------D2
+                            3H1S1T4-------D3
+)").substr(1), /* print_timestamp = */ true);
+
   mft.DeprecateId(3);
+  CheckTree(mft, std::string(R"(
+1H2S3T2-------20H1S1T1------D2
+              2H1S1T3-------D2
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(3u, mft.GetSize());
   EXPECT_EQ(2u, mft.IdFromRank(0));
+  CheckTree(mft, std::string(R"(
+1H2S3T2-------20H1S1T1------D2
+              2H1S1T5-------D2
+)").substr(1), /* print_timestamp = */ true);
+
   mft.DeprecateId(20);
+  CheckTree(mft, std::string(R"(
+1H2S2T2-------D1
+              2H1S1T5-------D2
+)").substr(1), /* print_timestamp = */ true);
+
   EXPECT_EQ(2u, mft.GetSize());
   mft.DeprecateId(2);
   EXPECT_EQ(1u, mft.GetSize());
@@ -457,6 +533,19 @@ TEST(MoveToFront, LargerScale) {
   EXPECT_EQ(21u, mft.RankFromId(996));
   mft.DeprecateId(995);
   EXPECT_EQ(22u, mft.RankFromId(994));
+
+  for (uint32_t i = 10; i < 1000; ++i) {
+    if (i != 995)
+      mft.DeprecateId(i);
+  }
+
+  CheckTree(mft, std::string(R"(
+6H4S9T2029----8H2S3T16------7H1S1T14------D3
+                            9H1S1T18------D3
+              2H3S5T2033----4H2S3T2031----5H1S1T2030----D4
+                                          3H1S1T2032----D4
+                            1H1S1T2034----D3
+)").substr(1), /* print_timestamp = */ true);
 }
 
 }  // anonymous namespace

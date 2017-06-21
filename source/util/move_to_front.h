@@ -97,9 +97,9 @@ class MoveToFront {
   }
 
   // Prints the internal tree data structure to |out|. For testing only.
-  void PrintTree(std::ostream& out) const {
+  void PrintTree(std::ostream& out, bool print_timestamp = false) const {
     if (root_)
-      PrintTreeInternal(out, root_, 1);
+      PrintTreeInternal(out, root_, 1, print_timestamp);
   }
 
  private:
@@ -278,9 +278,10 @@ class MoveToFront {
   // 10H3S4----5H1S1-----D2
   //           15H2S2----12H1S1----D3
   // Right links are horisontal, left links step down one line.
-  // 5H1S1 is read as id 5, height 1, size 1.
-  // D3 stands for depth 3.
-  void PrintTreeInternal(std::ostream& out, uint16_t node, size_t depth) const;
+  // 5H1S1 is read as id 5, height 1, size 1. Optionally node label can also
+  // contain timestamp (5H1S1T15). D3 stands for depth 3.
+  void PrintTreeInternal(std::ostream& out, uint16_t node, size_t depth,
+                         bool print_timestamp) const;
 
   // Inserts node handle in the tree.
   void InsertNode(uint16_t node);
