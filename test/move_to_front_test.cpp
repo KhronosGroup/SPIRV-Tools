@@ -405,20 +405,58 @@ TEST(MoveToFront, DeprecateId) {
   EXPECT_EQ(1u, mft.IdFromRank(0));
 }
 
-TEST(MoveToFront, Mixed) {
+TEST(MoveToFront, LargerScale) {
   MoveToFront mft;
-  EXPECT_EQ(1u, mft.IdFromRank(0));
-  EXPECT_EQ(2u, mft.IdFromRank(1));
-  EXPECT_EQ(2u, mft.IdFromRank(0));
-  EXPECT_EQ(0u, mft.RankFromId(2));
-  EXPECT_EQ(1u, mft.IdFromRank(1));
-  EXPECT_EQ(2u, mft.RankFromId(3));
-  EXPECT_EQ(3u, mft.GetSize());
-  EXPECT_EQ(4u, mft.IdFromRank(3));
-  EXPECT_EQ(1u, mft.RankFromId(3));
-  EXPECT_EQ(3u, mft.IdFromRank(0));
-  EXPECT_EQ(3u, mft.IdFromRank(0));
-  EXPECT_EQ(3u, mft.RankFromId(2));
+  for (uint32_t i = 1; i < 1000; ++i) {
+    ASSERT_EQ(i - 1, mft.RankFromId(i));
+    ASSERT_EQ(i, mft.IdFromRank(0));
+    ASSERT_EQ(i, mft.GetSize());
+  }
+
+  EXPECT_EQ(1u, mft.IdFromRank(998));
+  EXPECT_EQ(2u, mft.IdFromRank(998));
+  EXPECT_EQ(3u, mft.IdFromRank(998));
+  EXPECT_EQ(4u, mft.IdFromRank(998));
+  EXPECT_EQ(5u, mft.IdFromRank(998));
+  EXPECT_EQ(6u, mft.IdFromRank(998));
+  EXPECT_EQ(905u, mft.IdFromRank(100));
+  EXPECT_EQ(906u, mft.IdFromRank(100));
+  EXPECT_EQ(907u, mft.IdFromRank(100));
+  EXPECT_EQ(805u, mft.IdFromRank(200));
+  EXPECT_EQ(806u, mft.IdFromRank(200));
+  EXPECT_EQ(807u, mft.IdFromRank(200));
+  EXPECT_EQ(705u, mft.IdFromRank(300));
+  EXPECT_EQ(706u, mft.IdFromRank(300));
+  EXPECT_EQ(707u, mft.IdFromRank(300));
+  EXPECT_EQ(400u, mft.RankFromId(605));
+  EXPECT_EQ(400u, mft.RankFromId(606));
+  EXPECT_EQ(400u, mft.RankFromId(607));
+  EXPECT_EQ(607u, mft.IdFromRank(0));
+  EXPECT_EQ(606u, mft.IdFromRank(1));
+  EXPECT_EQ(605u, mft.IdFromRank(2));
+  EXPECT_EQ(707u, mft.IdFromRank(3));
+  EXPECT_EQ(706u, mft.IdFromRank(4));
+  EXPECT_EQ(705u, mft.IdFromRank(5));
+  EXPECT_EQ(807u, mft.IdFromRank(6));
+  EXPECT_EQ(806u, mft.IdFromRank(7));
+  EXPECT_EQ(805u, mft.IdFromRank(8));
+  EXPECT_EQ(907u, mft.IdFromRank(9));
+  EXPECT_EQ(906u, mft.IdFromRank(10));
+  EXPECT_EQ(905u, mft.IdFromRank(11));
+  EXPECT_EQ(6u, mft.IdFromRank(12));
+  EXPECT_EQ(5u, mft.IdFromRank(13));
+  EXPECT_EQ(4u, mft.IdFromRank(14));
+  EXPECT_EQ(3u, mft.IdFromRank(15));
+  EXPECT_EQ(2u, mft.IdFromRank(16));
+  EXPECT_EQ(1u, mft.IdFromRank(17));
+  EXPECT_EQ(999u, mft.IdFromRank(18));
+  EXPECT_EQ(998u, mft.IdFromRank(19));
+  EXPECT_EQ(997u, mft.IdFromRank(20));
+  EXPECT_EQ(0u, mft.RankFromId(997));
+  EXPECT_EQ(1u, mft.RankFromId(998));
+  EXPECT_EQ(21u, mft.RankFromId(996));
+  mft.DeprecateId(995);
+  EXPECT_EQ(22u, mft.RankFromId(994));
 }
 
 }  // anonymous namespace
