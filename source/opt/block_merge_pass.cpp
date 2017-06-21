@@ -23,7 +23,7 @@ namespace opt {
 
 namespace {
 
-const int kEntryPoint_FunctionId_InIdx = 1;
+const int kEntryPointFunctionIdInIdx = 1;
 
 } // anonymous namespace
 
@@ -124,7 +124,7 @@ Pass::Status BlockMergePass::ProcessImpl() {
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPoint_FunctionId_InIdx)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = MergeBlocks(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
