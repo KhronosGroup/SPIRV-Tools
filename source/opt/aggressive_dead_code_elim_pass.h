@@ -87,13 +87,13 @@ class AggressiveDCEPass : public Pass {
   std::queue<ir::Instruction*> worklist_;
 
   // Live Instructions
-  std::unordered_set<ir::Instruction*> live_insts_;
+  std::unordered_set<const ir::Instruction*> live_insts_;
 
   // Live Local Variables
   std::unordered_set<uint32_t> live_local_vars_;
 
   // Dead instructions. Use for debug cleanup.
-  std::unordered_set<ir::Instruction*> dead_insts_;
+  std::unordered_set<const ir::Instruction*> dead_insts_;
 };
 
 }  // namespace opt

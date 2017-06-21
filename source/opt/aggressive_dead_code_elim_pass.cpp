@@ -39,7 +39,7 @@ bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 
 ir::Instruction* AggressiveDCEPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
-  SpvOp op = ip->opcode();
+  const SpvOp op = ip->opcode();
   assert(op == SpvOpStore || op == SpvOpLoad);
   *varId = ip->GetSingleWordInOperand(
       op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
@@ -68,11 +68,11 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  const analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
   if (uses == nullptr)
     return;
-  for (auto u : *uses) {
-    SpvOp op = u.inst->opcode();
+  for (const auto u : *uses) {
+    const SpvOp op = u.inst->opcode();
     if (op == SpvOpStore)
       worklist_.push(u.inst);
     else if (op != SpvOpLoad)
@@ -151,8 +151,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto& di : module_->debugs()) {
     if (di.opcode() != SpvOpName)
       continue;
-    uint32_t tId = di.GetSingleWordInOperand(kNameTargetIdInIdx);
-    ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
+    const uint32_t tId = di.GetSingleWordInOperand(kNameTargetIdInIdx);
+    const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
     if (dead_insts_.find(tInst) == dead_insts_.end())
       continue;
     def_use_mgr_->KillInst(&di);
