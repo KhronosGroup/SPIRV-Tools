@@ -236,7 +236,7 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
 
 Pass::Status DeadBranchElimPass::ProcessImpl() {
   // Current functionality assumes structured control flow. 
-  // TODO(): Handle non-structured control-flow.
+  // TODO(greg-lunarg): Handle non-structured control-flow.
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
 
