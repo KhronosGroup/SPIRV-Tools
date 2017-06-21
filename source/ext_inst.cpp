@@ -31,8 +31,20 @@ static const spv_ext_inst_desc_t openclEntries_1_0[] = {
 #include "opencl.std.insts-1.0.inc"
 };
 
+static const spv_ext_inst_desc_t spv_amd_shader_explicit_vertex_parameter_entries[] = {
+#include "spv-amd-shader-explicit-vertex-parameter.insts.inc"
+};
+
+static const spv_ext_inst_desc_t spv_amd_shader_trinary_minmax_entries[] = {
+#include "spv-amd-shader-trinary-minmax.insts.inc"
+};
+
 static const spv_ext_inst_desc_t spv_amd_gcn_shader_entries[] = {
 #include "spv-amd-gcn-shader.insts.inc"
+};
+
+static const spv_ext_inst_desc_t spv_amd_shader_ballot_entries[] = {
+#include "spv-amd-shader-ballot.insts.inc"
 };
 
 spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable,
@@ -44,8 +56,14 @@ spv_result_t spvExtInstTableGet(spv_ext_inst_table* pExtInstTable,
        glslStd450Entries_1_0},
       {SPV_EXT_INST_TYPE_OPENCL_STD, ARRAY_SIZE(openclEntries_1_0),
        openclEntries_1_0},
+      {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER,
+       ARRAY_SIZE(spv_amd_shader_explicit_vertex_parameter_entries), spv_amd_shader_explicit_vertex_parameter_entries},
+      {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_TRINARY_MINMAX,
+       ARRAY_SIZE(spv_amd_shader_trinary_minmax_entries), spv_amd_shader_trinary_minmax_entries},
       {SPV_EXT_INST_TYPE_SPV_AMD_GCN_SHADER,
        ARRAY_SIZE(spv_amd_gcn_shader_entries), spv_amd_gcn_shader_entries},
+      {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
+       ARRAY_SIZE(spv_amd_shader_ballot_entries), spv_amd_shader_ballot_entries},
   };
 
   static const spv_ext_inst_table_t table_1_0 = {ARRAY_SIZE(groups_1_0),
@@ -81,8 +99,17 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strcmp("OpenCL.std", name)) {
     return SPV_EXT_INST_TYPE_OPENCL_STD;
   }
+  if (!strcmp("SPV_AMD_shader_explicit_vertex_parameter", name)) {
+    return SPV_EXT_INST_TYPE_SPV_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER;
+  }
+  if (!strcmp("SPV_AMD_shader_trinary_minmax", name)) {
+    return SPV_EXT_INST_TYPE_SPV_AMD_SHADER_TRINARY_MINMAX;
+  }
   if (!strcmp("SPV_AMD_gcn_shader", name)) {
     return SPV_EXT_INST_TYPE_SPV_AMD_GCN_SHADER;
+  }
+  if (!strcmp("SPV_AMD_shader_ballot", name)) {
+    return SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }
