@@ -19,15 +19,15 @@
 #include "cfa.h"
 #include "iterator.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvBranchCondConditionalId = 0;
-static const int kSpvBranchCondTrueLabId = 1;
-static const int kSpvBranchCondFalseLabId = 2;
-static const int kSpvSelectionMergeMergeBlockId = 0;
-static const int kSpvPhiVal0Id = 0;
-static const int kSpvPhiLab0Id = 1;
-static const int kSpvPhiVal1Id = 2;
-static const int kSpvLoopMergeMergeBlockId = 0;
+static const int kSpvEntryPoint_FunctionId = 1;
+static const int kSpvBranchCond_ConditionalId = 0;
+static const int kSpvBranchCond_TrueLabId = 1;
+static const int kSpvBranchCond_FalseLabId = 2;
+static const int kSpvSelectionMerge_MergeBlockId = 0;
+static const int kSpvPhi_Val0Id = 0;
+static const int kSpvPhi_Lab0Id = 1;
+static const int kSpvPhi_Val1Id = 2;
+static const int kSpvLoopMerge_MergeBlockId = 0;
 
 namespace spvtools {
 namespace opt {
@@ -40,9 +40,9 @@ uint32_t DeadBranchElimPass::MergeBlockIdIfAny(
   if (merge_ii != blk.cbegin()) {
     --merge_ii;
     if (merge_ii->opcode() == SpvOpLoopMerge)
-      mbid = merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
+      mbid = merge_ii->GetSingleWordOperand(kSpvLoopMerge_MergeBlockId);
     else if (merge_ii->opcode() == SpvOpSelectionMerge)
-      mbid = merge_ii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
+      mbid = merge_ii->GetSingleWordOperand(kSpvSelectionMerge_MergeBlockId);
   }
   return mbid;
 }
@@ -131,7 +131,7 @@ bool DeadBranchElimPass::GetConstConditionalBranch(ir::BasicBlock* bp,
     return false;
   bool condIsConst;
   (void) GetConstCondition(
-      (*branchInst)->GetSingleWordInOperand(kSpvBranchCondConditionalId),
+      (*branchInst)->GetSingleWordInOperand(kSpvBranchCond_ConditionalId),
       condVal, &condIsConst);
   return condIsConst;
 }
@@ -155,11 +155,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
     // Replace conditional branch with unconditional branch
     const uint32_t trueLabId =
-        br->GetSingleWordInOperand(kSpvBranchCondTrueLabId);
+        br->GetSingleWordInOperand(kSpvBranchCond_TrueLabId);
     const uint32_t falseLabId =
-        br->GetSingleWordInOperand(kSpvBranchCondFalseLabId);
+        br->GetSingleWordInOperand(kSpvBranchCond_FalseLabId);
     const uint32_t mergeLabId =
-        mergeInst->GetSingleWordInOperand(kSpvSelectionMergeMergeBlockId);
+        mergeInst->GetSingleWordInOperand(kSpvSelectionMerge_MergeBlockId);
     const uint32_t liveLabId = condVal == true ? trueLabId : falseLabId;
     const uint32_t deadLabId = condVal == true ? falseLabId : trueLabId;
     AddBranch(liveLabId, *bi);
@@ -197,9 +197,10 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     if (deadLabId == mergeLabId)
       deadLabIds.insert((*bi)->id());
     (*dbi)->ForEachPhiInst([&deadLabIds, this](ir::Instruction* phiInst) {
-      const uint32_t phiLabId0 = phiInst->GetSingleWordInOperand(kSpvPhiLab0Id);
+      const uint32_t phiLabId0 =
+          phiInst->GetSingleWordInOperand(kSpvPhi_Lab0Id);
       const bool useFirst = deadLabIds.find(phiLabId0) == deadLabIds.end();
-      const uint32_t phiValIdx = useFirst ? kSpvPhiVal0Id : kSpvPhiVal1Id;
+      const uint32_t phiValIdx = useFirst ? kSpvPhi_Val0Id : kSpvPhi_Val1Id;
       const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
       const uint32_t phiId = phiInst->result_id();
       (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
@@ -245,7 +246,7 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   bool modified = false;
   for (const auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordOperand(kSpvEntryPoint_FunctionId)];
     modified = EliminateDeadBranches(fn) || modified;
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
