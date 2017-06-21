@@ -154,12 +154,14 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       continue;
 
     // Replace conditional branch with unconditional branch
-    uint32_t trueLabId = br->GetSingleWordInOperand(kSpvBranchCondTrueLabId);
-    uint32_t falseLabId = br->GetSingleWordInOperand(kSpvBranchCondFalseLabId);
-    uint32_t mergeLabId =
+    const uint32_t trueLabId =
+        br->GetSingleWordInOperand(kSpvBranchCondTrueLabId);
+    const uint32_t falseLabId =
+        br->GetSingleWordInOperand(kSpvBranchCondFalseLabId);
+    const uint32_t mergeLabId =
         mergeInst->GetSingleWordInOperand(kSpvSelectionMergeMergeBlockId);
-    uint32_t liveLabId = condVal == true ? trueLabId : falseLabId;
-    uint32_t deadLabId = condVal == true ? falseLabId : trueLabId;
+    const uint32_t liveLabId = condVal == true ? trueLabId : falseLabId;
+    const uint32_t deadLabId = condVal == true ? falseLabId : trueLabId;
     AddBranch(liveLabId, *bi);
     def_use_mgr_->KillInst(br);
     def_use_mgr_->KillInst(mergeInst);
@@ -178,7 +180,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         });
         // Add merge block to dead block set in case it has
         // no predecessors.
-        uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi);
+        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi);
         if (dMergeLabId != 0)
           deadLabIds.insert(dMergeLabId);
         // Kill use/def for all instructions and delete block
@@ -195,11 +197,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     if (deadLabId == mergeLabId)
       deadLabIds.insert((*bi)->id());
     (*dbi)->ForEachPhiInst([&deadLabIds, this](ir::Instruction* phiInst) {
-      uint32_t phiLabId0 = phiInst->GetSingleWordInOperand(kSpvPhiLab0Id);
-      bool useFirst = deadLabIds.find(phiLabId0) == deadLabIds.end();
-      uint32_t phiValIdx = useFirst ? kSpvPhiVal0Id : kSpvPhiVal1Id;
-      uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
-      uint32_t phiId = phiInst->result_id();
+      const uint32_t phiLabId0 = phiInst->GetSingleWordInOperand(kSpvPhiLab0Id);
+      const bool useFirst = deadLabIds.find(phiLabId0) == deadLabIds.end();
+      const uint32_t phiValIdx = useFirst ? kSpvPhiVal0Id : kSpvPhiVal1Id;
+      const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
+      const uint32_t phiId = phiInst->result_id();
       (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
       def_use_mgr_->KillInst(phiInst);
     });
