@@ -445,7 +445,7 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = modified || LocalSingleStoreElim(fn);
+    modified = LocalSingleStoreElim(fn) || modified;
   }
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
