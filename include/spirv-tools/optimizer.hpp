@@ -252,6 +252,36 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // eliminated with standard dead code elimination.
 Optimizer::PassToken CreateAggressiveDCEPass();
 
+// Creates a local single store elimination pass.
+// For each entry point function, this pass eliminates loads and stores for 
+// function scope variable that are stored to only once, where possible. Only
+// whole variable loads and stores are eliminated; access-chain references are
+// not optimized. Replace all loads of such variables with the value that is
+// stored and eliminate any resulting dead code.
+//
+// Currently, the presence of access chains and function calls can inhibit this
+// pass, however the Inlining and LocalAccessChainConvert passes can make it
+// more effective. In additional, many non-load/store memory operations are
+// not supported and will prohibit optimization of a function. Support of
+// these operations are future work.
+//
+// This pass will reduce the work needed to be done by LocalSingleBlockElim
+// and LocalSSARewrite and can improve the effectiveness of other passes such
+// as DeadBranchElimination which depend on values for their analysis.
+Optimizer::PassToken CreateLocalSingleStoreElimPass();
+
+// Creates an insert/extract elimination pass.
+// This pass processes each entry point function in the module, searching for
+// extracts on a sequence of inserts. It further searches the sequence for an
+// insert with indices identical to the extract. If such an insert can be
+// found before hitting a conflicting insert, the extract's result id is
+// replaced with the id of the values from the insert.
+//
+// Besides removing extracts this pass enables subsequent dead code elimination
+// passes to delete the inserts. This pass performs best after access chains are
+// converted to inserts and extracts and local loads and stores are eliminated.
+Optimizer::PassToken CreateInsertExtractElimPass();
+
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
 Optimizer::PassToken CreateCompactIdsPass();
