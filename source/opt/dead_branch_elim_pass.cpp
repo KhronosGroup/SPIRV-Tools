@@ -24,15 +24,15 @@ namespace opt {
 
 namespace {
 
-const int kEntryPointFunctionIdInIdx = 1;
-const int kBranchCondConditionalIdInIdx = 0;
-const int kBranchCondTrueLabIdInIdx = 1;
-const int kBranchCondFalseLabIdInIdx = 2;
-const int kSelectionMergeMergeBlockIdInIdx = 0;
-const int kPhiVal0IdInIdx = 0;
-const int kPhiLab0IdInIdx = 1;
-const int kPhiVal1IdInIdx = 2;
-const int kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kBranchCondConditionalIdInIdx = 0;
+const uint32_t kBranchCondTrueLabIdInIdx = 1;
+const uint32_t kBranchCondFalseLabIdInIdx = 2;
+const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
+const uint32_t kPhiVal0IdInIdx = 0;
+const uint32_t kPhiLab0IdInIdx = 1;
+const uint32_t kPhiVal1IdInIdx = 2;
+const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 
 } // anonymous namespace
 
