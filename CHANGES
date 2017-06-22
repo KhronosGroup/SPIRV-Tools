@@ -3,9 +3,22 @@ Revision history for SPIRV-Tools
 v2016.7-dev 2017-01-06
  - Add SPIR-V 1.2
  - OpenCL 2.2 support is now based on SPIR-V 1.2
- - Optimizer: Add inlining of all function calls in entry points.
- - Optimizer: Add flattening of decoration groups.  Fixes #602
- - Optimizer: Add Id compaction (minimize Id bound).  Fixes #624
+ - Support AMD extensions in assembler, disassembler:
+    SPV_AMD_gcn_shader
+    SPV_AMD_shader_ballot
+    SPV_AMD_shader_explicit_vertex_parameter
+    SPV_AMD_shader_trinary_minmax
+    SPV_AMD_gpu_shader_half_float
+    SPV_AMD_texture_gather_bias_lod
+    SPV_AMD_gpu_shader_int16
+ - Optimizer: Add support for:
+   - Inline all function calls in entry points.
+   - Flatten of decoration groups.  Fixes #602
+   - Id compaction (minimize Id bound).  Fixes #624
+   - Eliminate redundant composite insert followed by extract
+   - Simplify access chains to local variables
+   - Eliminate local variables with a single store, if possible
+   - Eliminate loads and stores in same block to local variables
  - Assembler: Add option to preserve numeric ids. Fixes #625
  - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
    assembly syntax file for Vim.
