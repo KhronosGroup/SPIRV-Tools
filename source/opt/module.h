@@ -141,6 +141,10 @@ class Module {
   // Returns true if module has capability |cap|
   bool HasCapability(uint32_t cap);
 
+  // Returns id for OpExtInst instruction for extension |extstr|.
+  // Returns 0 if not found.
+  uint32_t GetExtInstId(const char* extstr);
+
  private:
   ModuleHeader header_;  // Module header
 

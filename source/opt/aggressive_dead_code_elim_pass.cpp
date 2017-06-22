@@ -18,6 +18,8 @@
 
 #include "iterator.h"
 
+#include "spirv/1.0/GLSL.std.450.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -30,6 +32,8 @@ const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kNameTargetIdInIdx = 0;
+const uint32_t kExtInstSetIdInIndx = 0;
+const uint32_t kExtInstInstructionInIndx = 1;
 
 }  // namespace anonymous
 
@@ -80,37 +84,47 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
   }
 }
 
+bool AggressiveDCEPass::IsCombinator(uint32_t op) const {
+  return combinator_ops_shader_.find(op) != combinator_ops_shader_.end();
+}
+
+bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
+  assert(inst->opcode() == SpvOpExtInst);
+  if (inst->GetSingleWordInOperand(kExtInstSetIdInIndx) == glsl_std_450_id_) {
+    uint32_t op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
+    return combinator_ops_glsl_std_450_.find(op) !=
+        combinator_ops_glsl_std_450_.end();
+  }
+  else
+    return false;
+}
+
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
   // Add non-local stores, block terminating and merge instructions
   // to worklist. If function call encountered, return false, unmodified.
-  // TODO(greg-lunarg): Improve in presence of function calls
   for (auto& blk : *func) {
     for (auto& inst : blk) {
-      switch (inst.opcode()) {
-      case SpvOpStore: {
-        uint32_t varId;
-        (void) GetPtr(&inst, &varId);
-        if (!IsLocalVar(varId)) {
-          worklist_.push(&inst);
-        }
-      } break;
-      case SpvOpLoopMerge:
-      case SpvOpSelectionMerge:
-      case SpvOpBranch:
-      case SpvOpBranchConditional:
-      case SpvOpSwitch: 
-      case SpvOpKill: 
-      case SpvOpUnreachable: 
-      case SpvOpReturn:
-      case SpvOpReturnValue: {
-        worklist_.push(&inst);
-      } break;
-      case SpvOpFunctionCall: {
-        return false;
-      } break;
-      default:
-        break;
+      uint32_t op = inst.opcode();
+      switch (op) {
+        case SpvOpStore: {
+          uint32_t varId;
+          (void) GetPtr(&inst, &varId);
+          // non-function-scope stores
+          if (!IsLocalVar(varId)) {
+            worklist_.push(&inst);
+          }
+        } break;
+        case SpvOpExtInst: {
+          // eg. GLSL frexp, modf
+          if (!IsCombinatorExt(&inst))
+            worklist_.push(&inst);
+        } break;
+        default: {
+          // eg. control flow, function call, atomics
+          if (!IsCombinator(op))
+            worklist_.push(&inst);
+        } break;
       }
     }
   }
@@ -183,8 +197,8 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
 }
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
-  // Current functionality assumes structured control flow. 
-  // TODO(greg-lunarg): Handle non-structured control-flow.
+  // Current functionality assumes shader capability 
+  // TODO(greg-lunarg): Handle additional capabilities
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
 
@@ -192,6 +206,8 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // TODO(greg-lunarg): Handle non-logical addressing
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
+
+  InitCombinatorSets();
 
   bool modified = false;
   for (auto& e : module_->entry_points()) {
@@ -208,6 +224,230 @@ AggressiveDCEPass::AggressiveDCEPass()
 Pass::Status AggressiveDCEPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void AggressiveDCEPass::InitCombinatorSets() {
+  combinator_ops_shader_ = {
+    SpvOpNop,
+    SpvOpUndef,
+    SpvOpVariable,
+    SpvOpImageTexelPointer,
+    SpvOpLoad,
+    SpvOpAccessChain,
+    SpvOpInBoundsAccessChain,
+    SpvOpArrayLength,
+    SpvOpVectorExtractDynamic,
+    SpvOpVectorInsertDynamic,
+    SpvOpVectorShuffle,
+    SpvOpCompositeConstruct,
+    SpvOpCompositeExtract,
+    SpvOpCompositeInsert,
+    SpvOpCopyObject,
+    SpvOpTranspose,
+    SpvOpSampledImage,
+    SpvOpImageSampleImplicitLod,
+    SpvOpImageSampleExplicitLod,
+    SpvOpImageSampleDrefImplicitLod,
+    SpvOpImageSampleDrefExplicitLod,
+    SpvOpImageSampleProjImplicitLod,
+    SpvOpImageSampleProjExplicitLod,
+    SpvOpImageSampleProjDrefImplicitLod,
+    SpvOpImageSampleProjDrefExplicitLod,
+    SpvOpImageFetch,
+    SpvOpImageGather,
+    SpvOpImageDrefGather,
+    SpvOpImageRead,
+    SpvOpImage,
+    SpvOpConvertFToU,
+    SpvOpConvertFToS,
+    SpvOpConvertSToF,
+    SpvOpConvertUToF,
+    SpvOpUConvert,
+    SpvOpSConvert,
+    SpvOpFConvert,
+    SpvOpQuantizeToF16,
+    SpvOpBitcast,
+    SpvOpSNegate,
+    SpvOpFNegate,
+    SpvOpIAdd,
+    SpvOpFAdd,
+    SpvOpISub,
+    SpvOpFSub,
+    SpvOpIMul,
+    SpvOpFMul,
+    SpvOpUDiv,
+    SpvOpSDiv,
+    SpvOpFDiv,
+    SpvOpUMod,
+    SpvOpSRem,
+    SpvOpSMod,
+    SpvOpFRem,
+    SpvOpFMod,
+    SpvOpVectorTimesScalar,
+    SpvOpMatrixTimesScalar,
+    SpvOpVectorTimesMatrix,
+    SpvOpMatrixTimesVector,
+    SpvOpMatrixTimesMatrix,
+    SpvOpOuterProduct,
+    SpvOpDot,
+    SpvOpIAddCarry,
+    SpvOpISubBorrow,
+    SpvOpUMulExtended,
+    SpvOpSMulExtended,
+    SpvOpAny,
+    SpvOpAll,
+    SpvOpIsNan,
+    SpvOpIsInf,
+    SpvOpLogicalEqual,
+    SpvOpLogicalNotEqual,
+    SpvOpLogicalOr,
+    SpvOpLogicalAnd,
+    SpvOpLogicalNot,
+    SpvOpSelect,
+    SpvOpIEqual,
+    SpvOpINotEqual,
+    SpvOpUGreaterThan,
+    SpvOpSGreaterThan,
+    SpvOpUGreaterThanEqual,
+    SpvOpSGreaterThanEqual,
+    SpvOpULessThan,
+    SpvOpSLessThan,
+    SpvOpULessThanEqual,
+    SpvOpSLessThanEqual,
+    SpvOpFOrdEqual,
+    SpvOpFUnordEqual,
+    SpvOpFOrdNotEqual,
+    SpvOpFUnordNotEqual,
+    SpvOpFOrdLessThan,
+    SpvOpFUnordLessThan,
+    SpvOpFOrdGreaterThan,
+    SpvOpFUnordGreaterThan,
+    SpvOpFOrdLessThanEqual,
+    SpvOpFUnordLessThanEqual,
+    SpvOpFOrdGreaterThanEqual,
+    SpvOpFUnordGreaterThanEqual,
+    SpvOpShiftRightLogical,
+    SpvOpShiftRightArithmetic,
+    SpvOpShiftLeftLogical,
+    SpvOpBitwiseOr,
+    SpvOpBitwiseXor,
+    SpvOpBitwiseAnd,
+    SpvOpNot,
+    SpvOpBitFieldInsert,
+    SpvOpBitFieldSExtract,
+    SpvOpBitFieldUExtract,
+    SpvOpBitReverse,
+    SpvOpBitCount,
+    SpvOpDPdx,
+    SpvOpDPdy,
+    SpvOpFwidth,
+    SpvOpDPdxFine,
+    SpvOpDPdyFine,
+    SpvOpFwidthFine,
+    SpvOpDPdxCoarse,
+    SpvOpDPdyCoarse,
+    SpvOpFwidthCoarse,
+    SpvOpPhi,
+    SpvOpImageSparseSampleImplicitLod,
+    SpvOpImageSparseSampleExplicitLod,
+    SpvOpImageSparseSampleDrefImplicitLod,
+    SpvOpImageSparseSampleDrefExplicitLod,
+    SpvOpImageSparseSampleProjImplicitLod,
+    SpvOpImageSparseSampleProjExplicitLod,
+    SpvOpImageSparseSampleProjDrefImplicitLod,
+    SpvOpImageSparseSampleProjDrefExplicitLod,
+    SpvOpImageSparseFetch,
+    SpvOpImageSparseGather,
+    SpvOpImageSparseDrefGather,
+    SpvOpImageSparseTexelsResident,
+    SpvOpImageSparseRead,
+    SpvOpSizeOf
+  };
+
+  // Find supported extension instruction set ids
+  glsl_std_450_id_ = module_->GetExtInstId("GLSL.std.450");
+
+  combinator_ops_glsl_std_450_ = {
+    GLSLstd450Round,
+    GLSLstd450RoundEven,
+    GLSLstd450Trunc,
+    GLSLstd450FAbs,
+    GLSLstd450SAbs,
+    GLSLstd450FSign,
+    GLSLstd450SSign,
+    GLSLstd450Floor,
+    GLSLstd450Ceil,
+    GLSLstd450Fract,
+    GLSLstd450Radians,
+    GLSLstd450Degrees,
+    GLSLstd450Sin,
+    GLSLstd450Cos,
+    GLSLstd450Tan,
+    GLSLstd450Asin,
+    GLSLstd450Acos,
+    GLSLstd450Atan,
+    GLSLstd450Sinh,
+    GLSLstd450Cosh,
+    GLSLstd450Tanh,
+    GLSLstd450Asinh,
+    GLSLstd450Acosh,
+    GLSLstd450Atanh,
+    GLSLstd450Atan2,
+    GLSLstd450Pow,
+    GLSLstd450Exp,
+    GLSLstd450Log,
+    GLSLstd450Exp2,
+    GLSLstd450Log2,
+    GLSLstd450Sqrt,
+    GLSLstd450InverseSqrt,
+    GLSLstd450Determinant,
+    GLSLstd450MatrixInverse,
+    GLSLstd450ModfStruct,
+    GLSLstd450FMin,
+    GLSLstd450UMin,
+    GLSLstd450SMin,
+    GLSLstd450FMax,
+    GLSLstd450UMax,
+    GLSLstd450SMax,
+    GLSLstd450FClamp,
+    GLSLstd450UClamp,
+    GLSLstd450SClamp,
+    GLSLstd450FMix,
+    GLSLstd450IMix,
+    GLSLstd450Step,
+    GLSLstd450SmoothStep,
+    GLSLstd450Fma,
+    GLSLstd450FrexpStruct,
+    GLSLstd450Ldexp,
+    GLSLstd450PackSnorm4x8,
+    GLSLstd450PackUnorm4x8,
+    GLSLstd450PackSnorm2x16,
+    GLSLstd450PackUnorm2x16,
+    GLSLstd450PackHalf2x16,
+    GLSLstd450PackDouble2x32,
+    GLSLstd450UnpackSnorm2x16,
+    GLSLstd450UnpackUnorm2x16,
+    GLSLstd450UnpackHalf2x16,
+    GLSLstd450UnpackSnorm4x8,
+    GLSLstd450UnpackUnorm4x8,
+    GLSLstd450UnpackDouble2x32,
+    GLSLstd450Length,
+    GLSLstd450Distance,
+    GLSLstd450Cross,
+    GLSLstd450Normalize,
+    GLSLstd450FaceForward,
+    GLSLstd450Reflect,
+    GLSLstd450Refract,
+    GLSLstd450FindILsb,
+    GLSLstd450FindSMsb,
+    GLSLstd450FindUMsb,
+    GLSLstd450InterpolateAtCentroid,
+    GLSLstd450InterpolateAtSample,
+    GLSLstd450InterpolateAtOffset,
+    GLSLstd450NMin,
+    GLSLstd450NMax,
+    GLSLstd450NClamp
+  };
 }
 
 }  // namespace opt

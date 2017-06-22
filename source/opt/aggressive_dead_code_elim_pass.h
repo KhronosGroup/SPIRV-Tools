@@ -60,6 +60,19 @@ class AggressiveDCEPass : public Pass {
   // Return true if variable with |varId| is function scope
   bool IsLocalVar(uint32_t varId);
 
+  // Initialize combinator data structures
+  void InitCombinatorSets();
+
+  // Return true if core operator |op| has no side-effects. Currently returns
+  // true only for shader capability operations.
+  // TODO(greg-lunarg): Add kernel and other operators
+  bool IsCombinator(uint32_t op) const;
+
+  // Return true if OpExtInst |inst| has no side-effects. Currently returns
+  // true only for std.GLSL.450 extensions
+  // TODO(greg-lunarg): Add support for other extensions
+  bool IsCombinatorExt(ir::Instruction* inst) const;
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true
@@ -94,6 +107,21 @@ class AggressiveDCEPass : public Pass {
 
   // Dead instructions. Use for debug cleanup.
   std::unordered_set<const ir::Instruction*> dead_insts_;
+
+  // Opcodes of shader capability core executable instructions
+  // without side-effect. This is a whitelist of operators
+  // that can safely be left unmarked as live at the beginning of
+  // aggressive DCE.
+  std::unordered_set<uint32_t> combinator_ops_shader_;
+
+  // Opcodes of GLSL_std_450 extension executable instructions
+  // without side-effect. This is a whitelist of operators
+  // that can safely be left unmarked as live at the beginning of
+  // aggressive DCE.
+  std::unordered_set<uint32_t> combinator_ops_glsl_std_450_;
+
+  // Set id for glsl_std_450 extension instructions
+  uint32_t glsl_std_450_id_;
 };
 
 }  // namespace opt
