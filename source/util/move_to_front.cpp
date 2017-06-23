@@ -23,6 +23,7 @@ namespace spvutils {
 
 size_t MoveToFront::RankFromId(uint32_t id) {
   const size_t old_size = GetSize();
+  (void)old_size;
   const auto it = id_to_node_.find(id);
 
   if (it == id_to_node_.end()) {
@@ -54,6 +55,7 @@ size_t MoveToFront::RankFromId(uint32_t id) {
 
 uint32_t MoveToFront::IdFromRank(size_t rank) {
   const size_t old_size = GetSize();
+  (void)old_size;
   if (rank == 0) {
     const uint32_t new_id = next_id_++;
     InsertNode(CreateNode(next_timestamp_++, new_id));
@@ -135,7 +137,7 @@ void MoveToFront::InsertNode(uint32_t node) {
   uint32_t iter = root_;
   uint32_t parent = 0;
 
-  // Will determine if |node| will become the right of left child after
+  // Will determine if |node| will become the right or left child after
   // insertion (but before balancing).
   bool right_child;
 
