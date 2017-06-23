@@ -25,20 +25,19 @@
 namespace spvutils {
 
 // Log(n) move-to-front implementation. Implements two main functions:
-// IdFromRank - access id by its 0-indexed rank in the move-to-front sequence.
+// IdFromRank - access id by its 1-indexed rank in the move-to-front sequence.
 // RankFromId - get the rank of the given id in the move-to-front sequence.
 // Accessing an id with any of the two functions moves the id to the front
-// of the sequence (rank of 0).
+// of the sequence (rank of 1).
 //
 // The implementation is based on an AVL-based order statistic tree.
 //
 // Terminology
 // id: SPIR-V id.
-// rank: 0-indexed value showing how recently the id was accessed.
-// node: uint16_t handle used internally to access nodes.
+// rank: 1-indexed value showing how recently the id was accessed.
+// node: handle used internally to access node data.
 // size: size of the subtree of a node (including the node).
 // height: distance from a node to the farthest leaf.
-// index: not used to avoid confusion with rank and handle.
 class MoveToFront {
   struct Node;
  public:
@@ -49,21 +48,33 @@ class MoveToFront {
     nodes_.emplace_back(Node());
   }
 
-  // Returns the 0-indexed rank of id in the move-to-front sequence and moves
+  // Returns 1-indexed rank of id in the move-to-front sequence and moves
   // id to the front. Example:
   // Before the call: 4 8 2 1 7
   // RankFromId(8) returns 1
   // After the call: 8 4 2 1 7
+  // If id is not in the list, and is equal to next_id_, then a new value is
+  // inserted at the front. The function returns 0 in this case.
+  // RankFromId(9) returns 0
+  // After the call: 9 8 4 2 1 7
+  // Calling the function with a value which is not in the list and is not
+  // equal to next_id_ will result in assertion.
   size_t RankFromId(uint32_t id);
 
-  // Returns id corresponding to a 0-indexed rank in the move-to-front sequence
-  // and moves id to the front. Example:
+  // Returns id corresponding to a 1-indexed rank in the move-to-front sequence
+  // and moves the id to the front. Example:
   // Before the call: 4 8 2 1 7
   // IdFromRank(1) returns 8
   // After the call: 8 4 2 1 7
+  // If rank is 0, then a new id equal to next_id_ is inserted.
+  // IdFromRank(0) returns 9
+  // After the call:  9 8 4 2 1 7
   uint32_t IdFromRank(size_t rank);
 
   // Permanently removes the id from the move-to-front sequence.
+  // The implementation has artificially restricted functionality which only
+  // allows to add new ids sequentially. So once the id is removed using this
+  // function it cannot be reinserted.
   void DeprecateId(uint32_t id) {
     auto it = id_to_node_.find(id);
     assert(it != id_to_node_.end());
@@ -71,10 +82,6 @@ class MoveToFront {
     // The iterator should still be valid, even if RemoveNode has modified
     // id_to_node_. But just in case erase by id, not by iterator.
     id_to_node_.erase(id);
-
-#ifndef NDEBUG
-    deprecated_ids_.insert(id);
-#endif
   }
 
   // Returns the number of elements in the move-to-front sequence.
@@ -103,172 +110,172 @@ class MoveToFront {
   }
 
  private:
+  // Internal tree data structure uses handles instead of pointers. Leaves and
+  // root parent reference a singleton under handle 0. Although dereferencing
+  // a null pointer is not possible, inappropriate access to handle 0 would
+  // cause an assertion. Handles are not garbage collected if id was deprecated
+  // with DeprecateId(). But handles are recycled when a node is repositioned.
+
   // Internal tree data structure node.
   struct Node {
     // Fields are in order from biggest bit width to smallest.
     // SPIR-V id.
     uint32_t id = 0;
     // Timestamp from a logical clock which updates every time the element is
-    // accessed.
+    // accessed through IdFromRank or RankFromId.
     uint32_t timestamp = 0;
-    // The size of the node's subtee, including the node.
+    // The size of the node's subtree, including the node.
     // SizeOf(LeftOf(node)) + SizeOf(RightOf(node)) + 1.
-    uint16_t size = 0;
+    uint32_t size = 0;
     // Handles to connected nodes.
-    uint16_t left = 0;
-    uint16_t right = 0;
-    uint16_t parent = 0;
+    uint32_t left = 0;
+    uint32_t right = 0;
+    uint32_t parent = 0;
     // Distance to the farthest leaf.
     // Leaves have height 0, real nodes at least 1.
-    uint8_t height = 0;
+    uint32_t height = 0;
   };
 
-  // Creates node and sets correct values. Nodes should be created only through
-  // this function.
-  uint16_t CreateNode(uint32_t timestamp, uint32_t id) {
+  // Creates node and sets correct values. Non-NIL nodes should be created only
+  // through this function.
+  uint32_t CreateNode(uint32_t timestamp, uint32_t id) {
+    uint32_t handle = static_cast<uint32_t>(nodes_.size());
     nodes_.emplace_back(Node());
     Node& node = nodes_.back();
     node.timestamp = timestamp;
     node.id = id;
     node.size = 1;
+    // Non-NIL nodes start with height 1 because their NIL children are leaves.
     node.height = 1;
-    uint16_t handle = static_cast<uint16_t>(nodes_.size() - 1);
     id_to_node_.emplace(id, handle);
     return handle;
   }
-
-  // Internal tree data structure uses handles instead of pointers. Leaves and
-  // root parent reference a singleton under handle 0. Although dereferencing
-  // a null pointer is not possible, inappropriate access to handle 0 would
-  // cause an assertion. Handles are not garbage collected if id is deprecated.
-  // But handles are recycled when a node is repositioned.
 
   // Node accessor methods. Naming is designed to be similar to natural
   // language as these functions tend to be used in sequences, for example:
   // ParentOf(LeftestDescendentOf(RightOf(node)))
 
-  // Returns immutable id of the node referenced by |handle|.
-  inline uint32_t IdOf(uint16_t handle) const {
-    return nodes_.at(handle).id;
+  // Returns id of the node referenced by |handle|.
+  uint32_t IdOf(uint32_t node) const {
+    return nodes_.at(node).id;
   }
 
-  // Returns immutable handle to left of the node referenced by |handle|.
-  inline uint16_t LeftOf(uint16_t handle) const {
-    return nodes_.at(handle).left;
+  // Returns left child of |node|.
+  uint32_t LeftOf(uint32_t node) const {
+    return nodes_.at(node).left;
   }
 
-  // Returns immutable handle to right of the node referenced by |handle|.
-  inline uint16_t RightOf(uint16_t handle) const {
-    return nodes_.at(handle).right;
+  // Returns right child of |node|.
+  uint32_t RightOf(uint32_t node) const {
+    return nodes_.at(node).right;
   }
 
-  // Returns immutable handle to parent of the node referenced by |handle|.
-  inline uint16_t ParentOf(uint16_t handle) const {
-    return nodes_.at(handle).parent;
+  // Returns parent of |node|.
+  uint32_t ParentOf(uint32_t node) const {
+    return nodes_.at(node).parent;
   }
 
-  // Returns immutable timestamp of the node referenced by |handle|.
-  inline uint32_t TimestampOf(uint16_t handle) const {
-    assert(handle);
-    return nodes_.at(handle).timestamp;
+  // Returns timestamp of |node|.
+  uint32_t TimestampOf(uint32_t node) const {
+    assert(node);
+    return nodes_.at(node).timestamp;
   }
 
-  // Returns immutable size of the node referenced by |handle|.
-  inline uint16_t SizeOf(uint16_t handle) const {
-    return nodes_.at(handle).size;
+  // Returns size of |node|.
+  uint32_t SizeOf(uint32_t node) const {
+    return nodes_.at(node).size;
   }
 
-  // Returns immutable height of the node referenced by |handle|.
-  inline uint16_t HeightOf(uint16_t handle) const {
-    return nodes_.at(handle).height;
+  // Returns height of |node|.
+  uint32_t HeightOf(uint32_t node) const {
+    return nodes_.at(node).height;
   }
 
-  // Returns mutable id of the node referenced by |handle|.
-  inline uint32_t& MutableIdOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).id;
+  // Returns mutable reference to id of |node|.
+  uint32_t& MutableIdOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).id;
   }
 
-  // Returns mutable handle to left of the node referenced by |handle|.
-  inline uint16_t& MutableLeftOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).left;
+  // Returns mutable reference to handle of left child of |node|.
+  uint32_t& MutableLeftOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).left;
   }
 
-  // Returns mutable handle to right of the node referenced by |handle|.
-  inline uint16_t& MutableRightOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).right;
+  // Returns mutable reference to handle of right child of |node|.
+  uint32_t& MutableRightOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).right;
   }
 
-  // Returns mutable handle to parent of the node referenced by |handle|.
-  inline uint16_t& MutableParentOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).parent;
+  // Returns mutable reference to handle of parent of |node|.
+  uint32_t& MutableParentOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).parent;
   }
 
-  // Returns mutable timestamp of the node referenced by |handle|.
-  inline uint32_t& MutableTimestampOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).timestamp;
+  // Returns mutable reference to timestamp of |node|.
+  uint32_t& MutableTimestampOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).timestamp;
   }
 
-  // Returns mutable size of the node referenced by |handle|.
-  inline uint16_t& MutableSizeOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).size;
+  // Returns mutable reference to size of |node|.
+  uint32_t& MutableSizeOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).size;
   }
 
-  // Returns mutable height of the node referenced by |handle|.
-  inline uint8_t& MutableHeightOf(uint16_t handle) {
-    assert(handle);
-    return nodes_.at(handle).height;
+  // Returns mutable reference to height of |node|.
+  uint32_t& MutableHeightOf(uint32_t node) {
+    assert(node);
+    return nodes_.at(node).height;
   }
 
-  // Returns true iff |handle| is left child of its parent.
-  inline bool IsLeftChild(uint16_t handle) const {
-    assert(handle);
-    return LeftOf(ParentOf(handle)) == handle;
+  // Returns true iff |node| is left child of its parent.
+  bool IsLeftChild(uint32_t node) const {
+    assert(node);
+    return LeftOf(ParentOf(node)) == node;
   }
 
-  // Returns true iff |handle| is right child of its parent.
-  inline bool IsRightChild(uint16_t handle) const {
-    assert(handle);
-    return RightOf(ParentOf(handle)) == handle;
+  // Returns true iff |node| is right child of its parent.
+  bool IsRightChild(uint32_t node) const {
+    assert(node);
+    return RightOf(ParentOf(node)) == node;
   }
 
-  // Returns the sibling of handle or 0 if no sibling.
-  inline uint16_t SiblingOf(uint16_t handle) const {
-    assert(handle);
-    const uint16_t parent = ParentOf(handle);
-    return LeftOf(parent) == handle ? RightOf(parent) : LeftOf(parent);
+  // Returns true iff |node| has no relatives.
+  bool IsOrphan(uint32_t node) const {
+    assert(node);
+    return !ParentOf(node) && !LeftOf(node) && !RightOf(node);
   }
 
   // Returns the height difference between right and left subtrees.
-  inline int BalanceOf(uint16_t handle) const {
-    return int(HeightOf(RightOf(handle))) - int(HeightOf(LeftOf(handle)));
+  int BalanceOf(uint32_t node) const {
+    return int(HeightOf(RightOf(node))) - int(HeightOf(LeftOf(node)));
   }
 
   // Updates size and height of the node, assuming that the children have
   // correct values.
-  void UpdateNode(uint16_t handle);
+  void UpdateNode(uint32_t node);
 
   // Returns the most LeftOf(LeftOf(... descendent which is not leaf.
-  uint16_t LeftestDescendantOf(uint16_t handle) const {
-    uint16_t parent = 0;
-    while (handle) {
-      parent = handle;
-      handle = LeftOf(handle);
+  uint32_t LeftestDescendantOf(uint32_t node) const {
+    uint32_t parent = 0;
+    while (node) {
+      parent = node;
+      node = LeftOf(node);
     }
     return parent;
   }
 
   // Returns the most RightOf(RightOf(... descendent which is not leaf.
-  uint16_t RightestDescendantOf(uint16_t handle) const {
-    uint16_t parent = 0;
-    while (handle) {
-      parent = handle;
-      handle = RightOf(handle);
+  uint32_t RightestDescendantOf(uint32_t node) const {
+    uint32_t parent = 0;
+    while (node) {
+      parent = node;
+      node = RightOf(node);
     }
     return parent;
   }
@@ -277,40 +284,40 @@ class MoveToFront {
   // format:
   // 10H3S4----5H1S1-----D2
   //           15H2S2----12H1S1----D3
-  // Right links are horisontal, left links step down one line.
+  // Right links are horizontal, left links step down one line.
   // 5H1S1 is read as id 5, height 1, size 1. Optionally node label can also
   // contain timestamp (5H1S1T15). D3 stands for depth 3.
-  void PrintTreeInternal(std::ostream& out, uint16_t node, size_t depth,
+  void PrintTreeInternal(std::ostream& out, uint32_t node, size_t depth,
                          bool print_timestamp) const;
 
-  // Inserts node handle in the tree.
-  void InsertNode(uint16_t node);
+  // Inserts node in the tree. The node must be an orphan.
+  void InsertNode(uint32_t node);
 
   // Removes node from the tree. May change id_to_node_ if removal uses a
   // scapegoat. Returns the removed (orphaned) handle for recycling. The
   // returned handle may not be equal to |node| if scapegoat was used.
-  uint16_t RemoveNode(uint16_t node);
+  uint32_t RemoveNode(uint32_t node);
 
-  // Rotates |node| left, reasigns all connections and returns the node
+  // Rotates |node| left, reassigns all connections and returns the node
   // which takes place of the |node|.
-  uint16_t RotateLeft(const uint16_t node);
+  uint32_t RotateLeft(const uint32_t node);
 
-  // Rotates |node| right, reasigns all connections and returns the node
+  // Rotates |node| right, reassigns all connections and returns the node
   // which takes place of the |node|.
-  uint16_t RotateRight(const uint16_t node);
+  uint32_t RotateRight(const uint32_t node);
 
-  uint16_t root_ = 0;
+  // Root node handle. The tree is empty if root_ is 0.
+  uint32_t root_ = 0;
+
+  // Incremented counters for next timestamp and id.
   uint32_t next_timestamp_ = 1;
+  uint32_t next_id_ = 1;
 
   // Holds all tree nodes. Indices of this vector are node handles.
   std::vector<Node> nodes_;
 
   // Maps ids to node handles.
-  std::unordered_map<uint32_t, uint16_t> id_to_node_;
-#ifndef NDEBUG
-  // Set of deprecated nodes, is used for debug only.
-  std::unordered_set<uint32_t> deprecated_ids_;
-#endif
+  std::unordered_map<uint32_t, uint32_t> id_to_node_;
 };
 
 }  // namespace spvutils

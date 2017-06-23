@@ -22,22 +22,20 @@
 namespace spvutils {
 
 size_t MoveToFront::RankFromId(uint32_t id) {
-  // The id was previously deprecated (i.e left its scope).
-  assert(deprecated_ids_.count(id) == 0);
-
   const size_t old_size = GetSize();
   const auto it = id_to_node_.find(id);
 
   if (it == id_to_node_.end()) {
-    InsertNode(CreateNode(next_timestamp_++, id));
+    assert(id == next_id_);
+    InsertNode(CreateNode(next_timestamp_++, next_id_++));
     assert(old_size + 1 == GetSize());
-    return old_size;
+    return 0;
   }
 
-  uint16_t target = it->second;
+  uint32_t target = it->second;
 
-  uint16_t node = target;
-  size_t rank = SizeOf(LeftOf(node));
+  uint32_t node = target;
+  size_t rank = 1 + SizeOf(LeftOf(node));
   while (node) {
     if (IsRightChild(node))
       rank += 1 + SizeOf(LeftOf(ParentOf(node)));
@@ -56,18 +54,19 @@ size_t MoveToFront::RankFromId(uint32_t id) {
 
 uint32_t MoveToFront::IdFromRank(size_t rank) {
   const size_t old_size = GetSize();
-  if (rank >= old_size) {
-    assert(rank == old_size);
-    const uint32_t new_id = static_cast<uint32_t>(rank + 1);
+  if (rank == 0) {
+    const uint32_t new_id = next_id_++;
     InsertNode(CreateNode(next_timestamp_++, new_id));
     assert(old_size + 1 == GetSize());
     return new_id;
   }
 
-  uint16_t node = root_;
+  assert(rank <= old_size);
+
+  uint32_t node = root_;
   while (node) {
     const size_t left_subtree_num_nodes = SizeOf(LeftOf(node));
-    if (rank == left_subtree_num_nodes) {
+    if (rank == left_subtree_num_nodes + 1) {
       // This is the node we are looking for.
       node = RemoveNode(node);
       assert(old_size == GetSize() + 1);
@@ -77,7 +76,7 @@ uint32_t MoveToFront::IdFromRank(size_t rank) {
       return IdOf(node);
     }
 
-    if (rank < left_subtree_num_nodes) {
+    if (rank < left_subtree_num_nodes + 1) {
       // Descend into the left subtree. The rank is still valid.
       node = LeftOf(node);
     } else {
@@ -92,7 +91,7 @@ uint32_t MoveToFront::IdFromRank(size_t rank) {
   return 0;
 }
 
-void MoveToFront::PrintTreeInternal(std::ostream& out, uint16_t node,
+void MoveToFront::PrintTreeInternal(std::ostream& out, uint32_t node,
                                     size_t depth, bool print_timestamp) const {
   if (!node) {
     out << "D" << depth - 1 << std::endl;
@@ -122,17 +121,26 @@ void MoveToFront::PrintTreeInternal(std::ostream& out, uint16_t node,
   }
 }
 
-void MoveToFront::InsertNode(uint16_t node) {
+void MoveToFront::InsertNode(uint32_t node) {
+  assert(IsOrphan(node));
+  assert(SizeOf(node) == 1);
+  assert(HeightOf(node) == 1);
+  assert(TimestampOf(node));
+
   if (!root_) {
     root_ = node;
     return;
   }
 
-  uint16_t iter = root_;
-  uint16_t parent = 0;
+  uint32_t iter = root_;
+  uint32_t parent = 0;
 
+  // Will determine if |node| will become the right of left child after
+  // insertion (but before balancing).
   bool right_child;
 
+  // Find the node which will become |node|'s parent after insertion
+  // (but before balancing).
   while (iter) {
     parent = iter;
     assert(TimestampOf(iter) != TimestampOf(node));
@@ -142,8 +150,8 @@ void MoveToFront::InsertNode(uint16_t node) {
 
   assert(parent);
 
+  // Connect node and parent.
   MutableParentOf(node) = parent;
-
   if (right_child)
     MutableRightOf(parent) = node;
   else
@@ -191,10 +199,16 @@ void MoveToFront::InsertNode(uint16_t node) {
   }
 }
 
-uint16_t MoveToFront::RemoveNode(uint16_t node) {
+uint32_t MoveToFront::RemoveNode(uint32_t node) {
   // Instead of removing the |node| find another node which is easier to
   // remove and swap them.
-  if (const uint16_t scapegoat = RightestDescendantOf(LeftOf(node))) {
+  // We use the 'rightest node on the left side' as it has the following
+  // properties:
+  // 1. No more than one child.
+  // 2. After removal of |node| it will take its place in the ranking.
+  //
+  // If scapegoat doesn't exist, then proceed with deleting |node|.
+  if (const uint32_t scapegoat = RightestDescendantOf(LeftOf(node))) {
     std::swap(MutableIdOf(node), MutableIdOf(scapegoat));
     std::swap(MutableTimestampOf(node), MutableTimestampOf(scapegoat));
     id_to_node_[IdOf(node)] = node;
@@ -202,13 +216,13 @@ uint16_t MoveToFront::RemoveNode(uint16_t node) {
     node = scapegoat;
   }
 
-  // node may have only one child at this point.
+  // |node| may have only one child at this point.
   assert(!RightOf(node) || !LeftOf(node));
 
-  uint16_t parent = ParentOf(node);
-  uint16_t child = RightOf(node) ? RightOf(node) : LeftOf(node);
+  uint32_t parent = ParentOf(node);
+  uint32_t child = RightOf(node) ? RightOf(node) : LeftOf(node);
 
-  // Orphan node and reconnect parent and child.
+  // Orphan |node| and reconnect parent and child.
   if (child)
     MutableParentOf(child) = parent;
 
@@ -222,7 +236,8 @@ uint16_t MoveToFront::RemoveNode(uint16_t node) {
   MutableParentOf(node) = 0;
   MutableLeftOf(node) = 0;
   MutableRightOf(node) = 0;
-  const uint16_t orphan = node;
+  UpdateNode(node);
+  const uint32_t orphan = node;
 
   if (root_ == node)
     root_ = child;
@@ -245,7 +260,7 @@ uint16_t MoveToFront::RemoveNode(uint16_t node) {
           // Removed node from the right subtree.
           if (parent_balance < -1) {
             // Parent is left heavy, rotate right.
-            const uint16_t sibling = LeftOf(parent);
+            const uint32_t sibling = LeftOf(parent);
             if (BalanceOf(sibling) > 0)
               RotateLeft(sibling);
             parent = RotateRight(parent);
@@ -254,7 +269,7 @@ uint16_t MoveToFront::RemoveNode(uint16_t node) {
           // Removed node from the left subtree.
           if (parent_balance > 1) {
             // Parent is right heavy, rotate left.
-            const uint16_t sibling = RightOf(parent);
+            const uint32_t sibling = RightOf(parent);
             if (BalanceOf(sibling) < 0)
               RotateRight(sibling);
             parent = RotateLeft(parent);
@@ -272,8 +287,9 @@ uint16_t MoveToFront::RemoveNode(uint16_t node) {
   return orphan;
 }
 
-uint16_t MoveToFront::RotateLeft(const uint16_t node) {
-  const uint16_t pivot = RightOf(node);
+uint32_t MoveToFront::RotateLeft(const uint32_t node) {
+  const uint32_t pivot = RightOf(node);
+  assert(pivot);
 
   // LeftOf(pivot) gets attached to node in place of pivot.
   MutableRightOf(node) = LeftOf(pivot);
@@ -293,14 +309,17 @@ uint16_t MoveToFront::RotateLeft(const uint16_t node) {
   MutableLeftOf(pivot) = node;
   MutableParentOf(node) = pivot;
 
+  // Update both node and pivot. Pivot is the new parent of node, so node should
+  // be updated first.
   UpdateNode(node);
   UpdateNode(pivot);
 
   return pivot;
 }
 
-uint16_t MoveToFront::RotateRight(const uint16_t node) {
-  const uint16_t pivot = LeftOf(node);
+uint32_t MoveToFront::RotateRight(const uint32_t node) {
+  const uint32_t pivot = LeftOf(node);
+  assert(pivot);
 
   // RightOf(pivot) gets attached to node in place of pivot.
   MutableLeftOf(node) = RightOf(pivot);
@@ -320,17 +339,18 @@ uint16_t MoveToFront::RotateRight(const uint16_t node) {
   MutableRightOf(pivot) = node;
   MutableParentOf(node) = pivot;
 
+  // Update both node and pivot. Pivot is the new parent of node, so node should
+  // be updated first.
   UpdateNode(node);
   UpdateNode(pivot);
 
   return pivot;
 }
 
-void MoveToFront::UpdateNode(uint16_t handle) {
-  MutableSizeOf(handle) = uint16_t(
-      1 + SizeOf(LeftOf(handle)) + SizeOf(RightOf(handle)));
-  MutableHeightOf(handle) = uint8_t(
-      1 + std::max(HeightOf(LeftOf(handle)), HeightOf(RightOf(handle))));
+void MoveToFront::UpdateNode(uint32_t node) {
+  MutableSizeOf(node) = 1 + SizeOf(LeftOf(node)) + SizeOf(RightOf(node));
+  MutableHeightOf(node) =
+      1 + std::max(HeightOf(LeftOf(node)), HeightOf(RightOf(node)));
 }
 
 }  // namespace spvutils
