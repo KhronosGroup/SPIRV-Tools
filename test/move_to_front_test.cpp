@@ -475,7 +475,7 @@ TEST(MoveToFront, DeprecateId) {
 TEST(MoveToFront, LargerScale) {
   MoveToFront mtf;
   for (uint32_t i = 1; i < 1000; ++i) {
-    ASSERT_EQ(0, mtf.RankFromId(i));
+    ASSERT_EQ(0u, mtf.RankFromId(i));
     ASSERT_EQ(i, mtf.IdFromRank(1));
     ASSERT_EQ(i, mtf.GetSize());
   }
