@@ -77,10 +77,21 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
     return;
   for (const auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op == SpvOpStore)
-      worklist_.push(u.inst);
-    else if (op != SpvOpLoad)
-      AddStores(u.inst->result_id());
+    switch (op) {
+      case SpvOpAccessChain:
+      case SpvOpInBoundsAccessChain:
+      case SpvOpCopyObject: {
+        AddStores(u.inst->result_id());
+      } break;
+      case SpvOpLoad:
+        break;
+      // Assume it stores eg frexp, modf
+      case SpvOpStore:
+      default: {
+        if (live_insts_.find(u.inst) == live_insts_.end())
+          worklist_.push(u.inst);
+      } break;
+    }
   }
 }
 
