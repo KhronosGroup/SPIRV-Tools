@@ -257,7 +257,8 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 //
 // This pass only processes entry point functions. It also only processes
 // shaders with logical addressing. It currently will not process functions
-// with function calls.
+// with function calls. It currently only supports the GLSL.std.450 extended
+// instruction set. It currently does not support any extensions.
 //
 // This pass will be made more effective by first running passes that remove
 // dead control flow and inlines function calls.

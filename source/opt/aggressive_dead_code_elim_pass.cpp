@@ -130,6 +130,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Add all control flow and instructions with external side effects 
   // to worklist
   // TODO(greg-lunarg): Handle frexp, modf more optimally
+  // TODO(greg-lunarg): Handle function call more optimally
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
@@ -146,6 +147,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           // eg. GLSL frexp, modf
           if (!IsCombinatorExt(&inst))
             worklist_.push(&inst);
+        } break;
+        case SpvOpFunctionCall: {
+          return false;
         } break;
         default: {
           // eg. control flow, function call, atomics
