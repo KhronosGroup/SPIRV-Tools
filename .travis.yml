@@ -8,7 +8,7 @@ os:
 
 # Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
 dist: trusty
-sudo: required
+sudo: false
 
 # Use the default Xcode environment for Xcode.
 
@@ -35,18 +35,14 @@ matrix:
 cache:
   apt: true
 
+git:
+  depth: 1
+
 branches:
   only:
     - master
 
-addons:
-  apt:
-    packages:
-      - ninja-build
-
 before_install:
-  # Install cmake & ninja on macOS.
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install ninja; fi
   - if [[ "$BUILD_NDK" == "ON" ]]; then
       git clone --depth=1 https://github.com/urho3d/android-ndk.git $HOME/android-ndk;
       export ANDROID_NDK=$HOME/android-ndk;
@@ -65,12 +61,13 @@ script:
             -DANDROID_NATIVE_API_LEVEL=android-9
             -DCMAKE_BUILD_TYPE=Release
             -DANDROID_ABI="armeabi-v7a with NEON"
-            -DSPIRV_SKIP_TESTS=ON
-            -GNinja ..;
+            -DSPIRV_SKIP_TESTS=ON ..;
     else
-      cmake -GNinja -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..;
+      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..;
     fi
-  - ninja
+  # Due to the limitation of Travis platform, we cannot start too many concurrent jobs.
+  # Otherwise GCC will panic with internal error, possibility because of memory issues.
+  - make -j4
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       export NPROC=`nproc`;
     else
