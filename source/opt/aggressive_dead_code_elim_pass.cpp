@@ -31,7 +31,6 @@ const uint32_t kLoadPtrIdInIdx = 0;
 const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
-const uint32_t kNameTargetIdInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 
