@@ -234,9 +234,9 @@ spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
   return spvExtInstTableValueLookup(extInstTable_, type, firstWord, extInst);
 }
 
-void AssemblyGrammar::prependOperandTypesForMask(
+void AssemblyGrammar::pushOperandTypesForMask(
     const spv_operand_type_t type, const uint32_t mask,
     spv_operand_pattern_t* pattern) const {
-  spvPrependOperandTypesForMask(operandTable_, type, mask, pattern);
+  spvPushOperandTypesForMask(operandTable_, type, mask, pattern);
 }
 }  // namespace libspirv

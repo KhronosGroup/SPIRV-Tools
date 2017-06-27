@@ -202,6 +202,7 @@ class Parser {
     // Used by parseOperand
     std::vector<spv_parsed_operand_t> operands;
     std::vector<uint32_t> endian_converted_words;
+    spv_operand_pattern_t expected_operands;
   } _;
 };
 
@@ -310,13 +311,14 @@ spv_result_t Parser::parseInstruction() {
   // has its own logical operands (such as the LocalSize operand for
   // ExecutionMode), or for extended instructions that may have their
   // own operands depending on the selected extended instruction.
-  spv_operand_pattern_t expected_operands(
-      opcode_desc->operandTypes,
-      opcode_desc->operandTypes + opcode_desc->numTypes);
+  _.expected_operands.clear();
+  _.expected_operands.reserve(opcode_desc->numTypes);
+  for (auto i = 0; i < opcode_desc->numTypes; i++)
+      _.expected_operands.push_back(opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
 
   while (_.word_index < inst_offset + inst_word_count) {
     const uint16_t inst_word_index = uint16_t(_.word_index - inst_offset);
-    if (expected_operands.empty()) {
+    if (_.expected_operands.empty()) {
       return diagnostic() << "Invalid instruction Op" << opcode_desc->name
                           << " starting at word " << inst_offset
                           << ": expected no more operands after "
@@ -325,17 +327,17 @@ spv_result_t Parser::parseInstruction() {
                           << inst_word_count << ".";
     }
 
-    spv_operand_type_t type = spvTakeFirstMatchableOperand(&expected_operands);
+    spv_operand_type_t type = spvTakeFirstMatchableOperand(&_.expected_operands);
 
     if (auto error =
             parseOperand(inst_offset, &inst, type, &_.endian_converted_words,
-                         &_.operands, &expected_operands)) {
+                         &_.operands, &_.expected_operands)) {
       return error;
     }
   }
 
-  if (!expected_operands.empty() &&
-      !spvOperandIsOptional(expected_operands.front())) {
+  if (!_.expected_operands.empty() &&
+      !spvOperandIsOptional(_.expected_operands.back())) {
     return diagnostic() << "End of input reached while decoding Op"
                         << opcode_desc->name << " starting at word "
                         << inst_offset << ": expected more operands after "
@@ -473,7 +475,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       spv_ext_inst_desc ext_inst;
       if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst))
         return diagnostic() << "Invalid extended instruction number: " << word;
-      spvPrependOperandTypes(ext_inst->operandTypes, expected_operands);
+      spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
@@ -493,7 +495,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       assert(opcode_entry->hasType);
       assert(opcode_entry->hasResult);
       assert(opcode_entry->numTypes >= 2);
-      spvPrependOperandTypes(opcode_entry->operandTypes + 2, expected_operands);
+      spvPushOperandTypes(opcode_entry->operandTypes + 2, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
@@ -627,7 +629,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                             << " operand: " << word;
       }
       // Prepare to accept operands to this operand, if needed.
-      spvPrependOperandTypes(entry->operandTypes, expected_operands);
+      spvPushOperandTypes(entry->operandTypes, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
@@ -662,7 +664,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                    << mask;
           }
           remaining_word ^= mask;
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
       if (word == 0) {
@@ -670,7 +672,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         spv_operand_desc entry;
         if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry)) {
           // Prepare for its operands, if any.
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
     } break;

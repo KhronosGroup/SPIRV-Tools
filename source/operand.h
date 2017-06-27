@@ -26,8 +26,13 @@
 // next on the input.
 //
 // As we parse an instruction in text or binary form from left to right,
-// we pull and push from the front of the pattern.
-using spv_operand_pattern_t = std::deque<spv_operand_type_t>;
+// we pop and push at the end of the pattern vector. Symbols later in the
+// pattern vector are matched against the input before symbols earlier in the
+// pattern vector are matched.
+
+// Using a vector in this way reduces memory traffic, which is good for
+// performance.
+using spv_operand_pattern_t = std::vector<spv_operand_type_t>;
 
 // Finds the named operand in the table. The type parameter specifies the
 // operand's group. A handle of the operand table entry for this operand will
@@ -62,24 +67,24 @@ bool spvOperandIsOptional(spv_operand_type_t type);
 // operand.
 bool spvOperandIsVariable(spv_operand_type_t type);
 
-// Inserts a list of operand types into the front of the given pattern.
+// Append a list of operand types to the end of the pattern vector.
 // The types parameter specifies the source array of types, ending with
 // SPV_OPERAND_TYPE_NONE.
-void spvPrependOperandTypes(const spv_operand_type_t* types,
-                            spv_operand_pattern_t* pattern);
+void spvPushOperandTypes(const spv_operand_type_t* types,
+                         spv_operand_pattern_t* pattern);
 
-// Inserts the operands expected after the given typed mask onto the
-// front of the given pattern.
+// Appends the operands expected after the given typed mask onto the
+// end of the given pattern.
 //
 // Each set bit in the mask represents zero or more operand types that should
-// be prepended onto the pattern.  Operands for a less significant bit always
-// appear before operands for a more significant bit.
+// be appended onto the pattern.  Operands for a less significant bit always
+// appear after operands for a more significant bit.
 //
 // If a set bit is unknown, then we assume it has no operands.
-void spvPrependOperandTypesForMask(const spv_operand_table operand_table,
-                                   const spv_operand_type_t mask_type,
-                                   const uint32_t mask,
-                                   spv_operand_pattern_t* pattern);
+void spvPushOperandTypesForMask(const spv_operand_table operand_table,
+                                const spv_operand_type_t mask_type,
+                                const uint32_t mask,
+                                spv_operand_pattern_t* pattern);
 
 // Expands an operand type representing zero or more logical operands,
 // exactly once.
