@@ -221,7 +221,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_stream.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/util/move_to_front.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/parse_number.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/util/string_utils.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/assembly_grammar.cpp
