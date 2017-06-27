@@ -209,25 +209,17 @@ bool ValidationState_t::IsDefinedId(uint32_t id) const {
 }
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {
-  if (all_definitions_.count(id) == 0) {
+  auto it = all_definitions_.find(id);
+  if (it == all_definitions_.end())
     return nullptr;
-  } else {
-    /// We are in a const function, so we cannot use defs.operator[]().
-    /// Luckily we know the key exists, so defs_.at() won't throw an
-    /// exception.
-    return all_definitions_.at(id);
-  }
+  return it->second;
 }
 
 Instruction* ValidationState_t::FindDef(uint32_t id) {
-  if (all_definitions_.count(id) == 0) {
+  auto it = all_definitions_.find(id);
+  if (it == all_definitions_.end())
     return nullptr;
-  } else {
-    /// We are in a const function, so we cannot use defs.operator[]().
-    /// Luckily we know the key exists, so defs_.at() won't throw an
-    /// exception.
-    return all_definitions_.at(id);
-  }
+  return it->second;
 }
 
 // Increments the instruction count. Used for diagnostic
