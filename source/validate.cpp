@@ -328,7 +328,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     spv_instruction_t inst;
     spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
                        wordCount, endian, &inst);
-    instructions.push_back(inst);
+    instructions.emplace_back(std::move(inst));
     index += wordCount;
   }
 
