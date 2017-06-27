@@ -130,6 +130,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
   // Add all control flow and instructions with external side effects 
   // to worklist
+  // TODO(greg-lunarg): Handle frexp, modf more optimally
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
