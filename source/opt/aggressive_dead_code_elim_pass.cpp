@@ -365,7 +365,7 @@ void AggressiveDCEPass::InitCombinatorSets() {
   };
 
   // Find supported extension instruction set ids
-  glsl_std_450_id_ = module_->GetExtInstId("GLSL.std.450");
+  glsl_std_450_id_ = module_->GetExtInstImportId("GLSL.std.450");
 
   combinator_ops_glsl_std_450_ = {
     GLSLstd450Round,

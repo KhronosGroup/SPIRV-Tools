@@ -143,7 +143,7 @@ class Module {
 
   // Returns id for OpExtInst instruction for extension |extstr|.
   // Returns 0 if not found.
-  uint32_t GetExtInstId(const char* extstr);
+  uint32_t GetExtInstImportId(const char* extstr);
 
  private:
   ModuleHeader header_;  // Module header
