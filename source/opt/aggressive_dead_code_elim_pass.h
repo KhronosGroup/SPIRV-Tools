@@ -78,6 +78,9 @@ class AggressiveDCEPass : public Pass {
   // are allowed.
   bool AllExtensionsAllowed();
 
+  // Delete debug or annotation |inst| if target operand is dead.
+  void DeleteInstIfTargetDead(ir::Instruction* inst);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true

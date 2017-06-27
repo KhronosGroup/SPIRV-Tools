@@ -32,6 +32,7 @@ const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kNameTargetIdInIdx = 0;
+const uint32_t kDecorateTargetIdInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 
@@ -108,10 +109,17 @@ bool AggressiveDCEPass::AllExtensionsAllowed() {
   return ecnt == 0;
 }
 
+void AggressiveDCEPass::DeleteInstIfTargetDead(ir::Instruction* inst) {
+  const uint32_t tId = inst->GetSingleWordInOperand(0);
+  const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
+  if (dead_insts_.find(tInst) != dead_insts_.end())
+    def_use_mgr_->KillInst(inst);
+}
+
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
-  // Add non-local stores, block terminating and merge instructions
-  // to worklist. If function call encountered, return false, unmodified.
+  // Add all control flow and instructions with external side effects 
+  // to worklist
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
@@ -136,6 +144,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         } break;
       }
     }
+  }
+  // Add OpGroupDecorates to worklist because they are a pain to remove
+  // ids from.
+  // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate
+  for (auto& ai : module_->annotations()) {
+    if (ai.opcode() == SpvOpGroupDecorate)
+      worklist_.push(&ai);
   }
   // Perform closure on live instruction set. 
   while (!worklist_.empty()) {
@@ -168,17 +183,19 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       dead_insts_.insert(&inst);
     }
   }
-  // Remove debug statements referencing dead instructions. This must
-  // be done before killing the instructions, otherwise there are dead
-  // objects in the def/use database.
+  // Remove debug and annotation statements referencing dead instructions.
+  // This must be done before killing the instructions, otherwise there are
+  // dead objects in the def/use database.
   for (auto& di : module_->debugs()) {
     if (di.opcode() != SpvOpName)
       continue;
-    const uint32_t tId = di.GetSingleWordInOperand(kNameTargetIdInIdx);
-    const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
-    if (dead_insts_.find(tInst) == dead_insts_.end())
+    DeleteInstIfTargetDead(&di);
+    modified = true;
+  }
+  for (auto& ai : module_->annotations()) {
+    if (ai.opcode() != SpvOpDecorate && ai.opcode() != SpvOpDecorateId)
       continue;
-    def_use_mgr_->KillInst(&di);
+    DeleteInstIfTargetDead(&ai);
     modified = true;
   }
   // Kill dead instructions
