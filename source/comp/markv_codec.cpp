@@ -1178,7 +1178,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
       }
 
       // Prepare to accept operands to this operand, if needed.
-      spvPrependOperandTypes(entry->operandTypes, expected_operands);
+      spvPushOperandTypes(entry->operandTypes, expected_operands);
       break;
     }
 
@@ -1221,7 +1221,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
                    << mask;
           }
           remaining_word ^= mask;
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
       if (word == 0) {
@@ -1229,7 +1229,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
         spv_operand_desc entry;
         if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry)) {
           // Prepare for its operands, if any.
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
       break;
@@ -1287,9 +1287,10 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
     return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Invalid opcode";
   }
 
-  spv_operand_pattern_t expected_operands(
-      opcode_desc->operandTypes,
-      opcode_desc->operandTypes + opcode_desc->numTypes);
+  spv_operand_pattern_t expected_operands;
+  expected_operands.reserve(opcode_desc->numTypes);
+  for (auto i = 0; i < opcode_desc->numTypes; i++)
+    expected_operands.push_back(opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
 
   if (!OpcodeHasFixedNumberOfOperands(opcode)) {
     if (!reader_.ReadVariableWidthU16(&inst->num_operands,

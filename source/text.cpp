@@ -247,7 +247,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       spvInstructionAddWord(pInst, extInst->ext_inst);
 
       // Prepare to parse the operands for the extended instructions.
-      spvPrependOperandTypes(extInst->operandTypes, pExpectedOperands);
+      spvPushOperandTypes(extInst->operandTypes, pExpectedOperands);
     } break;
 
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
@@ -271,7 +271,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       assert(opcodeEntry->hasType);
       assert(opcodeEntry->hasResult);
       assert(opcodeEntry->numTypes >= 2);
-      spvPrependOperandTypes(opcodeEntry->operandTypes + 2, pExpectedOperands);
+      spvPushOperandTypes(opcodeEntry->operandTypes + 2, pExpectedOperands);
     } break;
 
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
@@ -380,7 +380,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       }
       if (auto error = context->binaryEncodeU32(value, pInst)) return error;
       // Prepare to parse the operands for this logical operand.
-      grammar.prependOperandTypesForMask(type, value, pExpectedOperands);
+      grammar.pushOperandTypesForMask(type, value, pExpectedOperands);
     } break;
     case SPV_OPERAND_TYPE_OPTIONAL_CIV: {
       auto error = spvTextEncodeOperand(
@@ -420,7 +420,7 @@ spv_result_t spvTextEncodeOperand(const libspirv::AssemblyGrammar& grammar,
       }
 
       // Prepare to parse the operands for this logical operand.
-      spvPrependOperandTypes(entry->operandTypes, pExpectedOperands);
+      spvPushOperandTypes(entry->operandTypes, pExpectedOperands);
     } break;
   }
   return SPV_SUCCESS;
@@ -553,13 +553,14 @@ spv_result_t spvTextEncodeOpcode(const libspirv::AssemblyGrammar& grammar,
   // has its own logical operands (such as the LocalSize operand for
   // ExecutionMode), or for extended instructions that may have their
   // own operands depending on the selected extended instruction.
-  spv_operand_pattern_t expectedOperands(
-      opcodeEntry->operandTypes,
-      opcodeEntry->operandTypes + opcodeEntry->numTypes);
+  spv_operand_pattern_t expectedOperands;
+  expectedOperands.reserve(opcodeEntry->numTypes);
+  for (auto i = 0; i < opcodeEntry->numTypes; i++)
+      expectedOperands.push_back(opcodeEntry->operandTypes[opcodeEntry->numTypes - i - 1]);
 
   while (!expectedOperands.empty()) {
-    const spv_operand_type_t type = expectedOperands.front();
-    expectedOperands.pop_front();
+    const spv_operand_type_t type = expectedOperands.back();
+    expectedOperands.pop_back();
 
     // Expand optional tuples lazily.
     if (spvExpandOperandSequenceOnce(type, &expectedOperands)) continue;
