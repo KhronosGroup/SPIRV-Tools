@@ -547,7 +547,7 @@ TEST(MoveToFront, Remove) {
   MoveToFrontTester mtf;
 
   EXPECT_FALSE(mtf.Remove(1));
-  EXPECT_EQ(0, mtf.GetTotalNodeCount());
+  EXPECT_EQ(0u, mtf.GetTotalNodeCount());
 
   EXPECT_TRUE(mtf.Insert(1));
   EXPECT_TRUE(mtf.Insert(2));
@@ -559,9 +559,9 @@ TEST(MoveToFront, Remove) {
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_EQ(1u, mtf.GetNodeHandle(1));
-  EXPECT_EQ(3, mtf.GetTotalNodeCount());
+  EXPECT_EQ(3u, mtf.GetTotalNodeCount());
   EXPECT_TRUE(mtf.Remove(1));
-  EXPECT_EQ(3, mtf.GetTotalNodeCount());
+  EXPECT_EQ(3u, mtf.GetTotalNodeCount());
 
   CheckTree(mtf, std::string(R"(
 2H2S2T2-------D1
@@ -579,7 +579,7 @@ TEST(MoveToFront, Remove) {
 
   EXPECT_TRUE(mtf.Insert(1));
   EXPECT_EQ(1u, mtf.GetNodeHandle(1));
-  EXPECT_EQ(3, mtf.GetTotalNodeCount());
+  EXPECT_EQ(3u, mtf.GetTotalNodeCount());
 }
 
 TEST(MoveToFront, LargerScale) {
