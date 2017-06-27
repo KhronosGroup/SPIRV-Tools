@@ -22,6 +22,283 @@ using namespace spvtools;
 
 using AggressiveDCETest = PassTest<::testing::Test>;
 
+TEST_F(AggressiveDCETest, EliminateExtendedInst) {
+  //  #version 140
+  //  
+  //  in vec4 BaseColor;
+  //  in vec4 Dead;
+  //  
+  //  void main()
+  //  {
+  //      vec4 v = BaseColor;
+  //      vec4 dv = sqrt(Dead);
+  //      gl_FragColor = v;
+  //  }
+
+  const std::string predefs1 =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+)";
+
+  const std::string names_before =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %dv "dv"
+OpName %Dead "Dead"
+OpName %gl_FragColor "gl_FragColor"
+)";
+
+  const std::string names_after =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %Dead "Dead"
+OpName %gl_FragColor "gl_FragColor"
+)";
+
+  const std::string predefs2 =
+      R"(%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %9
+%15 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%dv = OpVariable %_ptr_Function_v4float Function 
+%16 = OpLoad %v4float %BaseColor
+OpStore %v %16
+%17 = OpLoad %v4float %Dead
+%18 = OpExtInst %v4float %1 Sqrt %17 
+OpStore %dv %18
+%19 = OpLoad %v4float %v
+OpStore %gl_FragColor %19
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %9
+%15 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%16 = OpLoad %v4float %BaseColor
+OpStore %v %16
+%19 = OpLoad %v4float %v
+OpStore %gl_FragColor %19
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs1 + names_before + predefs2 + func_before, 
+      predefs1 + names_after + predefs2 + func_after, 
+      true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateFrexp) {
+  // Note: SPIR-V hand-edited to utilize Frexp
+  //
+  // #version 450
+  // 
+  // in vec4 BaseColor;
+  // in vec4 Dead;
+  // out vec4 Color;
+  // out ivec4 iv2;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     vec4 dv = frexp(Dead, iv2);
+  //     Color = v;
+  // }
+
+  const std::string predefs1 =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %iv2 %Color
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+)";
+
+  const std::string names_before =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %dv "dv"
+OpName %Dead "Dead"
+OpName %iv2 "iv2"
+OpName %ResType "ResType"
+OpName %Color "Color"
+)";
+
+  const std::string names_after =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %Dead "Dead"
+OpName %iv2 "iv2"
+OpName %ResType "ResType"
+OpName %Color "Color"
+)";
+
+  const std::string predefs2 =
+      R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%_ptr_Output_v4int = OpTypePointer Output %v4int
+%iv2 = OpVariable %_ptr_Output_v4int Output
+%ResType = OpTypeStruct %v4float %v4int
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%Color = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %11
+%20 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%dv = OpVariable %_ptr_Function_v4float Function 
+%21 = OpLoad %v4float %BaseColor
+OpStore %v %21
+%22 = OpLoad %v4float %Dead
+%23 = OpExtInst %v4float %1 Frexp %22 %iv2
+OpStore %dv %23
+%24 = OpLoad %v4float %v
+OpStore %Color %24
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %11
+%20 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%21 = OpLoad %v4float %BaseColor
+OpStore %v %21
+%22 = OpLoad %v4float %Dead
+%23 = OpExtInst %v4float %1 Frexp %22 %iv2
+%24 = OpLoad %v4float %v
+OpStore %Color %24
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs1 + names_before + predefs2 + func_before, 
+      predefs1 + names_after + predefs2 + func_after, 
+      true, true);
+}
+
+TEST_F(AggressiveDCETest, EliminateDecorate) {
+  // Note: The SPIR-V was hand-edited to add the OpDecorate
+  //
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // in vec4 Dead;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     vec4 dv = Dead * 0.5;
+  //     gl_FragColor = v;
+  // }
+
+  const std::string predefs1 =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+)";
+
+  const std::string names_before =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %dv "dv"
+OpName %Dead "Dead"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %8 RelaxedPrecision
+)";
+
+  const std::string names_after =
+      R"(OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %Dead "Dead"
+OpName %gl_FragColor "gl_FragColor"
+)";
+
+  const std::string predefs2 =
+      R"(%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%float_0_5 = OpConstant %float 0.5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %10
+%17 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%dv = OpVariable %_ptr_Function_v4float Function 
+%18 = OpLoad %v4float %BaseColor
+OpStore %v %18
+%19 = OpLoad %v4float %Dead
+%8 = OpVectorTimesScalar %v4float %19 %float_0_5
+OpStore %dv %8
+%20 = OpLoad %v4float %v
+OpStore %gl_FragColor %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %10
+%17 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%18 = OpLoad %v4float %BaseColor
+OpStore %v %18
+%20 = OpLoad %v4float %v
+OpStore %gl_FragColor %20
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs1 + names_before + predefs2 + func_before, 
+      predefs1 + names_after + predefs2 + func_after, 
+      true, true);
+}
+
 TEST_F(AggressiveDCETest, Simple) {
   //  #version 140
   //  
@@ -108,7 +385,25 @@ OpFunctionEnd
 }
 
 TEST_F(AggressiveDCETest, DeadCycle) {
-  //  
+  // #version 140
+  // in vec4 BaseColor;
+  // 
+  // layout(std140) uniform U_t
+  // {
+  //     int g_I ;
+  // } ;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     float df = 0.0;
+  //     int i = 0;
+  //     while (i < g_I) {
+  //       df = df * 0.5;
+  //       i = i + 1;
+  //     }
+  //     gl_FragColor = v;
+  // }
 
   const std::string predefs1 =
       R"(OpCapability Shader
