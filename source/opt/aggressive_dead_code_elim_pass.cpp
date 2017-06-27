@@ -129,8 +129,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
   // Add all control flow and instructions with external side effects 
   // to worklist
-  // TODO(greg-lunarg): Handle frexp, modf more optimally
-  // TODO(greg-lunarg): Handle function call more optimally
+  // TODO(greg-lunarg): Handle Frexp, Modf more optimally
+  // TODO(greg-lunarg): Handle FunctionCall more optimally
+  // TODO(greg-lunarg): Handle CopyMemory more optimally
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
@@ -148,6 +149,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           if (!IsCombinatorExt(&inst))
             worklist_.push(&inst);
         } break;
+        case SpvOpCopyMemory:
         case SpvOpFunctionCall: {
           return false;
         } break;
