@@ -111,6 +111,12 @@ void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
 #undef DELEGATE
 }
 
+void Module::ForEachExtension(const std::function<void(Instruction*)>& f) {
+#define DELEGATE(i) i->ForEachInst(f, false)
+  for (auto& i : extensions_) DELEGATE(i);
+#undef DELEGATE
+}
+
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.magic_number);
   binary->push_back(header_.version);

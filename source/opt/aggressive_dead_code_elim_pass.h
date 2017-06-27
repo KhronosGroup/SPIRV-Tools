@@ -73,6 +73,11 @@ class AggressiveDCEPass : public Pass {
   // TODO(greg-lunarg): Add support for other extensions
   bool IsCombinatorExt(ir::Instruction* inst) const;
 
+  // Return true if all extensions in this module are allowed by this pass.
+  // Currently, no extensions are allowed. glsl_std_450 extended instructions
+  // are allowed.
+  bool AllExtensionsAllowed();
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true

@@ -99,6 +99,15 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
     return false;
 }
 
+bool AggressiveDCEPass::AllExtensionsAllowed() {
+  uint32_t ecnt = 0;
+  module_->ForEachExtension([&ecnt](ir::Instruction* epi) {
+    (void) epi;
+    ++ecnt;
+  });
+  return ecnt == 0;
+}
+
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   bool modified = false;
   // Add non-local stores, block terminating and merge instructions
@@ -205,6 +214,13 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // Current functionality assumes logical addressing only
   // TODO(greg-lunarg): Handle non-logical addressing
   if (module_->HasCapability(SpvCapabilityAddresses))
+    return Status::SuccessWithoutChange;
+
+  // If any extensions in the module are not explicitly allowed,
+  // return unmodified. Currently, no extensions are allowed.
+  // glsl_std_450 extended instructions are allowed.
+  // TODO(greg-lunarg): Allow additional extensions
+  if (!AllExtensionsAllowed())
     return Status::SuccessWithoutChange;
 
   InitCombinatorSets();

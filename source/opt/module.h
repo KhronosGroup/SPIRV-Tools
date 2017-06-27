@@ -131,6 +131,9 @@ class Module {
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
 
+  // Invokes function |f| on all OpExtension instructions in this module.
+  void ForEachExtension(const std::function<void(Instruction*)>& f);
+
   // Pushes the binary segments for this instruction into the back of *|binary|.
   // If |skip_nop| is true and this is a OpNop, do nothing.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
