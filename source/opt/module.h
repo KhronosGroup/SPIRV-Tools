@@ -112,6 +112,10 @@ class Module {
   IteratorRange<inst_iterator> annotations();
   IteratorRange<const_inst_iterator> annotations() const;
 
+  // Iterators for annotation instructions contained in this module.
+  IteratorRange<inst_iterator> extensions();
+  IteratorRange<const_inst_iterator> extensions() const;
+
   // Iterators for types, constants and global variables instructions.
   inline inst_iterator types_values_begin();
   inline inst_iterator types_values_end();
@@ -130,9 +134,6 @@ class Module {
                    bool run_on_debug_line_insts = false);
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
-
-  // Invokes function |f| on all OpExtension instructions in this module.
-  void ForEachExtension(const std::function<void(Instruction*)>& f);
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   // If |skip_nop| is true and this is a OpNop, do nothing.
@@ -240,6 +241,14 @@ inline IteratorRange<Module::inst_iterator> Module::annotations() {
 
 inline IteratorRange<Module::const_inst_iterator> Module::annotations() const {
   return make_const_range(annotations_);
+}
+
+inline IteratorRange<Module::inst_iterator> Module::extensions() {
+  return make_range(extensions_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::extensions() const {
+  return make_const_range(extensions_);
 }
 
 inline Module::inst_iterator Module::types_values_begin() {

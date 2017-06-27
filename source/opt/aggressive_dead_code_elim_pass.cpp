@@ -32,7 +32,6 @@ const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kNameTargetIdInIdx = 0;
-const uint32_t kDecorateTargetIdInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 
@@ -102,10 +101,10 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
 
 bool AggressiveDCEPass::AllExtensionsAllowed() {
   uint32_t ecnt = 0;
-  module_->ForEachExtension([&ecnt](ir::Instruction* epi) {
-    (void) epi;
+  for (auto& ei : module_->extensions()) {
+    (void) ei;
     ++ecnt;
-  });
+  }
   return ecnt == 0;
 }
 
