@@ -132,6 +132,11 @@ Optimizer::PassToken CreateEliminateDeadConstantPass() {
       MakeUnique<opt::EliminateDeadConstantPass>());
 }
 
+Optimizer::PassToken CreateBlockMergePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::BlockMergePass>());
+}
+
 Optimizer::PassToken CreateInlinePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::InlinePass>());
 }
