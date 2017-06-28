@@ -42,6 +42,7 @@ class HuffmanCodec {
 
  public:
   // Creates Huffman codec from a histogramm.
+  // Histogramm counts must not be zero.
   explicit HuffmanCodec(const std::map<Val, uint32_t>& hist) {
     if (hist.empty()) return;
 
@@ -61,6 +62,7 @@ class HuffmanCodec {
       Node* node = CreateNode();
       node->val = pair.first;
       node->weight = pair.second;
+      assert(node->weight);
       queue.push(node);
     }
 
@@ -238,6 +240,9 @@ class HuffmanCodec {
       Context(Node* in_node, uint64_t in_bits, size_t in_depth)
           :  node(in_node), bits(in_bits), depth(in_depth) {}
       Node* node;
+      // Huffman tree depth cannot exceed 64 as histogramm counts are expected
+      // to be positive and limited by numeric_limits<uint32_t>::max().
+      // For practical applications tree depth would be much smaller than 64.
       uint64_t bits;
       size_t depth;
     };
