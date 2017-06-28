@@ -178,7 +178,14 @@ class Parser {
           diagnostic(diagnostic_arg),
           word_index(0),
           endian(),
-          requires_endian_conversion(false) {}
+          requires_endian_conversion(false) {
+
+        // Temporary storage for parser state within a single instruction.
+        // Most instructions require fewer than 25 words or operands.
+        operands.reserve(25);
+        endian_converted_words.reserve(25);
+        expected_operands.reserve(25);
+    }
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
     size_t num_words;            // Number of words in the module.
@@ -267,25 +274,15 @@ spv_result_t Parser::parseInstruction() {
 
   const uint32_t first_word = peek();
 
-  // TODO(dneto): If it's too expensive to construct the following "words"
-  // and "operands" vectors for each instruction, each instruction, then make
-  // them class data members instead, and clear them here.
-
   // If the module's endianness is different from the host native endianness,
   // then converted_words contains the the endian-translated words in the
   // instruction.
   _.endian_converted_words.clear();
   _.endian_converted_words.push_back(first_word);
-  if (_.requires_endian_conversion) {
-    // Most instructions have fewer than 25 words.
-    _.endian_converted_words.reserve(25);
-  }
 
   // After a successful parse of the instruction, the inst.operands member
   // will point to this vector's storage.
-  // Most instructions have fewer than 25 logical operands.
   _.operands.clear();
-  _.operands.reserve(25);
 
   assert(_.word_index < _.num_words);
   // Decompose and check the first word.
@@ -312,7 +309,6 @@ spv_result_t Parser::parseInstruction() {
   // ExecutionMode), or for extended instructions that may have their
   // own operands depending on the selected extended instruction.
   _.expected_operands.clear();
-  _.expected_operands.reserve(opcode_desc->numTypes);
   for (auto i = 0; i < opcode_desc->numTypes; i++)
       _.expected_operands.push_back(opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
 
