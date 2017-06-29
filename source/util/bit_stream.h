@@ -27,6 +27,9 @@
 
 namespace spvutils {
 
+// Returns rounded down log2(val). log2(0) is considered 0.
+size_t Log2U64(uint64_t val);
+
 // Terminology:
 // Bits - usually used for a uint64 word, first bit is the lowest.
 // Stream - std::string of '0' and '1', read left-to-right,
@@ -243,6 +246,18 @@ class BitWriterInterface {
   void WriteVariableWidthS8(
       int8_t val, size_t chunk_length, size_t zigzag_exponent);
 
+  // Writes |val| using fixed bit width. Bit width is determined by |max_val|:
+  // max_val 0 -> bit width 1
+  // max_val 1 -> bit width 1
+  // max_val 2 -> bit width 2
+  // max_val 3 -> bit width 2
+  // max_val 4 -> bit width 3
+  // max_val 5 -> bit width 3
+  // max_val 8 -> bit width 4
+  // max_val n -> bit width 1 + floor(log2(n))
+  // |val| needs to be <= |max_val|.
+  void WriteFixedWidth(uint64_t val, uint64_t max_val);
+
   // Returns number of bits written.
   virtual size_t GetNumBits() const = 0;
 
@@ -388,6 +403,10 @@ class BitReaderInterface {
       int16_t* val, size_t chunk_length, size_t zigzag_exponent);
   bool ReadVariableWidthS8(
       int8_t* val, size_t chunk_length, size_t zigzag_exponent);
+
+  // Reads value written by WriteFixedWidth (|max_val| needs to be the same).
+  // Returns true on success, false if the bit stream ends prematurely.
+  bool ReadFixedWidth(uint64_t* val, uint64_t max_val);
 
   BitReaderInterface(const BitReaderInterface&) = delete;
   BitReaderInterface& operator=(const BitReaderInterface&) = delete;
