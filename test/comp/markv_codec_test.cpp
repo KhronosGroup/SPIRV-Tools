@@ -398,4 +398,16 @@ OpFunctionEnd
 )");
 }
 
+TEST(Markv, WithDecorate) {
+  TestEncodeDecode(R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %1 ArrayStride 4
+OpDecorate %1 Uniform
+%2 = OpTypeFloat 32
+%1 = OpTypeRuntimeArray %2
+)");
+}
+
 }  // namespace

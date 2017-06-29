@@ -167,6 +167,72 @@ size_t GetOperandVariableWidthChunkLength(spv_operand_type_t type) {
   return 0;
 }
 
+// Returns true if the opcode has a fixed number of operands. May return a
+// false negative.
+bool OpcodeHasFixedNumberOfOperands(SpvOp opcode) {
+  switch (opcode) {
+    // TODO(atgoo@github.com) This is not a complete list.
+    case SpvOpNop:
+    case SpvOpName:
+    case SpvOpUndef:
+    case SpvOpSizeOf:
+    case SpvOpLine:
+    case SpvOpNoLine:
+    case SpvOpDecorationGroup:
+    case SpvOpExtension:
+    case SpvOpExtInstImport:
+    case SpvOpMemoryModel:
+    case SpvOpCapability:
+    case SpvOpTypeVoid:
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeSampler:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeArray:
+    case SpvOpTypePointer:
+    case SpvOpConstantTrue:
+    case SpvOpConstantFalse:
+    case SpvOpLabel:
+    case SpvOpBranch:
+    case SpvOpFunction:
+    case SpvOpFunctionParameter:
+    case SpvOpFunctionEnd:
+    case SpvOpBitcast:
+    case SpvOpCopyObject:
+    case SpvOpTranspose:
+    case SpvOpSNegate:
+    case SpvOpFNegate:
+    case SpvOpIAdd:
+    case SpvOpFAdd:
+    case SpvOpISub:
+    case SpvOpFSub:
+    case SpvOpIMul:
+    case SpvOpFMul:
+    case SpvOpUDiv:
+    case SpvOpSDiv:
+    case SpvOpFDiv:
+    case SpvOpUMod:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpFRem:
+    case SpvOpFMod:
+    case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 size_t GetNumBitsToNextByte(size_t bit_pos) {
   return (8 - (bit_pos % 8)) % 8;
 }
@@ -295,32 +361,6 @@ class MarkvCodecBase {
   // Returns the current instruction (the one last processed by the validator).
   const Instruction& GetCurrentInstruction() const {
     return vstate_.ordered_instructions().back();
-  }
-
-  // Returns true if the opcode has a variable number of operands.
-  bool OpcodeHasVariableNumberOfOperands(SpvOp opcode) const {
-    switch (opcode) {
-      case SpvOpLoopMerge:
-        // Opcodes which can have a variable number of operands, even if the
-        // last operand is not declares as  variable.
-        // TODO(atgoo@github.com) Add other such opcodes or find a better
-        // solution.
-        return true;
-      default:
-        break;
-    }
-
-    spv_opcode_desc opcode_desc;
-    if (grammar_.lookupOpcode(static_cast<SpvOp>(opcode), &opcode_desc)
-        != SPV_SUCCESS) {
-      assert(false && "Opcode not described in the grammar");
-    }
-
-    if (opcode_desc->numTypes == 0)
-      return false;
-
-    return spvOperandIsVariable(
-        opcode_desc->operandTypes[opcode_desc->numTypes - 1]);
   }
 
   spv_validator_options validator_options_;
@@ -711,7 +751,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   // Write opcode.
   writer_.WriteVariableWidthU32(inst.opcode, model_->opcode_chunk_length());
 
-  if (OpcodeHasVariableNumberOfOperands(SpvOp(inst.opcode))) {
+  if (!OpcodeHasFixedNumberOfOperands(SpvOp(inst.opcode))) {
     // If the opcode has a variable number of operands, encode the number of
     // operands with the instruction.
 
@@ -1251,7 +1291,7 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
       opcode_desc->operandTypes,
       opcode_desc->operandTypes + opcode_desc->numTypes);
 
-  if (OpcodeHasVariableNumberOfOperands(opcode)) {
+  if (!OpcodeHasFixedNumberOfOperands(opcode)) {
     if (!reader_.ReadVariableWidthU16(&inst->num_operands,
                                       model_->num_operands_chunk_length()))
       return vstate_.diag(SPV_ERROR_INVALID_BINARY)
