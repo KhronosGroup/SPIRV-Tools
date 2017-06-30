@@ -215,9 +215,12 @@ Optimizer::PassToken CreateInlinePass();
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Create dead branch elimination pass.
-// For each entry point function, this pass will look for BranchConditionals
-// with constant condition and convert to a Branch to the indicated label. 
-// It will delete all resulting dead blocks. 
+// For each entry point function, this pass will look for SelectionMerge
+// BranchConditionals with constant condition and convert to a Branch to
+// the indicated label. It will delete all resulting dead blocks. 
+//
+// This pass only works on shaders (guaranteed to have structured control
+// flow).
 //
 // This pass is most effective when preceeded by passes which eliminate
 // local loads and stores, effectively propagating constant values where

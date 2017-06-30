@@ -122,7 +122,7 @@ void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   });
 }
 
-bool DeadBranchElimPass::GetConstConditionalBranch(ir::BasicBlock* bp,
+bool DeadBranchElimPass::GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
     bool *condVal) {
   auto ii = bp->end();
@@ -156,7 +156,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     ir::Instruction* br;
     ir::Instruction* mergeInst;
     bool condVal;
-    if (!GetConstConditionalBranch(*bi, &br, &mergeInst, &condVal))
+    if (!GetConstConditionalSelectionBranch(*bi, &br, &mergeInst, &condVal))
       continue;
 
     // Replace conditional branch with unconditional branch

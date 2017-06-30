@@ -80,7 +80,7 @@ class DeadBranchElimPass : public Pass {
   // If block |bp| contains constant conditional branch preceeded by an
   // OpSelctionMerge, return true and return branch and merge instructions
   // in |branchInst| and |mergeInst| and the boolean constant in |condVal|. 
-  bool GetConstConditionalBranch(ir::BasicBlock* bp,
+  bool GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
     bool *condVal);
 
