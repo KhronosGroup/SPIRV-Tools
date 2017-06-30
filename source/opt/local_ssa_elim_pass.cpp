@@ -604,20 +604,18 @@ bool LocalSSAElimPass::LocalSSAElim(ir::Function* func) {
       switch (ii->opcode()) {
         case SpvOpStore: {
           uint32_t varId;
-          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          (void) GetPtr(&*ii, &varId);
           if (!IsTargetVar(varId))
             break;
-          assert(ptrInst->opcode() != SpvOpAccessChain);
           // Register new stored value for the variable
           label2ssa_map_[label][varId] =
               ii->GetSingleWordInOperand(kStoreValIdInIdx);
         } break;
         case SpvOpLoad: {
           uint32_t varId;
-          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          (void) GetPtr(&*ii, &varId);
           if (!IsTargetVar(varId))
             break;
-          assert(ptrInst->opcode() != SpvOpAccessChain);
           uint32_t replId = 0;
           const auto ssaItr = label2ssa_map_.find(label);
           if (ssaItr != label2ssa_map_.end()) {
