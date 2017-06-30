@@ -410,4 +410,24 @@ OpDecorate %1 Uniform
 )");
 }
 
+TEST(Markv, WithExtInst) {
+  TestEncodeDecode(R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+%opencl = OpExtInstImport "OpenCL.std"
+OpMemoryModel Physical32 OpenCL
+%f32 = OpTypeFloat 32
+%void = OpTypeVoid
+%void_func = OpTypeFunction %void
+%100 = OpConstant %f32 1.1
+%main = OpFunction %void None %void_func
+%entry_main = OpLabel
+%200 = OpExtInst %f32 %opencl cos %100
+OpReturn
+OpFunctionEnd
+)");
+}
+
 }  // namespace
