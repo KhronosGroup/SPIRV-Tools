@@ -151,7 +151,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     // Skip blocks that are already in the elimination set
     if (elimBlocks.find(*bi) != elimBlocks.end())
       continue;
-    // Skip blocks that don't have constant conditional branch
+    // Skip blocks that don't have constant conditional branch preceded
+    // by OpSelectionMerge
     ir::Instruction* br;
     ir::Instruction* mergeInst;
     bool condVal;

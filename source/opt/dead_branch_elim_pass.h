@@ -77,9 +77,9 @@ class DeadBranchElimPass : public Pass {
   // Kill all instructions in block |bp|.
   void KillAllInsts(ir::BasicBlock* bp);
 
-  // If block |bp| contains constant conditional branch, return true
-  // and return branch and merge instructions in |branchInst| and |mergeInst|
-  // and the boolean constant in |condVal|. 
+  // If block |bp| contains constant conditional branch preceeded by an
+  // OpSelctionMerge, return true and return branch and merge instructions
+  // in |branchInst| and |mergeInst| and the boolean constant in |condVal|. 
   bool GetConstConditionalBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
     bool *condVal);
