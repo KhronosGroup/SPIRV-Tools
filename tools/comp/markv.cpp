@@ -51,6 +51,10 @@ or if the filename is "-", then the binary is read from standard input.
 If no output is specified then the output is printed to stdout in a human
 readable format.
 
+WIP: MARK-V codec is in early stages of development. At the moment it only
+can encode and decode some SPIR-V files and only if exacly the same build of
+software is used (is doesn't write or handle version numbers yet).
+
 Tasks:
   e               Encode SPIR-V to MARK-V.
   d               Decode MARK-V to SPIR-V.
