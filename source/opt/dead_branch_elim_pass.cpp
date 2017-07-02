@@ -130,6 +130,8 @@ bool DeadBranchElimPass::GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
   *branchInst = &*ii;
   if ((*branchInst)->opcode() != SpvOpBranchConditional)
     return false;
+  if (ii == bp->begin())
+    return false;
   --ii;
   *mergeInst = &*ii;
   if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
