@@ -96,10 +96,11 @@ class DeadBranchElimPass : public Pass {
   bool HasNonPhiRef(uint32_t labelId);
 
   // For function |func|, look for BranchConditionals with constant condition
-  // and convert to a Branch to the indicated label. Delete all resulting dead
-  // blocks. For all phi functions in the corresponding merge block, replace
-  // all uses with id corresponding to the living predecessor. Assumes only
-  // structured control flow in shader.
+  // and convert to a Branch to the indicated label. Delete resulting dead
+  // blocks. Assumes only structured control flow in shader. Note some such
+  // branches and blocks may be left to avoid creating invalid control flow.
+  // TODO(greg-lunarg): Remove remaining constant conditional branches and
+  // dead blocks.
   bool EliminateDeadBranches(ir::Function* func);
 
   void Initialize(ir::Module* module);
