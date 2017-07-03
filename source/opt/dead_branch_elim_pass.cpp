@@ -174,24 +174,24 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     def_use_mgr_->KillInst(br);
     def_use_mgr_->KillInst(mergeInst);
 
-    // Iterate to merge block deleting dead blocks
-    std::unordered_set<uint32_t> deadLabIds;
-    deadLabIds.insert(deadLabId);
+    // Iterate to merge block adding dead blocks to elimination set
+    std::unordered_set<uint32_t> deadSuccIds;
+    deadSuccIds.insert(deadLabId);
     auto dbi = bi;
     ++dbi;
     uint32_t dLabId = (*dbi)->id();
     while (dLabId != mergeLabId) {
-      if (deadLabIds.find(dLabId) != deadLabIds.end()) {
-        // Add successor blocks to dead block set
-        (*dbi)->ForEachSuccessorLabel([&deadLabIds](uint32_t succ) {
-          deadLabIds.insert(succ);
+      if (deadSuccIds.find(dLabId) != deadSuccIds.end()) {
+        // Add successor blocks to dead successor set
+        (*dbi)->ForEachSuccessorLabel([&deadSuccIds](uint32_t succ) {
+          deadSuccIds.insert(succ);
         });
-        // Add merge block to dead block set in case it has
-        // no predecessors.
+        // If dead block is merge block, add its merge block to dead
+        // successor set in case it has no predecessors.
         const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi);
         if (dMergeLabId != 0)
-          deadLabIds.insert(dMergeLabId);
-        // Kill use/def for all instructions and delete block
+          deadSuccIds.insert(dMergeLabId);
+        // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
       }
@@ -203,11 +203,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     // deadLabIds are now blocks which cannot precede merge block.
     // If eliminated branch is to merge label, add current block to dead blocks.
     if (deadLabId == mergeLabId)
-      deadLabIds.insert((*bi)->id());
-    (*dbi)->ForEachPhiInst([&deadLabIds, this](ir::Instruction* phiInst) {
+      deadSuccIds.insert((*bi)->id());
+    (*dbi)->ForEachPhiInst([&deadSuccIds, this](ir::Instruction* phiInst) {
       const uint32_t phiLabId0 =
           phiInst->GetSingleWordInOperand(kPhiLab0IdInIdx);
-      const bool useFirst = deadLabIds.find(phiLabId0) == deadLabIds.end();
+      const bool useFirst = deadSuccIds.find(phiLabId0) == deadSuccIds.end();
       const uint32_t phiValIdx =
           useFirst ? kPhiVal0IdInIdx : kPhiVal1IdInIdx;
       const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
