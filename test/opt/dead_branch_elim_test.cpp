@@ -624,6 +624,76 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
+TEST_F(DeadBranchElimTest, NoOrphanMerge) {
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%float_0_5 = OpConstant %float 0.5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %7
+%16 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%17 = OpLoad %v4float %BaseColor
+OpStore %v %17
+OpSelectionMerge %18 None
+OpBranchConditional %true %19 %20
+%19 = OpLabel
+OpKill
+%20 = OpLabel
+%21 = OpLoad %v4float %v
+%22 = OpVectorTimesScalar %v4float %21 %float_0_5
+OpStore %v %22
+OpBranch %18
+%18 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %7
+%16 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%17 = OpLoad %v4float %BaseColor
+OpStore %v %17
+OpSelectionMerge %18 None
+OpBranchConditional %true %19 %18
+%19 = OpLabel
+OpKill
+%18 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow

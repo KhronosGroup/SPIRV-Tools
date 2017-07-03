@@ -74,6 +74,14 @@ class DeadBranchElimPass : public Pass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
+  // Add selction merge of |labelId| to end of block |bp|.
+  void AddSelectionMerge(uint32_t labelId, ir::BasicBlock* bp);
+
+  // Add conditional branch of |condId|, |trueLabId| and |falseLabId| to end
+  // of block |bp|.
+  void AddBranchConditional(uint32_t condId, uint32_t trueLabId,
+      uint32_t falseLabId, ir::BasicBlock* bp);
+
   // Kill all instructions in block |bp|.
   void KillAllInsts(ir::BasicBlock* bp);
 
@@ -82,7 +90,10 @@ class DeadBranchElimPass : public Pass {
   // in |branchInst| and |mergeInst| and the boolean constant in |condVal|. 
   bool GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
-    bool *condVal);
+    uint32_t *condId, bool *condVal);
+
+  // Return true if |labelId| has any non-phi references
+  bool HasNonPhiRef(uint32_t labelId);
 
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete all resulting dead

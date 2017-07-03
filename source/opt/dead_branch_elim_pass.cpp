@@ -116,6 +116,27 @@ void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   bp->AddInstruction(std::move(newBranch));
 }
 
+void DeadBranchElimPass::AddSelectionMerge(uint32_t labelId,
+    ir::BasicBlock* bp) {
+  std::unique_ptr<ir::Instruction> newMerge(
+    new ir::Instruction(SpvOpSelectionMerge, 0, 0,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
+  def_use_mgr_->AnalyzeInstDefUse(&*newMerge);
+  bp->AddInstruction(std::move(newMerge));
+}
+
+void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
+    uint32_t trueLabId, uint32_t falseLabId, ir::BasicBlock* bp) {
+  std::unique_ptr<ir::Instruction> newBranchCond(
+    new ir::Instruction(SpvOpBranchConditional, 0, 0,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condId}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {trueLabId}},
+         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {falseLabId}}}));
+  def_use_mgr_->AnalyzeInstDefUse(&*newBranchCond);
+  bp->AddInstruction(std::move(newBranchCond));
+}
+
 void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
     def_use_mgr_->KillInst(ip);
@@ -124,7 +145,7 @@ void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
 
 bool DeadBranchElimPass::GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
-    bool *condVal) {
+    uint32_t *condId, bool *condVal) {
   auto ii = bp->end();
   --ii;
   *branchInst = &*ii;
@@ -137,10 +158,20 @@ bool DeadBranchElimPass::GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
   if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
     return false;
   bool condIsConst;
-  (void) GetConstCondition(
-      (*branchInst)->GetSingleWordInOperand(kBranchCondConditionalIdInIdx),
-      condVal, &condIsConst);
+  *condId = (*branchInst)->GetSingleWordInOperand(
+      kBranchCondConditionalIdInIdx);
+  (void) GetConstCondition(*condId, condVal, &condIsConst);
   return condIsConst;
+}
+
+bool DeadBranchElimPass::HasNonPhiRef(uint32_t labelId) {
+  analysis::UseList* uses = def_use_mgr_->GetUses(labelId);
+  if (uses == nullptr)
+    return false;
+  for (auto u : *uses)
+    if (u.inst->opcode() != SpvOpPhi)
+      return true;
+  return false;
 }
 
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
@@ -157,8 +188,10 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     // by OpSelectionMerge
     ir::Instruction* br;
     ir::Instruction* mergeInst;
+    uint32_t condId;
     bool condVal;
-    if (!GetConstConditionalSelectionBranch(*bi, &br, &mergeInst, &condVal))
+    if (!GetConstConditionalSelectionBranch(*bi, &br, &mergeInst, &condId,
+        &condVal))
       continue;
 
     // Replace conditional branch with unconditional branch
@@ -215,6 +248,23 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
       def_use_mgr_->KillInst(phiInst);
     });
+
+    // If merge block has no predecessors, replace the new branch with
+    // a MergeSelection/BranchCondition using the original constant condition
+    // and the mergeblock as the false branch. This is done so the merge block
+    // is not orphaned, which could cause invalid control flow in certain case.
+    // TODO(greg-lunarg): Do this only in cases where invalid code is caused.
+    if (!HasNonPhiRef(mergeLabId)) {
+      auto eii = (*bi)->end();
+      --eii;
+      ir::Instruction* nbr = &*eii;
+      AddSelectionMerge(mergeLabId, *bi);
+      if (condVal == true)
+        AddBranchConditional(condId, liveLabId, mergeLabId, *bi);
+      else
+        AddBranchConditional(condId, mergeLabId, liveLabId, *bi);
+      def_use_mgr_->KillInst(nbr);
+    }
     modified = true;
   }
 
