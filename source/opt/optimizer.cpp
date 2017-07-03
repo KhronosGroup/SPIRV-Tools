@@ -171,6 +171,11 @@ Optimizer::PassToken CreateLocalMultiStoreElimPass() {
       MakeUnique<opt::LocalMultiStoreElimPass>());
 }
 
+Optimizer::PassToken CreateCommonUniformElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CommonUniformElimPass>());
+}
+
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());
