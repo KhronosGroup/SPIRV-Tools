@@ -341,6 +341,20 @@ Optimizer::PassToken CreateInsertExtractElimPass();
 // possible.
 Optimizer::PassToken CreateDeadBranchElimPass();
 
+// Creates a pass to consolidate uniform references.
+// For each entry point function in the module, first change all constant index
+// access chain loads into equivalent composite extracts. Then consolidate 
+// identical uniform loads into one uniform load. Finally, consolidate
+// identical uniform extracts into one uniform extract. This may require
+// moving a load or extract to a point which dominates all uses.
+//
+// This pass requires a module to have structured control flow ie shader
+// capability. It also requires logical addressing ie Addresses capability
+// is not enabled. It also currently does not support any extensions.
+//
+// This pass currently only optimizes loads with a single index.
+Optimizer::PassToken CreateCommonUniformElimPass();
+
 // Create aggressive dead code elimination pass
 // This pass eliminates unused code from functions. In addition,
 // it detects and eliminates code which may have spurious uses but which do
@@ -361,6 +375,18 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // Store/Load elimination passes are completed. These cycles cannot be
 // eliminated with standard dead code elimination.
 Optimizer::PassToken CreateAggressiveDCEPass();
+
+// Creates a pass to consolidate uniform references.
+// For each entry point function in the module, first change all constant index
+// access chain loads into equivalent composite extracts. Then consolidate 
+// identical uniform loads into one uniform load. Finally, consolidate
+// identical uniform extracts into one uniform extract. This may require
+// moving a load or extract to a point which dominates all uses.
+//
+// This pass requires a module to have structured control flow ie shader
+// capability. It also requires logical addressing ie Addresses capability
+// is not enabled. It also currently does not support any extensions.
+Optimizer::PassToken CreateCommonUniformElimPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.

@@ -16,6 +16,7 @@ add_library(SPIRV-Tools-opt
   basic_block.h
   block_merge_pass.h
   build_module.h
+  common_uniform_elim_pass.h
   compact_ids_pass.h
   constants.h
   dead_branch_elim_pass.h
@@ -51,6 +52,7 @@ add_library(SPIRV-Tools-opt
   basic_block.cpp
   block_merge_pass.cpp
   build_module.cpp
+  common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
   def_use_manager.cpp
   dead_branch_elim_pass.cpp

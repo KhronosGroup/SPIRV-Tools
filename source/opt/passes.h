@@ -18,6 +18,7 @@
 // A single header to include all passes.
 
 #include "block_merge_pass.h"
+#include "common_uniform_elim_pass.h"
 #include "compact_ids_pass.h"
 #include "dead_branch_elim_pass.h"
 #include "eliminate_dead_constant_pass.h"

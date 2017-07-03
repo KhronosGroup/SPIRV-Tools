@@ -76,6 +76,12 @@ Options:
                equivalent load/stores with inserts and extracts. Performed
                on function scope variables referenced only with load, store,
                and constant index access chains.
+  --eliminate-common-uniform
+               Perform load/load elimination for duplicate uniform values.
+               Converts any constant index access chain uniform loads into
+               its equivalent load and extract. Some loads will be moved
+               to facilitate sharing. Performed only on entry point
+               functions.
   --eliminate-local-single-block
                Perform single-block store/load and load/load elimination.
                Performed only on function scope variables in entry point
@@ -182,6 +188,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateDeadBranchElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-local-multi-store")) {
         optimizer.RegisterPass(CreateLocalMultiStoreElimPass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-common-uniform")) {
+        optimizer.RegisterPass(CreateCommonUniformElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         optimizer.RegisterPass(CreateEliminateDeadConstantPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
