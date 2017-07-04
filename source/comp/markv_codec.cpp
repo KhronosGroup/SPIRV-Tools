@@ -1061,7 +1061,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
       if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst))
         return vstate_.diag(SPV_ERROR_INVALID_BINARY)
             << "Invalid extended instruction number: " << word;
-      spvPrependOperandTypes(ext_inst->operandTypes, expected_operands);
+      spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
       break;
     }
 
