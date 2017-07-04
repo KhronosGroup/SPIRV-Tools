@@ -40,7 +40,9 @@ option(SPIRV_TOOLS_INSTALL_EMACS_HELPERS
   ${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
 if (${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
   if(EXISTS /etc/emacs/site-start.d)
-    install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d)
+    if(ENABLE_SPIRV_TOOLS_INSTALL)
+      install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d)
+    endif(ENABLE_SPIRV_TOOLS_INSTALL)
   endif()
 endif()
 
