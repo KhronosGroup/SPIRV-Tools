@@ -25,6 +25,8 @@ project(spirv-tools)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
+include(GNUInstallDirs)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -177,7 +179,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/optimizer.hpp
     DESTINATION
-      include/spirv-tools/)
+      ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools/)
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
 add_test(NAME spirv-tools-copyrights
