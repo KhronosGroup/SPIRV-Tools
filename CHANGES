@@ -41,6 +41,8 @@ v2016.7-dev 2017-01-06
      binary vector when all passes succeded without changes.
    #629: The inline-entry-points-all optimization could generate invalidly
      structured code when the inlined function had early returns.
+   #697: Optimizer's Instruction::ForEachInId method was skipping semantics-id
+     and scope-id.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
