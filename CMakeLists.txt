@@ -25,6 +25,8 @@ project(spirv-tools)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
+include(GNUInstallDirs)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -48,6 +50,11 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+option(SKIP_SPIRV_TOOLS_INSTALL "Skip installation" ${SKIP_SPIRV_TOOLS_INSTALL})
+if(NOT ${SKIP_SPIRV_TOOLS_INSTALL})
+  set(ENABLE_SPIRV_TOOLS_INSTALL ON)
+endif()
+ 
 option(SPIRV_WERROR "Enable error on warning" ON)
 if(("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
   set(COMPILER_IS_LIKE_GNU TRUE)
@@ -165,13 +172,15 @@ add_subdirectory(tools)
 add_subdirectory(test)
 add_subdirectory(examples)
 
-install(
-  FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/optimizer.hpp
-  DESTINATION
-    include/spirv-tools/)
+if(ENABLE_SPIRV_TOOLS_INSTALL)
+  install(
+    FILES
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/optimizer.hpp
+    DESTINATION
+      ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools/)
+endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
 add_test(NAME spirv-tools-copyrights
          COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
