@@ -149,7 +149,7 @@ class LocalSSAElimPass : public Pass {
   // across predecessors, create a phi function and use that value id
   // for the variable in the new SSA map. Assumes all predecessors have
   // been visited by SSARewrite.
-  void SSABlockInitSelectMerge(ir::BasicBlock* block_ptr);
+  void SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
 
   // Initialize the label2SSA map entry for a block. Insert phi instructions
   // into block when necessary. All predecessor blocks must have been

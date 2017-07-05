@@ -480,7 +480,7 @@ void LocalSSAElimPass::SSABlockInitLoopHeader(
   }
 }
 
-void LocalSSAElimPass::SSABlockInitSelectMerge(ir::BasicBlock* block_ptr) {
+void LocalSSAElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   const uint32_t label = block_ptr->id();
   // Collect all live variables and a default value for each across all
   // predecesors.
@@ -561,7 +561,7 @@ void LocalSSAElimPass::SSABlockInit(
   else if (IsLoopHeader(*block_itr))
     SSABlockInitLoopHeader(block_itr);
   else
-    SSABlockInitSelectMerge(*block_itr);
+    SSABlockInitMultiPred(*block_itr);
 }
 
 void LocalSSAElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
