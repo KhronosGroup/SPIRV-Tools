@@ -129,32 +129,33 @@ class LocalSSAElimPass : public Pass {
   // Return true if loop header block
   bool IsLoopHeader(ir::BasicBlock* block_ptr) const;
 
-  // Initialize SSA map for block with single predecessor
+  // Initialize label2ssa_map_ entry for block |block_ptr| with single
+  // predecessor.
   void SSABlockInitSinglePred(ir::BasicBlock* block_ptr);
 
   // Return true if variable is loaded in block with |label| or in
   // any succeeding block.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
-  // Initialize SSA map for loop header block by merging SSA maps 
-  // from all predecessors. If any value ids differ for any variable
-  // across predecessors, create a phi function and use that value id
-  // for the variable in the new SSA map. Assumes all predecessors have
-  // been visited by SSARewrite except the back edge. Use a dummy value
-  // in the phi for the back edge until the back edge block is visited
-  // and patch the phi value then.
+  // Initialize label2ssa_map_ entry for loop header block pointed to
+  // |block_itr| by merging entries from all predecessors. If any value
+  // ids differ for any variable across predecessors, create a phi function
+  // in the block and use that value id for the variable in the new map.
+  // Assumes all predecessors have been visited by SSARewrite except the
+  // back edge. Use a dummy value in the phi for the back edge until the
+  // back edge block is visited and patch the phi value then.
   void SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
 
-  // Initialize SSA map for selection merge block by merging SSA Maps
-  // from all predecessors. If any value ids differ for any variable
-  // across predecessors, create a phi function and use that value id
-  // for the variable in the new SSA map. Assumes all predecessors have
-  // been visited by SSARewrite.
+  // Initialize label2ssa_map_ entry for multiple predecessor block
+  // |block_ptr| by merging label2ssa_map_ entries for all predecessors.
+  // If any value ids differ for any variable across predecessors, create
+  // a phi function in the block and use that value id for the variable in
+  // the new map. Assumes all predecessors have been visited by SSARewrite.
   void SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
 
-  // Initialize the label2SSA map entry for a block. Insert phi instructions
-  // into block when necessary. All predecessor blocks must have been
-  // visited by SSARewrite except for backedges.
+  // Initialize the label2ssa_map entry for a block pointed to by |block_itr|.
+  // Insert phi instructions into block when necessary. All predecessor
+  // blocks must have been visited by SSARewrite except for backedges.
   void SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
 
   // Return undef in function for type. Create and insert an undef after the
@@ -236,7 +237,8 @@ class LocalSSAElimPass : public Pass {
   // Map from block's label id to its predecessor blocks ids
   std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
 
-  // Map from block's label id to its SSA map
+  // Map from block's label id to a map of a variable to its value at the
+  // end of the block.
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
       label2ssa_map_;
 

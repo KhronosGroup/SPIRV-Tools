@@ -333,7 +333,7 @@ void LocalSSAElimPass::ComputeStructuredOrder(
 }
 
 void LocalSSAElimPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
-  // Copy SSA map from single predecessor
+  // Copy map entry from single predecessor
   const uint32_t label = block_ptr->id();
   const uint32_t predLabel = label2preds_[label].front();
   assert(visitedBlocks_.find(predLabel) != visitedBlocks_.end());
@@ -513,7 +513,7 @@ void LocalSSAElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
         break;
       }
     }
-    // If val is the same for all predecessors, enter it in SSA map
+    // If val is the same for all predecessors, enter it in map
     if (!differs) {
       label2ssa_map_[label].insert(var_val);
       continue;
@@ -595,8 +595,8 @@ bool LocalSSAElimPass::LocalSSAElim(ir::Function* func) {
     // Skip pseudo entry block
     if (*bi == &pseudo_entry_block_)
       continue;
-    // Initialize this block's SSA map using predecessor maps. Then
-    // process all stores and loads of targeted variables.
+    // Initialize this block's label2ssa_map_ entry using predecessor maps.
+    // Then process all stores and loads of targeted variables.
     SSABlockInit(bi);
     ir::BasicBlock* bp = *bi;
     const uint32_t label = bp->id();
