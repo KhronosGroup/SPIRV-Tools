@@ -694,6 +694,104 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
+TEST_F(DeadBranchElimTest, KeepContinueTargetWhenKillAfterMerge) {
+  // #version 450
+  // void main() {
+  //   bool c;
+  //   bool d;
+  //   while(c) {
+  //     if(d) {
+  //      continue;
+  //     }
+  //     if(false) {
+  //      continue;
+  //     }
+  //     discard;
+  //   }
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %c "c"
+OpName %d "d"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%bool = OpTypeBool
+%_ptr_Function_bool = OpTypePointer Function %bool
+%false = OpConstantFalse %bool
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %6
+%10 = OpLabel
+%c = OpVariable %_ptr_Function_bool Function
+%d = OpVariable %_ptr_Function_bool Function
+OpBranch %11
+%11 = OpLabel
+OpLoopMerge %12 %13 None
+OpBranch %14
+%14 = OpLabel
+%15 = OpLoad %bool %c
+OpBranchConditional %15 %16 %12
+%16 = OpLabel
+%17 = OpLoad %bool %d
+OpSelectionMerge %18 None
+OpBranchConditional %17 %19 %18
+%19 = OpLabel
+OpBranch %13
+%18 = OpLabel
+OpSelectionMerge %20 None
+OpBranchConditional %false %21 %20 
+%21 = OpLabel
+OpBranch %13
+%20 = OpLabel
+OpKill
+%13 = OpLabel
+OpBranch %11
+%12 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %6
+%10 = OpLabel
+%c = OpVariable %_ptr_Function_bool Function
+%d = OpVariable %_ptr_Function_bool Function
+OpBranch %11
+%11 = OpLabel
+OpLoopMerge %12 %13 None
+OpBranch %14
+%14 = OpLabel
+%15 = OpLoad %bool %c
+OpBranchConditional %15 %16 %12
+%16 = OpLabel
+%17 = OpLoad %bool %d
+OpSelectionMerge %18 None
+OpBranchConditional %17 %19 %18
+%19 = OpLabel
+OpBranch %13
+%18 = OpLabel
+OpBranch %20
+%20 = OpLabel
+OpKill
+%13 = OpLabel
+OpBranch %11
+%12 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow

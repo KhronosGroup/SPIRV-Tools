@@ -48,16 +48,18 @@ class DeadBranchElimPass : public Pass {
 
  private:
   // Returns the id of the merge block declared by a merge instruction in 
-  // this block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk) const;
+  // this block |blk|, if any. If none, returns zero. If loop merge, returns
+  // the continue target id in |cbid|. Otherwise sets to zero.
+  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) const;
 
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.
-  // When order matters, the merge block always appears first.
+  // When order matters, the merge block always appears first and if
+  // a loop merge block, the continue target always appears second.
   // This assures correct depth first search in the presence of early 
   // returns and kills. If the successor vector contain duplicates
-  // if the merge block, they are safely ignored by DFS.
+  // of the merge and continue blocks, they are safely ignored by DFS.
   void ComputeStructuredSuccessors(ir::Function* func);
 
   // Compute structured block order |order| for function |func|. This order

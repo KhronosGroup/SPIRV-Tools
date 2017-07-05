@@ -33,31 +33,41 @@ const uint32_t kPhiVal0IdInIdx = 0;
 const uint32_t kPhiLab0IdInIdx = 1;
 const uint32_t kPhiVal1IdInIdx = 2;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 } // anonymous namespace
 
 uint32_t DeadBranchElimPass::MergeBlockIdIfAny(
-    const ir::BasicBlock& blk) const {
+    const ir::BasicBlock& blk, uint32_t* cbid) const {
   auto merge_ii = blk.cend();
   --merge_ii;
   uint32_t mbid = 0;
+  *cbid = 0;
   if (merge_ii != blk.cbegin()) {
     --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge)
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
       mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-    else if (merge_ii->opcode() == SpvOpSelectionMerge)
+      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+    }
+    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
       mbid = merge_ii->GetSingleWordInOperand(
           kSelectionMergeMergeBlockIdInIdx);
+    }
   }
   return mbid;
 }
 
 void DeadBranchElimPass::ComputeStructuredSuccessors(ir::Function* func) {
-  // If header, make merge block first successor.
+  // If header, make merge block first successor. If a loop header, make
+  // the second successor the continue target.
   for (auto& blk : *func) {
-    uint32_t mbid = MergeBlockIdIfAny(blk);
-    if (mbid != 0)
+    uint32_t cbid;
+    uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
+    if (mbid != 0) {
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      if (cbid != 0)
+        block2structured_succs_[&blk].push_back(id2block_[cbid]);
+    }
     // add true successors
     blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
       block2structured_succs_[&blk].push_back(id2block_[sbid]);
@@ -221,7 +231,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         });
         // If dead block is merge block, add its merge block to dead
         // successor set in case it has no predecessors.
-        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi);
+        uint32_t dummy;
+        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi, &dummy);
         if (dMergeLabId != 0)
           deadSuccIds.insert(dMergeLabId);
         // Kill use/def for all instructions and mark block for elimination
