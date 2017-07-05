@@ -132,7 +132,8 @@ class LocalSSAElimPass : public Pass {
   // Initialize SSA map for block with single predecessor
   void SSABlockInitSinglePred(ir::BasicBlock* block_ptr);
 
-  // Return true if variable is loaded after the label
+  // Return true if variable is loaded in block with |label| or in
+  // any succeeding block.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
   // Initialize SSA map for loop header block by merging SSA maps 
