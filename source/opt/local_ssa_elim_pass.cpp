@@ -697,7 +697,7 @@ void LocalSSAElimPass::Initialize(ir::Module* module) {
   next_id_ = module_->id_bound();
 };
 
-bool LocalSSAElimPass::AllExtensionsAllowed() const {
+bool LocalSSAElimPass::AllExtensionsSupported() const {
   // Currently disallows all extensions. This is just super conservative
   // to allow this to go public and many can likely be allowed with little
   // to no additional coding. One exception is SPV_KHR_variable_pointers
@@ -727,7 +727,7 @@ Pass::Status LocalSSAElimPass::ProcessImpl() {
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
-  if (!AllExtensionsAllowed())
+  if (!AllExtensionsSupported())
       return Status::SuccessWithoutChange;
   // Process functions
   bool modified = false;

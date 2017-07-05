@@ -171,7 +171,7 @@ class LocalSSAElimPass : public Pass {
   // Return true if all extensions in this module are allowed by this pass.
   // Currently, no extensions are supported.
   // TODO(greg-lunarg): Add extensions to supported list.
-  bool AllExtensionsAllowed() const;
+  bool AllExtensionsSupported() const;
 
   // Remove remaining loads and stores of function scope variables only
   // referenced with non-access-chain loads and stores from function |func|.
