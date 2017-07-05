@@ -255,21 +255,21 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%44 = OpUndef %float
+      R"(%46 = OpUndef %float
 %main = OpFunction %void None %9
 %23 = OpLabel
 OpBranch %24
 %24 = OpLabel
-%45 = OpPhi %float %44 %23 %33 %26
-%46 = OpPhi %float %float_0 %23 %48 %26
-%47 = OpPhi %int %int_0 %23 %42 %26
+%44 = OpPhi %float %float_0 %23 %48 %26
+%45 = OpPhi %int %int_0 %23 %42 %26
+%47 = OpPhi %float %46 %23 %33 %26
 OpLoopMerge %25 %26 None
 OpBranch %27
 %27 = OpLabel
-%29 = OpSLessThan %bool %47 %int_4
+%29 = OpSLessThan %bool %45 %int_4
 OpBranchConditional %29 %30 %25
 %30 = OpLabel
-%32 = OpAccessChain %_ptr_Input_float %BC %47
+%32 = OpAccessChain %_ptr_Input_float %BC %45
 %33 = OpLoad %float %32
 %35 = OpFOrdLessThan %bool %33 %float_0
 OpSelectionMerge %36 None
@@ -277,14 +277,14 @@ OpBranchConditional %35 %37 %36
 %37 = OpLabel
 OpBranch %26
 %36 = OpLabel
-%40 = OpFAdd %float %46 %33
+%40 = OpFAdd %float %44 %33
 OpBranch %26
 %26 = OpLabel
-%48 = OpPhi %float %46 %37 %40 %36
-%42 = OpIAdd %int %47 %int_1
+%48 = OpPhi %float %44 %37 %40 %36
+%42 = OpIAdd %int %45 %int_1
 OpBranch %24
 %25 = OpLabel
-OpStore %fo %46
+OpStore %fo %44
 OpReturn
 OpFunctionEnd
 )";
@@ -404,23 +404,23 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%45 = OpUndef %float
+      R"(%47 = OpUndef %float
 %main = OpFunction %void None %9
 %24 = OpLabel
 OpBranch %25
 %25 = OpLabel
-%46 = OpPhi %float %45 %24 %36 %27
-%47 = OpPhi %float %float_0 %24 %36 %27
-%48 = OpPhi %int %int_0 %24 %43 %27
+%45 = OpPhi %float %float_0 %24 %36 %27
+%46 = OpPhi %int %int_0 %24 %43 %27
+%48 = OpPhi %float %47 %24 %36 %27
 OpLoopMerge %26 %27 None
 OpBranch %28
 %28 = OpLabel
-%30 = OpSLessThan %bool %48 %int_4
+%30 = OpSLessThan %bool %46 %int_4
 OpBranchConditional %30 %31 %26
 %31 = OpLabel
-%34 = OpAccessChain %_ptr_Input_float %BC %48
+%34 = OpAccessChain %_ptr_Input_float %BC %46
 %35 = OpLoad %float %34
-%36 = OpFAdd %float %47 %35
+%36 = OpFAdd %float %45 %35
 %38 = OpFOrdGreaterThan %bool %36 %float_1
 OpSelectionMerge %39 None
 OpBranchConditional %38 %40 %39
@@ -429,11 +429,11 @@ OpBranch %26
 %39 = OpLabel
 OpBranch %27
 %27 = OpLabel
-%43 = OpIAdd %int %48 %int_1
+%43 = OpIAdd %int %46 %int_1
 OpBranch %25
 %26 = OpLabel
-%49 = OpPhi %float %46 %28 %36 %40
-OpStore %fo %47
+%49 = OpPhi %float %48 %28 %36 %40
+OpStore %fo %45
 OpReturn
 OpFunctionEnd
 )";
@@ -551,29 +551,29 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%40 = OpUndef %float
+      R"(%43 = OpUndef %float
 %main = OpFunction %void None %11
 %23 = OpLabel
 %24 = OpLoad %float %fe
 %25 = OpConvertFToS %int %24
 OpBranch %26
 %26 = OpLabel
-%41 = OpPhi %float %40 %23 %42 %28
-%42 = OpPhi %float %float_0 %23 %43 %28
-%43 = OpPhi %float %float_1 %23 %42 %28
-%44 = OpPhi %int %int_0 %23 %38 %28
+%40 = OpPhi %float %float_0 %23 %41 %28
+%41 = OpPhi %float %float_1 %23 %40 %28
+%42 = OpPhi %int %int_0 %23 %38 %28
+%44 = OpPhi %float %43 %23 %40 %28
 OpLoopMerge %27 %28 None
 OpBranch %29
 %29 = OpLabel
-%32 = OpSLessThan %bool %44 %25
+%32 = OpSLessThan %bool %42 %25
 OpBranchConditional %32 %33 %27
 %33 = OpLabel
 OpBranch %28
 %28 = OpLabel
-%38 = OpIAdd %int %44 %int_1
+%38 = OpIAdd %int %42 %int_1
 OpBranch %26
 %27 = OpLabel
-OpStore %fo %42
+OpStore %fo %40
 OpReturn
 OpFunctionEnd
 )";
@@ -694,23 +694,23 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%45 = OpUndef %float
+      R"(%47 = OpUndef %float
 %main = OpFunction %void None %9
 %24 = OpLabel
 OpBranch %25
 %25 = OpLabel
-%46 = OpPhi %float %45 %24 %47 %27
-%47 = OpPhi %float %float_0 %24 %37 %27
-%48 = OpPhi %int %int_0 %24 %43 %27
+%45 = OpPhi %float %float_0 %24 %37 %27
+%46 = OpPhi %int %int_0 %24 %43 %27
+%48 = OpPhi %float %47 %24 %45 %27
 OpLoopMerge %26 %27 None
 OpBranch %28
 %28 = OpLabel
-%30 = OpSLessThan %bool %48 %int_4
+%30 = OpSLessThan %bool %46 %int_4
 OpBranchConditional %30 %31 %26
 %31 = OpLabel
-%35 = OpAccessChain %_ptr_Input_float %BC %48
+%35 = OpAccessChain %_ptr_Input_float %BC %46
 %36 = OpLoad %float %35
-%37 = OpFAdd %float %47 %36
+%37 = OpFAdd %float %45 %36
 %39 = OpFOrdGreaterThan %bool %37 %float_1
 OpSelectionMerge %40 None
 OpBranchConditional %39 %41 %40
@@ -719,12 +719,12 @@ OpBranch %26
 %40 = OpLabel
 OpBranch %27
 %27 = OpLabel
-%43 = OpIAdd %int %48 %int_1
+%43 = OpIAdd %int %46 %int_1
 OpBranch %25
 %26 = OpLabel
-%49 = OpPhi %float %46 %28 %47 %41
-%50 = OpPhi %float %47 %28 %37 %41
-OpStore %fo %49
+%49 = OpPhi %float %45 %28 %37 %41
+%50 = OpPhi %float %48 %28 %45 %41
+OpStore %fo %50
 OpReturn
 OpFunctionEnd
 )";

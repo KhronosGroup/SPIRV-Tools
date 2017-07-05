@@ -387,8 +387,10 @@ void LocalSSAElimPass::SSABlockInitLoopHeader(
   uint32_t mergeLabel = mergeInst->GetSingleWordInOperand(
       kLoopMergeMergeBlockIdInIdx);
   // Collect all live variables and a default value for each across all
-  // non-backedge predecesors.
-  std::unordered_map<uint32_t, uint32_t> liveVars;
+  // non-backedge predecesors. Must be ordered map because phis are
+  // generated based on order and test results will otherwise vary across
+  // platforms.
+  std::map<uint32_t, uint32_t> liveVars;
   for (uint32_t predLabel : label2preds_[label]) {
     for (auto var_val : label2ssa_map_[predLabel]) {
       uint32_t varId = var_val.first;
@@ -483,8 +485,9 @@ void LocalSSAElimPass::SSABlockInitLoopHeader(
 void LocalSSAElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   const uint32_t label = block_ptr->id();
   // Collect all live variables and a default value for each across all
-  // predecesors.
-  std::unordered_map<uint32_t, uint32_t> liveVars;
+  // predecesors. Must be ordered map because phis are generated based on
+  // order and test results will otherwise vary across platforms.
+  std::map<uint32_t, uint32_t> liveVars;
   for (uint32_t predLabel : label2preds_[label]) {
     assert(visitedBlocks_.find(predLabel) != visitedBlocks_.end());
     for (auto var_val : label2ssa_map_[predLabel]) {
