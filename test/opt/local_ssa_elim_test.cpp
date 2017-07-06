@@ -141,7 +141,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -289,7 +289,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -438,7 +438,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -578,7 +578,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -729,7 +729,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -841,7 +841,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -942,7 +942,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -1081,7 +1081,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);
@@ -1221,7 +1221,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSSAElimPass>(
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
       predefs + names_after + predefs2 + after,
       true, true);

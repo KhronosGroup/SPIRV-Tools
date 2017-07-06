@@ -161,9 +161,9 @@ Optimizer::PassToken CreateInsertExtractElimPass() {
       MakeUnique<opt::InsertExtractElimPass>());
 }
 
-Optimizer::PassToken CreateLocalSSAElimPass() {
+Optimizer::PassToken CreateLocalMultiStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::LocalSSAElimPass>());
+      MakeUnique<opt::LocalMultiStoreElimPass>());
 }
 
 Optimizer::PassToken CreateCompactIdsPass() {

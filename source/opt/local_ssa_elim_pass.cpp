@@ -37,12 +37,12 @@ const uint32_t kCopyObjectOperandInIdx = 0;
 
 } // anonymous namespace
 
-bool LocalSSAElimPass::IsNonPtrAccessChain(
+bool LocalMultiStoreElimPass::IsNonPtrAccessChain(
     const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
-bool LocalSSAElimPass::IsMathType(
+bool LocalMultiStoreElimPass::IsMathType(
     const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
     case SpvOpTypeInt:
@@ -57,7 +57,7 @@ bool LocalSSAElimPass::IsMathType(
   return false;
 }
 
-bool LocalSSAElimPass::IsTargetType(
+bool LocalMultiStoreElimPass::IsTargetType(
     const ir::Instruction* typeInst) const {
   if (IsMathType(typeInst))
     return true;
@@ -74,7 +74,7 @@ bool LocalSSAElimPass::IsTargetType(
   return nonMathComp == 0;
 }
 
-ir::Instruction* LocalSSAElimPass::GetPtr(
+ir::Instruction* LocalMultiStoreElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
   const SpvOp op = ip->opcode();
   assert(op == SpvOpStore || op == SpvOpLoad);
@@ -95,7 +95,7 @@ ir::Instruction* LocalSSAElimPass::GetPtr(
   return ptrInst;
 }
 
-bool LocalSSAElimPass::IsTargetVar(uint32_t varId) {
+bool LocalMultiStoreElimPass::IsTargetVar(uint32_t varId) {
   if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
     return false;
   if (seen_target_vars_.find(varId) != seen_target_vars_.end())
@@ -120,7 +120,7 @@ bool LocalSSAElimPass::IsTargetVar(uint32_t varId) {
   return true;
 }
 
-bool LocalSSAElimPass::HasLoads(uint32_t ptrId) const {
+bool LocalMultiStoreElimPass::HasLoads(uint32_t ptrId) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
   if (uses == nullptr)
     return false;
@@ -140,7 +140,7 @@ bool LocalSSAElimPass::HasLoads(uint32_t ptrId) const {
   return false;
 }
 
-bool LocalSSAElimPass::IsLiveVar(uint32_t varId) const {
+bool LocalMultiStoreElimPass::IsLiveVar(uint32_t varId) const {
   // non-function scope vars are live
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   assert(varInst->opcode() == SpvOpVariable);
@@ -153,7 +153,7 @@ bool LocalSSAElimPass::IsLiveVar(uint32_t varId) const {
   return HasLoads(varId);
 }
 
-void LocalSSAElimPass::AddStores(
+void LocalMultiStoreElimPass::AddStores(
     uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
   analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
   if (uses != nullptr) {
@@ -166,7 +166,7 @@ void LocalSSAElimPass::AddStores(
   }
 }
 
-bool LocalSSAElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
+bool LocalMultiStoreElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(id);
   if (uses == nullptr)
     return true;
@@ -178,7 +178,7 @@ bool LocalSSAElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   return true;
 }
 
-void LocalSSAElimPass::KillNamesAndDecorates(uint32_t id) {
+void LocalMultiStoreElimPass::KillNamesAndDecorates(uint32_t id) {
   // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
   // kill if no other operands.
   analysis::UseList* uses = def_use_mgr_->GetUses(id);
@@ -195,7 +195,7 @@ void LocalSSAElimPass::KillNamesAndDecorates(uint32_t id) {
     def_use_mgr_->KillInst(kip);
 }
 
-void LocalSSAElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
+void LocalMultiStoreElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
   // TODO(greg-lunarg): Remove inst from any OpGroupDecorate and 
   // kill if not other operands.
   const uint32_t rId = inst->result_id();
@@ -204,7 +204,7 @@ void LocalSSAElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
   KillNamesAndDecorates(rId);
 }
 
-void LocalSSAElimPass::DCEInst(ir::Instruction* inst) {
+void LocalMultiStoreElimPass::DCEInst(ir::Instruction* inst) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
@@ -238,7 +238,7 @@ void LocalSSAElimPass::DCEInst(ir::Instruction* inst) {
   }
 }
 
-bool LocalSSAElimPass::HasOnlySupportedRefs(uint32_t varId) {
+bool LocalMultiStoreElimPass::HasOnlySupportedRefs(uint32_t varId) {
   if (supported_ref_vars_.find(varId) != supported_ref_vars_.end())
     return true;
   analysis::UseList* uses = def_use_mgr_->GetUses(varId);
@@ -253,7 +253,7 @@ bool LocalSSAElimPass::HasOnlySupportedRefs(uint32_t varId) {
   return true;
 }
 
-void LocalSSAElimPass::InitSSARewrite(ir::Function& func) {
+void LocalMultiStoreElimPass::InitSSARewrite(ir::Function& func) {
   // Init predecessors
   label2preds_.clear();
   for (auto& blk : func) {
@@ -284,7 +284,7 @@ void LocalSSAElimPass::InitSSARewrite(ir::Function& func) {
   }
 }
 
-uint32_t LocalSSAElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
+uint32_t LocalMultiStoreElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
   auto merge_ii = blk.cend();
   --merge_ii;
   uint32_t mbid = 0;
@@ -298,7 +298,7 @@ uint32_t LocalSSAElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
   return mbid;
 }
 
-void LocalSSAElimPass::ComputeStructuredSuccessors(ir::Function* func) {
+void LocalMultiStoreElimPass::ComputeStructuredSuccessors(ir::Function* func) {
   for (auto& blk : *func) {
     // If no predecessors in function, make successor to pseudo entry
     if (label2preds_[blk.id()].size() == 0)
@@ -314,7 +314,7 @@ void LocalSSAElimPass::ComputeStructuredSuccessors(ir::Function* func) {
   }
 }
 
-void LocalSSAElimPass::ComputeStructuredOrder(
+void LocalMultiStoreElimPass::ComputeStructuredOrder(
     ir::Function* func, std::list<ir::BasicBlock*>* order) {
   // Compute structured successors and do DFS
   ComputeStructuredSuccessors(func);
@@ -332,7 +332,7 @@ void LocalSSAElimPass::ComputeStructuredOrder(
       post_order, ignore_edge);
 }
 
-void LocalSSAElimPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
+void LocalMultiStoreElimPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
   // Copy map entry from single predecessor
   const uint32_t label = block_ptr->id();
   const uint32_t predLabel = label2preds_[label].front();
@@ -340,7 +340,7 @@ void LocalSSAElimPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
   label2ssa_map_[label] = label2ssa_map_[predLabel];
 }
 
-bool LocalSSAElimPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
+bool LocalMultiStoreElimPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
   // For now, return very conservative result: true. This will result in
   // correct, but possibly usused, phi code to be generated. A subsequent
   // DCE pass should eliminate this code.
@@ -350,7 +350,7 @@ bool LocalSSAElimPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
   return true;
 }
 
-uint32_t LocalSSAElimPass::Type2Undef(uint32_t type_id) {
+uint32_t LocalMultiStoreElimPass::Type2Undef(uint32_t type_id) {
   const auto uitr = type2undefs_.find(type_id);
   if (uitr != type2undefs_.end())
     return uitr->second;
@@ -363,14 +363,14 @@ uint32_t LocalSSAElimPass::Type2Undef(uint32_t type_id) {
   return undefId;
 }
 
-uint32_t LocalSSAElimPass::GetPointeeTypeId(
+uint32_t LocalMultiStoreElimPass::GetPointeeTypeId(
     const ir::Instruction* ptrInst) const {
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst = def_use_mgr_->GetDef(ptrTypeId);
   return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 
-void LocalSSAElimPass::SSABlockInitLoopHeader(
+void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     std::list<ir::BasicBlock*>::iterator block_itr) {
   const uint32_t label = (*block_itr)->id();
   // Determine backedge label.
@@ -482,7 +482,7 @@ void LocalSSAElimPass::SSABlockInitLoopHeader(
   }
 }
 
-void LocalSSAElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
+void LocalMultiStoreElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   const uint32_t label = block_ptr->id();
   // Collect all live variables and a default value for each across all
   // predecesors. Must be ordered map because phis are generated based on
@@ -545,7 +545,7 @@ void LocalSSAElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   }
 }
 
-bool LocalSSAElimPass::IsLoopHeader(ir::BasicBlock* block_ptr) const {
+bool LocalMultiStoreElimPass::IsLoopHeader(ir::BasicBlock* block_ptr) const {
   auto iItr = block_ptr->end();
   --iItr;
   if (iItr == block_ptr->begin())
@@ -554,7 +554,7 @@ bool LocalSSAElimPass::IsLoopHeader(ir::BasicBlock* block_ptr) const {
   return iItr->opcode() == SpvOpLoopMerge;
 }
 
-void LocalSSAElimPass::SSABlockInit(
+void LocalMultiStoreElimPass::SSABlockInit(
     std::list<ir::BasicBlock*>::iterator block_itr) {
   const size_t numPreds = label2preds_[(*block_itr)->id()].size();
   if (numPreds == 0)
@@ -567,7 +567,7 @@ void LocalSSAElimPass::SSABlockInit(
     SSABlockInitMultiPred(*block_itr);
 }
 
-void LocalSSAElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
+void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
   ir::BasicBlock* header = id2block_[header_id];
   auto phiItr = header->begin();
   for (; phiItr->opcode() == SpvOpPhi; ++phiItr) {
@@ -588,7 +588,7 @@ void LocalSSAElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
   }
 }
 
-bool LocalSSAElimPass::LocalSSAElim(ir::Function* func) {
+bool LocalMultiStoreElimPass::EliminateMultiStoreLocal(ir::Function* func) {
   InitSSARewrite(*func);
   // Process all blocks in structured order. 
   std::list<ir::BasicBlock*> structuredOrder;
@@ -672,7 +672,7 @@ bool LocalSSAElimPass::LocalSSAElim(ir::Function* func) {
   return modified;
 }
 
-void LocalSSAElimPass::Initialize(ir::Module* module) {
+void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
@@ -700,7 +700,7 @@ void LocalSSAElimPass::Initialize(ir::Module* module) {
   next_id_ = module_->id_bound();
 };
 
-bool LocalSSAElimPass::AllExtensionsSupported() const {
+bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
   // Currently disallows all extensions. This is just super conservative
   // to allow this to go public and many can likely be allowed with little
   // to no additional coding. One exception is SPV_KHR_variable_pointers
@@ -714,7 +714,7 @@ bool LocalSSAElimPass::AllExtensionsSupported() const {
   return true;
 }
 
-Pass::Status LocalSSAElimPass::ProcessImpl() {
+Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Assumes all control flow structured.
   // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
   if (!module_->HasCapability(SpvCapabilityShader))
@@ -737,19 +737,19 @@ Pass::Status LocalSSAElimPass::ProcessImpl() {
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
         id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = LocalSSAElim(fn) || modified;
+    modified = EliminateMultiStoreLocal(fn) || modified;
   }
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSSAElimPass::LocalSSAElimPass()
+LocalMultiStoreElimPass::LocalMultiStoreElimPass()
     : module_(nullptr), def_use_mgr_(nullptr),
       pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       next_id_(0) {}
 
-Pass::Status LocalSSAElimPass::Process(ir::Module* module) {
+Pass::Status LocalMultiStoreElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
 }

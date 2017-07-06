@@ -34,14 +34,14 @@ namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class LocalSSAElimPass : public Pass {
+class LocalMultiStoreElimPass : public Pass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  LocalSSAElimPass();
+  LocalMultiStoreElimPass();
   const char* name() const override { return "eliminate-local-ssa"; }
   Status Process(ir::Module*) override;
 
@@ -180,7 +180,7 @@ class LocalSSAElimPass : public Pass {
   // Insert Phi functions where necessary. Running LocalAccessChainRemoval,
   // SingleBlockLocalElim and SingleStoreLocalElim beforehand will improve
   // the runtime and effectiveness of this function.
-  bool LocalSSAElim(ir::Function* func);
+  bool EliminateMultiStoreLocal(ir::Function* func);
 
   // Return true if all uses of varId are only through supported reference
   // operations ie. loads and store. Also cache in supported_ref_vars_;
