@@ -33,6 +33,7 @@ const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kCopyObjectOperandInIdx = 0;
 
 } // anonymous namespace
@@ -286,16 +287,21 @@ void LocalMultiStoreElimPass::InitSSARewrite(ir::Function& func) {
   }
 }
 
-uint32_t LocalMultiStoreElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
+uint32_t LocalMultiStoreElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk,
+    uint32_t* cbid) {
   auto merge_ii = blk.cend();
   --merge_ii;
+  *cbid = 0;
   uint32_t mbid = 0;
   if (merge_ii != blk.cbegin()) {
     --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge)
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
       mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-    else if (merge_ii->opcode() == SpvOpSelectionMerge)
+      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+    }
+    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
       mbid = merge_ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+    }
   }
   return mbid;
 }
@@ -306,9 +312,13 @@ void LocalMultiStoreElimPass::ComputeStructuredSuccessors(ir::Function* func) {
     if (label2preds_[blk.id()].size() == 0)
       block2structured_succs_[&pseudo_entry_block_].push_back(&blk);
     // If header, make merge block first successor.
-    const uint32_t mbid = MergeBlockIdIfAny(blk);
-    if (mbid != 0)
+    uint32_t cbid;
+    const uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
+    if (mbid != 0) {
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      if (cbid != 0)
+        block2structured_succs_[&blk].push_back(id2block_[cbid]);
+    }
     // add true successors
     blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
       block2structured_succs_[&blk].push_back(id2block_[sbid]);

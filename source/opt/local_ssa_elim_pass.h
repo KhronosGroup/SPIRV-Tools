@@ -108,7 +108,7 @@ class LocalMultiStoreElimPass : public Pass {
 
   // Returns the id of the merge block declared by a merge instruction in 
   // this block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk);
+  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
 
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
