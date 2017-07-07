@@ -42,7 +42,7 @@ class LocalMultiStoreElimPass : public Pass {
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   LocalMultiStoreElimPass();
-  const char* name() const override { return "eliminate-local-ssa"; }
+  const char* name() const override { return "eliminate-local-multi-store"; }
   Status Process(ir::Module*) override;
 
  private:
