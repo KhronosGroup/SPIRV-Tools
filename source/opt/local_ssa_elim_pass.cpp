@@ -420,7 +420,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
       uint32_t varId;
       (void) GetPtr(&*ii, &varId);
       if (!IsTargetVar(varId))
-        break;
+        continue;
       liveVars[varId] = 0;
     }
   }
@@ -677,7 +677,7 @@ bool LocalMultiStoreElimPass::EliminateMultiStoreLocal(ir::Function* func) {
       uint32_t varId;
       (void) GetPtr(&*ii, &varId);
       if (!IsTargetVar(varId))
-        break;
+        continue;
       assert(!HasLoads(varId));
       DCEInst(&*ii);
       modified = true;
