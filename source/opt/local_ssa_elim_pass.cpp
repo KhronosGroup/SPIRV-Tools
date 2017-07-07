@@ -263,7 +263,8 @@ void LocalMultiStoreElimPass::InitSSARewrite(ir::Function& func) {
       label2preds_[sbid].push_back(blkId);
     });
   }
-  // Remove variables with non-load/store refs from target variable set
+  // Collect target (and non-) variable sets. Remove variables with
+  // non-load/store refs from target variable set
   for (auto& blk : func) {
     for (auto& inst : blk) {
       switch (inst.opcode()) {
