@@ -68,6 +68,11 @@ add_spvtools_unittest(TARGET pass_insert_extract_elim
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_local_ssa_elim
+  SRCS local_ssa_elim_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_local_single_block_elim
   SRCS local_single_block_elim.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

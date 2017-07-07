@@ -143,6 +143,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateLocalSingleStoreElimPass());
       } else if (0 == strcmp(cur_arg, "--merge-blocks")) {
         optimizer.RegisterPass(CreateBlockMergePass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-local-multi-store")) {
+        optimizer.RegisterPass(CreateLocalMultiStoreElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-branches")) {
         optimizer.RegisterPass(CreateDeadBranchElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {

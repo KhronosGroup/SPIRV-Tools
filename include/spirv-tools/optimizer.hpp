@@ -227,7 +227,7 @@ Optimizer::PassToken CreateInlinePass();
 //
 // This pass is most effective if preceeded by Inlining and 
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
-// by LocalSingleStoreElim and LocalSSARewrite.
+// by LocalSingleStoreElim and LocalMultiStoreElim.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Create dead branch elimination pass.
@@ -275,9 +275,26 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // these operations are future work.
 //
 // This pass will reduce the work needed to be done by LocalSingleBlockElim
-// and LocalSSARewrite and can improve the effectiveness of other passes such
-// as DeadBranchElimination which depend on values for their analysis.
+// and LocalMultiStoreElim and can improve the effectiveness of other passes
+// such as DeadBranchElimination which depend on values for their analysis.
 Optimizer::PassToken CreateLocalSingleStoreElimPass();
+  
+// Creates an SSA local variable load/store elimination pass.
+// For every entry point function, eliminate all loads and stores of function
+// scope variables only referenced with non-access-chain loads and stores.
+// Eliminate the variables as well. 
+//
+// The presence of access chain references and function calls can inhibit
+// the above optimization.
+//
+// Only shader modules with logical addressing are currently processed.
+// Currently modules with any extensions enabled are not processed. This
+// is left for future work.
+//
+// This pass is most effective if preceeded by Inlining and 
+// LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
+// will reduce the work that this pass has to do.
+Optimizer::PassToken CreateLocalMultiStoreElimPass();
 
 // Creates an insert/extract elimination pass.
 // This pass processes each entry point function in the module, searching for

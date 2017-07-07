@@ -59,6 +59,12 @@ class DefUseManager {
   DefUseManager& operator=(const DefUseManager&) = delete;
   DefUseManager& operator=(DefUseManager&&) = delete;
 
+  // Analyzes the defs in the given |inst|.
+  void AnalyzeInstDef(ir::Instruction* inst);
+
+  // Analyzes the uses in the given |inst|.
+  void AnalyzeInstUse(ir::Instruction* inst);
+
   // Analyzes the defs and uses in the given |inst|.
   void AnalyzeInstDefUse(ir::Instruction* inst);
 
