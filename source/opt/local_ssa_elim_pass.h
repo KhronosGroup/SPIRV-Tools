@@ -102,8 +102,8 @@ class LocalMultiStoreElimPass : public Pass {
   // Kill all name and decorate ops using |id|
   void KillNamesAndDecorates(uint32_t id);
 
-  // Initialize data structures used by LocalSSAElim for function |func|,
-  // specifically block predecessors and target variables.
+  // Initialize data structures used by EliminateLocalMultiStore for
+  // function |func|, specifically block predecessors and target variables.
   void InitSSARewrite(ir::Function& func);
 
   // Returns the id of the merge block declared by a merge instruction in 
@@ -141,21 +141,23 @@ class LocalMultiStoreElimPass : public Pass {
   // |block_itr| by merging entries from all predecessors. If any value
   // ids differ for any variable across predecessors, create a phi function
   // in the block and use that value id for the variable in the new map.
-  // Assumes all predecessors have been visited by SSARewrite except the
-  // back edge. Use a dummy value in the phi for the back edge until the
-  // back edge block is visited and patch the phi value then.
+  // Assumes all predecessors have been visited by EliminateLocalMultiStore
+  // except the back edge. Use a dummy value in the phi for the back edge
+  // until the back edge block is visited and patch the phi value then.
   void SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
 
   // Initialize label2ssa_map_ entry for multiple predecessor block
   // |block_ptr| by merging label2ssa_map_ entries for all predecessors.
   // If any value ids differ for any variable across predecessors, create
   // a phi function in the block and use that value id for the variable in
-  // the new map. Assumes all predecessors have been visited by SSARewrite.
+  // the new map. Assumes all predecessors have been visited by
+  // EliminateLocalMultiStore.
   void SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
 
   // Initialize the label2ssa_map entry for a block pointed to by |block_itr|.
   // Insert phi instructions into block when necessary. All predecessor
-  // blocks must have been visited by SSARewrite except for backedges.
+  // blocks must have been visited by EliminateLocalMultiStore except for
+  // backedges.
   void SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
 
   // Return undef in function for type. Create and insert an undef after the
