@@ -242,7 +242,8 @@ bool LocalMultiStoreElimPass::HasOnlySupportedRefs(uint32_t varId) {
   if (supported_ref_vars_.find(varId) != supported_ref_vars_.end())
     return true;
   analysis::UseList* uses = def_use_mgr_->GetUses(varId);
-  assert(uses != nullptr);
+  if (uses == nullptr)
+    return true;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
     if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
