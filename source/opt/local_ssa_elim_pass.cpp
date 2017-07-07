@@ -440,9 +440,11 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
         if (predLabel == backLabel)
           continue;
         const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
-        // Missing values do not cause difference
-        if (var_val_itr == label2ssa_map_[predLabel].end())
-          continue;
+        // Missing (undef) values always cause difference with (defined) value
+        if (var_val_itr == label2ssa_map_[predLabel].end()) {
+          needsPhi = true;
+          break;
+        }
         if (var_val_itr->second != val0Id) {
           needsPhi = true;
           break;
@@ -460,7 +462,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     // Val differs across predecessors. Add phi op to block and 
     // add its result id to the map. For live back edge predecessor,
     // use the variable id. We will patch this after visiting back
-    // edge predecessor. For predessors that do not define a value,
+    // edge predecessor. For predecessors that do not define a value,
     // use undef.
     std::vector<ir::Operand> phi_in_operands;
     uint32_t typeId = GetPointeeTypeId(def_use_mgr_->GetDef(varId));
