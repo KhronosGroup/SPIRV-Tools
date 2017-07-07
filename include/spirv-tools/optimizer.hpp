@@ -227,7 +227,7 @@ Optimizer::PassToken CreateInlinePass();
 //
 // This pass is most effective if preceeded by Inlining and 
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
-// by LocalSingleStoreElim and LocalSSARewrite.
+// by LocalSingleStoreElim and LocalMultiStoreElim.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Creates an SSA local variable load/store elimination pass.
@@ -278,8 +278,8 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // these operations are future work.
 //
 // This pass will reduce the work needed to be done by LocalSingleBlockElim
-// and LocalSSARewrite and can improve the effectiveness of other passes such
-// as DeadBranchElimination which depend on values for their analysis.
+// and LocalMultiStoreElim and can improve the effectiveness of other passes
+// such as DeadBranchElimination which depend on values for their analysis.
 Optimizer::PassToken CreateLocalSingleStoreElimPass();
 
 // Creates an insert/extract elimination pass.
