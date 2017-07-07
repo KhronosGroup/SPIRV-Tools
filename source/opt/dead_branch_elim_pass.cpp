@@ -229,12 +229,16 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         (*dbi)->ForEachSuccessorLabel([&deadSuccIds](uint32_t succ) {
           deadSuccIds.insert(succ);
         });
-        // If dead block is merge block, add its merge block to dead
-        // successor set in case it has no predecessors.
-        uint32_t dummy;
-        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi, &dummy);
-        if (dMergeLabId != 0)
+        // If dead block is header block, add its merge block to dead
+        // successor set in case it has no predecessors. Add continue
+        // target if loop header.
+        uint32_t cbid;
+        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi, &cbid);
+        if (dMergeLabId != 0) {
           deadSuccIds.insert(dMergeLabId);
+          if (cbid != 0)
+            deadSuccIds.insert(cbid);
+        }
         // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
