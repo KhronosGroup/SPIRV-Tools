@@ -25,6 +25,9 @@ v2016.7-dev 2017-01-06
  - Version string: Allow overriding of wall clock timestamp with contents
    of environment variable SOURCE_DATE_EPOCH.
  - Validator implements relaxed rules for SPV_KHR_16bit_storage.
+ - CMake installation rules use GNUInstallDirs.  For example, libraries
+   will be installed into a lib64 directory if that's the norm for the
+   current system.
  - Fixes:
    #500: Parameterize validator limit checks
    #508: Support compilation under CYGWIN
@@ -38,6 +41,8 @@ v2016.7-dev 2017-01-06
      binary vector when all passes succeded without changes.
    #629: The inline-entry-points-all optimization could generate invalidly
      structured code when the inlined function had early returns.
+   #697: Optimizer's Instruction::ForEachInId method was skipping semantics-id
+     and scope-id.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and

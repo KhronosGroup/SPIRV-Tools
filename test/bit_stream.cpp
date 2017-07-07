@@ -36,6 +36,7 @@ using spvutils::StreamToBits;
 using spvutils::GetLowerBits;
 using spvutils::EncodeZigZag;
 using spvutils::DecodeZigZag;
+using spvutils::Log2U64;
 
 // A simple and inefficient implementatition of BitWriterInterface,
 // using std::stringstream. Intended for tests only.
@@ -88,6 +89,10 @@ class BitReaderFromString : public BitReaderInterface {
     return sub.length();
   }
 
+  size_t GetNumReadBits() const override {
+    return pos_;
+  }
+
   bool ReachedEnd() const override {
     return pos_ >= str_.length();
   }
@@ -100,6 +105,45 @@ class BitReaderFromString : public BitReaderInterface {
   std::string str_;
   size_t pos_;
 };
+
+TEST(Log2U16, Test) {
+  EXPECT_EQ(0u, Log2U64(0));
+  EXPECT_EQ(0u, Log2U64(1));
+  EXPECT_EQ(1u, Log2U64(2));
+  EXPECT_EQ(1u, Log2U64(3));
+  EXPECT_EQ(2u, Log2U64(4));
+  EXPECT_EQ(2u, Log2U64(5));
+  EXPECT_EQ(2u, Log2U64(6));
+  EXPECT_EQ(2u, Log2U64(7));
+  EXPECT_EQ(3u, Log2U64(8));
+  EXPECT_EQ(3u, Log2U64(9));
+  EXPECT_EQ(3u, Log2U64(10));
+  EXPECT_EQ(3u, Log2U64(11));
+  EXPECT_EQ(3u, Log2U64(12));
+  EXPECT_EQ(3u, Log2U64(13));
+  EXPECT_EQ(3u, Log2U64(14));
+  EXPECT_EQ(3u, Log2U64(15));
+  EXPECT_EQ(4u, Log2U64(16));
+  EXPECT_EQ(4u, Log2U64(17));
+  EXPECT_EQ(5u, Log2U64(35));
+  EXPECT_EQ(6u, Log2U64(72));
+  EXPECT_EQ(7u, Log2U64(255));
+  EXPECT_EQ(8u, Log2U64(256));
+  EXPECT_EQ(15u, Log2U64(65535));
+  EXPECT_EQ(16u, Log2U64(65536));
+  EXPECT_EQ(19u, Log2U64(0xFFFFF));
+  EXPECT_EQ(23u, Log2U64(0xFFFFFF));
+  EXPECT_EQ(27u, Log2U64(0xFFFFFFF));
+  EXPECT_EQ(31u, Log2U64(0xFFFFFFFF));
+  EXPECT_EQ(35u, Log2U64(0xFFFFFFFFF));
+  EXPECT_EQ(39u, Log2U64(0xFFFFFFFFFF));
+  EXPECT_EQ(43u, Log2U64(0xFFFFFFFFFFF));
+  EXPECT_EQ(47u, Log2U64(0xFFFFFFFFFFFF));
+  EXPECT_EQ(51u, Log2U64(0xFFFFFFFFFFFFF));
+  EXPECT_EQ(55u, Log2U64(0xFFFFFFFFFFFFFF));
+  EXPECT_EQ(59u, Log2U64(0xFFFFFFFFFFFFFFF));
+  EXPECT_EQ(63u, Log2U64(0xFFFFFFFFFFFFFFFF));
+}
 
 TEST(NumBitsToNumWords, Word8) {
   EXPECT_EQ(0u, NumBitsToNumWords<8>(0));
@@ -424,6 +468,23 @@ TEST(BitWriterStringStream, WriteBits) {
   EXPECT_EQ("11001", writer.GetStreamRaw());
 }
 
+TEST(BitWriterStringStream, WriteUnencodedU8) {
+  BitWriterStringStream writer;
+  const uint8_t bits = 127;
+  writer.WriteUnencoded(bits);
+  EXPECT_EQ(8u, writer.GetNumBits());
+  EXPECT_EQ("11111110", writer.GetStreamRaw());
+}
+
+TEST(BitWriterStringStream, WriteUnencodedS64) {
+  BitWriterStringStream writer;
+  const int64_t bits = std::numeric_limits<int64_t>::min() + 7;
+  writer.WriteUnencoded(bits);
+  EXPECT_EQ(64u, writer.GetNumBits());
+  EXPECT_EQ("1110000000000000000000000000000000000000000000000000000000000001",
+            writer.GetStreamRaw());
+}
+
 TEST(BitWriterStringStream, WriteMultiple) {
   BitWriterStringStream writer;
 
@@ -713,6 +774,29 @@ TEST(BitReaderWord64, ReadBitsTwoWords) {
   EXPECT_EQ(28u, reader.ReadBits(&bits, 32));
   EXPECT_EQ(0u, bits);
   EXPECT_TRUE(reader.ReachedEnd());
+}
+
+TEST(BitReaderFromString, ReadUnencodedU8) {
+  BitReaderFromString reader("11111110");
+  uint8_t val = 0;
+  ASSERT_TRUE(reader.ReadUnencoded(&val));
+  EXPECT_EQ(8u, reader.GetNumReadBits());
+  EXPECT_EQ(127, val);
+}
+
+TEST(BitReaderFromString, ReadUnencodedU16Fail) {
+  BitReaderFromString reader("11111110");
+  uint16_t val = 0;
+  ASSERT_FALSE(reader.ReadUnencoded(&val));
+}
+
+TEST(BitReaderFromString, ReadUnencodedS64) {
+  BitReaderFromString reader(
+      "1110000000000000000000000000000000000000000000000000000000000001");
+  int64_t val = 0;
+  ASSERT_TRUE(reader.ReadUnencoded(&val));
+  EXPECT_EQ(64u, reader.GetNumReadBits());
+  EXPECT_EQ(std::numeric_limits<int64_t>::min() + 7, val);
 }
 
 TEST(BitReaderWord64, FromU8) {
@@ -1133,6 +1217,70 @@ TEST(VariableWidthWriteRead, VariedNumbersChunkLength8) {
   }
 
   EXPECT_EQ(expected_values, actual_values);
+}
+
+TEST(FixedWidthWrite, Val0Max3) {
+  BitWriterStringStream writer;
+  writer.WriteFixedWidth(0, 3);
+  EXPECT_EQ("00", writer.GetStreamRaw());
+}
+
+TEST(FixedWidthWrite, Val0Max5) {
+  BitWriterStringStream writer;
+  writer.WriteFixedWidth(0, 5);
+  EXPECT_EQ("000", writer.GetStreamRaw());
+}
+
+TEST(FixedWidthWrite, Val0Max255) {
+  BitWriterStringStream writer;
+  writer.WriteFixedWidth(0, 255);
+  EXPECT_EQ("00000000", writer.GetStreamRaw());
+}
+
+TEST(FixedWidthWrite, Val3Max8) {
+  BitWriterStringStream writer;
+  writer.WriteFixedWidth(3, 8);
+  EXPECT_EQ("1100", writer.GetStreamRaw());
+}
+
+TEST(FixedWidthWrite, Val15Max127) {
+  BitWriterStringStream writer;
+  writer.WriteFixedWidth(15, 127);
+  EXPECT_EQ("1111000", writer.GetStreamRaw());
+}
+
+TEST(FixedWidthRead, Val0Max3) {
+  BitReaderFromString reader("0011111");
+  uint64_t val = 0;
+  ASSERT_TRUE(reader.ReadFixedWidth(&val, 3));
+  EXPECT_EQ(0u, val);
+}
+
+TEST(FixedWidthRead, Val0Max5) {
+  BitReaderFromString reader("0001010101");
+  uint64_t val = 0;
+  ASSERT_TRUE(reader.ReadFixedWidth(&val, 5));
+  EXPECT_EQ(0u, val);
+}
+
+TEST(FixedWidthRead, Val3Max8) {
+  BitReaderFromString reader("11001010101");
+  uint64_t val = 0;
+  ASSERT_TRUE(reader.ReadFixedWidth(&val, 8));
+  EXPECT_EQ(3u, val);
+}
+
+TEST(FixedWidthRead, Val15Max127) {
+  BitReaderFromString reader("111100010101");
+  uint64_t val = 0;
+  ASSERT_TRUE(reader.ReadFixedWidth(&val, 127));
+  EXPECT_EQ(15u, val);
+}
+
+TEST(FixedWidthRead, Fail) {
+  BitReaderFromString reader("111100");
+  uint64_t val = 0;
+  ASSERT_FALSE(reader.ReadFixedWidth(&val, 127));
 }
 
 }  // anonymous namespace

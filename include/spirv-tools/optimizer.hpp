@@ -230,22 +230,19 @@ Optimizer::PassToken CreateInlinePass();
 // by LocalSingleStoreElim and LocalMultiStoreElim.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
-// Creates an SSA local variable load/store elimination pass.
-// For every entry point function, eliminate all loads and stores of function
-// scope variables only referenced with non-access-chain loads and stores.
-// Eliminate the variables as well. 
+// Create dead branch elimination pass.
+// For each entry point function, this pass will look for SelectionMerge
+// BranchConditionals with constant condition and convert to a Branch to
+// the indicated label. It will delete resulting dead blocks.
 //
-// The presence of access chain references and function calls can inhibit
-// the above optimization.
+// This pass only works on shaders (guaranteed to have structured control
+// flow). Note that some such branches and blocks may be left to avoid
+// creating invalid control flow. Improving this is left to future work.
 //
-// Only shader modules with logical addressing are currently processed.
-// Currently modules with any extensions enabled are not processed. This
-// is left for future work.
-//
-// This pass is most effective if preceeded by Inlining and 
-// LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
-// will reduce the work that this pass has to do.
-Optimizer::PassToken CreateLocalMultiStoreElimPass();
+// This pass is most effective when preceeded by passes which eliminate
+// local loads and stores, effectively propagating constant values where
+// possible.
+Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope
@@ -281,6 +278,23 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // and LocalMultiStoreElim and can improve the effectiveness of other passes
 // such as DeadBranchElimination which depend on values for their analysis.
 Optimizer::PassToken CreateLocalSingleStoreElimPass();
+  
+// Creates an SSA local variable load/store elimination pass.
+// For every entry point function, eliminate all loads and stores of function
+// scope variables only referenced with non-access-chain loads and stores.
+// Eliminate the variables as well. 
+//
+// The presence of access chain references and function calls can inhibit
+// the above optimization.
+//
+// Only shader modules with logical addressing are currently processed.
+// Currently modules with any extensions enabled are not processed. This
+// is left for future work.
+//
+// This pass is most effective if preceeded by Inlining and 
+// LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
+// will reduce the work that this pass has to do.
+Optimizer::PassToken CreateLocalMultiStoreElimPass();
 
 // Creates an insert/extract elimination pass.
 // This pass processes each entry point function in the module, searching for
@@ -293,6 +307,17 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass();
 // passes to delete the inserts. This pass performs best after access chains are
 // converted to inserts and extracts and local loads and stores are eliminated.
 Optimizer::PassToken CreateInsertExtractElimPass();
+
+// Create dead branch elimination pass.
+// For each entry point function, this pass will look for BranchConditionals
+// with constant condition and convert to a branch. The BranchConditional must
+// be preceeded by OpSelectionMerge. For all phi functions in merge block,
+// replace all uses with the id corresponding to the living predecessor.
+//
+// This pass is most effective when preceeded by passes which eliminate
+// local loads and stores, effectively propagating constant values where
+// possible.
+Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.

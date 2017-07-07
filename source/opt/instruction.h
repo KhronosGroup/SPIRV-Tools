@@ -247,14 +247,30 @@ inline void Instruction::ForEachInst(
 }
 
 inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {
-  for (auto& opnd : operands_)
-    if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
+  for (auto& opnd : operands_) {
+    switch (opnd.type) {
+      case SPV_OPERAND_TYPE_RESULT_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+        break;
+      default:
+        if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+        break;
+    }
+  }
 }
 
 inline void Instruction::ForEachInId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_)
-    if (opnd.type == SPV_OPERAND_TYPE_ID) f(&opnd.words[0]);
+  for (const auto& opnd : operands_) {
+    switch (opnd.type) {
+      case SPV_OPERAND_TYPE_RESULT_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+        break;
+      default:
+        if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+        break;
+    }
+  }
 }
 
 inline bool Instruction::HasLabels() const {

@@ -17,6 +17,7 @@ add_library(SPIRV-Tools-opt
   build_module.h
   compact_ids_pass.h
   constants.h
+  dead_branch_elim_pass.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
   flatten_decoration_pass.h
@@ -49,6 +50,7 @@ add_library(SPIRV-Tools-opt
   build_module.cpp
   compact_ids_pass.cpp
   def_use_manager.cpp
+  dead_branch_elim_pass.cpp
   eliminate_dead_constant_pass.cpp
   flatten_decoration_pass.cpp
   function.cpp
@@ -84,7 +86,10 @@ target_link_libraries(SPIRV-Tools-opt
 
 set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
 
-install(TARGETS SPIRV-Tools-opt
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib)
+if(ENABLE_SPIRV_TOOLS_INSTALL)
+  install(TARGETS SPIRV-Tools-opt
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif(ENABLE_SPIRV_TOOLS_INSTALL)
+    

@@ -20,11 +20,15 @@
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <vector>
 
 namespace spvutils {
+
+// Returns rounded down log2(val). log2(0) is considered 0.
+size_t Log2U64(uint64_t val);
 
 // Terminology:
 // Bits - usually used for a uint64 word, first bit is the lowest.
@@ -213,6 +217,16 @@ class BitWriterInterface {
     WriteBits(bits.to_ullong(), num_bits);
   }
 
+  // Writes bits from value of type |T| to the stream. No encoding is done.
+  // Always writes 8 * sizeof(T) bits.
+  template <typename T>
+  void WriteUnencoded(T val) {
+    static_assert(sizeof(T) <= 64, "Type size too large");
+    uint64_t bits = 0;
+    memcpy(&bits, &val, sizeof(T));
+    WriteBits(bits, sizeof(T) * 8);
+  }
+
   // Writes |val| in chunks of size |chunk_length| followed by a signal bit:
   // 0 - no more chunks to follow
   // 1 - more chunks to follow
@@ -231,6 +245,18 @@ class BitWriterInterface {
       int16_t val, size_t chunk_length, size_t zigzag_exponent);
   void WriteVariableWidthS8(
       int8_t val, size_t chunk_length, size_t zigzag_exponent);
+
+  // Writes |val| using fixed bit width. Bit width is determined by |max_val|:
+  // max_val 0 -> bit width 1
+  // max_val 1 -> bit width 1
+  // max_val 2 -> bit width 2
+  // max_val 3 -> bit width 2
+  // max_val 4 -> bit width 3
+  // max_val 5 -> bit width 3
+  // max_val 8 -> bit width 4
+  // max_val n -> bit width 1 + floor(log2(n))
+  // |val| needs to be <= |max_val|.
+  void WriteFixedWidth(uint64_t val, uint64_t max_val);
 
   // Returns number of bits written.
   virtual size_t GetNumBits() const = 0;
@@ -278,10 +304,26 @@ class BitWriterWord64 : public BitWriterInterface {
     return BufferToStream(buffer_);
   }
 
+  // Sets callback to emit bit sequences after every write.
+  void SetCallback(std::function<void(const std::string&)> callback) {
+    callback_ = callback;
+  }
+
+ protected:
+  // Sends string generated from arguments to callback_ if defined.
+  void EmitSequence(uint64_t bits, size_t num_bits) const {
+    if (callback_)
+      callback_(BitsToStream(bits, num_bits));
+  }
+
  private:
   std::vector<uint64_t> buffer_;
   // Total number of bits written so far. Named 'end' as analogy to std::end().
   size_t end_;
+
+  // If not null, the writer will use the callback to emit the written bit
+  // sequence as a string of '0' and '1'.
+  std::function<void(const std::string&)> callback_;
 };
 
 // Base class for reading sequences of bits.
@@ -315,6 +357,21 @@ class BitReaderInterface {
     return BitsToStream(bits, num_read);
   }
 
+  // Reads 8 * sizeof(T) bits and stores them in |val|.
+  template <typename T>
+  bool ReadUnencoded(T* val) {
+    static_assert(sizeof(T) <= 64, "Type size too large");
+    uint64_t bits = 0;
+    const size_t num_read = ReadBits(&bits, sizeof(T) * 8);
+    if (num_read != sizeof(T) * 8)
+      return false;
+    memcpy(val, &bits, sizeof(T));
+    return true;
+  }
+
+  // Returns number of bits already read.
+  virtual size_t GetNumReadBits() const = 0;
+
   // These two functions define 'hard' and 'soft' EOF.
   //
   // Returns true if the end of the buffer was reached.
@@ -347,6 +404,10 @@ class BitReaderInterface {
   bool ReadVariableWidthS8(
       int8_t* val, size_t chunk_length, size_t zigzag_exponent);
 
+  // Reads value written by WriteFixedWidth (|max_val| needs to be the same).
+  // Returns true on success, false if the bit stream ends prematurely.
+  bool ReadFixedWidth(uint64_t* val, uint64_t max_val);
+
   BitReaderInterface(const BitReaderInterface&) = delete;
   BitReaderInterface& operator=(const BitReaderInterface&) = delete;
 };
@@ -363,8 +424,14 @@ class BitReaderWord64 : public BitReaderInterface {
   // Consuming the original buffer and casting it to uint64 is difficult,
   // as it would potentially cause data misalignment and poor performance.
   explicit BitReaderWord64(const std::vector<uint8_t>& buffer);
+  BitReaderWord64(const void* buffer, size_t num_bytes);
 
   size_t ReadBits(uint64_t* bits, size_t num_bits) override;
+
+  size_t GetNumReadBits() const override {
+    return pos_;
+  }
+
   bool ReachedEnd() const override;
   bool OnlyZeroesLeft() const override;
 
