@@ -607,7 +607,9 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
 
 bool LocalMultiStoreElimPass::EliminateMultiStoreLocal(ir::Function* func) {
   InitSSARewrite(*func);
-  // Process all blocks in structured order. 
+  // Process all blocks in structured order. This is just one way (the
+  // simplest?) to make sure all predecessors blocks are processed before
+  // a block itself.
   std::list<ir::BasicBlock*> structuredOrder;
   ComputeStructuredOrder(func, &structuredOrder);
   bool modified = false;
