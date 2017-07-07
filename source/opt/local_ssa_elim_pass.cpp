@@ -395,7 +395,9 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     }
   assert(backLabel != 0);
   // Determine merge block.
-  auto mergeInst = (*block_itr)->begin();
+  auto mergeInst = (*block_itr)->end();
+  --mergeInst;
+  --mergeInst;
   uint32_t mergeLabel = mergeInst->GetSingleWordInOperand(
       kLoopMergeMergeBlockIdInIdx);
   // Collect all live variables and a default value for each across all
