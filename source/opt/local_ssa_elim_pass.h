@@ -224,7 +224,7 @@ class LocalMultiStoreElimPass : public Pass {
   // Set of label ids of visited blocks
   std::unordered_set<uint32_t> visitedBlocks_;
 
-  // Map from type to undef for current function
+  // Map from type to undef
   std::unordered_map<uint32_t, uint32_t> type2undefs_;
 
   // Variables that are only referenced by supported operations for this
