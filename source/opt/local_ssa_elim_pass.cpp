@@ -695,6 +695,9 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
+  // TODO(greg-lunarg): Reuse def/use from previous passes
+  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
   // Initialize function and block maps
   id2function_.clear();
   id2block_.clear();
@@ -705,15 +708,15 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
       id2block_[blk.id()] = &blk;
   }
 
-  // Initialize Target Type Caches
+  // Clear collections
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
-
-  // Initialize set of variables only referenced by supported operations
+  visitedBlocks_.clear();
+  type2undefs_.clear();
   supported_ref_vars_.clear();
-
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+  block2structured_succs_.clear();
+  label2preds_.clear();
+  label2ssa_map_.clear();
 
   // Start new ids with next availablein module
   next_id_ = module_->id_bound();
