@@ -134,7 +134,7 @@ class LocalMultiStoreElimPass : public Pass {
   void SSABlockInitSinglePred(ir::BasicBlock* block_ptr);
 
   // Return true if variable is loaded in block with |label| or in
-  // any succeeding block.
+  // any succeeding block in structured order.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
   // Initialize label2ssa_map_ entry for loop header block pointed to
