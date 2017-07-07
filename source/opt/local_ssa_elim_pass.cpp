@@ -522,7 +522,8 @@ void LocalMultiStoreElimPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     bool differs = false;
     for (uint32_t predLabel : label2preds_[label]) {
       const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
-      // Missing values cause a difference
+      // Missing values cause a difference because we'll need to create an
+      // undef for that predecessor.
       if (var_val_itr == label2ssa_map_[predLabel].end()) {
         differs = true;
         break;
