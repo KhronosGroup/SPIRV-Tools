@@ -185,10 +185,6 @@ class CommonUniformElimPass : public Pass {
   // Map from block's label id to its predecessor blocks ids
   std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
 
-  // Extra block whose successors are all blocks with no predecessors
-  // in function.
-  ir::BasicBlock pseudo_entry_block_;
-
   // Map from uniform variable id to its common load id
   std::unordered_map<uint32_t, uint32_t> uniform2load_id_;
 
