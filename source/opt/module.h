@@ -112,7 +112,7 @@ class Module {
   IteratorRange<inst_iterator> annotations();
   IteratorRange<const_inst_iterator> annotations() const;
 
-  // Iterators for annotation instructions contained in this module.
+  // Iterators for extension instructions contained in this module.
   IteratorRange<inst_iterator> extensions();
   IteratorRange<const_inst_iterator> extensions() const;
 

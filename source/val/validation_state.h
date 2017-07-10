@@ -268,7 +268,7 @@ class ValidationState_t {
   Instruction* FindDef(uint32_t id);
 
   /// Returns a deque of instructions in the order they appear in the binary
-  const std::deque<Instruction>& ordered_instructions() {
+  const std::deque<Instruction>& ordered_instructions() const {
     return ordered_instructions_;
   }
 

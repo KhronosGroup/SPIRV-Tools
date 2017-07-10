@@ -166,6 +166,16 @@ Optimizer::PassToken CreateInsertExtractElimPass() {
       MakeUnique<opt::InsertExtractElimPass>());
 }
 
+Optimizer::PassToken CreateDeadBranchElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DeadBranchElimPass>());
+}
+
+Optimizer::PassToken CreateLocalMultiStoreElimPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LocalMultiStoreElimPass>());
+}
+
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());

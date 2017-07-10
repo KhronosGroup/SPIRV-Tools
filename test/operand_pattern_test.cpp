@@ -28,31 +28,31 @@ TEST(OperandPattern, InitiallyEmpty) {
   EXPECT_TRUE(empty.empty());
 }
 
-TEST(OperandPattern, PushFrontsAreOnTheLeft) {
+TEST(OperandPattern, PushBacksAreOnTheRight) {
   spv_operand_pattern_t pattern;
 
-  pattern.push_front(SPV_OPERAND_TYPE_ID);
+  pattern.push_back(SPV_OPERAND_TYPE_ID);
   EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_ID}));
   EXPECT_EQ(1u, pattern.size());
   EXPECT_TRUE(!pattern.empty());
-  EXPECT_EQ(SPV_OPERAND_TYPE_ID, pattern.front());
+  EXPECT_EQ(SPV_OPERAND_TYPE_ID, pattern.back());
 
-  pattern.push_front(SPV_OPERAND_TYPE_NONE);
-  EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_NONE,
-                                                SPV_OPERAND_TYPE_ID}));
+  pattern.push_back(SPV_OPERAND_TYPE_NONE);
+  EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_ID,
+                                                SPV_OPERAND_TYPE_NONE}));
   EXPECT_EQ(2u, pattern.size());
   EXPECT_TRUE(!pattern.empty());
-  EXPECT_EQ(SPV_OPERAND_TYPE_NONE, pattern.front());
+  EXPECT_EQ(SPV_OPERAND_TYPE_NONE, pattern.back());
 }
 
-TEST(OperandPattern, PopFrontsAreOnTheLeft) {
-  spv_operand_pattern_t pattern{SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                                SPV_OPERAND_TYPE_ID};
+TEST(OperandPattern, PopBacksAreOnTheRight) {
+  spv_operand_pattern_t pattern{SPV_OPERAND_TYPE_ID,
+                                SPV_OPERAND_TYPE_LITERAL_INTEGER};
 
-  pattern.pop_front();
+  pattern.pop_back();
   EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_ID}));
 
-  pattern.pop_front();
+  pattern.pop_back();
   EXPECT_THAT(pattern, Eq(spv_operand_pattern_t{}));
 }
 
@@ -72,44 +72,44 @@ TEST_P(MaskExpansionTest, Sample) {
             spvOperandTableGet(&operandTable, SPV_ENV_UNIVERSAL_1_0));
 
   spv_operand_pattern_t pattern(GetParam().initial);
-  spvPrependOperandTypesForMask(operandTable, GetParam().type, GetParam().mask,
+  spvPushOperandTypesForMask(operandTable, GetParam().type, GetParam().mask,
                                 &pattern);
   EXPECT_THAT(pattern, Eq(GetParam().expected));
 }
 
 // These macros let us write non-trivial examples without too much text.
-#define SUFFIX0 SPV_OPERAND_TYPE_NONE, SPV_OPERAND_TYPE_ID
-#define SUFFIX1                                              \
-  SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE, \
-      SPV_OPERAND_TYPE_STORAGE_CLASS
+#define PREFIX0 SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_NONE
+#define PREFIX1                                              \
+  SPV_OPERAND_TYPE_STORAGE_CLASS, SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE, \
+      SPV_OPERAND_TYPE_ID
 INSTANTIATE_TEST_CASE_P(
     OperandPattern, MaskExpansionTest,
     ::testing::ValuesIn(std::vector<MaskExpansionCase>{
         // No bits means no change.
-        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, 0, {SUFFIX0}, {SUFFIX0}},
+        {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS, 0, {PREFIX0}, {PREFIX0}},
         // Unknown bits means no change.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          0xfffffffc,
-         {SUFFIX1},
-         {SUFFIX1}},
+         {PREFIX1},
+         {PREFIX1}},
         // Volatile has no operands.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          SpvMemoryAccessVolatileMask,
-         {SUFFIX0},
-         {SUFFIX0}},
+         {PREFIX0},
+         {PREFIX0}},
         // Aligned has one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          SpvMemoryAccessAlignedMask,
-         {SUFFIX1},
-         {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
+         {PREFIX1},
+         {PREFIX1, SPV_OPERAND_TYPE_LITERAL_INTEGER}},
         // Volatile with Aligned still has just one literal number operand.
         {SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS,
          SpvMemoryAccessVolatileMask | SpvMemoryAccessAlignedMask,
-         {SUFFIX1},
-         {SPV_OPERAND_TYPE_LITERAL_INTEGER, SUFFIX1}},
+         {PREFIX1},
+         {PREFIX1, SPV_OPERAND_TYPE_LITERAL_INTEGER}},
     }), );
-#undef SUFFIX0
-#undef SUFFIX1
+#undef PREFIX0
+#undef PREFIX1
 
 // Returns a vector of all operand types that can be used in a pattern.
 std::vector<spv_operand_type_t> allOperandTypes() {
@@ -149,7 +149,7 @@ TEST_P(VariableOperandExpansionTest, NonMatchableOperandsExpand) {
     EXPECT_FALSE(pattern.empty());
     // For the existing rules, the first expansion of a zero-or-more operand
     // type yields a matchable operand type.  This isn't strictly necessary.
-    EXPECT_FALSE(spvOperandIsVariable(pattern.front()));
+    EXPECT_FALSE(spvOperandIsVariable(pattern.back()));
   }
 }
 
@@ -183,8 +183,8 @@ TEST(AlternatePatternFollowingImmediate, SingleElement) {
 TEST(AlternatePatternFollowingImmediate, SingleResultId) {
   EXPECT_THAT(
       spvAlternatePatternFollowingImmediate({SPV_OPERAND_TYPE_RESULT_ID}),
-      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
-                               SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+      Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                               SPV_OPERAND_TYPE_RESULT_ID}));
 }
 
 TEST(AlternatePatternFollowingImmediate, MultipleNonResultIds) {
@@ -199,12 +199,15 @@ TEST(AlternatePatternFollowingImmediate, MultipleNonResultIds) {
 TEST(AlternatePatternFollowingImmediate, ResultIdFront) {
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
                   {SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_ID}),
-              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_RESULT_ID,
                                        SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
                   {SPV_OPERAND_TYPE_RESULT_ID,
                    SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID}),
-              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
                                        SPV_OPERAND_TYPE_OPTIONAL_CIV}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
                   {SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_DIMENSIONALITY,
@@ -212,7 +215,13 @@ TEST(AlternatePatternFollowingImmediate, ResultIdFront) {
                    SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE,
                    SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
                    SPV_OPERAND_TYPE_VARIABLE_ID}),
-              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_RESULT_ID,
+              Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_RESULT_ID,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
+                                       SPV_OPERAND_TYPE_OPTIONAL_CIV,
                                        SPV_OPERAND_TYPE_OPTIONAL_CIV}));
 }
 
@@ -230,8 +239,8 @@ TEST(AlternatePatternFollowingImmediate, ResultIdMiddle) {
            SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_FP_ROUNDING_MODE,
            SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_VARIABLE_ID}),
       Eq(spv_operand_pattern_t{
-          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
           SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_RESULT_ID,
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
           SPV_OPERAND_TYPE_OPTIONAL_CIV}));
 }
 
@@ -239,14 +248,12 @@ TEST(AlternatePatternFollowingImmediate, ResultIdBack) {
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
                   {SPV_OPERAND_TYPE_ID, SPV_OPERAND_TYPE_RESULT_ID}),
               Eq(spv_operand_pattern_t{SPV_OPERAND_TYPE_OPTIONAL_CIV,
-                                       SPV_OPERAND_TYPE_RESULT_ID,
-                                       SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+                                       SPV_OPERAND_TYPE_RESULT_ID}));
   EXPECT_THAT(spvAlternatePatternFollowingImmediate(
                   {SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
                    SPV_OPERAND_TYPE_RESULT_ID}),
               Eq(spv_operand_pattern_t{
-                  SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
-                  SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+                  SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_RESULT_ID}));
   EXPECT_THAT(
       spvAlternatePatternFollowingImmediate(
           {SPV_OPERAND_TYPE_DIMENSIONALITY, SPV_OPERAND_TYPE_LINKAGE_TYPE,
@@ -254,10 +261,7 @@ TEST(AlternatePatternFollowingImmediate, ResultIdBack) {
            SPV_OPERAND_TYPE_FP_ROUNDING_MODE, SPV_OPERAND_TYPE_ID,
            SPV_OPERAND_TYPE_VARIABLE_ID, SPV_OPERAND_TYPE_RESULT_ID}),
       Eq(spv_operand_pattern_t{
-          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
-          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
-          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_OPTIONAL_CIV,
-          SPV_OPERAND_TYPE_RESULT_ID, SPV_OPERAND_TYPE_OPTIONAL_CIV}));
+          SPV_OPERAND_TYPE_OPTIONAL_CIV, SPV_OPERAND_TYPE_RESULT_ID}));
 }
 
 }  // anonymous namespace

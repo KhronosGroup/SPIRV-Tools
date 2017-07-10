@@ -317,6 +317,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // NOTE: Copy each instruction for easier processing
   std::vector<spv_instruction_t> instructions;
+  // Expect average instruction length to be a bit over 2 words.
+  instructions.reserve(binary->wordCount / 2);
   uint64_t index = SPV_INDEX_INSTRUCTION;
   while (index < binary->wordCount) {
     uint16_t wordCount;
@@ -326,7 +328,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     spv_instruction_t inst;
     spvInstructionCopy(&binary->code[index], static_cast<SpvOp>(opcode),
                        wordCount, endian, &inst);
-    instructions.push_back(inst);
+    instructions.emplace_back(std::move(inst));
     index += wordCount;
   }
 

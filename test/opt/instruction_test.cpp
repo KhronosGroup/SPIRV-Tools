@@ -69,6 +69,55 @@ spv_parsed_instruction_t kSampleParsedInstruction = {kSampleInstructionWords,
                                                      44,  // result id
                                                      kSampleParsedOperands,
                                                      3};
+
+// The words for an OpAccessChain instruction.
+uint32_t kSampleAccessChainInstructionWords[] = {
+    (7 << 16) | uint32_t(SpvOpAccessChain), 100, 101, 102, 103, 104, 105};
+
+// The operands that would be parsed from kSampleAccessChainInstructionWords.
+spv_parsed_operand_t kSampleAccessChainOperands[] = {
+    {1, 1, SPV_OPERAND_TYPE_RESULT_ID, SPV_NUMBER_NONE, 0},
+    {2, 1, SPV_OPERAND_TYPE_TYPE_ID, SPV_NUMBER_NONE, 0},
+    {3, 1, SPV_OPERAND_TYPE_ID, SPV_NUMBER_NONE, 0},
+    {4, 1, SPV_OPERAND_TYPE_ID, SPV_NUMBER_NONE, 0},
+    {5, 1, SPV_OPERAND_TYPE_ID, SPV_NUMBER_NONE, 0},
+    {6, 1, SPV_OPERAND_TYPE_ID, SPV_NUMBER_NONE, 0},
+};
+
+// A valid parse of kSampleAccessChainInstructionWords
+spv_parsed_instruction_t kSampleAccessChainInstruction = {
+    kSampleAccessChainInstructionWords,
+    uint16_t(7),
+    uint16_t(SpvOpAccessChain),
+    SPV_EXT_INST_TYPE_NONE,
+    100,  // type id
+    101,  // result id
+    kSampleAccessChainOperands,
+    6};
+
+// The words for an OpControlBarrier instruction.
+uint32_t kSampleControlBarrierInstructionWords[] = {
+    (4 << 16) | uint32_t(SpvOpControlBarrier), 100, 101, 102};
+
+// The operands that would be parsed from kSampleControlBarrierInstructionWords.
+spv_parsed_operand_t kSampleControlBarrierOperands[] = {
+    {1, 1, SPV_OPERAND_TYPE_SCOPE_ID, SPV_NUMBER_NONE, 0},  // Execution
+    {2, 1, SPV_OPERAND_TYPE_SCOPE_ID, SPV_NUMBER_NONE, 0},  // Memory
+    {3, 1, SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID, SPV_NUMBER_NONE,
+     0},  // Semantics
+};
+
+// A valid parse of kSampleControlBarrierInstructionWords
+spv_parsed_instruction_t kSampleControlBarrierInstruction = {
+    kSampleControlBarrierInstructionWords,
+    uint16_t(4),
+    uint16_t(SpvOpControlBarrier),
+    SPV_EXT_INST_TYPE_NONE,
+    0,  // type id
+    0,  // result id
+    kSampleControlBarrierOperands,
+    3};
+
 TEST(InstructionTest, CreateWithOpcodeAndOperands) {
   Instruction inst(kSampleParsedInstruction);
   EXPECT_EQ(SpvOpTypeInt, inst.opcode());
@@ -146,6 +195,30 @@ TEST(InstructionTest, OperandIterators) {
   // Check mutation through an iterator.
   operand2.type = SPV_OPERAND_TYPE_TYPE_ID;
   EXPECT_EQ(SPV_OPERAND_TYPE_TYPE_ID, (*(inst.cbegin() + 2)).type);
+}
+
+TEST(InstructionTest, ForInIdStandardIdTypes) {
+  Instruction inst(kSampleAccessChainInstruction);
+
+  std::vector<uint32_t> ids;
+  inst.ForEachInId([&ids](const uint32_t* idptr) { ids.push_back(*idptr); });
+  EXPECT_THAT(ids, Eq(std::vector<uint32_t>{102, 103, 104, 105}));
+
+  ids.clear();
+  inst.ForEachInId([&ids](uint32_t* idptr) { ids.push_back(*idptr); });
+  EXPECT_THAT(ids, Eq(std::vector<uint32_t>{102, 103, 104, 105}));
+}
+
+TEST(InstructionTest, ForInIdNonstandardIdTypes) {
+  Instruction inst(kSampleControlBarrierInstruction);
+
+  std::vector<uint32_t> ids;
+  inst.ForEachInId([&ids](const uint32_t* idptr) { ids.push_back(*idptr); });
+  EXPECT_THAT(ids, Eq(std::vector<uint32_t>{100, 101, 102}));
+
+  ids.clear();
+  inst.ForEachInId([&ids](uint32_t* idptr) { ids.push_back(*idptr); });
+  EXPECT_THAT(ids, Eq(std::vector<uint32_t>{100, 101, 102}));
 }
 
 }  // anonymous namespace

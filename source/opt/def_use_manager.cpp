@@ -21,7 +21,7 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
+void DefUseManager::AnalyzeInstDef(ir::Instruction* inst) {
   const uint32_t def_id = inst->result_id();
   if (def_id != 0) {
     auto iter = id_to_def_.find(def_id);
@@ -31,10 +31,13 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
       ClearInst(iter->second);
     }
     id_to_def_[def_id] = inst;
-  } else {
+  }
+  else {
     ClearInst(inst);
   }
+}
 
+void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
   // Create entry for the given instruction. Note that the instruction may
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
@@ -43,19 +46,24 @@ void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
       // For any id type but result id type
-      case SPV_OPERAND_TYPE_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-      case SPV_OPERAND_TYPE_SCOPE_ID: {
-        uint32_t use_id = inst->GetSingleWordOperand(i);
-        // use_id is used by the instruction generating def_id.
-        id_to_uses_[use_id].push_back({inst, i});
-        inst_to_used_ids_[inst].push_back(use_id);
-      } break;
-      default:
-        break;
+    case SPV_OPERAND_TYPE_ID:
+    case SPV_OPERAND_TYPE_TYPE_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+    case SPV_OPERAND_TYPE_SCOPE_ID: {
+      uint32_t use_id = inst->GetSingleWordOperand(i);
+      // use_id is used by the instruction generating def_id.
+      id_to_uses_[use_id].push_back({ inst, i });
+      inst_to_used_ids_[inst].push_back(use_id);
+    } break;
+    default:
+      break;
     }
   }
+}
+
+void DefUseManager::AnalyzeInstDefUse(ir::Instruction* inst) {
+  AnalyzeInstDef(inst);
+  AnalyzeInstUse(inst);
 }
 
 ir::Instruction* DefUseManager::GetDef(uint32_t id) {

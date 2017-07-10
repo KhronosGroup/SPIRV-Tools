@@ -178,7 +178,14 @@ class Parser {
           diagnostic(diagnostic_arg),
           word_index(0),
           endian(),
-          requires_endian_conversion(false) {}
+          requires_endian_conversion(false) {
+
+        // Temporary storage for parser state within a single instruction.
+        // Most instructions require fewer than 25 words or operands.
+        operands.reserve(25);
+        endian_converted_words.reserve(25);
+        expected_operands.reserve(25);
+    }
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
     size_t num_words;            // Number of words in the module.
@@ -198,6 +205,11 @@ class Parser {
     // Maps an ExtInstImport id to the extended instruction type.
     std::unordered_map<uint32_t, spv_ext_inst_type_t>
         import_id_to_ext_inst_type;
+
+    // Used by parseOperand
+    std::vector<spv_parsed_operand_t> operands;
+    std::vector<uint32_t> endian_converted_words;
+    spv_operand_pattern_t expected_operands;
   } _;
 };
 
@@ -262,24 +274,15 @@ spv_result_t Parser::parseInstruction() {
 
   const uint32_t first_word = peek();
 
-  // TODO(dneto): If it's too expensive to construct the following "words"
-  // and "operands" vectors for each instruction, each instruction, then make
-  // them class data members instead, and clear them here.
-
   // If the module's endianness is different from the host native endianness,
   // then converted_words contains the the endian-translated words in the
   // instruction.
-  std::vector<uint32_t> endian_converted_words = {first_word};
-  if (_.requires_endian_conversion) {
-    // Most instructions have fewer than 25 words.
-    endian_converted_words.reserve(25);
-  }
+  _.endian_converted_words.clear();
+  _.endian_converted_words.push_back(first_word);
 
   // After a successful parse of the instruction, the inst.operands member
   // will point to this vector's storage.
-  std::vector<spv_parsed_operand_t> operands;
-  // Most instructions have fewer than 25 logical operands.
-  operands.reserve(25);
+  _.operands.clear();
 
   assert(_.word_index < _.num_words);
   // Decompose and check the first word.
@@ -305,13 +308,13 @@ spv_result_t Parser::parseInstruction() {
   // has its own logical operands (such as the LocalSize operand for
   // ExecutionMode), or for extended instructions that may have their
   // own operands depending on the selected extended instruction.
-  spv_operand_pattern_t expected_operands(
-      opcode_desc->operandTypes,
-      opcode_desc->operandTypes + opcode_desc->numTypes);
+  _.expected_operands.clear();
+  for (auto i = 0; i < opcode_desc->numTypes; i++)
+      _.expected_operands.push_back(opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
 
   while (_.word_index < inst_offset + inst_word_count) {
     const uint16_t inst_word_index = uint16_t(_.word_index - inst_offset);
-    if (expected_operands.empty()) {
+    if (_.expected_operands.empty()) {
       return diagnostic() << "Invalid instruction Op" << opcode_desc->name
                           << " starting at word " << inst_offset
                           << ": expected no more operands after "
@@ -320,17 +323,17 @@ spv_result_t Parser::parseInstruction() {
                           << inst_word_count << ".";
     }
 
-    spv_operand_type_t type = spvTakeFirstMatchableOperand(&expected_operands);
+    spv_operand_type_t type = spvTakeFirstMatchableOperand(&_.expected_operands);
 
     if (auto error =
-            parseOperand(inst_offset, &inst, type, &endian_converted_words,
-                         &operands, &expected_operands)) {
+            parseOperand(inst_offset, &inst, type, &_.endian_converted_words,
+                         &_.operands, &_.expected_operands)) {
       return error;
     }
   }
 
-  if (!expected_operands.empty() &&
-      !spvOperandIsOptional(expected_operands.front())) {
+  if (!_.expected_operands.empty() &&
+      !spvOperandIsOptional(_.expected_operands.back())) {
     return diagnostic() << "End of input reached while decoding Op"
                         << opcode_desc->name << " starting at word "
                         << inst_offset << ": expected more operands after "
@@ -351,15 +354,15 @@ spv_result_t Parser::parseInstruction() {
   // performed, then the vector only contains the initial opcode/word-count
   // word.
   assert(!_.requires_endian_conversion ||
-         (inst_word_count == endian_converted_words.size()));
-  assert(_.requires_endian_conversion || (endian_converted_words.size() == 1));
+         (inst_word_count == _.endian_converted_words.size()));
+  assert(_.requires_endian_conversion || (_.endian_converted_words.size() == 1));
 
   recordNumberType(inst_offset, &inst);
 
   if (_.requires_endian_conversion) {
     // We must wait until here to set this pointer, because the vector might
     // have been be resized while we accumulated its elements.
-    inst.words = endian_converted_words.data();
+    inst.words = _.endian_converted_words.data();
   } else {
     // If no conversion is required, then just point to the underlying binary.
     // This saves time and space.
@@ -369,8 +372,8 @@ spv_result_t Parser::parseInstruction() {
 
   // We must wait until here to set this pointer, because the vector might
   // have been be resized while we accumulated its elements.
-  inst.operands = operands.data();
-  inst.num_operands = uint16_t(operands.size());
+  inst.operands = _.operands.data();
+  inst.num_operands = uint16_t(_.operands.size());
 
   // Issue the callback.  The callee should know that all the storage in inst
   // is transient, and will disappear immediately afterward.
@@ -468,7 +471,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       spv_ext_inst_desc ext_inst;
       if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst))
         return diagnostic() << "Invalid extended instruction number: " << word;
-      spvPrependOperandTypes(ext_inst->operandTypes, expected_operands);
+      spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
@@ -488,7 +491,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       assert(opcode_entry->hasType);
       assert(opcode_entry->hasResult);
       assert(opcode_entry->numTypes >= 2);
-      spvPrependOperandTypes(opcode_entry->operandTypes + 2, expected_operands);
+      spvPushOperandTypes(opcode_entry->operandTypes + 2, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
@@ -622,7 +625,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                             << " operand: " << word;
       }
       // Prepare to accept operands to this operand, if needed.
-      spvPrependOperandTypes(entry->operandTypes, expected_operands);
+      spvPushOperandTypes(entry->operandTypes, expected_operands);
     } break;
 
     case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
@@ -657,7 +660,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                    << mask;
           }
           remaining_word ^= mask;
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
       if (word == 0) {
@@ -665,7 +668,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         spv_operand_desc entry;
         if (SPV_SUCCESS == grammar_.lookupOperand(type, 0, &entry)) {
           // Prepare for its operands, if any.
-          spvPrependOperandTypes(entry->operandTypes, expected_operands);
+          spvPushOperandTypes(entry->operandTypes, expected_operands);
         }
       }
     } break;

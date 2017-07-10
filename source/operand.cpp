@@ -16,6 +16,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <algorithm>
 
 #include "macro.h"
 
@@ -218,26 +219,28 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
   return "unknown";
 }
 
-void spvPrependOperandTypes(const spv_operand_type_t* types,
-                            spv_operand_pattern_t* pattern) {
+void spvPushOperandTypes(const spv_operand_type_t* types,
+                         spv_operand_pattern_t* pattern) {
   const spv_operand_type_t* endTypes;
   for (endTypes = types; *endTypes != SPV_OPERAND_TYPE_NONE; ++endTypes)
     ;
-  pattern->insert(pattern->begin(), types, endTypes);
+  while (endTypes-- != types) {
+      pattern->push_back(*endTypes);
+  }
 }
 
-void spvPrependOperandTypesForMask(const spv_operand_table operandTable,
-                                   const spv_operand_type_t type,
-                                   const uint32_t mask,
-                                   spv_operand_pattern_t* pattern) {
-  // Scan from highest bits to lowest bits because we will prepend in LIFO
-  // fashion, and we need the operands for lower order bits to appear first.
+void spvPushOperandTypesForMask(const spv_operand_table operandTable,
+                                const spv_operand_type_t type,
+                                const uint32_t mask,
+                                spv_operand_pattern_t* pattern) {
+  // Scan from highest bits to lowest bits because we will append in LIFO
+  // fashion, and we need the operands for lower order bits to be consumed first
   for (uint32_t candidate_bit = (1u << 31u); candidate_bit; candidate_bit >>= 1) {
     if (candidate_bit & mask) {
       spv_operand_desc entry = nullptr;
       if (SPV_SUCCESS == spvOperandTableValueLookup(operandTable, type,
                                                     candidate_bit, &entry)) {
-        spvPrependOperandTypes(entry->operandTypes, pattern);
+        spvPushOperandTypes(entry->operandTypes, pattern);
       }
     }
   }
@@ -262,24 +265,25 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
                                   spv_operand_pattern_t* pattern) {
   switch (type) {
     case SPV_OPERAND_TYPE_VARIABLE_ID:
-      pattern->insert(pattern->begin(), {SPV_OPERAND_TYPE_OPTIONAL_ID, type});
+      pattern->push_back(type);
+      pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_ID);
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER:
-      pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER, type});
+      pattern->push_back(type);
+      pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_LITERAL_INTEGER);
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_LITERAL_INTEGER_ID:
       // Represents Zero or more (Literal number, Id) pairs,
       // where the literal number must be a scalar integer.
-      pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER,
-                       SPV_OPERAND_TYPE_ID, type});
+      pattern->push_back(type);
+      pattern->push_back(SPV_OPERAND_TYPE_ID);
+      pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER);
       return true;
     case SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER:
       // Represents Zero or more (Id, Literal number) pairs.
-      pattern->insert(pattern->begin(),
-                      {SPV_OPERAND_TYPE_OPTIONAL_ID,
-                       SPV_OPERAND_TYPE_LITERAL_INTEGER, type});
+      pattern->push_back(type);
+      pattern->push_back(SPV_OPERAND_TYPE_LITERAL_INTEGER);
+      pattern->push_back(SPV_OPERAND_TYPE_OPTIONAL_ID);
       return true;
     default:
       break;
@@ -292,25 +296,24 @@ spv_operand_type_t spvTakeFirstMatchableOperand(
   assert(!pattern->empty());
   spv_operand_type_t result;
   do {
-    result = pattern->front();
-    pattern->pop_front();
+    result = pattern->back();
+    pattern->pop_back();
   } while (spvExpandOperandSequenceOnce(result, pattern));
   return result;
 }
 
 spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
     const spv_operand_pattern_t& pattern) {
-  spv_operand_pattern_t alternatePattern;
-  for (const auto& operand : pattern) {
-    if (operand == SPV_OPERAND_TYPE_RESULT_ID) {
-      alternatePattern.push_back(operand);
-      alternatePattern.push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
-      return alternatePattern;
-    }
-    alternatePattern.push_back(SPV_OPERAND_TYPE_OPTIONAL_CIV);
+
+  auto it = std::find(pattern.crbegin(), pattern.crend(), SPV_OPERAND_TYPE_RESULT_ID);
+  if (it != pattern.crend()) {
+    spv_operand_pattern_t alternatePattern(it - pattern.crbegin() + 2, SPV_OPERAND_TYPE_OPTIONAL_CIV);
+    alternatePattern[1] = SPV_OPERAND_TYPE_RESULT_ID;
+    return alternatePattern;
   }
+
   // No result-id found, so just expect CIVs.
-  return {SPV_OPERAND_TYPE_OPTIONAL_CIV};
+  return{ SPV_OPERAND_TYPE_OPTIONAL_CIV };
 }
 
 bool spvIsIdType(spv_operand_type_t type) {

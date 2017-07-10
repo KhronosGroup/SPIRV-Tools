@@ -34,14 +34,19 @@ bool IsLittleEndian() {
   return reinterpret_cast<const unsigned char*>(&kFF00)[0] == 0;
 }
 
-// Copies uint8_t buffer to a uint64_t buffer.
+// Copies bytes from the given buffer to a uint64_t buffer.
 // Motivation: casting uint64_t* to uint8_t* is ok. Casting in the other
 // direction is only advisable if uint8_t* is aligned to 64-bit word boundary.
-std::vector<uint64_t> ToBuffer64(const std::vector<uint8_t>& in) {
+std::vector<uint64_t> ToBuffer64(const void* buffer, size_t num_bytes) {
   std::vector<uint64_t> out;
-  out.resize((in.size() + 7) / 8, 0);
-  memcpy(out.data(), in.data(), in.size());
+  out.resize((num_bytes + 7) / 8, 0);
+  memcpy(out.data(), buffer, num_bytes);
   return out;
+}
+
+// Copies uint8_t buffer to a uint64_t buffer.
+std::vector<uint64_t> ToBuffer64(const std::vector<uint8_t>& in) {
+  return ToBuffer64(in.data(), in.size());
 }
 
 // Returns uint64_t containing the same bits as |val|.
@@ -78,7 +83,9 @@ void WriteVariableWidthInternal(BitWriterInterface* writer, uint64_t val,
   assert(max_payload == 64 || (val >> max_payload) == 0);
 
   if (val == 0) {
-    writer->WriteBits(0, chunk_length + 1);
+    // Split in two writes for more readable logging.
+    writer->WriteBits(0, chunk_length);
+    writer->WriteBits(0, 1);
     return;
   }
 
@@ -193,6 +200,41 @@ bool ReadVariableWidthSigned(BitReaderInterface* reader, T* val,
 
 }  // namespace
 
+size_t Log2U64(uint64_t val) {
+  size_t res = 0;
+
+  if (val & 0xFFFFFFFF00000000) {
+    val >>= 32;
+    res |= 32;
+  }
+
+  if (val & 0xFFFF0000) {
+    val >>= 16;
+    res |= 16;
+  }
+
+  if (val & 0xFF00) {
+    val >>= 8;
+    res |= 8;
+  }
+
+  if (val & 0xF0) {
+    val >>= 4;
+    res |= 4;
+  }
+
+  if (val & 0xC) {
+    val >>= 2;
+    res |= 2;
+  }
+
+  if (val & 0x2) {
+    res |= 1;
+  }
+
+  return res;
+}
+
 void BitWriterInterface::WriteVariableWidthU64(uint64_t val,
                                                size_t chunk_length) {
   WriteVariableWidthUnsigned(this, val, chunk_length);
@@ -237,6 +279,16 @@ void BitWriterInterface::WriteVariableWidthS8(int8_t val,
   WriteVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
 }
 
+void BitWriterInterface::WriteFixedWidth(uint64_t val, uint64_t max_val) {
+  if (val > max_val) {
+    assert(0 && "WriteFixedWidth: value too wide");
+    return;
+  }
+
+  const size_t num_bits = 1 + Log2U64(max_val);
+  WriteBits(val, num_bits);
+}
+
 BitWriterWord64::BitWriterWord64(size_t reserve_bits) : end_(0) {
   buffer_.reserve(NumBitsToNumWords<64>(reserve_bits));
 }
@@ -249,6 +301,8 @@ void BitWriterWord64::WriteBits(uint64_t bits, size_t num_bits) {
   if (!is_little_endian) return;
 
   bits = GetLowerBits(bits, num_bits);
+
+  EmitSequence(bits, num_bits);
 
   // Offset from the start of the current word.
   const size_t offset = end_ % 64;
@@ -320,11 +374,19 @@ bool BitReaderInterface::ReadVariableWidthS8(int8_t* val,
   return ReadVariableWidthSigned(this, val, chunk_length, zigzag_exponent);
 }
 
+bool BitReaderInterface::ReadFixedWidth(uint64_t* val, uint64_t max_val) {
+  const size_t num_bits = 1 + Log2U64(max_val);
+  return ReadBits(val, num_bits) == num_bits;
+}
+
 BitReaderWord64::BitReaderWord64(std::vector<uint64_t>&& buffer)
     : buffer_(std::move(buffer)), pos_(0) {}
 
 BitReaderWord64::BitReaderWord64(const std::vector<uint8_t>& buffer)
     : buffer_(ToBuffer64(buffer)), pos_(0) {}
+
+BitReaderWord64::BitReaderWord64(const void* buffer, size_t num_bytes)
+    : buffer_(ToBuffer64(buffer, num_bytes)), pos_(0) {}
 
 size_t BitReaderWord64::ReadBits(uint64_t* bits, size_t num_bits) {
   assert(num_bits <= 64);
