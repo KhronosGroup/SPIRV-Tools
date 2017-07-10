@@ -176,6 +176,11 @@ Optimizer::PassToken CreateCommonUniformElimPass() {
       MakeUnique<opt::CommonUniformElimPass>());
 }
 
+Optimizer::PassToken CreateAggressiveDCEPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::AggressiveDCEPass>());
+}
+
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());

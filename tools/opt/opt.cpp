@@ -135,6 +135,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateInlinePass());
       } else if (0 == strcmp(cur_arg, "--convert-local-access-chains")) {
         optimizer.RegisterPass(CreateLocalAccessChainConvertPass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-dead-code-aggressive")) {
+        optimizer.RegisterPass(CreateAggressiveDCEPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-insert-extract")) {
         optimizer.RegisterPass(CreateInsertExtractElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-local-single-block")) {
