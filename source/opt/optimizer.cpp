@@ -151,6 +151,11 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass() {
       MakeUnique<opt::LocalSingleBlockLoadStoreElimPass>());
 }
 
+Optimizer::PassToken CreateAggressiveDCEPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::AggressiveDCEPass>());
+}
+  
 Optimizer::PassToken CreateLocalSingleStoreElimPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LocalSingleStoreElimPass>());
