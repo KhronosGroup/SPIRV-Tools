@@ -218,27 +218,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     def_use_mgr_->KillInst(mergeInst);
 
     // Iterate to merge block adding dead blocks to elimination set
-    std::unordered_set<uint32_t> deadSuccIds;
-    deadSuccIds.insert(deadLabId);
     auto dbi = bi;
     ++dbi;
     uint32_t dLabId = (*dbi)->id();
     while (dLabId != mergeLabId) {
-      if (deadSuccIds.find(dLabId) != deadSuccIds.end()) {
-        // Add successor blocks to dead successor set
-        (*dbi)->ForEachSuccessorLabel([&deadSuccIds](uint32_t succ) {
-          deadSuccIds.insert(succ);
-        });
-        // If dead block is header block, add its merge block to dead
-        // successor set in case it has no predecessors. Add continue
-        // target if loop header.
-        uint32_t cbid;
-        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi, &cbid);
-        if (dMergeLabId != 0) {
-          deadSuccIds.insert(dMergeLabId);
-          if (cbid != 0)
-            deadSuccIds.insert(cbid);
-        }
+      if (!HasNonPhiRef(dLabId)) {
         // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
@@ -248,14 +232,19 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
 
     // Process phi instructions in merge block.
-    // deadLabIds are now blocks which cannot precede merge block.
-    // If eliminated branch is to merge label, add current block to dead blocks.
+    // elimBlocks are now blocks which cannot precede merge block. Also,
+    // if eliminated branch is to merge label, remember the conditional block
+    // also cannot precede merge block.
+    uint32_t deadCondLabId = 0;
     if (deadLabId == mergeLabId)
-      deadSuccIds.insert((*bi)->id());
-    (*dbi)->ForEachPhiInst([&deadSuccIds, this](ir::Instruction* phiInst) {
+      deadCondLabId = (*bi)->id();
+    (*dbi)->ForEachPhiInst([&elimBlocks, &deadCondLabId, this](
+        ir::Instruction* phiInst) {
       const uint32_t phiLabId0 =
           phiInst->GetSingleWordInOperand(kPhiLab0IdInIdx);
-      const bool useFirst = deadSuccIds.find(phiLabId0) == deadSuccIds.end();
+      const bool useFirst =
+          elimBlocks.find(id2block_[phiLabId0]) == elimBlocks.end() &&
+          phiLabId0 != deadCondLabId;
       const uint32_t phiValIdx =
           useFirst ? kPhiVal0IdInIdx : kPhiVal1IdInIdx;
       const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
