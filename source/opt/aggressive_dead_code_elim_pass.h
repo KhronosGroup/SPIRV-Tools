@@ -73,13 +73,13 @@ class AggressiveDCEPass : public Pass {
   // TODO(greg-lunarg): Add support for other extensions
   bool IsCombinatorExt(ir::Instruction* inst) const;
 
-  // Return true if all extensions in this module are allowed by this pass.
-  // Currently, no extensions are allowed. glsl_std_450 extended instructions
+  // Return true if all extensions in this module are supported by this pass.
+  // Currently, no extensions are supported. glsl_std_450 extended instructions
   // are allowed.
-  bool AllExtensionsAllowed();
+  bool AllExtensionsSupported();
 
-  // Delete debug or annotation |inst| if target operand is dead.
-  void DeleteInstIfTargetDead(ir::Instruction* inst);
+  // Kill debug or annotation |inst| if target operand is dead.
+  void KillInstIfTargetDead(ir::Instruction* inst);
 
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
@@ -104,7 +104,11 @@ class AggressiveDCEPass : public Pass {
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
-  // Live Instruction Worklist
+  // Live Instruction Worklist.  An instruction is added to this list
+  // if it might have a side effect, either directly or indirectly.
+  // If we don't know, then add it to this list.  Instructions are
+  // removed from this list as the algorithm traces side effects,
+  // building up the live instructions set |live_insts_|.
   std::queue<ir::Instruction*> worklist_;
 
   // Live Instructions

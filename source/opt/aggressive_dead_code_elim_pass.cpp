@@ -109,7 +109,7 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
     return false;
 }
 
-bool AggressiveDCEPass::AllExtensionsAllowed() {
+bool AggressiveDCEPass::AllExtensionsSupported() {
   uint32_t ecnt = 0;
   for (auto& ei : module_->extensions()) {
     (void) ei;
@@ -118,7 +118,7 @@ bool AggressiveDCEPass::AllExtensionsAllowed() {
   return ecnt == 0;
 }
 
-void AggressiveDCEPass::DeleteInstIfTargetDead(ir::Instruction* inst) {
+void AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
   const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
   if (dead_insts_.find(tInst) != dead_insts_.end())
@@ -205,13 +205,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto& di : module_->debugs()) {
     if (di.opcode() != SpvOpName)
       continue;
-    DeleteInstIfTargetDead(&di);
+    KillInstIfTargetDead(&di);
     modified = true;
   }
   for (auto& ai : module_->annotations()) {
     if (ai.opcode() != SpvOpDecorate && ai.opcode() != SpvOpDecorateId)
       continue;
-    DeleteInstIfTargetDead(&ai);
+    KillInstIfTargetDead(&ai);
     modified = true;
   }
   // Kill dead instructions
@@ -235,6 +235,14 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
   for (auto& fn : *module_)
     id2function_[fn.result_id()] = &fn;
 
+  // Clear collections
+  worklist_ = std::queue<ir::Instruction*>{};
+  live_insts_.clear();
+  live_local_vars_.clear();
+  dead_insts_.clear();
+  combinator_ops_shader_.clear();
+  combinator_ops_glsl_std_450_.clear();
+
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 }
 
@@ -249,11 +257,11 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
 
-  // If any extensions in the module are not explicitly allowed,
-  // return unmodified. Currently, no extensions are allowed.
+  // If any extensions in the module are not explicitly supported,
+  // return unmodified. Currently, no extensions are supported.
   // glsl_std_450 extended instructions are allowed.
   // TODO(greg-lunarg): Allow additional extensions
-  if (!AllExtensionsAllowed())
+  if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
 
   InitCombinatorSets();
@@ -411,6 +419,7 @@ void AggressiveDCEPass::InitCombinatorSets() {
     SpvOpImageSparseTexelsResident,
     SpvOpImageSparseRead,
     SpvOpSizeOf
+    // TODO(dneto): Add instructions enabled by ImageQuery
   };
 
   // Find supported extension instruction set ids
