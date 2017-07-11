@@ -460,7 +460,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
       continue;
     }
     // Val differs across predecessors. Add phi op to block and 
-    // add its result id to the map. For live back edge predecessor,
+    // add its result id to the map. For back edge predecessor,
     // use the variable id. We will patch this after visiting back
     // edge predecessor. For predecessors that do not define a value,
     // use undef.
@@ -469,10 +469,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     for (uint32_t predLabel : label2preds_[label]) {
       uint32_t valId;
       if (predLabel == backLabel) {
-        if (val0Id == 0)
-          valId = varId;
-        else
-          valId = Type2Undef(typeId);
+        valId = varId;
       }
       else {
         const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
@@ -594,14 +591,15 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
       if (cnt % 2 == 1 && *iid == back_id) idx = cnt - 1;
       ++cnt;
     });
-    // Only patch operands that are in the backedge predecessor map
+    // Use undef if variable not in backedge predecessor map
     const uint32_t varId = phiItr->GetSingleWordInOperand(idx);
     const auto valItr = label2ssa_map_[back_id].find(varId);
-    if (valItr != label2ssa_map_[back_id].end()) {
-      phiItr->SetInOperand(idx, { valItr->second });
-      // Analyze uses now that they are complete
-      def_use_mgr_->AnalyzeInstUse(&*phiItr);
-    }
+    uint32_t valId = (valItr != label2ssa_map_[back_id].end()) ?
+      valItr->second :
+      Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
+    phiItr->SetInOperand(idx, { valId });
+    // Analyze uses now that they are complete
+    def_use_mgr_->AnalyzeInstUse(&*phiItr);
   }
 }
 
