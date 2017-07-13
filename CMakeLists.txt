@@ -182,6 +182,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.hpp
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/optimizer.hpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/linker.hpp
     DESTINATION
       ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools/)
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
