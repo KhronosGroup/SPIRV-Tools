@@ -94,6 +94,22 @@ class Module {
 
   inline uint32_t id_bound() const { return header_.bound; }
 
+  // Iterators for capabilities instructions contained in this module.
+  inline inst_iterator capability_begin();
+  inline inst_iterator capability_end();
+  inline IteratorRange<inst_iterator> capabilities();
+  inline IteratorRange<const_inst_iterator> capabilities() const;
+
+  // Iterators for ext_inst_imports instructions contained in this module.
+  inline inst_iterator ext_inst_import_begin();
+  inline inst_iterator ext_inst_import_end();
+  inline IteratorRange<inst_iterator> ext_inst_imports();
+  inline IteratorRange<const_inst_iterator> ext_inst_imports() const;
+
+  // Return the memory model instruction contained inthis module.
+  inline Instruction* GetMemoryModel() { return memory_model_.get(); }
+  inline const Instruction* GetMemoryModel() const { return memory_model_.get(); }
+
   // Iterators for debug instructions (excluding OpLine & OpNoLine) contained in
   // this module.
   inline inst_iterator debug_begin();
@@ -105,14 +121,24 @@ class Module {
   inline IteratorRange<inst_iterator> entry_points();
   inline IteratorRange<const_inst_iterator> entry_points() const;
 
+  // Iterators for execution_modes instructions contained in this module.
+  inline inst_iterator execution_mode_begin();
+  inline inst_iterator execution_mode_end();
+  inline IteratorRange<inst_iterator> execution_modes();
+  inline IteratorRange<const_inst_iterator> execution_modes() const;
+
   // Clears all debug instructions (excluding OpLine & OpNoLine).
   void debug_clear() { debugs_.clear(); }
 
   // Iterators for annotation instructions contained in this module.
+  inline inst_iterator annotation_begin();
+  inline inst_iterator annotation_end();
   IteratorRange<inst_iterator> annotations();
   IteratorRange<const_inst_iterator> annotations() const;
 
   // Iterators for extension instructions contained in this module.
+  inline inst_iterator extension_begin();
+  inline inst_iterator extension_end();
   IteratorRange<inst_iterator> extensions();
   IteratorRange<const_inst_iterator> extensions() const;
 
@@ -212,6 +238,36 @@ inline void Module::AddFunction(std::unique_ptr<Function> f) {
   functions_.emplace_back(std::move(f));
 }
 
+inline Module::inst_iterator Module::capability_begin() {
+  return inst_iterator(&capabilities_, capabilities_.begin());
+}
+inline Module::inst_iterator Module::capability_end() {
+  return inst_iterator(&capabilities_, capabilities_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::capabilities() {
+  return make_range(capabilities_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::capabilities() const {
+  return make_const_range(capabilities_);
+}
+
+inline Module::inst_iterator Module::ext_inst_import_begin() {
+  return inst_iterator(&ext_inst_imports_, ext_inst_imports_.begin());
+}
+inline Module::inst_iterator Module::ext_inst_import_end() {
+  return inst_iterator(&ext_inst_imports_, ext_inst_imports_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::ext_inst_imports() {
+  return make_range(ext_inst_imports_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::ext_inst_imports() const {
+  return make_const_range(ext_inst_imports_);
+}
+
 inline Module::inst_iterator Module::debug_begin() {
   return inst_iterator(&debugs_, debugs_.begin());
 }
@@ -235,12 +291,41 @@ inline IteratorRange<Module::const_inst_iterator> Module::entry_points() const {
   return make_const_range(entry_points_);
 }
 
+inline Module::inst_iterator Module::execution_mode_begin() {
+  return inst_iterator(&execution_modes_, execution_modes_.begin());
+}
+inline Module::inst_iterator Module::execution_mode_end() {
+  return inst_iterator(&execution_modes_, execution_modes_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::execution_modes() {
+  return make_range(execution_modes_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::execution_modes() const {
+  return make_const_range(execution_modes_);
+}
+
+inline Module::inst_iterator Module::annotation_begin() {
+  return inst_iterator(&annotations_, annotations_.begin());
+}
+inline Module::inst_iterator Module::annotation_end() {
+  return inst_iterator(&annotations_, annotations_.end());
+}
+
 inline IteratorRange<Module::inst_iterator> Module::annotations() {
   return make_range(annotations_);
 }
 
 inline IteratorRange<Module::const_inst_iterator> Module::annotations() const {
   return make_const_range(annotations_);
+}
+
+inline Module::inst_iterator Module::extension_begin() {
+  return inst_iterator(&extensions_, extensions_.begin());
+}
+inline Module::inst_iterator Module::extension_end() {
+  return inst_iterator(&extensions_, extensions_.end());
 }
 
 inline IteratorRange<Module::inst_iterator> Module::extensions() {
