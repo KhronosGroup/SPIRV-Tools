@@ -157,6 +157,10 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     module->ForEachInst([&id_bound](Instruction* insn){
       for (auto& o : *insn)
         if (spvIsIdType(o.type)) o.words[0] += id_bound;
+      if (const uint32_t result_id = insn->result_id())
+        insn->SetResultId(result_id + id_bound);
+      if (const uint32_t result_type = insn->type_id())
+        insn->SetResultType(result_type + id_bound);
     });
     id_bound += module->IdBound() - 1u;
     if (id_bound > 0x3FFFFF)
@@ -267,6 +271,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     i = (should_remove) ? i.Erase() : ++i;
   }
 
+  // TODO(pierremoreau): This needs to be ran on result_id and type_id as well
   linkedModule->ForEachInst([&linking_table](Instruction* insn){
     for (auto o = insn->begin(); o != insn->end(); ++o) {
       spv::Id& id = o->words[0];
