@@ -71,6 +71,7 @@ class DefUseManager {
   // Returns the def instruction for the given |id|. If there is no instruction
   // defining |id|, returns nullptr.
   ir::Instruction* GetDef(uint32_t id);
+  const ir::Instruction* GetDef(uint32_t id) const;
   // Returns the use instructions for the given |id|. If there is no uses of
   // |id|, returns nullptr.
   UseList* GetUses(uint32_t id);

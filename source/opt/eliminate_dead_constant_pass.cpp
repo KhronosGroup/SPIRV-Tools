@@ -40,7 +40,8 @@ Pass::Status EliminateDeadConstantPass::Process(ir::Module* module) {
       count =
           std::count_if(uses->begin(), uses->end(), [](const analysis::Use& u) {
             return !(ir::IsAnnotationInst(u.inst->opcode()) ||
-                     ir::IsDebugInst(u.inst->opcode()));
+                     ir::IsDebug1Inst(u.inst->opcode()) ||
+                     ir::IsDebug2Inst(u.inst->opcode()));
           });
     }
     use_counts[c] = count;
@@ -95,7 +96,8 @@ Pass::Status EliminateDeadConstantPass::Process(ir::Module* module) {
     if (analysis::UseList* uses = def_use.GetUses(dc->result_id())) {
       for (const auto& u : *uses) {
         if (ir::IsAnnotationInst(u.inst->opcode()) ||
-            ir::IsDebugInst(u.inst->opcode())) {
+            ir::IsDebug1Inst(u.inst->opcode()) ||
+            ir::IsDebug2Inst(u.inst->opcode())) {
           dead_others.insert(u.inst);
         }
       }

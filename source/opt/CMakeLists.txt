@@ -20,6 +20,7 @@ add_library(SPIRV-Tools-opt
   compact_ids_pass.h
   constants.h
   dead_branch_elim_pass.h
+  decoration_manager.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
   flatten_decoration_pass.h
@@ -45,6 +46,7 @@ add_library(SPIRV-Tools-opt
   passes.h
   pass_manager.h
   eliminate_dead_functions_pass.h
+  remove_duplicates_pass.h
   set_spec_constant_default_value_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
@@ -58,6 +60,7 @@ add_library(SPIRV-Tools-opt
   build_module.cpp
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
+  decoration_manager.cpp
   def_use_manager.cpp
   dead_branch_elim_pass.cpp
   eliminate_dead_constant_pass.cpp
@@ -77,6 +80,7 @@ add_library(SPIRV-Tools-opt
   local_ssa_elim_pass.cpp
   module.cpp
   eliminate_dead_functions_pass.cpp
+  remove_duplicates_pass.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
   mem_pass.cpp

@@ -29,7 +29,8 @@ import sys
 # List of designated copyright owners.
 AUTHORS = ['The Khronos Group Inc.',
            'LunarG Inc.',
-           'Google Inc.']
+           'Google Inc.',
+           'Pierre Moreau']
 CURRENT_YEAR='2017'
 
 YEARS = '(2014-2016|2015-2016|2016|2016-2017|2017)'

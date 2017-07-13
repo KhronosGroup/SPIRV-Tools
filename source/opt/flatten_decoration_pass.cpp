@@ -143,8 +143,8 @@ Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
   // An OpDecorationGroup instruction might not have been used by an
   // OpGroupDecorate or OpGroupMemberDecorate instruction.
   if (!group_ids.empty()) {
-    for (auto debug_inst_iter = module->debug_begin();
-         debug_inst_iter != module->debug_end();) {
+    for (auto debug_inst_iter = module->debug2_begin();
+         debug_inst_iter != module->debug2_end();) {
       if (debug_inst_iter->opcode() == SpvOp::SpvOpName) {
         const uint32_t target = debug_inst_iter->GetSingleWordOperand(0);
         if (group_ids.count(target)) {
