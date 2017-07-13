@@ -48,12 +48,15 @@ class CommonUniformElimPass : public Pass {
   // Returns true if |opcode| is a non-ptr access chain op
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
+  // Returns true if |typeInst| is a sampler or image type or a struct
+  // containing one, recursively.
+  bool IsSamplerOrImageType(const ir::Instruction* typeInst) const;
+
+  // Returns true if |varId| is a variable containing a sampler or image.
+  bool IsSamplerOrImageVar(uint32_t varId) const;
+
   // Return true if |block_ptr| is loop header block
   bool IsLoopHeader(ir::BasicBlock* block_ptr);
-
-  // Returns the id of the merge block declared by a merge instruction in 
-  // block |blk|, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk) const;
 
   // Given a load or store pointed at by |ip|, return the pointer
   // instruction. Also return the variable's id in |varId|.
@@ -63,7 +66,7 @@ class CommonUniformElimPass : public Pass {
   bool IsUniformVar(uint32_t varId);
 
   // Return true if any uses of |id| are decorate ops.
-  bool HasDecorates(uint32_t id) const;
+  bool HasUnsupportedDecorates(uint32_t id) const;
 
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
@@ -122,6 +125,10 @@ class CommonUniformElimPass : public Pass {
   // If first load is in control flow, move it to first block of function.
   // Most effective if preceded by UniformAccessChainRemoval().
   bool CommonUniformLoadElimination(ir::Function* func);
+
+  // Eliminate loads of uniform sampler and image variables which have previously
+  // been loaded in the same block for types whose loads cannot cross blocks.
+  bool CommonUniformLoadElimBlock(ir::Function* func);
 
   // Eliminate duplicated extracts of same id. Extract may be moved to same
   // block as the id definition. This is primarily intended for extracts

@@ -44,6 +44,39 @@ bool CommonUniformElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
+bool CommonUniformElimPass::IsSamplerOrImageType(
+  const ir::Instruction* typeInst) const {
+  switch (typeInst->opcode()) {
+    case SpvOpTypeSampler:
+    case SpvOpTypeImage:
+    case SpvOpTypeSampledImage:
+      return true;
+    default:
+      break;
+  }
+  if (typeInst->opcode() != SpvOpTypeStruct)
+    return false;
+  // Return true if any member is a sampler or image
+  int samplerOrImageCnt = 0;
+  typeInst->ForEachInId([&samplerOrImageCnt, this](const uint32_t* tid) {
+    const ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
+    if (IsSamplerOrImageType(compTypeInst)) ++samplerOrImageCnt;
+  });
+  return samplerOrImageCnt > 0;
+}
+
+bool CommonUniformElimPass::IsSamplerOrImageVar(
+    uint32_t varId) const {
+  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
+  assert(varInst->opcode() == SpvOpVariable);
+  const uint32_t varTypeId = varInst->type_id();
+  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  const uint32_t varPteTypeId =
+    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
+  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
+  return IsSamplerOrImageType(varPteTypeInst);
+}
+
 bool CommonUniformElimPass::IsLoopHeader(ir::BasicBlock* block_ptr) {
   auto iItr = block_ptr->tail();
   if (iItr == block_ptr->begin())
@@ -105,7 +138,7 @@ bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
     SpvStorageClassUniformConstant;
 }
 
-bool CommonUniformElimPass::HasDecorates(uint32_t id) const {
+bool CommonUniformElimPass::HasUnsupportedDecorates(uint32_t id) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(id);
   if (uses == nullptr)
     return false;
@@ -258,9 +291,9 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
         continue;
       if (!IsConstantIndexAccessChain(ptrInst))
         continue;
-      if (HasDecorates(ii->result_id()))
+      if (HasUnsupportedDecorates(ii->result_id()))
         continue;
-      if (HasDecorates(ptrInst->result_id()))
+      if (HasUnsupportedDecorates(ptrInst->result_id()))
         continue;
       std::vector<std::unique_ptr<ir::Instruction>> newInsts;
       uint32_t replId;
@@ -318,6 +351,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   // following load sites.
   std::list<ir::BasicBlock*> structuredOrder;
   ComputeStructuredOrder(func, &structuredOrder);
+  uniform2load_id_.clear();
   bool modified = false;
   // Find insertion point in first block to copy non-dominating loads.
   auto insertItr = func->begin()->begin();
@@ -342,7 +376,9 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
         continue;
       if (!IsUniformVar(varId))
         continue;
-      if (HasDecorates(ii->result_id()))
+      if (IsSamplerOrImageVar(varId))
+        continue;
+      if (HasUnsupportedDecorates(ii->result_id()))
         continue;
       uint32_t replId;
       const auto uItr = uniform2load_id_.find(varId);
@@ -379,6 +415,39 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   return modified;
 }
 
+bool CommonUniformElimPass::CommonUniformLoadElimBlock(ir::Function* func) {
+  bool modified = false;
+  for (auto& blk : *func) {
+    uniform2load_id_.clear();
+    for (auto ii = blk.begin(); ii != blk.end(); ++ii) {
+      if (ii->opcode() != SpvOpLoad)
+        continue;
+      uint32_t varId;
+      ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+      if (ptrInst->opcode() != SpvOpVariable)
+        continue;
+      if (!IsUniformVar(varId))
+        continue;
+      if (!IsSamplerOrImageVar(varId))
+        continue;
+      if (HasUnsupportedDecorates(ii->result_id()))
+        continue;
+      uint32_t replId;
+      const auto uItr = uniform2load_id_.find(varId);
+      if (uItr != uniform2load_id_.end()) {
+        replId = uItr->second;
+      }
+      else {
+        uniform2load_id_[varId] = ii->result_id();
+        continue;
+      }
+      ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
+      modified = true;
+    }
+  }
+  return modified;
+}
+
 bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
   // Find all composite ids with duplicate extracts.
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
@@ -387,7 +456,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
         continue;
       if (ii->NumInOperands() > 2)
         continue;
-      if (HasDecorates(ii->result_id()))
+      if (HasUnsupportedDecorates(ii->result_id()))
         continue;
       uint32_t compId = ii->GetSingleWordInOperand(kExtractCompositeIdInIdx);
       uint32_t idx = ii->GetSingleWordInOperand(kExtractIdx0InIdx);
@@ -429,6 +498,8 @@ bool CommonUniformElimPass::EliminateCommonUniform(ir::Function* func) {
     modified |= UniformAccessChainConvert(func);
     modified |= CommonUniformLoadElimination(func);
     modified |= CommonExtractElimination(func);
+
+    modified |= CommonUniformLoadElimBlock(func);
     return modified;
 }
 
@@ -449,7 +520,6 @@ void CommonUniformElimPass::Initialize(ir::Module* module) {
   // Clear collections
   block2structured_succs_.clear();
   label2preds_.clear();
-  uniform2load_id_.clear();
   comp2idx2inst_.clear();
 
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
