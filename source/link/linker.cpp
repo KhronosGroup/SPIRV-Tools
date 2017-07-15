@@ -65,8 +65,12 @@ static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inM
       linkedModule->AddExecutionMode(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
-    for (const auto& insn : module->debugs())
-      linkedModule->AddDebugInst(MakeUnique<Instruction>(insn));
+    for (const auto& insn : module->debugs1())
+      linkedModule->AddDebug1Inst(MakeUnique<Instruction>(insn));
+
+  for (const auto& module : inModules)
+    for (const auto& insn : module->debugs2())
+      linkedModule->AddDebug2Inst(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->annotations())
@@ -263,7 +267,14 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Remove debug instructions for imported declarations
-  for (auto i = linkedModule->debug_begin(); i != linkedModule->debug_end();) {
+  for (auto i = linkedModule->debug1_begin(); i != linkedModule->debug1_end();) {
+    bool should_remove = false;
+    i->ForEachInId([&imports,&should_remove](const uint32_t* id){
+      should_remove |= imports.find(*id) != imports.end();
+    });
+    i = (should_remove) ? i.Erase() : ++i;
+  }
+  for (auto i = linkedModule->debug2_begin(); i != linkedModule->debug2_end();) {
     bool should_remove = false;
     i->ForEachInId([&imports,&should_remove](const uint32_t* id){
       should_remove |= imports.find(*id) != imports.end();

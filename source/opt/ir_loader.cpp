@@ -99,8 +99,10 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddEntryPoint(std::move(spv_inst));
       } else if (opcode == SpvOpExecutionMode) {
         module_->AddExecutionMode(std::move(spv_inst));
-      } else if (IsDebugInst(opcode)) {
-        module_->AddDebugInst(std::move(spv_inst));
+      } else if (IsDebug1Inst(opcode)) {
+        module_->AddDebug1Inst(std::move(spv_inst));
+      } else if (IsDebug2Inst(opcode)) {
+        module_->AddDebug2Inst(std::move(spv_inst));
       } else if (IsAnnotationInst(opcode)) {
         module_->AddAnnotationInst(std::move(spv_inst));
       } else if (IsTypeInst(opcode)) {
