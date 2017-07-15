@@ -318,11 +318,17 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
 
   // Phase 5: Generate the header and output the linked module.
+
+  // TODO(pierremoreau): What to do when binaries use different versions of
+  //                     SPIR-V? For now, use the max of all versions found in
+  //                     the input modules.
+  uint32_t version = 0u;
+  for (const auto& module : modules)
+    version = std::max(version, module->version());
+
   ModuleHeader header;
   header.magic_number = spv::MagicNumber;
-  // TODO(pierremoreau): What to do when binaries use different versions of
-  //                   SPIR-V?
-  header.version = spv::Version;
+  header.version = version;
   // TODO(pierremoreau): Should we reserve a vendor ID?
   header.generator = 0u;
   header.bound = id_bound;
