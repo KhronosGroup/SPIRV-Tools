@@ -198,7 +198,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Remove debug and annotation statements referencing dead instructions.
   // This must be done before killing the instructions, otherwise there are
   // dead objects in the def/use database.
-  for (auto& di : module_->debugs()) {
+  for (auto& di : module_->debugs2()) {
     if (di.opcode() != SpvOpName)
       continue;
     if (KillInstIfTargetDead(&di))
