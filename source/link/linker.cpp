@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "opt/build_module.h"
 #include "opt/ir_loader.h"
@@ -36,8 +37,10 @@ namespace spvtools {
 using namespace ir;
 
 static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inModules,
-                                 MessageConsumer& consumer,
+                                 libspirv::AssemblyGrammar& grammar, MessageConsumer& consumer,
                                 std::unique_ptr<Module>& linkedModule) {
+  spv_position_t position = {};
+
   for (const auto& module : inModules)
     for (const auto& insn : module->capabilities())
       linkedModule->AddCapability(MakeUnique<Instruction>(insn));
@@ -50,10 +53,31 @@ static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inM
     for (const auto& insn : module->ext_inst_imports())
       linkedModule->AddExtInstImport(MakeUnique<Instruction>(insn));
 
-  // TODO(pierremoreau): error out if the |inModules| use different memory
-  //                     models and/or addressing models.
-  for (const auto& module : inModules)
-    linkedModule->SetMemoryModel(MakeUnique<Instruction>(*module->GetMemoryModel()));
+  {
+    const Instruction* memoryModelInsn = inModules[0]->GetMemoryModel();
+    spv::AddressingModel addressingModel = static_cast<spv::AddressingModel>(memoryModelInsn->GetSingleWordOperand(0u));
+    spv::MemoryModel memoryModel = static_cast<spv::MemoryModel>(memoryModelInsn->GetSingleWordOperand(1u));
+    for (const auto& module : inModules) {
+      memoryModelInsn = module->GetMemoryModel();
+      if (addressingModel != static_cast<spv::AddressingModel>(memoryModelInsn->GetSingleWordOperand(0u))) {
+        spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
+        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL, static_cast<uint32_t>(addressingModel), &initialDesc);
+        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL, memoryModelInsn->GetSingleWordOperand(0u), &currentDesc);
+        return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
+               << "Conflicting addressing models: " << initialDesc->name
+               << " vs " << currentDesc->name << ".";
+      }
+      if (memoryModel != static_cast<spv::MemoryModel>(memoryModelInsn->GetSingleWordOperand(1u))) {
+        spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
+        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, static_cast<uint32_t>(memoryModel), &initialDesc);
+        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, memoryModelInsn->GetSingleWordOperand(1u), &currentDesc);
+        return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
+               << "Conflicting memory models: " << initialDesc->name
+               << " vs " << currentDesc->name << ".";
+      }
+    }
+    linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
+  }
 
   // TODO(pierremoreau): error out if there are duplicate entry point names
   for (const auto& module : inModules)
@@ -84,7 +108,6 @@ static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inM
       num_global_values += insn.opcode() == SpvOpVariable;
     }
   }
-  spv_position_t position = {};
   if (num_global_values > 0xFFFF)
     return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
            << "The limit of global values was exceeded.";
@@ -181,7 +204,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   // Phase 2: Merge all the binaries into a single one.
   auto linkedModule = MakeUnique<Module>();
-  spv_result_t res = MergeModules(modules, impl_->context->consumer, linkedModule);
+  libspirv::AssemblyGrammar grammar(impl_->context);
+  spv_result_t res = MergeModules(modules, grammar, impl_->context->consumer, linkedModule);
   if (res != SPV_SUCCESS)
     return res;
 
