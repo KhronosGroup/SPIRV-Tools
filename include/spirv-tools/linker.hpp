@@ -24,12 +24,20 @@
 
 namespace spvtools {
 
+class LinkerOptions {
+public:
+  LinkerOptions() : createLibrary_(false) {}
+  void SetCreateLibrary(bool create_library) {
+    createLibrary_ = create_library;
+  }
+  bool GetCreateLibrary() const { return createLibrary_; }
+
+private:
+  bool createLibrary_;
+};
+
 class Linker {
  public:
-  enum {
-    kDefaultLinkerOptions = SPV_LINKER_OPTION_NONE
-  };
-
   // Constructs an instance targeting the given environment |env|.
   //
   // The constructed instance will have an empty message consumer, which just
@@ -52,10 +60,10 @@ class Linker {
 
   spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
-                    uint32_t options = kDefaultLinkerOptions) const;
+                    const LinkerOptions& options) const;
   spv_result_t Link(const uint32_t* const* binaries, const size_t* binary_sizes,
                     size_t num_binaries, std::vector<uint32_t>& linked_binary,
-                    uint32_t options = kDefaultLinkerOptions) const;
+                    const LinkerOptions& options) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.

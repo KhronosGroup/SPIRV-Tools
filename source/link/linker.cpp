@@ -162,7 +162,7 @@ void Linker::SetMessageConsumer(MessageConsumer consumer) {
 
 spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                                std::vector<uint32_t>& linked_binary,
-                               uint32_t options) const {
+                               const LinkerOptions& options) const {
   spv_position_t position = {};
 
   std::vector<std::unique_ptr<Module>> modules;
@@ -337,7 +337,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Remove export linkage attributes if making an executable
-  if (!(options & SPV_LINKER_OPTION_CREATE_LIBRARY)) {
+  if (!options.GetCreateLibrary()) {
     for (auto i = linkedModule->annotation_begin(); i != linkedModule->annotation_end();) {
       if (i->opcode() != SpvOpDecorate ||
           static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) != spv::Decoration::LinkageAttributes ||
@@ -377,7 +377,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
 spv_result_t Linker::Link(const uint32_t* const* binaries, const size_t* binary_sizes,
                                size_t num_binaries, std::vector<uint32_t>& linked_binary,
-                               uint32_t options) const {
+                               const LinkerOptions& options) const {
   std::vector<std::vector<uint32_t>> binaries_array;
   binaries_array.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i)
