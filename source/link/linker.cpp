@@ -16,8 +16,8 @@
 
 #include "spirv/1.2/spirv.hpp11"
 
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -28,17 +28,17 @@
 #include "opt/build_module.h"
 #include "opt/ir_loader.h"
 #include "opt/make_unique.h"
-#include "spirv_target_env.h"
 #include "spirv-tools/libspirv.hpp"
-
+#include "spirv_target_env.h"
 
 namespace spvtools {
 
 using namespace ir;
 
-static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inModules,
-                                 libspirv::AssemblyGrammar& grammar, MessageConsumer& consumer,
-                                std::unique_ptr<Module>& linkedModule) {
+static spv_result_t MergeModules(
+    const std::vector<std::unique_ptr<Module>>& inModules,
+    libspirv::AssemblyGrammar& grammar, MessageConsumer& consumer,
+    std::unique_ptr<Module>& linkedModule) {
   spv_position_t position = {};
 
   for (const auto& module : inModules)
@@ -55,25 +55,38 @@ static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inM
 
   {
     const Instruction* memoryModelInsn = inModules[0]->GetMemoryModel();
-    spv::AddressingModel addressingModel = static_cast<spv::AddressingModel>(memoryModelInsn->GetSingleWordOperand(0u));
-    spv::MemoryModel memoryModel = static_cast<spv::MemoryModel>(memoryModelInsn->GetSingleWordOperand(1u));
+    spv::AddressingModel addressingModel = static_cast<spv::AddressingModel>(
+        memoryModelInsn->GetSingleWordOperand(0u));
+    spv::MemoryModel memoryModel = static_cast<spv::MemoryModel>(
+        memoryModelInsn->GetSingleWordOperand(1u));
     for (const auto& module : inModules) {
       memoryModelInsn = module->GetMemoryModel();
-      if (addressingModel != static_cast<spv::AddressingModel>(memoryModelInsn->GetSingleWordOperand(0u))) {
+      if (addressingModel != static_cast<spv::AddressingModel>(
+                                 memoryModelInsn->GetSingleWordOperand(0u))) {
         spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL, static_cast<uint32_t>(addressingModel), &initialDesc);
-        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL, memoryModelInsn->GetSingleWordOperand(0u), &currentDesc);
-        return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
+        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                              static_cast<uint32_t>(addressingModel),
+                              &initialDesc);
+        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                              memoryModelInsn->GetSingleWordOperand(0u),
+                              &currentDesc);
+        return libspirv::DiagnosticStream(position, consumer,
+                                          SPV_ERROR_INTERNAL)
                << "Conflicting addressing models: " << initialDesc->name
                << " vs " << currentDesc->name << ".";
       }
-      if (memoryModel != static_cast<spv::MemoryModel>(memoryModelInsn->GetSingleWordOperand(1u))) {
+      if (memoryModel != static_cast<spv::MemoryModel>(
+                             memoryModelInsn->GetSingleWordOperand(1u))) {
         spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, static_cast<uint32_t>(memoryModel), &initialDesc);
-        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, memoryModelInsn->GetSingleWordOperand(1u), &currentDesc);
-        return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
-               << "Conflicting memory models: " << initialDesc->name
-               << " vs " << currentDesc->name << ".";
+        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
+                              static_cast<uint32_t>(memoryModel), &initialDesc);
+        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
+                              memoryModelInsn->GetSingleWordOperand(1u),
+                              &currentDesc);
+        return libspirv::DiagnosticStream(position, consumer,
+                                          SPV_ERROR_INTERNAL)
+               << "Conflicting memory models: " << initialDesc->name << " vs "
+               << currentDesc->name << ".";
       }
     }
     linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
@@ -116,15 +129,19 @@ static spv_result_t MergeModules(const std::vector<std::unique_ptr<Module>>& inM
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
     for (const auto& i : *module) {
-      std::unique_ptr<Function> func = MakeUnique<Function>(Function(MakeUnique<Instruction>(i.DefInst())));
+      std::unique_ptr<Function> func =
+          MakeUnique<Function>(Function(MakeUnique<Instruction>(i.DefInst())));
       func->SetParent(linkedModule.get());
-      i.ForEachParam([&func](const Instruction* insn){
-          func->AddParameter(MakeUnique<Instruction>(*insn));
-      }, true);
+      i.ForEachParam(
+          [&func](const Instruction* insn) {
+            func->AddParameter(MakeUnique<Instruction>(*insn));
+          },
+          true);
       // TODO(pierremoreau): convince the compiler to use cbegin()/cend()
       //                     instead of begin()/end()
       for (auto j = i.cbegin(); j != i.cend(); ++j) {
-        std::unique_ptr<BasicBlock> block = MakeUnique<BasicBlock>(BasicBlock(MakeUnique<Instruction>(j->GetLabelInst())));
+        std::unique_ptr<BasicBlock> block = MakeUnique<BasicBlock>(
+            BasicBlock(MakeUnique<Instruction>(j->GetLabelInst())));
         block->SetParent(func.get());
         // TODO(pierremoreau): convince the compiler to use cbegin()/cend()
         //                     instead of begin()/end()
@@ -161,8 +178,8 @@ void Linker::SetMessageConsumer(MessageConsumer consumer) {
 }
 
 spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
-                               std::vector<uint32_t>& linked_binary,
-                               const LinkerOptions& options) const {
+                          std::vector<uint32_t>& linked_binary,
+                          const LinkerOptions& options) const {
   spv_position_t position = {};
 
   linked_binary.clear();
@@ -174,22 +191,24 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   std::vector<std::unique_ptr<Module>> modules;
   modules.reserve(binaries.size());
   for (const auto& mod : binaries) {
-    std::unique_ptr<Module> module = BuildModule(impl_->context->target_env, impl_->context->consumer, mod.data(), mod.size());
+    std::unique_ptr<Module> module =
+        BuildModule(impl_->context->target_env, impl_->context->consumer,
+                    mod.data(), mod.size());
     if (module == nullptr)
       return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of binary " << modules.size() << ".";
+             << "Failed to build a module out of binary " << modules.size()
+             << ".";
     modules.push_back(std::move(module));
   }
-
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
   uint32_t id_bound = modules[0]->IdBound() - 1u;
   for (auto i = modules.begin() + 1; i != modules.end(); ++i) {
     Module* module = i->get();
-    module->ForEachInst([&id_bound](Instruction* insn){
-      insn->ForEachInId([&id_bound](uint32_t* id){ *id += id_bound; });
+    module->ForEachInst([&id_bound](Instruction* insn) {
+      insn->ForEachInId([&id_bound](uint32_t* id) { *id += id_bound; });
       if (const uint32_t result_id = insn->result_id())
         insn->SetResultId(result_id + id_bound);
       if (const uint32_t result_type = insn->type_id())
@@ -207,14 +226,12 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                                       SPV_ERROR_INVALID_ID)
            << "The limit of IDs was exceeded.";
 
-
   // Phase 2: Merge all the binaries into a single one.
   auto linkedModule = MakeUnique<Module>();
   libspirv::AssemblyGrammar grammar(impl_->context);
-  spv_result_t res = MergeModules(modules, grammar, impl_->context->consumer, linkedModule);
-  if (res != SPV_SUCCESS)
-    return res;
-
+  spv_result_t res =
+      MergeModules(modules, grammar, impl_->context->consumer, linkedModule);
+  if (res != SPV_SUCCESS) return res;
 
   // Phase 3: Generate the linkage table.
   std::unordered_map<spv::Id, std::string> imports;
@@ -222,15 +239,20 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   position.index = 0u;
   for (const auto& insn : linkedModule->annotations()) {
     position.index += (insn.result_id() != 0u) + insn.NumOperandWords();
-    if (insn.opcode() != SpvOpDecorate)
+    if (insn.opcode() != SpvOpDecorate) continue;
+    if (static_cast<spv::Decoration>(insn.GetSingleWordOperand(1u)) !=
+        spv::Decoration::LinkageAttributes)
       continue;
-    if (static_cast<spv::Decoration>(insn.GetSingleWordOperand(1u)) != spv::Decoration::LinkageAttributes)
-      continue;
-    spv::LinkageType linkage = static_cast<spv::LinkageType>(insn.GetSingleWordOperand(insn.NumOperands() - 1u));
+    spv::LinkageType linkage = static_cast<spv::LinkageType>(
+        insn.GetSingleWordOperand(insn.NumOperands() - 1u));
     if (linkage == spv::LinkageType::Import)
-      imports.emplace(insn.GetSingleWordOperand(0u), reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()));
+      imports.emplace(
+          insn.GetSingleWordOperand(0u),
+          reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()));
     else if (linkage == spv::LinkageType::Export)
-      exports.emplace(reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()), insn.GetSingleWordOperand(0u));
+      exports.emplace(
+          reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()),
+          insn.GetSingleWordOperand(0u));
     else
       return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                         SPV_ERROR_INVALID_BINARY)
@@ -247,7 +269,6 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
              << "No export linkage was found for \"" << i.second << "\".";
     linking_table.emplace(i.first, j->second);
   }
-
 
   // Phase 4: Clean up remains of imported functions and global variables.
 
@@ -287,7 +308,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Remove declarations of imported global variables
-  for (auto i = linkedModule->types_values_begin(); i != linkedModule->types_values_end();) {
+  for (auto i = linkedModule->types_values_begin();
+       i != linkedModule->types_values_end();) {
     if (i->opcode() == SpvOpVariable) {
       const auto variable_id = i->GetSingleWordOperand(1u);
       i = (imports.find(variable_id) != imports.end()) ? i.Erase() : ++i;
@@ -297,26 +319,27 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Remove debug instructions for imported declarations
-  for (auto i = linkedModule->debug1_begin(); i != linkedModule->debug1_end();) {
+  for (auto i = linkedModule->debug1_begin();
+       i != linkedModule->debug1_end();) {
     bool should_remove = false;
-    i->ForEachInId([&imports,&should_remove](const uint32_t* id){
+    i->ForEachInId([&imports, &should_remove](const uint32_t* id) {
       should_remove |= imports.find(*id) != imports.end();
     });
     i = (should_remove) ? i.Erase() : ++i;
   }
-  for (auto i = linkedModule->debug2_begin(); i != linkedModule->debug2_end();) {
+  for (auto i = linkedModule->debug2_begin();
+       i != linkedModule->debug2_end();) {
     bool should_remove = false;
-    i->ForEachInId([&imports,&should_remove](const uint32_t* id){
+    i->ForEachInId([&imports, &should_remove](const uint32_t* id) {
       should_remove |= imports.find(*id) != imports.end();
     });
     i = (should_remove) ? i.Erase() : ++i;
   }
 
-  linkedModule->ForEachInst([&linking_table](Instruction* insn){
-    const auto link = [&linking_table](uint32_t* id){
+  linkedModule->ForEachInst([&linking_table](Instruction* insn) {
+    const auto link = [&linking_table](uint32_t* id) {
       auto id_iter = linking_table.find(*id);
-      if (id_iter != linking_table.end())
-        *id = id_iter->second;
+      if (id_iter != linking_table.end()) *id = id_iter->second;
     };
     insn->ForEachInId(link);
     if (uint32_t result_id = insn->result_id()) {
@@ -331,16 +354,20 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   // Remove duplicate capabilities
   std::unordered_set<uint32_t> capabilities;
-  for (auto i = linkedModule->capability_begin(); i != linkedModule->capability_end();) {
+  for (auto i = linkedModule->capability_begin();
+       i != linkedModule->capability_end();) {
     auto insertRes = capabilities.insert(i->GetSingleWordOperand(0u));
     i = (insertRes.second) ? ++i : i.Erase();
   }
 
   // Remove import linkage attributes
-  for (auto i = linkedModule->annotation_begin(); i != linkedModule->annotation_end();) {
+  for (auto i = linkedModule->annotation_begin();
+       i != linkedModule->annotation_end();) {
     if (i->opcode() != SpvOpDecorate ||
-        static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) != spv::Decoration::LinkageAttributes ||
-        static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) != spv::LinkageType::Import) {
+        static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) !=
+            spv::Decoration::LinkageAttributes ||
+        static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) !=
+            spv::LinkageType::Import) {
       ++i;
       continue;
     }
@@ -349,10 +376,13 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   // Remove export linkage attributes if making an executable
   if (!options.GetCreateLibrary()) {
-    for (auto i = linkedModule->annotation_begin(); i != linkedModule->annotation_end();) {
+    for (auto i = linkedModule->annotation_begin();
+         i != linkedModule->annotation_end();) {
       if (i->opcode() != SpvOpDecorate ||
-          static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) != spv::Decoration::LinkageAttributes ||
-          static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) != spv::LinkageType::Export) {
+          static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) !=
+              spv::Decoration::LinkageAttributes ||
+          static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) !=
+              spv::LinkageType::Export) {
         ++i;
         continue;
       }
@@ -361,7 +391,6 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // TODO(pierremoreau): Run an optimisation pass to compact all IDs.
-
 
   // Phase 5: Generate the header and output the linked module.
 
@@ -386,9 +415,10 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   return SPV_SUCCESS;
 }
 
-spv_result_t Linker::Link(const uint32_t* const* binaries, const size_t* binary_sizes,
-                               size_t num_binaries, std::vector<uint32_t>& linked_binary,
-                               const LinkerOptions& options) const {
+spv_result_t Linker::Link(const uint32_t* const* binaries,
+                          const size_t* binary_sizes, size_t num_binaries,
+                          std::vector<uint32_t>& linked_binary,
+                          const LinkerOptions& options) const {
   std::vector<std::vector<uint32_t>> binaries_array;
   binaries_array.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i)
@@ -397,4 +427,4 @@ spv_result_t Linker::Link(const uint32_t* const* binaries, const size_t* binary_
   return Link(binaries_array, linked_binary, options);
 }
 
-} // namespace spvtool
+}  // namespace spvtool

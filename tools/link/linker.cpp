@@ -17,8 +17,8 @@
 #include <vector>
 
 #include "source/spirv_target_env.h"
-#include "spirv-tools/linker.hpp"
 #include "spirv-tools/libspirv.hpp"
+#include "spirv-tools/linker.hpp"
 #include "tools/io.h"
 
 void print_usage(char* argv0) {
@@ -107,8 +107,8 @@ int main(int argc, char** argv) {
   }
 
   if (inFiles.empty()) {
-      fprintf(stderr, "error: No input file specified\n");
-      return 1;
+    fprintf(stderr, "error: No input file specified\n");
+    return 1;
   }
 
   std::vector<std::vector<uint32_t>> contents(inFiles.size());
@@ -143,7 +143,8 @@ int main(int argc, char** argv) {
   bool succeed = linker.Link(contents, linkingResult, options);
 
   if (!WriteFile<uint32_t>(outFile, "wb", linkingResult.data(),
-                           linkingResult.size())) return 1;
+                           linkingResult.size()))
+    return 1;
 
   return !succeed;
 }
