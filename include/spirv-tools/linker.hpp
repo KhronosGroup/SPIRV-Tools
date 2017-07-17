@@ -25,7 +25,7 @@
 namespace spvtools {
 
 class LinkerOptions {
-public:
+ public:
   LinkerOptions() : createLibrary_(false) {}
 
   // Returns whether a library or an executable should be produced by the
@@ -41,7 +41,7 @@ public:
     createLibrary_ = create_library;
   }
 
-private:
+ private:
   bool createLibrary_;
 };
 
@@ -90,6 +90,6 @@ class Linker {
   std::unique_ptr<Impl> impl_;  // Unique pointer to implementation data.
 };
 
-} // namespace spvtools
+}  // namespace spvtools
 
-#endif // SPIRV_TOOLS_LINKER_HPP_
+#endif  // SPIRV_TOOLS_LINKER_HPP_
