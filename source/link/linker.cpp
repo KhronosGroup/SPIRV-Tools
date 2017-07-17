@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -85,10 +86,28 @@ static spv_result_t MergeModules(
     linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
   }
 
-  // TODO(pierremoreau): error out if there are duplicate entry point names
+  std::vector<std::pair<uint32_t, const char*>> entryPoints;
   for (const auto& module : inModules)
-    for (const auto& insn : module->entry_points())
+    for (const auto& insn : module->entry_points()) {
+      const uint32_t model = insn.GetSingleWordInOperand(0);
+      const char* const name =
+          reinterpret_cast<const char*>(insn.GetInOperand(2).words.data());
+      const auto i = std::find_if(
+          entryPoints.begin(), entryPoints.end(),
+          [model, name](const std::pair<uint32_t, const char*>& v) {
+            return v.first == model && strcmp(name, v.second) == 0;
+          });
+      if (i != entryPoints.end()) {
+        spv_operand_desc desc = nullptr;
+        grammar.lookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
+        return libspirv::DiagnosticStream(position, consumer,
+                                          SPV_ERROR_INTERNAL)
+               << "The entry point \"" << name << "\", with execution model "
+               << desc->name << ", was already defined.";
+      }
       linkedModule->AddEntryPoint(MakeUnique<Instruction>(insn));
+      entryPoints.emplace_back(model, name);
+    }
 
   for (const auto& module : inModules)
     for (const auto& insn : module->execution_modes())
@@ -106,7 +125,6 @@ static spv_result_t MergeModules(
     for (const auto& insn : module->annotations())
       linkedModule->AddAnnotationInst(MakeUnique<Instruction>(insn));
 
-  // TODO(pierremoreau): error out if there are duplicate global variable names
   uint32_t num_global_values = 0u;
   for (const auto& module : inModules) {
     for (const auto& insn : module->types_values()) {
@@ -118,7 +136,6 @@ static spv_result_t MergeModules(
     return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
            << "The limit of global values was exceeded.";
 
-  // TODO(pierremoreau): error out if there are duplicate function signatures
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
     for (const auto& i : *module) {
