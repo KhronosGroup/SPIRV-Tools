@@ -183,8 +183,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   for (auto i = modules.begin() + 1; i != modules.end(); ++i) {
     Module* module = i->get();
     module->ForEachInst([&id_bound](Instruction* insn){
-      for (auto& o : *insn)
-        if (spvIsIdType(o.type)) o.words[0] += id_bound;
+      insn->ForEachInId([&id_bound](uint32_t* id){ *id += id_bound; });
       if (const uint32_t result_id = insn->result_id())
         insn->SetResultId(result_id + id_bound);
       if (const uint32_t result_type = insn->type_id())
@@ -307,15 +306,20 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     i = (should_remove) ? i.Erase() : ++i;
   }
 
-  // TODO(pierremoreau): This needs to be ran on result_id and type_id as well
   linkedModule->ForEachInst([&linking_table](Instruction* insn){
-    for (auto o = insn->begin(); o != insn->end(); ++o) {
-      spv::Id& id = o->words[0];
-      if (!spvIsIdType(o->type))
-        continue;
-      auto id_iter = linking_table.find(id);
+    const auto link = [&linking_table](uint32_t* id){
+      auto id_iter = linking_table.find(*id);
       if (id_iter != linking_table.end())
-        id = id_iter->second;
+        *id = id_iter->second;
+    };
+    insn->ForEachInId(link);
+    if (uint32_t result_id = insn->result_id()) {
+      link(&result_id);
+      insn->SetResultId(result_id);
+    }
+    if (uint32_t result_type = insn->type_id()) {
+      link(&result_type);
+      insn->SetResultType(result_type);
     }
   });
 
