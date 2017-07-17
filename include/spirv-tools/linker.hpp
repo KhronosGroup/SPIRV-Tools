@@ -27,10 +27,19 @@ namespace spvtools {
 class LinkerOptions {
 public:
   LinkerOptions() : createLibrary_(false) {}
+
+  // Returns whether a library or an executable should be produced by the
+  // linking phase.
+  //
+  // All exported symbols are kept when creating a library, whereas they will
+  // be removed when creating an executable.
+  // The returned value will be true if creating a library, and false if
+  // creating an executable.
+  bool GetCreateLibrary() const { return createLibrary_; }
+  // Sets whether a library or an executable should be produced.
   void SetCreateLibrary(bool create_library) {
     createLibrary_ = create_library;
   }
-  bool GetCreateLibrary() const { return createLibrary_; }
 
 private:
   bool createLibrary_;
@@ -58,6 +67,17 @@ class Linker {
   // invoked once for each message communicated from the library.
   void SetMessageConsumer(MessageConsumer consumer);
 
+  // Links one or more SPIR-V modules into a new SPIR-V module.
+  //
+  // At least one binary has to be provided in |binaries|. Those binaries do
+  // not have to be valid, but they should be at least parseable.
+  // The functions can fail due to the following:
+  // * No input modules were given;
+  // * One or more of those modules were not parseable;
+  // * The input modules used different addressing or memory models;
+  // * The ID or global variable number limit were exceeded;
+  // * Some symbols were defined multiple times;
+  // * Some imported symbols did not have an exported counterpart.
   spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
                     const LinkerOptions& options) const;
