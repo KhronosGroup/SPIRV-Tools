@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
   std::vector<const char*> inFiles;
   const char* outFile = nullptr;
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_0;
-  uint32_t options = 0u;
+  spvtools::LinkerOptions options;
   bool continue_processing = true;
   int return_code = 0;
 
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
           return_code = 1;
         }
       } else if (0 == strcmp(cur_arg, "--create-library")) {
-        options |= SPV_LINKER_OPTION_CREATE_LIBRARY;
+        options.SetCreateLibrary(true);
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         // TODO(dneto): Add OpenCL 2.2 at least.
