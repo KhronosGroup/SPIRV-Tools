@@ -14,8 +14,6 @@
 
 #include "spirv-tools/linker.hpp"
 
-#include "spirv/1.2/spirv.hpp11"
-
 #include <cstdio>
 #include <cstring>
 
@@ -55,18 +53,14 @@ static spv_result_t MergeModules(
 
   {
     const Instruction* memoryModelInsn = inModules[0]->GetMemoryModel();
-    spv::AddressingModel addressingModel = static_cast<spv::AddressingModel>(
-        memoryModelInsn->GetSingleWordOperand(0u));
-    spv::MemoryModel memoryModel = static_cast<spv::MemoryModel>(
-        memoryModelInsn->GetSingleWordOperand(1u));
+    uint32_t addressingModel = memoryModelInsn->GetSingleWordOperand(0u);
+    uint32_t memoryModel = memoryModelInsn->GetSingleWordOperand(1u);
     for (const auto& module : inModules) {
       memoryModelInsn = module->GetMemoryModel();
-      if (addressingModel != static_cast<spv::AddressingModel>(
-                                 memoryModelInsn->GetSingleWordOperand(0u))) {
+      if (addressingModel != memoryModelInsn->GetSingleWordOperand(0u)) {
         spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
         grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-                              static_cast<uint32_t>(addressingModel),
-                              &initialDesc);
+                              addressingModel, &initialDesc);
         grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
                               memoryModelInsn->GetSingleWordOperand(0u),
                               &currentDesc);
@@ -75,11 +69,10 @@ static spv_result_t MergeModules(
                << "Conflicting addressing models: " << initialDesc->name
                << " vs " << currentDesc->name << ".";
       }
-      if (memoryModel != static_cast<spv::MemoryModel>(
-                             memoryModelInsn->GetSingleWordOperand(1u))) {
+      if (memoryModel != memoryModelInsn->GetSingleWordOperand(1u)) {
         spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
-                              static_cast<uint32_t>(memoryModel), &initialDesc);
+        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, memoryModel,
+                              &initialDesc);
         grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
                               memoryModelInsn->GetSingleWordOperand(1u),
                               &currentDesc);
@@ -234,22 +227,20 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 3: Generate the linkage table.
-  std::unordered_map<spv::Id, std::string> imports;
-  std::unordered_map<std::string, spv::Id> exports;
+  std::unordered_map<SpvId, std::string> imports;
+  std::unordered_map<std::string, SpvId> exports;
   position.index = 0u;
   for (const auto& insn : linkedModule->annotations()) {
     position.index += (insn.result_id() != 0u) + insn.NumOperandWords();
     if (insn.opcode() != SpvOpDecorate) continue;
-    if (static_cast<spv::Decoration>(insn.GetSingleWordOperand(1u)) !=
-        spv::Decoration::LinkageAttributes)
+    if (insn.GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes)
       continue;
-    spv::LinkageType linkage = static_cast<spv::LinkageType>(
-        insn.GetSingleWordOperand(insn.NumOperands() - 1u));
-    if (linkage == spv::LinkageType::Import)
+    uint32_t linkage = insn.GetSingleWordOperand(insn.NumOperands() - 1u);
+    if (linkage == SpvLinkageTypeImport)
       imports.emplace(
           insn.GetSingleWordOperand(0u),
           reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()));
-    else if (linkage == spv::LinkageType::Export)
+    else if (linkage == SpvLinkageTypeExport)
       exports.emplace(
           reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()),
           insn.GetSingleWordOperand(0u));
@@ -259,7 +250,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
              << "Invalid linkage type found.";
   }
 
-  std::unordered_map<spv::Id, spv::Id> linking_table;
+  std::unordered_map<SpvId, SpvId> linking_table;
   linking_table.reserve(imports.size());
   for (const auto& i : imports) {
     auto j = exports.find(i.second);
@@ -364,10 +355,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   for (auto i = linkedModule->annotation_begin();
        i != linkedModule->annotation_end();) {
     if (i->opcode() != SpvOpDecorate ||
-        static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) !=
-            spv::Decoration::LinkageAttributes ||
-        static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) !=
-            spv::LinkageType::Import) {
+        i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
+        i->GetSingleWordOperand(3u) != SpvLinkageTypeImport) {
       ++i;
       continue;
     }
@@ -379,10 +368,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     for (auto i = linkedModule->annotation_begin();
          i != linkedModule->annotation_end();) {
       if (i->opcode() != SpvOpDecorate ||
-          static_cast<spv::Decoration>(i->GetSingleWordOperand(1u)) !=
-              spv::Decoration::LinkageAttributes ||
-          static_cast<spv::LinkageType>(i->GetSingleWordOperand(3u)) !=
-              spv::LinkageType::Export) {
+          i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
+          i->GetSingleWordOperand(3u) != SpvLinkageTypeExport) {
         ++i;
         continue;
       }
@@ -402,7 +389,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     version = std::max(version, module->version());
 
   ModuleHeader header;
-  header.magic_number = spv::MagicNumber;
+  header.magic_number = SpvMagicNumber;
   header.version = version;
   // TODO(pierremoreau): Should we reserve a vendor ID?
   header.generator = 0u;
