@@ -165,6 +165,12 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                                const LinkerOptions& options) const {
   spv_position_t position = {};
 
+  linked_binary.clear();
+  if (binaries.empty())
+    return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                      SPV_ERROR_INVALID_BINARY)
+           << "No modules were given.";
+
   std::vector<std::unique_ptr<Module>> modules;
   modules.reserve(binaries.size());
   for (const auto& mod : binaries) {
