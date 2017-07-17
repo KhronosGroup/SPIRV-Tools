@@ -76,7 +76,7 @@ class Linker {
   // * One or more of those modules were not parseable;
   // * The input modules used different addressing or memory models;
   // * The ID or global variable number limit were exceeded;
-  // * Some symbols were defined multiple times;
+  // * Some entry points were defined multiple times;
   // * Some imported symbols did not have an exported counterpart.
   spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
