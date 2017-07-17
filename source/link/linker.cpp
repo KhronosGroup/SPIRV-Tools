@@ -179,8 +179,9 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
-  uint32_t id_bound = 0u;
-  for (auto& module : modules) {
+  uint32_t id_bound = modules[0]->IdBound() - 1u;
+  for (auto i = modules.begin() + 1; i != modules.end(); ++i) {
+    Module* module = i->get();
     module->ForEachInst([&id_bound](Instruction* insn){
       for (auto& o : *insn)
         if (spvIsIdType(o.type)) o.words[0] += id_bound;
