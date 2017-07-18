@@ -20,19 +20,24 @@
 #include "iterator.h"
 #include "spirv/1.0/GLSL.std.450.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvStorePtrId = 0;
-static const int kSpvStoreValId = 1;
-static const int kSpvLoadPtrId = 0;
-static const int kSpvAccessChainPtrId = 0;
-static const int kSpvTypePointerStorageClass = 0;
-static const int kSpvTypePointerTypeId = 1;
-
 // Universal Limit of ResultID + 1
 static const int kInvalidId = 0x400000;
 
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kStorePtrIdInIdx = 0;
+const uint32_t kStoreValIdInIdx = 1;
+const uint32_t kLoadPtrIdInIdx = 0;
+const uint32_t kAccessChainPtrIdInIdx = 0;
+const uint32_t kTypePointerStorageClassInIdx = 0;
+const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kCopyObjectOperandInIdx = 0;
+
+} // anonymous namespace
 
 bool LocalSingleStoreElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
@@ -72,12 +77,24 @@ bool LocalSingleStoreElimPass::IsTargetType(
 
 ir::Instruction* LocalSingleStoreElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
+  const SpvOp op = ip->opcode();
+  assert(op == SpvOpStore || op == SpvOpLoad);
   *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
+      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*varId);
+  }
   ir::Instruction* varInst = ptrInst;
-  while (IsNonPtrAccessChain(varInst->opcode())) {
-    *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
+  while (varInst->opcode() != SpvOpVariable) {
+    if (IsNonPtrAccessChain(varInst->opcode())) {
+      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
+    }
+    else {
+      assert(varInst->opcode() == SpvOpCopyObject);
+      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    }
     varInst = def_use_mgr_->GetDef(*varId);
   }
   return ptrInst;
@@ -92,13 +109,13 @@ bool LocalSingleStoreElimPass::IsTargetVar(uint32_t varId) {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
+    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
   ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
@@ -145,7 +162,7 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
           non_ssa_vars_.insert(varId);
           continue;
         }
-        if (IsNonPtrAccessChain(ptrInst->opcode())) {
+        if (ptrInst->opcode() != SpvOpVariable) {
           non_ssa_vars_.insert(varId);
           ssa_var2store_.erase(varId);
           continue;
@@ -272,8 +289,6 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       uint32_t varId;
       ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
       // Skip access chain loads
-      if (IsNonPtrAccessChain(ptrInst->opcode()))
-        continue;
       if (ptrInst->opcode() != SpvOpVariable)
         continue;
       const auto vsi = ssa_var2store_.find(varId);
@@ -285,7 +300,7 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       if (!Dominates(store2blk_[vsi->second], store2idx_[vsi->second], &*bi, instIdx))
         continue;
       // Use store value as replacement id
-      uint32_t replId = vsi->second->GetSingleWordInOperand(kSpvStoreValId);
+      uint32_t replId = vsi->second->GetSingleWordInOperand(kStoreValIdInIdx);
       // replace all instances of the load's id with the SSA value's id
       ReplaceAndDeleteLoad(&*ii, replId);
       modified = true;
@@ -318,7 +333,7 @@ bool LocalSingleStoreElimPass::IsLiveVar(uint32_t varId) const {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction)
     return true;
   // test if variable is loaded from
@@ -444,7 +459,7 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = LocalSingleStoreElim(fn) || modified;
   }
   FinalizeNextId(module_);

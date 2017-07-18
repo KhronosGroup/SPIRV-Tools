@@ -391,7 +391,7 @@ OpFunctionEnd
         assembly, assembly, false, true);
 }
 
-TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfCopyObjectInFunction) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, ElimIfCopyObjectInFunction) {
   // Note: SPIR-V hand edited to insert CopyObject
   //
   // #version 140
@@ -406,7 +406,7 @@ TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfCopyObjectInFunction) {
   //   gl_FragData[1] = v2;
   // }
 
-  const std::string assembly =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -435,7 +435,10 @@ OpName %v2 "v2"
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %float_0_5 = OpConstant %float 0.5
 %int_1 = OpConstant %int 1
-%main = OpFunction %void None %8
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %8
 %22 = OpLabel
 %v1 = OpVariable %_ptr_Function_v4float Function
 %v2 = OpVariable %_ptr_Function_v4float Function
@@ -455,8 +458,24 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%22 = OpLabel
+%v1 = OpVariable %_ptr_Function_v4float Function
+%v2 = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+%25 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_0
+OpStore %25 %23
+%26 = OpLoad %v4float %BaseColor
+%27 = OpVectorTimesScalar %v4float %26 %float_0_5
+%30 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_1
+OpStore %30 %27
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      predefs + before, predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
