@@ -14,19 +14,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "iterator.h"
 #include "local_single_block_elim_pass.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvStorePtrId = 0;
-static const int kSpvStoreValId = 1;
-static const int kSpvLoadPtrId = 0;
-static const int kSpvAccessChainPtrId = 0;
-static const int kSpvTypePointerStorageClass = 0;
-static const int kSpvTypePointerTypeId = 1;
+#include "iterator.h"
 
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kStorePtrIdInIdx = 0;
+const uint32_t kStoreValIdInIdx = 1;
+const uint32_t kLoadPtrIdInIdx = 0;
+const uint32_t kAccessChainPtrIdInIdx = 0;
+const uint32_t kTypePointerStorageClassInIdx = 0;
+const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kCopyObjectOperandInIdx = 0;
+
+} // anonymous namespace
 
 bool LocalSingleBlockLoadStoreElimPass::IsNonPtrAccessChain(
     const SpvOp opcode) const {
@@ -67,12 +73,24 @@ bool LocalSingleBlockLoadStoreElimPass::IsTargetType(
 
 ir::Instruction* LocalSingleBlockLoadStoreElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
+  const SpvOp op = ip->opcode();
+  assert(op == SpvOpStore || op == SpvOpLoad);
   *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
+      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*varId);
+  }
   ir::Instruction* varInst = ptrInst;
-  while (IsNonPtrAccessChain(varInst->opcode())) {
-    *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
+  while (varInst->opcode() != SpvOpVariable) {
+    if (IsNonPtrAccessChain(varInst->opcode())) {
+      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
+    }
+    else {
+      assert(varInst->opcode() == SpvOpCopyObject);
+      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    }
     varInst = def_use_mgr_->GetDef(*varId);
   }
   return ptrInst;
@@ -87,13 +105,13 @@ bool LocalSingleBlockLoadStoreElimPass::IsTargetVar(uint32_t varId) {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
+    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
   ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
@@ -137,7 +155,7 @@ bool LocalSingleBlockLoadStoreElimPass::IsLiveVar(uint32_t varId) const {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction)
     return true;
   // test if variable is loaded from
@@ -202,12 +220,6 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
 
 bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     ir::Function* func) {
-  // Verify no CopyObject ops in function. This is a pre-SSA pass and
-  // is generally not useful for code already in CSSA form.
-  for (auto& blk : *func)
-    for (auto& inst : blk)
-      if (inst.opcode() == SpvOpCopyObject)
-        return false;
   // Perform local store/load and load/load elimination on each block
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
@@ -251,7 +263,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         if (ptrInst->opcode() == SpvOpVariable) {
           auto si = var2store_.find(varId);
           if (si != var2store_.end()) {
-            replId = si->second->GetSingleWordInOperand(kSpvStoreValId);
+            replId = si->second->GetSingleWordInOperand(kStoreValIdInIdx);
           }
           else {
             auto li = var2load_.find(varId);
@@ -324,7 +336,7 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = LocalSingleBlockLoadStoreElim(fn) || modified;
   }
   FinalizeNextId(module_);
