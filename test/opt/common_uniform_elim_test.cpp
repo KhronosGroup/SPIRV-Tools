@@ -20,9 +20,9 @@ namespace {
 
 using namespace spvtools;
 
-using BlockMergeTest = PassTest<::testing::Test>;
+using CommonUniformElimTest = PassTest<::testing::Test>;
 
-TEST_F(BlockMergeTest, Basic1) {
+TEST_F(CommonUniformElimTest, Basic1) {
   // Note: This test exemplifies the following:
   // - Common uniform (%_) load floated to nearest non-controlled block
   // - Common extract (g_F) floated to non-controlled block
@@ -170,7 +170,7 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-TEST_F(BlockMergeTest, Basic2) {
+TEST_F(CommonUniformElimTest, Basic2) {
   // Note: This test exemplifies the following:
   // - Common uniform (%_) load floated to nearest non-controlled block
   // - Common extract (g_F) floated to non-controlled block
@@ -333,7 +333,7 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-TEST_F(BlockMergeTest, Basic3) {
+TEST_F(CommonUniformElimTest, Basic3) {
   // Note: This test exemplifies the following:
   // - Existing common uniform (%_) load kept in place and shared
   //
@@ -452,7 +452,7 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-TEST_F(BlockMergeTest, Loop) {
+TEST_F(CommonUniformElimTest, Loop) {
   // Note: This test exemplifies the following:
   // - Common extract (g_F) shared between two loops
   // #version 140
