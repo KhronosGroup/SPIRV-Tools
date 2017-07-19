@@ -511,7 +511,8 @@ void AggressiveDCEPass::InitCombinatorSets() {
 }
 
 void AggressiveDCEPass::InitExtensions() {
-  extensions_whitelist_ = {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
     "SPV_AMD_shader_explicit_vertex_parameter",
     "SPV_AMD_shader_trinary_minmax",
     "SPV_AMD_gcn_shader",
@@ -535,7 +536,7 @@ void AggressiveDCEPass::InitExtensions() {
     "SPV_AMD_gpu_shader_int16",
     "SPV_KHR_post_depth_coverage",
     "SPV_KHR_shader_atomic_counter_ops",
-  };
+  });
 }
 
 }  // namespace opt
