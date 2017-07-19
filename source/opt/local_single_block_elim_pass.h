@@ -103,6 +103,12 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
     return next_id_++;
   }
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are supported by this pass.
+  bool AllExtensionsSupported() const;
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
@@ -141,6 +147,9 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // for example, a load through an access chain. A variable is removed
   // from this set each time a new store of that variable is encountered.
   std::unordered_set<uint32_t> pinned_vars_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 
   // Next unused ID
   uint32_t next_id_;

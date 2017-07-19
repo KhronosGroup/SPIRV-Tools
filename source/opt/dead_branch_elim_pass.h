@@ -105,6 +105,12 @@ class DeadBranchElimPass : public Pass {
   // dead blocks.
   bool EliminateDeadBranches(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are allowed by this pass.
+  bool AllExtensionsSupported() const;
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
@@ -124,6 +130,9 @@ class DeadBranchElimPass : public Pass {
   // ComputeStructuredSuccessors() for definition.
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

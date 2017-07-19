@@ -73,10 +73,11 @@ class AggressiveDCEPass : public Pass {
   // TODO(greg-lunarg): Add support for other extensions
   bool IsCombinatorExt(ir::Instruction* inst) const;
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
   // Return true if all extensions in this module are supported by this pass.
-  // Currently, no extensions are supported. glsl_std_450 extended instructions
-  // are allowed.
-  bool AllExtensionsSupported();
+  bool AllExtensionsSupported() const;
 
   // Kill debug or annotation |inst| if target operand is dead.
   void KillInstIfTargetDead(ir::Instruction* inst);
@@ -131,6 +132,9 @@ class AggressiveDCEPass : public Pass {
   // that can safely be left unmarked as live at the beginning of
   // aggressive DCE.
   std::unordered_set<uint32_t> combinator_ops_glsl_std_450_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 
   // Set id for glsl_std_450 extension instructions
   uint32_t glsl_std_450_id_;

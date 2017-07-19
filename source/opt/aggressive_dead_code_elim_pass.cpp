@@ -113,13 +113,15 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
     return false;
 }
 
-bool AggressiveDCEPass::AllExtensionsSupported() {
-  uint32_t ecnt = 0;
+bool AggressiveDCEPass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
-    (void) ei;
-    ++ecnt;
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
   }
-  return ecnt == 0;
+  return true;
 }
 
 void AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
@@ -247,7 +249,11 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
   combinator_ops_shader_.clear();
   combinator_ops_glsl_std_450_.clear();
 
+  // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
+  // Initialize extensions whitelist
+  InitExtensions();
 }
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
@@ -255,21 +261,17 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // TODO(greg-lunarg): Handle additional capabilities
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-
   // Current functionality assumes logical addressing only
   // TODO(greg-lunarg): Handle non-logical addressing
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
-
   // If any extensions in the module are not explicitly supported,
-  // return unmodified. Currently, no extensions are supported.
-  // glsl_std_450 extended instructions are allowed.
-  // TODO(greg-lunarg): Allow additional extensions
+  // return unmodified. 
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-
+  // Initialize combinator whitelists
   InitCombinatorSets();
-
+  // Process all entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
@@ -510,6 +512,35 @@ void AggressiveDCEPass::InitCombinatorSets() {
     GLSLstd450NMax,
     GLSLstd450NClamp
   };
+}
+
+void AggressiveDCEPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt
