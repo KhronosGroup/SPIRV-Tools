@@ -111,6 +111,10 @@ ir::Instruction* CommonUniformElimPass::GetPtr(
   *varId = ip->GetSingleWordInOperand(
       op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*varId);
+  }
   ir::Instruction* varInst = ptrInst;
   while (varInst->opcode() != SpvOpVariable) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
