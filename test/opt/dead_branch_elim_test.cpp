@@ -792,6 +792,111 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
+TEST_F(DeadBranchElimTest, DecorateDeleted) {
+  // Note: SPIR-V hand-edited to add decoration
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     if (false)
+  //       v = v * vec4(0.5,0.5,0.5,0.5);
+  //     gl_FragColor = v;
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %22 RelaxedPrecision
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%float_0_5 = OpConstant %float 0.5
+%15 = OpConstantComposite %v4float %float_0_5 %float_0_5 %float_0_5 %float_0_5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%float_0_5 = OpConstant %float 0.5
+%16 = OpConstantComposite %v4float %float_0_5 %float_0_5 %float_0_5 %float_0_5
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %7
+%17 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%18 = OpLoad %v4float %BaseColor
+OpStore %v %18 
+OpSelectionMerge %19 None 
+OpBranchConditional %false %20 %19
+%20 = OpLabel
+%21 = OpLoad %v4float %v
+%22 = OpFMul %v4float %21 %15
+OpStore %v %22 
+OpBranch %19
+%19 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%18 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%19 = OpLoad %v4float %BaseColor
+OpStore %v %19
+OpBranch %20
+%20 = OpLabel
+%23 = OpLoad %v4float %v
+OpStore %gl_FragColor %23
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
+      predefs_before + before, predefs_after + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow

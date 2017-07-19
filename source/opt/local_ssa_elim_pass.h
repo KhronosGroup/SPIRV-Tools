@@ -177,6 +177,9 @@ class LocalMultiStoreElimPass : public Pass {
   // TODO(greg-lunarg): Add extensions to supported list.
   bool AllExtensionsSupported() const;
 
+  // Collect all named or decorated ids in module
+  void FindNamedOrDecoratedIds();
+
   // Remove remaining loads and stores of function scope variables only
   // referenced with non-access-chain loads and stores from function |func|.
   // Insert Phi functions where necessary. Running LocalAccessChainRemoval,
@@ -230,6 +233,9 @@ class LocalMultiStoreElimPass : public Pass {
   // Variables that are only referenced by supported operations for this
   // pass ie. loads and stores.
   std::unordered_set<uint32_t> supported_ref_vars_;
+
+  // named or decorated ids
+  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Map from block to its structured successor blocks. See 
   // ComputeStructuredSuccessors() for definition.
