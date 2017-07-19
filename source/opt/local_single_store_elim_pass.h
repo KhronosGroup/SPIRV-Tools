@@ -135,6 +135,12 @@ class LocalSingleStoreElimPass : public Pass {
   // any resulting dead code.
   bool LocalSingleStoreElim(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are allowed by this pass.
+  bool AllExtensionsSupported() const;
+
   // Save next available id into |module|.
   inline void FinalizeNextId(ir::Module* module) {
     module->SetIdBound(next_id_);
@@ -207,6 +213,9 @@ class LocalSingleStoreElimPass : public Pass {
   // Immediate Dominator Map
   // If block has no idom it points to itself.
   std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> idom_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 
   // Next unused ID
   uint32_t next_id_;

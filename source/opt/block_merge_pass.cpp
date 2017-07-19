@@ -117,10 +117,28 @@ void BlockMergePass::Initialize(ir::Module* module) {
   for (auto& fn : *module_) 
     id2function_[fn.result_id()] = &fn;
 
+  // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
 
+bool BlockMergePass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
+  for (auto& ei : module_->extensions()) {
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
+  }
+  return true;
+}
+
 Pass::Status BlockMergePass::ProcessImpl() {
+  // Do not process if any disallowed extensions are enabled
+  if (!AllExtensionsSupported())
+    return Status::SuccessWithoutChange;
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
@@ -136,6 +154,33 @@ BlockMergePass::BlockMergePass()
 Pass::Status BlockMergePass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void BlockMergePass::InitExtensions() {
+  extensions_whitelist_ = {
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    "SPV_KHR_variable_pointers",
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  };
 }
 
 }  // namespace opt
