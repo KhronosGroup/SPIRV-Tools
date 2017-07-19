@@ -526,22 +526,24 @@ void CommonUniformElimPass::Initialize(ir::Module* module) {
   label2preds_.clear();
   comp2idx2inst_.clear();
 
+  // TODO(greg-lunarg): Use def/use from previous pass
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Initialize next unused Id.
   next_id_ = module->id_bound();
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
 
+
 bool CommonUniformElimPass::AllExtensionsSupported() const {
-  // Currently disallows all extensions. This is just super conservative
-  // to allow this to go public and many can likely be allowed with little
-  // to no additional coding. One exception is SPV_KHR_variable_pointers
-  // which will require some additional work around HasLoads, AddStores
-  // and generally DCEInst.
-  // TODO(greg-lunarg): Enable more extensions.
+  // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
-    (void) ei;
-    return false;
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
   }
   return true;
 }
@@ -575,6 +577,35 @@ CommonUniformElimPass::CommonUniformElimPass()
 Pass::Status CommonUniformElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void CommonUniformElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt

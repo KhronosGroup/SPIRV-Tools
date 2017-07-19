@@ -150,9 +150,10 @@ class CommonUniformElimPass : public Pass {
   // is not enabled. It also currently does not support any extensions.
   bool EliminateCommonUniform(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
   // Return true if all extensions in this module are allowed by this pass.
-  // Currently, no extensions are supported.
-  // TODO(greg-lunarg): Add extensions to supported list.
   bool AllExtensionsSupported() const;
 
   // Return true if all uses of varId are only through supported reference
@@ -198,6 +199,9 @@ class CommonUniformElimPass : public Pass {
   // Map of extract composite ids to map of indices to insts
   std::unordered_map<uint32_t, std::unordered_map<uint32_t,
       std::list<ir::Instruction*>>> comp2idx2inst_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 
   // Next unused ID
   uint32_t next_id_;
