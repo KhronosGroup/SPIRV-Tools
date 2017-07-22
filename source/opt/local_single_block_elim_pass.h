@@ -85,6 +85,10 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // labels. 
   void DCEInst(ir::Instruction* inst);
 
+  // Return true if all uses of |varId| are only through supported reference
+  // operations ie. loads and store. Also cache in supported_ref_ptrs_;
+  bool HasOnlySupportedRefs(uint32_t varId);
+
   // On all entry point functions, within each basic block, eliminate
   // loads and stores to function variables where possible. For
   // loads, if previous load or store to same variable, replace
@@ -141,6 +145,10 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // for example, a load through an access chain. A variable is removed
   // from this set each time a new store of that variable is encountered.
   std::unordered_set<uint32_t> pinned_vars_;
+
+  // Variables that are only referenced by supported operations for this
+  // pass ie. loads and stores.
+  std::unordered_set<uint32_t> supported_ref_ptrs_;
 
   // Next unused ID
   uint32_t next_id_;
