@@ -218,24 +218,6 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
   }
 }
 
-bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
-  if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
-    return true;
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
-  assert(uses != nullptr);
-  for (auto u : *uses) {
-    SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op)) {
-      if (!HasOnlySupportedRefs(u.inst->result_id()))
-        return false;
-    }
-    else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
-      return false;
-  }
-  supported_ref_ptrs_.insert(ptrId);
-  return true;
-}
-
 bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     ir::Function* func) {
   // Perform local store/load and load/load elimination on each block
@@ -251,8 +233,6 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
         if (!IsTargetVar(varId))
-          continue;
-        if (!HasOnlySupportedRefs(varId))
           continue;
         // Register the store
         if (ptrInst->opcode() == SpvOpVariable) {
@@ -277,8 +257,6 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
         uint32_t varId;
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
         if (!IsTargetVar(varId))
-          continue;
-        if (!HasOnlySupportedRefs(varId))
           continue;
         // Look for previous store or load
         uint32_t replId = 0;
@@ -341,9 +319,6 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
   // Initialize Target Type Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
-
-  // Clear collections
-  supported_ref_ptrs_.clear();
 
   // TODO(): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
