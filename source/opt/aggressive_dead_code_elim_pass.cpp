@@ -233,7 +233,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
 }
 
 void AggressiveDCEPass::Initialize(ir::Module* module) {
-
   module_ = module;
 
   // Initialize id-to-function map
