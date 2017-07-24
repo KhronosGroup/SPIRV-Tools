@@ -132,11 +132,9 @@ bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op)) {
-      if (!HasOnlySupportedRefs(u.inst->result_id()))
-        return false;
-    }
-    else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
+    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
+      if (!HasOnlySupportedRefs(u.inst->result_id())) return false;
+    } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
       return false;
   }
   supported_ref_ptrs_.insert(ptrId);
@@ -527,4 +525,3 @@ void LocalSingleStoreElimPass::InitExtensions() {
 
 }  // namespace opt
 }  // namespace spvtools
-

@@ -16,11 +16,12 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
-template <typename T> std::vector<T> concat(const std::vector<T> &a, const std::vector<T> &b) {
-    std::vector<T> ret = std::vector<T>();
-    std::copy(a.begin(), a.end(), back_inserter(ret));
-    std::copy(b.begin(), b.end(), back_inserter(ret));
-    return ret;
+template <typename T>
+std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b) {
+  std::vector<T> ret;
+  std::copy(a.begin(), a.end(), back_inserter(ret));
+  std::copy(b.begin(), b.end(), back_inserter(ret));
+  return ret;
 }
 
 namespace {
@@ -31,9 +32,9 @@ using LocalSingleBlockLoadStoreElimTest = PassTest<::testing::Test>;
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleStoreLoadElim) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -90,10 +91,10 @@ OpFunctionEnd
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleLoadLoadElim) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -190,16 +191,16 @@ OpFunctionEnd
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest,
-    NoStoreElimIfInterveningAccessChainLoad) {
+       NoStoreElimIfInterveningAccessChainLoad) {
   //
   // Note that even though the Load to %v is eliminated, the Store to %v
   // is not eliminated due to the following access chain reference.
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // flat in int Idx;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -279,10 +280,10 @@ OpFunctionEnd
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningAccessChainStore) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // flat in int Idx;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -332,14 +333,14 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningFunctionCall) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void foo() {
   // }
   //
@@ -388,16 +389,16 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, ElimIfCopyObjectInFunction) {
   // Note: SPIR-V hand edited to insert CopyObject
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //   vec4 v1 = BaseColor;
