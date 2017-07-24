@@ -22,16 +22,15 @@ using namespace spvtools;
 
 using LocalSingleStoreElimTest = PassTest<::testing::Test>;
 
-
 TEST_F(LocalSingleStoreElimTest, PositiveAndNegative) {
   // Single store to v is optimized. Multiple store to
   // f is not optimized.
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -120,18 +119,18 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, MultipleLoads) {
   // Single store to multiple loads of v is optimized.
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -223,17 +222,17 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoStoreElimWithInterveningAccessChainLoad) {
   // Last load of v is eliminated, but access chain load and store of v isn't
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -300,17 +299,17 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoReplaceOfDominatingPartialStore) {
   // Note: SPIR-V hand edited to initialize v to vec4(0.0)
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -355,18 +354,18 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      assembly, assembly, true, true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(assembly, assembly, true,
+                                                       true);
 }
 
-TEST_F(LocalSingleStoreElimTest, NoReplaceInPresenceOfUnsupportedInst) {
-  // Note: PositiveNegative test hand edited to insert OpCopyObject
+TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
+  // Note: hand edited to insert OpCopyObject
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -376,7 +375,7 @@ TEST_F(LocalSingleStoreElimTest, NoReplaceInPresenceOfUnsupportedInst) {
   //     gl_FragColor = v + f;
   // }
 
-  const std::string assembly =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -403,7 +402,10 @@ OpName %gl_FragColor "gl_FragColor"
 %bool = OpTypeBool
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
-%main = OpFunction %void None %9
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %9
 %19 = OpLabel
 %v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
@@ -429,19 +431,43 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string after =
+      R"(%main = OpFunction %void None %9
+%19 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%f = OpVariable %_ptr_Function_float Function
+%20 = OpLoad %v4float %BaseColor
+%21 = OpLoad %float %fi
+OpStore %f %21
+%22 = OpLoad %float %f
+%23 = OpFOrdLessThan %bool %22 %float_0
+OpSelectionMerge %24 None
+OpBranchConditional %23 %25 %24
+%25 = OpLabel
+OpStore %f %float_0
+OpBranch %24
+%24 = OpLabel
+%28 = OpLoad %float %f
+%29 = OpCompositeConstruct %v4float %28 %28 %28 %28
+%30 = OpFAdd %v4float %20 %29
+OpStore %gl_FragColor %30
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      assembly, assembly, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoOptIfStoreNotDominating) {
   // Single store to f not optimized because it does not dominate
   // the load.
-  // 
+  //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     float f;
@@ -509,8 +535,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(assembly, assembly,
-      true, true);
+  SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(assembly, assembly, true,
+                                                       true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
