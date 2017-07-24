@@ -22,6 +22,7 @@
 namespace {
 
 using spvutils::MoveToFront;
+using spvutils::MultiMoveToFront;
 
 // Class used to test the inner workings of MoveToFront.
 class MoveToFrontTester : public MoveToFront<uint32_t> {
@@ -58,6 +59,10 @@ class MoveToFrontTester : public MoveToFront<uint32_t> {
   size_t GetTotalNodeCount() const {
     assert(nodes_.size());
     return nodes_.size() - 1;
+  }
+
+  uint32_t GetLastAccessedValue() const {
+    return last_accessed_value_;
   }
 
  private:
@@ -436,7 +441,7 @@ TEST(MoveToFront, BiggerScaleTreeTest) {
 TEST(MoveToFront, RankFromValue) {
   MoveToFrontTester mtf;
 
-  size_t rank = 0;
+  uint32_t rank = 0;
   EXPECT_FALSE(mtf.RankFromValue(1, &rank));
 
   EXPECT_TRUE(mtf.Insert(1));
@@ -478,9 +483,9 @@ TEST(MoveToFront, RankFromValue) {
   EXPECT_EQ(2u, rank);
 
   CheckTree(mtf, std::string(R"(
-2H3S5T7-------3H1S1T6-------D2
-              50H2S3T10-----40H1S1T8------D3
-                            1H1S1T11------D3
+2H3S5T6-------3H1S1T5-------D2
+              50H2S3T9------40H1S1T7------D3
+                            1H1S1T10------D3
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.RankFromValue(50, &rank));
@@ -488,9 +493,9 @@ TEST(MoveToFront, RankFromValue) {
 
   EXPECT_EQ(5u, mtf.GetSize());
   CheckTree(mtf, std::string(R"(
-2H3S5T7-------3H1S1T6-------D2
-              1H2S3T11------40H1S1T8------D3
-                            50H1S1T12-----D3
+2H3S5T6-------3H1S1T5-------D2
+              1H2S3T10------40H1S1T7------D3
+                            50H1S1T11-----D3
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_FALSE(mtf.RankFromValue(0, &rank));
@@ -505,14 +510,24 @@ TEST(MoveToFront, ValueFromRank) {
   EXPECT_FALSE(mtf.ValueFromRank(1, &value));
 
   EXPECT_TRUE(mtf.Insert(1));
+  EXPECT_EQ(1u, mtf.GetLastAccessedValue());
   EXPECT_TRUE(mtf.Insert(2));
+  EXPECT_EQ(2u, mtf.GetLastAccessedValue());
   EXPECT_TRUE(mtf.Insert(3));
+  EXPECT_EQ(3u, mtf.GetLastAccessedValue());
 
   EXPECT_TRUE(mtf.ValueFromRank(3, &value));
   EXPECT_EQ(1u, value);
+  EXPECT_EQ(1u, mtf.GetLastAccessedValue());
 
   EXPECT_TRUE(mtf.ValueFromRank(1, &value));
   EXPECT_EQ(1u, value);
+  EXPECT_EQ(1u, mtf.GetLastAccessedValue());
+
+  CheckTree(mtf, std::string(R"(
+3H2S3T3-------2H1S1T2-------D2
+              1H1S1T4-------D2
+)").substr(1), /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(2, &value));
   EXPECT_EQ(3u, value);
@@ -520,23 +535,23 @@ TEST(MoveToFront, ValueFromRank) {
   EXPECT_EQ(3u, mtf.GetSize());
 
   CheckTree(mtf, std::string(R"(
-1H2S3T5-------2H1S1T2-------D2
-              3H1S1T6-------D2
+1H2S3T4-------2H1S1T2-------D2
+              3H1S1T5-------D2
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(3, &value));
   EXPECT_EQ(2u, value);
 
   CheckTree(mtf, std::string(R"(
-3H2S3T6-------1H1S1T5-------D2
-              2H1S1T7-------D2
+3H2S3T5-------1H1S1T4-------D2
+              2H1S1T6-------D2
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.Insert(10));
   CheckTree(mtf, std::string(R"(
-3H3S4T6-------1H1S1T5-------D2
-              2H2S2T7-------D2
-                            10H1S1T8------D3
+3H3S4T5-------1H1S1T4-------D2
+              2H2S2T6-------D2
+                            10H1S1T7------D3
 )").substr(1), /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(1, &value));
@@ -585,7 +600,7 @@ TEST(MoveToFront, Remove) {
 TEST(MoveToFront, LargerScale) {
   MoveToFrontTester mtf;
   uint32_t value = 0;
-  size_t rank = 0;
+  uint32_t rank = 0;
 
   for (uint32_t i = 1; i < 1000; ++i) {
     ASSERT_TRUE(mtf.Insert(i));
@@ -738,11 +753,11 @@ TEST(MoveToFront, LargerScale) {
   }
 
   CheckTree(mtf, std::string(R"(
-6H4S9T3028----8H2S3T24------7H1S1T21------D3
-                            9H1S1T27------D3
-              2H3S5T3032----4H2S3T3030----5H1S1T3029----D4
-                                          3H1S1T3031----D4
-                            1H1S1T3033----D3
+6H4S9T1029----8H2S3T8-------7H1S1T7-------D3
+                            9H1S1T9-------D3
+              2H3S5T1033----4H2S3T1031----5H1S1T1030----D4
+                                          3H1S1T1032----D4
+                            1H1S1T1034----D3
 )").substr(1), /* print_timestamp = */ true);
 
   ASSERT_TRUE(mtf.Insert(1000));
@@ -758,6 +773,9 @@ TEST(MoveToFront, String) {
   EXPECT_TRUE(mtf.Insert("CCC"));
   EXPECT_FALSE(mtf.Insert("AAA"));
 
+  EXPECT_TRUE(mtf.HasValue("AAA"));
+  EXPECT_FALSE(mtf.HasValue("DDD"));
+
   std::string value;
   EXPECT_TRUE(mtf.ValueFromRank(2, &value));
   EXPECT_EQ("BBB", value);
@@ -765,7 +783,7 @@ TEST(MoveToFront, String) {
   EXPECT_TRUE(mtf.ValueFromRank(2, &value));
   EXPECT_EQ("CCC", value);
 
-  size_t rank = 0;
+  uint32_t rank = 0;
   EXPECT_TRUE(mtf.RankFromValue("AAA", &rank));
   EXPECT_EQ(3u, rank);
 
@@ -779,6 +797,88 @@ TEST(MoveToFront, String) {
 
   EXPECT_TRUE(mtf.Insert("AAA"));
   EXPECT_TRUE(mtf.RankFromValue("AAA", &rank));
+  EXPECT_EQ(1u, rank);
+
+  EXPECT_TRUE(mtf.Promote("BBB"));
+  EXPECT_TRUE(mtf.RankFromValue("BBB", &rank));
+  EXPECT_EQ(1u, rank);
+}
+
+TEST(MultiMoveToFront, Empty) {
+  MultiMoveToFront<std::string> multi_mtf;
+
+  uint32_t rank = 0;
+  std::string value;
+
+  EXPECT_EQ(0u, multi_mtf.GetSize(1001));
+  EXPECT_FALSE(multi_mtf.RankFromValue(1001, "AAA", &rank));
+  EXPECT_FALSE(multi_mtf.ValueFromRank(1001, 1, &value));
+  EXPECT_FALSE(multi_mtf.HasValue(1001, "AAA"));
+  EXPECT_FALSE(multi_mtf.Remove(1001, "AAA"));
+}
+
+
+TEST(MultiMoveToFront, TwoSequences) {
+  MultiMoveToFront<std::string> multi_mtf;
+
+  uint32_t rank = 0;
+  std::string value;
+
+  EXPECT_TRUE(multi_mtf.Insert(1001, "AAA"));
+
+  EXPECT_EQ(1u, multi_mtf.GetSize(1001));
+  EXPECT_EQ(0u, multi_mtf.GetSize(1002));
+  EXPECT_TRUE(multi_mtf.HasValue(1001, "AAA"));
+  EXPECT_FALSE(multi_mtf.HasValue(1002, "AAA"));
+
+  EXPECT_TRUE(multi_mtf.RankFromValue(1001, "AAA", &rank));
+  EXPECT_EQ(1u, rank);
+  EXPECT_FALSE(multi_mtf.RankFromValue(1002, "AAA", &rank));
+
+  EXPECT_TRUE(multi_mtf.ValueFromRank(1001, rank, &value));
+  EXPECT_EQ("AAA", value);
+  EXPECT_FALSE(multi_mtf.ValueFromRank(1002, rank, &value));
+
+  EXPECT_TRUE(multi_mtf.Insert(1001, "BBB"));
+
+  EXPECT_EQ(2u, multi_mtf.GetSize(1001));
+  EXPECT_EQ(0u, multi_mtf.GetSize(1002));
+  EXPECT_TRUE(multi_mtf.HasValue(1001, "BBB"));
+  EXPECT_FALSE(multi_mtf.HasValue(1002, "BBB"));
+
+  EXPECT_TRUE(multi_mtf.RankFromValue(1001, "BBB", &rank));
+  EXPECT_EQ(1u, rank);
+  EXPECT_FALSE(multi_mtf.RankFromValue(1002, "BBB", &rank));
+
+  EXPECT_TRUE(multi_mtf.ValueFromRank(1001, rank, &value));
+  EXPECT_EQ("BBB", value);
+  EXPECT_FALSE(multi_mtf.ValueFromRank(1002, rank, &value));
+
+  EXPECT_TRUE(multi_mtf.Insert(1002, "AAA"));
+
+  EXPECT_EQ(2u, multi_mtf.GetSize(1001));
+  EXPECT_EQ(1u, multi_mtf.GetSize(1002));
+  EXPECT_TRUE(multi_mtf.HasValue(1002, "AAA"));
+
+  EXPECT_TRUE(multi_mtf.RankFromValue(1002, "AAA", &rank));
+  EXPECT_EQ(1u, rank);
+
+  EXPECT_TRUE(multi_mtf.RankFromValue(1001, "AAA", &rank));
+  EXPECT_EQ(2u, rank);
+
+  multi_mtf.Promote("BBB");
+
+  EXPECT_TRUE(multi_mtf.RankFromValue(1001, "BBB", &rank));
+  EXPECT_EQ(1u, rank);
+
+  EXPECT_TRUE(multi_mtf.Insert(1002, "CCC"));
+  EXPECT_TRUE(multi_mtf.RankFromValue(1002, "CCC", &rank));
+  EXPECT_EQ(1u, rank);
+
+  multi_mtf.Promote("AAA");
+  EXPECT_TRUE(multi_mtf.RankFromValue(1001, "AAA", &rank));
+  EXPECT_EQ(1u, rank);
+  EXPECT_TRUE(multi_mtf.RankFromValue(1002, "AAA", &rank));
   EXPECT_EQ(1u, rank);
 }
 
