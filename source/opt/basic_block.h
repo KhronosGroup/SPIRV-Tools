@@ -40,6 +40,12 @@ class BasicBlock {
   // Creates a basic block with the given starting |label|.
   inline explicit BasicBlock(std::unique_ptr<Instruction> label);
 
+  // Creates a basic block from the given basic block |bb|.
+  //
+  // The parent function will default to null and needs to be explicitly set by
+  // the user.
+  explicit BasicBlock(const BasicBlock& bb);
+
   // Sets the enclosing function for this basic block.
   void SetParent(Function* function) { function_ = function; }
 

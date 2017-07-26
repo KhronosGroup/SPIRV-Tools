@@ -139,27 +139,8 @@ static spv_result_t MergeModules(
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
     for (const auto& i : *module) {
-      std::unique_ptr<Function> func =
-          MakeUnique<Function>(Function(MakeUnique<Instruction>(i.DefInst())));
+      std::unique_ptr<Function> func = MakeUnique<Function>(i);
       func->SetParent(linkedModule.get());
-      i.ForEachParam(
-          [&func](const Instruction* insn) {
-            func->AddParameter(MakeUnique<Instruction>(*insn));
-          },
-          true);
-      // TODO(pierremoreau): convince the compiler to use cbegin()/cend()
-      //                     instead of begin()/end()
-      for (auto j = i.cbegin(); j != i.cend(); ++j) {
-        std::unique_ptr<BasicBlock> block = MakeUnique<BasicBlock>(
-            BasicBlock(MakeUnique<Instruction>(j->GetLabelInst())));
-        block->SetParent(func.get());
-        // TODO(pierremoreau): convince the compiler to use cbegin()/cend()
-        //                     instead of begin()/end()
-        for (auto k = j->cbegin(); k != j->cend(); ++k)
-          block->AddInstruction(MakeUnique<Instruction>(*k));
-        func->AddBasicBlock(std::move(block));
-      }
-      func->SetFunctionEnd(MakeUnique<Instruction>(i.function_end()));
       linkedModule->AddFunction(std::move(func));
     }
   }
