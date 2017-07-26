@@ -14,8 +14,33 @@
 
 #include "function.h"
 
+#include "make_unique.h"
+
 namespace spvtools {
 namespace ir {
+
+Function::Function(const Function& f)
+    : module_(nullptr),
+      def_inst_(MakeUnique<Instruction>(f.DefInst())),
+      params_(),
+      blocks_(),
+      end_inst_() {
+  params_.reserve(f.params_.size());
+  f.ForEachParam(
+      [this](const Instruction* insn) {
+        AddParameter(MakeUnique<Instruction>(*insn));
+      },
+      true);
+
+  blocks_.reserve(f.blocks_.size());
+  for (auto& b : f.blocks_) {
+    std::unique_ptr<BasicBlock> bb = MakeUnique<BasicBlock>(*b.get());
+    bb->SetParent(this);
+    AddBasicBlock(std::move(bb));
+  }
+
+  SetFunctionEnd(MakeUnique<Instruction>(f.function_end()));
+}
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f,
                            bool run_on_debug_line_insts) {
@@ -36,8 +61,8 @@ void Function::ForEachInst(const std::function<void(const Instruction*)>& f,
         ->ForEachInst(f, run_on_debug_line_insts);
 
   for (const auto& bb : blocks_)
-    static_cast<const BasicBlock*>(bb.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
+    static_cast<const BasicBlock*>(bb.get())->ForEachInst(
+        f, run_on_debug_line_insts);
 
   if (end_inst_)
     static_cast<const Instruction*>(end_inst_.get())
