@@ -119,8 +119,7 @@ class LocalSingleStoreElimPass : public Pass {
   // Add stores using |ptr_id| to |insts|
   void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
 
-  // Return true if all uses of varId are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_vars_;
+  // Return true if |op| is supported decorate.
   inline bool IsDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }

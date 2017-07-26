@@ -97,8 +97,7 @@ class DeadBranchElimPass : public Pass {
   // Return true if |labelId| has any non-phi references
   bool HasNonPhiRef(uint32_t labelId);
 
-  // Return true if all uses of varId are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_vars_;
+  // Return true if |op| is supported decorate.
   inline bool IsDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }

@@ -158,9 +158,8 @@ void DeadBranchElimPass::KillNamesAndDecorates(uint32_t id) {
   std::list<ir::Instruction*> killList;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      continue;
-    killList.push_back(u.inst);
+    if (op == SpvOpName || IsDecorate(op))
+      killList.push_back(u.inst);
   }
   for (auto kip : killList)
     def_use_mgr_->KillInst(kip);
