@@ -456,7 +456,7 @@ TEST_F(LocalSingleStoreElimTest, ElimIfCopyObjectInFunction) {
   //     gl_FragColor = v + f;
   // }
 
-  const std::string predefs =
+  const std::string predefs_before =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -465,6 +465,34 @@ OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
 OpName %main "main"
 OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %f "f"
+OpName %fi "fi"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_float = OpTypePointer Input %float
+%fi = OpVariable %_ptr_Input_float Input
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %fi %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
 OpName %BaseColor "BaseColor"
 OpName %f "f"
 OpName %fi "fi"
@@ -515,7 +543,6 @@ OpFunctionEnd
   const std::string after =
       R"(%main = OpFunction %void None %9
 %19 = OpLabel
-%v = OpVariable %_ptr_Function_v4float Function
 %f = OpVariable %_ptr_Function_float Function
 %20 = OpLoad %v4float %BaseColor
 %21 = OpLoad %float %fi
@@ -537,7 +564,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs + before, predefs + after, true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoOptIfStoreNotDominating) {
