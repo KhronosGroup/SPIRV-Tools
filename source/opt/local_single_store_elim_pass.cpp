@@ -191,7 +191,9 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
 
 void LocalSingleStoreElimPass::ReplaceAndDeleteLoad(
     ir::Instruction* loadInst, uint32_t replId) {
-  (void) def_use_mgr_->ReplaceAllUsesWith(loadInst->result_id(), replId);
+  const uint32_t loadId = loadInst->result_id();
+  KillNamesAndDecorates(loadId);
+  (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
 }
 
@@ -358,6 +360,47 @@ void LocalSingleStoreElimPass::AddStores(
   }
 }
 
+bool LocalSingleStoreElimPass::HasOnlyNamesAndDecorates(
+    uint32_t id) const {
+  analysis::UseList* uses = def_use_mgr_->GetUses(id);
+  if (uses == nullptr)
+    return true;
+  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
+    return false;
+  for (auto u : *uses) {
+    const SpvOp op = u.inst->opcode();
+    if (op != SpvOpName && !IsDecorate(op))
+      return false;
+  }
+  return true;
+}
+
+void LocalSingleStoreElimPass::KillNamesAndDecorates(uint32_t id) {
+  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
+  // kill if no other operands.
+  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
+    return;
+  analysis::UseList* uses = def_use_mgr_->GetUses(id);
+  if (uses == nullptr)
+    return;
+  std::list<ir::Instruction*> killList;
+  for (auto u : *uses) {
+    const SpvOp op = u.inst->opcode();
+    if (op == SpvOpName || IsDecorate(op))
+      killList.push_back(u.inst);
+  }
+  for (auto kip : killList)
+    def_use_mgr_->KillInst(kip);
+}
+
+void LocalSingleStoreElimPass::KillNamesAndDecorates(
+    ir::Instruction* inst) {
+  const uint32_t rId = inst->result_id();
+  if (rId == 0)
+    return;
+  KillNamesAndDecorates(rId);
+}
+
 void LocalSingleStoreElimPass::DCEInst(ir::Instruction* inst) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
@@ -369,27 +412,25 @@ void LocalSingleStoreElimPass::DCEInst(ir::Instruction* inst) {
       continue;
     }
     // Remember operands
-    std::queue<uint32_t> ids;
+    std::vector<uint32_t> ids;
     di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push(*iid);
+      ids.push_back(*iid);
     });
     uint32_t varId = 0;
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad)
       (void) GetPtr(di, &varId);
+    KillNamesAndDecorates(di);
     def_use_mgr_->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
-    while (!ids.empty()) {
-      uint32_t id = ids.front();
-      analysis::UseList* uses = def_use_mgr_->GetUses(id);
-      if (uses == nullptr)
+    for (auto id : ids) {
+      if (HasOnlyNamesAndDecorates(id))
         deadInsts.push(def_use_mgr_->GetDef(id));
-      ids.pop();
     }
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId)) 
+    if (varId != 0 && !IsLiveVar(varId))
       AddStores(varId, &deadInsts);
     deadInsts.pop();
   }
@@ -452,6 +493,15 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
   InitExtensions();
 };
 
+void LocalSingleStoreElimPass::FindNamedOrDecoratedIds() {
+  for (auto& di : module_->debugs())
+    if (di.opcode() == SpvOpName)
+      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
+      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
+}
+  
 bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
@@ -467,9 +517,17 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
+  // Do not process if module contains OpGroupDecorate. Additional
+  // support required in KillNamesAndDecorates().
+  // TODO(greg-lunarg): Add support for OpGroupDecorate
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
+  // Collect all named and decorated ids
+  FindNamedOrDecoratedIds();
   // Process all entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {

@@ -119,6 +119,23 @@ class LocalSingleStoreElimPass : public Pass {
   // Add stores using |ptr_id| to |insts|
   void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
 
+  // Return true if |op| is supported decorate.
+  inline bool IsDecorate(uint32_t op) const {
+    return (op == SpvOpDecorate || op == SpvOpDecorateId);
+  }
+
+  // Return true if all uses of |id| are only name or decorate ops.
+  bool HasOnlyNamesAndDecorates(uint32_t id) const;
+
+  // Kill all name and decorate ops using |inst|
+  void KillNamesAndDecorates(ir::Instruction* inst);
+
+  // Kill all name and decorate ops using |id|
+  void KillNamesAndDecorates(uint32_t id);
+
+  // Collect all named or decorated ids in module
+  void FindNamedOrDecoratedIds();
+
   // Delete |inst| and iterate DCE on all its operands if they are now
   // useless. If a load is deleted and its variable has no other loads,
   // delete all its variable's stores.
@@ -214,12 +231,14 @@ class LocalSingleStoreElimPass : public Pass {
   // If block has no idom it points to itself.
   std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> idom_;
 
+  // named or decorated ids
+  std::unordered_set<uint32_t> named_or_decorated_ids_;
+
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 
   // Next unused ID
   uint32_t next_id_;
-
 };
 
 }  // namespace opt

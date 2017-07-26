@@ -17,7 +17,6 @@
 #include "aggressive_dead_code_elim_pass.h"
 
 #include "iterator.h"
-
 #include "spirv/1.0/GLSL.std.450.h"
 
 namespace spvtools {

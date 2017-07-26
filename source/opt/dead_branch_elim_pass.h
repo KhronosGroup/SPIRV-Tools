@@ -97,6 +97,20 @@ class DeadBranchElimPass : public Pass {
   // Return true if |labelId| has any non-phi references
   bool HasNonPhiRef(uint32_t labelId);
 
+  // Return true if |op| is supported decorate.
+  inline bool IsDecorate(uint32_t op) const {
+    return (op == SpvOpDecorate || op == SpvOpDecorateId);
+  }
+
+  // Kill all name and decorate ops using |inst|
+  void KillNamesAndDecorates(ir::Instruction* inst);
+
+  // Kill all name and decorate ops using |id|
+  void KillNamesAndDecorates(uint32_t id);
+
+  // Collect all named or decorated ids in module
+  void FindNamedOrDecoratedIds();
+
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
   // blocks. Assumes only structured control flow in shader. Note some such
@@ -130,6 +144,9 @@ class DeadBranchElimPass : public Pass {
   // ComputeStructuredSuccessors() for definition.
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
+  
+  // named or decorated ids
+  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

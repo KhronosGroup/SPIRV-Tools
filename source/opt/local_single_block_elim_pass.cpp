@@ -124,6 +124,7 @@ bool LocalSingleBlockLoadStoreElimPass::IsTargetVar(uint32_t varId) {
 void LocalSingleBlockLoadStoreElimPass::ReplaceAndDeleteLoad(
     ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
+  KillNamesAndDecorates(loadId);
   (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
   // TODO(greg-lunarg): Consider moving DCE into separate pass
   DCEInst(loadInst);
@@ -183,6 +184,47 @@ void LocalSingleBlockLoadStoreElimPass::AddStores(
   }
 }
 
+bool LocalSingleBlockLoadStoreElimPass::HasOnlyNamesAndDecorates(
+    uint32_t id) const {
+  analysis::UseList* uses = def_use_mgr_->GetUses(id);
+  if (uses == nullptr)
+    return true;
+  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
+    return false;
+  for (auto u : *uses) {
+    const SpvOp op = u.inst->opcode();
+    if (op != SpvOpName && !IsDecorate(op))
+      return false;
+  }
+  return true;
+}
+
+void LocalSingleBlockLoadStoreElimPass::KillNamesAndDecorates(uint32_t id) {
+  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
+  // kill if no other operands.
+  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
+    return;
+  analysis::UseList* uses = def_use_mgr_->GetUses(id);
+  if (uses == nullptr)
+    return;
+  std::list<ir::Instruction*> killList;
+  for (auto u : *uses) {
+    const SpvOp op = u.inst->opcode();
+    if (op == SpvOpName || IsDecorate(op))
+      killList.push_back(u.inst);
+  }
+  for (auto kip : killList)
+    def_use_mgr_->KillInst(kip);
+}
+
+void LocalSingleBlockLoadStoreElimPass::KillNamesAndDecorates(
+    ir::Instruction* inst) {
+  const uint32_t rId = inst->result_id();
+  if (rId == 0)
+    return;
+  KillNamesAndDecorates(rId);
+}
+
 void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
@@ -202,12 +244,12 @@ void LocalSingleBlockLoadStoreElimPass::DCEInst(ir::Instruction* inst) {
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad)
       (void) GetPtr(di, &varId);
+    KillNamesAndDecorates(di);
     def_use_mgr_->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
     for (auto id : ids) {
-      analysis::UseList* uses = def_use_mgr_->GetUses(id);
-      if (uses == nullptr)
+      if (HasOnlyNamesAndDecorates(id))
         deadInsts.push(def_use_mgr_->GetDef(id));
     }
     // if a load was deleted and it was the variable's
@@ -353,6 +395,15 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
   InitExtensions();
 };
 
+void LocalSingleBlockLoadStoreElimPass::FindNamedOrDecoratedIds() {
+  for (auto& di : module_->debugs())
+    if (di.opcode() == SpvOpName)
+      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
+      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
+}
+  
 bool LocalSingleBlockLoadStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
@@ -368,10 +419,18 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
+  // Do not process if module contains OpGroupDecorate. Additional
+  // support required in KillNamesAndDecorates().
+  // TODO(greg-lunarg): Add support for OpGroupDecorate
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
   // If any extensions in the module are not explicitly supported,
   // return unmodified. 
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
+  // Collect all named and decorated ids
+  FindNamedOrDecoratedIds();
   // Process all entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
