@@ -103,6 +103,10 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // labels. 
   void DCEInst(ir::Instruction* inst);
 
+  // Return true if all uses of |varId| are only through supported reference
+  // operations ie. loads and store. Also cache in supported_ref_ptrs_;
+  bool HasOnlySupportedRefs(uint32_t varId);
+
   // On all entry point functions, within each basic block, eliminate
   // loads and stores to function variables where possible. For
   // loads, if previous load or store to same variable, replace
@@ -120,6 +124,12 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   inline uint32_t TakeNextId() {
     return next_id_++;
   }
+
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are supported by this pass.
+  bool AllExtensionsSupported() const;
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
@@ -162,6 +172,13 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
 
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
+
+  // Variables that are only referenced by supported operations for this
+  // pass ie. loads and stores.
+  std::unordered_set<uint32_t> supported_ref_ptrs_;
 
   // Next unused ID
   uint32_t next_id_;

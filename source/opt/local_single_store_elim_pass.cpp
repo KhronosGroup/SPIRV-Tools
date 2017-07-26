@@ -20,19 +20,24 @@
 #include "iterator.h"
 #include "spirv/1.0/GLSL.std.450.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvStorePtrId = 0;
-static const int kSpvStoreValId = 1;
-static const int kSpvLoadPtrId = 0;
-static const int kSpvAccessChainPtrId = 0;
-static const int kSpvTypePointerStorageClass = 0;
-static const int kSpvTypePointerTypeId = 1;
-
 // Universal Limit of ResultID + 1
 static const int kInvalidId = 0x400000;
 
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kStorePtrIdInIdx = 0;
+const uint32_t kStoreValIdInIdx = 1;
+const uint32_t kLoadPtrIdInIdx = 0;
+const uint32_t kAccessChainPtrIdInIdx = 0;
+const uint32_t kTypePointerStorageClassInIdx = 0;
+const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kCopyObjectOperandInIdx = 0;
+
+} // anonymous namespace
 
 bool LocalSingleStoreElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
@@ -72,12 +77,24 @@ bool LocalSingleStoreElimPass::IsTargetType(
 
 ir::Instruction* LocalSingleStoreElimPass::GetPtr(
       ir::Instruction* ip, uint32_t* varId) {
+  const SpvOp op = ip->opcode();
+  assert(op == SpvOpStore || op == SpvOpLoad);
   *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
+      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*varId);
+  }
   ir::Instruction* varInst = ptrInst;
-  while (IsNonPtrAccessChain(varInst->opcode())) {
-    *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
+  while (varInst->opcode() != SpvOpVariable) {
+    if (IsNonPtrAccessChain(varInst->opcode())) {
+      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
+    }
+    else {
+      assert(varInst->opcode() == SpvOpCopyObject);
+      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    }
     varInst = def_use_mgr_->GetDef(*varId);
   }
   return ptrInst;
@@ -92,13 +109,13 @@ bool LocalSingleStoreElimPass::IsTargetVar(uint32_t varId) {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
     SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
+    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
   ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
@@ -115,11 +132,9 @@ bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op)) {
-      if (!HasOnlySupportedRefs(u.inst->result_id()))
-        return false;
-    }
-    else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
+    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
+      if (!HasOnlySupportedRefs(u.inst->result_id())) return false;
+    } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
       return false;
   }
   supported_ref_ptrs_.insert(ptrId);
@@ -145,7 +160,7 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
           non_ssa_vars_.insert(varId);
           continue;
         }
-        if (IsNonPtrAccessChain(ptrInst->opcode())) {
+        if (ptrInst->opcode() != SpvOpVariable) {
           non_ssa_vars_.insert(varId);
           ssa_var2store_.erase(varId);
           continue;
@@ -274,8 +289,6 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       uint32_t varId;
       ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
       // Skip access chain loads
-      if (IsNonPtrAccessChain(ptrInst->opcode()))
-        continue;
       if (ptrInst->opcode() != SpvOpVariable)
         continue;
       const auto vsi = ssa_var2store_.find(varId);
@@ -287,7 +300,7 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       if (!Dominates(store2blk_[vsi->second], store2idx_[vsi->second], &*bi, instIdx))
         continue;
       // Use store value as replacement id
-      uint32_t replId = vsi->second->GetSingleWordInOperand(kSpvStoreValId);
+      uint32_t replId = vsi->second->GetSingleWordInOperand(kStoreValIdInIdx);
       // replace all instances of the load's id with the SSA value's id
       ReplaceAndDeleteLoad(&*ii, replId);
       modified = true;
@@ -320,7 +333,7 @@ bool LocalSingleStoreElimPass::IsLiveVar(uint32_t varId) const {
   assert(varInst->opcode() == SpvOpVariable);
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
+  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction)
     return true;
   // test if variable is loaded from
@@ -476,6 +489,9 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
 
   // Initialize next unused Id
   next_id_ = module_->id_bound();
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
 
 void LocalSingleStoreElimPass::FindNamedOrDecoratedIds() {
@@ -485,6 +501,17 @@ void LocalSingleStoreElimPass::FindNamedOrDecoratedIds() {
   for (auto& ai : module_->annotations())
     if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
       named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
+}
+  
+bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
+  for (auto& ei : module_->extensions()) {
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
+  }
+  return true;
 }
 
 Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
@@ -497,13 +524,16 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   for (auto& ai : module_->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
+  // Do not process if any disallowed extensions are enabled
+  if (!AllExtensionsSupported())
+    return Status::SuccessWithoutChange;
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
-  // Process entry point functions
+  // Process all entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = LocalSingleStoreElim(fn) || modified;
   }
   FinalizeNextId(module_);
@@ -523,6 +553,34 @@ Pass::Status LocalSingleStoreElimPass::Process(ir::Module* module) {
   return ProcessImpl();
 }
 
+void LocalSingleStoreElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
+}
+
 }  // namespace opt
 }  // namespace spvtools
-

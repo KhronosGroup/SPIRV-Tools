@@ -172,9 +172,10 @@ class LocalMultiStoreElimPass : public Pass {
   // which corresponds to that variable in the predecessor map.
   void PatchPhis(uint32_t header_id, uint32_t back_id);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
   // Return true if all extensions in this module are allowed by this pass.
-  // Currently, no extensions are supported.
-  // TODO(greg-lunarg): Add extensions to supported list.
   bool AllExtensionsSupported() const;
 
   // Collect all named or decorated ids in module
@@ -187,8 +188,7 @@ class LocalMultiStoreElimPass : public Pass {
   // the runtime and effectiveness of this function.
   bool EliminateMultiStoreLocal(ir::Function* func);
 
-  // Return true if all uses of varId are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_vars_;
+  // Return true if |op| is decorate.
   inline bool IsDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
@@ -253,6 +253,9 @@ class LocalMultiStoreElimPass : public Pass {
   // Extra block whose successors are all blocks with no predecessors
   // in function.
   ir::BasicBlock pseudo_entry_block_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 
   // Next unused ID
   uint32_t next_id_;

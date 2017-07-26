@@ -82,6 +82,10 @@ ir::Instruction* LocalMultiStoreElimPass::GetPtr(
   *varId = ip->GetSingleWordInOperand(
       op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*varId);
+  }
   ir::Instruction* varInst = ptrInst;
   while (varInst->opcode() != SpvOpVariable) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
@@ -720,18 +724,18 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
 
   // Start new ids with next availablein module
   next_id_ = module_->id_bound();
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
 
 bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
-  // Currently disallows all extensions. This is just super conservative
-  // to allow this to go public and many can likely be allowed with little
-  // to no additional coding. One exception is SPV_KHR_variable_pointers
-  // which will require some additional work around HasLoads, AddStores
-  // and generally DCEInst.
-  // TODO(greg-lunarg): Enable more extensions.
+  // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
-    (void) ei;
-    return false;
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
   }
   return true;
 }
@@ -762,7 +766,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
-      return Status::SuccessWithoutChange;
+    return Status::SuccessWithoutChange;
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
   // Process functions
@@ -785,6 +789,35 @@ LocalMultiStoreElimPass::LocalMultiStoreElimPass()
 Pass::Status LocalMultiStoreElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void LocalMultiStoreElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt

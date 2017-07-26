@@ -16,11 +16,12 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
-template <typename T> std::vector<T> concat(const std::vector<T> &a, const std::vector<T> &b) {
-    std::vector<T> ret = std::vector<T>();
-    std::copy(a.begin(), a.end(), back_inserter(ret));
-    std::copy(b.begin(), b.end(), back_inserter(ret));
-    return ret;
+template <typename T>
+std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b) {
+  std::vector<T> ret;
+  std::copy(a.begin(), a.end(), back_inserter(ret));
+  std::copy(b.begin(), b.end(), back_inserter(ret));
+  return ret;
 }
 
 namespace {
@@ -31,9 +32,9 @@ using LocalSingleBlockLoadStoreElimTest = PassTest<::testing::Test>;
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleStoreLoadElim) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -110,10 +111,10 @@ OpFunctionEnd
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, SimpleLoadLoadElim) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -210,16 +211,16 @@ OpFunctionEnd
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest,
-    NoStoreElimIfInterveningAccessChainLoad) {
+       NoStoreElimIfInterveningAccessChainLoad) {
   //
   // Note that even though the Load to %v is eliminated, the Store to %v
   // is not eliminated due to the following access chain reference.
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // flat in int Idx;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -326,10 +327,10 @@ OpFunctionEnd
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningAccessChainStore) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // flat in int Idx;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -379,14 +380,14 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      assembly, assembly, false, true);
 }
 
 TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfInterveningFunctionCall) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void foo() {
   // }
   //
@@ -435,16 +436,16 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      assembly, assembly, false, true);
 }
 
-TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfCopyObjectInFunction) {
+TEST_F(LocalSingleBlockLoadStoreElimTest, ElimIfCopyObjectInFunction) {
   // Note: SPIR-V hand edited to insert CopyObject
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //   vec4 v1 = BaseColor;
@@ -453,7 +454,7 @@ TEST_F(LocalSingleBlockLoadStoreElimTest, NoElimIfCopyObjectInFunction) {
   //   gl_FragData[1] = v2;
   // }
 
-  const std::string assembly =
+  const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -482,7 +483,10 @@ OpName %v2 "v2"
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %float_0_5 = OpConstant %float 0.5
 %int_1 = OpConstant %int 1
-%main = OpFunction %void None %8
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %8
 %22 = OpLabel
 %v1 = OpVariable %_ptr_Function_v4float Function
 %v2 = OpVariable %_ptr_Function_v4float Function
@@ -502,8 +506,24 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%22 = OpLabel
+%v1 = OpVariable %_ptr_Function_v4float Function
+%v2 = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+%25 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_0
+OpStore %25 %23
+%26 = OpLoad %v4float %BaseColor
+%27 = OpVectorTimesScalar %v4float %26 %float_0_5
+%30 = OpAccessChain %_ptr_Output_v4float %gl_FragData %int_1
+OpStore %30 %27
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
-        assembly, assembly, false, true);
+      predefs + before, predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

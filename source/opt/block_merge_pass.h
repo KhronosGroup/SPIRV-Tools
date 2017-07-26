@@ -53,6 +53,12 @@ class BlockMergePass : public Pass {
   // with no other predecessors. Merge these blocks into a single block.
   bool MergeBlocks(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are allowed by this pass.
+  bool AllExtensionsSupported() const;
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
@@ -64,6 +70,9 @@ class BlockMergePass : public Pass {
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt
