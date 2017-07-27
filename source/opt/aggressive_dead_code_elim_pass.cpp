@@ -25,44 +25,11 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kStorePtrIdInIdx = 0;
-const uint32_t kLoadPtrIdInIdx = 0;
-const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 
 }  // namespace anonymous
-
-bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
-
-ir::Instruction* AggressiveDCEPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  while (ptrInst->opcode() == SpvOpCopyObject) {
-    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(*varId);
-  }
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    }
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
 
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
@@ -279,8 +246,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-AggressiveDCEPass::AggressiveDCEPass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+AggressiveDCEPass::AggressiveDCEPass() {}
 
 Pass::Status AggressiveDCEPass::Process(ir::Module* module) {
   Initialize(module);

@@ -24,119 +24,13 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
-const uint32_t kLoadPtrIdInIdx = 0;
 const uint32_t kAccessChainPtrIdInIdx = 0;
-const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kConstantValueInIdx = 0;
 const uint32_t kTypeIntWidthInIdx = 0;
-const uint32_t kCopyObjectOperandInIdx = 0;
 
 } // anonymous namespace
-
-bool LocalAccessChainConvertPass::IsNonPtrAccessChain(
-    const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
-
-bool LocalAccessChainConvertPass::IsMathType(
-    const ir::Instruction* typeInst) const {
-  switch (typeInst->opcode()) {
-  case SpvOpTypeInt:
-  case SpvOpTypeFloat:
-  case SpvOpTypeBool:
-  case SpvOpTypeVector:
-  case SpvOpTypeMatrix:
-    return true;
-  default:
-    break;
-  }
-  return false;
-}
-
-bool LocalAccessChainConvertPass::IsTargetType(
-    const ir::Instruction* typeInst) const {
-  if (IsMathType(typeInst))
-    return true;
-  if (typeInst->opcode() == SpvOpTypeArray)
-    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
-  // All struct members must be math type
-  int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    if (!IsMathType(compTypeInst)) ++nonMathComp;
-  });
-  return nonMathComp == 0;
-}
-
-ir::Instruction* LocalAccessChainConvertPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  while (ptrInst->opcode() == SpvOpCopyObject) {
-    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(*varId);
-  }
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    }
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
-
-bool LocalAccessChainConvertPass::IsTargetVar(uint32_t varId) {
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
-    return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end())
-    return true;
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  if (varInst->opcode() != SpvOpVariable)
-    return false;;
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-    SpvStorageClassFunction) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
-  if (!IsTargetType(varPteTypeInst)) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  seen_target_vars_.insert(varId);
-  return true;
-}
-
-bool LocalAccessChainConvertPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return true;
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return false;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      return false;
-  }
-  return true;
-}
 
 void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
   const uint32_t resId = inst->result_id();
@@ -145,46 +39,6 @@ void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
     KillNamesAndDecorates(resId);
     def_use_mgr_->KillInst(inst);
   }
-}
-
-void LocalAccessChainConvertPass::ReplaceAndDeleteLoad(
-    ir::Instruction* loadInst,
-    uint32_t replId,
-    ir::Instruction* ptrInst) {
-  const uint32_t loadId = loadInst->result_id();
-  KillNamesAndDecorates(loadId);
-  (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
-  // remove load instruction
-  def_use_mgr_->KillInst(loadInst);
-  // if access chain, see if it can be removed as well
-  if (IsNonPtrAccessChain(ptrInst->opcode())) {
-    DeleteIfUseless(ptrInst);
-  }
-}
-
-void LocalAccessChainConvertPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
-  // kill if no other operands.
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return;
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op == SpvOpName || IsDecorate(op))
-      killList.push_back(u.inst);
-  }
-  for (auto kip : killList)
-    def_use_mgr_->KillInst(kip);
-}
-
-void LocalAccessChainConvertPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  const uint32_t rId = inst->result_id();
-  if (rId == 0)
-    return;
-  KillNamesAndDecorates(rId);
 }
 
 uint32_t LocalAccessChainConvertPass::GetPointeeTypeId(
@@ -355,7 +209,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
         uint32_t replId =
             GenAccessChainLoadReplacement(ptrInst, &newInsts);
-        ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
+        ReplaceAndDeleteLoad(&*ii, replId);
         ++ii;
         ii = ii.InsertBefore(&newInsts);
         ++ii;
@@ -409,15 +263,6 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
   InitExtensions();
 };
 
-void LocalAccessChainConvertPass::FindNamedOrDecoratedIds() {
-  for (auto& di : module_->debugs())
-    if (di.opcode() == SpvOpName)
-      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
-  for (auto& ai : module_->annotations())
-    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
-      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
-}
-  
 bool LocalAccessChainConvertPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
@@ -461,8 +306,7 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalAccessChainConvertPass::LocalAccessChainConvertPass()
-    : module_(nullptr), def_use_mgr_(nullptr), next_id_(0) {}
+LocalAccessChainConvertPass::LocalAccessChainConvertPass() : next_id_(0) {}
 
 Pass::Status LocalAccessChainConvertPass::Process(ir::Module* module) {
   Initialize(module);

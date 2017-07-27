@@ -28,13 +28,13 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class LocalSingleStoreElimPass : public Pass {
+class LocalSingleStoreElimPass : public MemPass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
@@ -43,28 +43,6 @@ class LocalSingleStoreElimPass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Returns true if |opcode| is a non-ptr access chain op
-  bool IsNonPtrAccessChain(const SpvOp opcode) const;
-
-  // Returns true if |typeInst| is a scalar type
-  // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst) const;
-
-  // Returns true if |typeInst| is a math type or a struct or array
-  // of a math type.
-  bool IsTargetType(const ir::Instruction* typeInst) const;
-
-  // Given a load or store |ip|, return the pointer instruction.
-  // Also return the base variable's id in |varId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
-
-  // Return true if |varId| is a previously identified target variable.
-  // Return false if |varId| is a previously identified non-target variable.
-  // If variable is not cached, return true if variable is a function scope 
-  // variable of target type, false otherwise. Updates caches of target 
-  // and non-target variables.
-  bool IsTargetVar(uint32_t varId);
-
   // Return true if all refs through |ptrId| are only loads or stores and
   // cache ptrId in supported_ref_ptrs_.
   bool HasOnlySupportedRefs(uint32_t ptrId);
@@ -76,10 +54,6 @@ class LocalSingleStoreElimPass : public Pass {
   // is not done in the presence of function calls. TODO(): Allow
   // analysis in the presence of function calls.
   void SingleStoreAnalyze(ir::Function* func);
-
-  // Replace all instances of |loadInst|'s id with |replId| and delete
-  // |loadInst|.
-  void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
   using GetBlocksFunction =
     std::function<const std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
@@ -104,42 +78,6 @@ class LocalSingleStoreElimPass : public Pass {
   // Assumes that SingleStoreAnalyze() has just been run. Return true
   // if any instructions are modified.
   bool SingleStoreProcess(ir::Function* func);
-
-  // Return true if any instruction loads from |varId|
-  bool HasLoads(uint32_t varId) const;
-
-  // Return true if |varId| is not a function variable or if it has
-  // a load
-  bool IsLiveVar(uint32_t varId) const;
-
-  // Return true if |storeInst| is not a function variable or if its
-  // base variable has a load
-  bool IsLiveStore(ir::Instruction* storeInst);
-
-  // Add stores using |ptr_id| to |insts|
-  void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
-
-  // Return true if |op| is supported decorate.
-  inline bool IsDecorate(uint32_t op) const {
-    return (op == SpvOpDecorate || op == SpvOpDecorateId);
-  }
-
-  // Return true if all uses of |id| are only name or decorate ops.
-  bool HasOnlyNamesAndDecorates(uint32_t id) const;
-
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
-
-  // Delete |inst| and iterate DCE on all its operands if they are now
-  // useless. If a load is deleted and its variable has no other loads,
-  // delete all its variable's stores.
-  void DCEInst(ir::Instruction* inst);
 
   // Remove all stores to useless SSA variables. Remove useless
   // access chains and variables as well. Assumes SingleStoreAnalyze
@@ -171,12 +109,6 @@ class LocalSingleStoreElimPass : public Pass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
@@ -194,12 +126,6 @@ class LocalSingleStoreElimPass : public Pass {
 
   // Set of non-SSA Variables
   std::unordered_set<uint32_t> non_ssa_vars_;
-
-  // Cache of previously seen target types
-  std::unordered_set<uint32_t> seen_target_vars_;
-
-  // Cache of previously seen non-target types
-  std::unordered_set<uint32_t> seen_non_target_vars_;
 
   // Variables with only supported references, ie. loads and stores using
   // variable directly or through non-ptr access chains.
@@ -230,9 +156,6 @@ class LocalSingleStoreElimPass : public Pass {
   // Immediate Dominator Map
   // If block has no idom it points to itself.
   std::unordered_map<ir::BasicBlock*, ir::BasicBlock*> idom_;
-
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
