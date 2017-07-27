@@ -28,13 +28,13 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class DeadBranchElimPass : public Pass {
+class DeadBranchElimPass : public MemPass {
 
   using cbb_ptr = const ir::BasicBlock*;
 
@@ -97,20 +97,6 @@ class DeadBranchElimPass : public Pass {
   // Return true if |labelId| has any non-phi references
   bool HasNonPhiRef(uint32_t labelId);
 
-  // Return true if |op| is supported decorate.
-  inline bool IsDecorate(uint32_t op) const {
-    return (op == SpvOpDecorate || op == SpvOpDecorateId);
-  }
-
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
-
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
   // blocks. Assumes only structured control flow in shader. Note some such
@@ -128,12 +114,6 @@ class DeadBranchElimPass : public Pass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
@@ -145,9 +125,6 @@ class DeadBranchElimPass : public Pass {
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
   
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
-
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 };
