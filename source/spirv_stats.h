@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_SPIRV_STATS_H_
 #define LIBSPIRV_SPIRV_STATS_H_
 
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -39,6 +40,10 @@ struct SpirvStats {
   // Opcode histogram, SpvOpXXX -> count.
   std::unordered_map<uint32_t, uint32_t> opcode_hist;
 
+  // Histogram of words combining opcode and number of operands,
+  // opcode | (num_operands << 16) -> count.
+  std::unordered_map<uint32_t, uint32_t> opcode_and_num_operands_hist;
+
   // OpConstant u16 histogram, value -> count.
   std::unordered_map<uint16_t, uint32_t> u16_constant_hist;
 
@@ -62,6 +67,29 @@ struct SpirvStats {
 
   // OpConstant f64 histogram, value -> count.
   std::unordered_map<double, uint32_t> f64_constant_hist;
+
+  // Enum histogram, operand type -> operand value -> count.
+  std::unordered_map<uint32_t,
+      std::unordered_map<uint32_t, uint32_t>> enum_hist;
+
+  // Histogram of all non-id single words.
+  // pair<opcode, operand index> -> value -> count.
+  // This is a generalization of enum_hist, also includes literal integers and
+  // masks.
+  std::map<std::pair<uint32_t, uint32_t>,
+      std::map<uint32_t, uint32_t>> non_id_words_hist;
+
+  // Histogram of literal strings, sharded by opcodes, opcode -> string -> count.
+  // This is suboptimal if an opcode has multiple literal string operands,
+  // as it wouldn't differentiate between operands.
+  std::unordered_map<uint32_t, std::unordered_map<std::string, uint32_t>>
+      literal_strings_hist;
+
+  // Markov chain histograms:
+  // opcode -> next(opcode | (num_operands << 16)) -> count.
+  // See also opcode_and_num_operands_hist, which collects global statistics.
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
+      opcode_and_num_operands_markov_hist;
 
   // Used to collect statistics on opcodes triggering other opcodes.
   // Container scheme: gap between instructions -> cue opcode -> later opcode
