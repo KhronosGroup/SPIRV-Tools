@@ -61,18 +61,51 @@ Options:
                e.g.: --set-spec-const-default-value "1:100 2:400"
   --unify-const
                Remove the duplicated constants.
-  --inline-entry-points-exhaustive
-               Exhaustively inline all function calls in entry point functions.
-               Currently does not inline calls to functions with multiple
-               returns.
   --flatten-decorations
                Replace decoration groups with repeated OpDecorate and
                OpMemberDecorate instructions.
   --compact-ids
                Remap result ids to a compact range starting from %%1 and without
                any gaps.
-  -h, --help   Print this help.
-  --version    Display optimizer version information.
+  --inline-entry-points-exhaustive
+               Exhaustively inline all function calls in entry point functions.
+               Currently does not inline calls to functions with early return
+               in a loop.
+  --convert-local-access-chains
+               Convert constant index access chain loads/stores into
+               equivalent load/stores with inserts and extracts. Performed
+               on function scope variables referenced only with load, store,
+               and constant index access chains.
+  --eliminate-local-single-block
+               Perform single-block store/load and load/load elimination.
+               Performed only on function scope variables in entry point
+               functions.
+  --eliminate-local-single-store
+               Replace stores and loads of function scope variables that are
+               only stored once. Performed on variables referenceed only with
+               loads and stores. Performed only on entry point functions.
+  --eliminate-local-multi-store
+               Replace stores and loads of function scope variables that are
+               stored multiple times. Performed on variables referenceed only
+               with loads and stores. Performed only on entry point functions.
+  --eliminate-insert-extract
+               Replace extract from a sequence of inserts with the
+               corresponding value. Performed only on entry point functions.
+  --eliminate-dead-code-aggressive
+               Delete instructions which do not contribute to a function's
+               output. Performed only on entry point functions.
+  --eliminate-dead-branches
+               Convert conditional branches with constant condition to the
+               indicated unconditional brranch. Delete all resulting dead
+               code. Performed only on entry point functions.
+  --merge-blocks
+               Join two blocks into a single block if the second has the
+               first as its only predecessor. Performed only on entry point
+               functions.
+  -h, --help   
+               Print this help.
+  --version    
+               Display optimizer version information.
 )",
       program, program);
 }
