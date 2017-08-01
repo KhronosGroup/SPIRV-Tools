@@ -27,6 +27,7 @@ add_library(SPIRV-Tools-opt
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   inline_pass.h
+  inline_exhaustive_pass.h
   insert_extract_elim.h
   instruction.h
   ir_loader.h
@@ -62,6 +63,7 @@ add_library(SPIRV-Tools-opt
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   inline_pass.cpp
+  inline_exhaustive_pass.cpp
   insert_extract_elim.cpp
   instruction.cpp
   ir_loader.cpp

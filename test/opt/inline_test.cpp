@@ -133,7 +133,7 @@ TEST_F(InlineTest, Simple) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -283,7 +283,7 @@ TEST_F(InlineTest, Nested) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -412,7 +412,7 @@ TEST_F(InlineTest, InOutParameter) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -548,7 +548,7 @@ TEST_F(InlineTest, BranchInCallee) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -743,7 +743,7 @@ TEST_F(InlineTest, PhiAfterCall) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -940,7 +940,7 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1146,7 +1146,7 @@ TEST_F(InlineTest, OpImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1352,7 +1352,7 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
                "OpFunctionEnd",
       // clang-format on
   };
-  SinglePassRunAndCheck<opt::InlinePass>(
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
       JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
       JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
@@ -1480,7 +1480,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlinePass>(predefs + before + nonEntryFuncs, 
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      predefs + before + nonEntryFuncs, 
       predefs + after + nonEntryFuncs, false, true);
 }
 TEST_F(InlineTest, EarlyReturnInLoopIsNotInlined) {
@@ -1575,7 +1576,8 @@ OpReturnValue %41
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlinePass>(assembly, assembly, false, true);
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      assembly, assembly, false, true);
 }
 
 TEST_F(InlineTest, ExternalFunctionIsNotInlined) {
@@ -1599,7 +1601,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlinePass>(assembly, assembly, false, true);
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      assembly, assembly, false, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

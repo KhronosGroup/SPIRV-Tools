@@ -137,8 +137,9 @@ Optimizer::PassToken CreateBlockMergePass() {
       MakeUnique<opt::BlockMergePass>());
 }
 
-Optimizer::PassToken CreateInlinePass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::InlinePass>());
+Optimizer::PassToken CreateInlineExhaustivePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::InlineExhaustivePass>());
 }
   
 Optimizer::PassToken CreateLocalAccessChainConvertPass() {
