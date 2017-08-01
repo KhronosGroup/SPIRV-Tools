@@ -208,7 +208,7 @@ Optimizer::PassToken CreateBlockMergePass();
 // passes. As the inlining is exhaustive, there is no attempt to optimize for
 // size or runtime performance. Functions that are not designated as entry
 // points are not changed.
-Optimizer::PassToken CreateInlinePass();
+Optimizer::PassToken CreateInlineExhaustivePass();
   
 // Creates a single-block local variable load/store elimination pass.
 // For every entry point function, do single block memory optimization of 

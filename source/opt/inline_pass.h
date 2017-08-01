@@ -40,11 +40,9 @@ class InlinePass : public Pass {
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   InlinePass();
-  Status Process(ir::Module*) override;
+  virtual ~InlinePass() = default;
 
-  const char* name() const override { return "inline"; }
-
- private:
+ protected:
   // Return the next available Id and increment it.
   inline uint32_t TakeNextId() { return next_id_++; }
 
@@ -170,14 +168,16 @@ class InlinePass : public Pass {
   // Return true if |func| is a function that can be inlined.
   bool IsInlinableFunction(ir::Function* func);
 
-  // Exhaustively inline all function calls in func as well as in
-  // all code that is inlined into func. Return true if func is modified.
-  bool Inline(ir::Function* func);
+  // Update phis in succeeding blocks to point to new last block
+  void UpdateSucceedingPhis(
+      std::vector<std::unique_ptr<ir::BasicBlock>>& new_blocks);
 
-  void Initialize(ir::Module* module);
-  Pass::Status ProcessImpl();
+  void InitializeInline(ir::Module* module);
 
+  // Module being processed by this pass
   ir::Module* module_;
+
+  // Def/Use database
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Map from function's result id to function.
