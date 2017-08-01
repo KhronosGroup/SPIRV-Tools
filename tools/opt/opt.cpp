@@ -71,6 +71,12 @@ Options:
   --compact-ids
                Remap result ids to a compact range starting from %%1 and without
                any gaps.
+  --eliminate-common-uniform
+               Perform load/load elimination for duplicate uniform values.
+               Converts any constant index access chain uniform loads into
+               its equivalent load and extract. Some loads will be moved
+               to facilitate sharing. Performed only on entry point
+               functions.
   -h, --help   Print this help.
   --version    Display optimizer version information.
 )",
