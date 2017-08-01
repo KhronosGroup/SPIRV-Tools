@@ -17,12 +17,12 @@
 #ifndef LIBSPIRV_OPT_COMMON_UNIFORM_ELIM_PASS_H_
 #define LIBSPIRV_OPT_COMMON_UNIFORM_ELIM_PASS_H_
 
+#include <algorithm>
+#include <map>
+#include <queue>
 #include <unordered_map>
 #include <unordered_set>
-#include <map>
-#include <algorithm>
 #include <utility>
-#include <queue>
 
 #include "def_use_manager.h"
 #include "module.h"
@@ -136,9 +136,7 @@ class CommonUniformElimPass : public Pass {
   // CommonUniformLoadElimination().
   bool CommonExtractElimination(ir::Function* func);
 
-  // Initialize the label2SSA map entry for a block. Insert phi instructions
-  // into block when necessary. All predecessor blocks must have been
-  // For function |func|, first change all constant index
+  // For function |func|, first change all uniform constant index
   // access chain loads into equivalent composite extracts. Then consolidate 
   // identical uniform loads into one uniform load. Finally, consolidate
   // identical uniform extracts into one uniform extract. This may require
