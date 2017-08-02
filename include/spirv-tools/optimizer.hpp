@@ -351,6 +351,8 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // This pass requires a module to have structured control flow ie shader
 // capability. It also requires logical addressing ie Addresses capability
 // is not enabled. It also currently does not support any extensions.
+//
+// This pass currently only optimizes loads with a single index.
 Optimizer::PassToken CreateCommonUniformElimPass();
 
 // Create aggressive dead code elimination pass

@@ -459,6 +459,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       if (ii->opcode() != SpvOpCompositeExtract)
         continue;
+      // TODO(greg-lunarg): Support multiple indices
       if (ii->NumInOperands() > 2)
         continue;
       if (HasUnsupportedDecorates(ii->result_id()))

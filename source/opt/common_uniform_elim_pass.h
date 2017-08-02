@@ -146,6 +146,8 @@ class CommonUniformElimPass : public Pass {
   // This pass requires the function to have structured control flow ie shader
   // capability. It also requires logical addressing ie Addresses capability
   // is not enabled. It also currently does not support any extensions.
+  //
+  // This function currently only optimizes loads with a single index.
   bool EliminateCommonUniform(ir::Function* func);
 
   // Initialize extensions whitelist
