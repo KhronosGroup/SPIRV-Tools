@@ -28,80 +28,19 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class LocalSingleBlockLoadStoreElimPass : public Pass {
+class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
   LocalSingleBlockLoadStoreElimPass();
   const char* name() const override { return "eliminate-local-single-block"; }
   Status Process(ir::Module*) override;
 
  private:
-  // Returns true if |opcode| is a non-ptr access chain op
-  bool IsNonPtrAccessChain(const SpvOp opcode) const;
-
-  // Returns true if |typeInst| is a scalar type
-  // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst) const;
-
-  // Returns true if |typeInst| is a math type or a struct or array
-  // of a math type.
-  bool IsTargetType(const ir::Instruction* typeInst) const;
-
-  // Given a load or store |ip|, return the pointer instruction.
-  // Also return the base variable's id in |varId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
-
-  // Return true if |varId| is a previously identified target variable.
-  // Return false if |varId| is a previously identified non-target variable.
-  // If variable is not cached, return true if variable is a function scope 
-  // variable of target type, false otherwise. Updates caches of target 
-  // and non-target variables.
-  bool IsTargetVar(uint32_t varId);
-
-  // Replace all instances of |loadInst|'s id with |replId| and delete
-  // |loadInst|.
-  void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
-
-  // Return true if any instruction loads from |ptrId|
-  bool HasLoads(uint32_t ptrId) const;
-
-  // Return true if |varId| is not a function variable or if it has
-  // a load
-  bool IsLiveVar(uint32_t varId) const;
-
-  // Return true if |storeInst| is not to function variable or if its
-  // base variable has a load
-  bool IsLiveStore(ir::Instruction* storeInst);
-
-  // Add stores using |ptr_id| to |insts|
-  void AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts);
-
-  // Return true if |op| is supported decorate.
-  inline bool IsDecorate(uint32_t op) const {
-    return (op == SpvOpDecorate || op == SpvOpDecorateId);
-  }
-
-  // Return true if all uses of |id| are only name or decorate ops.
-  bool HasOnlyNamesAndDecorates(uint32_t id) const;
-
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
-
-  // Delete |inst| and iterate DCE on all its operands. Won't delete
-  // labels. 
-  void DCEInst(ir::Instruction* inst);
-
   // Return true if all uses of |varId| are only through supported reference
   // operations ie. loads and store. Also cache in supported_ref_ptrs_;
   bool HasOnlySupportedRefs(uint32_t varId);
@@ -133,20 +72,8 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
-
-  // Cache of previously seen target types
-  std::unordered_set<uint32_t> seen_target_vars_;
-
-  // Cache of previously seen non-target types
-  std::unordered_set<uint32_t> seen_non_target_vars_;
 
   // Map from function scope variable to a store of that variable in the
   // current block whose value is currently valid. This map is cleared
@@ -168,9 +95,6 @@ class LocalSingleBlockLoadStoreElimPass : public Pass {
   // for example, a load through an access chain. A variable is removed
   // from this set each time a new store of that variable is encountered.
   std::unordered_set<uint32_t> pinned_vars_;
-
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

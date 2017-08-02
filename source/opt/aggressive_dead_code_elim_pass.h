@@ -27,13 +27,13 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class AggressiveDCEPass : public Pass {
+class AggressiveDCEPass : public MemPass {
 
   using cbb_ptr = const ir::BasicBlock*;
 
@@ -46,13 +46,6 @@ class AggressiveDCEPass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Returns true if |opcode| is a non-ptr access chain op
-  bool IsNonPtrAccessChain(const SpvOp opcode) const;
-
-  // Given a load or store |ip|, return the pointer instruction.
-  // Also return the base variable's id in |varId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
-
   // Add all store instruction which use |ptrId|, directly or indirectly,
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
@@ -95,12 +88,6 @@ class AggressiveDCEPass : public Pass {
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;

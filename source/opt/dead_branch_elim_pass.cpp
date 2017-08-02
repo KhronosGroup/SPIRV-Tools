@@ -147,31 +147,6 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
   bp->AddInstruction(std::move(newBranchCond));
 }
 
-void DeadBranchElimPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
-  // kill if no other operands.
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return;
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op == SpvOpName || IsDecorate(op))
-      killList.push_back(u.inst);
-  }
-  for (auto kip : killList)
-    def_use_mgr_->KillInst(kip);
-}
-
-void DeadBranchElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  const uint32_t rId = inst->result_id();
-  if (rId == 0)
-    return;
-  KillNamesAndDecorates(rId);
-}
-
 void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
     KillNamesAndDecorates(ip);
@@ -331,15 +306,6 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
   InitExtensions();
 };
 
-void DeadBranchElimPass::FindNamedOrDecoratedIds() {
-  for (auto& di : module_->debugs())
-    if (di.opcode() == SpvOpName)
-      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
-  for (auto& ai : module_->annotations())
-    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
-      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
-}
-
 bool DeadBranchElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
@@ -377,8 +343,7 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-DeadBranchElimPass::DeadBranchElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+DeadBranchElimPass::DeadBranchElimPass() {}
 
 Pass::Status DeadBranchElimPass::Process(ir::Module* module) {
   Initialize(module);

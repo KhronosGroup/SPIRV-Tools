@@ -25,225 +25,13 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
-const uint32_t kLoadPtrIdInIdx = 0;
-const uint32_t kAccessChainPtrIdInIdx = 0;
-const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
-const uint32_t kCopyObjectOperandInIdx = 0;
 
 } // anonymous namespace
-
-bool LocalMultiStoreElimPass::IsNonPtrAccessChain(
-    const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
-
-bool LocalMultiStoreElimPass::IsMathType(
-    const ir::Instruction* typeInst) const {
-  switch (typeInst->opcode()) {
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypeBool:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-      return true;
-    default:
-      break;
-  }
-  return false;
-}
-
-bool LocalMultiStoreElimPass::IsTargetType(
-    const ir::Instruction* typeInst) const {
-  if (IsMathType(typeInst))
-    return true;
-  if (typeInst->opcode() == SpvOpTypeArray)
-    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
-  // All struct members must be math type
-  int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    const ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    if (!IsMathType(compTypeInst)) ++nonMathComp;
-  });
-  return nonMathComp == 0;
-}
-
-ir::Instruction* LocalMultiStoreElimPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  while (ptrInst->opcode() == SpvOpCopyObject) {
-    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(*varId);
-  }
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    }
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
-
-bool LocalMultiStoreElimPass::IsTargetVar(uint32_t varId) {
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
-    return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end())
-    return true;
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-      SpvStorageClassFunction) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  const uint32_t varPteTypeId =
-      varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
-  if (!IsTargetType(varPteTypeInst)) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  seen_target_vars_.insert(varId);
-  return true;
-}
-
-bool LocalMultiStoreElimPass::HasLoads(uint32_t ptrId) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
-  if (uses == nullptr)
-    return false;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-      if (HasLoads(u.inst->result_id()))
-        return true;
-    }
-    else {
-      // Conservatively assume that any non-store use is a load
-      // TODO(greg-lunarg): Improve analysis around function calls, etc
-      if (op != SpvOpStore && op != SpvOpName && !IsDecorate(op))
-        return true;
-    }
-  }
-  return false;
-}
-
-bool LocalMultiStoreElimPass::IsLiveVar(uint32_t varId) const {
-  // non-function scope vars are live
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-      SpvStorageClassFunction)
-    return true;
-  // test if variable is loaded from
-  return HasLoads(varId);
-}
-
-void LocalMultiStoreElimPass::AddStores(
-    uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
-  if (uses != nullptr) {
-    for (auto u : *uses) {
-      if (IsNonPtrAccessChain(u.inst->opcode()))
-        AddStores(u.inst->result_id(), insts);
-      else if (u.inst->opcode() == SpvOpStore)
-        insts->push(u.inst);
-    }
-  }
-}
-
-bool LocalMultiStoreElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return true;
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return false;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      return false;
-  }
-  return true;
-}
-
-void LocalMultiStoreElimPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
-  // kill if no other operands.
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return;
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      continue;
-    killList.push_back(u.inst);
-  }
-  for (auto kip : killList)
-    def_use_mgr_->KillInst(kip);
-}
-
-void LocalMultiStoreElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  const uint32_t rId = inst->result_id();
-  if (rId == 0)
-    return;
-  KillNamesAndDecorates(rId);
-}
-
-void LocalMultiStoreElimPass::DCEInst(ir::Instruction* inst) {
-  std::queue<ir::Instruction*> deadInsts;
-  deadInsts.push(inst);
-  while (!deadInsts.empty()) {
-    ir::Instruction* di = deadInsts.front();
-    // Don't delete labels
-    if (di->opcode() == SpvOpLabel) {
-      deadInsts.pop();
-      continue;
-    }
-    // Remember operands
-    std::vector<uint32_t> ids;
-    di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push_back(*iid);
-    });
-    uint32_t varId = 0;
-    // Remember variable if dead load
-    if (di->opcode() == SpvOpLoad)
-      (void) GetPtr(di, &varId);
-    KillNamesAndDecorates(di);
-    def_use_mgr_->KillInst(di);
-    // For all operands with no remaining uses, add their instruction
-    // to the dead instruction queue.
-    for (auto id : ids)
-      if (HasOnlyNamesAndDecorates(id))
-        deadInsts.push(def_use_mgr_->GetDef(id));
-    // if a load was deleted and it was the variable's
-    // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId)) 
-      AddStores(varId, &deadInsts);
-    deadInsts.pop();
-  }
-}
 
 bool LocalMultiStoreElimPass::HasOnlySupportedRefs(uint32_t varId) {
   if (supported_ref_vars_.find(varId) != supported_ref_vars_.end())
@@ -740,15 +528,6 @@ bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
   return true;
 }
 
-void LocalMultiStoreElimPass::FindNamedOrDecoratedIds() {
-  for (auto& di : module_->debugs())
-    if (di.opcode() == SpvOpName)
-      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
-  for (auto& ai : module_->annotations())
-    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
-      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
-}
-
 Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Assumes all control flow structured.
   // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
@@ -781,8 +560,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
 }
 
 LocalMultiStoreElimPass::LocalMultiStoreElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr),
-      pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
+    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       next_id_(0) {}
 

@@ -28,75 +28,26 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class LocalAccessChainConvertPass : public Pass {
+class LocalAccessChainConvertPass : public MemPass {
  public:
   LocalAccessChainConvertPass();
   const char* name() const override { return "convert-local-access-chains"; }
   Status Process(ir::Module*) override;
 
  private:
-  // Returns true if |opcode| is a non-pointer access chain op
-  // TODO(): Support conversion of pointer access chains.
-  bool IsNonPtrAccessChain(const SpvOp opcode) const;
-
-  // Returns true if |typeInst| is a scalar type
-  // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst) const;
-
-  // Returns true if |typeInst| is a math type or a struct or array
-  // of a math type.
-  // TODO(): Add more complex types to convert
-  bool IsTargetType(const ir::Instruction* typeInst) const;
-
-  // Given a load or store |ip|, return the pointer instruction.
-  // If the pointer is an access chain, |*varId| is its base id.
-  // Otherwise it is the id of the pointer of the load/store.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
-
   // Search |func| and cache function scope variables of target type that are
   // not accessed with non-constant-index access chains. Also cache non-target
   // variables.
   void FindTargetVars(ir::Function* func);
 
-  // Return true if |varId| is a previously identified target variable.
-  // Return false if |varId| is a previously identified non-target variable.
-  // See FindTargetVars() for definition of target variable. If variable is
-  // not cached, return true if variable is a function scope variable of
-  // target type, false otherwise. Updates caches of target and non-target
-  // variables.
-  bool IsTargetVar(uint32_t varId);
-
-  // Return true if |op| is supported decorate.
-  inline bool IsDecorate(uint32_t op) const {
-    return (op == SpvOpDecorate || op == SpvOpDecorateId);
-  }
-
-  // Return true if all uses of |id| are only name or decorate ops.
-  bool HasOnlyNamesAndDecorates(uint32_t id) const;
-
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
-
   // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.
   void DeleteIfUseless(ir::Instruction* inst);
-
-  // Replace all instances of |loadInst|'s id with |replId| and delete
-  // |loadInst| and its pointer |ptrInst| if it is a useless access chain.
-  void ReplaceAndDeleteLoad(ir::Instruction* loadInst,
-    uint32_t replId,
-    ir::Instruction* ptrInst);
 
   // Return type id for |ptrInst|'s pointee
   uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
@@ -164,23 +115,8 @@ class LocalAccessChainConvertPass : public Pass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
-
-  // Cache of verified target vars
-  std::unordered_set<uint32_t> seen_target_vars_;
-
-  // Cache of verified non-target vars
-  std::unordered_set<uint32_t> seen_non_target_vars_;
-
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
