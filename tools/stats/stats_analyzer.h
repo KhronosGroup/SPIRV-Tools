@@ -60,6 +60,11 @@ class StatsAnalyzer {
   // specific operand slot (opcode and operand number).
   void WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out);
 
+  // Writes C++ code containing a function returning a map of Huffman codecs
+  // for common id descriptors. Each Huffman codec is created for a
+  // specific operand slot (opcode and operand number).
+  void WriteCodegenIdDescriptorHuffmanCodecs(std::ostream& out);
+
  private:
   const libspirv::SpirvStats& stats_;
 
