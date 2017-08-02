@@ -560,6 +560,12 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
       return Status::SuccessWithoutChange;
+  // Do not process if module contains OpGroupDecorate. Additional
+  // support required in KillNamesAndDecorates().
+  // TODO(greg-lunarg): Add support for OpGroupDecorate
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
   // Process entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
