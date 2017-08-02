@@ -514,7 +514,6 @@ void CommonUniformElimPass::Initialize(ir::Module* module) {
   module_ = module;
 
   // Initialize function and block maps
-  // Initialize function and block maps
   id2function_.clear();
   id2block_.clear();
   for (auto& fn : *module_) {
