@@ -222,8 +222,8 @@ uint32_t CommonUniformElimPass::GetPointeeTypeId(const ir::Instruction* ptrInst)
 }
 
 void CommonUniformElimPass::GenACLoadRepl(const ir::Instruction* ptrInst,
-  std::vector<std::unique_ptr<ir::Instruction>>& newInsts,
-  uint32_t& resultId) {
+  std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
+  uint32_t* resultId) {
 
   // Build and append Load
   const uint32_t ldResultId = TakeNextId();
@@ -239,7 +239,7 @@ void CommonUniformElimPass::GenACLoadRepl(const ir::Instruction* ptrInst,
   std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(SpvOpLoad,
     varPteTypeId, ldResultId, load_in_operands));
   def_use_mgr_->AnalyzeInstDefUse(&*newLoad);
-  newInsts.emplace_back(std::move(newLoad));
+  newInsts->emplace_back(std::move(newLoad));
 
   // Build and append Extract
   const uint32_t extResultId = TakeNextId();
@@ -262,8 +262,8 @@ void CommonUniformElimPass::GenACLoadRepl(const ir::Instruction* ptrInst,
   std::unique_ptr<ir::Instruction> newExt(new ir::Instruction(
     SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
   def_use_mgr_->AnalyzeInstDefUse(&*newExt);
-  newInsts.emplace_back(std::move(newExt));
-  resultId = extResultId;
+  newInsts->emplace_back(std::move(newExt));
+  *resultId = extResultId;
 }
 
 bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
@@ -302,7 +302,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
         continue;
       std::vector<std::unique_ptr<ir::Instruction>> newInsts;
       uint32_t replId;
-      GenACLoadRepl(ptrInst, newInsts, replId);
+      GenACLoadRepl(ptrInst, &newInsts, &replId);
       ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
       ++ii;
       ii = ii.InsertBefore(&newInsts);

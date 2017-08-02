@@ -92,8 +92,8 @@ class CommonUniformElimPass : public Pass {
   // For the (constant index) access chain ptrInst, create an
   // equivalent load and extract
   void GenACLoadRepl(const ir::Instruction* ptrInst,
-      std::vector<std::unique_ptr<ir::Instruction>>& newInsts,
-      uint32_t& resultId);
+      std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
+      uint32_t* resultId);
 
   // Return true if all indices are constant
   bool IsConstantIndexAccessChain(ir::Instruction* acp);
