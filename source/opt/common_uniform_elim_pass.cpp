@@ -148,7 +148,7 @@ bool CommonUniformElimPass::HasUnsupportedDecorates(uint32_t id) const {
     return false;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (IsDecorate(op))
+    if (IsNonTypeDecorate(op))
       return true;
   }
   return false;
@@ -160,7 +160,7 @@ bool CommonUniformElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
     return true;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
+    if (op != SpvOpName && !IsNonTypeDecorate(op))
       return false;
   }
   return true;
@@ -175,7 +175,7 @@ void CommonUniformElimPass::KillNamesAndDecorates(uint32_t id) {
   std::list<ir::Instruction*> killList;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
+    if (op != SpvOpName && !IsNonTypeDecorate(op))
       continue;
     killList.push_back(u.inst);
   }
