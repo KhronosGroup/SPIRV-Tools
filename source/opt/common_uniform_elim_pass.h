@@ -194,6 +194,7 @@ class CommonUniformElimPass : public Pass {
   std::unordered_map<uint32_t, uint32_t> uniform2load_id_;
 
   // Map of extract composite ids to map of indices to insts
+  // TODO(greg-lunarg): Consider std::vector.
   std::unordered_map<uint32_t, std::unordered_map<uint32_t,
       std::list<ir::Instruction*>>> comp2idx2inst_;
 
