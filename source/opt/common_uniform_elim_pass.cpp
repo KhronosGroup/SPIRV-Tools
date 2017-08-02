@@ -367,7 +367,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     ir::BasicBlock* bp = *bi;
     // Check if we are exiting outermost control construct. If so, remember
-    // new load insertion point.
+    // new load insertion point. Trying to keep register pressure down.
     if (mergeBlockId == bp->id()) {
       mergeBlockId = 0;
       insertItr = bp->begin();
