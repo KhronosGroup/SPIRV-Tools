@@ -37,6 +37,7 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kLoadPtrIdInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
+const uint32_t kTypeIntWidthInIdx = 0;
 
 } // anonymous namespace
 
@@ -565,6 +566,12 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
   // TODO(greg-lunarg): Add support for OpGroupDecorate
   for (auto& ai : module_->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
+  // If non-32-bit integer type in module, terminate processing
+  // TODO(): Handle non-32-bit integer constants in access chains
+  for (const ir::Instruction& inst : module_->types_values())
+    if (inst.opcode() == SpvOpTypeInt &&
+        inst.GetSingleWordInOperand(kTypeIntWidthInIdx) != 32)
       return Status::SuccessWithoutChange;
   // Process entry point functions
   bool modified = false;
