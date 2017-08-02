@@ -207,6 +207,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
   ${CMAKE_CURRENT_SOURCE_DIR}/macro.h
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.h
@@ -234,6 +235,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/id_descriptor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/libspirv.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/message.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/name_mapper.cpp

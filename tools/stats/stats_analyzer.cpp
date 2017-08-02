@@ -726,7 +726,7 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       << "  std::map<std::pair<uint32_t, uint32_t>, "
       << "std::unique_ptr<HuffmanCodec<uint64_t>>> codecs;\n";
 
-  for (const auto& kv : stats_.non_id_words_hist) {
+  for (const auto& kv : stats_.operand_slot_non_id_words_hist) {
     const auto& opcode_and_index = kv.first;
     const uint32_t opcode = opcode_and_index.first;
     const uint32_t index = opcode_and_index.second;
@@ -751,6 +751,53 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       const double kWordFrequentEnoughToAnalyze = 0.001;
       if (freq < kWordFrequentEnoughToAnalyze) continue;
       out << "      { " << word << ", " << count << " },\n";
+    }
+
+    out << "      { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";
+
+    out << "    }));\n" << std::endl;
+    out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
+        << spvOpcodeString(SpvOp(opcode))
+        << ", " << index << "), std::move(codec));\n";
+    out << "  }\n\n";
+  }
+
+  out << "  return codecs;\n}\n";
+}
+
+void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
+    std::ostream& out) {
+  out << "std::map<std::pair<uint32_t, uint32_t>, "
+      << "std::unique_ptr<HuffmanCodec<uint64_t>>>\n"
+      << "GetIdDescriptorHuffmanCodecs() {\n"
+      << "  std::map<std::pair<uint32_t, uint32_t>, "
+      << "std::unique_ptr<HuffmanCodec<uint64_t>>> codecs;\n";
+
+  for (const auto& kv : stats_.operand_slot_id_descriptor_hist) {
+    const auto& opcode_and_index = kv.first;
+    const uint32_t opcode = opcode_and_index.first;
+    const uint32_t index = opcode_and_index.second;
+
+    const double kOpcodeFrequentEnoughToAnalyze = 0.001;
+    if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
+
+    const std::map<uint32_t, uint32_t>& hist = kv.second;
+
+    uint32_t total = 0;
+    for (const auto& pair : hist) {
+      total += pair.second;
+    }
+
+    out << "  {\n";
+    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
+        << "codec(new HuffmanCodec<uint64_t>({\n";
+    for (const auto& pair : hist) {
+      const uint32_t descriptor = pair.first;
+      const uint32_t count = pair.second;
+      const double freq = double(count) / double(total);
+      const double kDescriptorFrequentEnoughToAnalyze = 0.005;
+      if (freq < kDescriptorFrequentEnoughToAnalyze) continue;
+      out << "      { " << descriptor << ", " << count << " },\n";
     }
 
     out << "      { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";

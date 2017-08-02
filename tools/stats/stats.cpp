@@ -73,6 +73,11 @@ Options:
                    Output generated C++ code for Huffman codecs for
                    single-word non-id slots.
                    This flag disables non-C++ output.
+
+  --codegen_id_descriptor_huffman_codecs
+                   Output generated C++ code for Huffman codecs for
+                   common id descriptors.
+                   This flag disables non-C++ output.
 )",
       argv0, argv0, argv0);
 }
@@ -113,6 +118,7 @@ int main(int argc, char** argv) {
   bool codegen_opcode_and_num_operands_markov_huffman_codecs = false;
   bool codegen_literal_string_huffman_codecs = false;
   bool codegen_non_id_word_huffman_codecs = false;
+  bool codegen_id_descriptor_huffman_codecs = false;
 
   std::vector<const char*> paths;
   const char* output_path = nullptr;
@@ -128,27 +134,31 @@ int main(int argc, char** argv) {
         codegen_opcode_hist = true;
         export_text = false;
       } else if (0 == strcmp(cur_arg,
-			     "--codegen_opcode_and_num_operands_hist")) {
+                             "--codegen_opcode_and_num_operands_hist")) {
         codegen_opcode_and_num_operands_hist = true;
         export_text = false;
       } else if (strcmp(
-	  "--codegen_opcode_and_num_operands_markov_huffman_codecs",
-	  cur_arg) == 0) {
+          "--codegen_opcode_and_num_operands_markov_huffman_codecs",
+          cur_arg) == 0) {
         codegen_opcode_and_num_operands_markov_huffman_codecs = true;
         export_text = false;
       } else if (0 == strcmp(cur_arg,
-			     "--codegen_literal_string_huffman_codecs")) {
+                             "--codegen_literal_string_huffman_codecs")) {
         codegen_literal_string_huffman_codecs = true;
         export_text = false;
       } else if (0 == strcmp(cur_arg,
-			     "--codegen_non_id_word_huffman_codecs")) {
+                             "--codegen_non_id_word_huffman_codecs")) {
         codegen_non_id_word_huffman_codecs = true;
         export_text = false;
+      } else if (0 == strcmp(cur_arg,
+                             "--codegen_id_descriptor_huffman_codecs")) {
+        codegen_id_descriptor_huffman_codecs = true;
+        export_text = false;
       } else if (0 == strcmp(cur_arg, "--verbose") ||
-		 0 == strcmp(cur_arg, "-v")) {
+                 0 == strcmp(cur_arg, "-v")) {
         verbose = true;
       } else if (0 == strcmp(cur_arg, "--output") ||
-		 0 == strcmp(cur_arg, "-o")) {
+                 0 == strcmp(cur_arg, "-o")) {
         expect_output_path = true;
       } else {
         PrintUsage(argv[0]);
@@ -157,10 +167,10 @@ int main(int argc, char** argv) {
       }
     } else {
       if (expect_output_path) {
-	output_path = cur_arg;
-	expect_output_path = false;
+        output_path = cur_arg;
+        expect_output_path = false;
       } else {
-	paths.push_back(cur_arg);
+        paths.push_back(cur_arg);
       }
     }
   }
@@ -253,6 +263,11 @@ int main(int argc, char** argv) {
   if (codegen_non_id_word_huffman_codecs) {
     out << std::endl;
     analyzer.WriteCodegenNonIdWordHuffmanCodecs(out);
+  }
+
+  if (codegen_id_descriptor_huffman_codecs) {
+    out << std::endl;
+    analyzer.WriteCodegenIdDescriptorHuffmanCodecs(out);
   }
 
   return 0;
