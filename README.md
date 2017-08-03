@@ -86,16 +86,28 @@ limits accepted by a more than minimally capable SPIR-V consumer.
 
 ### Optimizer
 
-*Warning:* The optimizer is still under development.
+*Note:* The optimizer is still under development.
 
 Currently supported optimizations:
-* Strip debug info
-* Set spec constant default value
-* Freeze spec constant
-* Fold `OpSpecConstantOp` and `OpSpecConstantComposite`
-* Unify constants
-* Eliminate dead constant
-* Inline all function calls in entry points
+* General
+  * Strip debug info
+* Specialization Constants
+  * Set spec constant default value
+  * Freeze spec constant
+  * Fold `OpSpecConstantOp` and `OpSpecConstantComposite`
+  * Unify constants
+  * Eliminate dead constant
+* Code Reduction (Entry Point Functions)
+  * Inline all function calls exhaustively
+  * Convert local access chains to inserts/extracts
+  * Eliminate local load/store in single block
+  * Eliminate local load/store with single store
+  * Eliminate local load/store with multiple stores
+  * Eliminate local extract from insert
+  * Eliminate dead instructions (aggressive)
+  * Eliminate dead branches
+  * Merge single successor / single predecessor block pairs
+  * Eliminate common uniform loads
 
 For the latest list with detailed documentation, please refer to
 [`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).
