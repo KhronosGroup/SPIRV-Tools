@@ -43,7 +43,7 @@ class MemPass : public Pass {
  protected:
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
-  bool IsMathType(const ir::Instruction* typeInst) const;
+  bool IsBaseTargetType(const ir::Instruction* typeInst) const;
 
   // Returns true if |typeInst| is a math type or a struct or array
   // of a math type.

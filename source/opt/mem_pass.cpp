@@ -33,7 +33,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 }  // namespace anonymous
 
 
-bool MemPass::IsMathType(
+bool MemPass::IsBaseTargetType(
     const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
   case SpvOpTypeInt:
@@ -41,6 +41,9 @@ bool MemPass::IsMathType(
   case SpvOpTypeBool:
   case SpvOpTypeVector:
   case SpvOpTypeMatrix:
+  case SpvOpTypeImage:
+  case SpvOpTypeSampler:
+  case SpvOpTypeSampledImage:
     return true;
   default:
     break;
@@ -50,17 +53,18 @@ bool MemPass::IsMathType(
 
 bool MemPass::IsTargetType(
     const ir::Instruction* typeInst) const {
-  if (IsMathType(typeInst))
+  if (IsBaseTargetType(typeInst))
     return true;
   if (typeInst->opcode() == SpvOpTypeArray)
-    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
+    return IsBaseTargetType(
+        def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
   if (typeInst->opcode() != SpvOpTypeStruct)
     return false;
   // All struct members must be math type
   int nonMathComp = 0;
   typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    if (!IsMathType(compTypeInst)) ++nonMathComp;
+    if (!IsBaseTargetType(compTypeInst)) ++nonMathComp;
   });
   return nonMathComp == 0;
 }
