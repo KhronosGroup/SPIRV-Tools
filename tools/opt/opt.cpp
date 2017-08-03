@@ -108,6 +108,12 @@ Options:
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
                functions.
+  --eliminate-common-uniform
+               Perform load/load elimination for duplicate uniform values.
+               Converts any constant index access chain uniform loads into
+               its equivalent load and extract. Some loads will be moved
+               to facilitate sharing. Performed only on entry point
+               functions. Currently only optimizes single index accesses.
   -h, --help   
                Print this help.
   --version    
