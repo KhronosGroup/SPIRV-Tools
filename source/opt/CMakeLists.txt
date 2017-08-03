@@ -38,6 +38,7 @@ add_library(SPIRV-Tools-opt
   module.h
   null_pass.h
   reflect.h
+  mem_pass.h
   pass.h
   passes.h
   pass_manager.h
@@ -71,6 +72,7 @@ add_library(SPIRV-Tools-opt
   module.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
+  mem_pass.cpp
   pass_manager.cpp
   strip_debug_info_pass.cpp
   types.cpp

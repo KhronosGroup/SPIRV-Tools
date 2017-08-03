@@ -20,7 +20,9 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -74,7 +76,7 @@ class MoveToFront {
   // RankFromValue(8) returns 1
   // After the call: 8 4 2 1 7
   // Returns true iff the value was found in the sequence.
-  bool RankFromValue(const Val& value, size_t* rank);
+  bool RankFromValue(const Val& value, uint32_t* rank);
 
   // Returns value corresponding to a 1-indexed rank in the move-to-front
   // sequence and moves the value to the front. Example:
@@ -82,10 +84,17 @@ class MoveToFront {
   // ValueFromRank(1) returns 8
   // After the call: 8 4 2 1 7
   // Returns true iff the rank is within bounds [1, GetSize()].
-  bool ValueFromRank(size_t rank, Val* value);
+  bool ValueFromRank(uint32_t rank, Val* value);
+
+  // Moves the value to the front of the sequence.
+  // Returns false iff value is not in the sequence.
+  bool Promote(const Val& value);
+
+  // Returns true iff the move-to-front sequence contains the value.
+  bool HasValue(const Val& value) const;
 
   // Returns the number of elements in the move-to-front sequence.
-  size_t GetSize() const {
+  uint32_t GetSize() const {
     return SizeOf(root_);
   }
 
@@ -305,6 +314,113 @@ class MoveToFront {
 
   // Maps ids to node handles.
   std::unordered_map<Val, uint32_t> value_to_node_;
+
+  // Cache for the last accessed value in the sequence.
+  Val last_accessed_value_ = Val();
+  bool last_accessed_value_valid_ = false;
+};
+
+template <typename Val>
+class MultiMoveToFront {
+ public:
+  // Inserts |value| to sequence with handle |mtf|.
+  // Returns false if |mtf| already has |value|.
+  bool Insert(uint32_t mtf, const Val& value) {
+    if (GetMtf(mtf).Insert(value)) {
+      val_to_mtfs_[value].insert(mtf);
+      return true;
+    }
+    return false;
+  }
+
+  // Removes |value| from sequence with handle |mtf|.
+  // Returns false if |mtf| doesn't have |value|.
+  bool Remove(uint32_t mtf, const Val& value) {
+    if (GetMtf(mtf).Remove(value)) {
+      val_to_mtfs_[value].erase(mtf);
+      return true;
+    }
+    assert(val_to_mtfs_[value].count(mtf) == 0);
+    return false;
+  }
+
+  // Removes |value| from all sequences which have it.
+  void RemoveFromAll(const Val& value) {
+    auto it = val_to_mtfs_.find(value);
+    if (it == val_to_mtfs_.end())
+      return;
+
+    auto& mtfs_containing_value = it->second;
+    for (uint32_t mtf : mtfs_containing_value) {
+      GetMtf(mtf).Remove(value);
+    }
+
+    val_to_mtfs_.erase(value);
+  }
+
+  // Computes rank of |value| in sequence |mtf|.
+  // Returns false if |mtf| doesn't have |value|.
+  bool RankFromValue(uint32_t mtf, const Val& value, uint32_t* rank) {
+    return GetMtf(mtf).RankFromValue(value, rank);
+  }
+
+  // Finds |value| with |rank| in sequence |mtf|.
+  // Returns false if |rank| is out of bounds.
+  bool ValueFromRank(uint32_t mtf, uint32_t rank, Val* value) {
+    return GetMtf(mtf).ValueFromRank(rank, value);
+  }
+
+  // Returns size of |mtf| sequence.
+  uint32_t GetSize(uint32_t mtf) {
+    return GetMtf(mtf).GetSize();
+  }
+
+  // Promotes |value| in all sequences which have it.
+  void Promote(const Val& value) {
+    const auto it = val_to_mtfs_.find(value);
+    if (it == val_to_mtfs_.end())
+      return;
+
+    const auto& mtfs_containing_value = it->second;
+    for (uint32_t mtf : mtfs_containing_value) {
+      GetMtf(mtf).Promote(value);
+    }
+  }
+
+  // Inserts |value| in sequence |mtf| or promotes if it's already there.
+  void InsertOrPromote(uint32_t mtf, const Val& value) {
+    if (!Insert(mtf, value)) {
+      GetMtf(mtf).Promote(value);
+    }
+  }
+
+  // Returns if |mtf| sequence has |value|.
+  bool HasValue(uint32_t mtf, const Val& value) {
+    return GetMtf(mtf).HasValue(value);
+  }
+
+ private:
+  // Returns actual MoveToFront object corresponding to |handle|.
+  // As multiple operations are often performed consecutively for the same
+  // sequence, the last returned value is cached.
+  MoveToFront<Val>& GetMtf(uint32_t handle) {
+    if (!cached_mtf_ || cached_handle_ != handle) {
+      cached_handle_ = handle;
+      cached_mtf_ = &mtfs_[handle];
+    }
+
+    return *cached_mtf_;
+  }
+
+  // Container holding MoveToFront objects. Map key is sequence handle.
+  std::map<uint32_t, MoveToFront<Val>> mtfs_;
+
+  // Container mapping value to sequences which contain that value.
+  std::unordered_map<Val, std::set<uint32_t>> val_to_mtfs_;
+
+  // Cache for the last accessed sequence.
+  uint32_t cached_handle_ = 0;
+  MoveToFront<Val>* cached_mtf_ = nullptr;
 };
 
 template <typename Val>
@@ -313,10 +429,13 @@ bool MoveToFront<Val>::Insert(const Val& value) {
   if (it != value_to_node_.end() && IsInTree(it->second))
     return false;
 
-  const size_t old_size = GetSize();
+  const uint32_t old_size = GetSize();
   (void)old_size;
 
   InsertNode(CreateNode(next_timestamp_++, value));
+
+  last_accessed_value_ = value;
+  last_accessed_value_valid_ = true;
 
   assert(value_to_node_.count(value));
   assert(old_size + 1 == GetSize());
@@ -332,6 +451,9 @@ bool MoveToFront<Val>::Remove(const Val& value) {
   if (!IsInTree(it->second))
     return false;
 
+  if (last_accessed_value_ == value)
+    last_accessed_value_valid_ = false;
+
   const uint32_t orphan = RemoveNode(it->second);
   (void)orphan;
   // The node of |value| is still alive but it's orphaned now. Can still be
@@ -342,8 +464,13 @@ bool MoveToFront<Val>::Remove(const Val& value) {
 }
 
 template <typename Val>
-bool MoveToFront<Val>::RankFromValue(const Val& value, size_t* rank) {
-  const size_t old_size = GetSize();
+bool MoveToFront<Val>::RankFromValue(const Val& value, uint32_t* rank) {
+  if (last_accessed_value_valid_ && last_accessed_value_ == value) {
+    *rank = 1;
+    return true;
+  }
+
+  const uint32_t old_size = GetSize();
   (void)old_size;
   const auto it = value_to_node_.find(value);
   if (it == value_to_node_.end()) {
@@ -364,6 +491,51 @@ bool MoveToFront<Val>::RankFromValue(const Val& value, size_t* rank) {
     node = ParentOf(node);
   }
 
+  // Don't update timestamp if the node has rank 1.
+  if (*rank != 1) {
+    // Update timestamp and reposition the node.
+    target = RemoveNode(target);
+    assert(ValueOf(target) == value);
+    assert(old_size == GetSize() + 1);
+    MutableTimestampOf(target) = next_timestamp_++;
+    InsertNode(target);
+    assert(old_size == GetSize());
+  }
+
+  last_accessed_value_ = value;
+  last_accessed_value_valid_ = true;
+  return true;
+}
+
+template <typename Val>
+bool MoveToFront<Val>::HasValue(const Val& value) const {
+  const auto it = value_to_node_.find(value);
+  if (it == value_to_node_.end()) {
+    return false;
+  }
+
+  return IsInTree(it->second);
+}
+
+template <typename Val>
+bool MoveToFront<Val>::Promote(const Val& value) {
+  if (last_accessed_value_valid_ && last_accessed_value_ == value) {
+    return true;
+  }
+
+  const uint32_t old_size = GetSize();
+  (void)old_size;
+  const auto it = value_to_node_.find(value);
+  if (it == value_to_node_.end()) {
+    return false;
+  }
+
+  uint32_t target = it->second;
+
+  if (!IsInTree(target)) {
+    return false;
+  }
+
   // Update timestamp and reposition the node.
   target = RemoveNode(target);
   assert(ValueOf(target) == value);
@@ -371,27 +543,42 @@ bool MoveToFront<Val>::RankFromValue(const Val& value, size_t* rank) {
   MutableTimestampOf(target) = next_timestamp_++;
   InsertNode(target);
   assert(old_size == GetSize());
+
+  last_accessed_value_ = value;
+  last_accessed_value_valid_ = true;
   return true;
 }
 
 template <typename Val>
-bool MoveToFront<Val>::ValueFromRank(size_t rank, Val* value) {
-  const size_t old_size = GetSize();
+bool MoveToFront<Val>::ValueFromRank(uint32_t rank, Val* value) {
+  if (last_accessed_value_valid_ && rank == 1) {
+    *value = last_accessed_value_;
+    return true;
+  }
+
+  const uint32_t old_size = GetSize();
   if (rank <= 0 || rank > old_size) {
     return false;
   }
 
+  const bool update_timestamp = (rank != 1);
+
   uint32_t node = root_;
   while (node) {
-    const size_t left_subtree_num_nodes = SizeOf(LeftOf(node));
+    const uint32_t left_subtree_num_nodes = SizeOf(LeftOf(node));
     if (rank == left_subtree_num_nodes + 1) {
       // This is the node we are looking for.
-      node = RemoveNode(node);
-      assert(old_size == GetSize() + 1);
-      MutableTimestampOf(node) = next_timestamp_++;
-      InsertNode(node);
-      assert(old_size == GetSize());
+      // Don't update timestamp if the node has rank 1.
+      if (update_timestamp) {
+        node = RemoveNode(node);
+        assert(old_size == GetSize() + 1);
+        MutableTimestampOf(node) = next_timestamp_++;
+        InsertNode(node);
+        assert(old_size == GetSize());
+      }
       *value = ValueOf(node);
+      last_accessed_value_ = *value;
+      last_accessed_value_valid_ = true;
       return true;
     }
 

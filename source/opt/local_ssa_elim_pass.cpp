@@ -25,219 +25,13 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
-const uint32_t kLoadPtrIdInIdx = 0;
-const uint32_t kAccessChainPtrIdInIdx = 0;
-const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
-const uint32_t kCopyObjectOperandInIdx = 0;
 
 } // anonymous namespace
-
-bool LocalMultiStoreElimPass::IsNonPtrAccessChain(
-    const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
-
-bool LocalMultiStoreElimPass::IsMathType(
-    const ir::Instruction* typeInst) const {
-  switch (typeInst->opcode()) {
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypeBool:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-      return true;
-    default:
-      break;
-  }
-  return false;
-}
-
-bool LocalMultiStoreElimPass::IsTargetType(
-    const ir::Instruction* typeInst) const {
-  if (IsMathType(typeInst))
-    return true;
-  if (typeInst->opcode() == SpvOpTypeArray)
-    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
-  // All struct members must be math type
-  int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    const ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    if (!IsMathType(compTypeInst)) ++nonMathComp;
-  });
-  return nonMathComp == 0;
-}
-
-ir::Instruction* LocalMultiStoreElimPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    }
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
-
-bool LocalMultiStoreElimPass::IsTargetVar(uint32_t varId) {
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
-    return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end())
-    return true;
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-      SpvStorageClassFunction) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  const uint32_t varPteTypeId =
-      varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
-  if (!IsTargetType(varPteTypeInst)) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  seen_target_vars_.insert(varId);
-  return true;
-}
-
-bool LocalMultiStoreElimPass::HasLoads(uint32_t ptrId) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
-  if (uses == nullptr)
-    return false;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-      if (HasLoads(u.inst->result_id()))
-        return true;
-    }
-    else {
-      // Conservatively assume that any non-store use is a load
-      // TODO(greg-lunarg): Improve analysis around function calls, etc
-      if (op != SpvOpStore && op != SpvOpName && !IsDecorate(op))
-        return true;
-    }
-  }
-  return false;
-}
-
-bool LocalMultiStoreElimPass::IsLiveVar(uint32_t varId) const {
-  // non-function scope vars are live
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-      SpvStorageClassFunction)
-    return true;
-  // test if variable is loaded from
-  return HasLoads(varId);
-}
-
-void LocalMultiStoreElimPass::AddStores(
-    uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
-  if (uses != nullptr) {
-    for (auto u : *uses) {
-      if (IsNonPtrAccessChain(u.inst->opcode()))
-        AddStores(u.inst->result_id(), insts);
-      else if (u.inst->opcode() == SpvOpStore)
-        insts->push(u.inst);
-    }
-  }
-}
-
-bool LocalMultiStoreElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return true;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      return false;
-  }
-  return true;
-}
-
-void LocalMultiStoreElimPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
-  // kill if no other operands.
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
-      continue;
-    killList.push_back(u.inst);
-  }
-  for (auto kip : killList)
-    def_use_mgr_->KillInst(kip);
-}
-
-void LocalMultiStoreElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  // TODO(greg-lunarg): Remove inst from any OpGroupDecorate and 
-  // kill if not other operands.
-  const uint32_t rId = inst->result_id();
-  if (rId == 0)
-    return;
-  KillNamesAndDecorates(rId);
-}
-
-void LocalMultiStoreElimPass::DCEInst(ir::Instruction* inst) {
-  std::queue<ir::Instruction*> deadInsts;
-  deadInsts.push(inst);
-  while (!deadInsts.empty()) {
-    ir::Instruction* di = deadInsts.front();
-    // Don't delete labels
-    if (di->opcode() == SpvOpLabel) {
-      deadInsts.pop();
-      continue;
-    }
-    // Remember operands
-    std::vector<uint32_t> ids;
-    di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push_back(*iid);
-    });
-    uint32_t varId = 0;
-    // Remember variable if dead load
-    if (di->opcode() == SpvOpLoad)
-      (void) GetPtr(di, &varId);
-    KillNamesAndDecorates(di);
-    def_use_mgr_->KillInst(di);
-    // For all operands with no remaining uses, add their instruction
-    // to the dead instruction queue.
-    for (auto id : ids)
-      if (HasOnlyNamesAndDecorates(id))
-        deadInsts.push(def_use_mgr_->GetDef(id));
-    // if a load was deleted and it was the variable's
-    // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId)) 
-      AddStores(varId, &deadInsts);
-    deadInsts.pop();
-  }
-}
 
 bool LocalMultiStoreElimPass::HasOnlySupportedRefs(uint32_t varId) {
   if (supported_ref_vars_.find(varId) != supported_ref_vars_.end())
@@ -460,7 +254,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
       continue;
     }
     // Val differs across predecessors. Add phi op to block and 
-    // add its result id to the map. For live back edge predecessor,
+    // add its result id to the map. For back edge predecessor,
     // use the variable id. We will patch this after visiting back
     // edge predecessor. For predecessors that do not define a value,
     // use undef.
@@ -469,10 +263,7 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     for (uint32_t predLabel : label2preds_[label]) {
       uint32_t valId;
       if (predLabel == backLabel) {
-        if (val0Id == 0)
-          valId = varId;
-        else
-          valId = Type2Undef(typeId);
+        valId = varId;
       }
       else {
         const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
@@ -594,14 +385,15 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
       if (cnt % 2 == 1 && *iid == back_id) idx = cnt - 1;
       ++cnt;
     });
-    // Only patch operands that are in the backedge predecessor map
+    // Use undef if variable not in backedge predecessor map
     const uint32_t varId = phiItr->GetSingleWordInOperand(idx);
     const auto valItr = label2ssa_map_[back_id].find(varId);
-    if (valItr != label2ssa_map_[back_id].end()) {
-      phiItr->SetInOperand(idx, { valItr->second });
-      // Analyze uses now that they are complete
-      def_use_mgr_->AnalyzeInstUse(&*phiItr);
-    }
+    uint32_t valId = (valItr != label2ssa_map_[back_id].end()) ?
+      valItr->second :
+      Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
+    phiItr->SetInOperand(idx, { valId });
+    // Analyze uses now that they are complete
+    def_use_mgr_->AnalyzeInstUse(&*phiItr);
   }
 }
 
@@ -720,18 +512,18 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
 
   // Start new ids with next availablein module
   next_id_ = module_->id_bound();
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
 
 bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
-  // Currently disallows all extensions. This is just super conservative
-  // to allow this to go public and many can likely be allowed with little
-  // to no additional coding. One exception is SPV_KHR_variable_pointers
-  // which will require some additional work around HasLoads, AddStores
-  // and generally DCEInst.
-  // TODO(greg-lunarg): Enable more extensions.
+  // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
-    (void) ei;
-    return false;
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
   }
   return true;
 }
@@ -753,7 +545,9 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
-      return Status::SuccessWithoutChange;
+    return Status::SuccessWithoutChange;
+  // Collect all named and decorated ids
+  FindNamedOrDecoratedIds();
   // Process functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
@@ -766,14 +560,42 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
 }
 
 LocalMultiStoreElimPass::LocalMultiStoreElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr),
-      pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
+    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       next_id_(0) {}
 
 Pass::Status LocalMultiStoreElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void LocalMultiStoreElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt

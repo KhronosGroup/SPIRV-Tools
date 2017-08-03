@@ -149,6 +149,7 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
 
 void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
+    KillNamesAndDecorates(ip);
     def_use_mgr_->KillInst(ip);
   });
 }
@@ -218,27 +219,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     def_use_mgr_->KillInst(mergeInst);
 
     // Iterate to merge block adding dead blocks to elimination set
-    std::unordered_set<uint32_t> deadSuccIds;
-    deadSuccIds.insert(deadLabId);
     auto dbi = bi;
     ++dbi;
     uint32_t dLabId = (*dbi)->id();
     while (dLabId != mergeLabId) {
-      if (deadSuccIds.find(dLabId) != deadSuccIds.end()) {
-        // Add successor blocks to dead successor set
-        (*dbi)->ForEachSuccessorLabel([&deadSuccIds](uint32_t succ) {
-          deadSuccIds.insert(succ);
-        });
-        // If dead block is header block, add its merge block to dead
-        // successor set in case it has no predecessors. Add continue
-        // target if loop header.
-        uint32_t cbid;
-        const uint32_t dMergeLabId = MergeBlockIdIfAny(**dbi, &cbid);
-        if (dMergeLabId != 0) {
-          deadSuccIds.insert(dMergeLabId);
-          if (cbid != 0)
-            deadSuccIds.insert(cbid);
-        }
+      if (!HasNonPhiRef(dLabId)) {
         // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
@@ -248,18 +233,24 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     }
 
     // Process phi instructions in merge block.
-    // deadLabIds are now blocks which cannot precede merge block.
-    // If eliminated branch is to merge label, add current block to dead blocks.
+    // elimBlocks are now blocks which cannot precede merge block. Also,
+    // if eliminated branch is to merge label, remember the conditional block
+    // also cannot precede merge block.
+    uint32_t deadCondLabId = 0;
     if (deadLabId == mergeLabId)
-      deadSuccIds.insert((*bi)->id());
-    (*dbi)->ForEachPhiInst([&deadSuccIds, this](ir::Instruction* phiInst) {
+      deadCondLabId = (*bi)->id();
+    (*dbi)->ForEachPhiInst([&elimBlocks, &deadCondLabId, this](
+        ir::Instruction* phiInst) {
       const uint32_t phiLabId0 =
           phiInst->GetSingleWordInOperand(kPhiLab0IdInIdx);
-      const bool useFirst = deadSuccIds.find(phiLabId0) == deadSuccIds.end();
+      const bool useFirst =
+          elimBlocks.find(id2block_[phiLabId0]) == elimBlocks.end() &&
+          phiLabId0 != deadCondLabId;
       const uint32_t phiValIdx =
           useFirst ? kPhiVal0IdInIdx : kPhiVal1IdInIdx;
       const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
       const uint32_t phiId = phiInst->result_id();
+      KillNamesAndDecorates(phiId);
       (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
       def_use_mgr_->KillInst(phiInst);
     });
@@ -308,15 +299,41 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
     }
   }
 
+  // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
+
+bool DeadBranchElimPass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
+  for (auto& ei : module_->extensions()) {
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
+  }
+  return true;
+}
 
 Pass::Status DeadBranchElimPass::ProcessImpl() {
   // Current functionality assumes structured control flow. 
   // TODO(greg-lunarg): Handle non-structured control-flow.
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-
+  // Do not process if module contains OpGroupDecorate. Additional
+  // support required in KillNamesAndDecorates().
+  // TODO(greg-lunarg): Add support for OpGroupDecorate
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
+  // Do not process if any disallowed extensions are enabled
+  if (!AllExtensionsSupported())
+    return Status::SuccessWithoutChange;
+  // Collect all named and decorated ids
+  FindNamedOrDecoratedIds();
+  // Process all entry point functions
   bool modified = false;
   for (const auto& e : module_->entry_points()) {
     ir::Function* fn =
@@ -326,12 +343,39 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-DeadBranchElimPass::DeadBranchElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+DeadBranchElimPass::DeadBranchElimPass() {}
 
 Pass::Status DeadBranchElimPass::Process(ir::Module* module) {
   Initialize(module);
   return ProcessImpl();
+}
+
+void DeadBranchElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    "SPV_KHR_variable_pointers",
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt

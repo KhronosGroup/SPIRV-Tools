@@ -1367,7 +1367,7 @@ spv_result_t MarkvDecoder::DecodeInstruction(spv_parsed_instruction_t* inst) {
 
   assert(inst->num_words == std::accumulate(
       parsed_operands_.begin(), parsed_operands_.end(), 1,
-      [](size_t num_words, const spv_parsed_operand_t& operand) {
+      [](int num_words, const spv_parsed_operand_t& operand) {
         return num_words += operand.num_words;
   }) && "num_words in instruction doesn't correspond to the sum of num_words"
         "in the operands");

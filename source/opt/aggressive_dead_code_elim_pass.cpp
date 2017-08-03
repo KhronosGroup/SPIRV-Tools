@@ -17,7 +17,6 @@
 #include "aggressive_dead_code_elim_pass.h"
 
 #include "iterator.h"
-
 #include "spirv/1.0/GLSL.std.450.h"
 
 namespace spvtools {
@@ -26,40 +25,11 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kStorePtrIdInIdx = 0;
-const uint32_t kLoadPtrIdInIdx = 0;
-const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 
 }  // namespace anonymous
-
-bool AggressiveDCEPass::IsNonPtrAccessChain(const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
-
-ir::Instruction* AggressiveDCEPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    }
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
 
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
@@ -109,13 +79,15 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
     return false;
 }
 
-bool AggressiveDCEPass::AllExtensionsSupported() {
-  uint32_t ecnt = 0;
+bool AggressiveDCEPass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
   for (auto& ei : module_->extensions()) {
-    (void) ei;
-    ++ecnt;
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
   }
-  return ecnt == 0;
+  return true;
 }
 
 void AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
@@ -227,7 +199,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
 }
 
 void AggressiveDCEPass::Initialize(ir::Module* module) {
-
   module_ = module;
 
   // Initialize id-to-function map
@@ -243,7 +214,11 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
   combinator_ops_shader_.clear();
   combinator_ops_glsl_std_450_.clear();
 
+  // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
+  // Initialize extensions whitelist
+  InitExtensions();
 }
 
 Pass::Status AggressiveDCEPass::ProcessImpl() {
@@ -251,21 +226,17 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // TODO(greg-lunarg): Handle additional capabilities
   if (!module_->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-
   // Current functionality assumes logical addressing only
   // TODO(greg-lunarg): Handle non-logical addressing
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
-
   // If any extensions in the module are not explicitly supported,
-  // return unmodified. Currently, no extensions are supported.
-  // glsl_std_450 extended instructions are allowed.
-  // TODO(greg-lunarg): Allow additional extensions
+  // return unmodified. 
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-
+  // Initialize combinator whitelists
   InitCombinatorSets();
-
+  // Process all entry point functions
   bool modified = false;
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
@@ -275,8 +246,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-AggressiveDCEPass::AggressiveDCEPass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+AggressiveDCEPass::AggressiveDCEPass() {}
 
 Pass::Status AggressiveDCEPass::Process(ir::Module* module) {
   Initialize(module);
@@ -506,6 +476,35 @@ void AggressiveDCEPass::InitCombinatorSets() {
     GLSLstd450NMax,
     GLSLstd450NClamp
   };
+}
+
+void AggressiveDCEPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
 }
 
 }  // namespace opt

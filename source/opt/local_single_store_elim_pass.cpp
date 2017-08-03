@@ -20,93 +20,18 @@
 #include "iterator.h"
 #include "spirv/1.0/GLSL.std.450.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvStorePtrId = 0;
-static const int kSpvStoreValId = 1;
-static const int kSpvLoadPtrId = 0;
-static const int kSpvAccessChainPtrId = 0;
-static const int kSpvTypePointerStorageClass = 0;
-static const int kSpvTypePointerTypeId = 1;
-
 // Universal Limit of ResultID + 1
 static const int kInvalidId = 0x400000;
 
 namespace spvtools {
 namespace opt {
 
-bool LocalSingleStoreElimPass::IsNonPtrAccessChain(const SpvOp opcode) const {
-  return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
-}
+namespace {
 
-bool LocalSingleStoreElimPass::IsMathType(
-    const ir::Instruction* typeInst) const {
-  switch (typeInst->opcode()) {
-  case SpvOpTypeInt:
-  case SpvOpTypeFloat:
-  case SpvOpTypeBool:
-  case SpvOpTypeVector:
-  case SpvOpTypeMatrix:
-    return true;
-  default:
-    break;
-  }
-  return false;
-}
+const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kStoreValIdInIdx = 1;
 
-bool LocalSingleStoreElimPass::IsTargetType(
-    const ir::Instruction* typeInst) const {
-  if (IsMathType(typeInst))
-    return true;
-  if (typeInst->opcode() == SpvOpTypeArray)
-    return IsMathType(def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
-  // All struct members must be math type
-  int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
-    if (!IsMathType(compTypeInst)) ++nonMathComp;
-  });
-  return nonMathComp == 0;
-}
-
-ir::Instruction* LocalSingleStoreElimPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  *varId = ip->GetSingleWordInOperand(
-      ip->opcode() == SpvOpStore ?  kSpvStorePtrId : kSpvLoadPtrId);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
-  ir::Instruction* varInst = ptrInst;
-  while (IsNonPtrAccessChain(varInst->opcode())) {
-    *varId = varInst->GetSingleWordInOperand(kSpvAccessChainPtrId);
-    varInst = def_use_mgr_->GetDef(*varId);
-  }
-  return ptrInst;
-}
-
-bool LocalSingleStoreElimPass::IsTargetVar(uint32_t varId) {
-  if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
-    return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end())
-    return true;
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
-    SpvStorageClassFunction) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kSpvTypePointerTypeId);
-  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
-  if (!IsTargetType(varPteTypeInst)) {
-    seen_non_target_vars_.insert(varId);
-    return false;
-  }
-  seen_target_vars_.insert(varId);
-  return true;
-}
+} // anonymous namespace
 
 bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
@@ -115,11 +40,9 @@ bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
-    if (IsNonPtrAccessChain(op)) {
-      if (!HasOnlySupportedRefs(u.inst->result_id()))
-        return false;
-    }
-    else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
+    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
+      if (!HasOnlySupportedRefs(u.inst->result_id())) return false;
+    } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName)
       return false;
   }
   supported_ref_ptrs_.insert(ptrId);
@@ -145,7 +68,7 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
           non_ssa_vars_.insert(varId);
           continue;
         }
-        if (IsNonPtrAccessChain(ptrInst->opcode())) {
+        if (ptrInst->opcode() != SpvOpVariable) {
           non_ssa_vars_.insert(varId);
           ssa_var2store_.erase(varId);
           continue;
@@ -172,12 +95,6 @@ void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {
       } // switch
     }
   }
-}
-
-void LocalSingleStoreElimPass::ReplaceAndDeleteLoad(
-    ir::Instruction* loadInst, uint32_t replId) {
-  (void) def_use_mgr_->ReplaceAllUsesWith(loadInst->result_id(), replId);
-  DCEInst(loadInst);
 }
 
 LocalSingleStoreElimPass::GetBlocksFunction
@@ -272,8 +189,6 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       uint32_t varId;
       ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
       // Skip access chain loads
-      if (IsNonPtrAccessChain(ptrInst->opcode()))
-        continue;
       if (ptrInst->opcode() != SpvOpVariable)
         continue;
       const auto vsi = ssa_var2store_.find(varId);
@@ -285,101 +200,13 @@ bool LocalSingleStoreElimPass::SingleStoreProcess(ir::Function* func) {
       if (!Dominates(store2blk_[vsi->second], store2idx_[vsi->second], &*bi, instIdx))
         continue;
       // Use store value as replacement id
-      uint32_t replId = vsi->second->GetSingleWordInOperand(kSpvStoreValId);
+      uint32_t replId = vsi->second->GetSingleWordInOperand(kStoreValIdInIdx);
       // replace all instances of the load's id with the SSA value's id
       ReplaceAndDeleteLoad(&*ii, replId);
       modified = true;
     }
   }
   return modified;
-}
-
-bool LocalSingleStoreElimPass::HasLoads(uint32_t varId) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(varId);
-  if (uses == nullptr)
-    return false;
-  for (auto u : *uses) {
-    SpvOp op = u.inst->opcode();
-    // TODO(): The following is slightly conservative. Could be
-    // better handling of non-store/name.
-    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-      if (HasLoads(u.inst->result_id()))
-        return true;
-    }
-    else if (op != SpvOpStore && op != SpvOpName)
-      return true;
-  }
-  return false;
-}
-
-bool LocalSingleStoreElimPass::IsLiveVar(uint32_t varId) const {
-  // non-function scope vars are live
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
-  const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
-  if (varTypeInst->GetSingleWordInOperand(kSpvTypePointerStorageClass) !=
-      SpvStorageClassFunction)
-    return true;
-  // test if variable is loaded from
-  return HasLoads(varId);
-}
-
-bool LocalSingleStoreElimPass::IsLiveStore(ir::Instruction* storeInst) {
-  // get store's variable
-  uint32_t varId;
-  (void) GetPtr(storeInst, &varId);
-  return IsLiveVar(varId);
-}
-
-void LocalSingleStoreElimPass::AddStores(
-    uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
-  if (uses != nullptr) {
-    for (auto u : *uses) {
-      if (IsNonPtrAccessChain(u.inst->opcode()))
-        AddStores(u.inst->result_id(), insts);
-      else if (u.inst->opcode() == SpvOpStore)
-        insts->push(u.inst);
-    }
-  }
-}
-
-void LocalSingleStoreElimPass::DCEInst(ir::Instruction* inst) {
-  std::queue<ir::Instruction*> deadInsts;
-  deadInsts.push(inst);
-  while (!deadInsts.empty()) {
-    ir::Instruction* di = deadInsts.front();
-    // Don't delete labels
-    if (di->opcode() == SpvOpLabel) {
-      deadInsts.pop();
-      continue;
-    }
-    // Remember operands
-    std::queue<uint32_t> ids;
-    di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push(*iid);
-    });
-    uint32_t varId = 0;
-    // Remember variable if dead load
-    if (di->opcode() == SpvOpLoad)
-      (void) GetPtr(di, &varId);
-    def_use_mgr_->KillInst(di);
-    // For all operands with no remaining uses, add their instruction
-    // to the dead instruction queue.
-    while (!ids.empty()) {
-      uint32_t id = ids.front();
-      analysis::UseList* uses = def_use_mgr_->GetUses(id);
-      if (uses == nullptr)
-        deadInsts.push(def_use_mgr_->GetDef(id));
-      ids.pop();
-    }
-    // if a load was deleted and it was the variable's
-    // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId)) 
-      AddStores(varId, &deadInsts);
-    deadInsts.pop();
-  }
 }
 
 bool LocalSingleStoreElimPass::SingleStoreDCE() {
@@ -434,17 +261,42 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
 
   // Initialize next unused Id
   next_id_ = module_->id_bound();
+
+  // Initialize extension whitelist
+  InitExtensions();
 };
+
+bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
+  // If any extension not in whitelist, return false
+  for (auto& ei : module_->extensions()) {
+    const char* extName = reinterpret_cast<const char*>(
+        &ei.GetInOperand(0).words[0]);
+    if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
+      return false;
+  }
+  return true;
+}
 
 Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
   if (module_->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
+  // Do not process if module contains OpGroupDecorate. Additional
+  // support required in KillNamesAndDecorates().
+  // TODO(greg-lunarg): Add support for OpGroupDecorate
+  for (auto& ai : module_->annotations())
+    if (ai.opcode() == SpvOpGroupDecorate)
+      return Status::SuccessWithoutChange;
+  // Do not process if any disallowed extensions are enabled
+  if (!AllExtensionsSupported())
+    return Status::SuccessWithoutChange;
+  // Collect all named and decorated ids
+  FindNamedOrDecoratedIds();
+  // Process all entry point functions
   bool modified = false;
-  // Call Mem2Reg on all remaining functions.
   for (auto& e : module_->entry_points()) {
     ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
+        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
     modified = LocalSingleStoreElim(fn) || modified;
   }
   FinalizeNextId(module_);
@@ -452,8 +304,7 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
 }
 
 LocalSingleStoreElimPass::LocalSingleStoreElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr),
-      pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
+    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))),
@@ -464,6 +315,34 @@ Pass::Status LocalSingleStoreElimPass::Process(ir::Module* module) {
   return ProcessImpl();
 }
 
+void LocalSingleStoreElimPass::InitExtensions() {
+  extensions_whitelist_.clear();
+  extensions_whitelist_.insert({
+    "SPV_AMD_shader_explicit_vertex_parameter",
+    "SPV_AMD_shader_trinary_minmax",
+    "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
+    "SPV_AMD_shader_ballot",
+    "SPV_AMD_gpu_shader_half_float",
+    "SPV_KHR_shader_draw_parameters",
+    "SPV_KHR_subgroup_vote",
+    "SPV_KHR_16bit_storage",
+    "SPV_KHR_device_group",
+    "SPV_KHR_multiview",
+    "SPV_NVX_multiview_per_view_attributes",
+    "SPV_NV_viewport_array2",
+    "SPV_NV_stereo_view_rendering",
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    // SPV_KHR_variable_pointers
+    //   Currently do not support extended pointer expressions
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+  });
+}
+
 }  // namespace opt
 }  // namespace spvtools
-

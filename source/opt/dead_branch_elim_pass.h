@@ -28,13 +28,13 @@
 #include "basic_block.h"
 #include "def_use_manager.h"
 #include "module.h"
-#include "pass.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class DeadBranchElimPass : public Pass {
+class DeadBranchElimPass : public MemPass {
 
   using cbb_ptr = const ir::BasicBlock*;
 
@@ -105,14 +105,14 @@ class DeadBranchElimPass : public Pass {
   // dead blocks.
   bool EliminateDeadBranches(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are allowed by this pass.
+  bool AllExtensionsSupported() const;
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
@@ -124,6 +124,9 @@ class DeadBranchElimPass : public Pass {
   // ComputeStructuredSuccessors() for definition.
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
+  
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

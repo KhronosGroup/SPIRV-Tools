@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "basic_block.h"
@@ -57,6 +58,12 @@ class InsertExtractElimPass : public Pass {
   // intervening insert which conflicts.
   bool EliminateInsertExtract(ir::Function* func);
 
+  // Initialize extensions whitelist
+  void InitExtensions();
+
+  // Return true if all extensions in this module are allowed by this pass.
+  bool AllExtensionsSupported() const;
+
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
@@ -68,6 +75,9 @@ class InsertExtractElimPass : public Pass {
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Extensions supported by this pass.
+  std::unordered_set<std::string> extensions_whitelist_;
 };
 
 }  // namespace opt

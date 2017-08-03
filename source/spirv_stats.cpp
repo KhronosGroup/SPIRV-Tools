@@ -74,8 +74,72 @@ class StatsAggregator {
     ProcessCapability();
     ProcessExtension();
     ProcessConstant();
+    ProcessEnums();
+    ProcessLiteralStrings();
+    ProcessNonIdWords();
 
     return SPV_SUCCESS;
+  }
+
+  // Collects statistics of enum words for operands of specific types.
+  void ProcessEnums() {
+    const Instruction& inst = GetCurrentInstruction();
+    for (const auto& operand : inst.operands()) {
+      switch (operand.type) {
+        case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
+        case SPV_OPERAND_TYPE_EXECUTION_MODEL:
+        case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
+        case SPV_OPERAND_TYPE_MEMORY_MODEL:
+        case SPV_OPERAND_TYPE_EXECUTION_MODE:
+        case SPV_OPERAND_TYPE_STORAGE_CLASS:
+        case SPV_OPERAND_TYPE_DIMENSIONALITY:
+        case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
+        case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
+        case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
+        case SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER:
+        case SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE:
+        case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
+        case SPV_OPERAND_TYPE_LINKAGE_TYPE:
+        case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
+        case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
+        case SPV_OPERAND_TYPE_DECORATION:
+        case SPV_OPERAND_TYPE_BUILT_IN:
+        case SPV_OPERAND_TYPE_GROUP_OPERATION:
+        case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
+        case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO:
+        case SPV_OPERAND_TYPE_CAPABILITY: {
+          ++stats_->enum_hist[operand.type][inst.word(operand.offset)];
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  // Collects statistics of literal strings used by opcodes.
+  void ProcessLiteralStrings() {
+    const Instruction& inst = GetCurrentInstruction();
+    for (const auto& operand : inst.operands()) {
+      if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING) {
+        const std::string str =
+            reinterpret_cast<const char*>(&inst.words()[operand.offset]);
+        ++stats_->literal_strings_hist[inst.opcode()][str];
+      }
+    }
+  }
+
+  // Collects statistics of all single word non-id operand slots.
+  void ProcessNonIdWords() {
+    const Instruction& inst = GetCurrentInstruction();
+    uint32_t index = 0;
+    for (const auto& operand : inst.operands()) {
+      if (operand.num_words == 1 && !spvIsIdType(operand.type)) {
+          ++stats_->non_id_words_hist[std::pair<uint32_t, uint32_t>(
+              inst.opcode(), index)][inst.word(operand.offset)];
+      }
+      ++index;
+    }
   }
 
   // Collects OpCapability statistics.
@@ -100,7 +164,18 @@ class StatsAggregator {
     const SpvOp opcode = inst_it->opcode();
     ++stats_->opcode_hist[opcode];
 
+    const uint32_t opcode_and_num_operands =
+        (uint32_t(inst_it->operands().size()) << 16) | uint32_t(opcode);
+    ++stats_->opcode_and_num_operands_hist[opcode_and_num_operands];
+
     ++inst_it;
+
+    if (inst_it != vstate_->ordered_instructions().rend()) {
+      const SpvOp prev_opcode = inst_it->opcode();
+      ++stats_->opcode_and_num_operands_markov_hist[prev_opcode][
+          opcode_and_num_operands];
+    }
+
     auto step_it = stats_->opcode_markov_hist.begin();
     for (; inst_it != vstate_->ordered_instructions().rend() &&
          step_it != stats_->opcode_markov_hist.end(); ++inst_it, ++step_it) {
