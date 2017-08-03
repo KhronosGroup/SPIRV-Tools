@@ -179,6 +179,7 @@ TEST_F(CommonUniformElimTest, Basic2) {
   // #version 140
   // in vec4 BaseColor;
   // in float fi;
+  // in float fi2;
   // 
   // layout(std140) uniform U_t
   // {
@@ -188,17 +189,17 @@ TEST_F(CommonUniformElimTest, Basic2) {
   // 
   // void main()
   // {
-  //     vec4 v = BaseColor;
-  //     if (fi > 0) {
-  //       v = v * g_F;
+  //     float f = fi;
+  //     if (f < 0)
+  //       f = -f;
+  //     if (fi2 > 0) {
+  //       f = f * g_F;
   //     }
   //     else {
-  //       float f2 = g_F2 - g_F;
-  //       v = v * f2;
+  //       f = g_F2 - g_F;
   //     }
-  //     gl_FragColor = v;
+  //     gl_FragColor = f * BaseColor;
   // }
-
 
   const std::string predefs =
       R"(OpCapability Shader
