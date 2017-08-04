@@ -54,7 +54,7 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       } break;
       case SpvOpLoad:
         break;
-      // Assume it stores eg frexp, modf
+      // Assume it stores eg frexp, modf, function call
       case SpvOpStore:
       default: {
         if (live_insts_.find(u.inst) == live_insts_.end())
@@ -90,11 +90,27 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
   return true;
 }
 
-void AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
+bool AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
   const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
-  if (dead_insts_.find(tInst) != dead_insts_.end())
+  if (dead_insts_.find(tInst) != dead_insts_.end()) {
     def_use_mgr_->KillInst(inst);
+    return true;
+  }
+  return false;
+}
+
+void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
+  // Only process locals
+  if (!IsLocalVar(varId))
+    return;
+  // Return if already processed
+  if (live_local_vars_.find(varId) != live_local_vars_.end()) 
+    return;
+  // Mark all stores to varId as live
+  AddStores(varId);
+  // Cache varId as processed
+  live_local_vars_.insert(varId);
 }
 
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
@@ -102,8 +118,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Add all control flow and instructions with external side effects 
   // to worklist
   // TODO(greg-lunarg): Handle Frexp, Modf more optimally
-  // TODO(greg-lunarg): Handle FunctionCall more optimally
-  // TODO(greg-lunarg): Handle CopyMemory more optimally
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
@@ -121,12 +135,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           if (!IsCombinatorExt(&inst))
             worklist_.push(&inst);
         } break;
-        case SpvOpCopyMemory:
-        case SpvOpFunctionCall: {
-          return false;
-        } break;
         default: {
           // eg. control flow, function call, atomics
+          // TODO(greg-lunarg): function calls live only if write to non-local
           if (!IsCombinator(op))
             worklist_.push(&inst);
         } break;
@@ -154,12 +165,17 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     if (liveInst->opcode() == SpvOpLoad) {
       uint32_t varId;
       (void) GetPtr(liveInst, &varId);
-      if (IsLocalVar(varId)) {
-        if (live_local_vars_.find(varId) == live_local_vars_.end()) {
-          AddStores(varId);
-          live_local_vars_.insert(varId);
-        }
-      }
+      ProcessLoad(varId);
+    }
+    // If function call, treat as if it loads from all pointer arguments
+    else if (liveInst->opcode() == SpvOpFunctionCall) {
+      liveInst->ForEachInId([this](const uint32_t* iid) {
+        // Skip non-ptr args
+        if (!IsPtr(*iid)) return;
+        uint32_t varId;
+        (void) GetPtr(*iid, &varId);
+        ProcessLoad(varId);
+      });
     }
     worklist_.pop();
   }
@@ -177,14 +193,14 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto& di : module_->debugs()) {
     if (di.opcode() != SpvOpName)
       continue;
-    KillInstIfTargetDead(&di);
-    modified = true;
+    if (KillInstIfTargetDead(&di))
+      modified = true;
   }
   for (auto& ai : module_->annotations()) {
     if (ai.opcode() != SpvOpDecorate && ai.opcode() != SpvOpDecorateId)
       continue;
-    KillInstIfTargetDead(&ai);
-    modified = true;
+    if (KillInstIfTargetDead(&ai))
+      modified = true;
   }
   // Kill dead instructions
   for (auto& blk : *func) {

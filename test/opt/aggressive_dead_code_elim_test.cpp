@@ -680,6 +680,133 @@ OpFunctionEnd
       assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, ElimWithCall) {
+  // This demonstrates that "dead" function calls are not eliminated.
+  // Also demonstrates that DCE will happen in presense of function call.
+  // #version 140
+  // in vec4 i1;
+  // in vec4 i2;
+  // 
+  // void nothing(vec4 v)
+  // {
+  // }
+  // 
+  // void main()
+  // {
+  //     vec4 v1 = i1;
+  //     vec4 v2 = i2;
+  //     nothing(v1);
+  //     gl_FragColor = vec4(0.0);
+  // }
+
+  const std::string defs_before =
+      R"( OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %i1 %i2 %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %nothing_vf4_ "nothing(vf4;" 
+OpName %v "v"
+OpName %v1 "v1"
+OpName %i1 "i1"
+OpName %v2 "v2"
+OpName %i2 "i2"
+OpName %param "param" 
+OpName %gl_FragColor "gl_FragColor" 
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%16 = OpTypeFunction %void %_ptr_Function_v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%i1 = OpVariable %_ptr_Input_v4float Input
+%i2 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+%20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0 
+)";
+
+  const std::string defs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %i1 %i2 %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %nothing_vf4_ "nothing(vf4;"
+OpName %v "v"
+OpName %v1 "v1"
+OpName %i1 "i1"
+OpName %i2 "i2"
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%16 = OpTypeFunction %void %_ptr_Function_v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%i1 = OpVariable %_ptr_Input_v4float Input
+%i2 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%float_0 = OpConstant %float 0
+%20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %12
+%21 = OpLabel
+%v1 = OpVariable %_ptr_Function_v4float Function 
+%v2 = OpVariable %_ptr_Function_v4float Function 
+%param = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %i1
+OpStore %v1 %22
+%23 = OpLoad %v4float %i2
+OpStore %v2 %23
+%24 = OpLoad %v4float %v1
+OpStore %param %24
+%25 = OpFunctionCall %void %nothing_vf4_ %param
+OpStore %gl_FragColor %20
+OpReturn
+OpFunctionEnd
+%nothing_vf4_ = OpFunction %void None %16
+%v = OpFunctionParameter %_ptr_Function_v4float
+%26 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %12
+%21 = OpLabel
+%v1 = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %i1
+OpStore %v1 %22
+%24 = OpLoad %v4float %v1
+OpStore %param %24
+%25 = OpFunctionCall %void %nothing_vf4_ %param
+OpStore %gl_FragColor %20
+OpReturn
+OpFunctionEnd
+%nothing_vf4_ = OpFunction %void None %16
+%v = OpFunctionParameter %_ptr_Function_v4float
+%26 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      defs_before + func_before, defs_after + func_after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
