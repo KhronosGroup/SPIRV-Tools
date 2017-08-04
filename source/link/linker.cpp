@@ -25,14 +25,17 @@
 #include "assembly_grammar.h"
 #include "diagnostic.h"
 #include "opt/build_module.h"
+#include "opt/compact_ids_pass.h"
 #include "opt/ir_loader.h"
 #include "opt/make_unique.h"
+#include "opt/pass_manager.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv_target_env.h"
 
 namespace spvtools {
 
 using namespace ir;
+using namespace opt;
 
 static spv_result_t MergeModules(
     const std::vector<std::unique_ptr<Module>>& inModules,
@@ -192,6 +195,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
              << ".";
     modules.push_back(std::move(module));
   }
+
+  PassManager manager;
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
@@ -375,7 +380,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     }
   }
 
-  // TODO(pierremoreau): Run an optimisation pass to compact all IDs.
+  // Queue an optimisation pass to compact all IDs.
+  manager.AddPass<CompactIdsPass>();
 
   // Phase 5: Generate the header and output the linked module.
 
@@ -394,6 +400,9 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   header.bound = id_bound;
   header.reserved = 0u;
   linkedModule->SetHeader(header);
+
+  // Phase 6: Run all accumulated optimisation passes.
+  manager.Run(linkedModule.get());
 
   linkedModule->ToBinary(&linked_binary, true);
 
