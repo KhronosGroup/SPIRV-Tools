@@ -24,6 +24,7 @@ v2016.7-dev 2017-01-06
    - Aggressive dead instruction elimination
    - Eliminate dead branches
    - Merge blocks when the second can only be preceded by the first
+   - Eliminate ommon uniform loads
  - Assembler: Add option to preserve numeric ids. Fixes #625
  - Add build target spirv-tools-vimsyntax to generate spvasm.vim, a SPIR-V
    assembly syntax file for Vim.
