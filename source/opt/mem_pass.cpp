@@ -142,7 +142,7 @@ bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
     return false;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsDecorate(op))
+    if (op != SpvOpName && !IsNonTypeDecorate(op))
       return false;
   }
   return true;
@@ -159,7 +159,7 @@ void MemPass::KillNamesAndDecorates(uint32_t id) {
   std::list<ir::Instruction*> killList;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op == SpvOpName || IsDecorate(op))
+    if (op == SpvOpName || IsNonTypeDecorate(op))
       killList.push_back(u.inst);
   }
   for (auto kip : killList)
