@@ -101,7 +101,7 @@ class MemPass : public Pass {
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
   // Return true if |op| is supported decorate.
-  inline bool IsDecorate(uint32_t op) const {
+  inline bool IsNonTypeDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 

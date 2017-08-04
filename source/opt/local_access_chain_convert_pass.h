@@ -41,6 +41,10 @@ class LocalAccessChainConvertPass : public MemPass {
   Status Process(ir::Module*) override;
 
  private:
+  // Return true if all refs through |ptrId| are only loads or stores and
+  // cache ptrId in supported_ref_ptrs_.
+  bool HasOnlySupportedRefs(uint32_t ptrId);
+
   // Search |func| and cache function scope variables of target type that are
   // not accessed with non-constant-index access chains. Also cache non-target
   // variables.
@@ -117,6 +121,10 @@ class LocalAccessChainConvertPass : public MemPass {
 
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function_;
+
+  // Variables with only supported references, ie. loads and stores using
+  // variable directly or through non-ptr access chains.
+  std::unordered_set<uint32_t> supported_ref_ptrs_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

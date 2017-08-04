@@ -42,7 +42,7 @@ bool LocalMultiStoreElimPass::HasOnlySupportedRefs(uint32_t varId) {
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
     if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
-        !IsDecorate(op))
+        !IsNonTypeDecorate(op))
       return false;
   }
   supported_ref_vars_.insert(varId);

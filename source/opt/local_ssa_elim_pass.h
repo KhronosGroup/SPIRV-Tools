@@ -136,11 +136,6 @@ class LocalMultiStoreElimPass : public MemPass {
   // the runtime and effectiveness of this function.
   bool EliminateMultiStoreLocal(ir::Function* func);
 
-  // Return true if |op| is decorate.
-  inline bool IsDecorate(uint32_t op) const {
-    return (op == SpvOpDecorate || op == SpvOpDecorateId);
-  }
-
   // Save next available id into |module|.
   inline void FinalizeNextId(ir::Module* module) {
     module->SetIdBound(next_id_);

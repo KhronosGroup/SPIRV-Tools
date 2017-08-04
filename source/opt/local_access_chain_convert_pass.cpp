@@ -152,6 +152,23 @@ bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
   return nonConstCnt == 0;
 }
 
+bool LocalAccessChainConvertPass::HasOnlySupportedRefs(uint32_t ptrId) {
+  if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
+    return true;
+  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  assert(uses != nullptr);
+  for (auto u : *uses) {
+    SpvOp op = u.inst->opcode();
+    if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
+      if (!HasOnlySupportedRefs(u.inst->result_id())) return false;
+    } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
+               !IsNonTypeDecorate(op))
+      return false;
+  }
+  supported_ref_ptrs_.insert(ptrId);
+  return true;
+}
+
 void LocalAccessChainConvertPass::FindTargetVars(ir::Function* func) {
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
@@ -162,9 +179,9 @@ void LocalAccessChainConvertPass::FindTargetVars(ir::Function* func) {
         ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
         if (!IsTargetVar(varId))
           break;
-        // Rule out variables with non-non-ptr access chain refs
         const SpvOp op = ptrInst->opcode();
-        if (!IsNonPtrAccessChain(op) && op != SpvOpVariable) {
+        // Rule out variables with non-supported refs eg function calls
+        if (!HasOnlySupportedRefs(varId)) {
           seen_non_target_vars_.insert(varId);
           seen_target_vars_.erase(varId);
           break;
@@ -253,6 +270,9 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
   // Initialize Target Variable Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
+
+  // Initialize collections
+  supported_ref_ptrs_.clear();
 
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
