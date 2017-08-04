@@ -53,6 +53,14 @@ class MemPass : public Pass {
   // Returns true if |opcode| is a non-ptr access chain op
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
+  // Given the id |ptrId|, return true if the top-most non-CopyObj is
+  // a pointer. 
+  bool IsPtr(uint32_t ptrId);
+
+  // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.
+  // Also return the base variable's id in |varId|.
+  ir::Instruction* GetPtr(uint32_t ptrId, uint32_t* varId);
+
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the base variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);

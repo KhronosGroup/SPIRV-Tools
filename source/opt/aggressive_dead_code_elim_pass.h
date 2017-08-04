@@ -72,8 +72,12 @@ class AggressiveDCEPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  // Kill debug or annotation |inst| if target operand is dead.
-  void KillInstIfTargetDead(ir::Instruction* inst);
+  // Kill debug or annotation |inst| if target operand is dead. Return true
+  // if inst killed.
+  bool KillInstIfTargetDead(ir::Instruction* inst);
+
+  // If |varId| is local, mark all stores of varId as live.
+  void ProcessLoad(uint32_t varId);
 
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
