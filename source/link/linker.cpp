@@ -261,37 +261,6 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     linking_table.emplace(i.first, j->second);
   }
 
-  // Phase 4: Clean up remains of imported functions and global variables.
-
-  // TODO(pierremoreau): Switch usage of the type of exported
-  //                     functions/variables, to their imported counterpart.
-  //
-  //                     For example, if we have an imported variable:
-  //
-  //                       %impVar = OpVariable %impVarType Global
-  //
-  //                     an exported one:
-  //
-  //                       %expVar = OpVariable %expVarType Global 3.14f
-  //
-  //                     and a function which uses the imported variable:
-  //
-  //                       %func = OpFunction [...] { OpStore %impVar %obj }
-  //
-  //                     After linking, we have:
-  //
-  //                       %expVar = OpVariable %expVarType Global 3.14f
-  //                       %func = OpFunction [...] { OpStore %expVar %obj }
-  //
-  //                     However, we now have a mismatch between %obj's type's
-  //                     ID (the ID of the type pointed by %impVarType) and the
-  //                     ID of the type %expVar is pointing to.
-
-  // TODO(pierremoreau): Linked to the previous todo, imported and exported
-  //                     functions/variables might have some common
-  //                     decorations, or their types. The duplicates can be
-  //                     removed.
-
   // Remove prototypes of imported functions
   for (auto i = linkedModule->begin(); i != linkedModule->end();) {
     const auto function_id = i->DefInst().result_id();
@@ -334,7 +303,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     });
   });
 
-  // Remove duplicate capabilities
+  // Remove duplicates
   manager.AddPass<RemoveDuplicatesPass>();
 
   // Remove import linkage attributes
