@@ -118,6 +118,28 @@ Pass::Status RemoveDuplicatesPass::Process(ir::Module* module) {
     modified |= res.second;
   }
 
+  // Remove duplicate ext inst imports
+  std::unordered_map<std::string, SpvId> extInstImports;
+  std::unordered_map<SpvId, SpvId> extInstImportsReplacementMap;
+  for (auto i = module->ext_inst_import_begin();
+       i != module->ext_inst_import_end();) {
+    auto res = extInstImports.emplace(
+        reinterpret_cast<const char*>(i->GetInOperand(0u).words.data()),
+        i->result_id());
+    if (!res.second)
+      extInstImportsReplacementMap[i->result_id()] = res.first->second;
+    i = (res.second) ? ++i : i.Erase();
+    modified |= res.second;
+  }
+  module->ForEachInst(
+      [&extInstImportsReplacementMap](Instruction* inst) {
+        inst->ForEachInId([&extInstImportsReplacementMap](uint32_t* op) {
+          auto iter = extInstImportsReplacementMap.find(*op);
+          if (iter != extInstImportsReplacementMap.end()) *op = iter->second;
+        });
+      },
+      false);
+
   // Remove duplicate types
   // TODO(pierremoreau): optimise this part of the pass
   const auto isType = [](SpvOp op) {
