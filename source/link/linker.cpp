@@ -29,6 +29,7 @@
 #include "opt/ir_loader.h"
 #include "opt/make_unique.h"
 #include "opt/pass_manager.h"
+#include "opt/remove_duplicates_pass.h"
 #include "spirv-tools/libspirv.hpp"
 #include "spirv_target_env.h"
 
@@ -347,12 +348,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   });
 
   // Remove duplicate capabilities
-  std::unordered_set<uint32_t> capabilities;
-  for (auto i = linkedModule->capability_begin();
-       i != linkedModule->capability_end();) {
-    auto insertRes = capabilities.insert(i->GetSingleWordOperand(0u));
-    i = (insertRes.second) ? ++i : i.Erase();
-  }
+  manager.AddPass<RemoveDuplicatesPass>();
 
   // Remove import linkage attributes
   for (auto i = linkedModule->annotation_begin();
