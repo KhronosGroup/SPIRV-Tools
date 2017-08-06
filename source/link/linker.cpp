@@ -205,11 +205,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   for (auto i = modules.begin() + 1; i != modules.end(); ++i) {
     Module* module = i->get();
     module->ForEachInst([&id_bound](Instruction* insn) {
-      insn->ForEachInId([&id_bound](uint32_t* id) { *id += id_bound; });
-      if (const uint32_t result_id = insn->result_id())
-        insn->SetResultId(result_id + id_bound);
-      if (const uint32_t result_type = insn->type_id())
-        insn->SetResultType(result_type + id_bound);
+      insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
     });
     id_bound += module->IdBound() - 1u;
     if (id_bound > 0x3FFFFF)
@@ -332,19 +328,10 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   linkedModule->ForEachInst([&linking_table](Instruction* insn) {
-    const auto link = [&linking_table](uint32_t* id) {
+    insn->ForEachId([&linking_table](uint32_t* id) {
       auto id_iter = linking_table.find(*id);
       if (id_iter != linking_table.end()) *id = id_iter->second;
-    };
-    insn->ForEachInId(link);
-    if (uint32_t result_id = insn->result_id()) {
-      link(&result_id);
-      insn->SetResultId(result_id);
-    }
-    if (uint32_t result_type = insn->type_id()) {
-      link(&result_type);
-      insn->SetResultType(result_type);
-    }
+    });
   });
 
   // Remove duplicate capabilities
