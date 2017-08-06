@@ -45,6 +45,7 @@ add_library(SPIRV-Tools-opt
   passes.h
   pass_manager.h
   eliminate_dead_functions_pass.h
+  remove_duplicates_pass.h
   set_spec_constant_default_value_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
@@ -77,6 +78,7 @@ add_library(SPIRV-Tools-opt
   local_ssa_elim_pass.cpp
   module.cpp
   eliminate_dead_functions_pass.cpp
+  remove_duplicates_pass.cpp
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
   mem_pass.cpp
