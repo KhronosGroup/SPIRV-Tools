@@ -80,10 +80,10 @@ class Linker {
   // * Some imported symbols did not have an exported counterpart.
   spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
-                    const LinkerOptions& options) const;
+                    const LinkerOptions& options = LinkerOptions()) const;
   spv_result_t Link(const uint32_t* const* binaries, const size_t* binary_sizes,
                     size_t num_binaries, std::vector<uint32_t>& linked_binary,
-                    const LinkerOptions& options) const;
+                    const LinkerOptions& options = LinkerOptions()) const;
 
  private:
   struct Impl;  // Opaque struct for holding the data fields used by this class.
