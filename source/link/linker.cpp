@@ -56,12 +56,18 @@ static spv_result_t MergeModules(
     for (const auto& insn : module->ext_inst_imports())
       linkedModule->AddExtInstImport(MakeUnique<Instruction>(insn));
 
-  {
+  do {
     const Instruction* memoryModelInsn = inModules[0]->GetMemoryModel();
+    if (memoryModelInsn == nullptr)
+      break;
+
     uint32_t addressingModel = memoryModelInsn->GetSingleWordOperand(0u);
     uint32_t memoryModel = memoryModelInsn->GetSingleWordOperand(1u);
     for (const auto& module : inModules) {
       memoryModelInsn = module->GetMemoryModel();
+      if (memoryModelInsn == nullptr)
+        continue;
+
       if (addressingModel != memoryModelInsn->GetSingleWordOperand(0u)) {
         spv_operand_desc initialDesc = nullptr, currentDesc = nullptr;
         grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
@@ -87,8 +93,10 @@ static spv_result_t MergeModules(
                << currentDesc->name << ".";
       }
     }
-    linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
-  }
+
+    if (memoryModelInsn != nullptr)
+      linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
+  } while(false);
 
   std::vector<std::pair<uint32_t, const char*>> entryPoints;
   for (const auto& module : inModules)
