@@ -25,17 +25,18 @@ namespace libspirv {
 // Computes and stores id descriptors.
 //
 // Descriptors are computed as hash of all words in the instruction where ids
-// were substituted with previosly computed descriptors.
+// were substituted with previously computed descriptors.
 class IdDescriptorCollection {
  public:
   IdDescriptorCollection() {
     words_.reserve(16);
   }
 
-  // Issues new descriptor for the result id of the given instruction.
+  // Computes descriptor for the result id of the given instruction and
+  // registers it in id_to_descriptor_. Returns the computed descriptor.
   // This function needs to be sequentially called for every instruction in the
   // module.
-  uint32_t IssueNewDescriptor(const spv_parsed_instruction_t& inst);
+  uint32_t ProcessInstruction(const spv_parsed_instruction_t& inst);
 
   // Returns a previously computed descriptor id.
   uint32_t GetDescriptor(uint32_t id) const {
@@ -47,6 +48,8 @@ class IdDescriptorCollection {
 
  private:
   std::unordered_map<uint32_t, uint32_t> id_to_descriptor_;
+
+  // Scratch buffer used for hashing. Class member to optimize on allocation.
   std::vector<uint32_t> words_;
 };
 

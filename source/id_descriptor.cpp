@@ -24,6 +24,7 @@ namespace libspirv {
 
 namespace {
 
+// Hashes an array of words. Order of words is important.
 uint32_t HashU32Array(const std::vector<uint32_t>& words) {
   const uint32_t kMagic = 2654435761;
   uint32_t val = 0;
@@ -35,13 +36,12 @@ uint32_t HashU32Array(const std::vector<uint32_t>& words) {
 
 }  // namespace
 
-uint32_t IdDescriptorCollection::IssueNewDescriptor(
+uint32_t IdDescriptorCollection::ProcessInstruction(
     const spv_parsed_instruction_t& inst) {
   if (!inst.result_id)
     return 0;
 
-  words_.clear();
-
+  assert(words_.empty());
   words_.push_back(inst.words[0]);
 
   for (size_t operand_index = 0; operand_index < inst.num_operands;
@@ -64,6 +64,8 @@ uint32_t IdDescriptorCollection::IssueNewDescriptor(
 
   const uint32_t descriptor = HashU32Array(words_);
   assert(descriptor);
+
+  words_.clear();
 
   const auto result = id_to_descriptor_.emplace(inst.result_id, descriptor);
   assert(result.second);

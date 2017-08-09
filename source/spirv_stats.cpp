@@ -88,7 +88,7 @@ class StatsAggregator {
   void ProcessIdDescriptors() {
     const Instruction& inst = GetCurrentInstruction();
     const uint32_t new_descriptor =
-        id_descriptors_.IssueNewDescriptor(inst.c_inst());
+        id_descriptors_.ProcessInstruction(inst.c_inst());
 
     if (new_descriptor) {
       std::stringstream ss;
