@@ -1484,6 +1484,77 @@ OpFunctionEnd
       predefs + before + nonEntryFuncs, 
       predefs + after + nonEntryFuncs, false, true);
 }
+
+TEST_F(InlineTest, EarlyReturnNotAppearingLastInFunctionInlined) {
+  // Example from https://github.com/KhronosGroup/SPIRV-Tools/issues/755
+  //
+  // Original example is derived from:
+  //
+  // #version 450
+  //
+  // float foo() {
+  //     if (true) {
+  //     }
+  // }
+  //
+  // void main() { foo(); }
+  //
+  // But the order of basic blocks in foo is changed so that the return
+  // block is listed second-last.  There is only one return in the callee
+  // but it does not appear last.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+)";
+
+  const std::string nonEntryFuncs =
+      R"(%foo_ = OpFunction %void None %4
+%7 = OpLabel
+OpSelectionMerge %8 None
+OpBranchConditional %true %9 %8
+%8 = OpLabel
+OpReturn
+%9 = OpLabel
+OpBranch %8
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %4
+%10 = OpLabel
+%11 = OpFunctionCall %void %foo_
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+R"(%main = OpFunction %void None %4
+%10 = OpLabel
+OpSelectionMerge %12 None
+OpBranchConditional %true %13 %12
+%12 = OpLabel
+OpBranch %14
+%13 = OpLabel
+OpBranch %12
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before,
+      predefs + nonEntryFuncs + after, false, true);
+}
+
 TEST_F(InlineTest, EarlyReturnInLoopIsNotInlined) {
   // #version 140
   // 

@@ -228,9 +228,9 @@ void InlinePass::GenInlineCode(
   ir::Function* calleeFn = id2function_[call_inst_itr->GetSingleWordOperand(
       kSpvFunctionCallFunctionId)];
 
-  // Check for early returns
-  auto fi = early_return_.find(calleeFn->result_id());
-  bool earlyReturn = fi != early_return_.end();
+  // Check for multiple returns in the callee.
+  auto fi = multi_return_funcs_.find(calleeFn->result_id());
+  const bool multiReturn = fi != multi_return_funcs_.end();
 
   // Map parameters to actual arguments.
   MapParams(calleeFn, call_inst_itr, &callee2caller);
@@ -250,11 +250,14 @@ void InlinePass::GenInlineCode(
   uint32_t returnLabelId = 0;
   bool multiBlocks = false;
   const uint32_t calleeTypeId = calleeFn->type_id();
+  // new_blk_ptr is a new basic block in the caller.  New instructions are
+  // written to it.  It is created when we encounter the OpLabel
+  // of the first callee block.
   std::unique_ptr<ir::BasicBlock> new_blk_ptr;
   calleeFn->ForEachInst([&new_blocks, &callee2caller, &call_block_itr,
                          &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
                          &returnLabelId, &returnVarId, &calleeTypeId,
-                         &multiBlocks, &postCallSB, &preCallSB, &earlyReturn,
+                         &multiBlocks, &postCallSB, &preCallSB, multiReturn,
                          &singleTripLoopHeaderId, &singleTripLoopContinueId,
                          this](
       const ir::Instruction* cpi) {
@@ -304,10 +307,10 @@ void InlinePass::GenInlineCode(
             }
             new_blk_ptr->AddInstruction(std::move(cp_inst));
           }
-          // If callee is early return function, insert header block for
-          // one-trip loop that will encompass callee code. Start postheader
+          // If callee has multiple returns, insert header block for
+          // single-trip loop that will encompass callee code.  Start postheader
           // block.
-          if (earlyReturn) {
+          if (multiReturn) {
             singleTripLoopHeaderId = this->TakeNextId();
             AddBranch(singleTripLoopHeaderId, &new_blk_ptr);
             new_blocks->push_back(std::move(new_blk_ptr));
@@ -346,16 +349,23 @@ void InlinePass::GenInlineCode(
         prevInstWasReturn = true;
       } break;
       case SpvOpFunctionEnd: {
-        // If there was an early return, insert continue and return blocks.
-        // If previous instruction was return, insert branch instruction
-        // to return block.
+        // If there was an early return, we generated a return label id
+        // for it.  Now we have to generate the return block with that Id.
         if (returnLabelId != 0) {
+          // If previous instruction was return, insert branch instruction
+          // to return block.
           if (prevInstWasReturn) AddBranch(returnLabelId, &new_blk_ptr);
-          new_blocks->push_back(std::move(new_blk_ptr));
-          new_blk_ptr.reset(new ir::BasicBlock(NewLabel(
-              singleTripLoopContinueId)));
-          AddBranchCond(GetFalseId(), singleTripLoopHeaderId, returnLabelId, 
-              &new_blk_ptr);
+          if (multiReturn) {
+            // If we generated a loop header to for the single-trip loop
+            // to accommodate multiple returns, insert the continue
+            // target block now, with a false branch back to the loop header.
+            new_blocks->push_back(std::move(new_blk_ptr));
+            new_blk_ptr.reset(
+                new ir::BasicBlock(NewLabel(singleTripLoopContinueId)));
+            AddBranchCond(GetFalseId(), singleTripLoopHeaderId, returnLabelId,
+                          &new_blk_ptr);
+          }
+          // Generate the return block.
           new_blocks->push_back(std::move(new_blk_ptr));
           new_blk_ptr.reset(new ir::BasicBlock(NewLabel(returnLabelId)));
           multiBlocks = true;
@@ -547,7 +557,7 @@ void InlinePass::AnalyzeReturns(ir::Function* func) {
     no_return_in_loop_.insert(func->result_id());
     return;
   }
-  early_return_.insert(func->result_id());
+  multi_return_funcs_.insert(func->result_id());
   // If multiple returns, see if any are in a loop
   if (HasNoReturnInLoop(func))
     no_return_in_loop_.insert(func->result_id());
@@ -584,7 +594,7 @@ void InlinePass::InitializeInline(ir::Module* module) {
   block2structured_succs_.clear();
   inlinable_.clear();
   no_return_in_loop_.clear();
-  early_return_.clear();
+  multi_return_funcs_.clear();
 
   for (auto& fn : *module_) {
     // Initialize function and block maps.

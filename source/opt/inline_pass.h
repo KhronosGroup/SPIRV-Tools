@@ -186,8 +186,8 @@ class InlinePass : public Pass {
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 
-  // Set of ids of functions with early returns
-  std::set<uint32_t> early_return_;
+  // Set of ids of functions with multiple returns.
+  std::set<uint32_t> multi_return_funcs_;
 
   // Set of ids of functions with no returns in loop
   std::set<uint32_t> no_return_in_loop_;
