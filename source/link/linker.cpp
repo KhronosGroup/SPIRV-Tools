@@ -146,7 +146,8 @@ static spv_result_t MergeModules(
   }
   if (num_global_values > 0xFFFF)
     return libspirv::DiagnosticStream(position, consumer, SPV_ERROR_INTERNAL)
-           << "The limit of global values was exceeded.";
+           << "The limit of global values, 65535, was exceeded;"
+           << " " << num_global_values << " global values were found.";
 
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
