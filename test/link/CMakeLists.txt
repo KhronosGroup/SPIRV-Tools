@@ -21,3 +21,8 @@ add_spvtools_unittest(TARGET memory_model
   SRCS memory_model_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET entry_points
+  SRCS entry_points_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)
