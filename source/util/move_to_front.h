@@ -325,7 +325,7 @@ class MultiMoveToFront {
  public:
   // Inserts |value| to sequence with handle |mtf|.
   // Returns false if |mtf| already has |value|.
-  bool Insert(uint32_t mtf, const Val& value) {
+  bool Insert(uint64_t mtf, const Val& value) {
     if (GetMtf(mtf).Insert(value)) {
       val_to_mtfs_[value].insert(mtf);
       return true;
@@ -335,7 +335,7 @@ class MultiMoveToFront {
 
   // Removes |value| from sequence with handle |mtf|.
   // Returns false if |mtf| doesn't have |value|.
-  bool Remove(uint32_t mtf, const Val& value) {
+  bool Remove(uint64_t mtf, const Val& value) {
     if (GetMtf(mtf).Remove(value)) {
       val_to_mtfs_[value].erase(mtf);
       return true;
@@ -351,7 +351,7 @@ class MultiMoveToFront {
       return;
 
     auto& mtfs_containing_value = it->second;
-    for (uint32_t mtf : mtfs_containing_value) {
+    for (uint64_t mtf : mtfs_containing_value) {
       GetMtf(mtf).Remove(value);
     }
 
@@ -360,18 +360,18 @@ class MultiMoveToFront {
 
   // Computes rank of |value| in sequence |mtf|.
   // Returns false if |mtf| doesn't have |value|.
-  bool RankFromValue(uint32_t mtf, const Val& value, uint32_t* rank) {
+  bool RankFromValue(uint64_t mtf, const Val& value, uint32_t* rank) {
     return GetMtf(mtf).RankFromValue(value, rank);
   }
 
   // Finds |value| with |rank| in sequence |mtf|.
   // Returns false if |rank| is out of bounds.
-  bool ValueFromRank(uint32_t mtf, uint32_t rank, Val* value) {
+  bool ValueFromRank(uint64_t mtf, uint32_t rank, Val* value) {
     return GetMtf(mtf).ValueFromRank(rank, value);
   }
 
   // Returns size of |mtf| sequence.
-  uint32_t GetSize(uint32_t mtf) {
+  uint32_t GetSize(uint64_t mtf) {
     return GetMtf(mtf).GetSize();
   }
 
@@ -382,20 +382,20 @@ class MultiMoveToFront {
       return;
 
     const auto& mtfs_containing_value = it->second;
-    for (uint32_t mtf : mtfs_containing_value) {
+    for (uint64_t mtf : mtfs_containing_value) {
       GetMtf(mtf).Promote(value);
     }
   }
 
   // Inserts |value| in sequence |mtf| or promotes if it's already there.
-  void InsertOrPromote(uint32_t mtf, const Val& value) {
+  void InsertOrPromote(uint64_t mtf, const Val& value) {
     if (!Insert(mtf, value)) {
       GetMtf(mtf).Promote(value);
     }
   }
 
   // Returns if |mtf| sequence has |value|.
-  bool HasValue(uint32_t mtf, const Val& value) {
+  bool HasValue(uint64_t mtf, const Val& value) {
     return GetMtf(mtf).HasValue(value);
   }
 
@@ -403,7 +403,7 @@ class MultiMoveToFront {
   // Returns actual MoveToFront object corresponding to |handle|.
   // As multiple operations are often performed consecutively for the same
   // sequence, the last returned value is cached.
-  MoveToFront<Val>& GetMtf(uint32_t handle) {
+  MoveToFront<Val>& GetMtf(uint64_t handle) {
     if (!cached_mtf_ || cached_handle_ != handle) {
       cached_handle_ = handle;
       cached_mtf_ = &mtfs_[handle];
@@ -413,13 +413,13 @@ class MultiMoveToFront {
   }
 
   // Container holding MoveToFront objects. Map key is sequence handle.
-  std::map<uint32_t, MoveToFront<Val>> mtfs_;
+  std::map<uint64_t, MoveToFront<Val>> mtfs_;
 
   // Container mapping value to sequences which contain that value.
-  std::unordered_map<Val, std::set<uint32_t>> val_to_mtfs_;
+  std::unordered_map<Val, std::set<uint64_t>> val_to_mtfs_;
 
   // Cache for the last accessed sequence.
-  uint32_t cached_handle_ = 0;
+  uint64_t cached_handle_ = 0;
   MoveToFront<Val>* cached_mtf_ = nullptr;
 };
 
@@ -471,7 +471,15 @@ bool MoveToFront<Val>::RankFromValue(const Val& value, uint32_t* rank) {
   }
 
   const uint32_t old_size = GetSize();
-  (void)old_size;
+  if (old_size == 1) {
+    if (ValueOf(root_) == value) {
+      *rank = 1;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   const auto it = value_to_node_.find(value);
   if (it == value_to_node_.end()) {
     return false;
@@ -524,7 +532,9 @@ bool MoveToFront<Val>::Promote(const Val& value) {
   }
 
   const uint32_t old_size = GetSize();
-  (void)old_size;
+  if (old_size == 1)
+    return ValueOf(root_) == value;
+
   const auto it = value_to_node_.find(value);
   if (it == value_to_node_.end()) {
     return false;
@@ -559,6 +569,11 @@ bool MoveToFront<Val>::ValueFromRank(uint32_t rank, Val* value) {
   const uint32_t old_size = GetSize();
   if (rank <= 0 || rank > old_size) {
     return false;
+  }
+
+  if (old_size == 1) {
+    *value = ValueOf(root_);
+    return true;
   }
 
   const bool update_timestamp = (rank != 1);

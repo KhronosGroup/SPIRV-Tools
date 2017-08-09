@@ -16,6 +16,7 @@
 #define LIBSPIRV_OPERAND_H_
 
 #include <deque>
+#include <functional>
 
 #include "spirv-tools/libspirv.h"
 #include "table.h"
@@ -123,5 +124,12 @@ spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
 
 // Is the operand an ID?
 bool spvIsIdType(spv_operand_type_t type);
+
+// Takes the opcode of an instruction and returns
+// a function object that will return true if the index
+// of the operand can be forward declared. This function will
+// used in the SSA validation stage of the pipeline
+std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
+    SpvOp opcode);
 
 #endif  // LIBSPIRV_OPERAND_H_
