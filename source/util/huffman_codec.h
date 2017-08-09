@@ -210,7 +210,7 @@ class HuffmanCodec {
 
   // Encodes |val| and stores its Huffman code in the lower |num_bits| of
   // |bits|. Returns false of |val| is not in the Huffman table.
-  bool Encode(const Val& val, uint64_t* bits, size_t* num_bits) {
+  bool Encode(const Val& val, uint64_t* bits, size_t* num_bits) const {
     auto it = encoding_table_.find(val);
     if (it == encoding_table_.end())
       return false;
@@ -225,7 +225,8 @@ class HuffmanCodec {
   // |read_bit| has type bool func(bool* bit). When called, the next bit is
   // stored in |bit|. |read_bit| returns false if the stream terminates
   // prematurely.
-  bool DecodeFromStream(const std::function<bool(bool*)>& read_bit, Val* val) {
+  bool DecodeFromStream(
+      const std::function<bool(bool*)>& read_bit, Val* val) const {
     uint32_t node = root_;
     while (true) {
       assert(node);
