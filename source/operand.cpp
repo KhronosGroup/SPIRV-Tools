@@ -328,3 +328,61 @@ bool spvIsIdType(spv_operand_type_t type) {
       return false;
   }
 }
+
+std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
+    SpvOp opcode) {
+  std::function<bool(unsigned index)> out;
+  switch (opcode) {
+    case SpvOpExecutionMode:
+    case SpvOpEntryPoint:
+    case SpvOpName:
+    case SpvOpMemberName:
+    case SpvOpSelectionMerge:
+    case SpvOpDecorate:
+    case SpvOpMemberDecorate:
+    case SpvOpTypeStruct:
+    case SpvOpBranch:
+    case SpvOpLoopMerge:
+      out = [](unsigned) { return true; };
+      break;
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+    case SpvOpBranchConditional:
+    case SpvOpSwitch:
+      out = [](unsigned index) { return index != 0; };
+      break;
+
+    case SpvOpFunctionCall:
+      // The Function parameter.
+      out = [](unsigned index) { return index == 2; };
+      break;
+
+    case SpvOpPhi:
+      out = [](unsigned index) { return index > 1; };
+      break;
+
+    case SpvOpEnqueueKernel:
+      // The Invoke parameter.
+      out = [](unsigned index) { return index == 8; };
+      break;
+
+    case SpvOpGetKernelNDrangeSubGroupCount:
+    case SpvOpGetKernelNDrangeMaxSubGroupSize:
+      // The Invoke parameter.
+      out = [](unsigned index) { return index == 3; };
+      break;
+
+    case SpvOpGetKernelWorkGroupSize:
+    case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
+      // The Invoke parameter.
+      out = [](unsigned index) { return index == 2; };
+      break;
+    case SpvOpTypeForwardPointer:
+      out = [](unsigned index) { return index == 0; };
+      break;
+    default:
+      out = [](unsigned) { return false; };
+      break;
+  }
+  return out;
+}

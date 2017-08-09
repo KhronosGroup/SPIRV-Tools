@@ -599,23 +599,30 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsHist(std::ostream& out) {
     total += kv.second;
   }
 
+  uint32_t left_out = 0;
+
   for (const auto& kv : stats_.opcode_and_num_operands_hist) {
     const uint32_t count = kv.second;
     const double kFrequentEnoughToAnalyze = 0.001;
-    if (double(count) / double(total) < kFrequentEnoughToAnalyze) continue;
     const uint32_t opcode_and_num_operands = kv.first;
     const uint32_t opcode = opcode_and_num_operands & 0xFFFF;
     const uint32_t num_operands = opcode_and_num_operands >> 16;
 
-    if (opcode == SpvOpTypeStruct)
+    if (opcode == SpvOpTypeStruct ||
+        double(count) / double(total) < kFrequentEnoughToAnalyze) {
+      left_out += count;
       continue;
+    }
 
     out << "    { CombineOpcodeAndNumOperands(SpvOp"
         << spvOpcodeString(SpvOp(opcode))
         << ", " << num_operands << "), " << count << " },\n";
   }
 
-  out << "    { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";
+  // Heuristic.
+  const uint32_t none_of_the_above =
+      std::max(1, int(left_out + total * 0.01));
+  out << "    { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
   out << "  });\n}\n";
 }
 
@@ -628,7 +635,7 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
 
   for (const auto& kv : stats_.opcode_and_num_operands_markov_hist) {
     const uint32_t prev_opcode = kv.first;
-    const double kFrequentEnoughToAnalyze = 0.001;
+    const double kFrequentEnoughToAnalyze = 0.01;
     if (opcode_freq_[prev_opcode] < kFrequentEnoughToAnalyze) continue;
 
     const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
@@ -637,6 +644,8 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
     for (const auto& pair : hist) {
       total += pair.second;
     }
+
+    uint32_t left_out = 0;
 
     out << "  {\n";
     out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
@@ -654,15 +663,20 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
       const double posterior_freq = double(count) / double(total);
 
       if (opcode_freq_[opcode] < kFrequentEnoughToAnalyze &&
-          posterior_freq < kFrequentEnoughToAnalyze) continue;
+          posterior_freq < kFrequentEnoughToAnalyze) {
+        left_out += count;
+        continue;
+      }
 
-      total += count;
       out << "      { CombineOpcodeAndNumOperands(SpvOp"
           << spvOpcodeString(SpvOp(opcode))
           << ", " << num_operands << "), " << count << " },\n";
     }
 
-    out << "      { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";
+    // Heuristic.
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << GetOpcodeString(prev_opcode)
@@ -695,6 +709,8 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
       total += pair.second;
     }
 
+    uint32_t left_out = 0;
+
     out << "  {\n";
     out << "    std::unique_ptr<HuffmanCodec<std::string>> "
         << "codec(new HuffmanCodec<std::string>({\n";
@@ -702,13 +718,19 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
       const double kStringFrequentEnoughToAnalyze = 0.001;
-      if (freq < kStringFrequentEnoughToAnalyze) continue;
+      if (freq < kStringFrequentEnoughToAnalyze) {
+        left_out += count;
+        continue;
+      }
       out << "      { std::string(\"" << pair.first << "\"), " << count
           << " },\n";
     }
 
+    // Heuristic.
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
     out << "      { std::string(\"kMarkvNoneOfTheAbove\"), "
-        << 1 + int(total * 0.05) << " },\n";
+        << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << spvOpcodeString(SpvOp(opcode))
@@ -741,6 +763,8 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       total += pair.second;
     }
 
+    uint32_t left_out = 0;
+
     out << "  {\n";
     out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
         << "codec(new HuffmanCodec<uint64_t>({\n";
@@ -748,12 +772,18 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       const uint32_t word = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kWordFrequentEnoughToAnalyze = 0.001;
-      if (freq < kWordFrequentEnoughToAnalyze) continue;
+      const double kWordFrequentEnoughToAnalyze = 0.01;
+      if (freq < kWordFrequentEnoughToAnalyze) {
+        left_out += count;
+        continue;
+      }
       out << "      { " << word << ", " << count << " },\n";
     }
 
-    out << "      { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";
+    // Heuristic.
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
@@ -778,7 +808,7 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     const uint32_t opcode = opcode_and_index.first;
     const uint32_t index = opcode_and_index.second;
 
-    const double kOpcodeFrequentEnoughToAnalyze = 0.001;
+    const double kOpcodeFrequentEnoughToAnalyze = 0.01;
     if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
 
     const std::map<uint32_t, uint32_t>& hist = kv.second;
@@ -788,6 +818,8 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
       total += pair.second;
     }
 
+    uint32_t left_out = 0;
+
     out << "  {\n";
     out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
         << "codec(new HuffmanCodec<uint64_t>({\n";
@@ -795,12 +827,18 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
       const uint32_t descriptor = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kDescriptorFrequentEnoughToAnalyze = 0.005;
-      if (freq < kDescriptorFrequentEnoughToAnalyze) continue;
+      const double kDescriptorFrequentEnoughToAnalyze = 0.01;
+      if (freq < kDescriptorFrequentEnoughToAnalyze) {
+        left_out += count;
+        continue;
+      }
       out << "      { " << descriptor << ", " << count << " },\n";
     }
 
-    out << "      { kMarkvNoneOfTheAbove, " << 1 + int(total * 0.05) << " },\n";
+    // Heuristic.
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
