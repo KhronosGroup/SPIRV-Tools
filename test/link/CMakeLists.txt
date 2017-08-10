@@ -26,3 +26,8 @@ add_spvtools_unittest(TARGET entry_points
   SRCS entry_points_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET global_values_amount
+  SRCS global_values_amount_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)
