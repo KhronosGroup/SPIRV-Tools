@@ -137,6 +137,9 @@ static spv_result_t MergeModules(
     for (const auto& insn : module->annotations())
       linkedModule->AddAnnotationInst(MakeUnique<Instruction>(insn));
 
+  // TODO(pierremoreau): Since the modules have not been validate, should we
+  //                     expect SpvStorageClassFunction variables outside
+  //                     functions?
   uint32_t num_global_values = 0u;
   for (const auto& module : inModules) {
     for (const auto& insn : module->types_values()) {
@@ -201,7 +204,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     if (module == nullptr)
       return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of binary " << modules.size()
+             << "Failed to build a module out of " << modules.size()
              << ".";
     modules.push_back(std::move(module));
   }
