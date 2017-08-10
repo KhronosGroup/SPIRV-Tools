@@ -58,9 +58,10 @@ class CommonUniformElimPass : public Pass {
   // Return true if |block_ptr| is loop header block
   bool IsLoopHeader(ir::BasicBlock* block_ptr);
 
-  // Given a load or store pointed at by |ip|, return the pointer
-  // instruction. Also return the variable's id in |varId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
+  // Given a load or store pointed at by |ip|, return the top-most
+  // non-CopyObj in its pointer operand. Also return the base pointer
+  // in |objId|.
+  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* objId);
 
   // Return true if variable is uniform
   bool IsUniformVar(uint32_t varId);
@@ -177,9 +178,6 @@ class CommonUniformElimPass : public Pass {
 
   // Def-Uses for the module we are processing
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
 
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;

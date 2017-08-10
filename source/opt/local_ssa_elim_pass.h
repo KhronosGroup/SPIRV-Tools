@@ -149,9 +149,6 @@ class LocalMultiStoreElimPass : public MemPass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 

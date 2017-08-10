@@ -54,7 +54,7 @@ class MemPass : public Pass {
   bool IsNonPtrAccessChain(const SpvOp opcode) const;
 
   // Given the id |ptrId|, return true if the top-most non-CopyObj is
-  // a pointer. 
+  // a variable, a non-ptr access chain or a parameter of pointer type.
   bool IsPtr(uint32_t ptrId);
 
   // Given the id of a pointer |ptrId|, return the top-most non-CopyObj.

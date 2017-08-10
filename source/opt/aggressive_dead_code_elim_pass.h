@@ -50,7 +50,8 @@ class AggressiveDCEPass : public MemPass {
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
 
-  // Return true if variable with |varId| is function scope
+  // Return true if object with |varId| is function scope variable or
+  // function parameter with pointer type.
   bool IsLocalVar(uint32_t varId);
 
   // Initialize combinator data structures
@@ -92,9 +93,6 @@ class AggressiveDCEPass : public MemPass {
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
 
   // Live Instruction Worklist.  An instruction is added to this list
   // if it might have a side effect, either directly or indirectly.

@@ -24,7 +24,6 @@ namespace opt {
 
 namespace {
 
-const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
@@ -33,9 +32,13 @@ const uint32_t kExtInstInstructionInIndx = 1;
 
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
+  const SpvOp op = varInst->opcode();
+  if (op != SpvOpVariable && op != SpvOpFunctionParameter) 
+    return false;
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  if (varTypeInst->opcode() != SpvOpTypePointer)
+    return false;
   return varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) ==
       SpvStorageClassFunction;
 }
@@ -54,7 +57,7 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       } break;
       case SpvOpLoad:
         break;
-      // Assume it stores eg frexp, modf, function call
+      // If default, assume it stores eg frexp, modf, function call
       case SpvOpStore:
       default: {
         if (live_insts_.find(u.inst) == live_insts_.end())
@@ -136,7 +139,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
             worklist_.push(&inst);
         } break;
         default: {
-          // eg. control flow, function call, atomics
+          // eg. control flow, function call, atomics, function param,
+          // function return
           // TODO(greg-lunarg): function calls live only if write to non-local
           if (!IsCombinator(op))
             worklist_.push(&inst);
@@ -176,6 +180,10 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         (void) GetPtr(*iid, &varId);
         ProcessLoad(varId);
       });
+    }
+    // If function parameter, treat as if it's result id is loaded from
+    else if (liveInst->opcode() == SpvOpFunctionParameter) {
+      ProcessLoad(liveInst->result_id());
     }
     worklist_.pop();
   }
@@ -217,11 +225,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
 void AggressiveDCEPass::Initialize(ir::Module* module) {
   module_ = module;
 
-  // Initialize id-to-function map
-  id2function_.clear();
-  for (auto& fn : *module_)
-    id2function_[fn.result_id()] = &fn;
-
   // Clear collections
   worklist_ = std::queue<ir::Instruction*>{};
   live_insts_.clear();
@@ -253,12 +256,10 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // Initialize combinator whitelists
   InitCombinatorSets();
   // Process all entry point functions
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = AggressiveDCE(fn) || modified;
-  }
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return AggressiveDCE(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

@@ -40,6 +40,8 @@ class LocalAccessChainConvertPass : public MemPass {
   const char* name() const override { return "convert-local-access-chains"; }
   Status Process(ir::Module*) override;
 
+  using ProcessFunction = std::function<bool(ir::Function*)>;
+
  private:
   // Return true if all refs through |ptrId| are only loads or stores and
   // cache ptrId in supported_ref_ptrs_.
@@ -118,9 +120,6 @@ class LocalAccessChainConvertPass : public MemPass {
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
 
   // Variables with only supported references, ie. loads and stores using
   // variable directly or through non-ptr access chains.

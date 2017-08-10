@@ -19,12 +19,6 @@
 namespace spvtools {
 namespace opt {
 
-namespace {
-
-const int kEntryPointFunctionIdInIdx = 1;
-
-} // anonymous namespace
-
 bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.
@@ -60,16 +54,12 @@ void InlineExhaustivePass::Initialize(ir::Module* module) {
 };
 
 Pass::Status InlineExhaustivePass::ProcessImpl() {
-  // Do exhaustive inlining on each entry point function in module
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kEntryPointFunctionIdInIdx)];
-    modified = InlineExhaustive(fn) || modified;
-  }
-
+  // Attempt exhaustive inlining on each entry point function in module
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return InlineExhaustive(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   FinalizeNextId(module_);
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
