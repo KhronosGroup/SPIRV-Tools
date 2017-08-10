@@ -112,11 +112,6 @@ void BlockMergePass::Initialize(ir::Module* module) {
 
   module_ = module;
 
-  // Initialize function and block maps
-  id2function_.clear();
-  for (auto& fn : *module_) 
-    id2function_[fn.result_id()] = &fn;
-
   // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
@@ -139,12 +134,11 @@ Pass::Status BlockMergePass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = MergeBlocks(fn) || modified;
-  }
+  // Process all entry point functions.
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return MergeBlocks(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

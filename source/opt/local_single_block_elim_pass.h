@@ -72,9 +72,6 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
   // Map from function scope variable to a store of that variable in the
   // current block whose value is currently valid. This map is cleared
   // at the start of each block and incrementally updated as the block

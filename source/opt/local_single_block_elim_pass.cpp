@@ -142,11 +142,6 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
-  // Initialize function and block maps
-  id2function_.clear();
-  for (auto& fn : *module_) 
-    id2function_[fn.result_id()] = &fn;
-
   // Initialize Target Type Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
@@ -192,12 +187,10 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
   // Process all entry point functions
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = LocalSingleBlockLoadStoreElim(fn) || modified;
-  }
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return LocalSingleBlockLoadStoreElim(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

@@ -93,9 +93,6 @@ class AggressiveDCEPass : public MemPass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
   // Live Instruction Worklist.  An instruction is added to this list
   // if it might have a side effect, either directly or indirectly.
   // If we don't know, then add it to this list.  Instructions are

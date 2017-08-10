@@ -288,16 +288,13 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
   module_ = module;
 
   // Initialize function and block maps
-  id2function_.clear();
   id2block_.clear();
   block2structured_succs_.clear();
-  for (auto& fn : *module_) {
-    // Initialize function and block maps.
-    id2function_[fn.result_id()] = &fn;
-    for (auto& blk : fn) {
+
+  // Initialize block map
+  for (auto& fn : *module_)
+    for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
-    }
-  }
 
   // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
@@ -334,12 +331,10 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
   // Process all entry point functions
-  bool modified = false;
-  for (const auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = EliminateDeadBranches(fn) || modified;
-  }
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return EliminateDeadBranches(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

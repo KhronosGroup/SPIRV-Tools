@@ -73,9 +73,6 @@ class InsertExtractElimPass : public Pass {
   // Def-Uses for the module we are processing
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function_;
-
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 };

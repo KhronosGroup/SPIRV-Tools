@@ -491,14 +491,11 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Initialize function and block maps
-  id2function_.clear();
   id2block_.clear();
   block2structured_succs_.clear();
-  for (auto& fn : *module_) {
-    id2function_[fn.result_id()] = &fn;
+  for (auto& fn : *module_)
     for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
-  }
 
   // Clear collections
   seen_target_vars_.clear();
@@ -549,12 +546,10 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
   // Process functions
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = EliminateMultiStoreLocal(fn) || modified;
-  }
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return EliminateMultiStoreLocal(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

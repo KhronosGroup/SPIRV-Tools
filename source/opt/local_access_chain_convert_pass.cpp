@@ -262,11 +262,6 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
-  // Initialize function and block maps
-  id2function_.clear();
-  for (auto& fn : *module_) 
-    id2function_[fn.result_id()] = &fn;
-
   // Initialize Target Variable Caches
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
@@ -301,7 +296,6 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
     if (inst.opcode() == SpvOpTypeInt &&
         inst.GetSingleWordInOperand(kTypeIntWidthInIdx) != 32)
       return Status::SuccessWithoutChange;
-
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
@@ -314,15 +308,11 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   // Collect all named and decorated ids
   FindNamedOrDecoratedIds();
   // Process all entry point functions.
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = ConvertLocalAccessChains(fn) || modified;
-  }
-
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return ConvertLocalAccessChains(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   FinalizeNextId(module_);
-
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

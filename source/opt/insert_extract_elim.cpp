@@ -90,11 +90,6 @@ void InsertExtractElimPass::Initialize(ir::Module* module) {
 
   module_ = module;
 
-  // Initialize function and block maps
-  id2function_.clear();
-  for (auto& fn : *module_)
-    id2function_[fn.result_id()] = &fn;
-
   // Do def/use on whole module
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
@@ -118,13 +113,10 @@ Pass::Status InsertExtractElimPass::ProcessImpl() {
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
   // Process all entry point functions.
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordOperand(kSpvEntryPointFunctionId)];
-    modified = EliminateInsertExtract(fn) || modified;
-  }
-
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return EliminateInsertExtract(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

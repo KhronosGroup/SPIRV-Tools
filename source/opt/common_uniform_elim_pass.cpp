@@ -117,7 +117,8 @@ ir::Instruction* CommonUniformElimPass::GetPtr(
     ptrInst = def_use_mgr_->GetDef(*varId);
   }
   ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
+  while (varInst->opcode() != SpvOpVariable &&
+      varInst->opcode() != SpvOpFunctionParameter) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
       *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
     }
@@ -133,7 +134,8 @@ ir::Instruction* CommonUniformElimPass::GetPtr(
 bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
   const ir::Instruction* varInst =
     def_use_mgr_->id_to_defs().find(varId)->second;
-  assert(varInst->opcode() == SpvOpVariable);
+  if (varInst->opcode() != SpvOpVariable)
+    return false;
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst =
     def_use_mgr_->id_to_defs().find(varTypeId)->second;
@@ -514,13 +516,10 @@ void CommonUniformElimPass::Initialize(ir::Module* module) {
   module_ = module;
 
   // Initialize function and block maps
-  id2function_.clear();
   id2block_.clear();
-  for (auto& fn : *module_) {
-    id2function_[fn.result_id()] = &fn;
+  for (auto& fn : *module_)
     for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
-  }
 
   // Clear collections
   block2structured_succs_.clear();
@@ -574,12 +573,10 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
         inst.GetSingleWordInOperand(kTypeIntWidthInIdx) != 32)
       return Status::SuccessWithoutChange;
   // Process entry point functions
-  bool modified = false;
-  for (auto& e : module_->entry_points()) {
-    ir::Function* fn =
-        id2function_[e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx)];
-    modified = EliminateCommonUniform(fn) || modified;
-  }
+  ProcessFunction pfn = [this](ir::Function* fp) {
+    return EliminateCommonUniform(fp);
+  };
+  bool modified = ProcessEntryPointCallTree(pfn, module_);
   FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
