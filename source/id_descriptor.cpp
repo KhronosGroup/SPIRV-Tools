@@ -26,10 +26,12 @@ namespace {
 
 // Hashes an array of words. Order of words is important.
 uint32_t HashU32Array(const std::vector<uint32_t>& words) {
-  const uint32_t kMagic = 2654435761;
+  // The hash function is a sum of hashes of each word seeded by word index.
+  // Knuth's multiplicative hash is used to hash the words.
+  const uint32_t kKnuthMulHash = 2654435761;
   uint32_t val = 0;
   for (uint32_t i = 0; i < words.size(); ++i) {
-    val += (words[i] + i + 123) * kMagic;
+    val += (words[i] + i + 123) * kKnuthMulHash;
   }
   return val;
 }
