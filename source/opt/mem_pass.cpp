@@ -73,12 +73,20 @@ bool MemPass::IsNonPtrAccessChain(const SpvOp opcode) const {
   return opcode == SpvOpAccessChain || opcode == SpvOpInBoundsAccessChain;
 }
 
+bool MemPass::IsPtr(uint32_t ptrId) {
+  uint32_t varId = ptrId;
+  ir::Instruction* ptrInst = def_use_mgr_->GetDef(varId);
+  while (ptrInst->opcode() == SpvOpCopyObject) {
+    varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(varId);
+  }
+  const SpvOp op = ptrInst->opcode();
+  return op == SpvOpVariable || IsNonPtrAccessChain(op);
+}
+
 ir::Instruction* MemPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
-  const SpvOp op = ip->opcode();
-  assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
-      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
+      uint32_t ptrId, uint32_t* varId) {
+  *varId = ptrId;
   ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
     *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
@@ -96,6 +104,15 @@ ir::Instruction* MemPass::GetPtr(
     varInst = def_use_mgr_->GetDef(*varId);
   }
   return ptrInst;
+}
+
+ir::Instruction* MemPass::GetPtr(
+      ir::Instruction* ip, uint32_t* varId) {
+  const SpvOp op = ip->opcode();
+  assert(op == SpvOpStore || op == SpvOpLoad);
+  const uint32_t ptrId = ip->GetSingleWordInOperand(
+      op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
+  return GetPtr(ptrId, varId);
 }
 
 bool MemPass::IsTargetVar(uint32_t varId) {
