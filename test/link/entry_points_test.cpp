@@ -30,17 +30,12 @@ class EntryPoints : public spvtools::LinkerTest {
       });
     binaries.push_back(binaries.front());
   }
-  spvtools::Binaries& get_binaries() {
-    return binaries;
-  }
   virtual void TearDown() { binaries.clear(); }
 
   spvtools::Binaries binaries;
 };
 
 TEST_F(EntryPoints, Default) {
-  spvtools::Binaries& binaries = get_binaries();
-
   spvtools::Binary& first_binary = binaries[0];
   first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
@@ -62,8 +57,6 @@ TEST_F(EntryPoints, Default) {
 }
 
 TEST_F(EntryPoints, DifferentModelSameName) {
-  spvtools::Binaries& binaries = get_binaries();
-
   spvtools::Binary& first_binary = binaries[0];
   first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
@@ -87,8 +80,6 @@ TEST_F(EntryPoints, DifferentModelSameName) {
 }
 
 TEST_F(EntryPoints, SameModelAndName) {
-  spvtools::Binaries& binaries = get_binaries();
-
   spvtools::Binary& first_binary = binaries[0];
   first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
