@@ -25,24 +25,24 @@ class BinaryVersion : public spvtools::LinkerTest {
       SpvMagicNumber,
       0x00000300u,
       SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0  // NOTE: Schema; reserved
+      1u,  // NOTE: Bound
+      0u   // NOTE: Schema; reserved
       });
 
     binaries.push_back({
       SpvMagicNumber,
       0x00000600u,
       SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0  // NOTE: Schema; reserved
+      1u,  // NOTE: Bound
+      0u   // NOTE: Schema; reserved
       });
 
     binaries.push_back({
       SpvMagicNumber,
       0x00000100u,
       SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0  // NOTE: Schema; reserved
+      1u,  // NOTE: Bound
+      0u   // NOTE: Schema; reserved
       });
   }
   virtual void TearDown() { binaries.clear(); }
