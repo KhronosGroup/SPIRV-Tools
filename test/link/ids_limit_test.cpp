@@ -36,17 +36,12 @@ class IdsLimit : public spvtools::LinkerTest {
       0u,        // NOTE: Schema; reserved
     });
   }
-  spvtools::Binaries& get_binaries() {
-    return binaries;
-  }
   virtual void TearDown() { binaries.clear(); }
 
   spvtools::Binaries binaries;
 };
 
 TEST_F(IdsLimit, Default) {
-  const spvtools::Binaries& binaries = get_binaries();
-
   spvtools::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
@@ -54,8 +49,6 @@ TEST_F(IdsLimit, Default) {
 }
 
 TEST_F(IdsLimit, OverLimit) {
-  spvtools::Binaries& binaries = get_binaries();
-
   binaries.push_back({
     SpvMagicNumber,
     SpvVersion,

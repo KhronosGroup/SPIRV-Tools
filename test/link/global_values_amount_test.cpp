@@ -99,25 +99,18 @@ class EntryPoints : public spvtools::LinkerTest {
       binaries.push_back(binary);
     }
   }
-  spvtools::Binaries& get_binaries() {
-    return binaries;
-  }
   virtual void TearDown() { binaries.clear(); }
 
   spvtools::Binaries binaries;
 };
 
 TEST_F(EntryPoints, Default) {
-  const spvtools::Binaries& binaries = get_binaries();
-
   spvtools::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
 }
 
 TEST_F(EntryPoints, OverLimit) {
-  spvtools::Binaries& binaries = get_binaries();
-
   binaries.push_back({
     SpvMagicNumber,
     SpvVersion,
