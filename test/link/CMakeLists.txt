@@ -31,3 +31,8 @@ add_spvtools_unittest(TARGET global_values_amount
   SRCS global_values_amount_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET ids_limit
+  SRCS ids_limit_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)
