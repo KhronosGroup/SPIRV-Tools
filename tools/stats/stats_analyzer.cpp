@@ -634,7 +634,7 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
 
   for (const auto& kv : stats_.opcode_and_num_operands_markov_hist) {
     const uint32_t prev_opcode = kv.first;
-    const double kFrequentEnoughToAnalyze = 0.001;
+    const double kFrequentEnoughToAnalyze = 0.01;
     if (opcode_freq_[prev_opcode] < kFrequentEnoughToAnalyze) continue;
 
     const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
@@ -769,7 +769,7 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       const uint32_t word = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kWordFrequentEnoughToAnalyze = 0.001;
+      const double kWordFrequentEnoughToAnalyze = 0.01;
       if (freq < kWordFrequentEnoughToAnalyze) {
         left_out += count;
         continue;
@@ -804,7 +804,7 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     const uint32_t opcode = opcode_and_index.first;
     const uint32_t index = opcode_and_index.second;
 
-    const double kOpcodeFrequentEnoughToAnalyze = 0.003;
+    const double kOpcodeFrequentEnoughToAnalyze = 0.01;
     if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
 
     const std::map<uint32_t, uint32_t>& hist = kv.second;
@@ -823,7 +823,7 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
       const uint32_t descriptor = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kDescriptorFrequentEnoughToAnalyze = 0.003;
+      const double kDescriptorFrequentEnoughToAnalyze = 0.01;
       if (freq < kDescriptorFrequentEnoughToAnalyze) {
         left_out += count;
         continue;

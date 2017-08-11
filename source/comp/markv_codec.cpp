@@ -45,6 +45,7 @@
 #include "ext_inst.h"
 #include "id_descriptor.h"
 #include "instruction.h"
+#include "markv_autogen.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
@@ -148,7 +149,7 @@ const uint32_t kMarkvMaxPresumedAccessIndex = 31;
 
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
-const uint64_t kMarkvNoneOfTheAbove = std::numeric_limits<uint64_t>::max();
+const uint64_t kMarkvNoneOfTheAbove = GetMarkvNonOfTheAbove();
 
 // Mtf ranks smaller than this are encoded with Huffman coding.
 const uint32_t kMtfSmallestRankEncodedByValue = 10;
@@ -158,13 +159,6 @@ const uint32_t kMtfRankEncodedByValueSignal =
     std::numeric_limits<uint32_t>::max();
 
 const size_t kCommentNumWhitespaces = 2;
-
-inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
-                                            uint32_t num_operands) {
-  return opcode | (num_operands << 16);
-}
-
-#include "markv_autogen.inc"
 
 // Returns a set of mtf rank codecs based on a plausible hand-coded
 // distribution.
@@ -1063,6 +1057,9 @@ void MarkvCodecBase::ProcessCurInstruction() {
     assert(remaining_function_parameter_types_.empty());
   }
 
+  if (!inst_.result_id)
+    return;
+
   {
     // Save the result ID to type ID mapping.
     // In the grammar, type ID always appears before result ID.
@@ -1076,9 +1073,6 @@ void MarkvCodecBase::ProcessCurInstruction() {
     (void)insertion_result;
     assert(insertion_result.second);
   }
-
-  if (!inst_.result_id)
-    return;
 
   // Add result_id to MTFs.
 

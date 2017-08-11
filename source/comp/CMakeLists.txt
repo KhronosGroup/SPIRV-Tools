@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(SPIRV-Tools-comp markv_codec.cpp)
+add_library(SPIRV-Tools-comp markv_codec.cpp markv_autogen.cpp)
 
 spvtools_default_compile_options(SPIRV-Tools-comp)
 target_include_directories(SPIRV-Tools-comp
