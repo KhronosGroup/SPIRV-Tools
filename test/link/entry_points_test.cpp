@@ -25,8 +25,8 @@ class EntryPoints : public spvtools::LinkerTest {
       SpvMagicNumber,
       SpvVersion,
       SPV_GENERATOR_CODEPLAY,
-      2,  // NOTE: Bound
-      0  // NOTE: Schema; reserved
+      2u,  // NOTE: Bound
+      0u   // NOTE: Schema; reserved
       });
     binaries.push_back(binaries.front());
   }
@@ -42,64 +42,64 @@ TEST_F(EntryPoints, Default) {
   spvtools::Binaries& binaries = get_binaries();
 
   spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);         // NOTE: entry ID
-  first_binary.push_back(0x006F6F66); // NOTE: "foo"
+  first_binary.push_back(1u);          // NOTE: entry ID
+  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
 
   spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   second_binary.push_back(SpvExecutionModelGLCompute);
-  second_binary.push_back(1u);         // NOTE: entry ID
-  second_binary.push_back(0x00726162); // NOTE: "bar"
+  second_binary.push_back(1u);          // NOTE: entry ID
+  second_binary.push_back(0x00726162u); // NOTE: "bar"
 
   spvtools::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
 
-  ASSERT_EQ(0x006F6F66, linked_binary[8]);
-  ASSERT_EQ(0x00726162, linked_binary[12]);
+  ASSERT_EQ(0x006F6F66u, linked_binary[8]);
+  ASSERT_EQ(0x00726162u, linked_binary[12]);
 }
 
 TEST_F(EntryPoints, DifferentModelSameName) {
   spvtools::Binaries& binaries = get_binaries();
 
   spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);         // NOTE: entry ID
-  first_binary.push_back(0x006F6F66); // NOTE: "foo"
+  first_binary.push_back(1u);          // NOTE: entry ID
+  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
 
   spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   second_binary.push_back(SpvExecutionModelVertex);
-  second_binary.push_back(1u);         // NOTE: entry ID
-  second_binary.push_back(0x006F6F66); // NOTE: "foo"
+  second_binary.push_back(1u);          // NOTE: entry ID
+  second_binary.push_back(0x006F6F66u); // NOTE: "foo"
 
   spvtools::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
 
   ASSERT_EQ(SpvExecutionModelGLCompute, linked_binary[6]);
-  ASSERT_EQ(0x006F6F66, linked_binary[8]);
+  ASSERT_EQ(0x006F6F66u, linked_binary[8]);
   ASSERT_EQ(SpvExecutionModelVertex, linked_binary[10]);
-  ASSERT_EQ(0x006F6F66, linked_binary[12]);
+  ASSERT_EQ(0x006F6F66u, linked_binary[12]);
 }
 
 TEST_F(EntryPoints, SameModelAndName) {
   spvtools::Binaries& binaries = get_binaries();
 
   spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);         // NOTE: entry ID
-  first_binary.push_back(0x006F6F66); // NOTE: "foo"
+  first_binary.push_back(1u);          // NOTE: entry ID
+  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
 
   spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4 << SpvWordCountShift | SpvOpEntryPoint);
+  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
   second_binary.push_back(SpvExecutionModelGLCompute);
-  second_binary.push_back(1u);         // NOTE: entry ID
-  second_binary.push_back(0x006F6F66); // NOTE: "foo"
+  second_binary.push_back(1u);          // NOTE: entry ID
+  second_binary.push_back(0x006F6F66u); // NOTE: "foo"
 
   spvtools::Binary linked_binary;
 
