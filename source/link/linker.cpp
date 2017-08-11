@@ -223,13 +223,15 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     if (id_bound > 0x3FFFFF)
       return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                         SPV_ERROR_INVALID_ID)
-             << "The limit of IDs was exceeded.";
+             << "The limit of IDs, 4194303, was exceeded:"
+             << " " << id_bound << " is the current ID bound.";
   }
   ++id_bound;
   if (id_bound > 0x3FFFFF)
     return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                       SPV_ERROR_INVALID_ID)
-           << "The limit of IDs was exceeded.";
+           << "The limit of IDs, 4194303, was exceeded:"
+           << " " << id_bound << " is the current ID bound.";
 
   // Phase 2: Merge all the binaries into a single one.
   auto linkedModule = MakeUnique<Module>();
