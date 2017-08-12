@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "gmock/gmock.h"
 #include "linker_test.h"
 
 namespace {
 
-class EntryPoints : public spvtools::LinkerTest {
+using ::testing::HasSubstr;
+
+class EntryPoints : public spvtest::LinkerTest {
  public:
   EntryPoints() { binaries.reserve(0xFFFF); }
 
@@ -73,7 +76,7 @@ class EntryPoints : public spvtools::LinkerTest {
       1u << SpvWordCountShift | SpvOpFunctionEnd
       });
     for (size_t i = 0u; i < 2u; ++i) {
-      spvtools::Binary binary = {
+      spvtest::Binary binary = {
         SpvMagicNumber,
         SpvVersion,
         SPV_GENERATOR_CODEPLAY,
@@ -101,13 +104,14 @@ class EntryPoints : public spvtools::LinkerTest {
   }
   virtual void TearDown() { binaries.clear(); }
 
-  spvtools::Binaries binaries;
+  spvtest::Binaries binaries;
 };
 
 TEST_F(EntryPoints, Default) {
-  spvtools::Binary linked_binary;
+  spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
 TEST_F(EntryPoints, OverLimit) {
@@ -138,9 +142,10 @@ TEST_F(EntryPoints, OverLimit) {
     SpvStorageClassInput
   });
 
-  spvtools::Binary linked_binary;
+  spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_ERROR_INTERNAL, linker.Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link(binaries, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("The limit of global values, 65535, was exceeded; 65536 global values were found."));
 }
 
 }  // anonymous namespace

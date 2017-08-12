@@ -36,3 +36,8 @@ add_spvtools_unittest(TARGET ids_limit
   SRCS ids_limit_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET matching_imports_to_exports
+  SRCS matching_imports_to_exports_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)

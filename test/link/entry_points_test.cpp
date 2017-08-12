@@ -12,89 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "gmock/gmock.h"
 #include "linker_test.h"
 
 namespace {
 
-class EntryPoints : public spvtools::LinkerTest {
- public:
-  EntryPoints() { binaries.reserve(2); }
+using ::testing::HasSubstr;
 
-  virtual void SetUp() {
-    binaries.push_back({
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      2u,  // NOTE: Bound
-      0u   // NOTE: Schema; reserved
-      });
-    binaries.push_back(binaries.front());
-  }
-  virtual void TearDown() { binaries.clear(); }
+class EntryPoints : public spvtest::LinkerTest {};
 
-  spvtools::Binaries binaries;
-};
+TEST_F(EntryPoints, SameModelDifferentName) {
+  const std::string body1 = R"(
+OpEntryPoint GLCompute %1 "foo"
+)";
+  const std::string body2 = R"(
+OpEntryPoint GLCompute %1 "bar"
+)";
 
-TEST_F(EntryPoints, Default) {
-  spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);          // NOTE: entry ID
-  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
-
-  spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  second_binary.push_back(SpvExecutionModelGLCompute);
-  second_binary.push_back(1u);          // NOTE: entry ID
-  second_binary.push_back(0x00726162u); // NOTE: "bar"
-
-  spvtools::Binary linked_binary;
-
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
-
-  ASSERT_EQ(0x006F6F66u, linked_binary[8]);
-  ASSERT_EQ(0x00726162u, linked_binary[12]);
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
 TEST_F(EntryPoints, DifferentModelSameName) {
-  spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);          // NOTE: entry ID
-  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
+  const std::string body1 = R"(
+OpEntryPoint GLCompute %1 "foo"
+)";
+  const std::string body2 = R"(
+OpEntryPoint Vertex %1 "foo"
+)";
 
-  spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  second_binary.push_back(SpvExecutionModelVertex);
-  second_binary.push_back(1u);          // NOTE: entry ID
-  second_binary.push_back(0x006F6F66u); // NOTE: "foo"
-
-  spvtools::Binary linked_binary;
-
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
-
-  ASSERT_EQ(SpvExecutionModelGLCompute, linked_binary[6]);
-  ASSERT_EQ(0x006F6F66u, linked_binary[8]);
-  ASSERT_EQ(SpvExecutionModelVertex, linked_binary[10]);
-  ASSERT_EQ(0x006F6F66u, linked_binary[12]);
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
 TEST_F(EntryPoints, SameModelAndName) {
-  spvtools::Binary& first_binary = binaries[0];
-  first_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  first_binary.push_back(SpvExecutionModelGLCompute);
-  first_binary.push_back(1u);          // NOTE: entry ID
-  first_binary.push_back(0x006F6F66u); // NOTE: "foo"
+  const std::string body1 = R"(
+OpEntryPoint GLCompute %1 "foo"
+)";
+  const std::string body2 = R"(
+OpEntryPoint GLCompute %1 "foo"
+)";
 
-  spvtools::Binary& second_binary = binaries[1];
-  second_binary.push_back(4u << SpvWordCountShift | SpvOpEntryPoint);
-  second_binary.push_back(SpvExecutionModelGLCompute);
-  second_binary.push_back(1u);          // NOTE: entry ID
-  second_binary.push_back(0x006F6F66u); // NOTE: "foo"
-
-  spvtools::Binary linked_binary;
-
-  ASSERT_EQ(SPV_ERROR_INTERNAL, linker.Link(binaries, linked_binary));
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("The entry point \"foo\", with execution model GLCompute, was already defined."));
 }
 
 }  // anonymous namespace

@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "gmock/gmock.h"
 #include "linker_test.h"
 
 namespace {
 
-class MemoryModel : public spvtools::LinkerTest {
+using ::testing::HasSubstr;
+
+class MemoryModel : public spvtest::LinkerTest {
  public:
   MemoryModel() { }
 
@@ -25,90 +28,45 @@ class MemoryModel : public spvtools::LinkerTest {
 };
 
 TEST_F(MemoryModel, Default) {
-  const spvtools::Binaries binaries = {
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelLogical,
-        SpvMemoryModelSimple
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelLogical,
-        SpvMemoryModelSimple
-      }
-  };
-  spvtools::Binary linked_binary;
+  const std::string body1 = R"(
+OpMemoryModel Logical Simple
+)";
+  const std::string body2 = R"(
+OpMemoryModel Logical Simple
+)";
 
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
 
   ASSERT_EQ(SpvAddressingModelLogical, linked_binary[6]);
   ASSERT_EQ(SpvMemoryModelSimple,      linked_binary[7]);
 }
 
 TEST_F(MemoryModel, AddressingMismatch) {
-  const spvtools::Binaries binaries = {
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelLogical,
-        SpvMemoryModelSimple
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelPhysical32,
-        SpvMemoryModelSimple
-      }
-  };
-  spvtools::Binary linked_binary;
+  const std::string body1 = R"(
+OpMemoryModel Logical Simple
+)";
+  const std::string body2 = R"(
+OpMemoryModel Physical32 Simple
+)";
 
-  ASSERT_EQ(SPV_ERROR_INTERNAL, linker.Link(binaries, linked_binary));
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting addressing models: Logical vs Physical32."));
 }
 
 TEST_F(MemoryModel, MemoryMismatch) {
-  const spvtools::Binaries binaries = {
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelLogical,
-        SpvMemoryModelSimple
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      1,  // NOTE: Bound
-      0,  // NOTE: Schema; reserved
-      3u << SpvWordCountShift | SpvOpMemoryModel,
-        SpvAddressingModelLogical,
-        SpvMemoryModelGLSL450
-      }
-  };
-  spvtools::Binary linked_binary;
+  const std::string body1 = R"(
+OpMemoryModel Logical Simple
+)";
+  const std::string body2 = R"(
+OpMemoryModel Logical GLSL450
+)";
 
-  ASSERT_EQ(SPV_ERROR_INTERNAL, linker.Link(binaries, linked_binary));
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting memory models: Simple vs GLSL450."));
 }
 
 }  // anonymous namespace
