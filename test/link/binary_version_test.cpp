@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "gmock/gmock.h"
 #include "linker_test.h"
 
 namespace {
 
-class BinaryVersion : public spvtools::LinkerTest {
+class BinaryVersion : public spvtest::LinkerTest {
  public:
-  BinaryVersion() { binaries.reserve(3 * 6); }
+  BinaryVersion() { binaries.reserve(3); }
 
   virtual void SetUp() {
     binaries.push_back({
@@ -47,13 +48,14 @@ class BinaryVersion : public spvtools::LinkerTest {
   }
   virtual void TearDown() { binaries.clear(); }
 
-  spvtools::Binaries binaries;
+  spvtest::Binaries binaries;
 };
 
 TEST_F(BinaryVersion, Default) {
-  spvtools::Binary linked_binary;
+  spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
 
   ASSERT_EQ(0x00000600u, linked_binary[1]);
 }

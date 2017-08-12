@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "gmock/gmock.h"
 #include "linker_test.h"
 
 namespace {
 
-class IdsLimit : public spvtools::LinkerTest {
+using ::testing::HasSubstr;
+
+class IdsLimit : public spvtest::LinkerTest {
  public:
   IdsLimit() { binaries.reserve(2); }
 
@@ -38,13 +41,14 @@ class IdsLimit : public spvtools::LinkerTest {
   }
   virtual void TearDown() { binaries.clear(); }
 
-  spvtools::Binaries binaries;
+  spvtest::Binaries binaries;
 };
 
 TEST_F(IdsLimit, Default) {
-  spvtools::Binary linked_binary;
+  spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_SUCCESS, linker.Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
   ASSERT_EQ(0x3FFFFEu, linked_binary[3]);
 }
 
@@ -57,9 +61,10 @@ TEST_F(IdsLimit, OverLimit) {
     0u,  // NOTE: Schema; reserved
   });
 
-  spvtools::Binary linked_binary;
+  spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, linker.Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, linked_binary));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is the current ID bound."));
 }
 
 }  // anonymous namespace
