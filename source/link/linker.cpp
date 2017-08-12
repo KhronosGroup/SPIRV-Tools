@@ -332,13 +332,23 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     i = i.Erase();
   }
 
-  // Remove export linkage attributes if making an executable
+  // Remove export linkage attributes and Linkage capability if making an
+  // executable
   if (!options.GetCreateLibrary()) {
     for (auto i = linkedModule->annotation_begin();
          i != linkedModule->annotation_end();) {
       if (i->opcode() != SpvOpDecorate ||
           i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
           i->GetSingleWordOperand(3u) != SpvLinkageTypeExport) {
+        ++i;
+        continue;
+      }
+      i = i.Erase();
+    }
+
+    for (auto i = linkedModule->capability_begin();
+        i != linkedModule->capability_end();) {
+      if (i->GetSingleWordInOperand(0u) != SpvCapabilityLinkage) {
         ++i;
         continue;
       }
