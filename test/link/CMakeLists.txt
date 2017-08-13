@@ -12,32 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_spvtools_unittest(TARGET binary_version
+add_spvtools_unittest(TARGET link_binary_version
   SRCS binary_version_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
 
-add_spvtools_unittest(TARGET memory_model
+add_spvtools_unittest(TARGET link_memory_model
   SRCS memory_model_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
 
-add_spvtools_unittest(TARGET entry_points
+add_spvtools_unittest(TARGET link_entry_points
   SRCS entry_points_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
 
-add_spvtools_unittest(TARGET global_values_amount
+add_spvtools_unittest(TARGET link_global_values_amount
   SRCS global_values_amount_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
 
-add_spvtools_unittest(TARGET ids_limit
+add_spvtools_unittest(TARGET link_ids_limit
   SRCS ids_limit_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
 
-add_spvtools_unittest(TARGET matching_imports_to_exports
+add_spvtools_unittest(TARGET link_matching_imports_to_exports
   SRCS matching_imports_to_exports_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
