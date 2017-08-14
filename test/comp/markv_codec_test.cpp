@@ -809,4 +809,44 @@ TEST(Markv, SpirvSpecSample) {
 )");
 }
 
+TEST(Markv, SampleFromDeadBranchEliminationTest) {
+  TestEncodeDecode(R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%float_0 = OpConstant %float 0
+%12 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%float_1 = OpConstant %float 1
+%14 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%main = OpFunction %void None %5
+%17 = OpLabel
+OpSelectionMerge %18 None
+OpBranchConditional %true %19 %20
+%19 = OpLabel
+OpBranch %18
+%20 = OpLabel
+OpBranch %18
+%18 = OpLabel
+%21 = OpPhi %v4float %12 %19 %14 %20
+OpStore %gl_FragColor %21
+OpReturn
+OpFunctionEnd
+)");
+}
+
 }  // namespace

@@ -83,7 +83,7 @@ const uint32_t kMarkvMagicNumber = 0x07230303;
 
 // Handles for move-to-front sequences. Enums which end with "Begin" define
 // handle spaces which start at that value and span 16 or 32 bit wide.
-enum {
+enum : uint64_t {
   kMtfNone = 0,
   // All ids.
   kMtfAll,
@@ -230,6 +230,7 @@ class MarkvModel {
 
   // Returns Huffman codec for ranks of the mtf with given |handle|.
   // Different mtfs can use different rank distributions.
+  // May return nullptr if the codec doesn't exist.
   const HuffmanCodec<uint32_t>* GetMtfHuffmanCodec(uint64_t handle) const {
     const auto it = mtf_huffman_codecs_.find(handle);
     if (it == mtf_huffman_codecs_.end())
@@ -238,7 +239,7 @@ class MarkvModel {
   }
 
   // Returns a codec for common opcode_and_num_operands words for the given
-  // previous opcode.
+  // previous opcode. May return nullptr if the codec doesn't exist.
   const HuffmanCodec<uint64_t>* GetOpcodeAndNumOperandsMarkovHuffmanCodec(
       uint32_t prev_opcode) const {
     if (prev_opcode == SpvOpNop)
@@ -253,6 +254,7 @@ class MarkvModel {
 
   // Returns a codec for common non-id words used for given operand slot.
   // Operand slot is defined by the opcode and the operand index.
+  // May return nullptr if the codec doesn't exist.
   const HuffmanCodec<uint64_t>* GetNonIdWordHuffmanCodec(
       uint32_t opcode, uint32_t operand_index) const {
     const auto it = non_id_word_huffman_codecs_.find(
@@ -264,6 +266,7 @@ class MarkvModel {
 
   // Returns a codec for common id descriptos used for given operand slot.
   // Operand slot is defined by the opcode and the operand index.
+  // May return nullptr if the codec doesn't exist.
   const HuffmanCodec<uint64_t>* GetIdDescriptorHuffmanCodec(
       uint32_t opcode, uint32_t operand_index) const {
     const auto it = id_descriptor_huffman_codecs_.find(
@@ -275,6 +278,7 @@ class MarkvModel {
 
   // Returns a codec for common strings used by the given opcode.
   // Operand slot is defined by the opcode and the operand index.
+  // May return nullptr if the codec doesn't exist.
   const HuffmanCodec<std::string>* GetLiteralStringHuffmanCodec(
       uint32_t opcode) const {
     const auto it = literal_string_huffman_codecs_.find(opcode);
@@ -582,7 +586,8 @@ class MarkvCodecBase {
     return ValidateInstructionAndUpdateValidationState(&vstate_, &inst);
   }
 
-  // Returns instruction which created |id|.
+  // Returns instruction which created |id| or nullptr if such instruction was
+  // not registered.
   const Instruction* GetDefInst(uint32_t id) const {
     const auto it = vstate_.all_definitions().find(id);
     if (it == vstate_.all_definitions().end())
@@ -1193,6 +1198,8 @@ void MarkvCodecBase::ProcessCurInstruction() {
 }
 
 uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
+  // This function is only called for id operands (but not result ids).
+  assert(spvIsIdType(operand_.type));
   assert(operand_.type != SPV_OPERAND_TYPE_RESULT_ID);
 
   *can_forward_declare = false;
@@ -1205,6 +1212,8 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
       (inst_.opcode == SpvOpBranch && operand_index_ == 0) ||
       (inst_.opcode == SpvOpBranchConditional &&
        (operand_index_ == 1 || operand_index_ == 2 )) ||
+      (inst_.opcode == SpvOpPhi && operand_index_ >= 3 &&
+       operand_index_ % 2 == 1) ||
       (inst_.opcode == SpvOpSwitch && operand_index_ > 0)) {
     *can_forward_declare = true;
     return kMtfLabel;
@@ -1215,6 +1224,8 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
     case SpvOpFSub:
     case SpvOpFMul:
     case SpvOpFDiv:
+    case SpvOpFRem:
+    case SpvOpFMod:
     case SpvOpFNegate: {
       if (operand_index_ == 0)
         return kMtfTypeFloatScalarOrVector;
@@ -1227,6 +1238,9 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
     case SpvOpIMul:
     case SpvOpSDiv:
     case SpvOpUDiv:
+    case SpvOpSMod:
+    case SpvOpUMod:
+    case SpvOpSRem:
     case SpvOpSNegate: {
       if (operand_index_ == 0)
         return kMtfTypeIntScalarOrVector;

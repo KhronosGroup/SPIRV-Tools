@@ -620,8 +620,9 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsHist(std::ostream& out) {
   }
 
   // Heuristic.
-  const uint32_t non_of_the_above = std::max(1, int(left_out + total * 0.01));
-  out << "    { kMarkvNoneOfTheAbove, " << non_of_the_above << " },\n";
+  const uint32_t none_of_the_above =
+      std::max(1, int(left_out + total * 0.01));
+  out << "    { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
   out << "  });\n}\n";
 }
 
@@ -673,8 +674,9 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
     }
 
     // Heuristic.
-    const uint32_t non_of_the_above = std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << non_of_the_above << " },\n";
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << GetOpcodeString(prev_opcode)
@@ -725,9 +727,10 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
     }
 
     // Heuristic.
-    const uint32_t non_of_the_above = std::max(1, int(left_out + total * 0.01));
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
     out << "      { std::string(\"kMarkvNoneOfTheAbove\"), "
-        << non_of_the_above << " },\n";
+        << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << spvOpcodeString(SpvOp(opcode))
@@ -778,8 +781,9 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
     }
 
     // Heuristic.
-    const uint32_t non_of_the_above = std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << non_of_the_above << " },\n";
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
@@ -832,8 +836,9 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     }
 
     // Heuristic.
-    const uint32_t non_of_the_above = std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << non_of_the_above << " },\n";
+    const uint32_t none_of_the_above =
+        std::max(1, int(left_out + total * 0.01));
+    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
 
     out << "    }));\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
