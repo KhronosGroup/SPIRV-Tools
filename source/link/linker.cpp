@@ -457,6 +457,27 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
              << " and exported variable/function %" << i.second.id << ".";
   }
 
+
+  // TODO(pierremoreau): Ensure the import and export decorations are similar
+
+  // TODO(pierremoreau): Remove import types
+
+  // TODO(pierremoreau): Remove import decorations
+
+  // Remove prototypes of imported functions
+  for (const auto& i : linkingsToDo) {
+    for (auto j = modules[i.first.moduleIndex]->begin();
+        j != modules[i.first.moduleIndex]->end();)
+      j = (j->result_id() == i.first.id) ? j.Erase() : ++j;
+  }
+
+  // Remove declarations of imported variables
+  for (const auto& i : linkingsToDo) {
+    for (auto j = modules[i.first.moduleIndex]->types_values_begin();
+        j != modules[i.first.moduleIndex]->types_values_end();)
+      j = (j->result_id() == i.first.id) ? j.Erase() : ++j;
+  }
+
   // Phase 2: Merge all the binaries into a single one.
   auto linkedModule = MakeUnique<Module>();
   libspirv::AssemblyGrammar grammar(impl_->context);
@@ -464,82 +485,18 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
       MergeModules(modules, grammar, impl_->context->consumer, linkedModule);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 3: Generate the linkage table.
-  std::unordered_map<SpvId, std::string> imports;
-  std::unordered_map<std::string, SpvId> exports;
-  position.index = 0u;
-  for (const auto& insn : linkedModule->annotations()) {
-    position.index += (insn.result_id() != 0u) + insn.NumOperandWords();
-    if (insn.opcode() != SpvOpDecorate) continue;
-    if (insn.GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes)
-      continue;
-    uint32_t linkage = insn.GetSingleWordOperand(insn.NumOperands() - 1u);
-    if (linkage == SpvLinkageTypeImport)
-      imports.emplace(
-          insn.GetSingleWordOperand(0u),
-          reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()));
-    else if (linkage == SpvLinkageTypeExport)
-      exports.emplace(
-          reinterpret_cast<const char*>(insn.GetOperand(2u).words.data()),
-          insn.GetSingleWordOperand(0u));
-    else
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "Invalid linkage type found.";
-  }
-
-  std::unordered_map<SpvId, SpvId> linking_table;
-  linking_table.reserve(imports.size());
-  for (const auto& i : imports) {
-    auto j = exports.find(i.second);
-    if (j == exports.end())
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "No export linkage was found for \"" << i.second << "\".";
-    linking_table.emplace(i.first, j->second);
-  }
-
-  // Remove prototypes of imported functions
-  for (auto i = linkedModule->begin(); i != linkedModule->end();) {
-    const auto function_id = i->DefInst().result_id();
-    i = (imports.find(function_id) != imports.end()) ? i.Erase() : ++i;
-  }
-
-  // Remove declarations of imported global variables
-  for (auto i = linkedModule->types_values_begin();
-       i != linkedModule->types_values_end();) {
-    if (i->opcode() == SpvOpVariable) {
-      const auto variable_id = i->GetSingleWordOperand(1u);
-      i = (imports.find(variable_id) != imports.end()) ? i.Erase() : ++i;
-    } else {
-      ++i;
-    }
-  }
-
-  // Remove debug instructions for imported declarations
-  for (auto i = linkedModule->debug1_begin();
-       i != linkedModule->debug1_end();) {
-    bool should_remove = false;
-    i->ForEachInId([&imports, &should_remove](const uint32_t* id) {
-      should_remove |= imports.find(*id) != imports.end();
-    });
-    i = (should_remove) ? i.Erase() : ++i;
-  }
-  for (auto i = linkedModule->debug2_begin();
-       i != linkedModule->debug2_end();) {
-    bool should_remove = false;
-    i->ForEachInId([&imports, &should_remove](const uint32_t* id) {
-      should_remove |= imports.find(*id) != imports.end();
-    });
-    i = (should_remove) ? i.Erase() : ++i;
-  }
-
-  linkedModule->ForEachInst([&linking_table](Instruction* insn) {
-    insn->ForEachId([&linking_table](uint32_t* id) {
-      auto id_iter = linking_table.find(*id);
-      if (id_iter != linking_table.end()) *id = id_iter->second;
+  // Rematch import variables/functions to export variables/functions
+  linkedModule->ForEachInst([&linkingsToDo](Instruction* insn) {
+    insn->ForEachId([&linkingsToDo](uint32_t* id) {
+      auto id_iter = std::find_if(linkingsToDo.begin(), linkingsToDo.end(), [id](const std::pair<LinkingData, LinkingData>& pair) {
+        return pair.second.id == *id;
+      });
+      if (id_iter != linkingsToDo.end())
+        *id = id_iter->first.id;
     });
   });
+
+  // TODO(pierremoreau) Rematch import types/decorations to export types/decorations
 
   // Remove duplicates
   manager.AddPass<RemoveDuplicatesPass>();
