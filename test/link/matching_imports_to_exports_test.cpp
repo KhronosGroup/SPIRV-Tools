@@ -140,6 +140,7 @@ OpDecorate %1 LinkageAttributes "foo" Export
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, Link({ body1, body2 }, linked_binary))
     << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("Type mismatch between imported variable/function %1 and exported variable/function %4"));
 }
 
 TEST_F(MatchingImportsToExports, MultipleDefinitions) {
@@ -197,6 +198,7 @@ OpDecorate %1 LinkageAttributes "foo" Export
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, Link({ body1, body2, body3 }, linked_binary))
     << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("Too many export linkages, 2, were found for \"foo\"."));
 }
 
 TEST_F(MatchingImportsToExports, DecorationMismatch) {
@@ -230,7 +232,7 @@ OpDecorate %2 FuncParamAttr Zext
 %3 = OpTypeVoid
 %4 = OpTypeInt 32 0
 %5 = OpTypeFunction %3 %4
-%1 = OpFunction %2 None %5
+%1 = OpFunction %3 None %5
 %2 = OpFunctionParameter %4
 OpFunctionEnd
 )";
