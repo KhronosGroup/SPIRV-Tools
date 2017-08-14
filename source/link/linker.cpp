@@ -38,6 +38,85 @@ namespace spvtools {
 using namespace ir;
 using namespace opt;
 
+struct TypeData {
+  size_t moduleIndex;
+  Instruction i;
+};
+
+static bool areTypesSimilar(
+    const Instruction& a, const Instruction& b,
+    std::unordered_map<SpvId, TypeData>& typesMap) {
+  if (a.opcode() != b.opcode()) return false;
+
+  switch (a.opcode()) {
+    case SpvOpTypeVoid:
+    case SpvOpTypeBool:
+    case SpvOpTypeSampler:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+    case SpvOpTypePipeStorage:
+    case SpvOpTypeNamedBarrier:
+      return true;
+    case SpvOpTypeInt:
+      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u) &&
+             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u);
+    case SpvOpTypeFloat:
+    case SpvOpTypePipe:
+    case SpvOpTypeForwardPointer:
+      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u);
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)].i,
+                             typesMap[b.GetSingleWordInOperand(0u)].i,
+                             typesMap) &&
+             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u);
+    case SpvOpTypeImage:
+      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)].i,
+                             typesMap[b.GetSingleWordInOperand(0u)].i,
+                             typesMap) &&
+             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u) &&
+             a.GetSingleWordInOperand(2u) == b.GetSingleWordInOperand(2u) &&
+             a.GetSingleWordInOperand(3u) == b.GetSingleWordInOperand(3u) &&
+             a.GetSingleWordInOperand(4u) == b.GetSingleWordInOperand(4u) &&
+             a.GetSingleWordInOperand(5u) == b.GetSingleWordInOperand(5u) &&
+             a.GetSingleWordInOperand(6u) == b.GetSingleWordInOperand(6u) &&
+             a.NumOperands() == b.NumOperands() &&
+             (a.NumInOperands() == 8u ||
+              a.GetSingleWordInOperand(7u) == b.GetSingleWordInOperand(7u));
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeRuntimeArray:
+      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)].i,
+                             typesMap[b.GetSingleWordInOperand(0u)].i, typesMap);
+    case SpvOpTypeArray:
+      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)].i,
+                             typesMap[b.GetSingleWordInOperand(0u)].i,
+                             typesMap) &&
+             areTypesSimilar(typesMap[a.GetSingleWordInOperand(1u)].i,
+                             typesMap[b.GetSingleWordInOperand(1u)].i, typesMap);
+    case SpvOpTypeStruct:
+    case SpvOpTypeFunction: {
+      bool res = a.NumInOperands() == b.NumInOperands();
+      for (uint32_t i = 0u; i < a.NumInOperands() && res; ++i)
+        res &= areTypesSimilar(typesMap[a.GetSingleWordInOperand(i)].i,
+                               typesMap[b.GetSingleWordInOperand(i)].i, typesMap);
+      return res;
+    }
+    case SpvOpTypeOpaque:
+      return std::strcmp(
+                 reinterpret_cast<const char*>(a.GetInOperand(0u).words.data()),
+                 reinterpret_cast<const char*>(
+                     b.GetInOperand(0u).words.data())) == 0;
+    case SpvOpTypePointer:
+      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u) &&
+             areTypesSimilar(typesMap[a.GetSingleWordInOperand(1u)].i,
+                             typesMap[b.GetSingleWordInOperand(1u)].i, typesMap);
+    default:
+      return false;
+  }
+}
+
 static spv_result_t MergeModules(
     const std::vector<std::unique_ptr<Module>>& inModules,
     libspirv::AssemblyGrammar& grammar, MessageConsumer& consumer,
@@ -232,6 +311,151 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                                       SPV_ERROR_INVALID_ID)
            << "The limit of IDs, 4194303, was exceeded:"
            << " " << id_bound << " is the current ID bound.";
+
+  // Extract linking information
+  struct LinkingData {
+    size_t moduleIndex;
+    SpvId id;
+    SpvId typeId;
+    const char* name;
+  };
+  std::vector<std::vector<LinkingData>> modulesImports(modules.size());
+  std::vector<std::unordered_map<std::string, LinkingData>> modulesExports(modules.size());
+  size_t moduleIndex = 0u;
+  for (auto& i : modules) {
+    // Figure out the imports and exports
+    for (auto& j : i->annotations()) {
+      if (j.opcode() == SpvOpDecorate && j.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
+        uint32_t type = j.GetSingleWordInOperand(3u);
+        SpvId id = j.GetSingleWordInOperand(0u);
+        LinkingData data;
+        data.moduleIndex = moduleIndex;
+        data.name = reinterpret_cast<const char*>(j.GetInOperand(2u).words.data());
+        data.id = id;
+        data.typeId = 0u;
+        if (type == SpvLinkageTypeImport)
+          modulesImports[moduleIndex].push_back(data);
+        else if (type == SpvLinkageTypeExport)
+          modulesExports[moduleIndex].emplace(data.name, data);
+      }
+      // TODO(pierremoreau): Can an SpvOpDecorateId be used for
+      //                     LinkageAttributes decorations?
+    }
+    ++moduleIndex;
+  }
+
+  //Find the import/export pairs
+  std::vector<std::pair<LinkingData, LinkingData>> linkingsToDo;
+  for (const auto& i : modulesImports) {
+    for (const auto& j : i) {
+      std::vector<LinkingData> possibleExports;
+      for (const auto& k : modulesExports) {
+        const auto& l = k.find(j.name);
+        if (l != k.end())
+          possibleExports.push_back(l->second);
+      }
+      if (possibleExports.empty())
+        return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                          SPV_ERROR_INVALID_BINARY)
+               << "No export linkage was found for \"" << j.name << "\".";
+      else if (possibleExports.size() > 1u)
+        return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                          SPV_ERROR_INVALID_BINARY)
+               << "Too many export linkages, " << possibleExports.size()
+               << ", were found for \"" << j.name << "\".";
+
+      linkingsToDo.emplace_back(j, possibleExports.front());
+    }
+  }
+
+  // Grab all types used by imports and exports
+  std::unordered_map<size_t, std::unordered_set<SpvId>> typesToSearchFor;
+  for (auto& i : linkingsToDo) {
+    for (const auto& j : modules[i.first.moduleIndex]->types_values()) {
+      if (j.result_id() == i.first.id) {
+        assert(j.opcode() == SpvOpVariable);
+        typesToSearchFor[i.first.moduleIndex].emplace(j.type_id());
+        i.first.typeId = j.type_id();
+        break;
+      }
+    }
+    if (i.first.typeId == 0u) {
+      for (const auto& j : *modules[i.first.moduleIndex].get()) {
+        if (j.result_id() == i.first.id) {
+          typesToSearchFor[i.first.moduleIndex].emplace(j.DefInst().GetSingleWordInOperand(1u));
+          i.first.typeId = j.DefInst().GetSingleWordInOperand(1u);
+          break;
+        }
+      }
+    }
+    assert(i.first.typeId != 0u);
+    for (const auto& j : modules[i.second.moduleIndex]->types_values()) {
+      if (j.result_id() == i.second.id) {
+        assert(j.opcode() == SpvOpVariable);
+        typesToSearchFor[i.second.moduleIndex].emplace(j.type_id());
+        i.second.typeId = j.type_id();
+        break;
+      }
+    }
+    if (i.second.typeId == 0u) {
+      for (const auto& j : *modules[i.second.moduleIndex].get()) {
+        if (j.result_id() == i.second.id) {
+          typesToSearchFor[i.second.moduleIndex].emplace(j.DefInst().GetSingleWordInOperand(1u));
+          i.second.typeId = j.DefInst().GetSingleWordInOperand(1u);
+          break;
+        }
+      }
+    }
+    assert(i.second.typeId != 0u);
+  }
+  std::unordered_map<SpvId, TypeData> types;
+  for (auto& i : typesToSearchFor) {
+    if (modules[i.first]->types_values().empty())
+      continue;
+
+    auto typesIter = modules[i.first]->types_values_end();
+    do {
+      --typesIter;
+      if (i.second.find(typesIter->result_id()) != i.second.end()) {
+        types.emplace(typesIter->result_id(), TypeData{ i.first, *typesIter });
+        switch (typesIter->opcode()) {
+          case SpvOpTypeVector:
+          case SpvOpTypeMatrix:
+          case SpvOpTypeImage:
+          case SpvOpTypeSampledImage:
+          case SpvOpTypeRuntimeArray:
+            i.second.emplace(typesIter->GetSingleWordInOperand(0u));
+            break;
+          case SpvOpTypeArray:
+            i.second.emplace(typesIter->GetSingleWordInOperand(0u));
+            i.second.emplace(typesIter->GetSingleWordInOperand(1u));
+            break;
+          case SpvOpTypeStruct:
+          case SpvOpTypeFunction:
+            for (uint32_t j = 0u; j < typesIter->NumInOperands(); ++j)
+              i.second.emplace(typesIter->GetSingleWordInOperand(j));
+            break;
+          case SpvOpTypePointer:
+            i.second.emplace(typesIter->GetSingleWordInOperand(1u));
+            break;
+        }
+      }
+    } while (typesIter != modules[i.first]->types_values_begin());
+  }
+
+  // Ensure the import and export types are similar
+  for (const auto&i : linkingsToDo) {
+    auto importTypeIter = types.find(i.first.typeId);
+    assert(importTypeIter != types.end());
+    auto exportTypeIter = types.find(i.second.typeId);
+    assert(exportTypeIter != types.end());
+
+    if (!areTypesSimilar(importTypeIter->second.i, exportTypeIter->second.i, types))
+      return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "Type mismatch between imported variable/function %" << i.first.id
+             << " and exported variable/function %" << i.second.id << ".";
+  }
 
   // Phase 2: Merge all the binaries into a single one.
   auto linkedModule = MakeUnique<Module>();
