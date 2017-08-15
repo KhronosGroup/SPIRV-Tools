@@ -201,14 +201,25 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 // these is left for future improvements. 
 Optimizer::PassToken CreateBlockMergePass();
 
-// Creates an inline pass.
-// An inline pass exhaustively inlines all function calls in all functions
-// designated as an entry point. The intent is to enable, albeit through
-// brute force, analysis and optimization across function calls by subsequent
-// passes. As the inlining is exhaustive, there is no attempt to optimize for
-// size or runtime performance. Functions that are not designated as entry
-// points are not changed.
+// Creates an exhaustive inline pass.
+// An exhaustive inline pass attempts to exhaustively inline all function
+// calls in all functions in an entry point call tree. The intent is to enable,
+// albeit through brute force, analysis and optimization across function
+// calls by subsequent optimization passes. As the inlining is exhaustive,
+// there is no attempt to optimize for size or runtime performance. Functions
+// that are not in the call tree of an entry point are not changed.
 Optimizer::PassToken CreateInlineExhaustivePass();
+  
+// Creates an opaque inline pass.
+// An opaque inline pass inlines all function calls in all functions in all
+// entry point call trees where the called function contains an opaque type
+// in either its parameter types or return type. An opaque type is currently
+// defined as Image, Sampler or SampledImage. The intent is to enable, albeit
+// through brute force, analysis and optimization across these function calls
+// by subsequent passes in order to remove the storing of opaque types which is
+// not legal in Vulkan. Functions that are not in the call tree of an entry
+// point are not changed.
+Optimizer::PassToken CreateInlineOpaquePass();
   
 // Creates a single-block local variable load/store elimination pass.
 // For every entry point function, do single block memory optimization of 
@@ -228,6 +239,8 @@ Optimizer::PassToken CreateInlineExhaustivePass();
 // This pass is most effective if preceeded by Inlining and 
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
 // by LocalSingleStoreElim and LocalMultiStoreElim.
+//
+// Only functions in the call tree of an entry point are processed.
 Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Create dead branch elimination pass.

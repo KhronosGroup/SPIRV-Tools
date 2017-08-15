@@ -68,46 +68,56 @@ Options:
                Remap result ids to a compact range starting from %%1 and without
                any gaps.
   --inline-entry-points-exhaustive
-               Exhaustively inline all function calls in entry point functions.
-               Currently does not inline calls to functions with early return
-               in a loop.
+               Exhaustively inline all function calls in entry point call tree
+               functions. Currently does not inline calls to functions with
+               early return in a loop.
+  --inline-entry-points-opaque
+               Inline all function calls in entry point call tree functions
+               where the callee's parameters or return type contain an opaque
+               type. Opaque type is currently defined as Image, Sampler or
+               SampledImage. Currently will not inline calls to functions with
+               early return in a loop.
   --convert-local-access-chains
                Convert constant index access chain loads/stores into
                equivalent load/stores with inserts and extracts. Performed
                on function scope variables referenced only with load, store,
-               and constant index access chains.
+               and constant index access chains in entry point call tree
+               functions.
   --eliminate-common-uniform
                Perform load/load elimination for duplicate uniform values.
                Converts any constant index access chain uniform loads into
                its equivalent load and extract. Some loads will be moved
                to facilitate sharing. Performed only on entry point
-               functions.
+               call tree functions.
   --eliminate-local-single-block
                Perform single-block store/load and load/load elimination.
                Performed only on function scope variables in entry point
-               functions.
+               call tree functions.
   --eliminate-local-single-store
                Replace stores and loads of function scope variables that are
                only stored once. Performed on variables referenceed only with
-               loads and stores. Performed only on entry point functions.
+               loads and stores. Performed only on entry point call tree
+               functions.
   --eliminate-local-multi-store
                Replace stores and loads of function scope variables that are
                stored multiple times. Performed on variables referenceed only
-               with loads and stores. Performed only on entry point functions.
+               with loads and stores. Performed only on entry point call tree
+               functions.
   --eliminate-insert-extract
                Replace extract from a sequence of inserts with the
-               corresponding value. Performed only on entry point functions.
+               corresponding value. Performed only on entry point call tree
+               functions.
   --eliminate-dead-code-aggressive
                Delete instructions which do not contribute to a function's
-               output. Performed only on entry point functions.
+               output. Performed only on entry point call tree functions.
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
                indicated unconditional brranch. Delete all resulting dead
-               code. Performed only on entry point functions.
+               code. Performed only on entry point call tree functions.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
-               functions.
+               call tree functions.
   -h, --help   
                Print this help.
   --version    
@@ -172,6 +182,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateFreezeSpecConstantValuePass());
       } else if (0 == strcmp(cur_arg, "--inline-entry-points-exhaustive")) {
         optimizer.RegisterPass(CreateInlineExhaustivePass());
+      } else if (0 == strcmp(cur_arg, "--inline-entry-points-opaque")) {
+        optimizer.RegisterPass(CreateInlineOpaquePass());
       } else if (0 == strcmp(cur_arg, "--convert-local-access-chains")) {
         optimizer.RegisterPass(CreateLocalAccessChainConvertPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-code-aggressive")) {

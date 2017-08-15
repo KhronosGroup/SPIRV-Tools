@@ -63,6 +63,11 @@ add_spvtools_unittest(TARGET pass_inline
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_inline_opaque
+  SRCS inline_opaque_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_insert_extract_elim
   SRCS insert_extract_elim_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

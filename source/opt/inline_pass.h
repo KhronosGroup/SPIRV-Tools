@@ -172,6 +172,7 @@ class InlinePass : public Pass {
   void UpdateSucceedingPhis(
       std::vector<std::unique_ptr<ir::BasicBlock>>& new_blocks);
 
+  // Initialize state for optimization of |module|
   void InitializeInline(ir::Module* module);
 
   // Module being processed by this pass
