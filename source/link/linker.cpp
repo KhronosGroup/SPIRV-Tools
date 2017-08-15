@@ -117,6 +117,108 @@ static bool areTypesSimilar(
   }
 }
 
+using IdDecorationsList = std::unordered_map<uint32_t, std::vector<Instruction>>;
+
+static IdDecorationsList getDecorationsForId(SpvId id, const std::unique_ptr<Module>& module) {
+  IdDecorationsList decorations;
+  auto decoIter = module->annotation_end();
+
+  std::vector<std::pair<SpvId, uint32_t>> idsToLookFor;
+  idsToLookFor.emplace_back(id, std::numeric_limits<uint32_t>::max());
+
+  // pierremoreau: Assume that OpGroupDecorate can't target an
+  //               OpDecorationGroup.
+  do {
+    --decoIter;
+    if (decoIter->opcode() == SpvOpGroupDecorate) {
+      for (uint32_t j = 1u; j < decoIter->NumInOperands(); ++j)
+        if (decoIter->GetSingleWordInOperand(j) == id) {
+          idsToLookFor.emplace_back(decoIter->GetSingleWordInOperand(0u), std::numeric_limits<uint32_t>::max());
+          break;
+        }
+    } else if (decoIter->opcode() == SpvOpGroupMemberDecorate) {
+      for (uint32_t j = 1u; j < decoIter->NumInOperands(); j += 2u)
+        if (decoIter->GetSingleWordInOperand(j) == id) {
+          idsToLookFor.emplace_back(decoIter->GetSingleWordInOperand(0u), decoIter->GetSingleWordInOperand(j + 1u));
+          break;
+        }
+    } else if (decoIter->opcode() == SpvOpMemberDecorate) {
+      if (decoIter->GetSingleWordInOperand(0u) == id)
+        decorations[decoIter->GetSingleWordInOperand(1u)].push_back(*decoIter);
+    } else if ((decoIter->opcode() == SpvOpDecorate ||
+                decoIter->opcode() == SpvOpDecorateId) &&
+               decoIter->GetSingleWordInOperand(1u) != SpvDecorationLinkageAttributes) {
+      auto iter = std::find_if(idsToLookFor.cbegin(), idsToLookFor.cend(), [&decoIter](const std::pair<SpvId, uint32_t>& p) {
+        return p.first == decoIter->GetSingleWordInOperand(0u);
+      });
+      if (iter != idsToLookFor.cend())
+        decorations[iter->second].push_back(*decoIter);
+    }
+  } while (decoIter != module->annotation_begin());
+
+  return decorations;
+}
+
+static bool areDecorationsSimilar(const Instruction& a, const Instruction& b, const std::unordered_map<SpvId, Instruction>& constants) {
+  const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
+    std::vector<Operand> operands;
+    operands.reserve(inst.NumInOperands());
+    for (uint32_t i = 2u; i < inst.NumInOperands(); ++i) {
+      const auto& j = constants.find(inst.GetSingleWordInOperand(i));
+      if (j == constants.end())
+        return Instruction();
+      const auto operand = j->second.GetOperand(0u);
+      operands.emplace_back(operand.type, operand.words);
+    }
+    return Instruction(SpvOpDecorate, 0u, 0u, operands);
+  };
+  Instruction tmpA = (a.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(a) : a;
+  Instruction tmpB = (b.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(b) : b;
+
+  if (tmpA.opcode() != tmpB.opcode() || tmpA.NumInOperands() != tmpB.NumInOperands() ||
+      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
+    return false;
+
+  for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u; i < tmpA.NumInOperands(); ++i)
+    if (tmpA.GetInOperand(i) != tmpB.GetInOperand(i))
+      return false;
+
+  return true;
+}
+
+static bool haveIdsSimilarDecorations(SpvId id1, const std::unique_ptr<Module>& module1, SpvId id2, const std::unique_ptr<Module>& module2) {
+  const IdDecorationsList decorationsList1 = getDecorationsForId(id1, module1);
+  const IdDecorationsList decorationsList2 = getDecorationsForId(id2, module2);
+
+  if (decorationsList1.size() != decorationsList2.size())
+    return false;
+
+  // Grab all SpvOpConstant: those should be the only constant instructions
+  // used in SpvOpGroupDecorateId besides SpvOpSpecConstant, however there is
+  // no way to decide whether two decorations are the same if we rely on value
+  // that might change due to specialisation (which should occur before linking
+  // anyway?)
+  std::unordered_map<SpvId, Instruction> constants;
+  for (const auto& i : module1->types_values())
+    if (i.opcode() == SpvOpConstant)
+      constants[i.result_id()] = i;
+  for (const auto& i : module2->types_values())
+    if (i.opcode() == SpvOpConstant)
+      constants[i.result_id()] = i;
+
+  for (const auto& i : decorationsList1) {
+    const auto j = decorationsList2.find(i.first);
+    if (j == decorationsList2.end() || i.second.size() != j->second.size())
+      return false;
+
+    for (size_t k = 0u; k < i.second.size(); ++k)
+      if (!areDecorationsSimilar(i.second[k], j->second[k], constants))
+        return false;
+  }
+
+  return true;
+}
+
 static spv_result_t MergeModules(
     const std::vector<std::unique_ptr<Module>>& inModules,
     libspirv::AssemblyGrammar& grammar, MessageConsumer& consumer,
@@ -458,7 +560,21 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
 
-  // TODO(pierremoreau): Ensure the import and export decorations are similar
+  // Ensure the import and export decorations are similar
+  for (const auto& i : linkingsToDo) {
+    if (!haveIdsSimilarDecorations(i.first.id, modules[i.first.moduleIndex],
+                                   i.second.id, modules[i.second.moduleIndex]))
+        return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                          SPV_ERROR_INVALID_BINARY)
+               << "Decorations mismatch between imported variable/function %" << i.first.id
+               << " and exported variable/function %" << i.second.id << ".";
+    if (!haveIdsSimilarDecorations(i.first.typeId, modules[i.first.moduleIndex],
+                                   i.second.typeId, modules[i.second.moduleIndex]))
+        return libspirv::DiagnosticStream(position, impl_->context->consumer,
+                                          SPV_ERROR_INVALID_BINARY)
+               << "Decorations mismatch between the type of imported variable/function %" << i.first.id
+               << " and the type of exported variable/function %" << i.second.id << ".";
+  }
 
   // TODO(pierremoreau): Remove import types
 

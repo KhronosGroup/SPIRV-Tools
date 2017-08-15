@@ -58,6 +58,10 @@ struct Operand {
   spv_operand_type_t type;      // Type of this logical operand.
   std::vector<uint32_t> words;  // Binary segments of this logical operand.
 
+  friend bool operator!=(const Operand& o1, const Operand& o2) {
+    return o1.type != o2.type || o1.words != o2.words;
+  }
+
   // TODO(antiagainst): create fields for literal number kind, width, etc.
 };
 
