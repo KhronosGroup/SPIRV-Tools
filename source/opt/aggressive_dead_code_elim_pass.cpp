@@ -24,7 +24,6 @@ namespace opt {
 
 namespace {
 
-const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;

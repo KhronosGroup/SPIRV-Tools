@@ -19,12 +19,6 @@
 namespace spvtools {
 namespace opt {
 
-namespace {
-
-const int kEntryPointFunctionIdInIdx = 1;
-
-} // anonymous namespace
-
 bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
   bool modified = false;
   // Using block iterators here because of block erasures and insertions.

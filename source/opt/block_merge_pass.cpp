@@ -21,12 +21,6 @@
 namespace spvtools {
 namespace opt {
 
-namespace {
-
-const int kEntryPointFunctionIdInIdx = 1;
-
-} // anonymous namespace
-
 bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
   auto iItr = block_ptr->tail();
   if (iItr == block_ptr->begin())

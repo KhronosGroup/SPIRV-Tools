@@ -24,7 +24,6 @@ namespace opt {
 
 namespace {
 
-const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
