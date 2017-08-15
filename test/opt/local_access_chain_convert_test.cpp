@@ -345,6 +345,119 @@ OpFunctionEnd
       predefs_before + before, predefs_after + after, true, true);
 }
 
+TEST_F(LocalAccessChainConvertTest, OpaqueConverted) {
+  // SPIR-V not representable in GLSL; not generatable from HLSL
+  // at the moment
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %outColor %texCoords
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %S_t "S_t"
+OpMemberName %S_t 0 "v0"
+OpMemberName %S_t 1 "v1"
+OpMemberName %S_t 2 "smp"
+OpName %foo_struct_S_t_vf2_vf21_ "foo(struct-S_t-vf2-vf21;"
+OpName %s "s"
+OpName %outColor "outColor"
+OpName %sampler15 "sampler15"
+OpName %s0 "s0"
+OpName %texCoords "texCoords"
+OpName %param "param"
+OpDecorate %sampler15 DescriptorSet 0
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%outColor = OpVariable %_ptr_Output_v4float Output
+%17 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%18 = OpTypeSampledImage %17
+%S_t = OpTypeStruct %v2float %v2float %18
+%_ptr_Function_S_t = OpTypePointer Function %S_t
+%20 = OpTypeFunction %void %_ptr_Function_S_t
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+%_ptr_Function_18 = OpTypePointer Function %18
+%sampler15 = OpVariable %_ptr_UniformConstant_18 UniformConstant
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%texCoords = OpVariable %_ptr_Input_v2float Input
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %12
+%28 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function 
+%param = OpVariable %_ptr_Function_S_t Function
+%29 = OpLoad %v2float %texCoords
+%30 = OpAccessChain %_ptr_Function_v2float %s0 %int_0
+OpStore %30 %29
+%31 = OpLoad %18 %sampler15
+%32 = OpAccessChain %_ptr_Function_18 %s0 %int_2
+OpStore %32 %31
+%33 = OpLoad %S_t %s0 
+OpStore %param %33
+%34 = OpAccessChain %_ptr_Function_18 %param %int_2
+%35 = OpLoad %18 %34
+%36 = OpAccessChain %_ptr_Function_v2float %param %int_0
+%37 = OpLoad %v2float %36
+%38 = OpImageSampleImplicitLod %v4float %35 %37
+OpStore %outColor %38
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %12
+%28 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function
+%param = OpVariable %_ptr_Function_S_t Function
+%29 = OpLoad %v2float %texCoords
+%45 = OpLoad %S_t %s0
+%46 = OpCompositeInsert %S_t %29 %45 0
+OpStore %s0 %46
+%31 = OpLoad %18 %sampler15
+%47 = OpLoad %S_t %s0
+%48 = OpCompositeInsert %S_t %31 %47 2
+OpStore %s0 %48
+%33 = OpLoad %S_t %s0
+OpStore %param %33
+%49 = OpLoad %S_t %param
+%50 = OpCompositeExtract %18 %49 2
+%51 = OpLoad %S_t %param
+%52 = OpCompositeExtract %v2float %51 0
+%38 = OpImageSampleImplicitLod %v4float %50 %52
+OpStore %outColor %38
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string remain =
+      R"(%foo_struct_S_t_vf2_vf21_ = OpFunction %void None %20
+%s = OpFunctionParameter %_ptr_Function_S_t
+%39 = OpLabel
+%40 = OpAccessChain %_ptr_Function_18 %s %int_2
+%41 = OpLoad %18 %40
+%42 = OpAccessChain %_ptr_Function_v2float %s %int_0
+%43 = OpLoad %v2float %42
+%44 = OpImageSampleImplicitLod %v4float %41 %43
+OpStore %outColor %44
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+      predefs + before + remain, predefs + after + remain, true, true);
+}
+
 TEST_F(LocalAccessChainConvertTest, 
        UntargetedTypeNotConverted) {
 
