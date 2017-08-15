@@ -18,13 +18,16 @@
 
 #include "iterator.h"
 
-static const int kSpvEntryPointFunctionId = 1;
-static const int kSpvExtractCompositeId = 0;
-static const int kSpvInsertObjectId = 0;
-static const int kSpvInsertCompositeId = 1;
-
 namespace spvtools {
 namespace opt {
+
+namespace {
+
+const uint32_t kExtractCompositeIdInIdx = 0;
+const uint32_t kInsertObjectIdInIdx = 0;
+const uint32_t kInsertCompositeIdInIdx = 1;
+
+} // anonymous namespace
 
 bool InsertExtractElimPass::ExtInsMatch(const ir::Instruction* extInst,
     const ir::Instruction* insInst) const {
@@ -58,17 +61,17 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
         case SpvOpCompositeExtract: {
-          uint32_t cid = ii->GetSingleWordInOperand(kSpvExtractCompositeId);
+          uint32_t cid = ii->GetSingleWordInOperand(kExtractCompositeIdInIdx);
           ir::Instruction* cinst = def_use_mgr_->GetDef(cid);
           uint32_t replId = 0;
           while (cinst->opcode() == SpvOpCompositeInsert) {
             if (ExtInsConflict(&*ii, cinst))
               break;
             if (ExtInsMatch(&*ii, cinst)) {
-              replId = cinst->GetSingleWordInOperand(kSpvInsertObjectId);
+              replId = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
               break;
             }
-            cid = cinst->GetSingleWordInOperand(kSpvInsertCompositeId);
+            cid = cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
             cinst = def_use_mgr_->GetDef(cid);
           }
           if (replId != 0) {
