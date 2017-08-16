@@ -871,6 +871,7 @@ OpFunctionEnd
   const std::string defs_after =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
@@ -983,6 +984,7 @@ OpDecorate %sampler15 DescriptorSet 0
   const std::string defs_after =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %outColor %texCoords
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 140
