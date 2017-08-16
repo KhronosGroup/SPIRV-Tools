@@ -98,6 +98,10 @@ if(${SPIRV_LOG_DEBUG})
   add_definitions(-DSPIRV_LOG_DEBUG)
 endif()
 
+if (DEFINED SPIRV_TOOLS_EXTRA_DEFINITIONS)
+  add_definitions(${SPIRV_TOOLS_EXTRA_DEFINITIONS})
+endif()
+
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
 

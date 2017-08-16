@@ -206,6 +206,11 @@ The following CMake options are supported:
   warnings encountered by enabling the compiler-specific compiler front-end
   option.
 
+Additionally, you can pass additional C preprocessor definitions to SPIRV-Tools
+via setting `SPIRV_TOOLS_EXTRA_DEFINITIONS`. For example, by setting it to
+`/D_ITERATOR_DEBUG_LEVEL=0` on Windows, you can disable checked iterators and
+iterator debugging.
+
 ## Library
 
 ### Usage
