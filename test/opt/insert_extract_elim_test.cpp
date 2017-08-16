@@ -188,6 +188,88 @@ OpFunctionEnd
       predefs + after, true, true);
 }
 
+TEST_F(InsertExtractElimTest, OptimizeOpaque) {
+  // SPIR-V not representable in GLSL; not generatable from HLSL
+  // for the moment.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %outColor %texCoords
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %S_t "S_t"
+OpMemberName %S_t 0 "v0"
+OpMemberName %S_t 1 "v1"
+OpMemberName %S_t 2 "smp"
+OpName %outColor "outColor"
+OpName %sampler15 "sampler15"
+OpName %s0 "s0"
+OpName %texCoords "texCoords"
+OpDecorate %sampler15 DescriptorSet 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%outColor = OpVariable %_ptr_Output_v4float Output
+%14 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%15 = OpTypeSampledImage %14
+%S_t = OpTypeStruct %v2float %v2float %15
+%_ptr_Function_S_t = OpTypePointer Function %S_t
+%17 = OpTypeFunction %void %_ptr_Function_S_t
+%_ptr_UniformConstant_15 = OpTypePointer UniformConstant %15
+%_ptr_Function_15 = OpTypePointer Function %15
+%sampler15 = OpVariable %_ptr_UniformConstant_15 UniformConstant
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+%texCoords = OpVariable %_ptr_Input_v2float Input
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %9
+%25 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function 
+%26 = OpLoad %v2float %texCoords
+%27 = OpLoad %S_t %s0 
+%28 = OpCompositeInsert %S_t %26 %27 0
+%29 = OpLoad %15 %sampler15
+%30 = OpCompositeInsert %S_t %29 %28 2
+OpStore %s0 %30
+%31 = OpCompositeExtract %15 %30 2
+%32 = OpCompositeExtract %v2float %30 0
+%33 = OpImageSampleImplicitLod %v4float %31 %32
+OpStore %outColor %33
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %9
+%25 = OpLabel
+%s0 = OpVariable %_ptr_Function_S_t Function
+%26 = OpLoad %v2float %texCoords
+%27 = OpLoad %S_t %s0
+%28 = OpCompositeInsert %S_t %26 %27 0
+%29 = OpLoad %15 %sampler15
+%30 = OpCompositeInsert %S_t %29 %28 2
+OpStore %s0 %30
+%33 = OpImageSampleImplicitLod %v4float %29 %26
+OpStore %outColor %33
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(predefs + before, 
+      predefs + after, true, true);
+}
+
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
   // Note: The SPIR-V assembly has had store/load elimination
   // performed to allow the inserts and extracts to directly

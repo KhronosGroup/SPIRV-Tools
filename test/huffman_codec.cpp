@@ -217,4 +217,102 @@ TEST(Huffman, TestDecodeNumbers) {
   EXPECT_EQ(3u, decoded);
 }
 
+TEST(Huffman, SerializeToTextU64) {
+  const std::map<uint64_t, uint32_t> hist =
+  { {1001, 10}, {1002, 5}, {1003, 15} };
+  HuffmanCodec<uint64_t> huffman(hist);
+
+  const std::string code = huffman.SerializeToText(2);
+
+  const std::string expected = R"((5, {
+    {0, 0, 0},
+    {1001, 0, 0},
+    {1002, 0, 0},
+    {1003, 0, 0},
+    {0, 1, 2},
+    {0, 4, 3},
+  }))";
+
+
+  ASSERT_EQ(expected, code);
+}
+
+TEST(Huffman, SerializeToTextString) {
+  const std::map<std::string, uint32_t> hist =
+  { {"aaa", 10}, {"bbb", 20}, {"ccc", 15} };
+  HuffmanCodec<std::string> huffman(hist);
+
+  const std::string code = huffman.SerializeToText(4);
+
+  const std::string expected = R"((5, {
+      {"", 0, 0},
+      {"aaa", 0, 0},
+      {"bbb", 0, 0},
+      {"ccc", 0, 0},
+      {"", 3, 1},
+      {"", 4, 2},
+    }))";
+
+  ASSERT_EQ(expected, code);
+}
+
+TEST(Huffman, CreateFromTextString) {
+  std::vector<HuffmanCodec<std::string>::Node> nodes = {
+    {},
+    {"root", 2, 3},
+    {"left", 0, 0},
+    {"right", 0, 0},
+  };
+
+  HuffmanCodec<std::string> huffman(1, std::move(nodes));
+
+  std::stringstream ss;
+  huffman.PrintTree(ss);
+
+  const std::string expected = std::string(R"(
+0------right
+0------left
+)").substr(1);
+
+  EXPECT_EQ(expected, ss.str());
+}
+
+TEST(Huffman, CreateFromTextU64) {
+  HuffmanCodec<uint64_t> huffman(5, {
+        {0, 0, 0},
+        {1001, 0, 0},
+        {1002, 0, 0},
+        {1003, 0, 0},
+        {0, 1, 2},
+        {0, 4, 3},
+      });
+
+  std::stringstream ss;
+  huffman.PrintTree(ss);
+
+  const std::string expected = std::string(R"(
+0------1003
+0------0------1002
+       0------1001
+)").substr(1);
+
+  EXPECT_EQ(expected, ss.str());
+
+  TestBitReader bit_reader("01");
+  auto read_bit = [&bit_reader](bool* bit) {
+    return bit_reader.ReadBit(bit);
+  };
+
+  uint64_t decoded = 0;
+  ASSERT_TRUE(huffman.DecodeFromStream(read_bit, &decoded));
+  EXPECT_EQ(1002u, decoded);
+
+  uint64_t bits = 0;
+  size_t num_bits = 0;
+
+  EXPECT_TRUE(huffman.Encode(1001, &bits, &num_bits));
+  EXPECT_EQ(2u, num_bits);
+  EXPECT_EQ("00", BitsToStream(bits, num_bits));
+}
+
 }  // anonymous namespace
