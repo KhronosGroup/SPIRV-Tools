@@ -580,6 +580,8 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
           case SpvOpTypePointer:
             i.second.emplace(typesIter->GetSingleWordInOperand(1u));
             break;
+          default:
+            break;
         }
       }
     } while (typesIter != modules[i.first]->types_values_begin());
@@ -624,6 +626,9 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // TODO(pierremoreau): Remove import types
+  // Similar to the testing: traverse bottom-top
+  // But make sure to store the ID of removed types, to do the replacement
+  // later.
 
   // Remove import decorations
   for (const auto& i : linkingsToDo) {
