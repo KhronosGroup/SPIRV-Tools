@@ -105,27 +105,27 @@ uint32_t CommonUniformElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk,
 }
 
 ir::Instruction* CommonUniformElimPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
+      ir::Instruction* ip, uint32_t* objId) {
   const SpvOp op = ip->opcode();
   assert(op == SpvOpStore || op == SpvOpLoad);
-  *varId = ip->GetSingleWordInOperand(
+  *objId = ip->GetSingleWordInOperand(
       op == SpvOpStore ? kStorePtrIdInIdx : kLoadPtrIdInIdx);
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*objId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
-    *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(*varId);
+    *objId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+    ptrInst = def_use_mgr_->GetDef(*objId);
   }
-  ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable &&
-      varInst->opcode() != SpvOpFunctionParameter) {
-    if (IsNonPtrAccessChain(varInst->opcode())) {
-      *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
+  ir::Instruction* objInst = ptrInst;
+  while (objInst->opcode() != SpvOpVariable &&
+      objInst->opcode() != SpvOpFunctionParameter) {
+    if (IsNonPtrAccessChain(objInst->opcode())) {
+      *objId = objInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
     }
     else {
-      assert(varInst->opcode() == SpvOpCopyObject);
-      *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
+      assert(objInst->opcode() == SpvOpCopyObject);
+      *objId = objInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
     }
-    varInst = def_use_mgr_->GetDef(*varId);
+    objInst = def_use_mgr_->GetDef(*objId);
   }
   return ptrInst;
 }

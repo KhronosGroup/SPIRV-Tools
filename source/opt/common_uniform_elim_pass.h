@@ -58,9 +58,10 @@ class CommonUniformElimPass : public Pass {
   // Return true if |block_ptr| is loop header block
   bool IsLoopHeader(ir::BasicBlock* block_ptr);
 
-  // Given a load or store pointed at by |ip|, return the pointer
-  // instruction. Also return the variable's id in |varId|.
-  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
+  // Given a load or store pointed at by |ip|, return the top-most
+  // non-CopyObj in its pointer operand. Also return the base pointer
+  // in |objId|.
+  ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* objId);
 
   // Return true if variable is uniform
   bool IsUniformVar(uint32_t varId);
