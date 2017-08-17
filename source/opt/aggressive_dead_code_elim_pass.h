@@ -50,7 +50,8 @@ class AggressiveDCEPass : public MemPass {
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
 
-  // Return true if variable with |varId| is function scope
+  // Return true if object with |varId| is function scope variable or
+  // function parameter with pointer type.
   bool IsLocalVar(uint32_t varId);
 
   // Initialize combinator data structures
