@@ -75,6 +75,7 @@ add_library(SPIRV-Tools-opt
   set_spec_constant_default_value_pass.cpp
   optimizer.cpp
   mem_pass.cpp
+  pass.cpp
   pass_manager.cpp
   strip_debug_info_pass.cpp
   types.cpp

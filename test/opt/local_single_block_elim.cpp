@@ -553,10 +553,152 @@ OpFunctionEnd
       predefs_before + before, predefs_after + after, true, true);
 }
 
+TEST_F(LocalSingleBlockLoadStoreElimTest, PositiveAndNegativeCallTree) {
+  // Note that the call tree function bar is optimized, but foo is not
+  //
+  // #version 140
+  // 
+  // in vec4 BaseColor;
+  // 
+  // vec4 foo(vec4 v1)
+  // {
+  //     vec4 t = v1;
+  //     return t;
+  // }
+  // 
+  // vec4 bar(vec4 v1)
+  // {
+  //     vec4 t = v1;
+  //     return t;
+  // }
+  // 
+  // void main()
+  // {
+  //     gl_FragColor = bar(BaseColor);
+  // }
+  
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %v1 "v1"
+OpName %bar_vf4_ "bar(vf4;"
+OpName %v1_0 "v1"
+OpName %t "t"
+OpName %t_0 "t"
+OpName %gl_FragColor "gl_FragColor" 
+OpName %BaseColor "BaseColor"
+OpName %param "param" 
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%17 = OpTypeFunction %v4float %_ptr_Function_v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%main = OpFunction %void None %13
+%20 = OpLabel
+%param = OpVariable %_ptr_Function_v4float Function
+%21 = OpLoad %v4float %BaseColor
+OpStore %param %21
+%22 = OpFunctionCall %v4float %bar_vf4_ %param
+OpStore %gl_FragColor %22
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor %BaseColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %v1 "v1"
+OpName %bar_vf4_ "bar(vf4;"
+OpName %v1_0 "v1"
+OpName %t "t"
+OpName %gl_FragColor "gl_FragColor"
+OpName %BaseColor "BaseColor"
+OpName %param "param"
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%17 = OpTypeFunction %v4float %_ptr_Function_v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%main = OpFunction %void None %13
+%20 = OpLabel
+%param = OpVariable %_ptr_Function_v4float Function
+%21 = OpLoad %v4float %BaseColor
+OpStore %param %21
+%22 = OpFunctionCall %v4float %bar_vf4_ %param
+OpStore %gl_FragColor %22
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%foo_vf4_ = OpFunction %v4float None %17
+%v1 = OpFunctionParameter %_ptr_Function_v4float
+%23 = OpLabel
+%t = OpVariable %_ptr_Function_v4float Function
+%24 = OpLoad %v4float %v1
+OpStore %t %24
+%25 = OpLoad %v4float %t
+OpReturnValue %25
+OpFunctionEnd
+%bar_vf4_ = OpFunction %v4float None %17
+%v1_0 = OpFunctionParameter %_ptr_Function_v4float
+%26 = OpLabel
+%t_0 = OpVariable %_ptr_Function_v4float Function
+%27 = OpLoad %v4float %v1_0
+OpStore %t_0 %27
+%28 = OpLoad %v4float %t_0
+OpReturnValue %28
+OpFunctionEnd
+)";
+
+  const std::string after =
+        R"(%foo_vf4_ = OpFunction %v4float None %17
+%v1 = OpFunctionParameter %_ptr_Function_v4float
+%23 = OpLabel
+%t = OpVariable %_ptr_Function_v4float Function
+%24 = OpLoad %v4float %v1
+OpStore %t %24
+%25 = OpLoad %v4float %t
+OpReturnValue %25
+OpFunctionEnd
+%bar_vf4_ = OpFunction %v4float None %17
+%v1_0 = OpFunctionParameter %_ptr_Function_v4float
+%26 = OpLabel
+%27 = OpLoad %v4float %v1_0
+OpReturnValue %27
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalSingleBlockLoadStoreElimPass>(
+      predefs_before + before, predefs_after + after, true, true);
+}
+
 TEST_F(LocalSingleBlockLoadStoreElimTest, ElimOpaque) {
   // SPIR-V not representable in GLSL; not generatable from HLSL
   // at the moment
-
+  
   const std::string predefs_before =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -664,7 +806,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-      R"(%main = OpFunction %void None %10
+        R"(%main = OpFunction %void None %10
 %26 = OpLabel
 %s0 = OpVariable %_ptr_Function_S_t Function
 %27 = OpLoad %v2float %texCoords

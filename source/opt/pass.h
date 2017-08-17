@@ -15,6 +15,12 @@
 #ifndef LIBSPIRV_OPT_PASS_H_
 #define LIBSPIRV_OPT_PASS_H_
 
+#include <algorithm>
+#include <map>
+#include <queue>
+#include <unordered_map>
+#include <unordered_set>
+
 #include <utility>
 
 #include "module.h"
@@ -37,6 +43,8 @@ class Pass {
     SuccessWithoutChange = 0x11,
   };
 
+  using ProcessFunction = std::function<bool(ir::Function*)>;
+
   // Constructs a new pass.
   //
   // The constructed instance will have an empty message consumer, which just
@@ -55,6 +63,12 @@ class Pass {
   void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
   // Returns the reference to the message consumer for this pass.
   const MessageConsumer& consumer() const { return consumer_; }
+
+  // Add to |todo| all ids of functions called in |func|.
+  void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
+
+  // 
+  bool ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module);
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is

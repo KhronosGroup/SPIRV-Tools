@@ -81,7 +81,13 @@ bool MemPass::IsPtr(uint32_t ptrId) {
     ptrInst = def_use_mgr_->GetDef(varId);
   }
   const SpvOp op = ptrInst->opcode();
-  return op == SpvOpVariable || IsNonPtrAccessChain(op);
+  if (op == SpvOpVariable || IsNonPtrAccessChain(op))
+    return true;
+  if (op != SpvOpFunctionParameter)
+    return false;
+  const uint32_t varTypeId = ptrInst->type_id();
+  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  return varTypeInst->opcode() == SpvOpTypePointer;
 }
 
 ir::Instruction* MemPass::GetPtr(
@@ -93,7 +99,8 @@ ir::Instruction* MemPass::GetPtr(
     ptrInst = def_use_mgr_->GetDef(*varId);
   }
   ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable) {
+  while (varInst->opcode() != SpvOpVariable && 
+      varInst->opcode() != SpvOpFunctionParameter) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
       *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
     }
@@ -209,9 +216,11 @@ bool MemPass::HasLoads(uint32_t varId) const {
 }
 
 bool MemPass::IsLiveVar(uint32_t varId) const {
-  // non-function scope vars are live
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  assert(varInst->opcode() == SpvOpVariable);
+  // assume live if not a variable eg. function parameter
+  if (varInst->opcode() != SpvOpVariable)
+    return true;
+  // non-function scope vars are live
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
