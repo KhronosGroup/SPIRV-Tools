@@ -64,8 +64,8 @@ class Pass {
   // Returns the reference to the message consumer for this pass.
   const MessageConsumer& consumer() const { return consumer_; }
 
-  // Add to |next| all ids of functions called in |func|.
-  void AddCalls(ir::Function* func, std::unordered_set<uint32_t>* next);
+  // Add to |todo| all ids of functions called in |func|.
+  void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
 
   // 
   bool ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module);

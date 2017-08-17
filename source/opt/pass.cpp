@@ -28,39 +28,34 @@ const uint32_t kEntryPointFunctionIdInIdx = 1;
 }  // namespace anonymous
 
 void Pass::AddCalls(ir::Function* func,
-    std::unordered_set<uint32_t>* next) {
+    std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
     for (auto ii = bi->begin(); ii != bi->end(); ++ii)
       if (ii->opcode() == SpvOpFunctionCall)
-        next->insert(ii->GetSingleWordInOperand(0));
+        todo->push(ii->GetSingleWordInOperand(0));
 }
 
 bool Pass::ProcessEntryPointCallTree(
     ProcessFunction& pfn, ir::Module* module) {
   // Map from function's result id to function
   std::unordered_map<uint32_t, ir::Function*> id2function;
-  id2function.clear();
   for (auto& fn : *module)
     id2function[fn.result_id()] = &fn;
   // Process call tree
   bool modified = false;
-  std::unordered_set<uint32_t> todo;
-  std::unordered_set<uint32_t> next;
+  std::queue<uint32_t> todo;
   std::unordered_set<uint32_t> done;
   for (auto& e : module->entry_points())
-    todo.insert(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
+    todo.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
   while (!todo.empty()) {
-    for (auto& fi : todo) {
-      if (done.find(fi) != done.end())
-        continue;
+    const uint32_t fi = todo.front();
+    if (done.find(fi) == done.end()) {
       ir::Function* fn = id2function[fi];
       modified = pfn(fn) || modified;
       done.insert(fi);
-      AddCalls(fn, &next);
+      AddCalls(fn, &todo);
     }
-    todo.clear();
-    todo.insert(next.begin(), next.end());
-    next.clear();
+    todo.pop();
   }
   return modified;
 }
