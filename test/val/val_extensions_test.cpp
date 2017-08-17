@@ -43,24 +43,32 @@ string GetErrorString(const std::string& extension) {
 }
 
 INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
+    // Match the order as published on the SPIR-V Registry.
     "SPV_AMD_shader_explicit_vertex_parameter",
     "SPV_AMD_shader_trinary_minmax",
     "SPV_AMD_gcn_shader",
+    "SPV_KHR_shader_ballot",
     "SPV_AMD_shader_ballot",
     "SPV_AMD_gpu_shader_half_float",
-    "SPV_AMD_texture_gather_bias_lod",
-    "SPV_AMD_gpu_shader_int16",
-    "SPV_KHR_shader_ballot",
     "SPV_KHR_shader_draw_parameters",
     "SPV_KHR_subgroup_vote",
     "SPV_KHR_16bit_storage",
     "SPV_KHR_device_group",
     "SPV_KHR_multiview",
-    "SPV_NV_sample_mask_override_coverage",
-    "SPV_NV_geometry_shader_passthrough",
+    "SPV_NVX_multiview_per_view_attributes",
     "SPV_NV_viewport_array2",
     "SPV_NV_stereo_view_rendering",
-    "SPV_NVX_multiview_per_view_attributes"
+    "SPV_NV_sample_mask_override_coverage",
+    "SPV_NV_geometry_shader_passthrough",
+    "SPV_AMD_texture_gather_bias_lod",
+    "SPV_KHR_storage_buffer_storage_class",
+    "SPV_KHR_variable_pointers",
+    "SPV_AMD_gpu_shader_int16",
+    "SPV_KHR_post_depth_coverage",
+    "SPV_KHR_shader_atomic_counter_ops",
+    "SPV_EXT_shader_stencil_export",
+    "SPV_EXT_shader_viewport_index_layer",
+    "SPV_AMD_shader_image_load_store_lod"
     ));
 
 INSTANTIATE_TEST_CASE_P(FailSilently, ValidateUnknownExtensions, Values(
