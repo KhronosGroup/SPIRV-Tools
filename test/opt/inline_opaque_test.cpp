@@ -22,7 +22,7 @@ using namespace spvtools;
 
 using InlineOpaqueTest = PassTest<::testing::Test>;
 
-TEST_F(InlineOpaqueTest, InlineOpaqueArg) {
+TEST_F(InlineOpaqueTest, InlineCallWithStructArgContainingSampledImage) {
   // Function with opaque argument is inlined.
   // TODO(greg-lunarg): Add HLSL code
 
