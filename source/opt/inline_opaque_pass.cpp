@@ -38,6 +38,7 @@ bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
     default:
       break;
   }
+  // TODO(greg-lunarg): Handle arrays containing opaque type
   if (typeInst->opcode() != SpvOpTypeStruct)
     return false;
   // Return true if any member is opaque
