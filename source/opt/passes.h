@@ -25,6 +25,7 @@
 #include "flatten_decoration_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
 #include "inline_exhaustive_pass.h"
+#include "inline_opaque_pass.h"
 #include "insert_extract_elim.h"
 #include "local_single_block_elim_pass.h"
 #include "local_single_store_elim_pass.h"
