@@ -26,6 +26,7 @@
 #include "instruction.h"
 #include "message.h"
 #include "opcode.h"
+#include "operand.h"
 #include "spirv_validator_options.h"
 #include "spirv-tools/libspirv.h"
 #include "val/function.h"
@@ -3056,66 +3057,6 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 #undef TODO
 #undef CASE
 }
-// This function takes the opcode of an instruction and returns
-// a function object that will return true if the index
-// of the operand can be forwarad declared. This function will
-// used in the SSA validation stage of the pipeline
-function<bool(unsigned)> getCanBeForwardDeclaredFunction(SpvOp opcode) {
-  function<bool(unsigned index)> out;
-  switch (opcode) {
-    case SpvOpExecutionMode:
-    case SpvOpEntryPoint:
-    case SpvOpName:
-    case SpvOpMemberName:
-    case SpvOpSelectionMerge:
-    case SpvOpDecorate:
-    case SpvOpMemberDecorate:
-    case SpvOpTypeStruct:
-    case SpvOpBranch:
-    case SpvOpLoopMerge:
-      out = [](unsigned) { return true; };
-      break;
-    case SpvOpGroupDecorate:
-    case SpvOpGroupMemberDecorate:
-    case SpvOpBranchConditional:
-    case SpvOpSwitch:
-      out = [](unsigned index) { return index != 0; };
-      break;
-
-    case SpvOpFunctionCall:
-      // The Function parameter.
-      out = [](unsigned index) { return index == 2; };
-      break;
-
-    case SpvOpPhi:
-      out = [](unsigned index) { return index > 1; };
-      break;
-
-    case SpvOpEnqueueKernel:
-      // The Invoke parameter.
-      out = [](unsigned index) { return index == 8; };
-      break;
-
-    case SpvOpGetKernelNDrangeSubGroupCount:
-    case SpvOpGetKernelNDrangeMaxSubGroupSize:
-      // The Invoke parameter.
-      out = [](unsigned index) { return index == 3; };
-      break;
-
-    case SpvOpGetKernelWorkGroupSize:
-    case SpvOpGetKernelPreferredWorkGroupSizeMultiple:
-      // The Invoke parameter.
-      out = [](unsigned index) { return index == 2; };
-      break;
-    case SpvOpTypeForwardPointer:
-      out = [](unsigned index) { return index == 0; };
-      break;
-    default:
-      out = [](unsigned) { return false; };
-      break;
-  }
-  return out;
-}
 }  // anonymous namespace
 
 namespace libspirv {
@@ -3214,7 +3155,7 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _) {
 spv_result_t IdPass(ValidationState_t& _,
                     const spv_parsed_instruction_t* inst) {
   auto can_have_forward_declared_ids =
-      getCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
+      spvOperandCanBeForwardDeclaredFunction(static_cast<SpvOp>(inst->opcode));
 
   // Keep track of a result id defined by this instruction.  0 means it
   // does not define an id.

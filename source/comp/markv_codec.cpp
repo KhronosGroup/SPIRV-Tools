@@ -160,6 +160,8 @@ const uint32_t kMtfRankEncodedByValueSignal =
 
 const size_t kCommentNumWhitespaces = 2;
 
+const size_t kByteBreakAfterInstIfLessThanUntilNextByte = 8;
+
 // Returns a set of mtf rank codecs based on a plausible hand-coded
 // distribution.
 std::map<uint64_t, std::unique_ptr<HuffmanCodec<uint32_t>>>
@@ -465,11 +467,6 @@ size_t GetNumBitsToNextByte(size_t bit_pos) {
   return (8 - (bit_pos % 8)) % 8;
 }
 
-bool ShouldByteBreak(size_t bit_pos) {
-  const size_t num_bits_to_next_byte = GetNumBitsToNextByte(bit_pos);
-  return num_bits_to_next_byte > 0; // && num_bits_to_next_byte <= 2;
-}
-
 // Defines and returns current MARK-V version.
 uint32_t GetMarkvVersion() {
   const uint32_t kVersionMajor = 1;
@@ -662,10 +659,8 @@ class MarkvCodecBase {
   void ProcessCurInstruction();
 
   // Returns move-to-front handle to be used for the current operand slot.
-  // |can_forward_declare| is set to true iff the slot can use an id before it
-  // was defined. Mtf handle is chosen based on a set of rules defined by SPIR-V
-  // grammar.
-  uint64_t GetRuleBasedMtf(bool* can_forward_declare);
+  // Mtf handle is chosen based on a set of rules defined by SPIR-V grammar.
+  uint64_t GetRuleBasedMtf();
 
   // Returns words of the current instruction. Decoder has a different
   // implementation and the array is valid only until the previously decoded
@@ -818,52 +813,43 @@ class MarkvEncoder : public MarkvCodecBase {
     return spvValidatorOptionsCreate();
   }
 
-  // Writes a single word to bit stream. |type| determines if the word is
+  // Writes a single word to bit stream. operand_.type determines if the word is
   // encoded and how.
-  void EncodeOperandWord(uint32_t word);
+  spv_result_t EncodeNonIdWord(uint32_t word);
 
   // Writes both opcode and num_operands as a single code.
-  // Returns false iff encoding fails (no suitable codec).
-  bool EncodeOpcodeAndNumOperands(uint32_t opcode, uint32_t num_operands);
+  // Returns SPV_UNSUPPORTED iff no suitable codec was found.
+  spv_result_t EncodeOpcodeAndNumOperands(uint32_t opcode, uint32_t num_operands);
 
   // Writes mtf rank to bit stream. |mtf| is used to determine the codec
   // scheme. |fallback_method| is used if no codec defined for |mtf|.
-  // Returns false iff encoding fails.
-  bool EncodeMtfRankHuffman(uint32_t rank, uint64_t mtf,
-                            uint64_t fallback_method);
+  spv_result_t EncodeMtfRankHuffman(uint32_t rank, uint64_t mtf,
+                                    uint64_t fallback_method);
 
   // Writes id using coding based on mtf associated with the id descriptor.
-  // Returns false iff encoding fails.
-  bool EncodeIdWithDescriptor(uint32_t id);
+  // Returns SPV_UNSUPPORTED iff fallback method needs to be used.
+  spv_result_t EncodeIdWithDescriptor(uint32_t id);
 
   // Writes id using coding based on the given |mtf|, which is expected to
-  // contain the given |id|. Returns false iff encoding fails.
-  bool EncodeExistingId(uint64_t mtf, uint32_t id);
+  // contain the given |id|.
+  spv_result_t EncodeExistingId(uint64_t mtf, uint32_t id);
 
   // Writes type id of the current instruction if can't be inferred.
-  bool EncodeTypeId();
+  spv_result_t EncodeTypeId();
 
   // Writes result id of the current instruction if can't be inferred.
-  bool EncodeResultId();
+  spv_result_t EncodeResultId();
 
   // Writes ids which are neither type nor result ids.
-  bool EncodeRefId(uint32_t id);
+  spv_result_t EncodeRefId(uint32_t id);
 
-  // Writes id by value.
-  void WriteId(uint32_t id) {
-    const uint16_t value = uint16_t(id);
-    assert(value == id);
-    writer_.WriteUnencoded(value);
-  }
-
-  // Writes bits to the stream until the beginning of the next byte or does
-  // nothing, depending on internally defined rules which need to agree with
-  // the rules used by the decoder.
-  void AddByteBreakIfAgreed();
+  // Writes bits to the stream until the beginning of the next byte if the
+  // number of bits until the next byte is less than |byte_break_if_less_than|.
+  void AddByteBreak(size_t byte_break_if_less_than);
 
   // Encodes a literal number operand and writes it to the bit stream.
-  void EncodeLiteralNumber(const Instruction& instruction,
-                           const spv_parsed_operand_t& operand);
+  spv_result_t EncodeLiteralNumber(const Instruction& instruction,
+                                   const spv_parsed_operand_t& operand);
 
   spv_const_markv_encoder_options options_;
 
@@ -926,50 +912,40 @@ class MarkvDecoder : public MarkvCodecBase {
     return std::bind(&MarkvDecoder::ReadBit, this, std::placeholders::_1);
   }
 
-  // Reads a single word from bit stream. |type| determines if the word needs
-  // to be decoded and how. Returns false if read fails.
-  bool DecodeOperandWord(uint32_t* word);
+  // Reads a single non-id word from bit stream. operand_.type determines if
+  // the word needs to be decoded and how.
+  spv_result_t DecodeNonIdWord(uint32_t* word);
 
   // Reads and decodes both opcode and num_operands as a single code.
-  // Returns false iff decoding fails (no suitable codec).
-  bool DecodeOpcodeAndNumberOfOperands(uint32_t* opcode,
-                                       uint32_t* num_operands);
+  // Returns SPV_UNSUPPORTED iff no suitable codec was found.
+  spv_result_t DecodeOpcodeAndNumberOfOperands(uint32_t* opcode,
+                                               uint32_t* num_operands);
 
   // Reads mtf rank from bit stream. |mtf| is used to determine the codec
   // scheme. |fallback_method| is used if no codec defined for |mtf|.
-  // Returns false iff decoding fails.
-  bool DecodeMtfRankHuffman(uint64_t mtf, uint32_t fallback_method,
-                            uint32_t* rank);
+  spv_result_t DecodeMtfRankHuffman(uint64_t mtf, uint32_t fallback_method,
+                                    uint32_t* rank);
 
   // Reads id using coding based on mtf associated with the id descriptor.
-  // Returns false iff decoding fails.
-  bool DecodeIdWithDescriptor(uint32_t* id);
+  // Returns SPV_UNSUPPORTED iff fallback method needs to be used.
+  spv_result_t DecodeIdWithDescriptor(uint32_t* id);
 
   // Reads id using coding based on the given |mtf|, which is expected to
-  // contain the needed |id|. Returns false iff decoding fails.
-  bool DecodeExistingId(uint64_t mtf, uint32_t* id);
+  // contain the needed |id|.
+  spv_result_t DecodeExistingId(uint64_t mtf, uint32_t* id);
 
   // Reads type id of the current instruction if can't be inferred.
-  bool DecodeTypeId();
+  spv_result_t DecodeTypeId();
 
   // Reads result id of the current instruction if can't be inferred.
-  bool DecodeResultId();
+  spv_result_t DecodeResultId();
 
   // Reads id which is neither type nor result id.
-  bool DecodeRefId(uint32_t* id);
+  spv_result_t DecodeRefId(uint32_t* id);
 
-  // Reads id by value.
-  bool ReadId(uint32_t* id) {
-    uint16_t value = 0;
-    const bool result = reader_.ReadUnencoded(&value);
-    *id = value;
-    return result;
-  }
-
-  // Reads and discards bits until the beginning of the next byte or does
-  // nothing, depending on internally defined rules which need to agree with
-  // the rules used by the encoder.
-  bool ReadToByteBreakIfAgreed();
+  // Reads and discards bits until the beginning of the next byte if the
+  // number of bits until the next byte is less than |byte_break_if_less_than|.
+  bool ReadToByteBreak(size_t byte_break_if_less_than);
 
   // Returns instruction words decoded up to this point.
   const uint32_t* GetInstWords() const override {
@@ -1197,15 +1173,13 @@ void MarkvCodecBase::ProcessCurInstruction() {
   multi_mtf_.Insert(GetMtfIdDescriptor(descriptor), inst_.result_id);
 }
 
-uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
+uint64_t MarkvCodecBase::GetRuleBasedMtf() {
   // This function is only called for id operands (but not result ids).
   // TODO(atgoo@github.com) Clarify why SPV_OPERAND_TYPE_OPTIONAL_ID is not
   // considered id type by spvIsIdType.
   assert(spvIsIdType(operand_.type) ||
          operand_.type == SPV_OPERAND_TYPE_OPTIONAL_ID);
   assert(operand_.type != SPV_OPERAND_TYPE_RESULT_ID);
-
-  *can_forward_declare = false;
 
   const SpvOp opcode = static_cast<SpvOp>(inst_.opcode);
 
@@ -1218,7 +1192,6 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
       (inst_.opcode == SpvOpPhi && operand_index_ >= 3 &&
        operand_index_ % 2 == 1) ||
       (inst_.opcode == SpvOpSwitch && operand_index_ > 0)) {
-    *can_forward_declare = true;
     return kMtfLabel;
   }
 
@@ -1250,6 +1223,8 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
 
       return kMtfIntScalarOrVector;
     }
+
+    // TODO(atgoo@github.com) Add OpConvertFToU and other opcodes.
 
     case SpvOpFOrdEqual:
     case SpvOpFUnordEqual:
@@ -1395,15 +1370,8 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
         return GetMtfIdGeneratedByOpcode(SpvOpTypePointer);
       if (operand_index_ == 2)
         return kMtfTypePointerToComposite;
-      if (operand_index_ >= 3) {
-        const uint32_t composite_id = GetInstWords()[3];
-        const Instruction* type_inst = GetDefInst(composite_id);
-        assert(type_inst);
-        if (type_inst->opcode() == SpvOpTypeStruct)
-          return kMtfConstInteger;
-
+      if (operand_index_ >= 3)
         return GetMtfIdWithTypeGeneratedByOpcode(SpvOpTypeInt);
-      }
       break;
     }
 
@@ -1562,7 +1530,6 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
         return kMtfTypeReturnedByFunction;
 
       if (operand_index_ == 2) {
-        *can_forward_declare = true;
         const uint32_t return_type = GetInstWords()[1];
         return GetMtfFunctionWithReturnType(return_type);
       }
@@ -1629,7 +1596,7 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf(bool* can_forward_declare) {
   return kMtfNone;
 }
 
-void MarkvEncoder::EncodeOperandWord(uint32_t word) {
+spv_result_t MarkvEncoder::EncodeNonIdWord(uint32_t word) {
   auto* codec = model_->GetNonIdWordHuffmanCodec(inst_.opcode, operand_index_);
 
   if (codec) {
@@ -1638,12 +1605,15 @@ void MarkvEncoder::EncodeOperandWord(uint32_t word) {
     if (codec->Encode(word, &bits, &num_bits)) {
       // Encoding successful.
       writer_.WriteBits(bits, num_bits);
-      return;
+      return SPV_SUCCESS;
     } else {
       // Encoding failed, write kMarkvNoneOfTheAbove flag.
-      bool result = codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits);
-      (void)result;
-      assert(result);
+      if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
+        return vstate_.diag(SPV_ERROR_INTERNAL)
+            << "Non-id word Huffman table for "
+            << spvOpcodeString(SpvOp(inst_.opcode))
+            << " operand index " << operand_index_
+            << " is missing kMarkvNoneOfTheAbove";
       writer_.WriteBits(bits, num_bits);
     }
   }
@@ -1655,24 +1625,23 @@ void MarkvEncoder::EncodeOperandWord(uint32_t word) {
   } else {
     writer_.WriteUnencoded(word);
   }
+  return SPV_SUCCESS;
 }
 
-bool MarkvDecoder::DecodeOperandWord(uint32_t* word) {
+spv_result_t MarkvDecoder::DecodeNonIdWord(uint32_t* word) {
   auto* codec = model_->GetNonIdWordHuffmanCodec(inst_.opcode, operand_index_);
 
   if (codec) {
     uint64_t decoded_value = 0;
-    const bool huffman_result =
-        codec->DecodeFromStream(GetReadBitCallback(), &decoded_value);
-    assert(huffman_result);
-    if (!huffman_result)
-      return false;
+    if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+      return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+          << "Failed to decode non-id word with Huffman";
 
     if (decoded_value != kMarkvNoneOfTheAbove) {
       // The word decoded successfully.
       *word = uint32_t(decoded_value);
       assert(*word == decoded_value);
-      return true;
+      return SPV_SUCCESS;
     }
 
     // Received kMarkvNoneOfTheAbove signal, use fallback decoding.
@@ -1680,13 +1649,18 @@ bool MarkvDecoder::DecodeOperandWord(uint32_t* word) {
 
   const size_t chunk_length = GetOperandVariableWidthChunkLength(operand_.type);
   if (chunk_length) {
-    return reader_.ReadVariableWidthU32(word, chunk_length);
+    if (!reader_.ReadVariableWidthU32(word, chunk_length))
+      return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+          << "Failed to decode non-id word with varint";
   } else {
-    return reader_.ReadUnencoded(word);
+    if (!reader_.ReadUnencoded(word))
+      return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+          << "Failed to read unencoded non-id word";
   }
+  return SPV_SUCCESS;
 }
 
-bool MarkvEncoder::EncodeOpcodeAndNumOperands(
+spv_result_t MarkvEncoder::EncodeOpcodeAndNumOperands(
     uint32_t opcode, uint32_t num_operands) {
   uint64_t bits = 0;
   size_t num_bits = 0;
@@ -1699,13 +1673,15 @@ bool MarkvEncoder::EncodeOpcodeAndNumOperands(
     if (codec->Encode(word, &bits, &num_bits)) {
       // The word was successfully encoded into bits/num_bits.
       writer_.WriteBits(bits, num_bits);
-      return true;
+      return SPV_SUCCESS;
     } else {
       // The word is not in the Huffman table. Write kMarkvNoneOfTheAbove
       // and use fallback encoding.
-      bool result = codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits);
-      (void)result;
-      assert(result);
+      if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
+        return vstate_.diag(SPV_ERROR_INTERNAL)
+            << "opcode_and_num_operands Huffman table for "
+            << spvOpcodeString(GetPrevOpcode())
+            << "is missing kMarkvNoneOfTheAbove";
       writer_.WriteBits(bits, num_bits);
     }
   }
@@ -1716,35 +1692,35 @@ bool MarkvEncoder::EncodeOpcodeAndNumOperands(
   if (codec->Encode(word, &bits, &num_bits)) {
     // The word was successfully encoded into bits/num_bits.
     writer_.WriteBits(bits, num_bits);
-    return true;
+    return SPV_SUCCESS;
   } else {
     // The word is not in the Huffman table. Write kMarkvNoneOfTheAbove
     // and return false.
-    bool result = codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits);
-    (void)result;
-    assert(result);
+    if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Global opcode_and_num_operands Huffman table is missing "
+          << "kMarkvNoneOfTheAbove";
     writer_.WriteBits(bits, num_bits);
-    return false;
+    return SPV_UNSUPPORTED;
   }
 }
 
-bool MarkvDecoder::DecodeOpcodeAndNumberOfOperands(uint32_t* opcode,
-                                                   uint32_t* num_operands) {
+spv_result_t MarkvDecoder::DecodeOpcodeAndNumberOfOperands(
+    uint32_t* opcode, uint32_t* num_operands) {
   // First try to use the Markov chain codec.
   auto* codec = model_->GetOpcodeAndNumOperandsMarkovHuffmanCodec(GetPrevOpcode());
   if (codec) {
     uint64_t decoded_value = 0;
-    const bool huffman_result =
-        codec->DecodeFromStream(GetReadBitCallback(), &decoded_value);
-    assert(huffman_result);
-    if (!huffman_result)
-      return false;
+    if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Failed to decode opcode_and_num_operands, previous opcode is "
+          << spvOpcodeString(GetPrevOpcode());
 
     if (decoded_value != kMarkvNoneOfTheAbove) {
       // The word was successfully decoded.
       *opcode = uint32_t(decoded_value & 0xFFFF);
       *num_operands = uint32_t(decoded_value >> 16);
-      return true;
+      return SPV_SUCCESS;
     }
 
     // Received kMarkvNoneOfTheAbove signal, use fallback decoding.
@@ -1754,60 +1730,54 @@ bool MarkvDecoder::DecodeOpcodeAndNumberOfOperands(uint32_t* opcode,
   codec = model_->GetOpcodeAndNumOperandsMarkovHuffmanCodec(SpvOpNop);
   assert(codec);
   uint64_t decoded_value = 0;
-  const bool huffman_result =
-      codec->DecodeFromStream(GetReadBitCallback(), &decoded_value);
-  assert(huffman_result);
-  if (!huffman_result)
-    return false;
+  if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+    return vstate_.diag(SPV_ERROR_INTERNAL)
+        << "Failed to decode opcode_and_num_operands with global codec";
 
   if (decoded_value == kMarkvNoneOfTheAbove) {
     // Received kMarkvNoneOfTheAbove signal, fallback further.
-    return false;
+    return SPV_UNSUPPORTED;
   }
 
   *opcode = uint32_t(decoded_value & 0xFFFF);
   *num_operands = uint32_t(decoded_value >> 16);
-  return true;
+  return SPV_SUCCESS;
 }
 
-bool MarkvEncoder::EncodeMtfRankHuffman(uint32_t rank, uint64_t mtf,
-                                        uint64_t fallback_method) {
+spv_result_t MarkvEncoder::EncodeMtfRankHuffman(uint32_t rank, uint64_t mtf,
+                                                uint64_t fallback_method) {
   const auto* codec = model_->GetMtfHuffmanCodec(mtf);
   if (!codec) {
     assert(fallback_method != kMtfNone);
     codec = model_->GetMtfHuffmanCodec(fallback_method);
   }
 
-  assert(codec);
   if (!codec)
-    return false;
+    return vstate_.diag(SPV_ERROR_INTERNAL) << "No codec to encode MTF rank";
 
   uint64_t bits = 0;
   size_t num_bits = 0;
   if (rank < kMtfSmallestRankEncodedByValue) {
     // Encode using Huffman coding.
-    const bool result = codec->Encode(rank, &bits, &num_bits);
-    assert(result);
-    if (!result)
-      return false;
+    if (!codec->Encode(rank, &bits, &num_bits))
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Failed to encode MTF rank with Huffman";
 
     writer_.WriteBits(bits, num_bits);
   } else {
     // Encode by value.
-    const bool result = codec->Encode(kMtfRankEncodedByValueSignal,
-                                      &bits, &num_bits);
-    assert(result);
-    if (!result)
-      return false;
+    if (!codec->Encode(kMtfRankEncodedByValueSignal, &bits, &num_bits))
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Failed to encode kMtfRankEncodedByValueSignal";
 
     writer_.WriteBits(bits, num_bits);
     writer_.WriteVariableWidthU32(rank - kMtfSmallestRankEncodedByValue,
                                   model_->mtf_rank_chunk_length());
   }
-  return true;
+  return SPV_SUCCESS;
 }
 
-bool MarkvDecoder::DecodeMtfRankHuffman(
+spv_result_t MarkvDecoder::DecodeMtfRankHuffman(
     uint64_t mtf, uint32_t fallback_method, uint32_t* rank) {
   const auto* codec = model_->GetMtfHuffmanCodec(mtf);
   if (!codec) {
@@ -1815,35 +1785,33 @@ bool MarkvDecoder::DecodeMtfRankHuffman(
     codec = model_->GetMtfHuffmanCodec(fallback_method);
   }
 
-  assert(codec);
   if (!codec)
-    return false;
+    return vstate_.diag(SPV_ERROR_INTERNAL) << "No codec to decode MTF rank";
 
   uint32_t decoded_value = 0;
-  const bool huffman_result =
-      codec->DecodeFromStream(GetReadBitCallback(), &decoded_value);
-  assert(huffman_result);
-  if (!huffman_result)
-    return false;
+  if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+    return vstate_.diag(SPV_ERROR_INTERNAL)
+        << "Failed to decode MTF rank with Huffman";
 
   if (decoded_value == kMtfRankEncodedByValueSignal) {
     // Decode by value.
     if (!reader_.ReadVariableWidthU32(rank, model_->mtf_rank_chunk_length()))
-      return false;
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Failed to decode MTF rank with varint";
     *rank += kMtfSmallestRankEncodedByValue;
   } else {
     // Decode using Huffman coding.
     assert(decoded_value < kMtfSmallestRankEncodedByValue);
     *rank = decoded_value;
   }
-  return true;
+  return SPV_SUCCESS;
 }
 
-bool MarkvEncoder::EncodeIdWithDescriptor(uint32_t id) {
+spv_result_t MarkvEncoder::EncodeIdWithDescriptor(uint32_t id) {
   auto* codec = model_->GetIdDescriptorHuffmanCodec(inst_.opcode,
                                                     operand_index_);
   if (!codec)
-    return false;
+    return SPV_UNSUPPORTED;
 
   uint64_t bits = 0;
   size_t num_bits = 0;
@@ -1858,11 +1826,15 @@ bool MarkvEncoder::EncodeIdWithDescriptor(uint32_t id) {
   } else {
     // The descriptor doesn't exist or we have no coding for it. Write
     // kMarkvNoneOfTheAbove and go to fallback method.
-    bool result = codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits);
-    (void)result;
-    assert(result);
+    if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
+      return vstate_.diag(SPV_ERROR_INTERNAL)
+          << "Descriptor Huffman table for "
+          << spvOpcodeString(SpvOp(inst_.opcode))
+          << " operand index " << operand_index_
+          << " is missing kMarkvNoneOfTheAbove";
+
     writer_.WriteBits(bits, num_bits);
-    return false;
+    return SPV_UNSUPPORTED;
   }
 
   // Descriptor has been encoded. Now encode the rank of the id in the
@@ -1871,21 +1843,19 @@ bool MarkvEncoder::EncodeIdWithDescriptor(uint32_t id) {
   return EncodeExistingId(mtf, id);
 }
 
-bool MarkvDecoder::DecodeIdWithDescriptor(uint32_t* id) {
+spv_result_t MarkvDecoder::DecodeIdWithDescriptor(uint32_t* id) {
   auto* codec = model_->GetIdDescriptorHuffmanCodec(inst_.opcode,
                                                     operand_index_);
   if (!codec)
-    return false;
+    return SPV_UNSUPPORTED;
 
   uint64_t decoded_value = 0;
-  const bool huffman_result =
-      codec->DecodeFromStream(GetReadBitCallback(), &decoded_value);
-  assert(huffman_result);
-  if (!huffman_result)
-    return false;
+  if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+    return vstate_.diag(SPV_ERROR_INTERNAL)
+        << "Failed to decode descriptor with Huffman";
 
   if (decoded_value == kMarkvNoneOfTheAbove)
-    return false;
+    return SPV_UNSUPPORTED;
 
   // If descriptor exists then the id was encoded through descriptor mtf.
   const uint32_t descriptor = uint32_t(decoded_value);
@@ -1896,26 +1866,23 @@ bool MarkvDecoder::DecodeIdWithDescriptor(uint32_t* id) {
   return DecodeExistingId(mtf, id);
 }
 
-bool MarkvEncoder::EncodeExistingId(uint64_t mtf, uint32_t id) {
+spv_result_t MarkvEncoder::EncodeExistingId(uint64_t mtf, uint32_t id) {
   assert(multi_mtf_.GetSize(mtf) > 0);
   if (multi_mtf_.GetSize(mtf) == 1) {
     // If the sequence has only one element no need to write rank, the decoder
     // would make the same decision.
-    return true;
+    return SPV_SUCCESS;
   }
 
   uint32_t rank = 0;
-  bool result = multi_mtf_.RankFromValue(mtf, id, &rank);
-  assert(result);
-  assert(rank);
-
-  if (!result || !rank)
-    return false;
+  if (!multi_mtf_.RankFromValue(mtf, id, &rank))
+    return vstate_.diag(SPV_ERROR_INTERNAL)
+        << "Id is not in the MTF sequence";
 
   return EncodeMtfRankHuffman(rank, mtf, kMtfGenericNonZeroRank);
 }
 
-bool MarkvDecoder::DecodeExistingId(uint64_t mtf, uint32_t* id) {
+spv_result_t MarkvDecoder::DecodeExistingId(uint64_t mtf, uint32_t* id) {
   assert(multi_mtf_.GetSize(mtf) > 0);
   *id = 0;
 
@@ -1924,18 +1891,21 @@ bool MarkvDecoder::DecodeExistingId(uint64_t mtf, uint32_t* id) {
   if (multi_mtf_.GetSize(mtf) == 1) {
     rank = 1;
   } else {
-    if (!DecodeMtfRankHuffman(mtf, kMtfGenericNonZeroRank, &rank))
-      return false;
+    const spv_result_t result =
+        DecodeMtfRankHuffman(mtf, kMtfGenericNonZeroRank, &rank);
+    if (result != SPV_SUCCESS)
+      return result;
   }
 
   assert(rank);
-  const bool result = multi_mtf_.ValueFromRank(mtf, rank, id);
-  assert(result);
-  assert(*id);
-  return result;
+  if (!multi_mtf_.ValueFromRank(mtf, rank, id))
+    return vstate_.diag(SPV_ERROR_INTERNAL)
+        << "MTF rank is out of bounds";
+
+  return SPV_SUCCESS;
 }
 
-bool MarkvEncoder::EncodeRefId(uint32_t id) {
+spv_result_t MarkvEncoder::EncodeRefId(uint32_t id) {
   // TODO(atgoo@github.com) This might not be needed as EncodeIdWithDescriptor
   // can handle SpvOpAccessChain indices if enough statistics is collected.
   if (inst_.opcode == SpvOpAccessChain && operand_index_ >= 3) {
@@ -1943,20 +1913,26 @@ bool MarkvEncoder::EncodeRefId(uint32_t id) {
     if (it != id_to_presumed_index_.end()) {
       writer_.WriteBits(1, 1);
       writer_.WriteFixedWidth(it->second, kMarkvMaxPresumedAccessIndex);
-      return true;
+      return SPV_SUCCESS;
     }
 
     writer_.WriteBits(0, 1);
   }
 
-  // Try to encode using id descriptor mtfs.
-  if (EncodeIdWithDescriptor(id))
-    return true;
-  // If can't be done continue with other methods.
+  {
+    // Try to encode using id descriptor mtfs.
+    const spv_result_t result = EncodeIdWithDescriptor(id);
+    if (result != SPV_UNSUPPORTED)
+      return result;
+    // If can't be done continue with other methods.
+  }
 
   // Encode using rule-based mtf.
-  bool can_forward_declare = false;
-  uint64_t mtf = GetRuleBasedMtf(&can_forward_declare);
+  uint64_t mtf = GetRuleBasedMtf();
+  const bool can_forward_declare =
+      spvOperandCanBeForwardDeclaredFunction(
+          SpvOp(inst_.opcode))(operand_index_);
+
   if (mtf != kMtfNone && !can_forward_declare) {
     assert(multi_mtf_.HasValue(kMtfAll, id));
     return EncodeExistingId(mtf, id);
@@ -1979,39 +1955,44 @@ bool MarkvEncoder::EncodeRefId(uint32_t id) {
   return EncodeMtfRankHuffman(rank, mtf, kMtfAll);
 }
 
-bool MarkvDecoder::DecodeRefId(uint32_t* id) {
+spv_result_t MarkvDecoder::DecodeRefId(uint32_t* id) {
   if (inst_.opcode == SpvOpAccessChain && operand_index_ >= 3) {
-    uint64_t bits = 0;
-    bool result = reader_.ReadBits(&bits, 1);
-    assert(result);
-    if (!result)
-      return false;
+    uint64_t use_presumed_index_technique = 0;
+    if (!reader_.ReadBits(&use_presumed_index_technique, 1))
+      return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+          << "Failed to read use_presumed_index_technique flag";
 
-    if (bits) {
+    if (use_presumed_index_technique) {
       uint64_t value = 0;
-      result = reader_.ReadFixedWidth(&value, kMarkvMaxPresumedAccessIndex);
-      assert(result);
-      if (!result)
-        return false;
+      if (!reader_.ReadFixedWidth(&value, kMarkvMaxPresumedAccessIndex))
+        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+            << "Failed to read presumed_index";
 
       const uint32_t presumed_index = static_cast<uint32_t>(value);
 
       const auto it = presumed_index_to_id_.find(presumed_index);
       if (it == presumed_index_to_id_.end()) {
         assert(0);
-        return false;
+        return vstate_.diag(SPV_ERROR_INTERNAL)
+            << "Presumed index id not found";
       }
 
       *id = it->second;
-      return true;
+      return SPV_SUCCESS;
     }
   }
 
-  if (DecodeIdWithDescriptor(id))
-    return true;
+  {
+    const spv_result_t result = DecodeIdWithDescriptor(id);
+    if (result != SPV_UNSUPPORTED)
+      return result;
+  }
 
-  bool can_forward_declare = false;
-  uint64_t mtf = GetRuleBasedMtf(&can_forward_declare);
+  uint64_t mtf = GetRuleBasedMtf();
+  const bool can_forward_declare =
+      spvOperandCanBeForwardDeclaredFunction(
+          SpvOp(inst_.opcode))(operand_index_);
+
   if (mtf != kMtfNone && !can_forward_declare) {
     return DecodeExistingId(mtf, id);
   }
@@ -2023,8 +2004,11 @@ bool MarkvDecoder::DecodeRefId(uint32_t* id) {
 
   uint32_t rank = 0;
 
-  if (!DecodeMtfRankHuffman(mtf, kMtfAll, &rank))
-    return false;
+  {
+    const spv_result_t result = DecodeMtfRankHuffman(mtf, kMtfAll, &rank);
+    if (result != SPV_SUCCESS)
+      return result;
+  }
 
   if (rank == 0) {
     // This is the first occurrence of a forward declared id.
@@ -2035,32 +2019,33 @@ bool MarkvDecoder::DecodeRefId(uint32_t* id) {
     if (mtf != kMtfAll)
       multi_mtf_.Insert(mtf, *id);
   } else {
-    const bool result = multi_mtf_.ValueFromRank(mtf, rank, id);
-    assert(result);
-    if (!result)
-      return false;
+    if (!multi_mtf_.ValueFromRank(mtf, rank, id))
+      return vstate_.diag(SPV_ERROR_INTERNAL) << "MTF rank out of bounds";
   }
 
   assert(*id);
-  return true;
+  return SPV_SUCCESS;
 }
 
-bool MarkvEncoder::EncodeTypeId() {
+spv_result_t MarkvEncoder::EncodeTypeId() {
   if (inst_.opcode == SpvOpFunctionParameter) {
     assert(!remaining_function_parameter_types_.empty());
     assert(inst_.type_id == remaining_function_parameter_types_.front());
     remaining_function_parameter_types_.pop_front();
-    return true;
+    return SPV_SUCCESS;
   }
 
-  if (EncodeIdWithDescriptor(inst_.type_id))
-    return true;
+  {
+    // Try to encode using id descriptor mtfs.
+    const spv_result_t result = EncodeIdWithDescriptor(inst_.type_id);
+    if (result != SPV_UNSUPPORTED)
+      return result;
+    // If can't be done continue with other methods.
+  }
 
-  bool can_forward_declare = false;
-  uint64_t mtf = GetRuleBasedMtf(&can_forward_declare);
-  assert(!can_forward_declare);
-  if (can_forward_declare)
-    return false;
+  uint64_t mtf = GetRuleBasedMtf();
+  assert(!spvOperandCanBeForwardDeclaredFunction(
+      SpvOp(inst_.opcode))(operand_index_));
 
   if (mtf == kMtfNone) {
     mtf = kMtfTypeNonFunction;
@@ -2071,20 +2056,23 @@ bool MarkvEncoder::EncodeTypeId() {
   return EncodeExistingId(mtf, inst_.type_id);
 }
 
-bool MarkvDecoder::DecodeTypeId() {
+spv_result_t MarkvDecoder::DecodeTypeId() {
   if (inst_.opcode == SpvOpFunctionParameter) {
     assert(!remaining_function_parameter_types_.empty());
     inst_.type_id = remaining_function_parameter_types_.front();
     remaining_function_parameter_types_.pop_front();
-    return true;
+    return SPV_SUCCESS;
   }
 
-  if (DecodeIdWithDescriptor(&inst_.type_id))
-    return true;
+  {
+    const spv_result_t result = DecodeIdWithDescriptor(&inst_.type_id);
+    if (result != SPV_UNSUPPORTED)
+      return result;
+  }
 
-  bool can_forward_declare = false;
-  uint64_t mtf = GetRuleBasedMtf(&can_forward_declare);
-  assert(!can_forward_declare);
+  uint64_t mtf = GetRuleBasedMtf();
+  assert(!spvOperandCanBeForwardDeclaredFunction(
+      SpvOp(inst_.opcode))(operand_index_));
 
   if (mtf == kMtfNone) {
     mtf = kMtfTypeNonFunction;
@@ -2095,7 +2083,7 @@ bool MarkvDecoder::DecodeTypeId() {
   return DecodeExistingId(mtf, &inst_.type_id);
 }
 
-bool MarkvEncoder::EncodeResultId() {
+spv_result_t MarkvEncoder::EncodeResultId() {
   uint32_t rank = 0;
 
   const uint64_t num_still_forward_declared =
@@ -2103,15 +2091,14 @@ bool MarkvEncoder::EncodeResultId() {
 
   if (num_still_forward_declared) {
     // We write the rank only if kMtfForwardDeclared is not empty. If it is
-    // empty the decoder knows that there no forward declared ids to expect.
+    // empty the decoder knows that there are no forward declared ids to expect.
     if (multi_mtf_.RankFromValue(kMtfForwardDeclared,
                                  inst_.result_id, &rank)) {
       // This is a definition of a forward declared id. We can remove the id
       // from kMtfForwardDeclared.
-      bool result = multi_mtf_.Remove(kMtfForwardDeclared, inst_.result_id);
-      assert(result);
-      if (!result)
-        return false;
+      if (!multi_mtf_.Remove(kMtfForwardDeclared, inst_.result_id))
+        return vstate_.diag(SPV_ERROR_INTERNAL)
+            << "Failed to remove id from kMtfForwardDeclared";
       writer_.WriteBits(1, 1);
       writer_.WriteVariableWidthU32(
           rank, model_->mtf_rank_chunk_length());
@@ -2125,10 +2112,10 @@ bool MarkvEncoder::EncodeResultId() {
     multi_mtf_.Insert(kMtfAll, inst_.result_id);
   }
 
-  return true;
+  return SPV_SUCCESS;
 }
 
-bool MarkvDecoder::DecodeResultId() {
+spv_result_t MarkvDecoder::DecodeResultId() {
   uint32_t rank = 0;
 
   const uint64_t num_still_forward_declared =
@@ -2138,26 +2125,26 @@ bool MarkvDecoder::DecodeResultId() {
     // Some ids were forward declared. Check if this id is one of them.
     uint64_t id_was_forward_declared;
     if (!reader_.ReadBits(&id_was_forward_declared, 1))
-      return false;
+      return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+          << "Failed to read id_was_forward_declared flag";
 
     if (id_was_forward_declared) {
       if (!reader_.ReadVariableWidthU32(
           &rank, model_->mtf_rank_chunk_length()))
-        return false;
+        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+            << "Failed to read MTF rank of forward declared id";
 
       if (rank) {
         // The id was forward declared, recover it from kMtfForwardDeclared.
-        const bool result = multi_mtf_.ValueFromRank(kMtfForwardDeclared,
-                                                     rank, &inst_.result_id);
-
-        // If rank doesn't fit in the move-to-front sequence, this is unexpected
-        // behavior.
-        assert(result);
-        if (!result)
-          return false;
+        if (!multi_mtf_.ValueFromRank(kMtfForwardDeclared,
+                                     rank, &inst_.result_id))
+          return vstate_.diag(SPV_ERROR_INTERNAL)
+              << "Forward declared MTF rank is out of bounds";
 
         // We can now remove the id from kMtfForwardDeclared.
-        multi_mtf_.Remove(kMtfForwardDeclared, inst_.result_id);
+        if (!multi_mtf_.Remove(kMtfForwardDeclared, inst_.result_id))
+          return vstate_.diag(SPV_ERROR_INTERNAL)
+              << "Failed to remove id from kMtfForwardDeclared";
       }
     }
   }
@@ -2172,16 +2159,16 @@ bool MarkvDecoder::DecodeResultId() {
     multi_mtf_.Insert(kMtfAll, inst_.result_id);
   }
 
-  return true;
+  return SPV_SUCCESS;
 }
 
-void MarkvEncoder::EncodeLiteralNumber(const Instruction& instruction,
-                                       const spv_parsed_operand_t& operand) {
+spv_result_t MarkvEncoder::EncodeLiteralNumber(
+    const Instruction& instruction, const spv_parsed_operand_t& operand) {
   if (operand.number_bit_width <= 32) {
     const uint32_t word = instruction.word(operand.offset);
-    EncodeOperandWord(word);
+    return EncodeNonIdWord(word);
   } else {
-    assert(operand.number_bit_width == 64);
+    assert(operand.number_bit_width <= 64);
     const uint64_t word =
         uint64_t(instruction.word(operand.offset)) |
         (uint64_t(instruction.word(operand.offset + 1)) << 32);
@@ -2195,21 +2182,22 @@ void MarkvEncoder::EncodeLiteralNumber(const Instruction& instruction,
     } else if (operand.number_kind == SPV_NUMBER_FLOATING) {
       writer_.WriteUnencoded(word);
     } else {
-      assert(0);
+      return vstate_.diag(SPV_ERROR_INTERNAL) << "Unsupported bit length";
     }
   }
+  return SPV_SUCCESS;
 }
 
 spv_result_t MarkvDecoder::DecodeLiteralNumber(
     const spv_parsed_operand_t& operand) {
   if (operand.number_bit_width <= 32) {
     uint32_t word = 0;
-    if (!DecodeOperandWord(&word))
-        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read single-word literal number";
+    const spv_result_t result = DecodeNonIdWord(&word);
+    if (result != SPV_SUCCESS)
+      return result;
     inst_words_.push_back(word);
   } else {
-    assert(operand.number_bit_width == 64);
+    assert(operand.number_bit_width <= 64);
     uint64_t word = 0;
     if (operand.number_kind == SPV_NUMBER_UNSIGNED_INT) {
       if (!reader_.ReadVariableWidthU64(&word, model_->u64_chunk_length()))
@@ -2227,7 +2215,7 @@ spv_result_t MarkvDecoder::DecodeLiteralNumber(
         return vstate_.diag(SPV_ERROR_INVALID_BINARY)
             << "Failed to read literal F64";
     } else {
-      assert(0);
+      return vstate_.diag(SPV_ERROR_INTERNAL) << "Unsupported bit length";
     }
     inst_words_.push_back(static_cast<uint32_t>(word));
     inst_words_.push_back(static_cast<uint32_t>(word >> 32));
@@ -2235,8 +2223,11 @@ spv_result_t MarkvDecoder::DecodeLiteralNumber(
   return SPV_SUCCESS;
 }
 
-void MarkvEncoder::AddByteBreakIfAgreed() {
-  if (!ShouldByteBreak(writer_.GetNumBits()))
+void MarkvEncoder::AddByteBreak(size_t byte_break_if_less_than) {
+  const size_t num_bits_to_next_byte =
+      GetNumBitsToNextByte(writer_.GetNumBits());
+  if (num_bits_to_next_byte == 0 ||
+      num_bits_to_next_byte > byte_break_if_less_than)
     return;
 
   if (logger_) {
@@ -2244,18 +2235,22 @@ void MarkvEncoder::AddByteBreakIfAgreed() {
     logger_->AppendText("<byte break>");
   }
 
-  writer_.WriteBits(0, GetNumBitsToNextByte(writer_.GetNumBits()));
+  writer_.WriteBits(0, num_bits_to_next_byte);
 }
 
-bool MarkvDecoder::ReadToByteBreakIfAgreed() {
-  if (!ShouldByteBreak(reader_.GetNumReadBits()))
+bool MarkvDecoder::ReadToByteBreak(size_t byte_break_if_less_than) {
+  const size_t num_bits_to_next_byte =
+      GetNumBitsToNextByte(reader_.GetNumReadBits());
+  if (num_bits_to_next_byte == 0 ||
+      num_bits_to_next_byte > byte_break_if_less_than)
     return true;
 
+
   uint64_t bits = 0;
-  if (!reader_.ReadBits(&bits,
-                        GetNumBitsToNextByte(reader_.GetNumReadBits())))
+  if (!reader_.ReadBits(&bits, num_bits_to_next_byte))
     return false;
 
+  assert(bits == 0);
   if (bits != 0)
     return false;
 
@@ -2276,7 +2271,12 @@ spv_result_t MarkvEncoder::EncodeInstruction(
 
   LogDisassemblyInstruction();
 
-  if (!EncodeOpcodeAndNumOperands(opcode, inst.num_operands)) {
+  const spv_result_t opcode_encodig_result =
+      EncodeOpcodeAndNumOperands(opcode, inst.num_operands);
+  if (opcode_encodig_result < 0)
+    return opcode_encodig_result;
+
+  if (opcode_encodig_result != SPV_SUCCESS) {
     // Fallback encoding for opcode and num_operands.
     writer_.WriteVariableWidthU32(opcode, model_->opcode_chunk_length());
 
@@ -2296,10 +2296,8 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   for (operand_index_ = 0; operand_index_ < operands.size(); ++operand_index_) {
     operand_ = operands[operand_index_];
 
-    if (logger_)
-      logger_->AppendWhitespaces(kCommentNumWhitespaces);
-
     if (logger_) {
+      logger_->AppendWhitespaces(kCommentNumWhitespaces);
       logger_->AppendText("<");
       logger_->AppendText(spvOperandTypeStr(operand_.type));
       logger_->AppendText(">");
@@ -2314,17 +2312,17 @@ spv_result_t MarkvEncoder::EncodeInstruction(
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID: {
         const uint32_t id = instruction.word(operand_.offset);
         if (operand_.type == SPV_OPERAND_TYPE_TYPE_ID) {
-          if (!EncodeTypeId())
-            return vstate_.diag(SPV_ERROR_INTERNAL)
-                << "Failed to encode type id";
+          const spv_result_t result = EncodeTypeId();
+          if (result != SPV_SUCCESS)
+            return result;
         } else if (operand_.type == SPV_OPERAND_TYPE_RESULT_ID) {
-          if (!EncodeResultId())
-            return vstate_.diag(SPV_ERROR_INTERNAL)
-                << "Failed to encode result id";
+          const spv_result_t result = EncodeResultId();
+          if (result != SPV_SUCCESS)
+            return result;
         } else {
-          if (!EncodeRefId(id))
-            return vstate_.diag(SPV_ERROR_INTERNAL)
-                << "Failed to encode id";
+          const spv_result_t result = EncodeRefId(id);
+          if (result != SPV_SUCCESS)
+            return result;
         }
 
         multi_mtf_.Promote(id);
@@ -2332,12 +2330,17 @@ spv_result_t MarkvEncoder::EncodeInstruction(
       }
 
       case SPV_OPERAND_TYPE_LITERAL_INTEGER: {
-        EncodeOperandWord(instruction.word(operand_.offset));
+        const spv_result_t result =
+            EncodeNonIdWord(instruction.word(operand_.offset));
+        if (result != SPV_SUCCESS)
+          return result;
         break;
       }
 
       case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER: {
-        EncodeLiteralNumber(instruction, operand_);
+        const spv_result_t result = EncodeLiteralNumber(instruction, operand_);
+        if (result != SPV_SUCCESS)
+          return result;
         break;
       }
 
@@ -2375,14 +2378,16 @@ spv_result_t MarkvEncoder::EncodeInstruction(
       default: {
         for (int i = 0; i < operand_.num_words; ++i) {
           const uint32_t word = instruction.word(operand_.offset + i);
-          EncodeOperandWord(word);
+          const spv_result_t result = EncodeNonIdWord(word);
+          if (result != SPV_SUCCESS)
+            return result;
         }
         break;
       }
     }
   }
 
-  AddByteBreakIfAgreed();
+  AddByteBreak(kByteBreakAfterInstIfLessThanUntilNextByte);
 
   if (logger_) {
     logger_->NewLine();
@@ -2408,8 +2413,9 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
     return vstate_.diag(SPV_ERROR_INVALID_BINARY)
         << "Unable to read MARK-V header";
 
-  assert(header_.magic_number == kMarkvMagicNumber);
-  assert(header_.markv_length_in_bits > 0);
+  if (header_.markv_length_in_bits == 0)
+    return vstate_.diag(SPV_ERROR_INVALID_BINARY)
+        << "Header markv_length_in_bits field is zero";
 
   if (header_.magic_number != kMarkvMagicNumber)
     return vstate_.diag(SPV_ERROR_INVALID_BINARY)
@@ -2479,51 +2485,56 @@ spv_result_t MarkvDecoder::DecodeOperand(
   const size_t first_word_index = inst_words_.size();
 
   switch (type) {
-    case SPV_OPERAND_TYPE_RESULT_ID:
-    case SPV_OPERAND_TYPE_TYPE_ID:
+    case SPV_OPERAND_TYPE_RESULT_ID: {
+      const spv_result_t result = DecodeResultId();
+      if (result != SPV_SUCCESS)
+        return result;
+
+      inst_words_.push_back(inst_.result_id);
+      vstate_.setIdBound(std::max(vstate_.getIdBound(), inst_.result_id + 1));
+      multi_mtf_.Promote(inst_.result_id);
+      break;
+    }
+
+    case SPV_OPERAND_TYPE_TYPE_ID: {
+      const spv_result_t result = DecodeTypeId();
+      if (result != SPV_SUCCESS)
+        return result;
+
+      inst_words_.push_back(inst_.type_id);
+      vstate_.setIdBound(std::max(vstate_.getIdBound(), inst_.type_id + 1));
+      multi_mtf_.Promote(inst_.type_id);
+      break;
+    }
+
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_OPTIONAL_ID:
     case SPV_OPERAND_TYPE_SCOPE_ID:
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID: {
       uint32_t id = 0;
-      if (type == SPV_OPERAND_TYPE_TYPE_ID) {
-        if (!DecodeTypeId()) {
-          return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-              << "Failed to read type_id";
-        }
+      const spv_result_t result = DecodeRefId(&id);
+      if (result != SPV_SUCCESS)
+        return result;
 
-        id = inst_.type_id;
-      } else if (type == SPV_OPERAND_TYPE_RESULT_ID) {
-        if (!DecodeResultId()) {
-          return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-              << "Failed to read result_id";
-        }
+      if (id == 0)
+        return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Decoded id is 0";
 
-        id = inst_.result_id;
-      } else {
-        if (!DecodeRefId(&id))
-          return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Failed to read id";
+      if (type == SPV_OPERAND_TYPE_ID ||
+          type == SPV_OPERAND_TYPE_OPTIONAL_ID) {
 
-        if (id == 0)
-          return vstate_.diag(SPV_ERROR_INVALID_BINARY) << "Decoded id is 0";
+        operand_.type = SPV_OPERAND_TYPE_ID;
 
-        if (type == SPV_OPERAND_TYPE_ID ||
-            type == SPV_OPERAND_TYPE_OPTIONAL_ID) {
-
-          operand_.type = SPV_OPERAND_TYPE_ID;
-
-          if (opcode == SpvOpExtInst && operand_.offset == 3) {
-            // The current word is the extended instruction set id.
-            // Set the extended instruction set type for the current
-            // instruction.
-            auto ext_inst_type_iter = import_id_to_ext_inst_type_.find(id);
-            if (ext_inst_type_iter == import_id_to_ext_inst_type_.end()) {
-              return vstate_.diag(SPV_ERROR_INVALID_ID)
-                  << "OpExtInst set id " << id
-                  << " does not reference an OpExtInstImport result Id";
-            }
-            inst_.ext_inst_type = ext_inst_type_iter->second;
+        if (opcode == SpvOpExtInst && operand_.offset == 3) {
+          // The current word is the extended instruction set id.
+          // Set the extended instruction set type for the current
+          // instruction.
+          auto ext_inst_type_iter = import_id_to_ext_inst_type_.find(id);
+          if (ext_inst_type_iter == import_id_to_ext_inst_type_.end()) {
+            return vstate_.diag(SPV_ERROR_INVALID_ID)
+                << "OpExtInst set id " << id
+                << " does not reference an OpExtInstImport result Id";
           }
+          inst_.ext_inst_type = ext_inst_type_iter->second;
         }
       }
 
@@ -2535,9 +2546,9 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       uint32_t word = 0;
-      if (!DecodeOperandWord(&word))
-        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read enum";
+      const spv_result_t result = DecodeNonIdWord(&word);
+      if (result != SPV_SUCCESS)
+        return result;
 
       inst_words_.push_back(word);
 
@@ -2561,9 +2572,9 @@ spv_result_t MarkvDecoder::DecodeOperand(
       operand_.number_bit_width = 32;
 
       uint32_t word = 0;
-      if (!DecodeOperandWord(&word))
-        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read literal integer";
+      const spv_result_t result = DecodeNonIdWord(&word);
+      if (result != SPV_SUCCESS)
+        return result;
 
       inst_words_.push_back(word);
       break;
@@ -2703,9 +2714,9 @@ spv_result_t MarkvDecoder::DecodeOperand(
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
       // A single word that is a plain enum value.
       uint32_t word = 0;
-      if (!DecodeOperandWord(&word))
-        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read enum";
+      const spv_result_t result = DecodeNonIdWord(&word);
+      if (result != SPV_SUCCESS)
+        return result;
 
       inst_words_.push_back(word);
 
@@ -2735,10 +2746,9 @@ spv_result_t MarkvDecoder::DecodeOperand(
     case SPV_OPERAND_TYPE_SELECTION_CONTROL: {
       // This operand is a mask.
       uint32_t word = 0;
-      if (!DecodeOperandWord(&word))
-        return vstate_.diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read " << spvOperandTypeStr(type)
-            << " for " << spvOpcodeString(SpvOp(inst_.opcode));
+      const spv_result_t result = DecodeNonIdWord(&word);
+      if (result != SPV_SUCCESS)
+        return result;
 
       inst_words_.push_back(word);
 
@@ -2805,7 +2815,12 @@ spv_result_t MarkvDecoder::DecodeInstruction() {
     uint32_t opcode = 0;
     uint32_t num_operands = 0;
 
-    if (DecodeOpcodeAndNumberOfOperands(&opcode, &num_operands)) {
+    const spv_result_t opcode_decoding_result =
+        DecodeOpcodeAndNumberOfOperands(&opcode, &num_operands);
+    if (opcode_decoding_result < 0)
+      return opcode_decoding_result;
+
+    if (opcode_decoding_result == SPV_SUCCESS) {
       inst_.num_operands = static_cast<uint16_t>(num_operands);
       num_operands_still_unknown = false;
     } else {
@@ -2882,7 +2897,7 @@ spv_result_t MarkvDecoder::DecodeInstruction() {
   RecordNumberType();
   ProcessCurInstruction();
 
-  if (!ReadToByteBreakIfAgreed())
+  if (!ReadToByteBreak(kByteBreakAfterInstIfLessThanUntilNextByte))
     return vstate_.diag(SPV_ERROR_INVALID_BINARY)
         << "Failed to read to byte break";
 
