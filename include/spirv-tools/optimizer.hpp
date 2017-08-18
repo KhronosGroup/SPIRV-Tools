@@ -202,8 +202,8 @@ Optimizer::PassToken CreateEliminateDeadConstantPass();
 Optimizer::PassToken CreateBlockMergePass();
 
 // Creates an exhaustive inline pass.
-// An inline pass attempts to exhaustively inline all function calls in
-// all functions in an entry point call tree. The intent is to enable,
+// An exhaustive inline pass attempts to exhaustively inline all function
+// calls in all functions in an entry point call tree. The intent is to enable,
 // albeit through brute force, analysis and optimization across function
 // calls by subsequent optimization passes. As the inlining is exhaustive,
 // there is no attempt to optimize for size or runtime performance. Functions
@@ -211,11 +211,11 @@ Optimizer::PassToken CreateBlockMergePass();
 Optimizer::PassToken CreateInlineExhaustivePass();
   
 // Creates an opaque inline pass.
-// An inline pass inlines all function calls in all functions in an entry
-// point call tree. The intent is to enable, albeit through brute force,
-// analysis and optimization across these function calls by subsequent
-// passes in order to remove the storing of opaque types which is not
-// legal in Vulkan. Functions that are not in the call tree of an entry
+// An opaque inline pass inlines all function calls in all functions in all
+// entry point call trees where the called function contains an opaque type
+// in either its parameters or return value. The intent is to enable, albeit
+// through brute force, analysis and optimization across these function calls
+// by subsequent passes in order to remove the storing of opaque types which is // not legal in Vulkan. Functions that are not in the call tree of an entry
 // point are not changed.
 Optimizer::PassToken CreateInlineOpaquePass();
   
