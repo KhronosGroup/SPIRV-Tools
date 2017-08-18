@@ -213,7 +213,8 @@ Optimizer::PassToken CreateInlineExhaustivePass();
 // Creates an opaque inline pass.
 // An opaque inline pass inlines all function calls in all functions in all
 // entry point call trees where the called function contains an opaque type
-// in either its parameters or return value. The intent is to enable, albeit
+// in either its parameter types or return type. An opaque type is currently
+// defined as Image, Sampler or SampledImage. The intent is to enable, albeit
 // through brute force, analysis and optimization across these function calls
 // by subsequent passes in order to remove the storing of opaque types which is // not legal in Vulkan. Functions that are not in the call tree of an entry
 // point are not changed.
