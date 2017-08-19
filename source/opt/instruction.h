@@ -174,7 +174,9 @@ class Instruction {
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
 
-  // Runs the given function |f| on all operand ids
+  // Runs the given function |f| on all operand ids.
+  //
+  // |f| should not transform an ID into 0, as 0 is an invalid ID.
   inline void ForEachId(const std::function<void(uint32_t*)>& f);
   inline void ForEachId(const std::function<void(const uint32_t*)>& f) const;
 
@@ -259,36 +261,17 @@ inline void Instruction::ForEachInst(
 }
 
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
-  for (auto& opnd : operands_) {
-    switch (opnd.type) {
-      case SPV_OPERAND_TYPE_RESULT_ID:
-        f(&opnd.words[0]);
-        result_id_ = opnd.words[0];
-        break;
-      case SPV_OPERAND_TYPE_TYPE_ID:
-        f(&opnd.words[0]);
-        type_id_ = opnd.words[0];
-        break;
-      default:
-        if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
-        break;
-    }
-  }
+  for (auto& opnd : operands_)
+    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  if (result_id_ != 0u) result_id_ = GetSingleWordInOperand(0u);
+  if (type_id_ != 0u)
+    type_id_ = GetSingleWordInOperand(result_id_ == 0u ? 0u : 1u);
 }
 
 inline void Instruction::ForEachId(
     const std::function<void(const uint32_t*)>& f) const {
-  for (const auto& opnd : operands_) {
-    switch (opnd.type) {
-      case SPV_OPERAND_TYPE_RESULT_ID:
-      case SPV_OPERAND_TYPE_TYPE_ID:
-        f(&opnd.words[0]);
-        break;
-      default:
-        if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
-        break;
-    }
-  }
+  for (const auto& opnd : operands_)
+    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
 }
 
 inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {
