@@ -45,7 +45,7 @@ class Function {
   explicit Function(const Function& f);
   // The OpFunction instruction that begins the definition of this function.
   Instruction& DefInst() { return *def_inst_; }
-  Instruction DefInst() const { return *def_inst_; }
+  const Instruction& DefInst() const { return *def_inst_; }
 
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }
@@ -57,9 +57,9 @@ class Function {
   // Saves the given function end instruction.
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
-  // Returns functions's end instruction.
+  // Returns the given function end instruction.
   inline Instruction* function_end() { return end_inst_.get(); }
-  inline Instruction function_end() const { return *end_inst_.get(); }
+  inline const Instruction& function_end() const { return *end_inst_; }
 
   // Returns function's id
   inline uint32_t result_id() const { return def_inst_->result_id(); }

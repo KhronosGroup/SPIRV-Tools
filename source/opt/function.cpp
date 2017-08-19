@@ -33,8 +33,8 @@ Function::Function(const Function& f)
       true);
 
   blocks_.reserve(f.blocks_.size());
-  for (auto& b : f.blocks_) {
-    std::unique_ptr<BasicBlock> bb = MakeUnique<BasicBlock>(*b.get());
+  for (const auto& b : f.blocks_) {
+    std::unique_ptr<BasicBlock> bb = MakeUnique<BasicBlock>(*b);
     bb->SetParent(this);
     AddBasicBlock(std::move(bb));
   }
