@@ -263,9 +263,9 @@ inline void Instruction::ForEachInst(
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_)
     if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
-  if (result_id_ != 0u) result_id_ = GetSingleWordInOperand(0u);
   if (type_id_ != 0u)
-    type_id_ = GetSingleWordInOperand(result_id_ == 0u ? 0u : 1u);
+    type_id_ = GetSingleWordOperand(0u);
+  if (result_id_ != 0u) result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
 }
 
 inline void Instruction::ForEachId(

@@ -35,20 +35,22 @@ class LinkerTest : public ::testing::Test {
     const auto consumer = [this](spv_message_level_t level, const char*,
                                 const spv_position_t& position,
                                 const char* message) {
+      if (!error_message_.empty())
+        error_message_ += "\n";
       switch (level) {
         case SPV_MSG_FATAL:
         case SPV_MSG_INTERNAL_ERROR:
         case SPV_MSG_ERROR:
-          error_message_ = "ERROR";
+          error_message_ += "ERROR";
           break;
         case SPV_MSG_WARNING:
-          error_message_ = "WARNING";
+          error_message_ += "WARNING";
           break;
         case SPV_MSG_INFO:
-          error_message_ = "INFO";
+          error_message_ += "INFO";
           break;
         case SPV_MSG_DEBUG:
-          error_message_ = "DEBUG";
+          error_message_ += "DEBUG";
           break;
       }
       error_message_ += ": " + std::to_string(position.index) + ": " + message;

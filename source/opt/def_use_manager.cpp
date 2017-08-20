@@ -72,6 +72,12 @@ ir::Instruction* DefUseManager::GetDef(uint32_t id) {
   return iter->second;
 }
 
+const ir::Instruction* DefUseManager::GetDef(uint32_t id) const {
+  const auto iter = id_to_def_.find(id);
+  if (iter == id_to_def_.end()) return nullptr;
+  return iter->second;
+}
+
 UseList* DefUseManager::GetUses(uint32_t id) {
   auto iter = id_to_uses_.find(id);
   if (iter == id_to_uses_.end()) return nullptr;

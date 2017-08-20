@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
 #define LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
 
+#include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
 
@@ -26,6 +27,14 @@ class RemoveDuplicatesPass : public Pass {
  public:
   const char* name() const override { return "remove-duplicates"; }
   Status Process(ir::Module*) override;
+  static bool AreTypesEqual(const spvtools::ir::Instruction& inst1,
+                            const spvtools::ir::Instruction& inst2,
+                            const analysis::DefUseManager& defUseManager);
+
+ private:
+  bool RemoveDuplicateCapabilities(ir::Module* module) const;
+  bool RemoveDuplicatesExtInstImports(ir::Module* module, analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicateTypes(ir::Module* module, analysis::DefUseManager& defUseManager) const;
 };
 
 }  // namespace opt

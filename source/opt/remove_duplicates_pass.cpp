@@ -21,204 +21,208 @@
 #include <unordered_set>
 #include <vector>
 
-namespace {
-
-using spvtools::ir::Instruction;
-
-static bool areTypesSimilar(
-    const Instruction& a, const Instruction& b,
-    std::unordered_map<SpvId, const Instruction>& typesMap) {
-  if (a.opcode() != b.opcode()) return false;
-
-  switch (a.opcode()) {
-    case SpvOpTypeVoid:
-    case SpvOpTypeBool:
-    case SpvOpTypeSampler:
-    case SpvOpTypeEvent:
-    case SpvOpTypeDeviceEvent:
-    case SpvOpTypeReserveId:
-    case SpvOpTypeQueue:
-    case SpvOpTypePipeStorage:
-    case SpvOpTypeNamedBarrier:
-      return true;
-    case SpvOpTypeInt:
-      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u) &&
-             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u);
-    case SpvOpTypeFloat:
-    case SpvOpTypePipe:
-    case SpvOpTypeForwardPointer:
-      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u);
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)],
-                             typesMap[b.GetSingleWordInOperand(0u)],
-                             typesMap) &&
-             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u);
-    case SpvOpTypeImage:
-      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)],
-                             typesMap[b.GetSingleWordInOperand(0u)],
-                             typesMap) &&
-             a.GetSingleWordInOperand(1u) == b.GetSingleWordInOperand(1u) &&
-             a.GetSingleWordInOperand(2u) == b.GetSingleWordInOperand(2u) &&
-             a.GetSingleWordInOperand(3u) == b.GetSingleWordInOperand(3u) &&
-             a.GetSingleWordInOperand(4u) == b.GetSingleWordInOperand(4u) &&
-             a.GetSingleWordInOperand(5u) == b.GetSingleWordInOperand(5u) &&
-             a.GetSingleWordInOperand(6u) == b.GetSingleWordInOperand(6u) &&
-             a.NumOperands() == b.NumOperands() &&
-             (a.NumInOperands() == 8u ||
-              a.GetSingleWordInOperand(7u) == b.GetSingleWordInOperand(7u));
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeRuntimeArray:
-      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)],
-                             typesMap[b.GetSingleWordInOperand(0u)], typesMap);
-    case SpvOpTypeArray:
-      return areTypesSimilar(typesMap[a.GetSingleWordInOperand(0u)],
-                             typesMap[b.GetSingleWordInOperand(0u)],
-                             typesMap) &&
-             areTypesSimilar(typesMap[a.GetSingleWordInOperand(1u)],
-                             typesMap[b.GetSingleWordInOperand(1u)], typesMap);
-    case SpvOpTypeStruct:
-    case SpvOpTypeFunction: {
-      bool res = a.NumInOperands() == b.NumInOperands();
-      for (uint32_t i = 0u; i < a.NumInOperands() && res; ++i)
-        res &= areTypesSimilar(typesMap[a.GetSingleWordInOperand(i)],
-                               typesMap[b.GetSingleWordInOperand(i)], typesMap);
-      return res;
-    }
-    case SpvOpTypeOpaque:
-      return std::strcmp(
-                 reinterpret_cast<const char*>(a.GetInOperand(0u).words.data()),
-                 reinterpret_cast<const char*>(
-                     b.GetInOperand(0u).words.data())) == 0;
-    case SpvOpTypePointer:
-      return a.GetSingleWordInOperand(0u) == b.GetSingleWordInOperand(0u) &&
-             areTypesSimilar(typesMap[a.GetSingleWordInOperand(1u)],
-                             typesMap[b.GetSingleWordInOperand(1u)], typesMap);
-    default:
-      return false;
-  }
-}
-
-}  // anonymous namespace
+#include "opcode.h"
 
 namespace spvtools {
 namespace opt {
 
 using ir::Instruction;
 using ir::Operand;
+using opt::analysis::DefUseManager;
 
 Pass::Status RemoveDuplicatesPass::Process(ir::Module* module) {
+  DefUseManager defUseManager(consumer(), module);
+
+  bool modified  = RemoveDuplicateCapabilities(module);
+       modified |= RemoveDuplicatesExtInstImports(module, defUseManager);
+       modified |= RemoveDuplicateTypes(module, defUseManager);
+
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
+    ir::Module* module) const {
   bool modified = false;
 
-  // Remove duplicate capabilities
   std::unordered_set<uint32_t> capabilities;
   for (auto i = module->capability_begin(); i != module->capability_end();) {
     auto res = capabilities.insert(i->GetSingleWordOperand(0u));
-    i = (res.second) ? ++i : i.Erase();
-    modified |= res.second;
+
+    if (res.second) {
+      // Never seen before, keep it.
+      ++i;
+    } else {
+      // It's a duplicate, remove it.
+      i = i.Erase();
+      modified = true;
+    }
   }
 
-  // Remove duplicate ext inst imports
+  return modified;
+}
+
+bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
+    ir::Module* module, analysis::DefUseManager& defUseManager) const {
+  bool modified = false;
+
   std::unordered_map<std::string, SpvId> extInstImports;
-  std::unordered_map<SpvId, SpvId> extInstImportsReplacementMap;
   for (auto i = module->ext_inst_import_begin();
        i != module->ext_inst_import_end();) {
     auto res = extInstImports.emplace(
         reinterpret_cast<const char*>(i->GetInOperand(0u).words.data()),
         i->result_id());
-    if (!res.second)
-      extInstImportsReplacementMap[i->result_id()] = res.first->second;
-    i = (res.second) ? ++i : i.Erase();
-    modified |= res.second;
-  }
-  module->ForEachInst(
-      [&extInstImportsReplacementMap](Instruction* inst) {
-        inst->ForEachInId([&extInstImportsReplacementMap](uint32_t* op) {
-          auto iter = extInstImportsReplacementMap.find(*op);
-          if (iter != extInstImportsReplacementMap.end()) *op = iter->second;
-        });
-      },
-      false);
-
-  // Remove duplicate types
-  // TODO(pierremoreau): optimise this part of the pass
-  const auto isType = [](SpvOp op) {
-    switch (op) {
-    case SpvOpTypeVoid:
-    case SpvOpTypeBool:
-    case SpvOpTypeInt:
-    case SpvOpTypeFloat:
-    case SpvOpTypeVector:
-    case SpvOpTypeMatrix:
-    case SpvOpTypeImage:
-    case SpvOpTypeSampler:
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeArray:
-    case SpvOpTypeRuntimeArray:
-    case SpvOpTypeStruct:
-    case SpvOpTypeOpaque:
-    case SpvOpTypePointer:
-    case SpvOpTypeFunction:
-    case SpvOpTypeEvent:
-    case SpvOpTypeDeviceEvent:
-    case SpvOpTypeReserveId:
-    case SpvOpTypeQueue:
-    case SpvOpTypePipe:
-    case SpvOpTypeForwardPointer:
-    case SpvOpTypePipeStorage:
-    case SpvOpTypeNamedBarrier:
-      return true;
-    default:
-      return false;
+    if (res.second) {
+      // Never seen before, keep it.
+      ++i;
+    } else {
+      // It's a duplicate, remove it.
+      defUseManager.ReplaceAllUsesWith(i->result_id(), res.first->second);
+      i = i.Erase();
+      modified = true;
     }
-  };
+  }
 
-  std::unordered_map<SpvId, const Instruction> typesMap;
-  typesMap.reserve(module->types_values().size());
-  for (auto i : module->types_values())
-    if (isType(i.opcode()))
-      typesMap.emplace(i.result_id(), i);
+  return modified;
+}
+
+bool RemoveDuplicatesPass::RemoveDuplicateTypes(
+    ir::Module* module, analysis::DefUseManager& defUseManager) const {
+  bool modified = false;
 
   std::vector<Instruction> visitedTypes;
   visitedTypes.reserve(module->types_values().size());
-  std::unordered_map<SpvId, SpvId> typesReplacementMap;
-  typesReplacementMap.reserve(module->types_values().size());
-
 
   for (auto i = module->types_values_begin();
        i != module->types_values_end();) {
-    if (!isType(i->opcode())) {
+    // We only care about types.
+    if (!spvOpcodeGeneratesType((i->opcode())) &&
+        i->opcode() != SpvOpTypeForwardPointer) {
       ++i;
       continue;
     }
 
+    // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
     for (auto j : visitedTypes) {
-      if (areTypesSimilar(*i, j, typesMap)) {
+      if (AreTypesEqual(*i, j, defUseManager)) {
         idToKeep = j.result_id();
         break;
       }
     }
-    if (idToKeep == 0u)
+
+    if (idToKeep == 0u) {
+      // This is a never seen before type, keep it around.
       visitedTypes.emplace_back(*i);
-    else
-      typesReplacementMap[i->result_id()] = idToKeep;
-    i = (idToKeep == 0u) ? ++i : i.Erase();
+      ++i;
+    } else {
+      // The same type has already been seen before, remove this one.
+      defUseManager.ReplaceAllUsesWith(i->result_id(), idToKeep);
+      modified = true;
+      i = i.Erase();
+    }
   }
 
-  if (!typesReplacementMap.empty()) {
-    module->ForEachInst(
-        [&typesReplacementMap](Instruction* inst) {
-          inst->ForEachId([&typesReplacementMap](uint32_t* op) {
-            auto iter = typesReplacementMap.find(*op);
-            if (iter != typesReplacementMap.end()) *op = iter->second;
-          });
-        },
-        false);
-    modified = true;
-  }
+  return modified;
+}
 
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+// TODO(pierremoreau): take decorations into account
+// Returns whether two types are equal, decorations not taken into account
+// yet., decorations not taken into account yet.
+bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
+                                         const Instruction& inst2,
+                                         const DefUseManager& defUseManager) {
+  if (inst1.opcode() != inst2.opcode()) return false;
+
+  switch (inst1.opcode()) {
+    case SpvOpTypeVoid:
+    case SpvOpTypeBool:
+    case SpvOpTypeSampler:
+    case SpvOpTypeEvent:
+    case SpvOpTypeDeviceEvent:
+    case SpvOpTypeReserveId:
+    case SpvOpTypeQueue:
+    case SpvOpTypePipeStorage:
+    case SpvOpTypeNamedBarrier:
+      return true;
+    case SpvOpTypeInt:
+      return inst1.GetSingleWordInOperand(0u) ==
+                 inst2.GetSingleWordInOperand(0u) &&
+             inst1.GetSingleWordInOperand(1u) ==
+                 inst2.GetSingleWordInOperand(1u);
+    case SpvOpTypeFloat:
+    case SpvOpTypePipe:
+    case SpvOpTypeForwardPointer:
+      return inst1.GetSingleWordInOperand(0u) ==
+             inst2.GetSingleWordInOperand(0u);
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+      return AreTypesEqual(
+                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
+                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
+                 defUseManager) &&
+             inst1.GetSingleWordInOperand(1u) ==
+                 inst2.GetSingleWordInOperand(1u);
+    case SpvOpTypeImage:
+      return AreTypesEqual(
+                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
+                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
+                 defUseManager) &&
+             inst1.GetSingleWordInOperand(1u) ==
+                 inst2.GetSingleWordInOperand(1u) &&
+             inst1.GetSingleWordInOperand(2u) ==
+                 inst2.GetSingleWordInOperand(2u) &&
+             inst1.GetSingleWordInOperand(3u) ==
+                 inst2.GetSingleWordInOperand(3u) &&
+             inst1.GetSingleWordInOperand(4u) ==
+                 inst2.GetSingleWordInOperand(4u) &&
+             inst1.GetSingleWordInOperand(5u) ==
+                 inst2.GetSingleWordInOperand(5u) &&
+             inst1.GetSingleWordInOperand(6u) ==
+                 inst2.GetSingleWordInOperand(6u) &&
+             inst1.NumOperands() == inst2.NumOperands() &&
+             (inst1.NumInOperands() == 7u ||
+              inst1.GetSingleWordInOperand(7u) ==
+                  inst2.GetSingleWordInOperand(7u));
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeRuntimeArray:
+      return AreTypesEqual(
+          *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
+          *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
+          defUseManager);
+    case SpvOpTypeArray:
+      return AreTypesEqual(
+                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
+                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
+                 defUseManager) &&
+             AreTypesEqual(
+                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
+                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
+                 defUseManager);
+    case SpvOpTypeStruct:
+    case SpvOpTypeFunction: {
+      bool res = inst1.NumInOperands() == inst2.NumInOperands();
+      for (uint32_t i = 0u; i < inst1.NumInOperands() && res; ++i)
+        res &= AreTypesEqual(
+            *defUseManager.GetDef(inst1.GetSingleWordInOperand(i)),
+            *defUseManager.GetDef(inst2.GetSingleWordInOperand(i)),
+            defUseManager);
+      return res;
+    }
+    case SpvOpTypeOpaque:
+      return std::strcmp(reinterpret_cast<const char*>(
+                             inst1.GetInOperand(0u).words.data()),
+                         reinterpret_cast<const char*>(
+                             inst2.GetInOperand(0u).words.data())) == 0;
+    case SpvOpTypePointer:
+      return inst1.GetSingleWordInOperand(0u) ==
+                 inst2.GetSingleWordInOperand(0u) &&
+             AreTypesEqual(
+                 *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
+                 *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
+                 defUseManager);
+    default:
+      return false;
+  }
 }
 
 }  // namespace opt
