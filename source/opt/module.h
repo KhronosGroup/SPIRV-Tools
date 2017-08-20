@@ -67,8 +67,12 @@ class Module {
   // Appends an execution mode instruction to this module.
   inline void AddExecutionMode(std::unique_ptr<Instruction> e);
   // Appends a debug 1 instruction (excluding OpLine & OpNoLine) to this module.
+  // "debug 1" instructions are the ones in layout section 7.a), see section
+  // 2.4 Logical Layout of a Module from the SPIR-V specification.
   inline void AddDebug1Inst(std::unique_ptr<Instruction> d);
   // Appends a debug 2 instruction (excluding OpLine & OpNoLine) to this module.
+  // "debug 2" instructions are the ones in layout section 7.b), see section
+  // 2.4 Logical Layout of a Module from the SPIR-V specification.
   inline void AddDebug2Inst(std::unique_ptr<Instruction> d);
   // Appends an annotation instruction to this module.
   inline void AddAnnotationInst(std::unique_ptr<Instruction> a);

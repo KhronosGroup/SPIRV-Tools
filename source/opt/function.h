@@ -64,7 +64,10 @@ class Function {
   // Returns function's id
   inline uint32_t result_id() const { return def_inst_->result_id(); }
 
-  // Returns function's type id
+//  // Returns function's type id
+//  inline uint32_t type_id() const { return def_inst_->GetSingleWordInOperand(1u); }
+
+  // Returns function's return type id
   inline uint32_t type_id() const { return def_inst_->type_id(); }
 
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
