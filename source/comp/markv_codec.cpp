@@ -1057,7 +1057,21 @@ void MarkvCodecBase::ProcessCurInstruction() {
 
   // Add result_id to MTFs.
 
-  multi_mtf_.Insert(GetMtfIdGeneratedByOpcode(opcode), inst_.result_id);
+  switch (opcode) {
+    case SpvOpTypeFloat:
+    case SpvOpTypeInt:
+    case SpvOpTypeBool:
+    case SpvOpTypeVector:
+    case SpvOpTypePointer:
+    case SpvOpExtInstImport:
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeImage:
+    case SpvOpTypeSampler:
+      multi_mtf_.Insert(GetMtfIdGeneratedByOpcode(opcode), inst_.result_id);
+      break;
+    default:
+      break;
+  }
 
   if (spvOpcodeIsComposite(opcode)) {
     multi_mtf_.Insert(kMtfTypeComposite, inst_.result_id);
@@ -1141,8 +1155,20 @@ void MarkvCodecBase::ProcessCurInstruction() {
       }
     }
 
-    multi_mtf_.Insert(GetMtfIdWithTypeGeneratedByOpcode(type_inst->opcode()),
-                      inst_.result_id);
+    switch (type_inst->opcode()) {
+      case SpvOpTypeInt:
+      case SpvOpTypeBool:
+      case SpvOpTypePointer:
+      case SpvOpTypeVector:
+      case SpvOpTypeImage:
+      case SpvOpTypeSampledImage:
+      case SpvOpTypeSampler:
+        multi_mtf_.Insert(GetMtfIdWithTypeGeneratedByOpcode(
+            type_inst->opcode()), inst_.result_id);
+        break;
+      default:
+        break;
+    }
 
     if (type_inst->opcode() == SpvOpTypeVector) {
       const uint32_t component_type = type_inst->word(2);
