@@ -217,15 +217,29 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     def_use_mgr_->KillInst(br);
     def_use_mgr_->KillInst(mergeInst);
 
+    // Initialize live block set to the live label
+    std::unordered_set<uint32_t> liveLabIds;
+    liveLabIds.insert(liveLabId);
+
     // Iterate to merge block adding dead blocks to elimination set
     auto dbi = bi;
     ++dbi;
     uint32_t dLabId = (*dbi)->id();
     while (dLabId != mergeLabId) {
-      if (!HasNonPhiRef(dLabId)) {
+      if (liveLabIds.find(dLabId) == liveLabIds.end()) {
         // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
+      }
+      else {
+        // Mark all successors as live
+        (*dbi)->ForEachSuccessorLabel([&liveLabIds](const uint32_t succId){
+          liveLabIds.insert(succId);
+        });
+        // Mark merge and continue blocks as live
+        (*dbi)->ForMergeAndContinueLabel([&liveLabIds](const uint32_t succId){
+          liveLabIds.insert(succId);
+        });
       }
       ++dbi;
       dLabId = (*dbi)->id();
