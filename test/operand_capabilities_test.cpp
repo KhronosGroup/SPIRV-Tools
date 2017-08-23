@@ -514,7 +514,7 @@ INSTANTIATE_TEST_CASE_P(
             CASE1(BUILT_IN, BuiltInFrontFacing, Shader),
             CASE1(BUILT_IN, BuiltInSampleId, SampleRateShading),  // Bug 15234
             CASE1(BUILT_IN, BuiltInSamplePosition, SampleRateShading), // Bug 15234
-            CASE1(BUILT_IN, BuiltInSampleMask, SampleRateShading),  // Bug 15234
+            CASE1(BUILT_IN, BuiltInSampleMask, Shader),  // Bug 15234, Issue 182
             // Value 21 intentionally missing
             CASE1(BUILT_IN, BuiltInFragDepth, Shader),
             CASE1(BUILT_IN, BuiltInHelperInvocation, Shader),

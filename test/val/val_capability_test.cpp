@@ -1213,7 +1213,7 @@ make_pair(string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n" +
           "OpDecorate %intt BuiltIn SampleMask\n"
           "%intt = OpTypeInt 32 0\n" + string(kVoidFVoid),
-          vector<string>{"SampleRateShading"}),
+          ShaderDependencies()),
 make_pair(string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n" +
           "OpDecorate %intt BuiltIn FragDepth\n"
