@@ -1849,6 +1849,7 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
   // The grammar guarantees that the instruction has at least 5 words.
   // ID definition checks ensure these IDs are already defined.
   const size_t resultTypeIndex = 1;
+  const size_t resultIdIndex = 2;
   const size_t compositeIndex = 4;
   auto resultTypeInstr = module_.FindDef(inst->words[resultTypeIndex]);
   auto compositeInstr = module_.FindDef(inst->words[compositeIndex]);
@@ -1856,7 +1857,8 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
   if (resultTypeInstr != compositeTypeInstr) {
     DIAG(resultTypeIndex)
         << "The Result Type must be the same as Composite type in "
-        << instr_name() << ".";
+        << instr_name() << " yielding Result Id " << inst->words[resultIdIndex]
+        << ".";
     return false;
   }
 
