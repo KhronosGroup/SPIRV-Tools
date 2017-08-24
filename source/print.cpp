@@ -35,63 +35,52 @@ clr::blue::operator const char*() { return "\x1b[34m"; }
 
 namespace libspirv {
 
+static void SetConsoleForegroundColorPrimary(HANDLE hConsole, WORD color)
+{
+  // Get screen buffer information from console handle
+  CONSOLE_SCREEN_BUFFER_INFO bufInfo;
+  GetConsoleScreenBufferInfo(hConsole, &bufInfo);
+
+  // Get background color
+  color |= (bufInfo.wAttributes & 0xfff0);
+
+  // Set foreground color
+  SetConsoleTextAttribute(hConsole, color);
+}
+
+static void SetConsoleForegroundColor(WORD color)
+{
+  SetConsoleForegroundColorPrimary(GetStdHandle(STD_OUTPUT_HANDLE), color);
+  SetConsoleForegroundColorPrimary(GetStdHandle(STD_ERROR_HANDLE), color);
+}
+
 clr::reset::operator const char*() {
-  const DWORD color = 0Xf;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(0xf);
   return "";
 }
 
 clr::grey::operator const char*() {
-  const DWORD color = 0x8;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(FOREGROUND_INTENSITY);
   return "";
 }
 
 clr::red::operator const char*() {
-  const DWORD color = 0x4;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(FOREGROUND_RED);
   return "";
 }
 
 clr::green::operator const char*() {
-  const DWORD color = 0x2;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(FOREGROUND_GREEN);
   return "";
 }
 
 clr::yellow::operator const char*() {
-  const DWORD color = 0x6;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(FOREGROUND_RED | FOREGROUND_GREEN);
   return "";
 }
 
 clr::blue::operator const char*() {
-  const DWORD color = 0x1;
-  HANDLE hConsole;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
-  hConsole = GetStdHandle(STD_ERROR_HANDLE);
-  SetConsoleTextAttribute(hConsole, color);
+  SetConsoleForegroundColor(FOREGROUND_BLUE);
   return "";
 }
 
