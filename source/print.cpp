@@ -80,7 +80,10 @@ clr::yellow::operator const char*() {
 }
 
 clr::blue::operator const char*() {
-  SetConsoleForegroundColor(FOREGROUND_BLUE);
+  // Blue all by itself is hard to see against a black background (the
+  // default on command shell), or a medium blue background (the default
+  // on PowerShell).  So increase its intensity.
+  SetConsoleForegroundColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
   return "";
 }
 
