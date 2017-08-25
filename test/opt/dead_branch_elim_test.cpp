@@ -897,6 +897,111 @@ OpFunctionEnd
       predefs_before + before, predefs_after + after, true, true);
 }
 
+TEST_F(DeadBranchElimTest, LoopInDeadBranch) {
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     if (false)
+  //       for (int i=0; i<3; i++)
+  //         v = v * 0.5;
+  //     OutColor = v;
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %i "i"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+%int_3 = OpConstant %int 3
+%float_0_5 = OpConstant %float 0.5
+%int_1 = OpConstant %int 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %8
+%22 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%i = OpVariable %_ptr_Function_int Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %v %23
+OpSelectionMerge %24 None
+OpBranchConditional %false %25 %24 
+%25 = OpLabel
+OpStore %i %int_0
+OpBranch %26
+%26 = OpLabel
+OpLoopMerge %27 %28 None
+OpBranch %29
+%29 = OpLabel
+%30 = OpLoad %int %i
+%31 = OpSLessThan %bool %30 %int_3
+OpBranchConditional %31 %32 %27
+%32 = OpLabel
+%33 = OpLoad %v4float %v
+%34 = OpVectorTimesScalar %v4float %33 %float_0_5
+OpStore %v %34
+OpBranch %28
+%28 = OpLabel
+%35 = OpLoad %int %i
+%36 = OpIAdd %int %35 %int_1
+OpStore %i %36
+OpBranch %26
+%27 = OpLabel
+OpBranch %24
+%24 = OpLabel
+%37 = OpLoad %v4float %v
+OpStore %OutColor %37
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%main = OpFunction %void None %8
+%22 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%i = OpVariable %_ptr_Function_int Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %v %23
+OpBranch %24
+%24 = OpLabel
+%37 = OpLoad %v4float %v
+OpStore %OutColor %37
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow
