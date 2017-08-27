@@ -85,6 +85,10 @@ class BasicBlock {
   void ForEachSuccessorLabel(
       const std::function<void(const uint32_t)>& f);
 
+  // Runs the given function |f| on the merge and continue label, if any
+  void ForMergeAndContinueLabel(
+      const std::function<void(const uint32_t)>& f);
+
  private:
   // The enclosing function.
   Function* function_;

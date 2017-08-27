@@ -236,6 +236,10 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         (*dbi)->ForEachSuccessorLabel([&liveLabIds](const uint32_t succId){
           liveLabIds.insert(succId);
         });
+        // Mark merge and continue blocks as live
+        (*dbi)->ForMergeAndContinueLabel([&liveLabIds](const uint32_t succId){
+          liveLabIds.insert(succId);
+        });
       }
       ++dbi;
       dLabId = (*dbi)->id();

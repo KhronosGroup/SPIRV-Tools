@@ -37,6 +37,18 @@ void BasicBlock::ForEachSuccessorLabel(
   }
 }
 
+void BasicBlock::ForMergeAndContinueLabel(
+    const std::function<void(const uint32_t)>& f) {
+  auto ii = insts_.end();
+  --ii;
+  --ii;
+  if ((*ii)->opcode() == SpvOpSelectionMerge || 
+      (*ii)->opcode() == SpvOpLoopMerge)
+    (*ii)->ForEachInId([&f](const uint32_t* idp) {
+      f(*idp);
+    });
+}
+
 }  // namespace ir
 }  // namespace spvtools
 
