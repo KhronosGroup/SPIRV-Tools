@@ -41,6 +41,7 @@ void BasicBlock::ForMergeAndContinueLabel(
     const std::function<void(const uint32_t)>& f) {
   auto ii = insts_.end();
   --ii;
+  if (ii == insts_.begin()) return;
   --ii;
   if ((*ii)->opcode() == SpvOpSelectionMerge || 
       (*ii)->opcode() == SpvOpLoopMerge)
