@@ -624,7 +624,7 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-TEST_F(DeadBranchElimTest, NoOrphanMerge) {
+TEST_F(DeadBranchElimTest, PreventOrphanMerge) {
 
   const std::string predefs =
       R"(OpCapability Shader
@@ -687,6 +687,72 @@ OpKill
 %23 = OpLoad %v4float %v
 OpStore %gl_FragColor %23
 OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
+      predefs + before, predefs + after, true, true);
+}
+
+TEST_F(DeadBranchElimTest, HandleOrphanMerge) {
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_ "foo("
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %gl_FragColor Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%9 = OpTypeFunction %v4float
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%float_0 = OpConstant %float 0
+%13 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%float_1 = OpConstant %float 1
+%15 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %6
+%17 = OpLabel
+%18 = OpFunctionCall %v4float %foo_
+OpStore %gl_FragColor %18
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%foo_ = OpFunction %v4float None %9
+%19 = OpLabel
+OpSelectionMerge %20 None
+OpBranchConditional %true %21 %22
+%21 = OpLabel
+OpReturnValue %13
+%22 = OpLabel
+OpReturnValue %15
+%20 = OpLabel
+%23 = OpUndef %v4float 
+OpReturnValue %23
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%foo_ = OpFunction %v4float None %9
+%19 = OpLabel
+OpSelectionMerge %20 None
+OpBranchConditional %true %21 %20
+%21 = OpLabel
+OpReturnValue %13
+%20 = OpLabel
+%23 = OpUndef %v4float
+OpReturnValue %23
 OpFunctionEnd
 )";
 
