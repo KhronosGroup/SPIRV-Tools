@@ -42,7 +42,7 @@ static void SetConsoleForegroundColorPrimary(HANDLE hConsole, WORD color)
   GetConsoleScreenBufferInfo(hConsole, &bufInfo);
 
   // Get background color
-  color |= (bufInfo.wAttributes & 0xfff0);
+  color = WORD(color | (bufInfo.wAttributes & 0xfff0));
 
   // Set foreground color
   SetConsoleTextAttribute(hConsole, color);
