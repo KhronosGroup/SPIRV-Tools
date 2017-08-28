@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include <stdio.h> // Need fileno
+#include <unistd.h>
+#endif
+
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -39,7 +44,8 @@ Options:
                   not specified, or if the filename is "-".
 
   --no-color      Don't print in color.
-                  The default when output goes to a file.
+                  The default when output goes to something other than a
+                  terminal (e.g. a file, a pipe, or a shell redirection).
 
   --no-indent     Don't indent instructions.
 
@@ -142,7 +148,11 @@ int main(int argc, char** argv) {
   if (!outFile || (0 == strcmp("-", outFile))) {
     // Print to standard output.
     options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
-    if (allow_color) {
+    bool output_is_tty = true;
+#if defined(_POSIX_VERSION)
+    output_is_tty = isatty(fileno(stdout));
+#endif
+    if (allow_color && output_is_tty) {
       options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
     }
   }
