@@ -565,6 +565,25 @@ TEST(BitWriterWord64, WriteBits) {
   EXPECT_EQ(PadToWord<64>("110011100111001"), writer.GetStreamPadded64());
 }
 
+TEST(BitWriterWord64, WriteZeroBits) {
+  BitWriterWord64 writer;
+  writer.WriteBits(0, 0);
+  writer.WriteBits(1, 0);
+  EXPECT_EQ(0u, writer.GetNumBits());
+  writer.WriteBits(1, 1);
+  writer.WriteBits(0, 0);
+  EXPECT_EQ(PadToWord<64>("1"), writer.GetStreamPadded64());
+  writer.WriteBits(0, 63);
+  EXPECT_EQ(64u, writer.GetNumBits());
+  writer.WriteBits(0, 0);
+  writer.WriteBits(7, 3);
+  writer.WriteBits(0, 0);
+  EXPECT_EQ(PadToWord<64>(
+          "1"
+          "000000000000000000000000000000000000000000000000000000000000000"
+          "111"), writer.GetStreamPadded64());
+}
+
 TEST(BitWriterWord64, ComparisonTestWriteLotsOfBits) {
   BitWriterStringStream writer1;
   BitWriterWord64 writer2(16384);

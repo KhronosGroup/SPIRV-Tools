@@ -300,6 +300,8 @@ void BitWriterWord64::WriteBits(uint64_t bits, size_t num_bits) {
   assert(is_little_endian && "Big-endian architecture support not implemented");
   if (!is_little_endian) return;
 
+  if (num_bits == 0) return;
+
   bits = GetLowerBits(bits, num_bits);
 
   EmitSequence(bits, num_bits);
