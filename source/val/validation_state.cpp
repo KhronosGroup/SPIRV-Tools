@@ -15,6 +15,7 @@
 #include "val/validation_state.h"
 
 #include <cassert>
+#include <map>
 
 #include "opcode.h"
 #include "val/basic_block.h"
@@ -423,6 +424,22 @@ bool ValidationState_t::RegisterUniqueTypeDeclaration(
     assert(words_end <= static_cast<int>(inst.num_words));
 
     key.insert(key.end(), inst.words + words_begin, inst.words + words_end);
+  }
+
+  if (inst.opcode == SpvOpTypePointer &&
+      HasExtension(Extension::kSPV_KHR_variable_pointers)) {
+    const std::vector<Decoration>& decorations = id_decorations(inst.result_id);
+    std::map<SpvDecoration, const std::vector<uint32_t>*> decoration_params;
+    for (const auto& decoration : decorations) {
+      const auto result = decoration_params.emplace(decoration.dec_type(),
+                                                    &decoration.params());
+      (void)result;
+      assert(result.second);
+    }
+    for (const auto& kv : decoration_params) {
+      key.push_back(static_cast<uint32_t>(kv.first));
+      key.insert(key.end(), kv.second->begin(), kv.second->end());
+    }
   }
 
   return unique_type_declarations_.insert(std::move(key)).second;

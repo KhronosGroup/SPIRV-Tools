@@ -49,7 +49,7 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
       // return _.diag(SPV_ERROR_INVALID_DATA)
       return _.diag(SPV_SUCCESS)
           << "Duplicate non-aggregate type declarations are not allowed."
-          << " Opcode: " << inst->opcode;
+          << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode));
     }
   }
 
