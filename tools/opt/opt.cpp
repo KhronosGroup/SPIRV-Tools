@@ -71,12 +71,6 @@ Options:
                Exhaustively inline all function calls in entry point call tree
                functions. Currently does not inline calls to functions with
                early return in a loop.
-  --inline-entry-points-opaque
-               Inline all function calls in entry point call tree functions
-               where the callee's parameters or return type contain an opaque
-               type. Opaque type is currently defined as Image, Sampler or
-               SampledImage. Currently will not inline calls to functions with
-               early return in a loop.
   --convert-local-access-chains
                Convert constant index access chain loads/stores into
                equivalent load/stores with inserts and extracts. Performed
