@@ -95,7 +95,7 @@ OpFunctionEnd
 // declaration.
 string GetErrorString(SpvOp opcode) {
   return "Duplicate non-aggregate type declarations are not allowed. Opcode: "
-      + std::to_string(opcode);
+      + std::string(spvOpcodeString(opcode));
 }
 
 TEST_F(ValidateTypeUnique, success) {
@@ -236,6 +236,37 @@ OpMemoryModel Physical32 OpenCL
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               Not(HasSubstr(GetErrorString(SpvOpTypeVoid))));
+}
+
+TEST_F(ValidateTypeUnique, DuplicatePointerTypesNoExtension) {
+  string str = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%u32 = OpTypeInt 32 0
+%ptr1 = OpTypePointer Input %u32
+%ptr2 = OpTypePointer Input %u32
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(GetErrorString(SpvOpTypePointer)));
+}
+
+TEST_F(ValidateTypeUnique, DuplicatePointerTypesWithExtension) {
+  string str = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+%u32 = OpTypeInt 32 0
+%ptr1 = OpTypePointer Input %u32
+%ptr2 = OpTypePointer Input %u32
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              Not(HasSubstr(GetErrorString(SpvOpTypePointer))));
 }
 
 }  // anonymous namespace
