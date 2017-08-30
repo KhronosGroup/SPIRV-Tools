@@ -51,6 +51,8 @@ v2016.7-dev 2017-01-06
      and scope-id.
    #755: Inliner: Fix inlining of callee with single Return appearing before
      the end of the function.
+   #776: Fix dead branch elimination in presence of complex but dead control
+     flow.
    #782: Inliner: Fix remapping of non-label forward references in callee
 
 v2016.6 2016-12-13
