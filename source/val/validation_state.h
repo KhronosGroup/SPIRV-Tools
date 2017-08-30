@@ -330,6 +330,41 @@ class ValidationState_t {
   /// Returns false if an identical type declaration already exists.
   bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
 
+  // Returns type_id of the scalar component of |id|.
+  // |id| can be either
+  // - vector type
+  // - matrix type
+  // - object of either vector or matrix type
+  uint32_t GetComponentType(uint32_t id) const;
+
+  // Returns dimension of scalar, vector or matrix type or object. Will invoke
+  // assertion and return 0 if |id| is none of the above.
+  // In case of matrix returns number of columns.
+  uint32_t GetDimension(uint32_t id) const;
+
+  // Returns bit width of scalar or component.
+  // |id| can be
+  // - scalar type or object
+  // - vector or matrix type or object
+  // Will invoke assertion and return 0 if |id| is none of the above.
+  uint32_t GetBitWidth(uint32_t id) const;
+
+  // Returns true iff |id| is a type corresponding to the name of the function.
+  // Only works for types not for objects.
+  bool IsFloatScalarType(uint32_t id) const;
+  bool IsFloatVectorType(uint32_t id) const;
+  bool IsIntScalarType(uint32_t id) const;
+  bool IsIntVectorType(uint32_t id) const;
+  bool IsUnsignedIntScalarType(uint32_t id) const;
+  bool IsUnsignedIntVectorType(uint32_t id) const;
+  bool IsSignedIntScalarType(uint32_t id) const;
+  bool IsSignedIntVectorType(uint32_t id) const;
+  bool IsBoolScalarType(uint32_t id) const;
+  bool IsBoolVectorType(uint32_t id) const;
+
+  // Returns type_id if id has type or zero otherwise.
+  uint32_t GetTypeId(uint32_t id) const;
+
  private:
   ValidationState_t(const ValidationState_t&);
 
