@@ -242,6 +242,15 @@ void InlinePass::GenInlineCode(
   // Create return var if needed.
   uint32_t returnVarId = CreateReturnVar(calleeFn, new_vars);
 
+  // Create set of callee result ids. Used to detect forward references
+  std::unordered_set<uint32_t> callee_result_ids;
+  calleeFn->ForEachInst([&callee_result_ids](
+      const ir::Instruction* cpi) {
+    const uint32_t rid = cpi->result_id();
+    if (rid != 0)
+      callee_result_ids.insert(rid);
+  });
+
   // Clone and map callee code. Copy caller block code to beginning of
   // first block and end of last block.
   bool prevInstWasReturn = false;
@@ -259,7 +268,7 @@ void InlinePass::GenInlineCode(
                          &returnLabelId, &returnVarId, &calleeTypeId,
                          &multiBlocks, &postCallSB, &preCallSB, multiReturn,
                          &singleTripLoopHeaderId, &singleTripLoopContinueId,
-                         this](
+                         &callee_result_ids, this](
       const ir::Instruction* cpi) {
     switch (cpi->opcode()) {
       case SpvOpFunction:
@@ -398,27 +407,32 @@ void InlinePass::GenInlineCode(
       default: {
         // Copy callee instruction and remap all input Ids.
         std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*cpi));
-        cp_inst->ForEachInId([&callee2caller, &cpi, this](uint32_t* iid) {
+        cp_inst->ForEachInId([&callee2caller, &cpi, &callee_result_ids, this]
+            (uint32_t* iid) {
           const auto mapItr = callee2caller.find(*iid);
           if (mapItr != callee2caller.end()) {
             *iid = mapItr->second;
-          } else if (cpi->HasLabels()) {
-            const ir::Instruction* inst =
-                def_use_mgr_->id_to_defs().find(*iid)->second;
-            if (inst->opcode() == SpvOpLabel) {
-              // Forward label reference. Allocate a new label id, map it,
-              // use it and check for it at each label.
-              const uint32_t nid = this->TakeNextId();
-              callee2caller[*iid] = nid;
-              *iid = nid;
-            }
+          } else if (callee_result_ids.find(*iid) != callee_result_ids.end()) {
+            // Forward reference. Allocate a new id, map it,
+            // use it and check for it when remapping result ids
+            const uint32_t nid = this->TakeNextId();
+            callee2caller[*iid] = nid;
+            *iid = nid;
           }
         });
-        // Map and reset result id.
+        // If result id is non-zero, remap it. If already mapped, use mapped
+        // value, else use next id.
         const uint32_t rid = cp_inst->result_id();
         if (rid != 0) {
-          const uint32_t nid = this->TakeNextId();
-          callee2caller[rid] = nid;
+          const auto mapItr = callee2caller.find(rid);
+          uint32_t nid;
+          if (mapItr != callee2caller.end()) {
+            nid = mapItr->second;
+          }
+          else {
+            nid = this->TakeNextId();
+            callee2caller[rid] = nid;
+          }
           cp_inst->SetResultId(nid);
         }
         new_blk_ptr->AddInstruction(std::move(cp_inst));

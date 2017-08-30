@@ -1555,6 +1555,95 @@ OpFunctionEnd
       predefs + nonEntryFuncs + after, false, true);
 }
 
+TEST_F(InlineTest, ForwardReferencesInPhiInlined) {
+  // The basic structure of the test case is like this:
+  // 
+  // int foo() {
+  //   int result = 1;
+  //   if (true) {
+  //      result = 1;
+  //   } 
+  //   return result;
+  // }   
+  // 
+  // void main() {
+  //  int x = foo();
+  // }
+  // 
+  // but with modifications: Using Phi instead of load/store, and the
+  // return block in foo appears before the "then" block.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+OpName %x "x"
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%8 = OpTypeFunction %int
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%int_0 = OpConstant %int 0
+%_ptr_Function_int = OpTypePointer Function %int
+)";
+
+  const std::string nonEntryFuncs =
+      R"(%foo_ = OpFunction %int None %8
+%13 = OpLabel
+%14 = OpCopyObject %int %int_0
+OpSelectionMerge %15 None
+OpBranchConditional %true %16 %15
+%15 = OpLabel
+%17 = OpPhi %int %14 %13 %18 %16
+OpReturnValue %17
+%16 = OpLabel
+%18 = OpCopyObject %int %int_0
+OpBranch %15
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %6
+%19 = OpLabel
+%x = OpVariable %_ptr_Function_int Function
+%20 = OpFunctionCall %int %foo_
+OpStore %x %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+R"(%main = OpFunction %void None %6
+%19 = OpLabel
+%21 = OpVariable %_ptr_Function_int Function
+%x = OpVariable %_ptr_Function_int Function
+%22 = OpCopyObject %int %int_0
+OpSelectionMerge %23 None
+OpBranchConditional %true %24 %23
+%23 = OpLabel
+%26 = OpPhi %int %22 %19 %25 %24
+OpStore %21 %26
+OpBranch %27
+%24 = OpLabel
+%25 = OpCopyObject %int %int_0
+OpBranch %23
+%27 = OpLabel
+%20 = OpLoad %int %21
+OpStore %x %20
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before,
+      predefs + nonEntryFuncs + after, false, true);
+}
+
 TEST_F(InlineTest, EarlyReturnInLoopIsNotInlined) {
   // #version 140
   // 
