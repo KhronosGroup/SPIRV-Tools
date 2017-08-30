@@ -252,6 +252,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_arithmetics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_cfg.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_capability.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp

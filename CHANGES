@@ -1,6 +1,8 @@
 Revision history for SPIRV-Tools
 
 v2017.1-dev 2017-09-01
+ - Validator:
+   - Type check basic arithmetic operations
 
 v2017.0 2017-09-01
  - Update README to describe that assembler, disassembler, and binary parser support
