@@ -15,7 +15,6 @@
 #include "val/validation_state.h"
 
 #include <cassert>
-#include <map>
 
 #include "opcode.h"
 #include "val/basic_block.h"
