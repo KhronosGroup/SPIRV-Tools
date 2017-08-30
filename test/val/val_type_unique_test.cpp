@@ -238,13 +238,11 @@ OpMemoryModel Physical32 OpenCL
               Not(HasSubstr(GetErrorString(SpvOpTypeVoid))));
 }
 
-TEST_F(ValidateTypeUnique, PointerTypesDifferentArrayStrideNoExtension) {
+TEST_F(ValidateTypeUnique, DuplicatePointerTypesNoExtension) {
   string str = R"(
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %ptr1 ArrayStride 4
-OpDecorate %ptr2 ArrayStride 8
 %u32 = OpTypeInt 32 0
 %ptr1 = OpTypePointer Input %u32
 %ptr2 = OpTypePointer Input %u32
@@ -255,14 +253,12 @@ OpDecorate %ptr2 ArrayStride 8
               HasSubstr(GetErrorString(SpvOpTypePointer)));
 }
 
-TEST_F(ValidateTypeUnique, PointerTypesDifferentArrayStride) {
+TEST_F(ValidateTypeUnique, DuplicatePointerTypesWithExtension) {
   string str = R"(
 OpCapability Shader
 OpCapability Linkage
 OpExtension "SPV_KHR_variable_pointers"
 OpMemoryModel Logical GLSL450
-OpDecorate %ptr1 ArrayStride 4
-OpDecorate %ptr2 ArrayStride 8
 %u32 = OpTypeInt 32 0
 %ptr1 = OpTypePointer Input %u32
 %ptr2 = OpTypePointer Input %u32
@@ -271,24 +267,6 @@ OpDecorate %ptr2 ArrayStride 8
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               Not(HasSubstr(GetErrorString(SpvOpTypePointer))));
-}
-
-TEST_F(ValidateTypeUnique, PointerTypesSameArrayStride) {
-  string str = R"(
-OpCapability Shader
-OpCapability Linkage
-OpExtension "SPV_KHR_variable_pointers"
-OpMemoryModel Logical GLSL450
-OpDecorate %ptr1 ArrayStride 4
-OpDecorate %ptr2 ArrayStride 4
-%u32 = OpTypeInt 32 0
-%ptr1 = OpTypePointer Input %u32
-%ptr2 = OpTypePointer Input %u32
-)";
-  CompileSuccessfully(str.c_str());
-  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(GetErrorString(SpvOpTypePointer)));
 }
 
 }  // anonymous namespace

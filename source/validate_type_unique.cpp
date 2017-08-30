@@ -42,6 +42,12 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
       return SPV_SUCCESS;
     }
 
+    if (inst->opcode == SpvOpTypePointer &&
+        _.HasExtension(Extension::kSPV_KHR_variable_pointers)) {
+      // Duplicate pointer types are allowed with this extension.
+      return SPV_SUCCESS;
+    }
+
     if (!_.RegisterUniqueTypeDeclaration(*inst)) {
       // TODO(atgoo@github) Error logging temporarily disabled because it's
       // failing vulkancts tests. Message in the diagnostics is for unit tests.
