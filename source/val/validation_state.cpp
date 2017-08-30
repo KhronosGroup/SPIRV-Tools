@@ -426,17 +426,20 @@ bool ValidationState_t::RegisterUniqueTypeDeclaration(
     key.insert(key.end(), inst.words + words_begin, inst.words + words_end);
   }
 
+  // If module has extension SPV_KHR_variable_pointers, then OpTypePointer
+  // is allowed to create identical types so long as their decorations differ.
   if (inst.opcode == SpvOpTypePointer &&
       HasExtension(Extension::kSPV_KHR_variable_pointers)) {
     const std::vector<Decoration>& decorations = id_decorations(inst.result_id);
     std::map<SpvDecoration, const std::vector<uint32_t>*> decoration_params;
     for (const auto& decoration : decorations) {
-      const auto result = decoration_params.emplace(decoration.dec_type(),
-                                                    &decoration.params());
-      (void)result;
-      assert(result.second);
+      decoration_params[decoration.dec_type()] = &decoration.params();
     }
     for (const auto& kv : decoration_params) {
+      // Append decoration data to the key, sorted by decoration type.
+      // Use magic number to separate unrelated chunks of data.
+      const uint32_t kMagicSeparator = 0xffff9296;
+      key.push_back(kMagicSeparator);
       key.push_back(static_cast<uint32_t>(kv.first));
       key.insert(key.end(), kv.second->begin(), kv.second->end());
     }

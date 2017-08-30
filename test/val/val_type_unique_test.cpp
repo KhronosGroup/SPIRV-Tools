@@ -238,7 +238,7 @@ OpMemoryModel Physical32 OpenCL
               Not(HasSubstr(GetErrorString(SpvOpTypeVoid))));
 }
 
-TEST_F(ValidateTypeUnique, PointerTypesSameArrayStrideNoExtension) {
+TEST_F(ValidateTypeUnique, PointerTypesDifferentArrayStrideNoExtension) {
   string str = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -250,7 +250,7 @@ OpDecorate %ptr2 ArrayStride 8
 %ptr2 = OpTypePointer Input %u32
 )";
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypePointer)));
 }
@@ -286,7 +286,7 @@ OpDecorate %ptr2 ArrayStride 4
 %ptr2 = OpTypePointer Input %u32
 )";
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(kDuplicateTypeError, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(GetErrorString(SpvOpTypePointer)));
 }
