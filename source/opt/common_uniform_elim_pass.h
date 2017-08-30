@@ -41,7 +41,7 @@ class CommonUniformElimPass : public Pass {
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   CommonUniformElimPass();
-  const char* name() const override { return "common-uniform-elim"; }
+  const char* name() const override { return "eliminate-common-uniform"; }
   Status Process(ir::Module*) override;
 
  private:

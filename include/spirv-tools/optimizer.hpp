@@ -77,16 +77,31 @@ class Optimizer {
   // method.
   Optimizer& RegisterPass(PassToken&& pass);
 
+  // Registers passes that attempt to improve performance of generated code.
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterPerformancePasses();
+
+  // Registers passes that attempt to improve the size of generated code.
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterSizePasses();
+
   // Optimizes the given SPIR-V module |original_binary| and writes the
   // optimized binary into |optimized_binary|.
   // Returns true on successful optimization, whether or not the module is
   // modified. Returns false if errors occur when processing |original_binary|
   // using any of the registered passes. In that case, no further passes are
-  // excuted and the contents in |optimized_binary| may be invalid.
+  // executed and the contents in |optimized_binary| may be invalid.
   //
   // It's allowed to alias |original_binary| to the start of |optimized_binary|.
   bool Run(const uint32_t* original_binary, size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary) const;
+
+  // Returns a vector of strings with all the pass names added to this
+  // optimizer's pass manager. These strings are valid until the associated
+  // pass manager is destroyed.
+  std::vector<const char *> GetPassNames() const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.

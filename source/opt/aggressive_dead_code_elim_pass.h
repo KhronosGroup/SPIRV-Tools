@@ -42,7 +42,7 @@ class AggressiveDCEPass : public MemPass {
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   AggressiveDCEPass();
-  const char* name() const override { return "aggressive-dce"; }
+  const char* name() const override { return "eliminate-dead-code-aggressive"; }
   Status Process(ir::Module*) override;
 
  private:

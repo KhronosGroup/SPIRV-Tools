@@ -37,7 +37,7 @@ class InlineExhaustivePass : public InlinePass {
   InlineExhaustivePass();
   Status Process(ir::Module*) override;
 
-  const char* name() const override { return "inline-exhaustive"; }
+  const char* name() const override { return "inline-entry-points-exhaustive"; }
 
  private:
   // Exhaustively inline all function calls in func as well as in

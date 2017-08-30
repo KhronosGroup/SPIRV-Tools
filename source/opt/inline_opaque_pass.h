@@ -37,7 +37,7 @@ class InlineOpaquePass : public InlinePass {
   InlineOpaquePass();
   Status Process(ir::Module*) override;
 
-  const char* name() const override { return "inline-opaque"; }
+  const char* name() const override { return "inline-entry-points-opaque"; }
 
  private:
   // Return true if |typeId| is or contains opaque type

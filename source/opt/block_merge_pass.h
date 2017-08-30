@@ -36,7 +36,7 @@ namespace opt {
 class BlockMergePass : public Pass {
  public:
   BlockMergePass();
-  const char* name() const override { return "sroa"; }
+  const char* name() const override { return "merge-blocks"; }
   Status Process(ir::Module*) override;
 
  private:
