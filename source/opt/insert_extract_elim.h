@@ -36,7 +36,7 @@ namespace opt {
 class InsertExtractElimPass : public Pass {
  public:
   InsertExtractElimPass();
-  const char* name() const override { return "insert_extract_elim"; }
+  const char* name() const override { return "eliminate-insert-extract"; }
   Status Process(ir::Module*) override;
 
  private:

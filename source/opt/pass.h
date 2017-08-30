@@ -56,6 +56,11 @@ class Pass {
   virtual ~Pass() = default;
 
   // Returns a descriptive name for this pass.
+  //
+  // NOTE: When deriving a new pass class, make sure you make the name
+  // compatible with the corresponding spirv-opt command-line flag. For example,
+  // if you add the flag --my-pass to spirv-opt, make this function return
+  // "my-pass" (no leading hyphens).
   virtual const char* name() const = 0;
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be

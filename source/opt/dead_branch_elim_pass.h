@@ -43,7 +43,7 @@ class DeadBranchElimPass : public MemPass {
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   DeadBranchElimPass();
-  const char* name() const override { return "dead-branch-elim"; }
+  const char* name() const override { return "eliminate-dead-branches"; }
   Status Process(ir::Module*) override;
 
  private:
