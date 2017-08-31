@@ -52,6 +52,15 @@ class BasicBlock {
   // The label starting this basic block.
   Instruction* GetLabelInst() { return label_.get(); }
 
+  // Returns the merge instruction in this basic block, if it exists.
+  // Otherwise return null.  May be used whenever tail() can be used.
+  const Instruction* GetMergeInst() const;
+  Instruction* GetMergeInst();
+  // Returns the OpLoopMerge instruciton in this basic block, if it exists.
+  // Otherwise return null.  May be used whenever tail() can be used.
+  const Instruction* GetLoopMergeInst() const;
+  Instruction* GetLoopMergeInst();
+
   // Returns the id of the label at the top of this block
   inline uint32_t id() const { return label_->result_id(); }
 
@@ -64,9 +73,17 @@ class BasicBlock {
     return const_iterator(&insts_, insts_.cend());
   }
 
+  // Returns an iterator pointing to the last instruction.  This may only
+  // be used if this block has an instruction other than the OpLabel
+  // that defines it.
   iterator tail() {
     assert(!insts_.empty());
     return iterator(&insts_, std::prev(insts_.end()));
+  }
+  // Returns a const iterator, but othewrise similar to tail().
+  const_iterator ctail() const {
+    assert(!insts_.empty());
+    return const_iterator(&insts_, std::prev(insts_.cend()));
   }
 
   // Runs the given function |f| on each instruction in this basic block, and
