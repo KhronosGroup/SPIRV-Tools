@@ -378,6 +378,10 @@ void InlinePass::GenInlineCode(
             new_blocks->push_back(std::move(new_blk_ptr));
             new_blk_ptr.reset(new ir::BasicBlock(NewLabel(postHeaderId)));
             multiBlocks = true;
+            // Reset the mapping of the callee's entry block to point to
+            // the post-header block.  Do this so we can fix up phis later
+            // on to satisfy dominance.
+            callee2caller[cpi->result_id()] = postHeaderId;
           }
         } else {
           multiBlocks = true;

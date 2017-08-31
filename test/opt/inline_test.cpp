@@ -2016,6 +2016,89 @@ OpFunctionEnd
       true);
 }
 
+TEST_F(InlineTest, CalleeWithMultiReturnAndPhiRequiresEntryBlockRemapping) {
+  // The case from https://github.com/KhronosGroup/SPIRV-Tools/issues/790
+  //
+  // The callee has multiple returns, and so must be wrapped with a single-trip
+  // loop.  That code must remap the callee entry block ID to the introduced
+  // loop body's ID.  Otherwise you can get a dominance error in a cloned OpPhi.
+
+  const std::string predefs =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpSource OpenCL_C 120
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_4 = OpConstant %int 4
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+)";
+
+  // This callee has multiple returns, and a Phi in the second block referencing
+  // a value generated in the entry block.
+  const std::string nonEntryFuncs =
+      R"(%12 = OpFunction %void None %9
+%13 = OpLabel
+%14 = OpCopyObject %int %int_0
+OpBranch %15
+%15 = OpLabel
+%16 = OpPhi %int %14 %13
+%17 = OpCopyObject %int %int_1
+OpReturn
+%18 = OpLabel
+%19 = OpCopyObject %int %int_2
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string before =
+      R"(%1 = OpFunction %void None %9
+%20 = OpLabel
+%21 = OpCopyObject %int %int_3
+%22 = OpFunctionCall %void %12
+%23 = OpCopyObject %int %int_4
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%1 = OpFunction %void None %9
+%20 = OpLabel
+%21 = OpCopyObject %int %int_3
+OpBranch %24
+%24 = OpLabel
+OpLoopMerge %25 %26 None
+OpBranch %27
+%27 = OpLabel
+%28 = OpCopyObject %int %int_0
+OpBranch %29
+%29 = OpLabel
+%30 = OpPhi %int %28 %27
+%31 = OpCopyObject %int %int_1
+OpBranch %25
+%32 = OpLabel
+%33 = OpCopyObject %int %int_2
+OpBranch %25
+%26 = OpLabel
+OpBranchConditional %false %24 %25
+%25 = OpLabel
+%23 = OpCopyObject %int %int_4
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+      predefs + nonEntryFuncs + before, predefs + nonEntryFuncs + after, false,
+      true);
+}
+
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
