@@ -17,6 +17,7 @@
 #include <cassert>
 
 #include "opcode.h"
+#include "spirv_constant.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "val/function.h"
@@ -240,6 +241,13 @@ void ValidationState_t::ProgressToNextLayoutSectionOrder() {
 }
 
 bool ValidationState_t::IsOpcodeInCurrentLayoutSection(SpvOp op) {
+  // OpModuleProcessed can go anywhwere, starting with SPIR-V 1.1.
+  if (op == SpvOpModuleProcessed &&
+      (spvVersionForTargetEnv(SPV_ENV_UNIVERSAL_1_0) !=
+       spvVersionForTargetEnv(context_->target_env))) {
+    return true;
+  }
+  // Otherwise, use a table to look it up.
   return IsInstructionInLayoutSection(current_layout_section_, op);
 }
 
