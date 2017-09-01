@@ -48,11 +48,12 @@ version.  An API call reports the software version as a C-style string.
 
 ### Assembler, binary parser, and disassembler
 
-* Based on SPIR-V version 1.1 Rev 3
+* Support for SPIR-V 1.0, 1.1, 1.2
+  * Based on SPIR-V syntax described by JSON grammar files in the
+    [SPIRV-Headers](spirv-headers) repository.
 * Support for extended instruction sets:
   * GLSL std450 version 1.0 Rev 3
   * OpenCL version 1.0 Rev 2
-* Support for SPIR-V 1.0 (with or without additional restrictions from Vulkan 1.0)
 * Assembler only does basic syntax checking.  No cross validation of
   IDs or types is performed, except to check literal arguments to
   `OpConstant`, `OpSpecConstant`, and `OpSwitch`.

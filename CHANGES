@@ -1,5 +1,9 @@
 Revision history for SPIRV-Tools
 
+v2017.0 2017-09-01
+ - Update README to describe that assembler, disassembler, and binary parser support
+   are based on grammar files from the SPIRV-Headers repository.
+
 v2016.7 2017-09-01
  - Add SPIR-V 1.2
  - OpenCL 2.2 support is now based on SPIR-V 1.2
