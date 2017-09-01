@@ -53,6 +53,7 @@ v2016.7-dev 2017-01-06
      the end of the function.
    #776: Fix dead branch elimination in presence of complex but dead control
      flow.
+   #781: SPV_KHR_variable_pointers allows duplicate pointer types
    #782: Inliner: Fix remapping of non-label forward references in callee
 
 v2016.6 2016-12-13
