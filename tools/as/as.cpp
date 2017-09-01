@@ -85,15 +85,12 @@ int main(int argc, char** argv) {
             printf("Target: %s\n",
                    spvTargetEnvDescription(kDefaultEnvironment));
             return 0;
-          }
-          if (0 == strcmp(argv[argi], "--help")) {
+          } else if (0 == strcmp(argv[argi], "--help")) {
             print_usage(argv[0]);
             return 0;
-          }
-          if (0 == strcmp(argv[argi], "--preserve-numeric-ids")) {
+          } else if (0 == strcmp(argv[argi], "--preserve-numeric-ids")) {
             options |= SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
-          }
-          if (0 == strcmp(argv[argi], "--target-env")) {
+          } else if (0 == strcmp(argv[argi], "--target-env")) {
             if (argi + 1 < argc) {
               const auto env_str = argv[++argi];
               if (!spvParseTargetEnv(env_str, &target_env)) {
@@ -105,9 +102,14 @@ int main(int argc, char** argv) {
               fprintf(stderr, "error: Missing argument to --target-env\n");
               return 1;
             }
+          } else {
+            fprintf(stderr, "error: Unrecognized option: %s\n\n", argv[argi]);
+            print_usage(argv[0]);
+            return 1;
           }
         } break;
         default:
+          fprintf(stderr, "error: Unrecognized option: %s\n\n", argv[argi]);
           print_usage(argv[0]);
           return 1;
       }

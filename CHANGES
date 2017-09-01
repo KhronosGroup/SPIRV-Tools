@@ -4,6 +4,7 @@ v2017.1-dev 2017-09-01
  - Validator:
    - Type check basic arithmetic operations
  - Fixes:
+   #798: spirv-as should fail when given unrecognized long option
    #800: Inliner: Fix inlining function into header of multi-block loop
 
 v2017.0 2017-09-01
