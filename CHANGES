@@ -55,6 +55,10 @@ v2016.7-dev 2017-01-06
      flow.
    #781: SPV_KHR_variable_pointers allows duplicate pointer types
    #782: Inliner: Fix remapping of non-label forward references in callee
+   #787: Inliner: Fix remapping of inlined entry block when called from
+     single block loop.
+   #790: Inliner: Fix remapping of inlined entry block when callee has
+     multiple returns.
 
 v2016.6 2016-12-13
  - Published the C++ interface for assembling, disassembling, validation, and
