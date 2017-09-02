@@ -259,7 +259,9 @@ void InlinePass::GenInlineCode(
   // single block loop.  We'll wait to move the OpLoopMerge until the end
   // of the regular inlining logic, and only if necessary.
   bool caller_is_single_block_loop = false;
+  bool caller_is_loop_header = false;
   if (auto* loop_merge = call_block_itr->GetLoopMergeInst()) {
+    caller_is_loop_header = true;
     caller_is_single_block_loop =
         call_block_itr->id() ==
         loop_merge->GetSingleWordInOperand(kSpvLoopMergeContinueTargetIdInIdx);
@@ -283,8 +285,7 @@ void InlinePass::GenInlineCode(
   std::unique_ptr<ir::BasicBlock> new_blk_ptr;
   calleeFn->ForEachInst([&new_blocks, &callee2caller, &call_block_itr,
                          &call_inst_itr, &new_blk_ptr, &prevInstWasReturn,
-                         &returnLabelId, &returnVarId,
-                         caller_is_single_block_loop,
+                         &returnLabelId, &returnVarId, caller_is_loop_header,
                          callee_begins_with_structured_header, &calleeTypeId,
                          &multiBlocks, &postCallSB, &preCallSB, multiReturn,
                          &singleTripLoopHeaderId, &singleTripLoopContinueId,
@@ -335,7 +336,7 @@ void InlinePass::GenInlineCode(
             }
             new_blk_ptr->AddInstruction(std::move(cp_inst));
           }
-          if (caller_is_single_block_loop &&
+          if (caller_is_loop_header &&
               callee_begins_with_structured_header) {
             // We can't place both the caller's merge instruction and another
             // merge instruction in the same block.  So split the calling block.
@@ -489,10 +490,9 @@ void InlinePass::GenInlineCode(
     }
   });
 
-  if (caller_is_single_block_loop && (new_blocks->size() > 1)) {
+  if (caller_is_loop_header && (new_blocks->size() > 1)) {
     // Move the OpLoopMerge from the last block back to the first, where
-    // it belongs.  Also, update its continue target to point to the last
-    // block.
+    // it belongs.
     auto& first = new_blocks->front();
     auto& last = new_blocks->back();
     assert(first != last);
@@ -501,8 +501,12 @@ void InlinePass::GenInlineCode(
     auto loop_merge_itr = last->tail();
     --loop_merge_itr;
     assert(loop_merge_itr->opcode() == SpvOpLoopMerge);
-    std::unique_ptr<ir::Instruction> cp_inst(new ir::Instruction(*loop_merge_itr));
-    cp_inst->SetInOperand(kSpvLoopMergeContinueTargetIdInIdx, {last->id()});
+    std::unique_ptr<ir::Instruction> cp_inst(
+        new ir::Instruction(*loop_merge_itr));
+    if (caller_is_single_block_loop) {
+      // Also, update its continue target to point to the last block.
+      cp_inst->SetInOperand(kSpvLoopMergeContinueTargetIdInIdx, {last->id()});
+    }
     first->tail().InsertBefore(std::move(cp_inst));
 
     // Remove the loop merge from the last block.
