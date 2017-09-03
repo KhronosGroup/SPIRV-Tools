@@ -26,9 +26,10 @@ Instruction::Instruction(const spv_parsed_instruction_t& inst,
     : opcode_(static_cast<SpvOp>(inst.opcode)),
       type_id_(inst.type_id),
       result_id_(inst.result_id),
-      dbg_line_insts_(std::move(dbg_line)) {
-  assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
-         "Op(No)Line attaching to Op(No)Line found");
+      embedded_debug_insts_(std::move(dbg_line)) {
+  assert((!IsEmbeddedDebugInst(opcode_) || dbg_line.empty()) &&
+         "OpLine/OpNoLine/OpModuleProcessed attaching to "
+         "OpLine/OpNoLine/OpModuleProcessed found");
   for (uint32_t i = 0; i < inst.num_operands; ++i) {
     const auto& current_payload = inst.operands[i];
     std::vector<uint32_t> words(
@@ -57,14 +58,14 @@ Instruction::Instruction(Instruction&& that)
       type_id_(that.type_id_),
       result_id_(that.result_id_),
       operands_(std::move(that.operands_)),
-      dbg_line_insts_(std::move(that.dbg_line_insts_)) {}
+      embedded_debug_insts_(std::move(that.embedded_debug_insts_)) {}
 
 Instruction& Instruction::operator=(Instruction&& that) {
   opcode_ = that.opcode_;
   type_id_ = that.type_id_;
   result_id_ = that.result_id_;
   operands_ = std::move(that.operands_);
-  dbg_line_insts_ = std::move(that.dbg_line_insts_);
+  embedded_debug_insts_ = std::move(that.embedded_debug_insts_);
   return *this;
 }
 

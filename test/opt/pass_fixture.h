@@ -181,6 +181,9 @@ class PassTest : public TestT {
     EXPECT_EQ(expected, optimized);
   }
 
+  // Sets the message consumer.
+  void SetMessageConsumer(MessageConsumer consumer) { consumer_ = consumer; }
+
   void SetAssembleOptions(uint32_t assemble_options) {
     assemble_options_ = assemble_options;
   }

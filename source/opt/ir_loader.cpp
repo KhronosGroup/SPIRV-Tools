@@ -29,14 +29,14 @@ IrLoader::IrLoader(const MessageConsumer& consumer, Module* module)
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
   const auto opcode = static_cast<SpvOp>(inst->opcode);
-  if (IsDebugLineInst(opcode)) {
-    dbg_line_info_.push_back(Instruction(*inst));
+  if (IsEmbeddedDebugInst(opcode)) {
+    embedded_debug_insts_.push_back(Instruction(*inst));
     return true;
   }
 
   std::unique_ptr<Instruction> spv_inst(
-      new Instruction(*inst, std::move(dbg_line_info_)));
-  dbg_line_info_.clear();
+      new Instruction(*inst, std::move(embedded_debug_insts_)));
+  embedded_debug_insts_.clear();
 
   const char* src = source_.c_str();
   spv_position_t loc = {inst_index_, 0, 0};

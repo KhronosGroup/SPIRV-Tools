@@ -94,7 +94,6 @@ INSTANTIATE_TEST_CASE_P(
         "OpName %main \"main\"",
         "OpMemberName %struct 0 \"field\"",
         "%1 = OpString \"name.vert\"",
-        "OpModuleProcessed \"42\"",
     })));
 // clang-format on
 
