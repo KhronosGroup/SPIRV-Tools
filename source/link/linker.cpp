@@ -49,7 +49,7 @@ struct TypeData {
 
 using IdDecorationsList = std::unordered_map<uint32_t, std::vector<Instruction>>;
 
-static IdDecorationsList getDecorationsForId(SpvId id, const std::unique_ptr<Module>& module) {
+static IdDecorationsList getDecorationsForId(SpvId id, Module* module) {
   IdDecorationsList decorations;
   auto decoIter = module->annotation_end();
 
@@ -148,9 +148,9 @@ static bool areDecorationsSimilar(const Instruction& a, const Instruction& b, co
   return true;
 }
 
-static bool haveIdsSimilarDecorations(SpvId id1, const std::unique_ptr<Module>& module1, SpvId id2, const std::unique_ptr<Module>& module2) {
-  const IdDecorationsList decorationsList1 = getDecorationsForId(id1, module1);
-  const IdDecorationsList decorationsList2 = getDecorationsForId(id2, module2);
+static bool haveIdsSimilarDecorations(SpvId id1, SpvId id2, Module* module) {
+  const IdDecorationsList decorationsList1 = getDecorationsForId(id1, module);
+  const IdDecorationsList decorationsList2 = getDecorationsForId(id2, module);
 
   if (decorationsList1.size() != decorationsList2.size())
     return false;
@@ -161,10 +161,10 @@ static bool haveIdsSimilarDecorations(SpvId id1, const std::unique_ptr<Module>& 
   // that might change due to specialisation (which should occur before linking
   // anyway?)
   std::unordered_map<SpvId, Instruction> constants;
-  for (const auto& i : module1->types_values())
+  for (const auto& i : module->types_values())
     if (i.opcode() == SpvOpConstant)
       constants[i.result_id()] = i;
-  for (const auto& i : module2->types_values())
+  for (const auto& i : module->types_values())
     if (i.opcode() == SpvOpConstant)
       constants[i.result_id()] = i;
 
@@ -477,21 +477,18 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   // Ensure the import and export decorations are similar
   for (const auto& i : linkingsToDo) {
-    if (!haveIdsSimilarDecorations(i.first.id, linkedModule,
-                                   i.second.id, linkedModule))
+    if (!haveIdsSimilarDecorations(i.first.id, i.second.id, linkedModule.get()))
         return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                           SPV_ERROR_INVALID_BINARY)
                << "Decorations mismatch between imported variable/function %" << i.first.id
                << " and exported variable/function %" << i.second.id << ".";
-    if (!haveIdsSimilarDecorations(i.first.typeId, linkedModule,
-                                   i.second.typeId, linkedModule))
+    if (!haveIdsSimilarDecorations(i.first.typeId, i.second.typeId, linkedModule.get()))
         return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                           SPV_ERROR_INVALID_BINARY)
                << "Decorations mismatch between the type of imported variable/function %" << i.first.id
                << " and the type of exported variable/function %" << i.second.id << ".";
     for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
-      if (!haveIdsSimilarDecorations(i.first.parametersIds[j], linkedModule,
-                                     i.second.parametersIds[j], linkedModule))
+      if (!haveIdsSimilarDecorations(i.first.parametersIds[j], i.second.parametersIds[j], linkedModule.get()))
           return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                             SPV_ERROR_INVALID_BINARY)
                  << "Decorations mismatch between imported function %" << i.first.id << "'s"
@@ -504,12 +501,12 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   // later.
 
   // Remove import decorations
-  for (const auto& i : linkingsToDo) {
-    removeDecorationsFor(i.first.id, linkedModule);
-    removeDecorationsFor(i.first.typeId, linkedModule);
-    for (const auto j : i.first.parametersIds)
-      removeDecorationsFor(j, linkedModule);
-  }
+//  for (const auto& i : linkingsToDo) {
+//    removeDecorationsFor(i.first.id, linkedModule);
+//    removeDecorationsFor(i.first.typeId, linkedModule);
+//    for (const auto j : i.first.parametersIds)
+//      removeDecorationsFor(j, linkedModule);
+//  }
 
   // Remove prototypes of imported functions
   for (const auto& i : linkingsToDo) {
@@ -536,21 +533,15 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     });
   });
 
-  // TODO(pierremoreau) Rematch import types/decorations to export types/decorations
-
-  // Remove duplicates
-  manager.AddPass<RemoveDuplicatesPass>();
-
   // Remove import linkage attributes
   for (auto i = linkedModule->annotation_begin();
        i != linkedModule->annotation_end();) {
     if (i->opcode() != SpvOpDecorate ||
         i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
-        i->GetSingleWordOperand(3u) != SpvLinkageTypeImport) {
+        i->GetSingleWordOperand(3u) != SpvLinkageTypeImport)
       ++i;
-      continue;
-    }
-    i = i.Erase();
+    else
+      i = i.Erase();
   }
 
   // Remove export linkage attributes and Linkage capability if making an
@@ -560,20 +551,21 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
          i != linkedModule->annotation_end();) {
       if (i->opcode() != SpvOpDecorate ||
           i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
-          i->GetSingleWordOperand(3u) != SpvLinkageTypeExport) {
+          i->GetSingleWordOperand(3u) != SpvLinkageTypeExport)
         ++i;
-        continue;
-      }
-      i = i.Erase();
+      else
+        i = i.Erase();
     }
+
+  // Remove duplicates
+  manager.AddPass<RemoveDuplicatesPass>();
 
     for (auto i = linkedModule->capability_begin();
         i != linkedModule->capability_end();) {
-      if (i->GetSingleWordInOperand(0u) != SpvCapabilityLinkage) {
+      if (i->GetSingleWordInOperand(0u) != SpvCapabilityLinkage)
         ++i;
-        continue;
-      }
-      i = i.Erase();
+      else
+        i = i.Erase();
     }
   }
 
