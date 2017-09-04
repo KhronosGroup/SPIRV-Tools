@@ -389,8 +389,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   ir::ModuleHeader header;
   header.magic_number = SpvMagicNumber;
   header.version = version;
-  // TODO(pierremoreau): Should we reserve a vendor ID?
-  header.generator = 0u;
+  header.generator = 17u;
   header.bound = id_bound;
   header.reserved = 0u;
   auto linkedModule = MakeUnique<Module>();
