@@ -1,0 +1,62 @@
+// Copyright (c) 2017 Pierre Moreau
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef LIBSPIRV_OPT_DECORATION_MANAGER_H_
+#define LIBSPIRV_OPT_DECORATION_MANAGER_H_
+
+#include <unordered_map>
+#include <vector>
+
+#include "instruction.h"
+#include "module.h"
+
+namespace spvtools {
+namespace opt {
+namespace analysis {
+
+// A class for analyzing and managing decorations in an ir::Module.
+class DecorationManager {
+ public:
+  // Constructs a decoration manager from the given |module|. All internal
+  // messages will be communicated to the outside via the given message
+  // |consumer|. This instance only keeps a reference to the |consumer|, so the
+  // |consumer| should outlive this instance.
+  DecorationManager(const MessageConsumer& consumer, ir::Module* module)
+      : consumer_(consumer) {
+    AnalyzeDecorations(module);
+  }
+
+ private:
+  using IdToDecorationInstsMap =
+      std::unordered_map<SpvId, std::vector<ir::Instruction*>>;
+  // Analyzes the defs and uses in the given |module| and populates data
+  // structures in this class. Does nothing if |module| is nullptr.
+  void AnalyzeDecorations(ir::Module* module);
+
+  const MessageConsumer& consumer_;  // Message consumer.
+  // Mapping from ids to the instructions applying a decoration to them. In
+  // other words, for each id you get all decoration instructions referencing
+  // that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate and
+  // SpvOpDecorateId), or indirectly (SpvOpGroupDecorate,
+  // SpvOpMemberGroupDecorate).
+  IdToDecorationInstsMap id_to_decoration_insts_;
+  // Mapping from group ids to all the decoration instructions they apply.
+  IdToDecorationInstsMap group_to_decoration_insts_;
+};
+
+}  // namespace analysis
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_DECORATION_MANAGER_H_

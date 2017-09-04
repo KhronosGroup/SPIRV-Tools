@@ -15,6 +15,8 @@
 #ifndef LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
 #define LIBSPIRV_OPT_REMOVE_DUPLICATES_PASS_H_
 
+#include <unordered_map>
+
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
@@ -22,19 +24,36 @@
 namespace spvtools {
 namespace opt {
 
+using IdDecorationsList =
+    std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
+
 // See optimizer.hpp for documentation.
 class RemoveDuplicatesPass : public Pass {
  public:
   const char* name() const override { return "remove-duplicates"; }
   Status Process(ir::Module*) override;
-  static bool AreTypesEqual(const spvtools::ir::Instruction& inst1,
-                            const spvtools::ir::Instruction& inst2,
+  static bool AreTypesEqual(const ir::Instruction& inst1,
+                            const ir::Instruction& inst2,
                             const analysis::DefUseManager& defUseManager);
+  static IdDecorationsList GetDecorationsForId(SpvId id, ir::Module* module);
+
+  // Remove the whole instruction for SpvOpDecorate, SpvDecorateId and
+  // SpvMemberDecorate. For group decorations, juste remove the ID (and its
+  // structure index if present) from the list.
+  static void RemoveDecorationsFor(SpvId id, ir::Module* module);
+
+  static bool AreDecorationsEqual(
+      const ir::Instruction& deco1, const ir::Instruction& deco2,
+      const std::unordered_map<SpvId, const ir::Instruction*>& constants);
+  static bool HaveIdsSimilarDecorations(SpvId id1, SpvId id2, ir::Module* module);
 
  private:
   bool RemoveDuplicateCapabilities(ir::Module* module) const;
-  bool RemoveDuplicatesExtInstImports(ir::Module* module, analysis::DefUseManager& defUseManager) const;
-  bool RemoveDuplicateTypes(ir::Module* module, analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicatesExtInstImports(
+      ir::Module* module, analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicateTypes(ir::Module* module,
+                            analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicateDecorations(ir::Module* module) const;
 };
 
 }  // namespace opt
