@@ -46,7 +46,8 @@ class DecorationManager {
   // instructions that apply the same decorations but to different IDs, still
   // count as being the same.
   bool HaveTheSameDecorations(uint32_t id1, uint32_t id2);
-  // Returns whether two decorations are the same.
+  // Returns whether two decorations are the same. SpvOpDecorateId is currently
+  // not handled and will return false no matter what.
   bool AreDecorationsTheSame(const ir::Instruction* inst1,
                              const ir::Instruction* inst2);
 
