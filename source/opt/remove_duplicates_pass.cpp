@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "decoration_manager.h"
 #include "opcode.h"
 
 namespace spvtools {
@@ -139,16 +140,17 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(ir::Module* module) const 
     if (i.opcode() == SpvOpConstant)
       constants[i.result_id()] = &i;
 
-  std::vector<Instruction> visitedDecorations;
+  std::vector<const Instruction*> visitedDecorations;
   visitedDecorations.reserve(module->annotations().size());
 
+  opt::analysis::DecorationManager decorationManager(consumer(), module);
   for (auto i = module->annotation_begin();
        i != module->annotation_end();) {
 
     // Is the current decoration equal to one of the decorations we have aready visited?
     bool alreadyVisited = false;
-    for (auto j : visitedDecorations) {
-      if (AreDecorationsEqual(*i, j, constants)) {
+    for (const Instruction* j : visitedDecorations) {
+      if (decorationManager.AreDecorationsTheSame(&*i, j)) {
         alreadyVisited = true;
         break;
       }
@@ -156,7 +158,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(ir::Module* module) const 
 
     if (!alreadyVisited) {
       // This is a never seen before decoration, keep it around.
-      visitedDecorations.emplace_back(*i);
+      visitedDecorations.emplace_back(&*i);
       ++i;
     } else {
       // The same decoration has already been seen before, remove this one.
@@ -266,107 +268,6 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
     default:
       return false;
   }
-}
-
-IdDecorationsList RemoveDuplicatesPass::GetDecorationsForId(SpvId id, Module* module) {
-  IdDecorationsList decorations;
-  auto decoIter = module->annotation_end();
-
-  std::vector<std::pair<SpvId, uint32_t>> idsToLookFor;
-  idsToLookFor.emplace_back(id, std::numeric_limits<uint32_t>::max());
-
-  // pierremoreau: Assume that OpGroupDecorate can't target an
-  //               OpDecorationGroup.
-  do {
-    --decoIter;
-    if (decoIter->opcode() == SpvOpGroupDecorate) {
-      for (uint32_t j = 1u; j < decoIter->NumInOperands(); ++j)
-        if (decoIter->GetSingleWordInOperand(j) == id) {
-          idsToLookFor.emplace_back(decoIter->GetSingleWordInOperand(0u), std::numeric_limits<uint32_t>::max());
-          break;
-        }
-    } else if (decoIter->opcode() == SpvOpGroupMemberDecorate) {
-      for (uint32_t j = 1u; j < decoIter->NumInOperands(); j += 2u)
-        if (decoIter->GetSingleWordInOperand(j) == id) {
-          idsToLookFor.emplace_back(decoIter->GetSingleWordInOperand(0u), decoIter->GetSingleWordInOperand(j + 1u));
-          break;
-        }
-    } else if (decoIter->opcode() == SpvOpMemberDecorate) {
-      if (decoIter->GetSingleWordInOperand(0u) == id)
-        decorations[decoIter->GetSingleWordInOperand(1u)].push_back(&*decoIter);
-    } else if ((decoIter->opcode() == SpvOpDecorate ||
-                decoIter->opcode() == SpvOpDecorateId) &&
-               decoIter->GetSingleWordInOperand(1u) != SpvDecorationLinkageAttributes &&
-               decoIter->GetSingleWordInOperand(1u) != SpvDecorationFuncParamAttr) { // FuncParamAttr are always taken from the definition anyway
-      auto iter = std::find_if(idsToLookFor.cbegin(), idsToLookFor.cend(), [&decoIter](const std::pair<SpvId, uint32_t>& p) {
-        return p.first == decoIter->GetSingleWordInOperand(0u);
-      });
-      if (iter != idsToLookFor.cend())
-        decorations[iter->second].push_back(&*decoIter);
-    }
-  } while (decoIter != module->annotation_begin());
-
-  return decorations;
-}
-
-bool RemoveDuplicatesPass::AreDecorationsEqual(const Instruction& deco1, const Instruction& deco2, const std::unordered_map<SpvId, const Instruction*>& constants) {
-  const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
-    std::vector<Operand> operands;
-    operands.reserve(inst.NumInOperands());
-    for (uint32_t i = 2u; i < inst.NumInOperands(); ++i) {
-      const auto& j = constants.find(inst.GetSingleWordInOperand(i));
-      if (j == constants.end())
-        return Instruction();
-      const auto operand = j->second->GetOperand(0u);
-      operands.emplace_back(operand.type, operand.words);
-    }
-    return Instruction(SpvOpDecorate, 0u, 0u, operands);
-  };
-  Instruction tmpA = (deco1.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(deco1) : deco1;
-  Instruction tmpB = (deco2.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(deco2) : deco2;
-
-  if (tmpA.opcode() != tmpB.opcode() || tmpA.NumInOperands() != tmpB.NumInOperands() ||
-      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
-    return false;
-
-  for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u; i < tmpA.NumInOperands(); ++i)
-    if (tmpA.GetInOperand(i) != tmpB.GetInOperand(i))
-      return false;
-
-  return true;
-}
-
-bool RemoveDuplicatesPass::HaveIdsSimilarDecorations(SpvId id1, SpvId id2, Module* module) {
-  const IdDecorationsList decorationsList1 = GetDecorationsForId(id1, module);
-  const IdDecorationsList decorationsList2 = GetDecorationsForId(id2, module);
-
-  if (decorationsList1.size() != decorationsList2.size())
-    return false;
-
-  // Grab all SpvOpConstant: those should be the only constant instructions
-  // used in SpvOpGroupDecorateId besides SpvOpSpecConstant, however there is
-  // no way to decide whether two decorations are the same if we rely on value
-  // that might change due to specialisation (which should occur before linking
-  // anyway?)
-  std::unordered_map<SpvId, const Instruction*> constants;
-  for (const auto& i : module->types_values())
-    if (i.opcode() == SpvOpConstant)
-      constants[i.result_id()] = &i;
-  for (const auto& i : module->types_values())
-    if (i.opcode() == SpvOpConstant)
-      constants[i.result_id()] = &i;
-
-  for (const auto& i : decorationsList1) {
-    const auto j = decorationsList2.find(i.first);
-    if (j == decorationsList2.end() || i.second.size() != j->second.size())
-      return false;
-
-    for (size_t k = 0u; k < i.second.size(); ++k)
-      if (!AreDecorationsEqual(*i.second[k], *j->second[k], constants))
-        return false;
-  }
-
-  return true;
 }
 
 }  // namespace opt
