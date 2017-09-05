@@ -165,6 +165,92 @@ void TestEncodeDecode(const std::string& original_text) {
   spvMarkvBinaryDestroy(markv_binary);
 }
 
+void TestEncodeDecodeShaderMainBody(const std::string& body) {
+  const std::string prefix =
+R"(
+OpCapability Shader
+OpCapability Int64
+OpCapability Float64
+%ext_inst = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+%f64 = OpTypeFloat 64
+%u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
+%boolvec2 = OpTypeVector %bool 2
+%s32vec2 = OpTypeVector %s32 2
+%u32vec2 = OpTypeVector %u32 2
+%f32vec2 = OpTypeVector %f32 2
+%f64vec2 = OpTypeVector %f64 2
+%boolvec3 = OpTypeVector %bool 3
+%u32vec3 = OpTypeVector %u32 3
+%s32vec3 = OpTypeVector %s32 3
+%f32vec3 = OpTypeVector %f32 3
+%f64vec3 = OpTypeVector %f64 3
+%boolvec4 = OpTypeVector %bool 4
+%u32vec4 = OpTypeVector %u32 4
+%s32vec4 = OpTypeVector %s32 4
+%f32vec4 = OpTypeVector %f32 4
+%f64vec4 = OpTypeVector %f64 4
+
+%f32_0 = OpConstant %f32 0
+%f32_1 = OpConstant %f32 1
+%f32_2 = OpConstant %f32 2
+%f32_3 = OpConstant %f32 3
+%f32_4 = OpConstant %f32 4
+%f32_pi = OpConstant %f32 3.14159
+
+%s32_0 = OpConstant %s32 0
+%s32_1 = OpConstant %s32 1
+%s32_2 = OpConstant %s32 2
+%s32_3 = OpConstant %s32 3
+%s32_4 = OpConstant %s32 4
+%s32_m1 = OpConstant %s32 -1
+
+%u32_0 = OpConstant %u32 0
+%u32_1 = OpConstant %u32 1
+%u32_2 = OpConstant %u32 2
+%u32_3 = OpConstant %u32 3
+%u32_4 = OpConstant %u32 4
+
+%u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
+%u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
+%u32vec3_012 = OpConstantComposite %u32vec3 %u32_0 %u32_1 %u32_2
+%u32vec3_123 = OpConstantComposite %u32vec3 %u32_1 %u32_2 %u32_3
+%u32vec4_0123 = OpConstantComposite %u32vec4 %u32_0 %u32_1 %u32_2 %u32_3
+%u32vec4_1234 = OpConstantComposite %u32vec4 %u32_1 %u32_2 %u32_3 %u32_4
+
+%s32vec2_01 = OpConstantComposite %s32vec2 %s32_0 %s32_1
+%s32vec2_12 = OpConstantComposite %s32vec2 %s32_1 %s32_2
+%s32vec3_012 = OpConstantComposite %s32vec3 %s32_0 %s32_1 %s32_2
+%s32vec3_123 = OpConstantComposite %s32vec3 %s32_1 %s32_2 %s32_3
+%s32vec4_0123 = OpConstantComposite %s32vec4 %s32_0 %s32_1 %s32_2 %s32_3
+%s32vec4_1234 = OpConstantComposite %s32vec4 %s32_1 %s32_2 %s32_3 %s32_4
+
+%f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
+%f32vec2_12 = OpConstantComposite %f32vec2 %f32_1 %f32_2
+%f32vec3_012 = OpConstantComposite %f32vec3 %f32_0 %f32_1 %f32_2
+%f32vec3_123 = OpConstantComposite %f32vec3 %f32_1 %f32_2 %f32_3
+%f32vec4_0123 = OpConstantComposite %f32vec4 %f32_0 %f32_1 %f32_2 %f32_3
+%f32vec4_1234 = OpConstantComposite %f32vec4 %f32_1 %f32_2 %f32_3 %f32_4
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel)";
+
+  const std::string suffix =
+R"(
+OpReturn
+OpFunctionEnd)";
+
+  TestEncodeDecode(prefix + body + suffix);
+}
+
 TEST(Markv, U32Literal) {
   TestEncodeDecode(R"(
 OpCapability Shader
@@ -322,6 +408,39 @@ OpFunctionEnd
 )");
 }
 
+TEST(Markv, WithMultipleFunctions) {
+  TestEncodeDecode(R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+%f32 = OpTypeFloat 32
+%one = OpConstant %f32 1
+%void = OpTypeVoid
+%void_func = OpTypeFunction %void
+%f32_func = OpTypeFunction %f32 %f32
+%sqr_plus_one = OpFunction %f32 None %f32_func
+%x = OpFunctionParameter %f32
+%100 = OpLabel
+%x2 = OpFMul %f32 %x %x
+%x2p1 = OpFunctionCall %f32 %plus_one %x2
+OpReturnValue %x2p1
+OpFunctionEnd
+%plus_one = OpFunction %f32 None %f32_func
+%y = OpFunctionParameter %f32
+%200 = OpLabel
+%yp1 = OpFAdd %f32 %y %one
+OpReturnValue %yp1
+OpFunctionEnd
+%main = OpFunction %void None %void_func
+%entry_main = OpLabel
+%1p1 = OpFunctionCall %f32 %sqr_plus_one %one
+OpReturn
+OpFunctionEnd
+)");
+}
+
 TEST(Markv, ForwardDeclaredId) {
   TestEncodeDecode(R"(
 OpCapability Addresses
@@ -425,6 +544,306 @@ OpMemoryModel Physical32 OpenCL
 %main = OpFunction %void None %void_func
 %entry_main = OpLabel
 %200 = OpExtInst %f32 %opencl cos %100
+OpReturn
+OpFunctionEnd
+)");
+}
+
+TEST(Markv, F32Mul) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpFMul %f32 %f32_0 %f32_1
+%val2 = OpFMul %f32 %f32_2 %f32_0
+%val3 = OpFMul %f32 %f32_pi %f32_2
+%val4 = OpFMul %f32 %f32_1 %f32_1
+)");
+}
+
+TEST(Markv, U32Mul) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpIMul %u32 %u32_0 %u32_1
+%val2 = OpIMul %u32 %u32_2 %u32_0
+%val3 = OpIMul %u32 %u32_3 %u32_2
+%val4 = OpIMul %u32 %u32_1 %u32_1
+)");
+}
+
+TEST(Markv, S32Mul) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpIMul %s32 %s32_0 %s32_1
+%val2 = OpIMul %s32 %s32_2 %s32_0
+%val3 = OpIMul %s32 %s32_m1 %s32_2
+%val4 = OpIMul %s32 %s32_1 %s32_1
+)");
+}
+
+TEST(Markv, F32Add) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpFAdd %f32 %f32_0 %f32_1
+%val2 = OpFAdd %f32 %f32_2 %f32_0
+%val3 = OpFAdd %f32 %f32_pi %f32_2
+%val4 = OpFAdd %f32 %f32_1 %f32_1
+)");
+}
+
+TEST(Markv, U32Add) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpIAdd %u32 %u32_0 %u32_1
+%val2 = OpIAdd %u32 %u32_2 %u32_0
+%val3 = OpIAdd %u32 %u32_3 %u32_2
+%val4 = OpIAdd %u32 %u32_1 %u32_1
+)");
+}
+
+TEST(Markv, S32Add) {
+  TestEncodeDecodeShaderMainBody(R"(
+%val1 = OpIAdd %s32 %s32_0 %s32_1
+%val2 = OpIAdd %s32 %s32_2 %s32_0
+%val3 = OpIAdd %s32 %s32_m1 %s32_2
+%val4 = OpIAdd %s32 %s32_1 %s32_1
+)");
+}
+
+TEST(Markv, F32Dot) {
+  TestEncodeDecodeShaderMainBody(R"(
+%dot2_1 = OpDot %f32 %f32vec2_01 %f32vec2_12
+%dot2_2 = OpDot %f32 %f32vec2_01 %f32vec2_01
+%dot2_3 = OpDot %f32 %f32vec2_12 %f32vec2_12
+%dot3_1 = OpDot %f32 %f32vec3_012 %f32vec3_123
+%dot3_2 = OpDot %f32 %f32vec3_012 %f32vec3_012
+%dot3_3 = OpDot %f32 %f32vec3_123 %f32vec3_123
+%dot4_1 = OpDot %f32 %f32vec4_0123 %f32vec4_1234
+%dot4_2 = OpDot %f32 %f32vec4_0123 %f32vec4_0123
+%dot4_3 = OpDot %f32 %f32vec4_1234 %f32vec4_1234
+)");
+}
+
+TEST(Markv, F32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(R"(
+%cc1 = OpCompositeConstruct %f32vec4 %f32vec2_01 %f32vec2_12
+%cc2 = OpCompositeConstruct %f32vec3 %f32vec2_01 %f32_2
+%cc3 = OpCompositeConstruct %f32vec2 %f32_1 %f32_2
+%cc4 = OpCompositeConstruct %f32vec4 %f32_1 %f32_2 %cc3
+)");
+}
+
+TEST(Markv, U32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(R"(
+%cc1 = OpCompositeConstruct %u32vec4 %u32vec2_01 %u32vec2_12
+%cc2 = OpCompositeConstruct %u32vec3 %u32vec2_01 %u32_2
+%cc3 = OpCompositeConstruct %u32vec2 %u32_1 %u32_2
+%cc4 = OpCompositeConstruct %u32vec4 %u32_1 %u32_2 %cc3
+)");
+}
+
+TEST(Markv, S32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(R"(
+%cc1 = OpCompositeConstruct %u32vec4 %u32vec2_01 %u32vec2_12
+%cc2 = OpCompositeConstruct %u32vec3 %u32vec2_01 %u32_2
+%cc3 = OpCompositeConstruct %u32vec2 %u32_1 %u32_2
+%cc4 = OpCompositeConstruct %u32vec4 %u32_1 %u32_2 %cc3
+)");
+}
+
+TEST(Markv, F32VectorCompositeExtract) {
+  TestEncodeDecodeShaderMainBody(R"(
+%f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
+%f32vec3_013 = OpCompositeExtract %f32vec3 %f32vec4_0123 0 1 3
+)");
+}
+
+TEST(Markv, F32VectorComparison) {
+  TestEncodeDecodeShaderMainBody(R"(
+%f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
+%c1 = OpFOrdEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c2 = OpFUnordEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c3 = OpFOrdNotEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c4 = OpFUnordNotEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c5 = OpFOrdLessThan %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c6 = OpFUnordLessThan %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c7 = OpFOrdGreaterThan %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c8 = OpFUnordGreaterThan %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c9 = OpFOrdLessThanEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c10 = OpFUnordLessThanEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c11 = OpFOrdGreaterThanEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+%c12 = OpFUnordGreaterThanEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
+)");
+}
+
+TEST(Markv, VectorShuffle) {
+  TestEncodeDecodeShaderMainBody(R"(
+%f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
+%sh1 = OpVectorShuffle %f32vec2 %f32vec4_0123 %f32vec4_3210 3 6
+%sh2 = OpVectorShuffle %f32vec3 %f32vec2_01 %f32vec4_3210 0 3 4
+)");
+}
+
+TEST(Markv, VectorTimesScalar) {
+  TestEncodeDecodeShaderMainBody(R"(
+%f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
+%res1 = OpVectorTimesScalar %f32vec4 %f32vec4_0123 %f32_2
+%res2 = OpVectorTimesScalar %f32vec4 %f32vec4_3210 %f32_2
+%res3 = OpVectorTimesScalar %u32vec3 %u32vec3_012 %u32_2
+%res4 = OpVectorTimesScalar %s32vec2 %s32vec2_01 %s32_2
+)");
+}
+
+TEST(Markv, SpirvSpecSample) {
+  TestEncodeDecode(R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %31 %33 %42 %57
+               OpExecutionMode %4 OriginLowerLeft
+
+; Debug information
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %9 "scale"
+               OpName %17 "S"
+               OpMemberName %17 0 "b"
+               OpMemberName %17 1 "v"
+               OpMemberName %17 2 "i"
+               OpName %18 "blockName"
+               OpMemberName %18 0 "s"
+               OpMemberName %18 1 "cond"
+               OpName %20 ""
+               OpName %31 "color"
+               OpName %33 "color1"
+               OpName %42 "color2"
+               OpName %48 "i"
+               OpName %57 "multiplier"
+
+; Annotations (non-debug)
+               OpDecorate %15 ArrayStride 16
+               OpMemberDecorate %17 0 Offset 0
+               OpMemberDecorate %17 1 Offset 16
+               OpMemberDecorate %17 2 Offset 96
+               OpMemberDecorate %18 0 Offset 0
+               OpMemberDecorate %18 1 Offset 112
+               OpDecorate %18 Block
+               OpDecorate %20 DescriptorSet 0
+               OpDecorate %42 NoPerspective
+
+; All types, variables, and constants
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2                      ; void ()
+          %6 = OpTypeFloat 32                         ; 32-bit float
+          %7 = OpTypeVector %6 4                      ; vec4
+          %8 = OpTypePointer Function %7              ; function-local vec4*
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 2
+         %12 = OpConstantComposite %7 %10 %10 %11 %10 ; vec4(1.0, 1.0, 2.0, 1.0)
+         %13 = OpTypeInt 32 0                         ; 32-bit int, sign-less
+         %14 = OpConstant %13 5
+         %15 = OpTypeArray %7 %14
+         %16 = OpTypeInt 32 1
+         %17 = OpTypeStruct %13 %15 %16
+         %18 = OpTypeStruct %17 %13
+         %19 = OpTypePointer Uniform %18
+         %20 = OpVariable %19 Uniform
+         %21 = OpConstant %16 1
+         %22 = OpTypePointer Uniform %13
+         %25 = OpTypeBool
+         %26 = OpConstant %13 0
+         %30 = OpTypePointer Output %7
+         %31 = OpVariable %30 Output
+         %32 = OpTypePointer Input %7
+         %33 = OpVariable %32 Input
+         %35 = OpConstant %16 0
+         %36 = OpConstant %16 2
+         %37 = OpTypePointer Uniform %7
+         %42 = OpVariable %32 Input
+         %47 = OpTypePointer Function %16
+         %55 = OpConstant %16 4
+         %57 = OpVariable %32 Input
+
+; All functions
+          %4 = OpFunction %2 None %3                  ; main()
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+         %48 = OpVariable %47 Function
+               OpStore %9 %12
+         %23 = OpAccessChain %22 %20 %21              ; location of cond
+         %24 = OpLoad %13 %23                         ; load 32-bit int from cond
+         %27 = OpINotEqual %25 %24 %26                ; convert to bool
+               OpSelectionMerge %29 None              ; structured if
+               OpBranchConditional %27 %28 %41        ; if cond
+         %28 = OpLabel                                ; then
+         %34 = OpLoad %7 %33
+         %38 = OpAccessChain %37 %20 %35 %21 %36      ; s.v[2]
+         %39 = OpLoad %7 %38
+         %40 = OpFAdd %7 %34 %39
+               OpStore %31 %40
+               OpBranch %29
+         %41 = OpLabel                                ; else
+         %43 = OpLoad %7 %42
+         %44 = OpExtInst %7 %1 Sqrt %43               ; extended instruction sqrt
+         %45 = OpLoad %7 %9
+         %46 = OpFMul %7 %44 %45
+               OpStore %31 %46
+               OpBranch %29
+         %29 = OpLabel                                ; endif
+               OpStore %48 %35
+               OpBranch %49
+         %49 = OpLabel
+               OpLoopMerge %51 %52 None               ; structured loop
+               OpBranch %53
+         %53 = OpLabel
+         %54 = OpLoad %16 %48
+         %56 = OpSLessThan %25 %54 %55                ; i < 4 ?
+               OpBranchConditional %56 %50 %51        ; body or break
+         %50 = OpLabel                                ; body
+         %58 = OpLoad %7 %57
+         %59 = OpLoad %7 %31
+         %60 = OpFMul %7 %59 %58
+               OpStore %31 %60
+               OpBranch %52
+         %52 = OpLabel                                ; continue target
+         %61 = OpLoad %16 %48
+         %62 = OpIAdd %16 %61 %21                     ; ++i
+               OpStore %48 %62
+               OpBranch %49                           ; loop back
+         %51 = OpLabel                                ; loop merge point
+               OpReturn
+               OpFunctionEnd
+)");
+}
+
+TEST(Markv, SampleFromDeadBranchEliminationTest) {
+  TestEncodeDecode(R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%float_0 = OpConstant %float 0
+%12 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%float_1 = OpConstant %float 1
+%14 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%main = OpFunction %void None %5
+%17 = OpLabel
+OpSelectionMerge %18 None
+OpBranchConditional %true %19 %20
+%19 = OpLabel
+OpBranch %18
+%20 = OpLabel
+OpBranch %18
+%18 = OpLabel
+%21 = OpPhi %v4float %12 %19 %14 %20
+OpStore %gl_FragColor %21
 OpReturn
 OpFunctionEnd
 )");
