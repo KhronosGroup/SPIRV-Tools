@@ -18,70 +18,94 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-void DecorationManager::AnalyzeDecorations(ir::Module* module) {
-  if (!module) return;
+void DecorationManager::removeDecorationsFrom(uint32_t id) {
+  auto const ids_iter = id_to_decoration_insts_.find(id);
+  if (ids_iter == id_to_decoration_insts_.end())
+    return;
 
-  // Collect all ids decorated at least once, and all group ids.
-  for (auto i = module->annotation_begin(); i != module->annotation_end();
-       ++i) {
-    switch (i->opcode()) {
+  for (ir::Instruction* inst : ids_iter->second) {
+    switch (inst->opcode()) {
       case SpvOpDecorate:
       case SpvOpDecorateId:
       case SpvOpMemberDecorate:
-        id_to_decoration_insts_.insert({i->GetSingleWordInOperand(0u), {}});
+        inst->ToNop();
         break;
       case SpvOpGroupDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); ++j)
-          id_to_decoration_insts_.insert({i->GetSingleWordInOperand(j), {}});
+        for (uint32_t i = 1u; i < inst->NumInOperands(); ++i) {
+          if (inst->GetSingleWordInOperand(i) == inst->result_id()) {
+            inst->RemoveInOperand(i);
+            break;
+          }
+        }
         break;
       case SpvOpGroupMemberDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); j += 2u)
-          id_to_decoration_insts_.insert({i->GetSingleWordInOperand(j), {}});
+        for (uint32_t i = 1u; i < inst->NumInOperands(); i += 2u) {
+          if (inst->GetSingleWordInOperand(i) == inst->result_id()) {
+            inst->RemoveInOperand(i);
+            break;
+          }
+        }
         break;
+      default:
+        break;
+    }
+  }
+}
+
+void DecorationManager::AnalyzeDecorations(ir::Module* module) {
+  if (!module) return;
+
+  // Collect all group ids.
+  for (const ir::Instruction& inst : module->annotations()) {
+    switch (inst.opcode()) {
       case SpvOpDecorationGroup:
-        group_to_decoration_insts_.insert({i->GetSingleWordInOperand(0u), {}});
+        group_to_decoration_insts_.insert({inst.GetSingleWordInOperand(0u), {}});
         break;
       default:
         break;
     }
   }
 
-  // For each group, collect all its decoration instructions.
-  for (const ir::Instruction& inst : module->annotations()) {
+  // For each group and instruction, collect all their decoration instructions.
+  for (ir::Instruction& inst : module->annotations()) {
     switch (inst.opcode()) {
       case SpvOpDecorate:
       case SpvOpDecorateId:
       case SpvOpMemberDecorate: {
+        auto const target_id = inst.GetSingleWordInOperand(0u);
         auto const group_iter =
-            group_to_decoration_insts_.find(inst.GetSingleWordInOperand(0u));
+            group_to_decoration_insts_.find(target_id);
         if (group_iter != group_to_decoration_insts_.end())
-          group_iter->second.push_back(inst);
+          group_iter->second.push_back(&inst);
+        else
+          id_to_decoration_insts_[target_id].push_back(&inst);
         break;
       }
       case SpvOpGroupDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); ++j) {
+        for (uint32_t i = 1u; i < inst.NumInOperands(); ++i) {
+          auto const target_id = inst.GetSingleWordInOperand(i);
           auto const group_iter =
-              group_to_decoration_insts_.find(inst.GetSingleWordInOperand(i));
+              group_to_decoration_insts_.find(target_id);
           if (group_iter != group_to_decoration_insts_.end())
-            group_iter->second.push_back(inst);
+            group_iter->second.push_back(&inst);
+          else
+            id_to_decoration_insts_[target_id].push_back(&inst);
         }
         break;
       case SpvOpGroupMemberDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); j += 2u) {
+        for (uint32_t i = 1u; i < inst.NumInOperands(); i += 2u) {
+          auto const target_id = inst.GetSingleWordInOperand(i);
           auto const group_iter =
-              group_to_decoration_insts_.find(inst.GetSingleWordInOperand(i));
+              group_to_decoration_insts_.find(target_id);
           if (group_iter != group_to_decoration_insts_.end())
-            group_iter->second.push_back(inst);
+            group_iter->second.push_back(&inst);
+          else
+            id_to_decoration_insts_[target_id].push_back(&inst);
         }
         break;
       default:
         break;
     }
-  }
-
-  // For each id in |id_to_decoration_insts_|, collect its decorations.
-  for (auto i = module->annotation_begin(); i != module->annotation_end();
-       ++i) {
   }
 }
 
