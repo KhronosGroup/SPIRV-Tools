@@ -14,6 +14,8 @@
 
 #include "decoration_manager.h"
 
+#include <stack>
+
 namespace spvtools {
 namespace opt {
 namespace analysis {
@@ -55,13 +57,56 @@ void DecorationManager::RemoveDecorationsFrom(uint32_t id) {
 std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
     uint32_t id) {
   std::vector<ir::Instruction*> decorations;
+  std::stack<uint32_t> ids_to_process;
+  ids_to_process.push(id);
+  const auto process = [&ids_to_process,&decorations](ir::Instruction* inst){
+    if (inst->opcode() == SpvOpGroupDecorate || inst->opcode() == SpvOpGroupMemberDecorate)
+      ids_to_process.push(inst->GetSingleWordInOperand(0u));
+    else
+      decorations.push_back(inst);
+  };
+  while (!ids_to_process.empty()) {
+    const uint32_t id_to_process = ids_to_process.top();
+    ids_to_process.pop();
+    const auto group_iter = group_to_decoration_insts_.find(id_to_process);
+    if (group_iter != group_to_decoration_insts_.end()) {
+      for (ir::Instruction* inst : group_iter->second)
+        process(inst);
+    } else {
+      const auto ids_iter = id_to_decoration_insts_.find(id_to_process);
+      if (ids_iter == id_to_decoration_insts_.end())
+        return std::vector<ir::Instruction*>();
+      for (ir::Instruction* inst : ids_iter->second)
+        process(inst);
+    }
+  }
   return decorations;
 }
 
+// TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
+//                     deco2 } when it should return false.
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1, uint32_t id2) {
-  return false;
+  const auto decorationsFor1 = GetDecorationsFor(id1);
+  const auto decorationsFor2 = GetDecorationsFor(id2);
+  if (decorationsFor1.size() != decorationsFor2.size())
+    return false;
+
+  for (const ir::Instruction* inst1 : decorationsFor1) {
+    bool didFindAMatch = false;
+    for (const ir::Instruction* inst2 : decorationsFor2) {
+      if (AreDecorationsTheSame(inst1, inst2)) {
+        didFindAMatch = true;
+        break;
+      }
+    }
+    if (!didFindAMatch)
+      return false;
+  }
+  return true;
 }
 
+// TODO(pierremoreau): Handle SpvOpDecorateId by converting them to a regular
+//                     SpvOpDecorate.
 bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1, const ir::Instruction* inst2) {
 //  const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
 //    std::vector<Operand> operands;
@@ -78,16 +123,19 @@ bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1, cons
 //  Instruction tmpA = (deco1.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(deco1) : deco1;
 //  Instruction tmpB = (deco2.opcode() == SpvOpDecorateId) ? decorateIdToDecorate(deco2) : deco2;
 //
-//  if (tmpA.opcode() != tmpB.opcode() || tmpA.NumInOperands() != tmpB.NumInOperands() ||
-//      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
-//    return false;
-//
-//  for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u; i < tmpA.NumInOperands(); ++i)
-//    if (tmpA.GetInOperand(i) != tmpB.GetInOperand(i))
-//      return false;
-//
-//  return true;
-  return false;
+  if (inst1->opcode() == SpvOpDecorateId || inst2->opcode() == SpvOpDecorateId)
+    return false;
+
+  ir::Instruction tmpA = *inst1, tmpB = *inst2;
+  if (tmpA.opcode() != tmpB.opcode() || tmpA.NumInOperands() != tmpB.NumInOperands() ||
+      tmpA.opcode() == SpvOpNop || tmpB.opcode() == SpvOpNop)
+    return false;
+
+  for (uint32_t i = (tmpA.opcode() == SpvOpDecorate) ? 1u : 2u; i < tmpA.NumInOperands(); ++i)
+    if (tmpA.GetInOperand(i) != tmpB.GetInOperand(i))
+      return false;
+
+  return true;
 }
 
 void DecorationManager::AnalyzeDecorations(ir::Module* module) {
