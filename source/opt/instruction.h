@@ -147,6 +147,10 @@ class Instruction {
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
+  // Remove the |index|-th operand
+  void RemoveOperand(uint32_t index) {
+    operands_.erase(operands_.begin() + index);
+  }
 
   // The following methods are similar to the above, but are for in operands.
   uint32_t NumInOperands() const {
@@ -158,6 +162,9 @@ class Instruction {
   }
   uint32_t GetSingleWordInOperand(uint32_t index) const {
     return GetSingleWordOperand(index + TypeResultIdCount());
+  }
+  void RemoveInOperand(uint32_t index) {
+    operands_.erase(operands_.begin() + index + TypeResultIdCount());
   }
 
   // Returns true if this instruction is OpNop.
