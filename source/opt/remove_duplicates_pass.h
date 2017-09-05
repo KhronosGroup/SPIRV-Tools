@@ -42,9 +42,6 @@ class RemoveDuplicatesPass : public Pass {
   // structure index if present) from the list.
   static void RemoveDecorationsFor(SpvId id, ir::Module* module);
 
-  static bool AreDecorationsEqual(
-      const ir::Instruction& deco1, const ir::Instruction& deco2,
-      const std::unordered_map<SpvId, const ir::Instruction*>& constants);
   static bool HaveIdsSimilarDecorations(SpvId id1, SpvId id2, ir::Module* module);
 
  private:
