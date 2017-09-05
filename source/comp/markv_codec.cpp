@@ -28,6 +28,7 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <list>
 #include <memory>
 #include <numeric>
