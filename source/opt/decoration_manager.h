@@ -36,10 +36,12 @@ class DecorationManager {
       : consumer_(consumer) {
     AnalyzeDecorations(module);
   }
+  // Remove all decorations from |id|, which should not be a group ID.
+  void removeDecorationsFrom(uint32_t id);
 
  private:
   using IdToDecorationInstsMap =
-      std::unordered_map<SpvId, std::vector<ir::Instruction*>>;
+      std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDecorations(ir::Module* module);
