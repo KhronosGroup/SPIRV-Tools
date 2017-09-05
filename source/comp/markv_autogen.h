@@ -22,7 +22,8 @@
 #include "util/huffman_codec.h"
 
 inline uint64_t GetMarkvNonOfTheAbove() {
-  return std::numeric_limits<uint64_t>::max();
+  // Magic number.
+  return 1111111111111111111;
 }
 
 std::map<uint64_t, uint32_t> GetOpcodeAndNumOperandsHist();

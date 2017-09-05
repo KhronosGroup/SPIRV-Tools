@@ -170,7 +170,7 @@ GetMtfHuffmanCodecs() {
 
   std::unique_ptr<HuffmanCodec<uint32_t>> codec;
 
-  codec.reset(new HuffmanCodec<uint32_t>({
+  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
     { 0, 5 },
     { 1, 40 },
     { 2, 10 },
@@ -182,10 +182,10 @@ GetMtfHuffmanCodecs() {
     { 8, 3 },
     { 9, 3 },
     { kMtfRankEncodedByValueSignal, 10 },
-  }));
+  })));
   codecs.emplace(kMtfAll, std::move(codec));
 
-  codec.reset(new HuffmanCodec<uint32_t>({
+  codec.reset(new HuffmanCodec<uint32_t>(std::map<uint32_t, uint32_t>({
     { 1, 50 },
     { 2, 20 },
     { 3, 5 },
@@ -196,7 +196,7 @@ GetMtfHuffmanCodecs() {
     { 8, 1 },
     { 9, 1 },
     { kMtfRankEncodedByValueSignal, 10 },
-  }));
+  })));
   codecs.emplace(kMtfGenericNonZeroRank, std::move(codec));
 
   return codecs;

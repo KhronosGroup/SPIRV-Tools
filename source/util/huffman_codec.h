@@ -60,7 +60,7 @@ class HuffmanCodec {
 
   // Creates Huffman codec from a histogramm.
   // Histogramm counts must not be zero.
-  HuffmanCodec(const std::map<Val, uint32_t>& hist) {
+  explicit HuffmanCodec(const std::map<Val, uint32_t>& hist) {
     if (hist.empty()) return;
 
     // Heuristic estimate.

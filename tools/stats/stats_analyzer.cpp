@@ -23,13 +23,25 @@
 
 #include "spirv/1.2/spirv.h"
 #include "source/enum_string_mapping.h"
+#include "source/comp/markv_autogen.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
+#include "source/util/huffman_codec.h"
 
 using libspirv::SpirvStats;
+using spvutils::HuffmanCodec;
 
 namespace {
+
+// Signals that the value is not in the coding scheme and a fallback method
+// needs to be used.
+const uint64_t kMarkvNoneOfTheAbove = GetMarkvNonOfTheAbove();
+
+inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
+                                            uint32_t num_operands) {
+  return opcode | (num_operands << 16);
+}
 
 // Returns all SPIR-V v1.2 opcodes.
 std::vector<uint32_t> GetAllOpcodes() {
@@ -647,10 +659,7 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
 
     uint32_t left_out = 0;
 
-    out << "  {\n";
-    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
-        << "codec(new HuffmanCodec<uint64_t>({\n";
-
+    std::map<uint64_t, uint32_t> processed_hist;
     for (const auto& pair : hist) {
       const uint32_t opcode_and_num_operands = pair.first;
       const uint32_t opcode = opcode_and_num_operands & 0xFFFF;
@@ -667,18 +676,21 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
         left_out += count;
         continue;
       }
-
-      out << "      { CombineOpcodeAndNumOperands(SpvOp"
-          << spvOpcodeString(SpvOp(opcode))
-          << ", " << num_operands << "), " << count << " },\n";
+      processed_hist.emplace(CombineOpcodeAndNumOperands(opcode, num_operands),
+                             count);
     }
 
     // Heuristic.
-    const uint32_t none_of_the_above =
-        std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
+    processed_hist.emplace(kMarkvNoneOfTheAbove,
+                           std::max(1, int(left_out + total * 0.01)));
 
-    out << "    }));\n" << std::endl;
+    HuffmanCodec<uint64_t> codec(processed_hist);
+
+    out << "  {\n";
+    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
+        << "codec(new HuffmanCodec<uint64_t>";
+    out << codec.SerializeToText(4);
+    out << ");\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << GetOpcodeString(prev_opcode)
         << ", std::move(codec));\n";
     out << "  }\n\n";
@@ -711,9 +723,7 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
 
     uint32_t left_out = 0;
 
-    out << "  {\n";
-    out << "    std::unique_ptr<HuffmanCodec<std::string>> "
-        << "codec(new HuffmanCodec<std::string>({\n";
+    std::map<std::string, uint32_t> processed_hist;
     for (const auto& pair : hist) {
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
@@ -722,17 +732,20 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
         left_out += count;
         continue;
       }
-      out << "      { std::string(\"" << pair.first << "\"), " << count
-          << " },\n";
+      processed_hist.emplace(pair.first, count);
     }
 
     // Heuristic.
-    const uint32_t none_of_the_above =
-        std::max(1, int(left_out + total * 0.01));
-    out << "      { std::string(\"kMarkvNoneOfTheAbove\"), "
-        << none_of_the_above << " },\n";
+    processed_hist.emplace("kMarkvNoneOfTheAbove",
+                           std::max(1, int(left_out + total * 0.01)));
 
-    out << "    }));\n" << std::endl;
+    HuffmanCodec<std::string> codec(processed_hist);
+
+    out << "  {\n";
+    out << "    std::unique_ptr<HuffmanCodec<std::string>> "
+        << "codec(new HuffmanCodec<std::string>";
+    out << codec.SerializeToText(4);
+    out << ");\n" << std::endl;
     out << "    codecs.emplace(SpvOp" << spvOpcodeString(SpvOp(opcode))
         << ", std::move(codec));\n";
     out << "  }\n\n";
@@ -765,9 +778,7 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
 
     uint32_t left_out = 0;
 
-    out << "  {\n";
-    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
-        << "codec(new HuffmanCodec<uint64_t>({\n";
+    std::map<uint64_t, uint32_t> processed_hist;
     for (const auto& pair : hist) {
       const uint32_t word = pair.first;
       const uint32_t count = pair.second;
@@ -777,15 +788,20 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
         left_out += count;
         continue;
       }
-      out << "      { " << word << ", " << count << " },\n";
+      processed_hist.emplace(word, count);
     }
 
     // Heuristic.
-    const uint32_t none_of_the_above =
-        std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
+    processed_hist.emplace(kMarkvNoneOfTheAbove,
+                           std::max(1, int(left_out + total * 0.01)));
 
-    out << "    }));\n" << std::endl;
+    HuffmanCodec<uint64_t> codec(processed_hist);
+
+    out << "  {\n";
+    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
+        << "codec(new HuffmanCodec<uint64_t>";
+    out << codec.SerializeToText(4);
+    out << ");\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
         << spvOpcodeString(SpvOp(opcode))
         << ", " << index << "), std::move(codec));\n";
@@ -813,6 +829,7 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
 
     const std::map<uint32_t, uint32_t>& hist = kv.second;
 
+
     uint32_t total = 0;
     for (const auto& pair : hist) {
       total += pair.second;
@@ -820,9 +837,7 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
 
     uint32_t left_out = 0;
 
-    out << "  {\n";
-    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
-        << "codec(new HuffmanCodec<uint64_t>({\n";
+    std::map<uint64_t, uint32_t> processed_hist;
     for (const auto& pair : hist) {
       const uint32_t descriptor = pair.first;
       const uint32_t count = pair.second;
@@ -832,15 +847,20 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
         left_out += count;
         continue;
       }
-      out << "      { " << descriptor << ", " << count << " },\n";
+      processed_hist.emplace(descriptor, count);
     }
 
     // Heuristic.
-    const uint32_t none_of_the_above =
-        std::max(1, int(left_out + total * 0.01));
-    out << "      { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
+    processed_hist.emplace(kMarkvNoneOfTheAbove,
+                           std::max(1, int(left_out + total * 0.01)));
 
-    out << "    }));\n" << std::endl;
+    HuffmanCodec<uint64_t> codec(processed_hist);
+
+    out << "  {\n";
+    out << "    std::unique_ptr<HuffmanCodec<uint64_t>> "
+        << "codec(new HuffmanCodec<uint64_t>";
+    out << codec.SerializeToText(4);
+    out << ");\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
         << spvOpcodeString(SpvOp(opcode))
         << ", " << index << "), std::move(codec));\n";
