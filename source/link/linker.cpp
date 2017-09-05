@@ -90,37 +90,6 @@ static IdDecorationsList getDecorationsForId(SpvId id, Module* module) {
   return decorations;
 }
 
-// Remove the whole instruction for SpvOpDecorate, SpvDecorateId and
-// SpvMemberDecorate. For group decorations, juste remove the ID (and its
-// structure index if present) from the list.
-static void removeDecorationsFor(SpvId id, std::unique_ptr<Module>& module) {
-  for (auto i = module->annotation_begin();
-      i != module->annotation_end();) {
-    if ((i->opcode() == SpvOpDecorate || i->opcode() == SpvOpDecorateId ||
-        i->opcode() == SpvOpMemberDecorate) && i->GetSingleWordInOperand(0u) == id)
-      i = i.Erase();
-    else if (i->opcode() == SpvOpGroupDecorate) {
-      std::vector<Operand> operands;
-      operands.reserve(i->NumInOperands());
-      for (uint32_t j = 2u; j < i->NumInOperands(); ++j)
-        if (i->GetSingleWordInOperand(j) != id)
-          operands.push_back(i->GetOperand(j));
-      *i = Instruction(i->opcode(), 0u, 0u, operands);
-    } else if (i->opcode() == SpvOpGroupMemberDecorate) {
-      std::vector<Operand> operands;
-      operands.reserve(i->NumInOperands());
-      for (uint32_t j = 2u; j < i->NumInOperands(); j += 2u) {
-        if (i->GetSingleWordInOperand(j) != id) {
-          operands.push_back(i->GetOperand(j));
-          operands.push_back(i->GetOperand(j + 1u));
-        }
-      }
-      *i = Instruction(i->opcode(), 0u, 0u, operands);
-    } else
-      ++i;
-  }
-}
-
 static bool areDecorationsSimilar(const Instruction& a, const Instruction& b, const std::unordered_map<SpvId, Instruction>& constants) {
   const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
     std::vector<Operand> operands;
