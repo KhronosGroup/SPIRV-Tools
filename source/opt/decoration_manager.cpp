@@ -28,18 +28,18 @@ void DecorationManager::AnalyzeDecorations(ir::Module* module) {
       case SpvOpDecorate:
       case SpvOpDecorateId:
       case SpvOpMemberDecorate:
-        id_to_decoration_insts_.insert({ i->GetSingleWordInOperand(0u), {} });
+        id_to_decoration_insts_.insert({i->GetSingleWordInOperand(0u), {}});
         break;
       case SpvOpGroupDecorate:
         for (uint32_t j = 1u; j < i->NumInOperands(); ++j)
-          id_to_decoration_insts_.insert({ i->GetSingleWordInOperand(j), {} });
+          id_to_decoration_insts_.insert({i->GetSingleWordInOperand(j), {}});
         break;
       case SpvOpGroupMemberDecorate:
         for (uint32_t j = 1u; j < i->NumInOperands(); j += 2u)
-          id_to_decoration_insts_.insert({ i->GetSingleWordInOperand(j), {} });
+          id_to_decoration_insts_.insert({i->GetSingleWordInOperand(j), {}});
         break;
       case SpvOpDecorationGroup:
-        group_to_decoration_insts_.insert({ i->GetSingleWordInOperand(0u), {} });
+        group_to_decoration_insts_.insert({i->GetSingleWordInOperand(0u), {}});
         break;
       default:
         break;
@@ -51,16 +51,28 @@ void DecorationManager::AnalyzeDecorations(ir::Module* module) {
     switch (inst.opcode()) {
       case SpvOpDecorate:
       case SpvOpDecorateId:
-      case SpvOpMemberDecorate:
-        id_to_decoration_insts_[inst.GetSingleWordInOperand(0u)].push_back(inst);
+      case SpvOpMemberDecorate: {
+        auto const group_iter =
+            group_to_decoration_insts_.find(inst.GetSingleWordInOperand(0u));
+        if (group_iter != group_to_decoration_insts_.end())
+          group_iter->second.push_back(inst);
         break;
+      }
       case SpvOpGroupDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); ++j)
-          id_to_decoration_insts_.insert({ i->GetSingleWordInOperand(j), {} });
+        for (uint32_t j = 1u; j < i->NumInOperands(); ++j) {
+          auto const group_iter =
+              group_to_decoration_insts_.find(inst.GetSingleWordInOperand(i));
+          if (group_iter != group_to_decoration_insts_.end())
+            group_iter->second.push_back(inst);
+        }
         break;
       case SpvOpGroupMemberDecorate:
-        for (uint32_t j = 1u; j < i->NumInOperands(); j += 2u)
-          id_to_decoration_insts_.insert({ i->GetSingleWordInOperand(j), {} });
+        for (uint32_t j = 1u; j < i->NumInOperands(); j += 2u) {
+          auto const group_iter =
+              group_to_decoration_insts_.find(inst.GetSingleWordInOperand(i));
+          if (group_iter != group_to_decoration_insts_.end())
+            group_iter->second.push_back(inst);
+        }
         break;
       default:
         break;
