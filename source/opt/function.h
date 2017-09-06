@@ -70,6 +70,9 @@ class Function {
   // Returns function's return type id
   inline uint32_t type_id() const { return def_inst_->type_id(); }
 
+  // Returns the entry basic block for this function.
+  const std::unique_ptr<BasicBlock>& entry() const { return blocks_.front(); }
+
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
   const_iterator cbegin() const {

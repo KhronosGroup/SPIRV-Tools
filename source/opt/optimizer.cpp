@@ -238,4 +238,9 @@ std::vector<const char*> Optimizer::GetPassNames() const {
   return v;
 }
 
+Optimizer::PassToken CreateCFGCleanupPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::CFGCleanupPass>());
+}
+
 }  // namespace spvtools

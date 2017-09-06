@@ -393,6 +393,14 @@ Optimizer::PassToken CreateCompactIdsPass();
 // Creates a remove duplicate capabilities pass.
 Optimizer::PassToken CreateRemoveDuplicatesPass();
 
+// Creates a CFG cleanup pass.
+// This pass removes cruft from the control flow graph of functions that are
+// reachable from entry points and exported functions. It currently includes the
+// following functionality:
+//
+// - Removal of unreachable basic blocks.
+Optimizer::PassToken CreateCFGCleanupPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

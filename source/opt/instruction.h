@@ -202,8 +202,13 @@ class Instruction {
   // Pushes the binary segments for this instruction into the back of *|binary|.
   void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
 
+  // Replaces the operands to the instruction with |new_operands|. The caller
+  // is responsible for building a complete and valid list of operands for
+  // this instruction.
+  void ReplaceOperands(const std::vector<Operand>& new_operands);
+
  private:
-  // Returns the toal count of result type id and result id.
+  // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);
   }

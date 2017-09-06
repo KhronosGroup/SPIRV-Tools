@@ -113,6 +113,16 @@ class BasicBlock {
   void ForMergeAndContinueLabel(
       const std::function<void(const uint32_t)>& f);
 
+  // Returns true if this basic block has any Phi instructions.
+  bool HasPhiInstructions() {
+    int count = 0;
+    ForEachPhiInst([&count](ir::Instruction*) {
+      ++count;
+      return;
+    });
+    return count > 0;
+  }
+
  private:
   // The enclosing function.
   Function* function_;
