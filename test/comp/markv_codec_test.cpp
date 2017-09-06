@@ -682,8 +682,6 @@ TEST(Markv, VectorTimesScalar) {
 %f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
 %res1 = OpVectorTimesScalar %f32vec4 %f32vec4_0123 %f32_2
 %res2 = OpVectorTimesScalar %f32vec4 %f32vec4_3210 %f32_2
-%res3 = OpVectorTimesScalar %u32vec3 %u32vec3_012 %u32_2
-%res4 = OpVectorTimesScalar %s32vec2 %s32vec2_01 %s32_2
 )");
 }
 
