@@ -23,7 +23,7 @@ class EntryPoints : public spvtest::LinkerTest {
  public:
   EntryPoints() { binaries.reserve(0xFFFF); }
 
-  virtual void SetUp() {
+  virtual void SetUp() override {
       binaries.push_back({
       SpvMagicNumber,
       SpvVersion,
@@ -102,12 +102,12 @@ class EntryPoints : public spvtest::LinkerTest {
       binaries.push_back(binary);
     }
   }
-  virtual void TearDown() { binaries.clear(); }
+  virtual void TearDown() override { binaries.clear(); }
 
   spvtest::Binaries binaries;
 };
 
-TEST_F(EntryPoints, Default) {
+TEST_F(EntryPoints, UnderLimit) {
   spvtest::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));

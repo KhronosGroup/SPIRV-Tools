@@ -18,14 +18,7 @@
 namespace {
 
 using ::testing::HasSubstr;
-
-class MatchingImportsToExports : public spvtest::LinkerTest {
- public:
-  MatchingImportsToExports() { }
-
-  virtual void SetUp() { }
-  virtual void TearDown() { }
-};
+using MatchingImportsToExports = spvtest::LinkerTest;
 
 TEST_F(MatchingImportsToExports, Default) {
   const std::string body1 = R"(
