@@ -20,7 +20,7 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-void DecorationManager::RemoveDecorationsFrom(uint32_t id) {
+void DecorationManager::RemoveDecorationsFrom(uint32_t id, bool keep_linkage) {
   auto const ids_iter = id_to_decoration_insts_.find(id);
   if (ids_iter == id_to_decoration_insts_.end())
     return;
@@ -30,7 +30,8 @@ void DecorationManager::RemoveDecorationsFrom(uint32_t id) {
       case SpvOpDecorate:
       case SpvOpDecorateId:
       case SpvOpMemberDecorate:
-        inst->ToNop();
+        if (!(keep_linkage && inst->GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes))
+          inst->ToNop();
         break;
       case SpvOpGroupDecorate:
         for (uint32_t i = 1u; i < inst->NumInOperands(); ++i) {
@@ -55,7 +56,7 @@ void DecorationManager::RemoveDecorationsFrom(uint32_t id) {
 }
 
 std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
-    uint32_t id) {
+    uint32_t id, bool include_linkage) {
   std::vector<ir::Instruction*> decorations;
   std::stack<uint32_t> ids_to_process;
   ids_to_process.push(id);
@@ -76,8 +77,11 @@ std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
       const auto ids_iter = id_to_decoration_insts_.find(id_to_process);
       if (ids_iter == id_to_decoration_insts_.end())
         return std::vector<ir::Instruction*>();
-      for (ir::Instruction* inst : ids_iter->second)
-        process(inst);
+      for (ir::Instruction* inst : ids_iter->second) {
+        const bool is_linkage = inst->opcode() == SpvOpDecorate && inst->GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes;
+        if (include_linkage || !is_linkage)
+          process(inst);
+      }
     }
   }
   return decorations;
@@ -86,8 +90,8 @@ std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
 // TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
 //                     deco2 } when it should return false.
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1, uint32_t id2) {
-  const auto decorationsFor1 = GetDecorationsFor(id1);
-  const auto decorationsFor2 = GetDecorationsFor(id2);
+  const auto decorationsFor1 = GetDecorationsFor(id1, false);
+  const auto decorationsFor2 = GetDecorationsFor(id2, false);
   if (decorationsFor1.size() != decorationsFor2.size())
     return false;
 

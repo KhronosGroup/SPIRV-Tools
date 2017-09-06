@@ -355,26 +355,38 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                                           SPV_ERROR_INVALID_BINARY)
                << "Decorations mismatch between the type of imported variable/function %" << i.first.id
                << " and the type of exported variable/function %" << i.second.id << ".";
-    for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
-      if (!decorationManager.HaveTheSameDecorations(i.first.parametersIds[j], i.second.parametersIds[j]))
-          return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                            SPV_ERROR_INVALID_BINARY)
-                 << "Decorations mismatch between imported function %" << i.first.id << "'s"
-                 << " and exported function %" << i.second.id << "'s " << j << "th parameter.";
+    // TODO(pierremoreau): Decorations on function parameters should probably
+    //                     match, except for FuncParamAttr if I understand the
+    //                     spec correctly, which makes the code more
+    //                     complicated.
+//    for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
+//      if (!decorationManager.HaveTheSameDecorations(i.first.parametersIds[j], i.second.parametersIds[j]))
+//          return libspirv::DiagnosticStream(position, impl_->context->consumer,
+//                                            SPV_ERROR_INVALID_BINARY)
+//                 << "Decorations mismatch between imported function %" << i.first.id << "'s"
+//                 << " and exported function %" << i.second.id << "'s " << (j + 1u) << "th parameter.";
   }
 
-  // TODO(pierremoreau): Remove import types
-  // Similar to the testing: traverse bottom-top
-  // But make sure to store the ID of removed types, to do the replacement
-  // later.
-
-  // Remove import decorations
-//  for (const auto& i : linkingsToDo) {
-//    removeDecorationsFor(i.first.id, linkedModule);
-//    removeDecorationsFor(i.first.typeId, linkedModule);
-//    for (const auto j : i.first.parametersIds)
-//      removeDecorationsFor(j, linkedModule);
-//  }
+  // Remove FuncParamAttr decorations of imported functions' parameters.
+  // From the SPIR-V specification, Sec. 2.13:
+  //   When resolving imported functions, the Function Control and all Function
+  //   Parameter Attributes are taken from the function definition, and not
+  //   from the function declaration.
+  for (const auto& i : linkingsToDo) {
+    for (const auto j : i.first.parametersIds) {
+      for (ir::Instruction* decoration : decorationManager.GetDecorationsFor(j, false)) {
+        switch (decoration->opcode()) {
+          case SpvOpDecorate:
+          case SpvOpMemberDecorate:
+            if (decoration->GetSingleWordInOperand(1u) == SpvDecorationFuncParamAttr)
+              decoration->ToNop();
+            break;
+          default:
+            break;
+        }
+      }
+    }
+  }
 
   // Remove prototypes of imported functions
   for (const auto& i : linkingsToDo) {

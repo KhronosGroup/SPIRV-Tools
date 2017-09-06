@@ -36,12 +36,14 @@ class DecorationManager {
       : consumer_(consumer) {
     AnalyzeDecorations(module);
   }
-  // Removes all decorations from |id|, which should not be a group ID.
-  void RemoveDecorationsFrom(uint32_t id);
+  // Removes all decorations from |id|, which should not be a group ID, except
+  // for linkage decorations if |keep_linkage| is set.
+  void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
   // Returns a vector of all decorations affecting |id|. If a group is applied
   // to |id|, the decorations of that group are returned rather than the group
-  // decoration instruction.
-  std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id);
+  // decoration instruction. If |include_linkage| is not set, linkage
+  // decorations won't be returned.
+  std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id, bool include_linkage);
   // Returns whether two IDs have the same decorations. Two SpvOpGroupDecorate
   // instructions that apply the same decorations but to different IDs, still
   // count as being the same.
