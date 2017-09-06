@@ -89,5 +89,11 @@ void Instruction::ToBinaryWithoutAttachedDebugInsts(
     binary->insert(binary->end(), operand.words.begin(), operand.words.end());
 }
 
+void Instruction::ReplaceOperands(const std::vector<Operand>& new_operands) {
+  operands_.clear();
+  operands_.insert(operands_.begin(), new_operands.begin(), new_operands.end());
+  operands_.shrink_to_fit();
+}
+
 }  // namespace ir
 }  // namespace spvtools

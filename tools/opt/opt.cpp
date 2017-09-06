@@ -99,6 +99,10 @@ Options:
   --compact-ids
                Remap result ids to a compact range starting from %%1 and without
                any gaps.
+  --cfg-cleanup
+               Cleanup the control flow graph. This will remove any unnecessary
+               code from the CFG like unreachable code. Performed on entry
+               point call tree functions and exported functions.
   --inline-entry-points-exhaustive
                Exhaustively inline all function calls in entry point call tree
                functions. Currently does not inline calls to functions with
@@ -359,6 +363,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateFlattenDecorationPass());
       } else if (0 == strcmp(cur_arg, "--compact-ids")) {
         optimizer->RegisterPass(CreateCompactIdsPass());
+      } else if (0 == strcmp(cur_arg, "--cfg-cleanup")) {
+        optimizer->RegisterPass(CreateCFGCleanupPass());
       } else if (0 == strcmp(cur_arg, "-O")) {
         optimizer->RegisterPerformancePasses();
       } else if (0 == strcmp(cur_arg, "-Os")) {
