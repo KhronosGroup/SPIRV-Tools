@@ -35,6 +35,7 @@ R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64
+OpCapability Matrix
 %ext_inst = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
@@ -65,6 +66,12 @@ OpEntryPoint Fragment %main "main"
 %s32vec4 = OpTypeVector %s32 4
 %f32vec4 = OpTypeVector %f32 4
 %f64vec4 = OpTypeVector %f64 4
+
+%f32mat22 = OpTypeMatrix %f32vec2 2
+%f32mat23 = OpTypeMatrix %f32vec2 3
+%f32mat32 = OpTypeMatrix %f32vec3 2
+%f32mat33 = OpTypeMatrix %f32vec3 3
+%f64mat22 = OpTypeMatrix %f64vec2 2
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
@@ -132,6 +139,13 @@ OpEntryPoint Fragment %main "main"
 %f64vec3_123 = OpConstantComposite %f64vec3 %f64_1 %f64_2 %f64_3
 %f64vec4_0123 = OpConstantComposite %f64vec4 %f64_0 %f64_1 %f64_2 %f64_3
 %f64vec4_1234 = OpConstantComposite %f64vec4 %f64_1 %f64_2 %f64_3 %f64_4
+
+%f32mat22_1212 = OpConstantComposite %f32mat22 %f32vec2_12 %f32vec2_12
+%f32mat23_121212 = OpConstantComposite %f32mat23 %f32vec2_12 %f32vec2_12 %f32vec2_12
+%f32mat32_123123 = OpConstantComposite %f32mat32 %f32vec3_123 %f32vec3_123
+%f32mat33_123123123 = OpConstantComposite %f32mat33 %f32vec3_123 %f32vec3_123 %f32vec3_123
+
+%f64mat22_1212 = OpConstantComposite %f64mat22 %f64vec2_12 %f64vec2_12
 
 %main = OpFunction %void None %func
 %main_entry = OpLabel)";
@@ -534,6 +548,556 @@ TEST_F(ValidateArithmetics, UDivWrongOperand2) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have type type_id: "
       "UDiv operand index 3"));
+}
+
+TEST_F(ValidateArithmetics, DotSuccess) {
+  const std::string body = R"(
+%val = OpDot %f32 %f32vec2_01 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, DotWrongTypeId) {
+  const std::string body = R"(
+%val = OpDot %u32 %u32vec2_01 %u32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float scalar type as type_id: Dot"));
+}
+
+TEST_F(ValidateArithmetics, DotNotVectorTypeOperand1) {
+  const std::string body = R"(
+%val = OpDot %f32 %f32 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector as operand: Dot operand index 2"));
+}
+
+TEST_F(ValidateArithmetics, DotNotVectorTypeOperand2) {
+  const std::string body = R"(
+%val = OpDot %f32 %f32vec3_012 %f32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector as operand: Dot operand index 3"));
+}
+
+TEST_F(ValidateArithmetics, DotWrongComponentOperand1) {
+  const std::string body = R"(
+%val = OpDot %f64 %f32vec2_01 %f64vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component type to be equal to type_id: Dot operand index 2"));
+}
+
+TEST_F(ValidateArithmetics, DotWrongComponentOperand2) {
+  const std::string body = R"(
+%val = OpDot %f32 %f32vec2_01 %f64vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component type to be equal to type_id: Dot operand index 3"));
+}
+
+TEST_F(ValidateArithmetics, DotDifferentVectorSize) {
+  const std::string body = R"(
+%val = OpDot %f32 %f32vec2_01 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected operands to have the same number of componenets: Dot"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesScalarSuccess) {
+  const std::string body = R"(
+%val = OpVectorTimesScalar %f32vec2 %f32vec2_01 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, VectorTimesScalarWrongTypeId) {
+  const std::string body = R"(
+%val = OpVectorTimesScalar %u32vec2 %f32vec2_01 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as type_id: "
+      "VectorTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesScalarWrongVector) {
+  const std::string body = R"(
+%val = OpVectorTimesScalar %f32vec2 %f32vec3_012 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected vector operand type to be equal to type_id: "
+      "VectorTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesScalarWrongScalar) {
+  const std::string body = R"(
+%val = OpVectorTimesScalar %f32vec2 %f32vec2_01 %f64_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected scalar operand type to be equal to the component "
+      "type of the vector operand: VectorTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesScalarSuccess) {
+  const std::string body = R"(
+%val = OpMatrixTimesScalar %f32mat22 %f32mat22_1212 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesScalarWrongTypeId) {
+  const std::string body = R"(
+%val = OpMatrixTimesScalar %f32vec2 %f32mat22_1212 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as type_id: "
+      "MatrixTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesScalarWrongMatrix) {
+  const std::string body = R"(
+%val = OpMatrixTimesScalar %f32mat22 %f32vec2_01 %f32_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected matrix operand type to be equal to type_id: "
+      "MatrixTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesScalarWrongScalar) {
+  const std::string body = R"(
+%val = OpMatrixTimesScalar %f32mat22 %f32mat22_1212 %f64_2
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected scalar operand type to be equal to the component "
+      "type of the matrix operand: MatrixTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrix2x22Success) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec2_12 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrix3x32Success) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec3_123 %f32mat32_123123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrixWrongTypeId) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32mat22 %f32vec2_12 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as type_id: "
+      "VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrixNotFloatVector) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %u32vec2_12 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as left operand: "
+      "VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrixWrongVectorComponent) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f64vec2_12 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component types of type_id and vector to be equal: "
+      "VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrixWrongMatrix) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec2_12 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as right operand: "
+      "VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrixWrongMatrixComponent) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec2_12 %f64mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component types of type_id and matrix to be equal: "
+      "VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrix2eq2x23Fail) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec2_12 %f32mat23_121212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of columns of the matrix to be equal to the type_id "
+      "vector size: VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, VectorTimesMatrix2x32Fail) {
+  const std::string body = R"(
+%val = OpVectorTimesMatrix %f32vec2 %f32vec2_12 %f32mat32_123123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of rows of the matrix to be equal to the vector "
+      "operand size: VectorTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVector22x2Success) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec2 %f32mat22_1212 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVector23x3Success) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec2 %f32mat23_121212 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVectorWrongTypeId) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32mat22 %f32mat22_1212 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as type_id: "
+      "MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVectorWrongMatrix) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec3 %f32vec3_123 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as left operand: "
+      "MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVectorWrongMatrixCol) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec3 %f32mat23_121212 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected column type of the matrix to be equal to type_id: "
+      "MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVectorWrongVector) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec2 %f32mat22_1212 %u32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as right operand: "
+      "MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVectorDifferentComponents) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec2 %f32mat22_1212 %f64vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component types of the operands to be equal: "
+      "MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesVector22x3Fail) {
+  const std::string body = R"(
+%val = OpMatrixTimesVector %f32vec2 %f32mat22_1212 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of columns of the matrix to be equal to the vector "
+      "size: MatrixTimesVector"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix22x22Success) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat22_1212 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix23x32Success) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat23_121212 %f32mat32_123123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix33x33Success) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat33 %f32mat33_123123123 %f32mat33_123123123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrixWrongTypeId) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32vec2 %f32mat22_1212 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as type_id: MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrixWrongLeftOperand) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32vec2_12 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as left operand: MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrixWrongRightOperand) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat22_1212 %f32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as right operand: MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix32x23Fail) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat32_123123 %f32mat23_121212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected column types of type_id and left matrix to be equal: "
+      "MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrixDifferentComponents) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat22_1212 %f64mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component types of type_id and right matrix to be equal: "
+      "MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix23x23Fail) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat23_121212 %f32mat23_121212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of columns of type_id and right matrix to be equal: "
+      "MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, MatrixTimesMatrix23x22Fail) {
+  const std::string body = R"(
+%val = OpMatrixTimesMatrix %f32mat22 %f32mat23_121212 %f32mat22_1212
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of columns of left matrix and number of rows of right "
+      "matrix to be equal: MatrixTimesMatrix"));
+}
+
+TEST_F(ValidateArithmetics, OuterProduct2x2Success) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat22 %f32vec2_12 %f32vec2_01
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, OuterProduct3x2Success) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat32 %f32vec3_123 %f32vec2_01
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, OuterProduct2x3Success) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat23 %f32vec2_01 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, OuterProductWrongTypeId) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32vec2 %f32vec2_01 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float matrix type as type_id: "
+      "OuterProduct"));
+}
+
+TEST_F(ValidateArithmetics, OuterProductWrongLeftOperand) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat22 %f32vec3_123 %f32vec2_01
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected column type of the type_id to be equal to the type "
+      "of the left operand: OuterProduct"));
+}
+
+TEST_F(ValidateArithmetics, OuterProductRightOperandNotFloatVector) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat22 %f32vec2_12 %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected float vector type as right operand: OuterProduct"));
+}
+
+TEST_F(ValidateArithmetics, OuterProductRightOperandWrongComponent) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat22 %f32vec2_12 %f64vec2_01
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected component types of the operands to be equal: OuterProduct"));
+}
+
+TEST_F(ValidateArithmetics, OuterProductRightOperandWrongDimension) {
+  const std::string body = R"(
+%val = OpOuterProduct %f32mat22 %f32vec2_12 %f32vec3_123
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected number of columns of the matrix to be equal to the "
+      "vector size of the right operand: OuterProduct"));
 }
 
 }  // anonymous namespace

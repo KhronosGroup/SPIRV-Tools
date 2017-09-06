@@ -586,4 +586,43 @@ bool ValidationState_t::IsBoolVectorType(uint32_t id) const {
   return false;
 }
 
+bool ValidationState_t::IsFloatMatrixType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  assert(inst);
+
+  if (inst->opcode() == SpvOpTypeMatrix) {
+    return IsFloatScalarType(GetComponentType(id));
+  }
+
+  return false;
+}
+
+bool ValidationState_t::GetMatrixTypeInfo(
+    uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
+    uint32_t* column_type, uint32_t* component_type) const {
+  if (!id)
+    return false;
+
+  const Instruction* mat_inst = FindDef(id);
+  assert(mat_inst);
+  if (mat_inst->opcode() != SpvOpTypeMatrix)
+    return false;
+
+  const uint32_t vec_type = mat_inst->word(2);
+  const Instruction* vec_inst = FindDef(vec_type);
+  assert(vec_inst);
+
+  if (vec_inst->opcode() != SpvOpTypeVector) {
+    assert(0);
+    return false;
+  }
+
+  *num_cols = mat_inst->word(3);
+  *num_rows = vec_inst->word(3);
+  *column_type = mat_inst->word(2);
+  *component_type = vec_inst->word(2);
+
+  return true;
+}
+
 }  /// namespace libspirv
