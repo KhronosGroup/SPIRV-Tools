@@ -13,19 +13,13 @@
 // limitations under the License.
 
 #include "gmock/gmock.h"
-#include "linker_test.h"
+#include "linker_fixture.h"
 
 namespace {
 
 using ::testing::HasSubstr;
 
-class MemoryModel : public spvtest::LinkerTest {
- public:
-  MemoryModel() { }
-
-  virtual void SetUp() { }
-  virtual void TearDown() { }
-};
+using MemoryModel = spvtest::LinkerTest;
 
 TEST_F(MemoryModel, Default) {
   const std::string body1 = R"(
@@ -36,7 +30,7 @@ OpMemoryModel Logical Simple
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 
   ASSERT_EQ(SpvAddressingModelLogical, linked_binary[6]);
@@ -52,7 +46,7 @@ OpMemoryModel Physical32 Simple
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, linked_binary));
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting addressing models: Logical vs Physical32."));
 }
 
@@ -65,7 +59,7 @@ OpMemoryModel Logical GLSL450
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, linked_binary));
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting memory models: Simple vs GLSL450."));
 }
 

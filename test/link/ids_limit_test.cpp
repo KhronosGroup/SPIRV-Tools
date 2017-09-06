@@ -13,57 +13,66 @@
 // limitations under the License.
 
 #include "gmock/gmock.h"
-#include "linker_test.h"
+#include "linker_fixture.h"
 
 namespace {
 
 using ::testing::HasSubstr;
 
-class IdsLimit : public spvtest::LinkerTest {
- public:
-  IdsLimit() { binaries.reserve(2); }
+using IdsLimit = spvtest::LinkerTest;
 
-  virtual void SetUp() {
-    binaries.push_back({
+TEST_F(IdsLimit, UnderLimit) {
+  spvtest::Binaries binaries = {
+    {
       SpvMagicNumber,
       SpvVersion,
       SPV_GENERATOR_CODEPLAY,
       0x2FFFFFu, // NOTE: Bound
       0u,        // NOTE: Schema; reserved
-    });
-    binaries.push_back({
+    },
+    {
       SpvMagicNumber,
       SpvVersion,
       SPV_GENERATOR_CODEPLAY,
       0x100000u, // NOTE: Bound
       0u,        // NOTE: Schema; reserved
-    });
-  }
-  virtual void TearDown() { binaries.clear(); }
-
-  spvtest::Binaries binaries;
-};
-
-TEST_F(IdsLimit, Default) {
+    }
+  };
   spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
   ASSERT_EQ(0x3FFFFEu, linked_binary[3]);
 }
 
 TEST_F(IdsLimit, OverLimit) {
-  binaries.push_back({
-    SpvMagicNumber,
-    SpvVersion,
-    SPV_GENERATOR_CODEPLAY,
-    3u,  // NOTE: Bound
-    0u,  // NOTE: Schema; reserved
-  });
+  spvtest::Binaries binaries = {
+    {
+      SpvMagicNumber,
+      SpvVersion,
+      SPV_GENERATOR_CODEPLAY,
+      0x2FFFFFu, // NOTE: Bound
+      0u,        // NOTE: Schema; reserved
+    },
+    {
+      SpvMagicNumber,
+      SpvVersion,
+      SPV_GENERATOR_CODEPLAY,
+      0x100000u, // NOTE: Bound
+      0u,        // NOTE: Schema; reserved
+    },
+    {
+      SpvMagicNumber,
+      SpvVersion,
+      SPV_GENERATOR_CODEPLAY,
+      3u,  // NOTE: Bound
+      0u,  // NOTE: Schema; reserved
+    }
+  };
 
   spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is the current ID bound."));
 }
 
