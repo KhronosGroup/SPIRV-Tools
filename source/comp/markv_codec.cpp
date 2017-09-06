@@ -34,6 +34,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "spirv/1.2/GLSL.std.450.h"
 #include "spirv/1.2/OpenCL.std.h"
@@ -213,6 +215,7 @@ class MarkvModel {
             GetOpcodeAndNumOperandsMarkovHuffmanCodecs()),
         non_id_word_huffman_codecs_(GetNonIdWordHuffmanCodecs()),
         id_descriptor_huffman_codecs_(GetIdDescriptorHuffmanCodecs()),
+        descriptors_with_coding_scheme_(GetDescriptorsWithCodingScheme()),
         literal_string_huffman_codecs_(GetLiteralStringHuffmanCodecs()) {}
 
   size_t opcode_chunk_length() const { return 7; }
@@ -290,6 +293,10 @@ class MarkvModel {
     return it->second.get();
   }
 
+  bool DescriptorHasCodingScheme(uint32_t descriptor) const {
+    return descriptors_with_coding_scheme_.count(descriptor);
+  }
+
  private:
   // Huffman codecs for move-to-front ranks. The map key is mtf handle. Doesn't
   // need to contain a different codec for every handle as most use one and the
@@ -315,6 +322,8 @@ class MarkvModel {
   std::map<std::pair<uint32_t, uint32_t>,
       std::unique_ptr<HuffmanCodec<uint64_t>>>
       id_descriptor_huffman_codecs_;
+
+  std::unordered_set<uint32_t> descriptors_with_coding_scheme_;
 
   // Huffman codecs for literal strings. The map key is the opcode of the
   // current instruction. This assumes, that there is no more than one literal
@@ -1196,8 +1205,8 @@ void MarkvCodecBase::ProcessCurInstruction() {
   }
 
   const uint32_t descriptor = id_descriptors_.ProcessInstruction(inst_);
-
-  multi_mtf_.Insert(GetMtfIdDescriptor(descriptor), inst_.result_id);
+  if (model_->DescriptorHasCodingScheme(descriptor))
+    multi_mtf_.Insert(GetMtfIdDescriptor(descriptor), inst_.result_id);
 }
 
 uint64_t MarkvCodecBase::GetRuleBasedMtf() {

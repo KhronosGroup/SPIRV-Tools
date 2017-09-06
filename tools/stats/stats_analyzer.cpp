@@ -19,6 +19,8 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "spirv/1.2/spirv.h"
@@ -647,7 +649,7 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
 
   for (const auto& kv : stats_.opcode_and_num_operands_markov_hist) {
     const uint32_t prev_opcode = kv.first;
-    const double kFrequentEnoughToAnalyze = 0.01;
+    const double kFrequentEnoughToAnalyze = 0.001;
     if (opcode_freq_[prev_opcode] < kFrequentEnoughToAnalyze) continue;
 
     const std::unordered_map<uint32_t, uint32_t>& hist = kv.second;
@@ -783,7 +785,7 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
       const uint32_t word = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kWordFrequentEnoughToAnalyze = 0.01;
+      const double kWordFrequentEnoughToAnalyze = 0.003;
       if (freq < kWordFrequentEnoughToAnalyze) {
         left_out += count;
         continue;
@@ -819,12 +821,14 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
       << "  std::map<std::pair<uint32_t, uint32_t>, "
       << "std::unique_ptr<HuffmanCodec<uint64_t>>> codecs;\n";
 
+  std::unordered_set<uint32_t> descriptors_with_coding_scheme;
+
   for (const auto& kv : stats_.operand_slot_id_descriptor_hist) {
     const auto& opcode_and_index = kv.first;
     const uint32_t opcode = opcode_and_index.first;
     const uint32_t index = opcode_and_index.second;
 
-    const double kOpcodeFrequentEnoughToAnalyze = 0.01;
+    const double kOpcodeFrequentEnoughToAnalyze = 0.003;
     if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
 
     const std::map<uint32_t, uint32_t>& hist = kv.second;
@@ -842,17 +846,19 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
       const uint32_t descriptor = pair.first;
       const uint32_t count = pair.second;
       const double freq = double(count) / double(total);
-      const double kDescriptorFrequentEnoughToAnalyze = 0.01;
+      const double kDescriptorFrequentEnoughToAnalyze = 0.003;
       if (freq < kDescriptorFrequentEnoughToAnalyze) {
         left_out += count;
         continue;
       }
       processed_hist.emplace(descriptor, count);
+      descriptors_with_coding_scheme.insert(descriptor);
     }
 
     // Heuristic.
     processed_hist.emplace(kMarkvNoneOfTheAbove,
                            std::max(1, int(left_out + total * 0.01)));
+
 
     HuffmanCodec<uint64_t> codec(processed_hist);
 
@@ -868,4 +874,12 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
   }
 
   out << "  return codecs;\n}\n";
+
+  out << "\nstd::unordered_set<uint32_t> GetDescriptorsWithCodingScheme() {\n"
+      << "  std::unordered_set<uint32_t> descriptors_with_coding_scheme = {\n";
+  for (uint32_t descriptor : descriptors_with_coding_scheme) {
+    out << "    " << descriptor << ",\n";
+  }
+  out << "  };\n";
+  out << "  return descriptors_with_coding_scheme;\n}\n";
 }
