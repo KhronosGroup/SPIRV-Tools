@@ -108,4 +108,95 @@ TEST_F(PassTestForLineDebugInfo, KeepLineDebugInfo) {
                                     /* skip_nop = */ true);
 }
 
+using PassTestForModuleProcessed = PassTest<::testing::Test>;
+
+// OpModuleProcessed is handled just like OpLine and OpNoLine.
+TEST_F(PassTestForModuleProcessed, KeepLineModuleProcessed) {
+  SetMessageConsumer([](spv_message_level_t, const char*, const spv_position_t&,
+                        const char* msg) { std::cout << msg << std::endl; });
+  // clang-format off
+  const char* text =
+               "OpModuleProcessed \"before first cap\" "
+               "OpCapability Shader "
+          "%1 = OpExtInstImport \"GLSL.std.450\" "
+               "OpMemoryModel Logical GLSL450 "
+               "OpModuleProcessed \"before entry point\" "
+               "OpEntryPoint Vertex %2 \"main\" "
+          "%3 = OpString \"minimal.vert\" "
+               "OpNoLine "
+               "OpLine %3 10 10 "
+               "OpModuleProcessed \"in types\" "
+       "%void = OpTypeVoid "
+               "OpLine %3 100 100 "
+          "%5 = OpTypeFunction %void "
+          "%2 = OpFunction %void None %5 "
+               "OpModuleProcessed \"in function before label\" "
+               "OpLine %3 1 1 "
+               "OpNoLine "
+               "OpLine %3 2 2 "
+               "OpLine %3 3 3 "
+          "%6 = OpLabel "
+               "OpLine %3 4 4 "
+               "OpModuleProcessed \"in block\" "
+               "OpNoLine "
+               "OpReturn "
+               "OpModuleProcessed \"after last block\" "
+               "OpLine %3 4 4 "
+               "OpNoLine "
+               "OpFunctionEnd ";
+  // clang-format on
+
+  const char* result_keep_nop =
+      "OpModuleProcessed \"before first cap\"\n"
+      "OpNop\n"
+      "OpNop\n"
+      "OpNop\n"
+      "OpModuleProcessed \"before entry point\"\n"
+      "OpNop\n"
+      "OpNop\n"
+      "OpNoLine\n"
+      "OpLine %3 10 10\n"
+      "OpModuleProcessed \"in types\"\n"
+      "OpNop\n"
+      "OpLine %3 100 100\n"
+      "OpNop\n"
+      "OpNop\n"
+      "OpModuleProcessed \"in function before label\"\n"
+      "OpLine %3 1 1\n"
+      "OpNoLine\n"
+      "OpLine %3 2 2\n"
+      "OpLine %3 3 3\n"
+      "OpNop\n"
+      "OpLine %3 4 4\n"
+      "OpModuleProcessed \"in block\"\n"
+      "OpNoLine\n"
+      "OpNop\n"
+      "OpModuleProcessed \"after last block\"\n"
+      "OpLine %3 4 4\n"
+      "OpNoLine\n"
+      "OpNop\n";
+  SinglePassRunAndCheck<NopifyPass>(text, result_keep_nop,
+                                    /* skip_nop = */ false);
+  const char* result_skip_nop =
+      "OpModuleProcessed \"before first cap\"\n"
+      "OpModuleProcessed \"before entry point\"\n"
+      "OpNoLine\n"
+      "OpLine %3 10 10\n"
+      "OpModuleProcessed \"in types\"\n"
+      "OpLine %3 100 100\n"
+      "OpModuleProcessed \"in function before label\"\n"
+      "OpLine %3 1 1\n"
+      "OpNoLine\n"
+      "OpLine %3 2 2\n"
+      "OpLine %3 3 3\n"
+      "OpLine %3 4 4\n"
+      "OpModuleProcessed \"in block\"\n"
+      "OpNoLine\n"
+      "OpModuleProcessed \"after last block\"\n"
+      "OpLine %3 4 4\n"
+      "OpNoLine\n";
+  SinglePassRunAndCheck<NopifyPass>(text, result_skip_nop,
+                                    /* skip_nop = */ true);
+}
+
 }  // anonymous namespace

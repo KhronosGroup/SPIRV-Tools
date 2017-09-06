@@ -63,10 +63,11 @@ struct Operand {
 
 // A SPIR-V instruction. It contains the opcode and any additional logical
 // operand, including the result id (if any) and result type id (if any). It
-// may also contain line-related debug instruction (OpLine, OpNoLine) directly
-// appearing before this instruction. Note that the result id of an instruction
-// should never change after the instruction being built. If the result id
-// needs to change, the user should create a new instruction instead.
+// may also contain embedded debug insturctions (OpLine, OpNoLine,
+// OpModuleProcessed) directly appearing before this instruction. Note that
+// the result id of an instruction should never change after the instruction
+// being built. If the result id needs to change, the user should create a
+// new instruction instead.
 class Instruction {
  public:
   using iterator = std::vector<Operand>::iterator;
@@ -79,10 +80,10 @@ class Instruction {
   Instruction(SpvOp op) : opcode_(op), type_id_(0), result_id_(0) {}
   // Creates an instruction using the given spv_parsed_instruction_t |inst|. All
   // the data inside |inst| will be copied and owned in this instance. And keep
-  // record of line-related debug instructions |dbg_line| ahead of this
+  // record of embedded debug instructions |embedded_debug_insts| ahead of this
   // instruction, if any.
   Instruction(const spv_parsed_instruction_t& inst,
-              std::vector<Instruction>&& dbg_line = {});
+              std::vector<Instruction>&& embedded_debug_insts = {});
 
   // Creates an instruction with the given opcode |op|, type id: |ty_id|,
   // result id: |res_id| and input operands: |in_operands|.
@@ -103,11 +104,16 @@ class Instruction {
   void SetOpcode(SpvOp op) { opcode_ = op; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
-  // Returns the vector of line-related debug instructions attached to this
+  // Returns the vector of embedded debug instructions attached to this
   // instruction and the caller can directly modify them.
-  std::vector<Instruction>& dbg_line_insts() { return dbg_line_insts_; }
+  std::vector<Instruction>& embedded_debug_insts() { return embedded_debug_insts_; }
+  const std::vector<Instruction>& embedded_debug_insts() const {
+    return embedded_debug_insts_;
+  }
+  // These are deprecated now.  Use embedded_debug_insts() instead.
+  std::vector<Instruction>& dbg_line_insts() { return embedded_debug_insts_; }
   const std::vector<Instruction>& dbg_line_insts() const {
-    return dbg_line_insts_;
+    return embedded_debug_insts_;
   }
 
   // Begin and end iterators for operands.
@@ -187,10 +193,10 @@ class Instruction {
   uint32_t result_id_;  // Result id. A value of 0 means no result id.
   // All logical operands, including result type id and result id.
   std::vector<Operand> operands_;
-  // Opline and OpNoLine instructions preceding this instruction. Note that for
-  // Instructions representing OpLine or OpNonLine itself, this field should be
-  // empty.
-  std::vector<Instruction> dbg_line_insts_;
+  // Opline, OpNoLine, and OpModuleProcessed instructions preceding this
+  // instruction.  Note that for Instructions representing OpLine, OpNonLine,
+  // or OpModuleProcessed itself, this field should be empty.
+  std::vector<Instruction> embedded_debug_insts_;
 };
 
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
@@ -234,7 +240,7 @@ inline void Instruction::ToNop() {
 inline void Instruction::ForEachInst(const std::function<void(Instruction*)>& f,
                                      bool run_on_debug_line_insts) {
   if (run_on_debug_line_insts)
-    for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
+    for (auto& inst : embedded_debug_insts_) f(&inst);
   f(this);
 }
 
@@ -242,7 +248,7 @@ inline void Instruction::ForEachInst(
     const std::function<void(const Instruction*)>& f,
     bool run_on_debug_line_insts) const {
   if (run_on_debug_line_insts)
-    for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
+    for (auto& inst : embedded_debug_insts_) f(&inst);
   f(this);
 }
 

@@ -72,8 +72,10 @@ class IrLoader {
   std::unique_ptr<Function> function_;
   // The current BasicBlock under construction.
   std::unique_ptr<BasicBlock> block_;
-  // Line related debug instructions accumulated thus far.
-  std::vector<Instruction> dbg_line_info_;
+  // Embedded debug instructions accumulated thus far.
+  // An "embedded" debug instruction may appear anywhere in the module.
+  // These include OpLine, OpNoLine, and OpModuleProcessed instructions.
+  std::vector<Instruction> embedded_debug_insts_;
 };
 
 }  // namespace ir

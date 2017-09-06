@@ -28,8 +28,9 @@ inline bool IsDebugInst(SpvOp opcode) {
   return (opcode >= SpvOpSourceContinued && opcode <= SpvOpLine) ||
          opcode == SpvOpNoLine || opcode == SpvOpModuleProcessed;
 }
-inline bool IsDebugLineInst(SpvOp opcode) {
-  return opcode == SpvOpLine || opcode == SpvOpNoLine;
+inline bool IsEmbeddedDebugInst(SpvOp opcode) {
+  return opcode == SpvOpLine || opcode == SpvOpNoLine ||
+         opcode == SpvOpModuleProcessed;
 }
 inline bool IsAnnotationInst(SpvOp opcode) {
   return opcode >= SpvOpDecorate && opcode <= SpvOpGroupMemberDecorate;
