@@ -59,34 +59,51 @@ class LinkerTest : public ::testing::Test {
     linker_.SetMessageConsumer(consumer);
   }
 
-  virtual void SetUp() {}
-  virtual void TearDown() { error_message_.clear(); }
+  virtual void TearDown() override { error_message_.clear(); }
 
-  spv_result_t Link(const std::vector<std::string>& bodies, spvtest::Binary& linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
+  // Assembles each of the given strings into SPIR-V binaries before linking
+  // them together. SPV_ERROR_INVALID_TEXT is returned if the assembling failed
+  // for any of the input strings, and SPV_ERROR_INVALID_POINTER if
+  // |linked_binary| is a null pointer.
+  spv_result_t Link(const std::vector<std::string>& bodies, spvtest::Binary* linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
+    if (!linked_binary)
+      return SPV_ERROR_INVALID_POINTER;
+
     spvtest::Binaries binaries(bodies.size());
     for (size_t i = 0u; i < bodies.size(); ++i)
       if (!tools_.Assemble(bodies[i], binaries.data() + i, assemble_options_))
         return SPV_ERROR_INVALID_TEXT;
 
-    return linker_.Link(binaries, linked_binary, options);
+    return linker_.Link(binaries, *linked_binary, options);
   }
 
-  spv_result_t Link(const spvtest::Binaries& binaries, spvtest::Binary& linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
-    return linker_.Link(binaries, linked_binary, options);
+  // Links the given SPIR-V binaries together; SPV_ERROR_INVALID_POINTER is
+  // returned if |linked_binary| is a null pointer.
+  spv_result_t Link(const spvtest::Binaries& binaries, spvtest::Binary* linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
+    if (!linked_binary)
+      return SPV_ERROR_INVALID_POINTER;
+    return linker_.Link(binaries, *linked_binary, options);
   }
 
-  spv_result_t Disassemble(const spvtest::Binary& binary, std::string& text) {
-    return tools_.Disassemble(binary, &text, disassemble_options_) ? SPV_SUCCESS : SPV_ERROR_INVALID_BINARY;
+  // Disassembles |binary| and outputs the result in |text|. If |text| is a
+  // null pointer, SPV_ERROR_INVALID_POINTER is returned.
+  spv_result_t Disassemble(const spvtest::Binary& binary, std::string* text) {
+    if (!text)
+      return SPV_ERROR_INVALID_POINTER;
+    return tools_.Disassemble(binary, text, disassemble_options_) ? SPV_SUCCESS : SPV_ERROR_INVALID_BINARY;
   }
 
+  // Sets the options for the assembler.
   void SetAssembleOptions(uint32_t assemble_options) {
     assemble_options_ = assemble_options;
   }
 
+  // Sets the options used by the disassembler.
   void SetDisassembleOptions(uint32_t disassemble_options) {
     disassemble_options_ = disassemble_options;
   }
 
+  // Returns the accumulated error messages for the test.
   std::string GetErrorMessage() const {
     return error_message_;
   }

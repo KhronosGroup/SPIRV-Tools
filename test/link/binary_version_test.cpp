@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "gmock/gmock.h"
-#include "linker_test.h"
+#include "linker_fixture.h"
 
 namespace {
 
@@ -44,7 +44,7 @@ TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
   };
   spvtest::Binary linked_binary;
 
-  ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 
   ASSERT_EQ(0x00000600u, linked_binary[1]);
