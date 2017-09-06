@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "spirv/1.2/spirv.h"
 

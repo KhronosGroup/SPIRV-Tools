@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <unordered_set>
 
 #include "util/huffman_codec.h"
 
@@ -26,20 +27,34 @@ inline uint64_t GetMarkvNonOfTheAbove() {
   return 1111111111111111111;
 }
 
+// Returns of histogram of CombineOpcodeAndNumOperands(opcode, num_operands).
 std::map<uint64_t, uint32_t> GetOpcodeAndNumOperandsHist();
 
+// Returns Huffman codecs based on a Markov chain of histograms of
+// CombineOpcodeAndNumOperands(opcode, num_operands).
+// Map prev_opcode -> codec.
 std::map<uint32_t, std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
-GetOpcodeAndNumOperandsMarkovHuffmanCodecs();
+    GetOpcodeAndNumOperandsMarkovHuffmanCodecs();
 
+// Returns Huffman codecs for literal strings.
+// Map opcode -> codec.
 std::map<uint32_t, std::unique_ptr<spvutils::HuffmanCodec<std::string>>>
-GetLiteralStringHuffmanCodecs();
+    GetLiteralStringHuffmanCodecs();
 
+// Returns Huffman codecs for single-word non-id operand slots.
+// Map <opcode, operand_index> -> codec.
 std::map<std::pair<uint32_t, uint32_t>,
     std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
     GetNonIdWordHuffmanCodecs();
 
-    std::map<std::pair<uint32_t, uint32_t>,
+// Returns Huffman codecs for id descriptors used by common operand slots.
+// Map <opcode, operand_index> -> codec.
+std::map<std::pair<uint32_t, uint32_t>,
     std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>>
     GetIdDescriptorHuffmanCodecs();
+
+// Returns a set of all descriptors which are encodable by at least one codec
+// returned by GetIdDescriptorHuffmanCodecs().
+std::unordered_set<uint32_t> GetDescriptorsWithCodingScheme();
 
 #endif  // LIBSPIRV_COMP_MARKV_AUTOGEN_H_
