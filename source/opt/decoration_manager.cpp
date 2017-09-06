@@ -87,9 +87,41 @@ std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
   return decorations;
 }
 
+std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
+    uint32_t id, bool include_linkage) const {
+  std::vector<const ir::Instruction*> decorations;
+  std::stack<uint32_t> ids_to_process;
+  ids_to_process.push(id);
+  const auto process = [&ids_to_process,&decorations](ir::Instruction* inst){
+    if (inst->opcode() == SpvOpGroupDecorate || inst->opcode() == SpvOpGroupMemberDecorate)
+      ids_to_process.push(inst->GetSingleWordInOperand(0u));
+    else
+      decorations.push_back(inst);
+  };
+  while (!ids_to_process.empty()) {
+    const uint32_t id_to_process = ids_to_process.top();
+    ids_to_process.pop();
+    const auto group_iter = group_to_decoration_insts_.find(id_to_process);
+    if (group_iter != group_to_decoration_insts_.end()) {
+      for (ir::Instruction* inst : group_iter->second)
+        process(inst);
+    } else {
+      const auto ids_iter = id_to_decoration_insts_.find(id_to_process);
+      if (ids_iter == id_to_decoration_insts_.end())
+        return std::vector<const ir::Instruction*>();
+      for (ir::Instruction* inst : ids_iter->second) {
+        const bool is_linkage = inst->opcode() == SpvOpDecorate && inst->GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes;
+        if (include_linkage || !is_linkage)
+          process(inst);
+      }
+    }
+  }
+  return decorations;
+}
+
 // TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
 //                     deco2 } when it should return false.
-bool DecorationManager::HaveTheSameDecorations(uint32_t id1, uint32_t id2) {
+bool DecorationManager::HaveTheSameDecorations(uint32_t id1, uint32_t id2) const {
   const auto decorationsFor1 = GetDecorationsFor(id1, false);
   const auto decorationsFor2 = GetDecorationsFor(id2, false);
   if (decorationsFor1.size() != decorationsFor2.size())
@@ -111,7 +143,7 @@ bool DecorationManager::HaveTheSameDecorations(uint32_t id1, uint32_t id2) {
 
 // TODO(pierremoreau): Handle SpvOpDecorateId by converting them to a regular
 //                     SpvOpDecorate.
-bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1, const ir::Instruction* inst2) {
+bool DecorationManager::AreDecorationsTheSame(const ir::Instruction* inst1, const ir::Instruction* inst2) const {
 //  const auto decorateIdToDecorate = [&constants](const Instruction& inst) {
 //    std::vector<Operand> operands;
 //    operands.reserve(inst.NumInOperands());

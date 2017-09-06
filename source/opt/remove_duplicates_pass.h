@@ -17,6 +17,7 @@
 
 #include <unordered_map>
 
+#include "decoration_manager.h"
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
@@ -32,24 +33,19 @@ class RemoveDuplicatesPass : public Pass {
  public:
   const char* name() const override { return "remove-duplicates"; }
   Status Process(ir::Module*) override;
+  // Returns whether two types are equal, and have the same decorations.
   static bool AreTypesEqual(const ir::Instruction& inst1,
                             const ir::Instruction& inst2,
-                            const analysis::DefUseManager& defUseManager);
-  static IdDecorationsList GetDecorationsForId(SpvId id, ir::Module* module);
-
-  // Remove the whole instruction for SpvOpDecorate, SpvDecorateId and
-  // SpvMemberDecorate. For group decorations, juste remove the ID (and its
-  // structure index if present) from the list.
-  static void RemoveDecorationsFor(SpvId id, ir::Module* module);
-
-  static bool HaveIdsSimilarDecorations(SpvId id1, SpvId id2, ir::Module* module);
+                            const analysis::DefUseManager& defUseManager,
+                            const analysis::DecorationManager& decoManager);
 
  private:
   bool RemoveDuplicateCapabilities(ir::Module* module) const;
   bool RemoveDuplicatesExtInstImports(
       ir::Module* module, analysis::DefUseManager& defUseManager) const;
   bool RemoveDuplicateTypes(ir::Module* module,
-                            analysis::DefUseManager& defUseManager) const;
+                            analysis::DefUseManager& defUseManager,
+                            analysis::DecorationManager& decManager) const;
   bool RemoveDuplicateDecorations(ir::Module* module) const;
 };
 

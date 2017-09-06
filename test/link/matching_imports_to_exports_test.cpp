@@ -221,7 +221,7 @@ OpDecorate %1 LinkageAttributes "foo" Export
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, Link({ body1, body2 }, linked_binary))
     << GetErrorMessage();
-  EXPECT_THAT(GetErrorMessage(), HasSubstr("Decorations mismatch between the type of imported variable/function %1 and the type of exported variable/function %4."));
+  EXPECT_THAT(GetErrorMessage(), HasSubstr("Type mismatch between imported variable/function %1 and exported variable/function %4."));
 }
 
 TEST_F(MatchingImportsToExports, FuncParamAttr) {
