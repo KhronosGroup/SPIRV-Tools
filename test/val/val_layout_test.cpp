@@ -34,8 +34,9 @@ using std::tie;
 using std::tuple;
 using std::vector;
 
-using ::testing::StrEq;
+using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::StrEq;
 using libspirv::spvResultToString;
 
 using pred_type = function<spv_result_t(int)>;
@@ -490,6 +491,55 @@ TEST_F(ValidateEntryPoint, NoEntryPointWithLinkageCapGood) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+// OpModuleProcessed
+
+// Returns the assembly for a module with OpModuleProcessed in
+// many places.
+std::string GetModuleWithModuleProcessed() {
+  return R"(
+           OpCapability Shader
+           OpModuleProcessed "in capabilities"
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+           OpName %voidt "void"
+           OpModuleProcessed "in debug"
+           OpName %funct "func"
+%voidt   = OpTypeVoid
+           OpModuleProcessed "in types"
+%funct   = OpTypeFunction %voidt
+%foo     = OpFunction %voidt None %funct
+           OpModuleProcessed "in function before label"
+%entry   = OpLabel
+           OpModuleProcessed "in block"
+           OpReturn
+           OpModuleProcessed "after last block before function"
+           OpFunctionEnd
+           OpModuleProcessed "at end"
+  )";
+}
+
+using ValidateModuleProcessed = spvtest::ValidateBase<bool>;
+
+TEST_F(ValidateModuleProcessed, OkAnywhereInSPIRV11) {
+  CompileSuccessfully(GetModuleWithModuleProcessed(), SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateModuleProcessed, OkAnywhereInSPIRV12) {
+  CompileSuccessfully(GetModuleWithModuleProcessed(), SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateModuleProcessed, FailsIn10) {
+  CompileSuccessfully(GetModuleWithModuleProcessed(), SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  // We could do better on the message.  But this will do.
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Invalid opcode"));
+}
+
 
 // TODO(umar): Test optional instructions
 }
