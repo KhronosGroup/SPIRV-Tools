@@ -1202,8 +1202,6 @@ void MarkvCodecBase::ProcessCurInstruction() {
 
 uint64_t MarkvCodecBase::GetRuleBasedMtf() {
   // This function is only called for id operands (but not result ids).
-  // TODO(atgoo@github.com) Clarify why SPV_OPERAND_TYPE_OPTIONAL_ID is not
-  // considered id type by spvIsIdType.
   assert(spvIsIdType(operand_.type) ||
          operand_.type == SPV_OPERAND_TYPE_OPTIONAL_ID);
   assert(operand_.type != SPV_OPERAND_TYPE_RESULT_ID);
