@@ -333,27 +333,36 @@ class ValidationState_t {
 
   // Returns type_id of the scalar component of |id|.
   // |id| can be either
-  // - vector type
-  // - matrix type
-  // - object of either vector or matrix type
+  // - scalar, vector or matrix type
+  // - object of either scalar, vector or matrix type
   uint32_t GetComponentType(uint32_t id) const;
 
-  // Returns dimension of scalar, vector or matrix type or object. Will invoke
-  // assertion and return 0 if |id| is none of the above.
-  // In case of matrix returns number of columns.
+  // Returns
+  // - 1 for scalar types or objects
+  // - vector size for vector types or objects
+  // - num columns for matrix types or objects
+  // Should not be called with any other arguments (will return zero and invoke
+  // assertion).
   uint32_t GetDimension(uint32_t id) const;
 
   // Returns bit width of scalar or component.
   // |id| can be
-  // - scalar type or object
-  // - vector or matrix type or object
+  // - scalar, vector or matrix type
+  // - object of either scalar, vector or matrix type
   // Will invoke assertion and return 0 if |id| is none of the above.
   uint32_t GetBitWidth(uint32_t id) const;
+
+  // Provides detailed information on matrix type.
+  // Returns false iff |id| is not matrix type.
+  bool GetMatrixTypeInfo(
+      uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
+      uint32_t* column_type, uint32_t* component_type) const;
 
   // Returns true iff |id| is a type corresponding to the name of the function.
   // Only works for types not for objects.
   bool IsFloatScalarType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
+  bool IsFloatMatrixType(uint32_t id) const;
   bool IsIntScalarType(uint32_t id) const;
   bool IsIntVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;

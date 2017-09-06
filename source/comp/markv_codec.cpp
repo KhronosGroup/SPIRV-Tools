@@ -1290,8 +1290,10 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
     }
 
     case SpvOpVectorTimesScalar: {
-      if (operand_index_ == 0)
+      if (operand_index_ == 0) {
+        // TODO(atgoo@github.com) Could be narrowed to vector of floats.
         return GetMtfIdGeneratedByOpcode(SpvOpTypeVector);
+      }
 
       assert(inst_.type_id);
       if (operand_index_ == 2)
