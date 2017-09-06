@@ -333,8 +333,9 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Ensure the import and export types are similar
+  opt::analysis::DecorationManager decorationManager(impl_->context->consumer, linkedModule.get());
   for (const auto&i : linkingsToDo) {
-    if (!RemoveDuplicatesPass::AreTypesEqual(*defUseManager.GetDef(i.first.typeId), *defUseManager.GetDef(i.second.typeId), defUseManager))
+    if (!RemoveDuplicatesPass::AreTypesEqual(*defUseManager.GetDef(i.first.typeId), *defUseManager.GetDef(i.second.typeId), defUseManager, decorationManager))
       return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                         SPV_ERROR_INVALID_BINARY)
              << "Type mismatch between imported variable/function %" << i.first.id
@@ -343,18 +344,12 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
 
   // Ensure the import and export decorations are similar
-  opt::analysis::DecorationManager decorationManager(impl_->context->consumer, linkedModule.get());
   for (const auto& i : linkingsToDo) {
     if (!decorationManager.HaveTheSameDecorations(i.first.id, i.second.id))
         return libspirv::DiagnosticStream(position, impl_->context->consumer,
                                           SPV_ERROR_INVALID_BINARY)
                << "Decorations mismatch between imported variable/function %" << i.first.id
                << " and exported variable/function %" << i.second.id << ".";
-    if (!decorationManager.HaveTheSameDecorations(i.first.typeId, i.second.typeId))
-        return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                          SPV_ERROR_INVALID_BINARY)
-               << "Decorations mismatch between the type of imported variable/function %" << i.first.id
-               << " and the type of exported variable/function %" << i.second.id << ".";
     // TODO(pierremoreau): Decorations on function parameters should probably
     //                     match, except for FuncParamAttr if I understand the
     //                     spec correctly, which makes the code more

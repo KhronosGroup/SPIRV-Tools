@@ -44,14 +44,15 @@ class DecorationManager {
   // decoration instruction. If |include_linkage| is not set, linkage
   // decorations won't be returned.
   std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id, bool include_linkage);
+  std::vector<const ir::Instruction*> GetDecorationsFor(uint32_t id, bool include_linkage) const;
   // Returns whether two IDs have the same decorations. Two SpvOpGroupDecorate
   // instructions that apply the same decorations but to different IDs, still
   // count as being the same.
-  bool HaveTheSameDecorations(uint32_t id1, uint32_t id2);
+  bool HaveTheSameDecorations(uint32_t id1, uint32_t id2) const;
   // Returns whether two decorations are the same. SpvOpDecorateId is currently
   // not handled and will return false no matter what.
   bool AreDecorationsTheSame(const ir::Instruction* inst1,
-                             const ir::Instruction* inst2);
+                             const ir::Instruction* inst2) const;
 
  private:
   using IdToDecorationInstsMap =

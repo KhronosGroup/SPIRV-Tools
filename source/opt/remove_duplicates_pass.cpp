@@ -32,13 +32,15 @@ using ir::Instruction;
 using ir::Module;
 using ir::Operand;
 using opt::analysis::DefUseManager;
+using opt::analysis::DecorationManager;
 
 Pass::Status RemoveDuplicatesPass::Process(Module* module) {
   DefUseManager defUseManager(consumer(), module);
+  DecorationManager decManager(consumer(), module);
 
   bool modified  = RemoveDuplicateCapabilities(module);
        modified |= RemoveDuplicatesExtInstImports(module, defUseManager);
-       modified |= RemoveDuplicateTypes(module, defUseManager);
+       modified |= RemoveDuplicateTypes(module, defUseManager, decManager);
        modified |= RemoveDuplicateDecorations(module);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
@@ -90,7 +92,7 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    Module* module, analysis::DefUseManager& defUseManager) const {
+    Module* module, DefUseManager& defUseManager, DecorationManager& decManager) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
@@ -108,7 +110,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
     for (auto j : visitedTypes) {
-      if (AreTypesEqual(*i, j, defUseManager)) {
+      if (AreTypesEqual(*i, j, defUseManager, decManager)) {
         idToKeep = j.result_id();
         break;
       }
@@ -170,13 +172,13 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(ir::Module* module) const 
   return modified;
 }
 
-// TODO(pierremoreau): take decorations into account
-// Returns whether two types are equal, decorations not taken into account
-// yet.
 bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
                                          const Instruction& inst2,
-                                         const DefUseManager& defUseManager) {
+                                         const DefUseManager& defUseManager,
+                                         const DecorationManager& decManager) {
   if (inst1.opcode() != inst2.opcode()) return false;
+  if (!decManager.HaveTheSameDecorations(inst1.result_id(), inst2.result_id()))
+    return false;
 
   switch (inst1.opcode()) {
     case SpvOpTypeVoid:
@@ -204,14 +206,14 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
       return AreTypesEqual(
                  *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
                  *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager) &&
+                 defUseManager, decManager) &&
              inst1.GetSingleWordInOperand(1u) ==
                  inst2.GetSingleWordInOperand(1u);
     case SpvOpTypeImage:
       return AreTypesEqual(
                  *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
                  *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager) &&
+                 defUseManager, decManager) &&
              inst1.GetSingleWordInOperand(1u) ==
                  inst2.GetSingleWordInOperand(1u) &&
              inst1.GetSingleWordInOperand(2u) ==
@@ -233,16 +235,16 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
       return AreTypesEqual(
           *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
           *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-          defUseManager);
+          defUseManager, decManager);
     case SpvOpTypeArray:
       return AreTypesEqual(
                  *defUseManager.GetDef(inst1.GetSingleWordInOperand(0u)),
                  *defUseManager.GetDef(inst2.GetSingleWordInOperand(0u)),
-                 defUseManager) &&
+                 defUseManager, decManager) &&
              AreTypesEqual(
                  *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
                  *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
-                 defUseManager);
+                 defUseManager, decManager);
     case SpvOpTypeStruct:
     case SpvOpTypeFunction: {
       bool res = inst1.NumInOperands() == inst2.NumInOperands();
@@ -250,7 +252,7 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
         res &= AreTypesEqual(
             *defUseManager.GetDef(inst1.GetSingleWordInOperand(i)),
             *defUseManager.GetDef(inst2.GetSingleWordInOperand(i)),
-            defUseManager);
+            defUseManager, decManager);
       return res;
     }
     case SpvOpTypeOpaque:
@@ -264,7 +266,7 @@ bool RemoveDuplicatesPass::AreTypesEqual(const Instruction& inst1,
              AreTypesEqual(
                  *defUseManager.GetDef(inst1.GetSingleWordInOperand(1u)),
                  *defUseManager.GetDef(inst2.GetSingleWordInOperand(1u)),
-                 defUseManager);
+                 defUseManager, decManager);
     default:
       return false;
   }
