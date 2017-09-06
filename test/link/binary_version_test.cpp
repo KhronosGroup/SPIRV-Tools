@@ -17,41 +17,31 @@
 
 namespace {
 
-class BinaryVersion : public spvtest::LinkerTest {
- public:
-  BinaryVersion() { binaries.reserve(3); }
+using BinaryVersion = spvtest::LinkerTest;
 
-  virtual void SetUp() {
-    binaries.push_back({
+TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
+  spvtest::Binaries binaries = { {
       SpvMagicNumber,
       0x00000300u,
       SPV_GENERATOR_CODEPLAY,
       1u,  // NOTE: Bound
       0u   // NOTE: Schema; reserved
-      });
-
-    binaries.push_back({
+    },
+    {
       SpvMagicNumber,
       0x00000600u,
       SPV_GENERATOR_CODEPLAY,
       1u,  // NOTE: Bound
       0u   // NOTE: Schema; reserved
-      });
-
-    binaries.push_back({
+    },
+    {
       SpvMagicNumber,
       0x00000100u,
       SPV_GENERATOR_CODEPLAY,
       1u,  // NOTE: Bound
       0u   // NOTE: Schema; reserved
-      });
-  }
-  virtual void TearDown() { binaries.clear(); }
-
-  spvtest::Binaries binaries;
-};
-
-TEST_F(BinaryVersion, Default) {
+    }
+  };
   spvtest::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, linked_binary));
