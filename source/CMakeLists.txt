@@ -255,11 +255,12 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_arithmetics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_cfg.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_capability.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_datarules.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_decorations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_logicals.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_type_unique.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/decoration.h
   ${CMAKE_CURRENT_SOURCE_DIR}/val/basic_block.cpp
