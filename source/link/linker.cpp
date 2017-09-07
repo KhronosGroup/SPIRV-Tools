@@ -333,7 +333,7 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   }
 
   // Ensure the import and export types are similar
-  opt::analysis::DecorationManager decorationManager(impl_->context->consumer, linkedModule.get());
+  opt::analysis::DecorationManager decorationManager(linkedModule.get());
   for (const auto&i : linkingsToDo) {
     if (!RemoveDuplicatesPass::AreTypesEqual(*defUseManager.GetDef(i.first.typeId), *defUseManager.GetDef(i.second.typeId), defUseManager, decorationManager))
       return libspirv::DiagnosticStream(position, impl_->context->consumer,

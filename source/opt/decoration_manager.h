@@ -28,14 +28,8 @@ namespace analysis {
 // A class for analyzing and managing decorations in an ir::Module.
 class DecorationManager {
  public:
-  // Constructs a decoration manager from the given |module|. All internal
-  // messages will be communicated to the outside via the given message
-  // |consumer|. This instance only keeps a reference to the |consumer|, so the
-  // |consumer| should outlive this instance.
-  DecorationManager(const MessageConsumer& consumer, ir::Module* module)
-      : consumer_(consumer) {
-    AnalyzeDecorations(module);
-  }
+  // Constructs a decoration manager from the given |module|
+  DecorationManager(ir::Module* module) { AnalyzeDecorations(module); }
   // Removes all decorations from |id|, which should not be a group ID, except
   // for linkage decorations if |keep_linkage| is set.
   void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
@@ -43,8 +37,10 @@ class DecorationManager {
   // to |id|, the decorations of that group are returned rather than the group
   // decoration instruction. If |include_linkage| is not set, linkage
   // decorations won't be returned.
-  std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id, bool include_linkage);
-  std::vector<const ir::Instruction*> GetDecorationsFor(uint32_t id, bool include_linkage) const;
+  std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id,
+                                                  bool include_linkage);
+  std::vector<const ir::Instruction*> GetDecorationsFor(
+      uint32_t id, bool include_linkage) const;
   // Returns whether two IDs have the same decorations. Two SpvOpGroupDecorate
   // instructions that apply the same decorations but to different IDs, still
   // count as being the same.
@@ -61,7 +57,6 @@ class DecorationManager {
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDecorations(ir::Module* module);
 
-  const MessageConsumer& consumer_;  // Message consumer.
   // Mapping from ids to the instructions applying a decoration to them. In
   // other words, for each id you get all decoration instructions referencing
   // that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate and
