@@ -1878,7 +1878,9 @@ TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpSelectGood) {
 
 // Without the VariablePointers Capability, OpLoad will not allow loading
 // through a variable pointer.
-TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpSelectBad) {
+// Disabled since using OpSelect with pointers without VariablePointers will
+// fail LogicalsPass.
+TEST_F(ValidateIdWithMessage, DISABLED_OpLoadVarPtrOpSelectBad) {
   std::string result_strategy = R"(
     %isneg     = OpSLessThan %bool %i %zero
     %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
@@ -2086,7 +2088,9 @@ TEST_F(ValidateIdWithMessage, OpStoreLogicalPointerBad) {
 
 // Without the VariablePointer Capability, OpStore should may not store
 // through a variable pointer.
-TEST_F(ValidateIdWithMessage, OpStoreVarPtrBad) {
+// Disabled since using OpSelect with pointers without VariablePointers will
+// fail LogicalsPass.
+TEST_F(ValidateIdWithMessage, DISABLED_OpStoreVarPtrBad) {
   std::string result_strategy = R"(
     %isneg     = OpSLessThan %bool %i %zero
     %varptr    = OpSelect %f32ptr %isneg %ptr1 %ptr2
@@ -3134,7 +3138,9 @@ OpFunctionEnd)";
 // However, the OpSelect validation does not catch this today. Therefore, it is
 // caught by the OpSampledImage validation. If the OpSelect validation code is
 // updated, the error message for this test may change.
-TEST_F(ValidateIdWithMessage, OpSampledImageUsedInOpSelectBad) {
+//
+// Disabled since OpSelect catches this now.
+TEST_F(ValidateIdWithMessage, DISABLED_OpSampledImageUsedInOpSelectBad) {
   string spirv = kGLSL450MemoryModel + sampledImageSetup + R"(
 %smpld_img  = OpSampledImage %sampled_image_type %image_inst %sampler_inst
 %select_img = OpSelect %sampled_image_type %spec_true %smpld_img %smpld_img
@@ -3820,7 +3826,9 @@ TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrGood) {
 
 // Without the VariablePointer Capability, the return value of a function is
 // *not* allowed to be a pointer.
-TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrBad) {
+// Disabled since using OpSelect with pointers without VariablePointers will
+// fail LogicalsPass.
+TEST_F(ValidateIdWithMessage, DISABLED_OpReturnValueVarPtrBad) {
   std::ostringstream spirv;
   createVariablePointerSpirvProgram(&spirv,
                                     ""    /* Instructions to add to "main" */,

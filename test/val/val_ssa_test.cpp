@@ -1080,7 +1080,7 @@ TEST_F(ValidateSSA, IdDominatesItsUseGood) {
                R"(
 %func      = OpFunction %voidt None %vfunct
 %entry     = OpLabel
-%cond      = OpSLessThan %uintt %one %ten
+%cond      = OpSLessThan %boolt %one %ten
 %eleven    = OpIAdd %uintt %one %ten
              OpSelectionMerge %merge None
              OpBranchConditional %cond %t %f
@@ -1108,7 +1108,7 @@ TEST_F(ValidateSSA, IdDoesNotDominateItsUseBad) {
                R"(
 %func        = OpFunction %voidt None %vfunct
 %entry       = OpLabel
-%cond        = OpSLessThan %uintt %one %ten
+%cond        = OpSLessThan %boolt %one %ten
                OpSelectionMerge %merge None
                OpBranchConditional %cond %true_block %false_block
 %true_block  = OpLabel
@@ -1140,7 +1140,7 @@ TEST_F(ValidateSSA, PhiUseDoesntDominateDefinitionGood) {
                OpBranch %loop
 %loop        = OpLabel
 %i           = OpPhi %uintt %one_val %entry %inew %cont
-%cond        = OpSLessThan %uintt %one %ten
+%cond        = OpSLessThan %boolt %one %ten
                OpLoopMerge %merge %cont None
                OpBranchConditional %cond %body %merge
 %body        = OpLabel
@@ -1169,7 +1169,7 @@ TEST_F(ValidateSSA,
 %loop        = OpLabel
 %i           = OpPhi %uintt %one_val %entry %inew %cont
 %bad         = OpIAdd %uintt %inew %one
-%cond        = OpSLessThan %uintt %one %ten
+%cond        = OpSLessThan %boolt %one %ten
                OpLoopMerge %merge %cont None
                OpBranchConditional %cond %body %merge
 %body        = OpLabel

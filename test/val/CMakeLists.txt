@@ -81,6 +81,12 @@ add_spvtools_unittest(TARGET val_arithmetics
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_logicals
+	SRCS val_logicals_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_limits
 	SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}
