@@ -62,6 +62,10 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
         default: break;
       }
       break;
+    case kLayoutDebug3:
+      // Only OpModuleProcessed is allowed here.
+      out = (op == SpvOpModuleProcessed);
+      break;
     case kLayoutAnnotations:
       switch (op) {
         case SpvOpDecorate:
@@ -110,6 +114,7 @@ bool IsInstructionInLayoutSection(ModuleLayoutSection layout, SpvOp op) {
         case SpvOpString:
         case SpvOpName:
         case SpvOpMemberName:
+        case SpvOpModuleProcessed:
         case SpvOpDecorate:
         case SpvOpMemberDecorate:
         case SpvOpGroupDecorate:

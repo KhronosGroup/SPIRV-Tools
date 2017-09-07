@@ -46,6 +46,7 @@ enum ModuleLayoutSection {
   kLayoutExecutionMode,         /// < Section 2.4 #6
   kLayoutDebug1,                /// < Section 2.4 #7 > 1
   kLayoutDebug2,                /// < Section 2.4 #7 > 2
+  kLayoutDebug3,                /// < Section 2.4 #7 > 3
   kLayoutAnnotations,           /// < Section 2.4 #8
   kLayoutTypes,                 /// < Section 2.4 #9
   kLayoutFunctionDeclarations,  /// < Section 2.4 #10

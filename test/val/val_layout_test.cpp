@@ -34,8 +34,9 @@ using std::tie;
 using std::tuple;
 using std::vector;
 
-using ::testing::StrEq;
+using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::StrEq;
 using libspirv::spvResultToString;
 
 using pred_type = function<spv_result_t(int)>;
@@ -490,6 +491,115 @@ TEST_F(ValidateEntryPoint, NoEntryPointWithLinkageCapGood) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+
+TEST_F(ValidateLayout, ModuleProcessedInvalidIn10) {
+  char str[] = R"(
+           OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+           OpName %void "void"
+           OpModuleProcessed "this is ok in 1.1 and later"
+           OpDecorate %void Volatile ; bogus, but makes the example short
+%void    = OpTypeVoid
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  // In a 1.0 environment the binary parse fails before we even get to
+  // validation.  This occurs no matter where the OpModuleProcessed is placed.
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Invalid opcode: 330"));
+}
+
+TEST_F(ValidateLayout, ModuleProcessedValidIn11) {
+  char str[] = R"(
+           OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+           OpName %void "void"
+           OpModuleProcessed "this is ok in 1.1 and later"
+           OpDecorate %void Volatile ; bogus, but makes the example short
+%void    = OpTypeVoid
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateLayout, ModuleProcessedBeforeLastNameIsTooEarly) {
+  char str[] = R"(
+           OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+           OpModuleProcessed "this is too early"
+           OpName %void "void"
+%void    = OpTypeVoid
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  // By the mechanics of the validator, we assume ModuleProcessed is in the
+  // right spot, but then that OpName is in the wrong spot.
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Name cannot appear in a function declaration"));
+}
+
+TEST_F(ValidateLayout, ModuleProcessedInvalidAfterFirstAnnotation) {
+  char str[] = R"(
+           OpCapability Shader
+           OpCapability Linkage
+           OpMemoryModel Logical GLSL450
+           OpDecorate %void Volatile ; this is bogus, but keeps the example short
+           OpModuleProcessed "this is too late"
+%void    = OpTypeVoid
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+}
+
+TEST_F(ValidateLayout, ModuleProcessedInvalidInFunctionBeforeLabel) {
+  char str[] = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint GLCompute %main "main"
+%void    = OpTypeVoid
+%voidfn  = OpTypeFunction %void
+%main    = OpFunction %void None %voidfn
+           OpModuleProcessed "this is too late, in function before label"
+%entry  =  OpLabel
+           OpReturn
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+}
+
+TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
+  char str[] = R"(
+           OpCapability Shader
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint GLCompute %main "main"
+%void    = OpTypeVoid
+%voidfn  = OpTypeFunction %void
+%main    = OpFunction %void None %voidfn
+%entry   = OpLabel
+           OpModuleProcessed "this is too late, in basic block"
+           OpReturn
+           OpFunctionEnd
+)";
+
+  CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+}
+
 
 // TODO(umar): Test optional instructions
 }

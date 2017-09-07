@@ -50,7 +50,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
         }
         break;
       case kLayoutFunctionDeclarations:
-        // All module sections have been processed. Recursivly call
+        // All module sections have been processed. Recursively call
         // ModuleLayoutPass to process the next section of the module
         return libspirv::ModuleLayoutPass(_, inst);
       default:
@@ -190,6 +190,7 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
     case kLayoutExecutionMode:
     case kLayoutDebug1:
     case kLayoutDebug2:
+    case kLayoutDebug3:
     case kLayoutAnnotations:
     case kLayoutTypes:
       if (auto error = ModuleScopedInstructions(_, inst, opcode)) return error;
