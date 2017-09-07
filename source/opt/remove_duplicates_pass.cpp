@@ -36,18 +36,17 @@ using opt::analysis::DecorationManager;
 
 Pass::Status RemoveDuplicatesPass::Process(Module* module) {
   DefUseManager defUseManager(consumer(), module);
-  DecorationManager decManager(consumer(), module);
+  DecorationManager decManager(module);
 
-  bool modified  = RemoveDuplicateCapabilities(module);
-       modified |= RemoveDuplicatesExtInstImports(module, defUseManager);
-       modified |= RemoveDuplicateTypes(module, defUseManager, decManager);
-       modified |= RemoveDuplicateDecorations(module);
+  bool modified = RemoveDuplicateCapabilities(module);
+  modified |= RemoveDuplicatesExtInstImports(module, defUseManager);
+  modified |= RemoveDuplicateTypes(module, defUseManager, decManager);
+  modified |= RemoveDuplicateDecorations(module);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
-    Module* module) const {
+bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(Module* module) const {
   bool modified = false;
 
   std::unordered_set<uint32_t> capabilities;
@@ -92,7 +91,8 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    Module* module, DefUseManager& defUseManager, DecorationManager& decManager) const {
+    Module* module, DefUseManager& defUseManager,
+    DecorationManager& decManager) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
@@ -131,25 +131,23 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
   return modified;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateDecorations(ir::Module* module) const {
+bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
+    ir::Module* module) const {
   bool modified = false;
 
   std::unordered_map<SpvId, const Instruction*> constants;
   for (const auto& i : module->types_values())
-    if (i.opcode() == SpvOpConstant)
-      constants[i.result_id()] = &i;
+    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
   for (const auto& i : module->types_values())
-    if (i.opcode() == SpvOpConstant)
-      constants[i.result_id()] = &i;
+    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
 
   std::vector<const Instruction*> visitedDecorations;
   visitedDecorations.reserve(module->annotations().size());
 
-  opt::analysis::DecorationManager decorationManager(consumer(), module);
-  for (auto i = module->annotation_begin();
-       i != module->annotation_end();) {
-
-    // Is the current decoration equal to one of the decorations we have aready visited?
+  opt::analysis::DecorationManager decorationManager(module);
+  for (auto i = module->annotation_begin(); i != module->annotation_end();) {
+    // Is the current decoration equal to one of the decorations we have aready
+    // visited?
     bool alreadyVisited = false;
     for (const Instruction* j : visitedDecorations) {
       if (decorationManager.AreDecorationsTheSame(&*i, j)) {
