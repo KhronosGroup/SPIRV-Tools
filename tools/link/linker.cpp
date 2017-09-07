@@ -33,7 +33,7 @@ NOTE: The linker is a work in progress.
 
 Options:
   -h, --help       Print this help.
-  -o, --outfile    Name of the resulting linked SPIR-V binary.
+  -o               Name of the resulting linked SPIR-V binary.
   --create-library Link the binaries into a library, keeping all exported symbols.
   --version        Display linker version information
   --target-env     {vulkan1.0|spv1.0|spv1.1|spv1.2|opencl2.1|opencl2.2}
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   for (int argi = 1; continue_processing && argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
-      if (0 == strcmp(cur_arg, "--output") || 0 == strcmp(cur_arg, "-o")) {
+      if (0 == strcmp(cur_arg, "-o")) {
         if (argi + 1 < argc) {
           if (!outFile) {
             outFile = argv[++argi];
