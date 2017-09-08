@@ -185,6 +185,12 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpSpecConstantOp.
 Optimizer::PassToken CreateEliminateDeadConstantPass();
 
+// Creates a strength-reduction pass.
+// A strength-reduction pass will look for opportunities to replace an
+// instruction with an equivalent and less expensive one.  For example,
+// multiplying by a power of 2 can be replaced by a bit shift.
+Optimizer::PassToken CreateStrengthReductionPass();
+
 // Creates a block merge pass.
 // This pass searches for blocks with a single Branch to a block with no
 // other predecessors and merges the blocks into a single block. Continue

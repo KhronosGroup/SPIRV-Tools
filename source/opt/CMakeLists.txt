@@ -45,6 +45,7 @@ add_library(SPIRV-Tools-opt
   passes.h
   pass_manager.h
   set_spec_constant_default_value_pass.h
+  strength_reduction_pass.h
   strip_debug_info_pass.h
   types.h
   type_manager.h
@@ -79,6 +80,7 @@ add_library(SPIRV-Tools-opt
   mem_pass.cpp
   pass.cpp
   pass_manager.cpp
+  strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
   types.cpp
   type_manager.cpp

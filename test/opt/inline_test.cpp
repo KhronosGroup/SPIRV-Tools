@@ -16,13 +16,6 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
-template <typename T> std::vector<T> concat(const std::vector<T> &a, const std::vector<T> &b) {
-    std::vector<T> ret = std::vector<T>();
-    std::copy(a.begin(), a.end(), back_inserter(ret));
-    std::copy(b.begin(), b.end(), back_inserter(ret));
-    return ret;
-}
-
 namespace {
 
 using namespace spvtools;
@@ -134,8 +127,8 @@ TEST_F(InlineTest, Simple) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -284,8 +277,8 @@ TEST_F(InlineTest, Nested) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -413,8 +406,8 @@ TEST_F(InlineTest, InOutParameter) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -549,8 +542,8 @@ TEST_F(InlineTest, BranchInCallee) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -744,8 +737,8 @@ TEST_F(InlineTest, PhiAfterCall) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -941,8 +934,8 @@ TEST_F(InlineTest, OpSampledImageOutOfBlock) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -1147,8 +1140,8 @@ TEST_F(InlineTest, OpImageOutOfBlock) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 
@@ -1353,8 +1346,8 @@ TEST_F(InlineTest, OpImageAndOpSampledImageOutOfBlock) {
       // clang-format on
   };
   SinglePassRunAndCheck<opt::InlineExhaustivePass>(
-      JoinAllInsts(concat(concat(predefs, before), nonEntryFuncs)),
-      JoinAllInsts(concat(concat(predefs, after), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, before), nonEntryFuncs)),
+      JoinAllInsts(Concat(Concat(predefs, after), nonEntryFuncs)),
       /* skip_nop = */ false, /* do_validate = */ true);
 }
 

@@ -112,6 +112,8 @@ Options:
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
                call tree functions.
+  --strength-reduction
+               Replaces instructions with equivalent and less expensive ones.
   -h, --help   
                Print this help.
   --version    
@@ -200,6 +202,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateEliminateDeadConstantPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
         optimizer.RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
+      } else if (0 == strcmp(cur_arg, "--strength-reduction")) {
+        optimizer.RegisterPass(CreateStrengthReductionPass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {
         optimizer.RegisterPass(CreateUnifyConstantPass());
       } else if (0 == strcmp(cur_arg, "--flatten-decorations")) {
