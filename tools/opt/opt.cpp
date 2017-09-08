@@ -200,6 +200,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateEliminateDeadConstantPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
         optimizer.RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
+      } else if (0 == strcmp(cur_arg, "--strength-reduction")) {
+        optimizer.RegisterPass(CreateStrengthReductionPass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {
         optimizer.RegisterPass(CreateUnifyConstantPass());
       } else if (0 == strcmp(cur_arg, "--flatten-decorations")) {

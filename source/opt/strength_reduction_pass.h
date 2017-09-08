@@ -1,0 +1,64 @@
+// Copyright (c) 2017 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
+#define LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
+
+#include "def_use_manager.h"
+#include "module.h"
+#include "pass.h"
+
+namespace spvtools {
+namespace opt {
+
+// See optimizer.hpp for documentation.
+class StrengthReductionPass : public Pass {
+ public:
+  const char* name() const override { return "strength-reduction"; }
+  Status Process(ir::Module*) override;
+
+ private:
+  // Replaces multiple by power of 2 with an equivalent bit shift.
+  // Returns true if something changed.
+  bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator&);
+
+  // Scan the types in the module looking for the the integer types that we are
+  // interested in.  The shift operation needs an unsigned int.  We need to find
+  // it, or create it.  We do not want duplicates.
+  void FindIntTypes();
+
+  // Simple driver to go through every instruction.  Returns true if something
+  // changed.
+  bool ScanFunctions();
+
+  // Will create the type for an unsigned 32-bit integer with id |uint32_type_id_|.
+  // This functions assumes one does not already exist.
+  uint32_t CreateUint32Type();
+
+  // Def-Uses for the module we are processing
+  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
+  // Type ids for the types of interest.
+  uint32_t int32_type_id_;
+  uint32_t uint32_type_id_;
+  bool must_create_type_;
+
+  uint32_t next_id_;
+  ir::Module* module_;
+};
+
+}  // namespace opt
+}  // namespace spvtools
+
+#endif  // LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
