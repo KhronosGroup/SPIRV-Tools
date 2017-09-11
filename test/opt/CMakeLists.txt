@@ -168,3 +168,8 @@ add_spvtools_unittest(TARGET line_debug_info
   SRCS line_debug_info_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET pass_strength_reduction
+  SRCS strength_reduction_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
