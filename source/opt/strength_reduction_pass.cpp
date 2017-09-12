@@ -24,23 +24,24 @@
 #include "reflect.h"
 
 namespace {
-// Utility function to count the number of trailing zeros in constVal.
-uint32_t GetShiftAmount(uint32_t constVal) {
+// Count the number of trailing zeros in the binary representation of
+// |constVal|.
+uint32_t CountLeadingZeros(uint32_t constVal) {
   // Faster if we use the hardware count trailing zeros instruction.
   // If not available, we could create a table.
   uint32_t shiftAmount = 0;
-  while (constVal != 1) {
+  while ((constVal & 1) == 0) {
     ++shiftAmount;
     constVal = (constVal >> 1);
   }
   return shiftAmount;
 }
 
-// Quick check if |val| is a power of 2 or not.
-// The idea is that the & will clear out the least
-// significant 1 bit.  If it is a power of 2, then
-// there is exactly 1 bit set, and the value becomes 0.
+// Check if |val| is a power of 2 or not.
 bool IsPowerOf2(uint32_t val) {
+  // The idea is that the & will clear out the least
+  // significant 1 bit.  If it is a power of 2, then
+  // there is exactly 1 bit set, and the value becomes 0.
   if (val == 0) return false;
   return ((val - 1) & val) == 0;
 }
@@ -58,7 +59,6 @@ Pass::Status StrengthReductionPass::Process(ir::Module* module) {
   uint32_type_id_ = 0;
   next_id_ = module->IdBound();
   module_ = module;
-  must_create_type_ = false;
 
   FindIntTypes();
   modified = ScanFunctions();
@@ -68,7 +68,8 @@ Pass::Status StrengthReductionPass::Process(ir::Module* module) {
 }
 
 bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
-    ir::BasicBlock::iterator& inst) {
+    ir::BasicBlock::iterator* instPtr) {
+  ir::BasicBlock::iterator& inst = *instPtr;
   assert(inst->opcode() == SpvOp::SpvOpIMul &&
          "Only works for multiplication of integers.");
   bool modified = false;
@@ -87,7 +88,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
       uint32_t constVal = opInst->GetSingleWordOperand(2);
 
       if (IsPowerOf2(constVal)) {
-        uint32_t shiftAmount = GetShiftAmount(constVal);
+        uint32_t shiftAmount = CountLeadingZeros(constVal);
         modified = true;
 
         if (uint32_type_id_ == 0) {
@@ -164,7 +165,7 @@ bool StrengthReductionPass::ScanFunctions() {
       for (auto inst = bb.begin(); inst != bb.end(); ++inst) {
         switch (inst->opcode()) {
           case SpvOp::SpvOpIMul:
-            if (ReplaceMultiplyByPowerOf2(inst)) modified = true;
+            if (ReplaceMultiplyByPowerOf2(&inst)) modified = true;
             break;
           default:
             break;

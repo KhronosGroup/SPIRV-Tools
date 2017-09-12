@@ -31,30 +31,32 @@ class StrengthReductionPass : public Pass {
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.
   // Returns true if something changed.
-  bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator&);
+  bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator*);
 
   // Scan the types in the module looking for the the integer types that we are
   // interested in.  The shift operation needs an unsigned int.  We need to find
   // it, or create it.  We do not want duplicates.
   void FindIntTypes();
 
-  // Simple driver to go through every instruction.  Returns true if something
-  // changed.
+  // Replaces certain instructions in function bodies with presumable cheaper
+  // ones. Returns true if something changed.
   bool ScanFunctions();
 
-  // Will create the type for an unsigned 32-bit integer with id |uint32_type_id_|.
+  // Will create the type for an unsigned 32-bit integer and return the id.
   // This functions assumes one does not already exist.
   uint32_t CreateUint32Type();
 
   // Def-Uses for the module we are processing
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
-  // Type ids for the types of interest.
+  // Type ids for the types of interest, or 0 if they do not exist.
   uint32_t int32_type_id_;
   uint32_t uint32_type_id_;
-  bool must_create_type_;
 
+  // Next unused ID
   uint32_t next_id_;
+
+  // The module that the pass is being applied to.
   ir::Module* module_;
 };
 

@@ -185,8 +185,8 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpSpecConstantOp.
 Optimizer::PassToken CreateEliminateDeadConstantPass();
 
-// Creates a strenth-reduction pass.
-// A strenth-reduction pass will look for opportunities to replace an
+// Creates a strength-reduction pass.
+// A strength-reduction pass will look for opportunities to replace an
 // instruction with an equivalent and less expensive one.  For example,
 // multiplying by a power of 2 can be replaced by a bit shift.
 Optimizer::PassToken CreateStrengthReductionPass();
