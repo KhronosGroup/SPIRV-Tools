@@ -33,10 +33,14 @@ class StrengthReductionPass : public Pass {
   // Returns true if something changed.
   bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator*);
 
-  // Scan the types in the module looking for the the integer types that we are
-  // interested in.  The shift operation needs an unsigned int.  We need to find
-  // it, or create it.  We do not want duplicates.
-  void FindIntTypes();
+  // Scan the types and constants in the module looking for the the integer types that we are
+  // interested in.  The shift operation needs a small unsigned integer.  We need to find
+  // them or create them.  We do not want duplicates.
+  void FindIntTypesAndConstants();
+
+  // Get the id for the given constant.  If it does not exist, it will be
+  // created.  The parameter must be between 0 and 32 inclusive.
+  uint32_t GetConstantId(uint32_t);
 
   // Replaces certain instructions in function bodies with presumable cheaper
   // ones. Returns true if something changed.
@@ -52,6 +56,11 @@ class StrengthReductionPass : public Pass {
   // Type ids for the types of interest, or 0 if they do not exist.
   uint32_t int32_type_id_;
   uint32_t uint32_type_id_;
+
+  // constant_ids[i] is the id for unsigned integer constant i.
+  // We set the limit at 32 because a bit shift of a 32-bit integer does not
+  // need a value larger than 32.
+  uint32_t constant_ids_[33];
 
   // Next unused ID
   uint32_t next_id_;

@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -57,10 +58,11 @@ Pass::Status StrengthReductionPass::Process(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
   int32_type_id_ = 0;
   uint32_type_id_ = 0;
+  memset(constant_ids_, 0, sizeof(constant_ids_));
   next_id_ = module->IdBound();
   module_ = module;
 
-  FindIntTypes();
+  FindIntTypesAndConstants();
   modified = ScanFunctions();
   // Have to reset the id bound.
   module->SetIdBound(next_id_);
@@ -88,23 +90,9 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
       uint32_t constVal = opInst->GetSingleWordOperand(2);
 
       if (IsPowerOf2(constVal)) {
-        uint32_t shiftAmount = CountLeadingZeros(constVal);
         modified = true;
-
-        if (uint32_type_id_ == 0) {
-          uint32_type_id_ = CreateUint32Type();
-        }
-
-        // Construct the constant.  Currently not worried
-        // about duplicate constants.
-        uint32_t shiftConstResultId = next_id_++;
-        ir::Operand shiftConstant(
-            spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
-            {shiftAmount});
-        std::unique_ptr<ir::Instruction> newConstant(
-            new ir::Instruction(SpvOp::SpvOpConstant, uint32_type_id_,
-                                shiftConstResultId, {shiftConstant}));
-        module_->AddGlobalValue(std::move(newConstant));
+        uint32_t shiftAmount = CountLeadingZeros(constVal);
+        uint32_t shiftConstResultId = GetConstantId(shiftAmount);
 
         // Create the new instruction.
         uint32_t newResultId = next_id_++;
@@ -136,7 +124,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
   return modified;
 }
 
-void StrengthReductionPass::FindIntTypes() {
+void StrengthReductionPass::FindIntTypesAndConstants() {
   for (auto typeIter = module_->types_values_begin();
        typeIter != module_->types_values_end(); ++typeIter) {
     switch (typeIter->opcode()) {
@@ -149,10 +137,41 @@ void StrengthReductionPass::FindIntTypes() {
           }
         }
         break;
+      case SpvOp::SpvOpConstant:
+        if (typeIter->GetSingleWordOperand(0) == uint32_type_id_) {
+          uint32_t value = typeIter->GetSingleWordOperand(2);
+          if (value <= 32)
+            constant_ids_[value] = typeIter->GetSingleWordOperand(1);
+        }
+        break;
       default:
         break;
     }
   }
+}
+
+uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
+  assert(val <= 32 &&
+         "This function does not handle constants larger than 32.");
+
+  if (constant_ids_[val] == 0) {
+    if (uint32_type_id_ == 0) {
+      uint32_type_id_ = CreateUint32Type();
+    }
+
+    // Construct the constant.
+    uint32_t resultId = next_id_++;
+    ir::Operand constant(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                         {val});
+    std::unique_ptr<ir::Instruction> newConstant(new ir::Instruction(
+        SpvOp::SpvOpConstant, uint32_type_id_, resultId, {constant}));
+    module_->AddGlobalValue(std::move(newConstant));
+
+    // Store the result id for next time.
+    constant_ids_[val] = resultId;
+  }
+
+  return constant_ids_[val];
 }
 
 bool StrengthReductionPass::ScanFunctions() {

@@ -128,4 +128,71 @@ TEST_F(StrengthReductionBasicTest, BasicNoChange) {
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
+// Test to make sure constants are reused and not duplicated.
+TEST_F(StrengthReductionBasicTest, NoDuplicateConstants) {
+  const std::vector<const char*> text = {
+      // clang-format off
+             "OpCapability Shader",
+             "OpCapability Float64",
+        "%1 = OpExtInstImport \"GLSL.std.450\"",
+             "OpMemoryModel Logical GLSL450",
+             "OpEntryPoint Vertex %2 \"main\"",
+             "OpName %2 \"main\"",
+        "%3 = OpTypeVoid",
+        "%4 = OpTypeFunction %3",
+        "%6 = OpTypeInt 32 0",
+        "%7 = OpConstant %6 8",
+        "%8 = OpConstant %6 3",
+        "%2 = OpFunction %3 None %4",
+        "%9 = OpLabel",
+        "%10 = OpIMul %6 %7 %8",
+             "OpReturn",
+             "OpFunctionEnd",
+      // clang-format on
+  };
+
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+      JoinAllInsts(text), /* skip_nop = */ true);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  const std::string& output = std::get<0>(result);
+  std::string::size_type pos1 = output.find("OpConstant %uint 3");
+  EXPECT_NE(pos1, std::string::npos);
+  std::string::size_type pos2 = output.rfind("OpConstant %uint 3");
+  EXPECT_EQ(pos1, pos2);
+}
+
+// Test to make sure types are reused and not duplicated.
+TEST_F(StrengthReductionBasicTest, NoDuplicateTypes) {
+  const std::vector<const char*> text = {
+      // clang-format off
+             "OpCapability Shader",
+             "OpCapability Float64",
+        "%1 = OpExtInstImport \"GLSL.std.450\"",
+             "OpMemoryModel Logical GLSL450",
+             "OpEntryPoint Vertex %2 \"main\"",
+             "OpName %2 \"main\"",
+        "%3 = OpTypeVoid",
+        "%4 = OpTypeFunction %3",
+        "%6 = OpTypeInt 32 0",
+        "%7 = OpConstant %6 8",
+        "%8 = OpConstant %6 3",
+        "%2 = OpFunction %3 None %4",
+        "%9 = OpLabel",
+        "%10 = OpIMul %6 %7 %8",
+             "OpReturn",
+             "OpFunctionEnd",
+      // clang-format on
+  };
+
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+      JoinAllInsts(text), /* skip_nop = */ true);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  const std::string& output = std::get<0>(result);
+  std::string::size_type pos1 = output.find("OpTypeInt 32 0");
+  EXPECT_NE(pos1, std::string::npos);
+  std::string::size_type pos2 = output.rfind("OpTypeInt 32 0");
+  EXPECT_EQ(pos1, pos2);
+}
 }  // anonymous namespace
