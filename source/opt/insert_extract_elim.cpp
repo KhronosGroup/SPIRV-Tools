@@ -55,6 +55,11 @@ bool InsertExtractElimPass::ExtInsConflict(const ir::Instruction* extInst,
   return true;
 }
 
+bool InsertExtractElimPass::IsVectorType(uint32_t typeId) {
+  ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  return typeInst->opcode() == SpvOpTypeVector;
+}
+
 bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
@@ -73,6 +78,33 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
             }
             cid = cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
             cinst = def_use_mgr_->GetDef(cid);
+          }
+          // If search ended with CompositeConstruct or ConstantComposite
+          // and the extract has one index, return the appropriate component.
+          // If a vector CompositeConstruct we make sure all preceding
+          // components are of component type (not vector composition).
+          // TODO(greg-lunarg): Handle multiple-indices, ConstantNull, special
+          // vector composition, and additional CompositeInsert.
+          if ((cinst->opcode() == SpvOpCompositeConstruct ||
+               cinst->opcode() == SpvOpConstantComposite) &&
+              (*ii).NumInOperands() == 2) {
+            uint32_t compIdx = (*ii).GetSingleWordInOperand(1);
+            if (IsVectorType(cinst->type_id())) {
+              if (compIdx < cinst->NumInOperands()) {
+                uint32_t i = 0;
+                for (; i <= compIdx; i++) {
+                  uint32_t compId = cinst->GetSingleWordInOperand(i);
+                  ir::Instruction* compInst = def_use_mgr_->GetDef(compId);
+                  if (compInst->type_id() != (*ii).type_id())
+                    break;
+                }
+                if (i > compIdx)
+                  replId = cinst->GetSingleWordInOperand(compIdx);
+              }
+            }
+            else {
+              replId = cinst->GetSingleWordInOperand(compIdx);
+            }
           }
           if (replId != 0) {
             const uint32_t extId = ii->result_id();
