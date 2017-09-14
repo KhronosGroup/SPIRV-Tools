@@ -112,6 +112,8 @@ Options:
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
                call tree functions.
+  --strength-reduction
+               Replaces instructions with equivalent and less expensive ones.
   -h, --help   
                Print this help.
   --version    
