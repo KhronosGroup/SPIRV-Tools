@@ -5,6 +5,8 @@ v2017.1-dev 2017-09-01
    - Type check basic arithmetic operations
    - OpModuleProcessed is only allowed after debug names section and before annotations
      section.
+   - Recognize extensions listed on SPIR-V registry,
+     through #25 SPV_AMD_shader_fragment_mask
  - Fixes:
    #798: spirv-as should fail when given unrecognized long option
    #800: Inliner: Fix inlining function into header of multi-block loop

@@ -68,7 +68,8 @@ INSTANTIATE_TEST_CASE_P(ExpectSuccess, ValidateKnownExtensions, Values(
     "SPV_KHR_shader_atomic_counter_ops",
     "SPV_EXT_shader_stencil_export",
     "SPV_EXT_shader_viewport_index_layer",
-    "SPV_AMD_shader_image_load_store_lod"
+    "SPV_AMD_shader_image_load_store_lod",
+    "SPV_AMD_shader_fragment_mask"
     ));
 
 INSTANTIATE_TEST_CASE_P(FailSilently, ValidateUnknownExtensions, Values(
