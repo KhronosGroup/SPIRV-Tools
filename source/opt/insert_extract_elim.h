@@ -52,6 +52,9 @@ class InsertExtractElimPass : public Pass {
   bool ExtInsConflict(
     const ir::Instruction* extInst, const ir::Instruction* insInst) const;
 
+  // Return true if |typeId| is a vector type
+  bool IsVectorType(uint32_t typeId);
+
   // Look for OpExtract on sequence of OpInserts in |func|. If there is an
   // insert with identical indices, replace the extract with the value
   // that is inserted if possible. Specifically, replace if there is no
