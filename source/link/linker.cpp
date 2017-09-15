@@ -43,6 +43,13 @@ using opt::PassManager;
 using opt::RemoveDuplicatesPass;
 using opt::analysis::DefUseManager;
 
+struct LinkingInfo {
+  SpvId id;
+  SpvId typeId;
+  std::string name;
+  std::vector<SpvId> parametersIds;
+};
+
 // Shifts the IDs used in each binary of |modules| so that they occupy a
 // disjoint range from the other binaries, and compute the new ID bound which
 // is returned in |max_id_bound|.
@@ -72,8 +79,15 @@ static spv_result_t GenerateHeader(
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
     const std::vector<std::unique_ptr<Module>>& inModules,
-    const libspirv::AssemblyGrammar& grammar,
-    Module* linkedModule);
+    const libspirv::AssemblyGrammar& grammar, Module* linkedModule);
+
+// Compute all pairs of import and export and return it in |linkingsToDo|.
+//
+// |linkingsToDo should not be null.
+static spv_result_t GetImportExportPairs(
+    const MessageConsumer& consumer, const Module& linkedModule,
+    const DefUseManager& defUseManager,
+    std::vector<std::pair<LinkingInfo, LinkingInfo>>* linkingsToDo);
 
 // Structs for holding the data members for SpvLinker.
 struct Linker::Impl {
@@ -142,67 +156,11 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
 
   DefUseManager defUseManager(consumer, linkedModule.get());
 
-  // Extract linking information
-  struct LinkingInfo {
-    SpvId id;
-    SpvId typeId;
-    std::string name;
-    std::vector<SpvId> parametersIds;
-  };
-  std::vector<LinkingInfo> imports;
-  std::unordered_map<std::string, std::vector<LinkingInfo>> exports;
-  // Figure out the imports and exports
-  for (const auto& j : linkedModule->annotations()) {
-    if (j.opcode() == SpvOpDecorate &&
-        j.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
-      uint32_t type = j.GetSingleWordInOperand(3u);
-      SpvId id = j.GetSingleWordInOperand(0u);
-      LinkingInfo data;
-      data.name =
-          reinterpret_cast<const char*>(j.GetInOperand(2u).words.data());
-      data.id = id;
-      data.typeId = 0u;
-      const Instruction* defInst = defUseManager.GetDef(id);
-      if (defInst == nullptr)
-        return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                          SPV_ERROR_INVALID_BINARY)
-               << "ID " << id << " is never defined:\n";
-      if (defInst->opcode() == SpvOpVariable) {
-        data.typeId = defInst->type_id();
-      } else if (defInst->opcode() == SpvOpFunction) {
-        data.typeId = defInst->GetSingleWordInOperand(1u);
-        for (const auto& func : *linkedModule) {
-          if (func.result_id() != id) continue;
-          func.ForEachParam([&data](const Instruction* inst) {
-            data.parametersIds.push_back(inst->result_id());
-          });
-        }
-      }
-      if (type == SpvLinkageTypeImport)
-        imports.push_back(data);
-      else if (type == SpvLinkageTypeExport)
-        exports[data.name].push_back(data);
-    }
-  }
-
   // Find the import/export pairs
   std::vector<std::pair<LinkingInfo, LinkingInfo>> linkingsToDo;
-  for (const auto& import : imports) {
-    std::vector<LinkingInfo> possibleExports;
-    const auto& exp = exports.find(import.name);
-    if (exp != exports.end()) possibleExports = exp->second;
-    if (possibleExports.empty())
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "No export linkage was found for \"" << import.name << "\".";
-    else if (possibleExports.size() > 1u)
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "Too many export linkages, " << possibleExports.size()
-             << ", were found for \"" << import.name << "\".";
-
-    linkingsToDo.emplace_back(import, possibleExports.front());
-  }
+  res = GetImportExportPairs(consumer, *linkedModule, defUseManager,
+                             &linkingsToDo);
+  if (res != SPV_SUCCESS) return res;
 
   // Ensure the import and export types are similar
   opt::analysis::DecorationManager decorationManager(linkedModule.get());
@@ -423,8 +381,7 @@ static spv_result_t GenerateHeader(
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
     const std::vector<std::unique_ptr<Module>>& inModules,
-    const libspirv::AssemblyGrammar& grammar,
-    Module* linkedModule) {
+    const libspirv::AssemblyGrammar& grammar, Module* linkedModule) {
   spv_position_t position = {};
 
   if (linkedModule == nullptr)
@@ -432,8 +389,7 @@ static spv_result_t MergeModules(
                                       SPV_ERROR_INVALID_DATA)
            << "|linkedModule| of MergeModules should not be null.";
 
-  if (inModules.empty())
-      return SPV_SUCCESS;
+  if (inModules.empty()) return SPV_SUCCESS;
 
   for (const auto& module : inModules)
     for (const auto& insn : module->capabilities())
@@ -548,6 +504,77 @@ static spv_result_t MergeModules(
       func->SetParent(linkedModule);
       linkedModule->AddFunction(std::move(func));
     }
+  }
+
+  return SPV_SUCCESS;
+}
+
+static spv_result_t GetImportExportPairs(
+    const MessageConsumer& consumer, const Module& linkedModule,
+    const DefUseManager& defUseManager,
+    std::vector<std::pair<LinkingInfo, LinkingInfo>>* linkingsToDo) {
+  spv_position_t position = {};
+
+  if (linkingsToDo == nullptr)
+    return libspirv::DiagnosticStream(position, consumer,
+                                      SPV_ERROR_INVALID_DATA)
+           << "|linkingsToDo| of GetImportExportPairs should not be empty.";
+
+  std::vector<LinkingInfo> imports;
+  std::unordered_map<std::string, std::vector<LinkingInfo>> exports;
+  // Figure out the imports and exports
+  for (const auto& j : linkedModule.annotations()) {
+    if (j.opcode() == SpvOpDecorate &&
+        j.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
+      uint32_t type = j.GetSingleWordInOperand(3u);
+      SpvId id = j.GetSingleWordInOperand(0u);
+      LinkingInfo data;
+      data.name =
+          reinterpret_cast<const char*>(j.GetInOperand(2u).words.data());
+      data.id = id;
+      data.typeId = 0u;
+      const Instruction* defInst = defUseManager.GetDef(id);
+      if (defInst == nullptr)
+        return libspirv::DiagnosticStream(position, consumer,
+                                          SPV_ERROR_INVALID_BINARY)
+               << "ID " << id << " is never defined:\n";
+      if (defInst->opcode() == SpvOpVariable) {
+        data.typeId = defInst->type_id();
+      } else if (defInst->opcode() == SpvOpFunction) {
+        data.typeId = defInst->GetSingleWordInOperand(1u);
+        // range-based for loop calls begin()/end(), but never cbegin()/cend(),
+        // which will not work here.
+        for (auto func_iter = linkedModule.cbegin();
+             func_iter != linkedModule.cend(); ++func_iter) {
+          if (func_iter->result_id() != id) continue;
+          func_iter->ForEachParam([&data](const Instruction* inst) {
+            data.parametersIds.push_back(inst->result_id());
+          });
+        }
+      }
+      if (type == SpvLinkageTypeImport)
+        imports.push_back(data);
+      else if (type == SpvLinkageTypeExport)
+        exports[data.name].push_back(data);
+    }
+  }
+
+  // Find the import/export pairs
+  for (const auto& import : imports) {
+    std::vector<LinkingInfo> possibleExports;
+    const auto& exp = exports.find(import.name);
+    if (exp != exports.end()) possibleExports = exp->second;
+    if (possibleExports.empty())
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "No export linkage was found for \"" << import.name << "\".";
+    else if (possibleExports.size() > 1u)
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "Too many export linkages, " << possibleExports.size()
+             << ", were found for \"" << import.name << "\".";
+
+    linkingsToDo->emplace_back(import, possibleExports.front());
   }
 
   return SPV_SUCCESS;
