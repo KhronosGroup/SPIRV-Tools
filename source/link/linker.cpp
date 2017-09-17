@@ -98,6 +98,10 @@ static spv_result_t MergeModules(
 // Compute all pairs of import and export and return it in |linkingsToDo|.
 //
 // |linkingsToDo should not be null.
+//
+// TODO(pierremoreau): Linkage attributes applied by a group decoration are
+//                     currently not handled. (You could have a group being
+//                     applied to a single ID.)
 static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
                                          const Module& linked_module,
                                          const DefUseManager& defUseManager,
@@ -123,6 +127,8 @@ static spv_result_t CheckImportExportCompatibility(
 // TODO(pierremoreau): Linkage attributes applied by a group decoration are
 //                     currently not handled. (You could have a group being
 //                     applied to a single ID.)
+// TODO(pierremoreau): Run a pass for removing dead instructions, for example
+//                     OpName for prototypes of imported funcions.
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
     const LinkageTable& linkingsToDo, DecorationManager* decorationManager,
@@ -465,41 +471,56 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
 
   std::vector<LinkageSymbolInfo> imports;
   std::unordered_map<std::string, std::vector<LinkageSymbolInfo>> exports;
+
   // Figure out the imports and exports
   for (const auto& decoration : linked_module.annotations()) {
-    if (decoration.opcode() == SpvOpDecorate &&
-        decoration.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
-      uint32_t type = decoration.GetSingleWordInOperand(3u);
-      SpvId id = decoration.GetSingleWordInOperand(0u);
-      LinkageSymbolInfo data;
-      data.name =
-          reinterpret_cast<const char*>(decoration.GetInOperand(2u).words.data());
-      data.id = id;
-      data.typeId = 0u;
-      const Instruction* defInst = defUseManager.GetDef(id);
-      if (defInst == nullptr)
-        return libspirv::DiagnosticStream(position, consumer,
-                                          SPV_ERROR_INVALID_BINARY)
-               << "ID " << id << " is never defined:\n";
-      if (defInst->opcode() == SpvOpVariable) {
-        data.typeId = defInst->type_id();
-      } else if (defInst->opcode() == SpvOpFunction) {
-        data.typeId = defInst->GetSingleWordInOperand(1u);
-        // range-based for loop calls begin()/end(), but never cbegin()/cend(),
-        // which will not work here.
-        for (auto func_iter = linked_module.cbegin();
-             func_iter != linked_module.cend(); ++func_iter) {
-          if (func_iter->result_id() != id) continue;
-          func_iter->ForEachParam([&data](const Instruction* inst) {
-            data.parametersIds.push_back(inst->result_id());
-          });
-        }
+    if (decoration.opcode() != SpvOpDecorate ||
+        decoration.GetSingleWordInOperand(1u) != SpvDecorationLinkageAttributes)
+      continue;
+
+    const uint32_t type = decoration.GetSingleWordInOperand(3u);
+    const SpvId id = decoration.GetSingleWordInOperand(0u);
+
+    LinkageSymbolInfo data;
+    data.name =
+        reinterpret_cast<const char*>(decoration.GetInOperand(2u).words.data());
+    data.id = id;
+    data.typeId = 0u;
+
+    // Retrieve the type of the current symbol. This information will be used
+    // when checking that the imported and exported symbols have the same
+    // types.
+    const Instruction* def_inst = defUseManager.GetDef(id);
+    if (def_inst == nullptr)
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+              << "ID " << id << " is never defined:\n";
+
+    if (def_inst->opcode() == SpvOpVariable) {
+      data.typeId = def_inst->type_id();
+    } else if (def_inst->opcode() == SpvOpFunction) {
+      data.typeId = def_inst->GetSingleWordInOperand(1u);
+
+      // range-based for loop calls begin()/end(), but never cbegin()/cend(),
+      // which will not work here.
+      for (auto func_iter = linked_module.cbegin();
+            func_iter != linked_module.cend(); ++func_iter) {
+        if (func_iter->result_id() != id) continue;
+        func_iter->ForEachParam([&data](const Instruction* inst) {
+          data.parametersIds.push_back(inst->result_id());
+        });
       }
-      if (type == SpvLinkageTypeImport)
-        imports.push_back(data);
-      else if (type == SpvLinkageTypeExport)
-        exports[data.name].push_back(data);
+    } else {
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+              << "Only global variables and functions can be decorated using"
+              << " LinkageAttributes; " << id << " is neither of them.\n";
     }
+
+    if (type == SpvLinkageTypeImport)
+      imports.push_back(data);
+    else if (type == SpvLinkageTypeExport)
+      exports[data.name].push_back(data);
   }
 
   // Find the import/export pairs
