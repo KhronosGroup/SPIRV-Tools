@@ -54,7 +54,14 @@ struct LinkageSymbolInfo {
   std::vector<SpvId> parametersIds;  // ID of the parameters of the symbol, if
                                      // it is a function
 };
-using LinkageEntry = std::pair<LinkageSymbolInfo, LinkageSymbolInfo>;
+struct LinkageEntry {
+  LinkageSymbolInfo imported_symbol;
+  LinkageSymbolInfo exported_symbol;
+
+  LinkageEntry(const LinkageSymbolInfo& import_info,
+               const LinkageSymbolInfo& export_info)
+      : imported_symbol(import_info), exported_symbol(export_info) {}
+};
 using LinkageTable = std::vector<LinkageEntry>;
 
 // Shifts the IDs used in each binary of |modules| so that they occupy a
@@ -113,8 +120,9 @@ static spv_result_t CheckImportExportCompatibility(
 // |linked_module| and |decorationManager| should not be null, and the
 // 'RemoveDuplicatePass' should be run first.
 //
-// TODO(pierremoreau): Could linkage attributes be found inside decoration
-//                     groups? Most likely not, but who knows.
+// TODO(pierremoreau): Linkage attributes applied by a group decoration are
+//                     currently not handled. (You could have a group being
+//                     applied to a single ID.)
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
     const LinkageTable& linkingsToDo, DecorationManager* decorationManager,
@@ -213,10 +221,11 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   // Phase 8: Rematch import variables/functions to export variables/functions
   linked_module->ForEachInst([&linkingsToDo](Instruction* insn) {
     insn->ForEachId([&linkingsToDo](uint32_t* id) {
-      auto id_iter = std::find_if(
-          linkingsToDo.begin(), linkingsToDo.end(),
-          [id](const LinkageEntry& pair) { return pair.second.id == *id; });
-      if (id_iter != linkingsToDo.end()) *id = id_iter->first.id;
+      auto id_iter = std::find_if(linkingsToDo.begin(), linkingsToDo.end(),
+                                  [id](const LinkageEntry& entry) {
+                                    return entry.exported_symbol.id == *id;
+                                  });
+      if (id_iter != linkingsToDo.end()) *id = id_iter->imported_symbol.id;
     });
   });
 
@@ -521,41 +530,46 @@ static spv_result_t CheckImportExportCompatibility(
   spv_position_t position = {};
 
   // Ensure th import and export types are the same.
-  for (const auto& i : linkingsToDo) {
+  for (const auto& linking_entry : linkingsToDo) {
     if (!RemoveDuplicatesPass::AreTypesEqual(
-            *defUseManager.GetDef(i.first.typeId),
-            *defUseManager.GetDef(i.second.typeId), defUseManager,
-            decorationManager))
+            *defUseManager.GetDef(linking_entry.imported_symbol.typeId),
+            *defUseManager.GetDef(linking_entry.exported_symbol.typeId),
+            defUseManager, decorationManager))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
              << "Type mismatch between imported variable/function %"
-             << i.first.id << " and exported variable/function %" << i.second.id
-             << ".";
+             << linking_entry.imported_symbol.id
+             << " and exported variable/function %"
+             << linking_entry.exported_symbol.id << ".";
   }
 
   // Ensure the import and export decorations are similar
-  for (const auto& i : linkingsToDo) {
-    if (!decorationManager.HaveTheSameDecorations(i.first.id, i.second.id))
+  for (const auto& linking_entry : linkingsToDo) {
+    if (!decorationManager.HaveTheSameDecorations(
+            linking_entry.imported_symbol.id, linking_entry.exported_symbol.id))
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
              << "Decorations mismatch between imported variable/function %"
-             << i.first.id << " and exported variable/function %" << i.second.id
-             << ".";
+             << linking_entry.imported_symbol.id
+             << " and exported variable/function %"
+             << linking_entry.exported_symbol.id << ".";
     // TODO(pierremoreau): Decorations on function parameters should probably
     //                     match, except for FuncParamAttr if I understand the
     //                     spec correctly, which makes the code more
     //                     complicated.
-    //    for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
+    //    for (uint32_t j = 0u; j <
+    //    linking_entry.imported_symbol.parametersIds.size(); ++j)
     //      if
-    //      (!decorationManager.HaveTheSameDecorations(i.first.parametersIds[j],
-    //      i.second.parametersIds[j]))
+    //      (!decorationManager.HaveTheSameDecorations(linking_entry.imported_symbol.parametersIds[j],
+    //      linking_entry.exported_symbol.parametersIds[j]))
     //          return libspirv::DiagnosticStream(position,
     //          impl_->context->consumer,
     //                                            SPV_ERROR_INVALID_BINARY)
     //                 << "Decorations mismatch between imported function %" <<
-    //                 i.first.id << "'s"
-    //                 << " and exported function %" << i.second.id << "'s " <<
-    //                 (j + 1u) << "th parameter.";
+    //                 linking_entry.imported_symbol.id << "'s"
+    //                 << " and exported function %" <<
+    //                 linking_entry.exported_symbol.id << "'s " << (j + 1u) <<
+    //                 "th parameter.";
   }
 
   return SPV_SUCCESS;
@@ -584,8 +598,9 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   //   When resolving imported functions, the Function Control and all Function
   //   Parameter Attributes are taken from the function definition, and not
   //   from the function declaration.
-  for (const auto& linking_pair : linkingsToDo) {
-    for (const auto parameter_id : linking_pair.first.parametersIds) {
+  for (const auto& linking_entry : linkingsToDo) {
+    for (const auto parameter_id :
+         linking_entry.imported_symbol.parametersIds) {
       for (ir::Instruction* decoration :
            decorationManager->GetDecorationsFor(parameter_id, false)) {
         switch (decoration->opcode()) {
@@ -603,9 +618,9 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   }
 
   // Remove prototypes of imported functions
-  for (const auto& linking_pair : linkingsToDo) {
+  for (const auto& linking_entry : linkingsToDo) {
     for (auto j = linked_module->begin(); j != linked_module->end();) {
-      if (j->result_id() == linking_pair.first.id)
+      if (j->result_id() == linking_entry.imported_symbol.id)
         j = j.Erase();
       else
         ++j;
@@ -613,9 +628,9 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   }
 
   // Remove declarations of imported variables
-  for (const auto& linking_pair : linkingsToDo) {
+  for (const auto& linking_entry : linkingsToDo) {
     for (auto& inst : linked_module->types_values())
-      if (inst.result_id() == linking_pair.first.id) inst.ToNop();
+      if (inst.result_id() == linking_entry.imported_symbol.id) inst.ToNop();
   }
 
   // Remove import linkage attributes
