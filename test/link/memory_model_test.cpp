@@ -30,11 +30,11 @@ OpMemoryModel Logical Simple
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, &linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 
   ASSERT_EQ(SpvAddressingModelLogical, linked_binary[6]);
-  ASSERT_EQ(SpvMemoryModelSimple,      linked_binary[7]);
+  ASSERT_EQ(SpvMemoryModelSimple, linked_binary[7]);
 }
 
 TEST_F(MemoryModel, AddressingMismatch) {
@@ -46,8 +46,11 @@ OpMemoryModel Physical32 Simple
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting addressing models: Logical vs Physical32."));
+  ASSERT_EQ(SPV_ERROR_INTERNAL,
+            AssembleAndLink({body1, body2}, &linked_binary));
+  EXPECT_THAT(
+      GetErrorMessage(),
+      HasSubstr("Conflicting addressing models: Logical vs Physical32."));
 }
 
 TEST_F(MemoryModel, MemoryMismatch) {
@@ -59,8 +62,10 @@ OpMemoryModel Logical GLSL450
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(), HasSubstr("Conflicting memory models: Simple vs GLSL450."));
+  ASSERT_EQ(SPV_ERROR_INTERNAL,
+            AssembleAndLink({body1, body2}, &linked_binary));
+  EXPECT_THAT(GetErrorMessage(),
+              HasSubstr("Conflicting memory models: Simple vs GLSL450."));
 }
 
 }  // anonymous namespace

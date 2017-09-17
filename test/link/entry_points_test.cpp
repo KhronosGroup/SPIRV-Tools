@@ -30,7 +30,7 @@ OpEntryPoint GLCompute %1 "bar"
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, &linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
@@ -43,7 +43,7 @@ OpEntryPoint Vertex %1 "foo"
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_SUCCESS, Link({ body1, body2 }, &linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
@@ -56,8 +56,11 @@ OpEntryPoint GLCompute %1 "foo"
 )";
 
   spvtest::Binary linked_binary;
-  ASSERT_EQ(SPV_ERROR_INTERNAL, Link({ body1, body2 }, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(), HasSubstr("The entry point \"foo\", with execution model GLCompute, was already defined."));
+  ASSERT_EQ(SPV_ERROR_INTERNAL,
+            AssembleAndLink({body1, body2}, &linked_binary));
+  EXPECT_THAT(GetErrorMessage(),
+              HasSubstr("The entry point \"foo\", with execution model "
+                        "GLCompute, was already defined."));
 }
 
 }  // anonymous namespace

@@ -29,14 +29,15 @@ using Binaries = std::vector<Binary>;
 
 class LinkerTest : public ::testing::Test {
  public:
-  LinkerTest() : tools_(SPV_ENV_UNIVERSAL_1_2), linker_(SPV_ENV_UNIVERSAL_1_2),
+  LinkerTest()
+      : tools_(SPV_ENV_UNIVERSAL_1_2),
+        linker_(SPV_ENV_UNIVERSAL_1_2),
         assemble_options_(spvtools::SpirvTools::kDefaultAssembleOption),
         disassemble_options_(spvtools::SpirvTools::kDefaultDisassembleOption) {
     const auto consumer = [this](spv_message_level_t level, const char*,
-                                const spv_position_t& position,
-                                const char* message) {
-      if (!error_message_.empty())
-        error_message_ += "\n";
+                                 const spv_position_t& position,
+                                 const char* message) {
+      if (!error_message_.empty()) error_message_ += "\n";
       switch (level) {
         case SPV_MSG_FATAL:
         case SPV_MSG_INTERNAL_ERROR:
@@ -65,9 +66,10 @@ class LinkerTest : public ::testing::Test {
   // them together. SPV_ERROR_INVALID_TEXT is returned if the assembling failed
   // for any of the input strings, and SPV_ERROR_INVALID_POINTER if
   // |linked_binary| is a null pointer.
-  spv_result_t Link(const std::vector<std::string>& bodies, spvtest::Binary* linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
-    if (!linked_binary)
-      return SPV_ERROR_INVALID_POINTER;
+  spv_result_t AssembleAndLink(
+      const std::vector<std::string>& bodies, spvtest::Binary* linked_binary,
+      spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
+    if (!linked_binary) return SPV_ERROR_INVALID_POINTER;
 
     spvtest::Binaries binaries(bodies.size());
     for (size_t i = 0u; i < bodies.size(); ++i)
@@ -79,18 +81,20 @@ class LinkerTest : public ::testing::Test {
 
   // Links the given SPIR-V binaries together; SPV_ERROR_INVALID_POINTER is
   // returned if |linked_binary| is a null pointer.
-  spv_result_t Link(const spvtest::Binaries& binaries, spvtest::Binary* linked_binary, spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
-    if (!linked_binary)
-      return SPV_ERROR_INVALID_POINTER;
+  spv_result_t Link(
+      const spvtest::Binaries& binaries, spvtest::Binary* linked_binary,
+      spvtools::LinkerOptions options = spvtools::LinkerOptions()) {
+    if (!linked_binary) return SPV_ERROR_INVALID_POINTER;
     return linker_.Link(binaries, *linked_binary, options);
   }
 
   // Disassembles |binary| and outputs the result in |text|. If |text| is a
   // null pointer, SPV_ERROR_INVALID_POINTER is returned.
   spv_result_t Disassemble(const spvtest::Binary& binary, std::string* text) {
-    if (!text)
-      return SPV_ERROR_INVALID_POINTER;
-    return tools_.Disassemble(binary, text, disassemble_options_) ? SPV_SUCCESS : SPV_ERROR_INVALID_BINARY;
+    if (!text) return SPV_ERROR_INVALID_POINTER;
+    return tools_.Disassemble(binary, text, disassemble_options_)
+               ? SPV_SUCCESS
+               : SPV_ERROR_INVALID_BINARY;
   }
 
   // Sets the options for the assembler.
@@ -104,12 +108,11 @@ class LinkerTest : public ::testing::Test {
   }
 
   // Returns the accumulated error messages for the test.
-  std::string GetErrorMessage() const {
-    return error_message_;
-  }
+  std::string GetErrorMessage() const { return error_message_; }
 
  private:
-  spvtools::SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
+  spvtools::SpirvTools
+      tools_;  // An instance for calling SPIRV-Tools functionalities.
   spvtools::Linker linker_;
   uint32_t assemble_options_;
   uint32_t disassemble_options_;
@@ -118,4 +121,4 @@ class LinkerTest : public ::testing::Test {
 
 }  // namespace spvtest
 
-#endif // LIBSPIRV_TEST_LINK_LINK_TEST
+#endif  // LIBSPIRV_TEST_LINK_LINK_TEST
