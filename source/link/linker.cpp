@@ -157,20 +157,37 @@ void Linker::SetMessageConsumer(MessageConsumer consumer) {
 spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                           std::vector<uint32_t>& linked_binary,
                           const LinkerOptions& options) const {
+  std::vector<const uint32_t*> binary_ptrs;
+  binary_ptrs.reserve(binaries.size());
+  std::vector<size_t> binary_sizes;
+  binary_sizes.reserve(binaries.size());
+
+  for (const auto& binary : binaries) {
+    binary_ptrs.push_back(binary.data());
+    binary_sizes.push_back(binary.size());
+  }
+
+  return Link(binary_ptrs.data(), binary_sizes.data(), binaries.size(), linked_binary, options);
+}
+
+spv_result_t Linker::Link(const uint32_t* const* binaries,
+                          const size_t* binary_sizes, size_t num_binaries,
+                          std::vector<uint32_t>& linked_binary,
+                          const LinkerOptions& options) const {
   spv_position_t position = {};
   const MessageConsumer& consumer = impl_->context->consumer;
 
   linked_binary.clear();
-  if (binaries.empty())
+  if (num_binaries == 0u)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_BINARY)
            << "No modules were given.";
 
   std::vector<std::unique_ptr<Module>> modules;
-  modules.reserve(binaries.size());
-  for (const auto& mod : binaries) {
+  modules.reserve(num_binaries);
+  for (size_t i = 0u; i < num_binaries; ++i) {
     std::unique_ptr<Module> module = BuildModule(
-        impl_->context->target_env, consumer, mod.data(), mod.size());
+        impl_->context->target_env, consumer, binaries[i], binary_sizes[i]);
     if (module == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
@@ -240,18 +257,6 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   linked_module->ToBinary(&linked_binary, true);
 
   return SPV_SUCCESS;
-}
-
-spv_result_t Linker::Link(const uint32_t* const* binaries,
-                          const size_t* binary_sizes, size_t num_binaries,
-                          std::vector<uint32_t>& linked_binary,
-                          const LinkerOptions& options) const {
-  std::vector<std::vector<uint32_t>> binaries_array;
-  binaries_array.reserve(num_binaries);
-  for (size_t i = 0u; i < num_binaries; ++i)
-    binaries_array.push_back({binaries[i], binaries[i] + binary_sizes[i]});
-
-  return Link(binaries_array, linked_binary, options);
 }
 
 static spv_result_t ShiftIdsInModules(
