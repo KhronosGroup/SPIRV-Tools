@@ -97,14 +97,17 @@ static spv_result_t MergeModules(
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
 //
-// |linkings_to_do should not be null.
+// |linkings_to_do should not be null. Built-in symbols will be ignored.
 //
 // TODO(pierremoreau): Linkage attributes applied by a group decoration are
 //                     currently not handled. (You could have a group being
 //                     applied to a single ID.)
+// TODO(pierremoreau): What should be the proper behaviour with built-in
+//                     symbols?
 static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
                                          const Module& linked_module,
                                          const DefUseManager& def_use_manager,
+                                         const DecorationManager& decoration_manager,
                                          LinkageTable* linkings_to_do);
 
 // Checks that for each pair of import and export, the import and export have
@@ -226,12 +229,12 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
+  DecorationManager decoration_manager(linked_module.get());
   res = GetImportExportPairs(consumer, *linked_module, def_use_manager,
-                             &linkings_to_do);
+                             decoration_manager, &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
-  DecorationManager decoration_manager(linked_module.get());
   res = CheckImportExportCompatibility(consumer, linkings_to_do,
                                        def_use_manager, decoration_manager);
   if (res != SPV_SUCCESS) return res;
@@ -475,6 +478,7 @@ static spv_result_t MergeModules(
 static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
                                          const Module& linked_module,
                                          const DefUseManager& def_use_manager,
+                                         const DecorationManager& decoration_manager,
                                          LinkageTable* linkings_to_do) {
   spv_position_t position = {};
 
@@ -492,8 +496,19 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
         decoration.GetSingleWordInOperand(1u) != SpvDecorationLinkageAttributes)
       continue;
 
-    const uint32_t type = decoration.GetSingleWordInOperand(3u);
     const SpvId id = decoration.GetSingleWordInOperand(0u);
+    // Ignore if the targeted symbol is a built-in
+    bool is_built_in = false;
+    for (const auto& id_decoration : decoration_manager.GetDecorationsFor(id, false)) {
+      if (id_decoration->GetSingleWordInOperand(1u) == SpvDecorationBuiltIn) {
+        is_built_in = true;
+        break;
+      }
+    }
+    if (is_built_in)
+      continue;
+
+    const uint32_t type = decoration.GetSingleWordInOperand(3u);
 
     LinkageSymbolInfo symbol_info;
     symbol_info.name =
