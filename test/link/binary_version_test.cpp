@@ -20,27 +20,28 @@ namespace {
 using BinaryVersion = spvtest::LinkerTest;
 
 TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
-  spvtest::Binaries binaries = { {
-      SpvMagicNumber,
-      0x00000300u,
-      SPV_GENERATOR_CODEPLAY,
-      1u,  // NOTE: Bound
-      0u   // NOTE: Schema; reserved
-    },
-    {
-      SpvMagicNumber,
-      0x00000600u,
-      SPV_GENERATOR_CODEPLAY,
-      1u,  // NOTE: Bound
-      0u   // NOTE: Schema; reserved
-    },
-    {
-      SpvMagicNumber,
-      0x00000100u,
-      SPV_GENERATOR_CODEPLAY,
-      1u,  // NOTE: Bound
-      0u   // NOTE: Schema; reserved
-    }
+  spvtest::Binaries binaries = {
+      {
+          SpvMagicNumber,
+          0x00000300u,
+          SPV_GENERATOR_CODEPLAY,
+          1u,  // NOTE: Bound
+          0u   // NOTE: Schema; reserved
+      },
+      {
+          SpvMagicNumber,
+          0x00000600u,
+          SPV_GENERATOR_CODEPLAY,
+          1u,  // NOTE: Bound
+          0u   // NOTE: Schema; reserved
+      },
+      {
+          SpvMagicNumber,
+          0x00000100u,
+          SPV_GENERATOR_CODEPLAY,
+          1u,  // NOTE: Bound
+          0u   // NOTE: Schema; reserved
+      }
   };
   spvtest::Binary linked_binary;
 

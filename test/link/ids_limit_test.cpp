@@ -23,20 +23,20 @@ using IdsLimit = spvtest::LinkerTest;
 
 TEST_F(IdsLimit, UnderLimit) {
   spvtest::Binaries binaries = {
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      0x2FFFFFu, // NOTE: Bound
-      0u,        // NOTE: Schema; reserved
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      0x100000u, // NOTE: Bound
-      0u,        // NOTE: Schema; reserved
-    }
+      {
+          SpvMagicNumber,
+          SpvVersion,
+          SPV_GENERATOR_CODEPLAY,
+          0x2FFFFFu, // NOTE: Bound
+          0u,        // NOTE: Schema; reserved
+      },
+      {
+          SpvMagicNumber,
+          SpvVersion,
+          SPV_GENERATOR_CODEPLAY,
+          0x100000u, // NOTE: Bound
+          0u,        // NOTE: Schema; reserved
+      }
   };
   spvtest::Binary linked_binary;
 
@@ -47,33 +47,35 @@ TEST_F(IdsLimit, UnderLimit) {
 
 TEST_F(IdsLimit, OverLimit) {
   spvtest::Binaries binaries = {
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      0x2FFFFFu, // NOTE: Bound
-      0u,        // NOTE: Schema; reserved
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      0x100000u, // NOTE: Bound
-      0u,        // NOTE: Schema; reserved
-    },
-    {
-      SpvMagicNumber,
-      SpvVersion,
-      SPV_GENERATOR_CODEPLAY,
-      3u,  // NOTE: Bound
-      0u,  // NOTE: Schema; reserved
-    }
+      {
+          SpvMagicNumber,
+          SpvVersion,
+          SPV_GENERATOR_CODEPLAY,
+          0x2FFFFFu, // NOTE: Bound
+          0u,        // NOTE: Schema; reserved
+      },
+      {
+          SpvMagicNumber,
+          SpvVersion,
+          SPV_GENERATOR_CODEPLAY,
+          0x100000u, // NOTE: Bound
+          0u,        // NOTE: Schema; reserved
+      },
+      {
+          SpvMagicNumber,
+          SpvVersion,
+          SPV_GENERATOR_CODEPLAY,
+          3u,  // NOTE: Bound
+          0u,  // NOTE: Schema; reserved
+      }
   };
 
   spvtest::Binary linked_binary;
 
   ASSERT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(), HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is the current ID bound."));
+  EXPECT_THAT(GetErrorMessage(),
+              HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is "
+                        "the current ID bound."));
 }
 
 }  // anonymous namespace
