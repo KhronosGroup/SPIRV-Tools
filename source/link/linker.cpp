@@ -18,6 +18,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -41,6 +42,7 @@ using ir::Module;
 using ir::Operand;
 using opt::PassManager;
 using opt::RemoveDuplicatesPass;
+using opt::analysis::DecorationManager;
 using opt::analysis::DefUseManager;
 
 struct LinkingInfo {
@@ -89,6 +91,32 @@ static spv_result_t GetImportExportPairs(
     const DefUseManager& defUseManager,
     std::vector<std::pair<LinkingInfo, LinkingInfo>>* linkingsToDo);
 
+// Checks that for each pair of import and export, the import and export have
+// the same type as well as the same decorations.
+//
+// TODO(pierremoreau): Decorations on functions parameters are currently not
+// checked.
+static spv_result_t CheckImportExportCompatibility(
+    const MessageConsumer& consumer,
+    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    const DefUseManager& defUseManager,
+    const DecorationManager& decorationManager);
+
+// Remove linkage specific instructions, such as prototypes of imported
+// functions, declarations of imported variables, import (and export if
+// necessary) linkage attribtes.
+//
+// |linkedModule| and |decorationManager| should not be null, and the
+// 'RemoveDuplicatePass' should be run first.
+//
+// TODO(pierremoreau): Could linkage attributes be found inside decoration
+//                     groups? Most likely not, but who knows.
+static spv_result_t RemoveLinkageSpecificInstructions(
+    const MessageConsumer& consumer, bool create_executable,
+    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    DecorationManager* decorationManager,
+    Module* linkedModule);
+
 // Structs for holding the data members for SpvLinker.
 struct Linker::Impl {
   explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
@@ -133,9 +161,6 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     modules.push_back(std::move(module));
   }
 
-  PassManager manager;
-  manager.SetMessageConsumer(consumer);
-
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
   uint32_t max_id_bound;
@@ -162,80 +187,25 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
                              &linkingsToDo);
   if (res != SPV_SUCCESS) return res;
 
-  // Ensure the import and export types are similar
-  opt::analysis::DecorationManager decorationManager(linkedModule.get());
-  for (const auto& i : linkingsToDo) {
-    if (!RemoveDuplicatesPass::AreTypesEqual(
-            *defUseManager.GetDef(i.first.typeId),
-            *defUseManager.GetDef(i.second.typeId), defUseManager,
-            decorationManager))
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "Type mismatch between imported variable/function %"
-             << i.first.id << " and exported variable/function %" << i.second.id
-             << ".";
-  }
+  // Ensure the import and export have the same types and decorations.
+  DecorationManager decorationManager(linkedModule.get());
+  res = CheckImportExportCompatibility(consumer, linkingsToDo, defUseManager,
+                                       decorationManager);
+  if (res != SPV_SUCCESS) return res;
 
-  // Ensure the import and export decorations are similar
-  for (const auto& i : linkingsToDo) {
-    if (!decorationManager.HaveTheSameDecorations(i.first.id, i.second.id))
-      return libspirv::DiagnosticStream(position, impl_->context->consumer,
-                                        SPV_ERROR_INVALID_BINARY)
-             << "Decorations mismatch between imported variable/function %"
-             << i.first.id << " and exported variable/function %" << i.second.id
-             << ".";
-    // TODO(pierremoreau): Decorations on function parameters should probably
-    //                     match, except for FuncParamAttr if I understand the
-    //                     spec correctly, which makes the code more
-    //                     complicated.
-    //    for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
-    //      if
-    //      (!decorationManager.HaveTheSameDecorations(i.first.parametersIds[j],
-    //      i.second.parametersIds[j]))
-    //          return libspirv::DiagnosticStream(position,
-    //          impl_->context->consumer,
-    //                                            SPV_ERROR_INVALID_BINARY)
-    //                 << "Decorations mismatch between imported function %" <<
-    //                 i.first.id << "'s"
-    //                 << " and exported function %" << i.second.id << "'s " <<
-    //                 (j + 1u) << "th parameter.";
-  }
-
-  // Remove FuncParamAttr decorations of imported functions' parameters.
-  // From the SPIR-V specification, Sec. 2.13:
-  //   When resolving imported functions, the Function Control and all Function
-  //   Parameter Attributes are taken from the function definition, and not
-  //   from the function declaration.
-  for (const auto& i : linkingsToDo) {
-    for (const auto j : i.first.parametersIds) {
-      for (ir::Instruction* decoration :
-           decorationManager.GetDecorationsFor(j, false)) {
-        switch (decoration->opcode()) {
-          case SpvOpDecorate:
-          case SpvOpMemberDecorate:
-            if (decoration->GetSingleWordInOperand(1u) ==
-                SpvDecorationFuncParamAttr)
-              decoration->ToNop();
-            break;
-          default:
-            break;
-        }
-      }
-    }
-  }
+  // Remove duplicates
+  PassManager manager;
+  manager.SetMessageConsumer(consumer);
+  manager.AddPass<RemoveDuplicatesPass>();
+  opt::Pass::Status pass_res = manager.Run(linkedModule.get());
+  if (pass_res == opt::Pass::Status::Failure)
+    return SPV_ERROR_INVALID_DATA;
 
   // Remove prototypes of imported functions
-  for (const auto& i : linkingsToDo) {
-    for (auto j = linkedModule->begin(); j != linkedModule->end();)
-      j = (j->result_id() == i.first.id) ? j.Erase() : ++j;
-  }
-
-  // Remove declarations of imported variables
-  for (const auto& i : linkingsToDo) {
-    for (auto j = linkedModule->types_values_begin();
-         j != linkedModule->types_values_end();)
-      j = (j->result_id() == i.first.id) ? j.Erase() : ++j;
-  }
+  res = RemoveLinkageSpecificInstructions(consumer, !options.GetCreateLibrary(),
+                                          linkingsToDo, &decorationManager,
+                                          linkedModule.get());
+  if (res != SPV_SUCCESS) return res;
 
   // Rematch import variables/functions to export variables/functions
   linkedModule->ForEachInst([&linkingsToDo](Instruction* insn) {
@@ -249,47 +219,11 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
     });
   });
 
-  // Remove import linkage attributes
-  for (auto i = linkedModule->annotation_begin();
-       i != linkedModule->annotation_end();) {
-    if (i->opcode() != SpvOpDecorate ||
-        i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
-        i->GetSingleWordOperand(3u) != SpvLinkageTypeImport)
-      ++i;
-    else
-      i = i.Erase();
-  }
-
-  // Remove export linkage attributes and Linkage capability if making an
-  // executable
-  if (!options.GetCreateLibrary()) {
-    for (auto i = linkedModule->annotation_begin();
-         i != linkedModule->annotation_end();) {
-      if (i->opcode() != SpvOpDecorate ||
-          i->GetSingleWordOperand(1u) != SpvDecorationLinkageAttributes ||
-          i->GetSingleWordOperand(3u) != SpvLinkageTypeExport)
-        ++i;
-      else
-        i = i.Erase();
-    }
-
-    // Remove duplicates
-    manager.AddPass<RemoveDuplicatesPass>();
-
-    for (auto i = linkedModule->capability_begin();
-         i != linkedModule->capability_end();) {
-      if (i->GetSingleWordInOperand(0u) != SpvCapabilityLinkage)
-        ++i;
-      else
-        i = i.Erase();
-    }
-  }
-
   // Queue an optimisation pass to compact all IDs.
   manager.AddPass<opt::CompactIdsPass>();
-
-  // Phase 6: Run all accumulated optimisation passes.
-  manager.Run(linkedModule.get());
+  pass_res = manager.Run(linkedModule.get());
+  if (pass_res == opt::Pass::Status::Failure)
+    return SPV_ERROR_INVALID_DATA;
 
   // Phase 7: Output the module
   linkedModule->ToBinary(&linked_binary, true);
@@ -575,6 +509,139 @@ static spv_result_t GetImportExportPairs(
              << ", were found for \"" << import.name << "\".";
 
     linkingsToDo->emplace_back(import, possibleExports.front());
+  }
+
+  return SPV_SUCCESS;
+}
+
+static spv_result_t CheckImportExportCompatibility(
+    const MessageConsumer& consumer,
+    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    const DefUseManager& defUseManager,
+    const DecorationManager& decorationManager) {
+  spv_position_t position = {};
+
+  // Ensure th import and export types are the same.
+  for (const auto& i : linkingsToDo) {
+    if (!RemoveDuplicatesPass::AreTypesEqual(
+            *defUseManager.GetDef(i.first.typeId),
+            *defUseManager.GetDef(i.second.typeId), defUseManager,
+            decorationManager))
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "Type mismatch between imported variable/function %"
+             << i.first.id << " and exported variable/function %" << i.second.id
+             << ".";
+  }
+
+  // Ensure the import and export decorations are similar
+  for (const auto& i : linkingsToDo) {
+    if (!decorationManager.HaveTheSameDecorations(i.first.id, i.second.id))
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "Decorations mismatch between imported variable/function %"
+             << i.first.id << " and exported variable/function %" << i.second.id
+             << ".";
+    // TODO(pierremoreau): Decorations on function parameters should probably
+    //                     match, except for FuncParamAttr if I understand the
+    //                     spec correctly, which makes the code more
+    //                     complicated.
+    //    for (uint32_t j = 0u; j < i.first.parametersIds.size(); ++j)
+    //      if
+    //      (!decorationManager.HaveTheSameDecorations(i.first.parametersIds[j],
+    //      i.second.parametersIds[j]))
+    //          return libspirv::DiagnosticStream(position,
+    //          impl_->context->consumer,
+    //                                            SPV_ERROR_INVALID_BINARY)
+    //                 << "Decorations mismatch between imported function %" <<
+    //                 i.first.id << "'s"
+    //                 << " and exported function %" << i.second.id << "'s " <<
+    //                 (j + 1u) << "th parameter.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+static spv_result_t RemoveLinkageSpecificInstructions(
+    const MessageConsumer& consumer, bool create_executable,
+    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    DecorationManager* decorationManager,
+    Module* linkedModule) {
+  spv_position_t position = {};
+
+  if (decorationManager == nullptr)
+    return libspirv::DiagnosticStream(position, consumer,
+                                      SPV_ERROR_INVALID_DATA)
+           << "|decorationManager| of RemoveLinkageSpecificInstructions should not "
+              "be empty.";
+  if (linkedModule == nullptr)
+    return libspirv::DiagnosticStream(position, consumer,
+                                      SPV_ERROR_INVALID_DATA)
+           << "|linkedModule| of RemoveLinkageSpecificInstructions should not "
+              "be empty.";
+
+  // Remove FuncParamAttr decorations of imported functions' parameters.
+  // From the SPIR-V specification, Sec. 2.13:
+  //   When resolving imported functions, the Function Control and all Function
+  //   Parameter Attributes are taken from the function definition, and not
+  //   from the function declaration.
+  for (const auto& linking_pair : linkingsToDo) {
+    for (const auto parameter_id : linking_pair.first.parametersIds) {
+      for (ir::Instruction* decoration :
+           decorationManager->GetDecorationsFor(parameter_id, false)) {
+        switch (decoration->opcode()) {
+          case SpvOpDecorate:
+          case SpvOpMemberDecorate:
+            if (decoration->GetSingleWordInOperand(1u) ==
+                SpvDecorationFuncParamAttr)
+              decoration->ToNop();
+            break;
+          default:
+            break;
+        }
+      }
+    }
+  }
+
+  // Remove prototypes of imported functions
+  for (const auto& linking_pair : linkingsToDo) {
+    for (auto j = linkedModule->begin(); j != linkedModule->end();) {
+      if (j->result_id() == linking_pair.first.id)
+        j = j.Erase();
+      else
+        ++j;
+    }
+  }
+
+  // Remove declarations of imported variables
+  for (const auto& linking_pair : linkingsToDo) {
+    for (auto& inst : linkedModule->types_values())
+      if (inst.result_id() == linking_pair.first.id) inst.ToNop();
+  }
+
+  // Remove import linkage attributes
+  for (auto& inst : linkedModule->annotations())
+    if (inst.opcode() == SpvOpDecorate &&
+        inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
+        inst.GetSingleWordOperand(3u) == SpvLinkageTypeImport)
+      inst.ToNop();
+
+  // Remove export linkage attributes and Linkage capability if making an
+  // executable
+  if (create_executable) {
+    for (auto& inst : linkedModule->annotations())
+      if (inst.opcode() == SpvOpDecorate &&
+          inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
+          inst.GetSingleWordOperand(3u) == SpvLinkageTypeExport)
+        inst.ToNop();
+
+    for (auto& inst : linkedModule->capabilities())
+      if (inst.GetSingleWordInOperand(0u) == SpvCapabilityLinkage) {
+        inst.ToNop();
+        // The RemoveDuplicatesPass did remove duplicated capabilities, so we
+        // now there aren’t more SpvCapabilityLinkage further down.
+        break;
+      }
   }
 
   return SPV_SUCCESS;
