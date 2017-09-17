@@ -63,6 +63,8 @@ class PassManager {
   // registered after the error-reporting pass will be skipped. Returns the
   // corresponding Status::Success if processing is succesful to indicate
   // whether changes are made to the module.
+  //
+  // After running all the passes, they are removed from the list.
   Pass::Status Run(ir::Module* module);
 
  private:
