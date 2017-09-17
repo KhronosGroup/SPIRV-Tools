@@ -188,7 +188,7 @@ void DecorationManager::AnalyzeDecorations(ir::Module* module) {
     switch (inst.opcode()) {
       case SpvOpDecorationGroup:
         group_to_decoration_insts_.insert(
-            {inst.GetSingleWordInOperand(0u), {}});
+            {inst.result_id(), {}});
         break;
       default:
         break;
