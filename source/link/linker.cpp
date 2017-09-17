@@ -206,7 +206,7 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
-  uint32_t max_id_bound;
+  uint32_t max_id_bound = 0u;
   spv_result_t res = ShiftIdsInModules(consumer, &modules, &max_id_bound);
   if (res != SPV_SUCCESS) return res;
 
@@ -272,6 +272,7 @@ static spv_result_t ShiftIdsInModules(
     const MessageConsumer& consumer,
     std::vector<std::unique_ptr<ir::Module>>* modules, uint32_t* max_id_bound) {
   spv_position_t position = {};
+
   if (modules == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
