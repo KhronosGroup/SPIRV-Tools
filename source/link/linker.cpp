@@ -225,15 +225,11 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 8: Rematch import variables/functions to export variables/functions
-  linked_module->ForEachInst([&linkingsToDo](Instruction* insn) {
-    insn->ForEachId([&linkingsToDo](uint32_t* id) {
-      auto id_iter = std::find_if(linkingsToDo.begin(), linkingsToDo.end(),
-                                  [id](const LinkageEntry& entry) {
-                                    return entry.exported_symbol.id == *id;
-                                  });
-      if (id_iter != linkingsToDo.end()) *id = id_iter->imported_symbol.id;
-    });
-  });
+  // TODO(pierremoreau): Keep the previous DefUseManager up-to-date
+  DefUseManager def_use_manager2(consumer, linked_module.get());
+  for (const auto& linking_entry : linkingsToDo)
+    def_use_manager2.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
+                                        linking_entry.exported_symbol.id);
 
   // Phase 9: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
@@ -276,7 +272,8 @@ static spv_result_t ShiftIdsInModules(
            << "|max_id_bound| of ShiftIdsInModules should not be null.";
 
   uint32_t id_bound = modules->front()->IdBound() - 1u;
-  for (auto module_iter = modules->begin() + 1; module_iter != modules->end(); ++module_iter) {
+  for (auto module_iter = modules->begin() + 1; module_iter != modules->end();
+       ++module_iter) {
     Module* module = module_iter->get();
     module->ForEachInst([&id_bound](Instruction* insn) {
       insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
@@ -449,7 +446,8 @@ static spv_result_t MergeModules(
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
     for (const auto& func : *module) {
-      std::unique_ptr<ir::Function> cloned_func = MakeUnique<ir::Function>(func);
+      std::unique_ptr<ir::Function> cloned_func =
+          MakeUnique<ir::Function>(func);
       cloned_func->SetParent(linked_module);
       linked_module->AddFunction(std::move(cloned_func));
     }
@@ -494,7 +492,7 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
     if (def_inst == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-              << "ID " << id << " is never defined:\n";
+             << "ID " << id << " is never defined:\n";
 
     if (def_inst->opcode() == SpvOpVariable) {
       data.typeId = def_inst->type_id();
@@ -504,7 +502,7 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
       // range-based for loop calls begin()/end(), but never cbegin()/cend(),
       // which will not work here.
       for (auto func_iter = linked_module.cbegin();
-            func_iter != linked_module.cend(); ++func_iter) {
+           func_iter != linked_module.cend(); ++func_iter) {
         if (func_iter->result_id() != id) continue;
         func_iter->ForEachParam([&data](const Instruction* inst) {
           data.parametersIds.push_back(inst->result_id());
@@ -513,8 +511,8 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
     } else {
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-              << "Only global variables and functions can be decorated using"
-              << " LinkageAttributes; " << id << " is neither of them.\n";
+             << "Only global variables and functions can be decorated using"
+             << " LinkageAttributes; " << id << " is neither of them.\n";
     }
 
     if (type == SpvLinkageTypeImport)
@@ -640,7 +638,8 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove prototypes of imported functions
   for (const auto& linking_entry : linkingsToDo) {
-    for (auto func_iter = linked_module->begin(); func_iter != linked_module->end();) {
+    for (auto func_iter = linked_module->begin();
+         func_iter != linked_module->end();) {
       if (func_iter->result_id() == linking_entry.imported_symbol.id)
         func_iter = func_iter.Erase();
       else
