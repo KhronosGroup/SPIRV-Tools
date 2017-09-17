@@ -270,8 +270,8 @@ static spv_result_t ShiftIdsInModules(
            << "|max_id_bound| of ShiftIdsInModules should not be null.";
 
   uint32_t id_bound = modules->front()->IdBound() - 1u;
-  for (auto i = modules->begin() + 1; i != modules->end(); ++i) {
-    Module* module = i->get();
+  for (auto module_iter = modules->begin() + 1; module_iter != modules->end(); ++module_iter) {
+    Module* module = module_iter->get();
     module->ForEachInst([&id_bound](Instruction* insn) {
       insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
     });
@@ -442,10 +442,10 @@ static spv_result_t MergeModules(
 
   // Process functions and their basic blocks
   for (const auto& module : inModules) {
-    for (const auto& i : *module) {
-      std::unique_ptr<ir::Function> func = MakeUnique<ir::Function>(i);
-      func->SetParent(linked_module);
-      linked_module->AddFunction(std::move(func));
+    for (const auto& func : *module) {
+      std::unique_ptr<ir::Function> cloned_func = MakeUnique<ir::Function>(func);
+      cloned_func->SetParent(linked_module);
+      linked_module->AddFunction(std::move(cloned_func));
     }
   }
 
