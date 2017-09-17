@@ -466,14 +466,14 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
   std::vector<LinkageSymbolInfo> imports;
   std::unordered_map<std::string, std::vector<LinkageSymbolInfo>> exports;
   // Figure out the imports and exports
-  for (const auto& j : linked_module.annotations()) {
-    if (j.opcode() == SpvOpDecorate &&
-        j.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
-      uint32_t type = j.GetSingleWordInOperand(3u);
-      SpvId id = j.GetSingleWordInOperand(0u);
+  for (const auto& decoration : linked_module.annotations()) {
+    if (decoration.opcode() == SpvOpDecorate &&
+        decoration.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
+      uint32_t type = decoration.GetSingleWordInOperand(3u);
+      SpvId id = decoration.GetSingleWordInOperand(0u);
       LinkageSymbolInfo data;
       data.name =
-          reinterpret_cast<const char*>(j.GetInOperand(2u).words.data());
+          reinterpret_cast<const char*>(decoration.GetInOperand(2u).words.data());
       data.id = id;
       data.typeId = 0u;
       const Instruction* defInst = defUseManager.GetDef(id);
@@ -557,18 +557,18 @@ static spv_result_t CheckImportExportCompatibility(
     //                     match, except for FuncParamAttr if I understand the
     //                     spec correctly, which makes the code more
     //                     complicated.
-    //    for (uint32_t j = 0u; j <
-    //    linking_entry.imported_symbol.parametersIds.size(); ++j)
+    //    for (uint32_t i = 0u; i <
+    //    linking_entry.imported_symbol.parametersIds.size(); ++i)
     //      if
-    //      (!decorationManager.HaveTheSameDecorations(linking_entry.imported_symbol.parametersIds[j],
-    //      linking_entry.exported_symbol.parametersIds[j]))
+    //      (!decorationManager.HaveTheSameDecorations(linking_entry.imported_symbol.parametersIds[i],
+    //      linking_entry.exported_symbol.parametersIds[i]))
     //          return libspirv::DiagnosticStream(position,
     //          impl_->context->consumer,
     //                                            SPV_ERROR_INVALID_BINARY)
     //                 << "Decorations mismatch between imported function %" <<
     //                 linking_entry.imported_symbol.id << "'s"
     //                 << " and exported function %" <<
-    //                 linking_entry.exported_symbol.id << "'s " << (j + 1u) <<
+    //                 linking_entry.exported_symbol.id << "'s " << (i + 1u) <<
     //                 "th parameter.";
   }
 
@@ -619,11 +619,11 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove prototypes of imported functions
   for (const auto& linking_entry : linkingsToDo) {
-    for (auto j = linked_module->begin(); j != linked_module->end();) {
-      if (j->result_id() == linking_entry.imported_symbol.id)
-        j = j.Erase();
+    for (auto func_iter = linked_module->begin(); func_iter != linked_module->end();) {
+      if (func_iter->result_id() == linking_entry.imported_symbol.id)
+        func_iter = func_iter.Erase();
       else
-        ++j;
+        ++func_iter;
     }
   }
 
