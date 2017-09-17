@@ -45,12 +45,17 @@ using opt::RemoveDuplicatesPass;
 using opt::analysis::DecorationManager;
 using opt::analysis::DefUseManager;
 
-struct LinkingInfo {
-  SpvId id;
-  SpvId typeId;
-  std::string name;
-  std::vector<SpvId> parametersIds;
+// Stores various information about an imported or exported symbol.
+struct LinkageSymbolInfo {
+  SpvId id;          // ID of the symbol
+  SpvId typeId;      // ID of the type of the symbol
+  std::string name;  // unique name defining the symbol and used for matching
+                     // imports and exports together
+  std::vector<SpvId> parametersIds;  // ID of the parameters of the symbol, if
+                                     // it is a function
 };
+using LinkageEntry = std::pair<LinkageSymbolInfo, LinkageSymbolInfo>;
+using LinkageTable = std::vector<LinkageEntry>;
 
 // Shifts the IDs used in each binary of |modules| so that they occupy a
 // disjoint range from the other binaries, and compute the new ID bound which
@@ -75,21 +80,21 @@ static spv_result_t GenerateHeader(
     const std::vector<std::unique_ptr<ir::Module>>& modules,
     uint32_t max_id_bound, ir::ModuleHeader* header);
 
-// Merge all the modules from |inModules| into |linkedModule|.
+// Merge all the modules from |inModules| into |linked_module|.
 //
-// |linkedModule| should not be null.
+// |linked_module| should not be null.
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
     const std::vector<std::unique_ptr<Module>>& inModules,
-    const libspirv::AssemblyGrammar& grammar, Module* linkedModule);
+    const libspirv::AssemblyGrammar& grammar, Module* linked_module);
 
 // Compute all pairs of import and export and return it in |linkingsToDo|.
 //
 // |linkingsToDo should not be null.
-static spv_result_t GetImportExportPairs(
-    const MessageConsumer& consumer, const Module& linkedModule,
-    const DefUseManager& defUseManager,
-    std::vector<std::pair<LinkingInfo, LinkingInfo>>* linkingsToDo);
+static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
+                                         const Module& linked_module,
+                                         const DefUseManager& defUseManager,
+                                         LinkageTable* linkingsToDo);
 
 // Checks that for each pair of import and export, the import and export have
 // the same type as well as the same decorations.
@@ -97,8 +102,7 @@ static spv_result_t GetImportExportPairs(
 // TODO(pierremoreau): Decorations on functions parameters are currently not
 // checked.
 static spv_result_t CheckImportExportCompatibility(
-    const MessageConsumer& consumer,
-    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    const MessageConsumer& consumer, const LinkageTable& linkingsToDo,
     const DefUseManager& defUseManager,
     const DecorationManager& decorationManager);
 
@@ -106,16 +110,15 @@ static spv_result_t CheckImportExportCompatibility(
 // functions, declarations of imported variables, import (and export if
 // necessary) linkage attribtes.
 //
-// |linkedModule| and |decorationManager| should not be null, and the
+// |linked_module| and |decorationManager| should not be null, and the
 // 'RemoveDuplicatePass' should be run first.
 //
 // TODO(pierremoreau): Could linkage attributes be found inside decoration
 //                     groups? Most likely not, but who knows.
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
-    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
-    DecorationManager* decorationManager,
-    Module* linkedModule);
+    const LinkageTable& linkingsToDo, DecorationManager* decorationManager,
+    Module* linked_module);
 
 // Structs for holding the data members for SpvLinker.
 struct Linker::Impl {
@@ -171,62 +174,59 @@ spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  auto linkedModule = MakeUnique<Module>();
-  linkedModule->SetHeader(header);
+  auto linked_module = MakeUnique<Module>();
+  linked_module->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.
   libspirv::AssemblyGrammar grammar(impl_->context);
-  res = MergeModules(consumer, modules, grammar, linkedModule.get());
+  res = MergeModules(consumer, modules, grammar, linked_module.get());
   if (res != SPV_SUCCESS) return res;
 
-  DefUseManager defUseManager(consumer, linkedModule.get());
+  DefUseManager defUseManager(consumer, linked_module.get());
 
-  // Find the import/export pairs
-  std::vector<std::pair<LinkingInfo, LinkingInfo>> linkingsToDo;
-  res = GetImportExportPairs(consumer, *linkedModule, defUseManager,
+  // Phase 4: Find the import/export pairs
+  LinkageTable linkingsToDo;
+  res = GetImportExportPairs(consumer, *linked_module, defUseManager,
                              &linkingsToDo);
   if (res != SPV_SUCCESS) return res;
 
-  // Ensure the import and export have the same types and decorations.
-  DecorationManager decorationManager(linkedModule.get());
+  // Phase 5: Ensure the import and export have the same types and decorations.
+  DecorationManager decorationManager(linked_module.get());
   res = CheckImportExportCompatibility(consumer, linkingsToDo, defUseManager,
                                        decorationManager);
   if (res != SPV_SUCCESS) return res;
 
-  // Remove duplicates
+  // Phase 6: Remove duplicates
   PassManager manager;
   manager.SetMessageConsumer(consumer);
   manager.AddPass<RemoveDuplicatesPass>();
-  opt::Pass::Status pass_res = manager.Run(linkedModule.get());
-  if (pass_res == opt::Pass::Status::Failure)
-    return SPV_ERROR_INVALID_DATA;
+  opt::Pass::Status pass_res = manager.Run(linked_module.get());
+  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Remove prototypes of imported functions
+  // Phase 7: Remove linkage specific instructions, such as import/export
+  // attributes, linkage capability, etc. if applicable
   res = RemoveLinkageSpecificInstructions(consumer, !options.GetCreateLibrary(),
                                           linkingsToDo, &decorationManager,
-                                          linkedModule.get());
+                                          linked_module.get());
   if (res != SPV_SUCCESS) return res;
 
-  // Rematch import variables/functions to export variables/functions
-  linkedModule->ForEachInst([&linkingsToDo](Instruction* insn) {
+  // Phase 8: Rematch import variables/functions to export variables/functions
+  linked_module->ForEachInst([&linkingsToDo](Instruction* insn) {
     insn->ForEachId([&linkingsToDo](uint32_t* id) {
-      auto id_iter =
-          std::find_if(linkingsToDo.begin(), linkingsToDo.end(),
-                       [id](const std::pair<LinkingInfo, LinkingInfo>& pair) {
-                         return pair.second.id == *id;
-                       });
+      auto id_iter = std::find_if(
+          linkingsToDo.begin(), linkingsToDo.end(),
+          [id](const LinkageEntry& pair) { return pair.second.id == *id; });
       if (id_iter != linkingsToDo.end()) *id = id_iter->first.id;
     });
   });
 
-  // Queue an optimisation pass to compact all IDs.
+  // Phase 9: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
-  pass_res = manager.Run(linkedModule.get());
-  if (pass_res == opt::Pass::Status::Failure)
-    return SPV_ERROR_INVALID_DATA;
+  pass_res = manager.Run(linked_module.get());
+  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 7: Output the module
-  linkedModule->ToBinary(&linked_binary, true);
+  // Phase 10: Output the module
+  linked_module->ToBinary(&linked_binary, true);
 
   return SPV_SUCCESS;
 }
@@ -315,27 +315,27 @@ static spv_result_t GenerateHeader(
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
     const std::vector<std::unique_ptr<Module>>& inModules,
-    const libspirv::AssemblyGrammar& grammar, Module* linkedModule) {
+    const libspirv::AssemblyGrammar& grammar, Module* linked_module) {
   spv_position_t position = {};
 
-  if (linkedModule == nullptr)
+  if (linked_module == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
-           << "|linkedModule| of MergeModules should not be null.";
+           << "|linked_module| of MergeModules should not be null.";
 
   if (inModules.empty()) return SPV_SUCCESS;
 
   for (const auto& module : inModules)
     for (const auto& insn : module->capabilities())
-      linkedModule->AddCapability(MakeUnique<Instruction>(insn));
+      linked_module->AddCapability(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->extensions())
-      linkedModule->AddExtension(MakeUnique<Instruction>(insn));
+      linked_module->AddExtension(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->ext_inst_imports())
-      linkedModule->AddExtInstImport(MakeUnique<Instruction>(insn));
+      linked_module->AddExtInstImport(MakeUnique<Instruction>(insn));
 
   do {
     const Instruction* memoryModelInsn = inModules[0]->GetMemoryModel();
@@ -374,7 +374,7 @@ static spv_result_t MergeModules(
     }
 
     if (memoryModelInsn != nullptr)
-      linkedModule->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
+      linked_module->SetMemoryModel(MakeUnique<Instruction>(*memoryModelInsn));
   } while (false);
 
   std::vector<std::pair<uint32_t, const char*>> entryPoints;
@@ -396,25 +396,25 @@ static spv_result_t MergeModules(
                << "The entry point \"" << name << "\", with execution model "
                << desc->name << ", was already defined.";
       }
-      linkedModule->AddEntryPoint(MakeUnique<Instruction>(insn));
+      linked_module->AddEntryPoint(MakeUnique<Instruction>(insn));
       entryPoints.emplace_back(model, name);
     }
 
   for (const auto& module : inModules)
     for (const auto& insn : module->execution_modes())
-      linkedModule->AddExecutionMode(MakeUnique<Instruction>(insn));
+      linked_module->AddExecutionMode(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->debugs1())
-      linkedModule->AddDebug1Inst(MakeUnique<Instruction>(insn));
+      linked_module->AddDebug1Inst(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->debugs2())
-      linkedModule->AddDebug2Inst(MakeUnique<Instruction>(insn));
+      linked_module->AddDebug2Inst(MakeUnique<Instruction>(insn));
 
   for (const auto& module : inModules)
     for (const auto& insn : module->annotations())
-      linkedModule->AddAnnotationInst(MakeUnique<Instruction>(insn));
+      linked_module->AddAnnotationInst(MakeUnique<Instruction>(insn));
 
   // TODO(pierremoreau): Since the modules have not been validate, should we
   //                     expect SpvStorageClassFunction variables outside
@@ -422,7 +422,7 @@ static spv_result_t MergeModules(
   uint32_t num_global_values = 0u;
   for (const auto& module : inModules) {
     for (const auto& insn : module->types_values()) {
-      linkedModule->AddType(MakeUnique<Instruction>(insn));
+      linked_module->AddType(MakeUnique<Instruction>(insn));
       num_global_values += insn.opcode() == SpvOpVariable;
     }
   }
@@ -435,18 +435,18 @@ static spv_result_t MergeModules(
   for (const auto& module : inModules) {
     for (const auto& i : *module) {
       std::unique_ptr<ir::Function> func = MakeUnique<ir::Function>(i);
-      func->SetParent(linkedModule);
-      linkedModule->AddFunction(std::move(func));
+      func->SetParent(linked_module);
+      linked_module->AddFunction(std::move(func));
     }
   }
 
   return SPV_SUCCESS;
 }
 
-static spv_result_t GetImportExportPairs(
-    const MessageConsumer& consumer, const Module& linkedModule,
-    const DefUseManager& defUseManager,
-    std::vector<std::pair<LinkingInfo, LinkingInfo>>* linkingsToDo) {
+static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
+                                         const Module& linked_module,
+                                         const DefUseManager& defUseManager,
+                                         LinkageTable* linkingsToDo) {
   spv_position_t position = {};
 
   if (linkingsToDo == nullptr)
@@ -454,15 +454,15 @@ static spv_result_t GetImportExportPairs(
                                       SPV_ERROR_INVALID_DATA)
            << "|linkingsToDo| of GetImportExportPairs should not be empty.";
 
-  std::vector<LinkingInfo> imports;
-  std::unordered_map<std::string, std::vector<LinkingInfo>> exports;
+  std::vector<LinkageSymbolInfo> imports;
+  std::unordered_map<std::string, std::vector<LinkageSymbolInfo>> exports;
   // Figure out the imports and exports
-  for (const auto& j : linkedModule.annotations()) {
+  for (const auto& j : linked_module.annotations()) {
     if (j.opcode() == SpvOpDecorate &&
         j.GetSingleWordInOperand(1u) == SpvDecorationLinkageAttributes) {
       uint32_t type = j.GetSingleWordInOperand(3u);
       SpvId id = j.GetSingleWordInOperand(0u);
-      LinkingInfo data;
+      LinkageSymbolInfo data;
       data.name =
           reinterpret_cast<const char*>(j.GetInOperand(2u).words.data());
       data.id = id;
@@ -478,8 +478,8 @@ static spv_result_t GetImportExportPairs(
         data.typeId = defInst->GetSingleWordInOperand(1u);
         // range-based for loop calls begin()/end(), but never cbegin()/cend(),
         // which will not work here.
-        for (auto func_iter = linkedModule.cbegin();
-             func_iter != linkedModule.cend(); ++func_iter) {
+        for (auto func_iter = linked_module.cbegin();
+             func_iter != linked_module.cend(); ++func_iter) {
           if (func_iter->result_id() != id) continue;
           func_iter->ForEachParam([&data](const Instruction* inst) {
             data.parametersIds.push_back(inst->result_id());
@@ -495,7 +495,7 @@ static spv_result_t GetImportExportPairs(
 
   // Find the import/export pairs
   for (const auto& import : imports) {
-    std::vector<LinkingInfo> possibleExports;
+    std::vector<LinkageSymbolInfo> possibleExports;
     const auto& exp = exports.find(import.name);
     if (exp != exports.end()) possibleExports = exp->second;
     if (possibleExports.empty())
@@ -515,8 +515,7 @@ static spv_result_t GetImportExportPairs(
 }
 
 static spv_result_t CheckImportExportCompatibility(
-    const MessageConsumer& consumer,
-    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
+    const MessageConsumer& consumer, const LinkageTable& linkingsToDo,
     const DefUseManager& defUseManager,
     const DecorationManager& decorationManager) {
   spv_position_t position = {};
@@ -564,20 +563,20 @@ static spv_result_t CheckImportExportCompatibility(
 
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
-    const std::vector<std::pair<LinkingInfo, LinkingInfo>>& linkingsToDo,
-    DecorationManager* decorationManager,
-    Module* linkedModule) {
+    const LinkageTable& linkingsToDo, DecorationManager* decorationManager,
+    Module* linked_module) {
   spv_position_t position = {};
 
   if (decorationManager == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
-           << "|decorationManager| of RemoveLinkageSpecificInstructions should not "
+           << "|decorationManager| of RemoveLinkageSpecificInstructions should "
+              "not "
               "be empty.";
-  if (linkedModule == nullptr)
+  if (linked_module == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
-           << "|linkedModule| of RemoveLinkageSpecificInstructions should not "
+           << "|linked_module| of RemoveLinkageSpecificInstructions should not "
               "be empty.";
 
   // Remove FuncParamAttr decorations of imported functions' parameters.
@@ -605,7 +604,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove prototypes of imported functions
   for (const auto& linking_pair : linkingsToDo) {
-    for (auto j = linkedModule->begin(); j != linkedModule->end();) {
+    for (auto j = linked_module->begin(); j != linked_module->end();) {
       if (j->result_id() == linking_pair.first.id)
         j = j.Erase();
       else
@@ -615,12 +614,12 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove declarations of imported variables
   for (const auto& linking_pair : linkingsToDo) {
-    for (auto& inst : linkedModule->types_values())
+    for (auto& inst : linked_module->types_values())
       if (inst.result_id() == linking_pair.first.id) inst.ToNop();
   }
 
   // Remove import linkage attributes
-  for (auto& inst : linkedModule->annotations())
+  for (auto& inst : linked_module->annotations())
     if (inst.opcode() == SpvOpDecorate &&
         inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
         inst.GetSingleWordOperand(3u) == SpvLinkageTypeImport)
@@ -629,13 +628,13 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   // Remove export linkage attributes and Linkage capability if making an
   // executable
   if (create_executable) {
-    for (auto& inst : linkedModule->annotations())
+    for (auto& inst : linked_module->annotations())
       if (inst.opcode() == SpvOpDecorate &&
           inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
           inst.GetSingleWordOperand(3u) == SpvLinkageTypeExport)
         inst.ToNop();
 
-    for (auto& inst : linkedModule->capabilities())
+    for (auto& inst : linked_module->capabilities())
       if (inst.GetSingleWordInOperand(0u) == SpvCapabilityLinkage) {
         inst.ToNop();
         // The RemoveDuplicatesPass did remove duplicated capabilities, so we
