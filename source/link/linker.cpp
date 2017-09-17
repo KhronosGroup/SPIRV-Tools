@@ -186,6 +186,14 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   std::vector<std::unique_ptr<Module>> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
+    const uint32_t schema = binaries[i][4u];
+    if (schema != 0u) {
+      position.index = 4u;
+      return libspirv::DiagnosticStream(position, consumer,
+                                        SPV_ERROR_INVALID_BINARY)
+             << "Schema is non-zero for module " << i << ".";
+    }
+
     std::unique_ptr<Module> module = BuildModule(
         impl_->context->target_env, consumer, binaries[i], binary_sizes[i]);
     if (module == nullptr)
