@@ -33,11 +33,10 @@ using ::testing::MatchesRegex;
 using StrengthReductionBasicTest = PassTest<::testing::Test>;
 
 // Test to make sure we replace 5*8.
-TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8a) {
+TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
   const std::vector<const char*> text = {
       // clang-format off
                "OpCapability Shader",
-               "OpCapability Float64",
           "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Vertex %main \"main\"",
@@ -64,12 +63,11 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8a) {
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_3"));
 }
 
-// Test to make sure we replace 8*5.
-TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8b) {
+// Test to make sure we replace 16*5.
+TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy16) {
   const std::vector<const char*> text = {
       // clang-format off
                "OpCapability Shader",
-               "OpCapability Float64",
           "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Vertex %main \"main\"",
@@ -96,12 +94,43 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8b) {
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %int %int_5 %uint_4"));
 }
 
+// Test to make sure we replace a multiple of 32 and 4.
+TEST_F(StrengthReductionBasicTest, BasicTwoPowersOf2) {
+  // In this case, we have two powers of 2.  Need to make sure we replace only
+  // one of them for the bit shift.
+  // clang-format off
+  const std::string text = R"(
+          OpCapability Shader
+     %1 = OpExtInstImport "GLSL.std.450"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint Vertex %main "main"
+          OpName %main "main"
+  %void = OpTypeVoid
+     %4 = OpTypeFunction %void
+   %int = OpTypeInt 32 1
+%int_32 = OpConstant %int 32
+ %int_4 = OpConstant %int 4
+  %main = OpFunction %void None %4
+     %8 = OpLabel
+     %9 = OpIMul %int %int_32 %int_4
+          OpReturn
+          OpFunctionEnd
+)";
+  // clang-format on
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+      text, /* skip_nop = */ true);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  const std::string& output = std::get<0>(result);
+  EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
+  EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %int %int_4 %uint_5"));
+}
+
 // Test to make sure we don't replace 0*5.
 TEST_F(StrengthReductionBasicTest, BasicDontReplace0) {
   const std::vector<const char*> text = {
       // clang-format off
                "OpCapability Shader",
-               "OpCapability Float64",
           "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Vertex %main \"main\"",
@@ -130,7 +159,6 @@ TEST_F(StrengthReductionBasicTest, BasicNoChange) {
   const std::vector<const char*> text = {
       // clang-format off
              "OpCapability Shader",
-             "OpCapability Float64",
         "%1 = OpExtInstImport \"GLSL.std.450\"",
              "OpMemoryModel Logical GLSL450",
              "OpEntryPoint Vertex %2 \"main\"",
@@ -160,7 +188,6 @@ TEST_F(StrengthReductionBasicTest, NoDuplicateConstantsAndTypes) {
   const std::vector<const char*> text = {
       // clang-format off
                "OpCapability Shader",
-               "OpCapability Float64",
           "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Vertex %main \"main\"",
@@ -183,8 +210,218 @@ TEST_F(StrengthReductionBasicTest, NoDuplicateConstantsAndTypes) {
 
   EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
   const std::string& output = std::get<0>(result);
-  EXPECT_THAT(output, Not(MatchesRegex(".*OpConstant %uint 3.*OpConstant %uint 3.*")));
+  EXPECT_THAT(output,
+              Not(MatchesRegex(".*OpConstant %uint 3.*OpConstant %uint 3.*")));
   EXPECT_THAT(output, Not(MatchesRegex(".*OpTypeInt 32 0.*OpTypeInt 32 0.*")));
 }
 
+// Test to make sure we generate the constants only once
+TEST_F(StrengthReductionBasicTest, BasicCreateOneConst) {
+  const std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Vertex %main \"main\"",
+               "OpName %main \"main\"",
+       "%void = OpTypeVoid",
+          "%4 = OpTypeFunction %void",
+       "%uint = OpTypeInt 32 0",
+     "%uint_5 = OpConstant %uint 5",
+     "%uint_9 = OpConstant %uint 9",
+   "%uint_128 = OpConstant %uint 128",
+       "%main = OpFunction %void None %4",
+          "%8 = OpLabel",
+          "%9 = OpIMul %uint %uint_5 %uint_128",
+         "%10 = OpIMul %uint %uint_9 %uint_128",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
+      JoinAllInsts(text), /* skip_nop = */ true);
+
+  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
+  const std::string& output = std::get<0>(result);
+  EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
+  EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_7"));
+  EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_9 %uint_7"));
+}
+
+// Test to make sure we generate the instructions in the correct position and
+// that the uses get replaced as well.  Here we check that the use in the return
+// is replaced, we also check that we can replace two OpIMuls when one feeds the
+// other.
+TEST_F(StrengthReductionBasicTest, BasicCheckPositionAndReplacement) {
+  // This is just the preamble to set up the test.
+  const std::vector<const char*> common_text = {
+      // clang-format off
+               "OpCapability Shader",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
+               "OpExecutionMode %main OriginUpperLeft",
+               "OpName %main \"main\"",
+               "OpName %foo_i1_ \"foo(i1;\"",
+               "OpName %n \"n\"",
+               "OpName %gl_FragColor \"gl_FragColor\"",
+               "OpName %param \"param\"",
+               "OpDecorate %gl_FragColor Location 0",
+       "%void = OpTypeVoid",
+          "%3 = OpTypeFunction %void",
+        "%int = OpTypeInt 32 1",
+"%_ptr_Function_int = OpTypePointer Function %int",
+          "%8 = OpTypeFunction %int %_ptr_Function_int",
+    "%int_256 = OpConstant %int 256",
+      "%int_2 = OpConstant %int 2",
+      "%float = OpTypeFloat 32",
+    "%v4float = OpTypeVector %float 4",
+"%_ptr_Output_v4float = OpTypePointer Output %v4float",
+"%gl_FragColor = OpVariable %_ptr_Output_v4float Output",
+    "%float_1 = OpConstant %float 1",
+     "%int_10 = OpConstant %int 10",
+  "%float_0_4 = OpConstant %float 0.4",
+  "%float_0_8 = OpConstant %float 0.8",
+       "%uint = OpTypeInt 32 0",
+     "%uint_8 = OpConstant %uint 8",
+     "%uint_1 = OpConstant %uint 1",
+       "%main = OpFunction %void None %3",
+          "%5 = OpLabel",
+      "%param = OpVariable %_ptr_Function_int Function",
+               "OpStore %param %int_10",
+         "%26 = OpFunctionCall %int %foo_i1_ %param",
+         "%27 = OpConvertSToF %float %26",
+         "%28 = OpFDiv %float %float_1 %27",
+         "%31 = OpCompositeConstruct %v4float %28 %float_0_4 %float_0_8 %float_1",
+               "OpStore %gl_FragColor %31",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  // This is the real test.  The two OpIMul should be replaced.  The expected
+  // output is in |foo_after|.
+  const std::vector<const char*> foo_before = {
+      // clang-format off
+    "%foo_i1_ = OpFunction %int None %8",
+          "%n = OpFunctionParameter %_ptr_Function_int",
+         "%11 = OpLabel",
+         "%12 = OpLoad %int %n",
+         "%14 = OpIMul %int %12 %int_256",
+         "%16 = OpIMul %int %14 %int_2",
+               "OpReturnValue %16",
+               "OpFunctionEnd",
+
+      // clang-format on
+  };
+
+  const std::vector<const char*> foo_after = {
+      // clang-format off
+    "%foo_i1_ = OpFunction %int None %8",
+          "%n = OpFunctionParameter %_ptr_Function_int",
+         "%11 = OpLabel",
+         "%12 = OpLoad %int %n",
+         "%33 = OpShiftLeftLogical %int %12 %uint_8",
+         "%34 = OpShiftLeftLogical %int %33 %uint_1",
+               "OpReturnValue %34",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::StrengthReductionPass>(
+      JoinAllInsts(Concat(common_text, foo_before)),
+      JoinAllInsts(Concat(common_text, foo_after)),
+      /* skip_nop = */ true, /* do_validate = */ true);
+}
+
+// Test that, when the result of an OpIMul instruction has more than 1 use, and
+// the instruction is replaced, all of the uses of the results are replace with
+// the new result.
+TEST_F(StrengthReductionBasicTest, BasicTestMultipleReplacements) {
+  // This is just the preamble to set up the test.
+  const std::vector<const char*> common_text = {
+      // clang-format off
+               "OpCapability Shader",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
+               "OpExecutionMode %main OriginUpperLeft",
+               "OpName %main \"main\"",
+               "OpName %foo_i1_ \"foo(i1;\"",
+               "OpName %n \"n\"",
+               "OpName %gl_FragColor \"gl_FragColor\"",
+               "OpName %param \"param\"",
+               "OpDecorate %gl_FragColor Location 0",
+       "%void = OpTypeVoid",
+          "%3 = OpTypeFunction %void",
+        "%int = OpTypeInt 32 1",
+"%_ptr_Function_int = OpTypePointer Function %int",
+          "%8 = OpTypeFunction %int %_ptr_Function_int",
+    "%int_256 = OpConstant %int 256",
+      "%int_2 = OpConstant %int 2",
+      "%float = OpTypeFloat 32",
+    "%v4float = OpTypeVector %float 4",
+"%_ptr_Output_v4float = OpTypePointer Output %v4float",
+"%gl_FragColor = OpVariable %_ptr_Output_v4float Output",
+    "%float_1 = OpConstant %float 1",
+     "%int_10 = OpConstant %int 10",
+  "%float_0_4 = OpConstant %float 0.4",
+  "%float_0_8 = OpConstant %float 0.8",
+       "%uint = OpTypeInt 32 0",
+     "%uint_8 = OpConstant %uint 8",
+     "%uint_1 = OpConstant %uint 1",
+       "%main = OpFunction %void None %3",
+          "%5 = OpLabel",
+      "%param = OpVariable %_ptr_Function_int Function",
+               "OpStore %param %int_10",
+         "%26 = OpFunctionCall %int %foo_i1_ %param",
+         "%27 = OpConvertSToF %float %26",
+         "%28 = OpFDiv %float %float_1 %27",
+         "%31 = OpCompositeConstruct %v4float %28 %float_0_4 %float_0_8 %float_1",
+               "OpStore %gl_FragColor %31",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  // This is the real test.  The two OpIMul instructions should be replaced.  In
+  // particular, we want to be sure that both uses of %16 are changed to use the
+  // new result.
+  const std::vector<const char*> foo_before = {
+      // clang-format off
+    "%foo_i1_ = OpFunction %int None %8",
+          "%n = OpFunctionParameter %_ptr_Function_int",
+         "%11 = OpLabel",
+         "%12 = OpLoad %int %n",
+         "%14 = OpIMul %int %12 %int_256",
+         "%16 = OpIMul %int %14 %int_2",
+         "%17 = OpIAdd %int %14 %16",
+               "OpReturnValue %17",
+               "OpFunctionEnd",
+
+      // clang-format on
+  };
+
+  const std::vector<const char*> foo_after = {
+      // clang-format off
+    "%foo_i1_ = OpFunction %int None %8",
+          "%n = OpFunctionParameter %_ptr_Function_int",
+         "%11 = OpLabel",
+         "%12 = OpLoad %int %n",
+         "%34 = OpShiftLeftLogical %int %12 %uint_8",
+         "%35 = OpShiftLeftLogical %int %34 %uint_1",
+         "%17 = OpIAdd %int %34 %35",
+               "OpReturnValue %17",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::StrengthReductionPass>(
+      JoinAllInsts(Concat(common_text, foo_before)),
+      JoinAllInsts(Concat(common_text, foo_after)),
+      /* skip_nop = */ true, /* do_validate = */ true);
+}
 }  // anonymous namespace

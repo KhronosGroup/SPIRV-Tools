@@ -27,7 +27,7 @@
 namespace {
 // Count the number of trailing zeros in the binary representation of
 // |constVal|.
-uint32_t CountLeadingZeros(uint32_t constVal) {
+uint32_t CountTrailingZeros(uint32_t constVal) {
   // Faster if we use the hardware count trailing zeros instruction.
   // If not available, we could create a table.
   uint32_t shiftAmount = 0;
@@ -38,7 +38,7 @@ uint32_t CountLeadingZeros(uint32_t constVal) {
   return shiftAmount;
 }
 
-// Check if |val| is a power of 2 or not.
+// Return true if |val| is a power of 2.
 bool IsPowerOf2(uint32_t val) {
   // The idea is that the & will clear out the least
   // significant 1 bit.  If it is a power of 2, then
@@ -58,7 +58,7 @@ Pass::Status StrengthReductionPass::Process(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
   int32_type_id_ = 0;
   uint32_type_id_ = 0;
-  memset(constant_ids_, 0, sizeof(constant_ids_));
+  std::memset(constant_ids_, 0, sizeof(constant_ids_));
   next_id_ = module->IdBound();
   module_ = module;
 
@@ -91,7 +91,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
 
       if (IsPowerOf2(constVal)) {
         modified = true;
-        uint32_t shiftAmount = CountLeadingZeros(constVal);
+        uint32_t shiftAmount = CountTrailingZeros(constVal);
         uint32_t shiftConstResultId = GetConstantId(shiftAmount);
 
         // Create the new instruction.
@@ -125,23 +125,22 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
 }
 
 void StrengthReductionPass::FindIntTypesAndConstants() {
-  for (auto typeIter = module_->types_values_begin();
-       typeIter != module_->types_values_end(); ++typeIter) {
-    switch (typeIter->opcode()) {
+  for (auto iter = module_->types_values_begin();
+       iter != module_->types_values_end(); ++iter) {
+    switch (iter->opcode()) {
       case SpvOp::SpvOpTypeInt:
-        if (typeIter->GetSingleWordOperand(1) == 32) {
-          if (typeIter->GetSingleWordOperand(2) == 1) {
-            int32_type_id_ = typeIter->result_id();
+        if (iter->GetSingleWordOperand(1) == 32) {
+          if (iter->GetSingleWordOperand(2) == 1) {
+            int32_type_id_ = iter->result_id();
           } else {
-            uint32_type_id_ = typeIter->result_id();
+            uint32_type_id_ = iter->result_id();
           }
         }
         break;
       case SpvOp::SpvOpConstant:
-        if (typeIter->GetSingleWordOperand(0) == uint32_type_id_) {
-          uint32_t value = typeIter->GetSingleWordOperand(2);
-          if (value <= 32)
-            constant_ids_[value] = typeIter->GetSingleWordOperand(1);
+        if (iter->type_id() == uint32_type_id_) {
+          uint32_t value = iter->GetSingleWordOperand(2);
+          if (value <= 32) constant_ids_[value] = iter->result_id();
         }
         break;
       default:

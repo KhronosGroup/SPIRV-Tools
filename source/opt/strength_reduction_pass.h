@@ -42,7 +42,7 @@ class StrengthReductionPass : public Pass {
   // created.  The parameter must be between 0 and 32 inclusive.
   uint32_t GetConstantId(uint32_t);
 
-  // Replaces certain instructions in function bodies with presumable cheaper
+  // Replaces certain instructions in function bodies with presumably cheaper
   // ones. Returns true if something changed.
   bool ScanFunctions();
 

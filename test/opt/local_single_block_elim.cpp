@@ -16,14 +16,6 @@
 #include "pass_fixture.h"
 #include "pass_utils.h"
 
-template <typename T>
-std::vector<T> concat(const std::vector<T>& a, const std::vector<T>& b) {
-  std::vector<T> ret;
-  std::copy(a.begin(), a.end(), back_inserter(ret));
-  std::copy(b.begin(), b.end(), back_inserter(ret));
-  return ret;
-}
-
 namespace {
 
 using namespace spvtools;
