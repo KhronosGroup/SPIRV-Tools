@@ -480,7 +480,7 @@ size_t GetNumBitsToNextByte(size_t bit_pos) {
 // Defines and returns current MARK-V version.
 uint32_t GetMarkvVersion() {
   const uint32_t kVersionMajor = 1;
-  const uint32_t kVersionMinor = 1;
+  const uint32_t kVersionMinor = 2;
   return kVersionMinor | (kVersionMajor << 16);
 }
 
