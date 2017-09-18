@@ -276,7 +276,7 @@ TEST_F(ValidateLogicals, OpAnyWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar type as type_id: Any"));
+      "Expected bool scalar type as Result Type: Any"));
 }
 
 TEST_F(ValidateLogicals, OpAnyWrongOperand) {
@@ -311,7 +311,7 @@ TEST_F(ValidateLogicals, OpIsNanWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: IsNan"));
+      "Expected bool scalar or vector type as Result Type: IsNan"));
 }
 
 TEST_F(ValidateLogicals, OpIsNanOperandNotFloat) {
@@ -333,7 +333,8 @@ TEST_F(ValidateLogicals, OpIsNanOperandWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operand to be equal: IsNan"));
+      "Expected vector sizes of Result Type and the operand to be equal: "
+      "IsNan"));
 }
 
 TEST_F(ValidateLogicals, OpLessOrGreaterSuccess) {
@@ -357,7 +358,7 @@ TEST_F(ValidateLogicals, OpLessOrGreaterWrongTypeId) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: LessOrGreater"));
+      "Expected bool scalar or vector type as Result Type: LessOrGreater"));
 }
 
 TEST_F(ValidateLogicals, OpLessOrGreaterLeftOperandNotFloat) {
@@ -379,7 +380,7 @@ TEST_F(ValidateLogicals, OpLessOrGreaterLeftOperandWrongSize) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operands to be equal: "
+      "Expected vector sizes of Result Type and the operands to be equal: "
       "LessOrGreater"));
 }
 
@@ -416,7 +417,7 @@ TEST_F(ValidateLogicals, OpFOrdEqualWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: FOrdEqual"));
+      "Expected bool scalar or vector type as Result Type: FOrdEqual"));
 }
 
 TEST_F(ValidateLogicals, OpFOrdEqualLeftOperandNotFloat) {
@@ -438,7 +439,7 @@ TEST_F(ValidateLogicals, OpFOrdEqualLeftOperandWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operands to be equal: "
+      "Expected vector sizes of Result Type and the operands to be equal: "
       "FOrdEqual"));
 }
 
@@ -474,7 +475,7 @@ TEST_F(ValidateLogicals, OpLogicalEqualWrongTypeId) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: LogicalEqual"));
+      "Expected bool scalar or vector type as Result Type: LogicalEqual"));
 }
 
 TEST_F(ValidateLogicals, OpLogicalEqualWrongLeftOperand) {
@@ -485,7 +486,7 @@ TEST_F(ValidateLogicals, OpLogicalEqualWrongLeftOperand) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected both operands to be of type type_id: LogicalEqual"));
+      "Expected both operands to be of Result Type: LogicalEqual"));
 }
 
 TEST_F(ValidateLogicals, OpLogicalEqualWrongRightOperand) {
@@ -496,7 +497,7 @@ TEST_F(ValidateLogicals, OpLogicalEqualWrongRightOperand) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected both operands to be of type type_id: LogicalEqual"));
+      "Expected both operands to be of Result Type: LogicalEqual"));
 }
 
 TEST_F(ValidateLogicals, OpLogicalNotSuccess) {
@@ -519,7 +520,7 @@ TEST_F(ValidateLogicals, OpLogicalNotWrongTypeId) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: LogicalNot"));
+      "Expected bool scalar or vector type as Result Type: LogicalNot"));
 }
 
 TEST_F(ValidateLogicals, OpLogicalNotWrongOperand) {
@@ -530,7 +531,7 @@ TEST_F(ValidateLogicals, OpLogicalNotWrongOperand) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operand to be of type type_id: LogicalNot"));
+      "Expected operand to be of Result Type: LogicalNot"));
 }
 
 TEST_F(ValidateLogicals, OpSelectSuccess) {
@@ -554,7 +555,7 @@ TEST_F(ValidateLogicals, OpSelectWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected scalar or vector type as type_id: Select"));
+      "Expected scalar or vector type as Result Type: Select"));
 }
 
 TEST_F(ValidateLogicals, OpSelectPointerNoCapability) {
@@ -609,7 +610,8 @@ TEST_F(ValidateLogicals, OpSelectWrongConditionDimension) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the condition to be equal: Select"));
+      "Expected vector sizes of Result Type and the condition to be equal: "
+      "Select"));
 }
 
 TEST_F(ValidateLogicals, OpSelectWrongLeftObject) {
@@ -620,7 +622,7 @@ TEST_F(ValidateLogicals, OpSelectWrongLeftObject) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected both objects to be of type type_id: Select"));
+      "Expected both objects to be of Result Type: Select"));
 }
 
 TEST_F(ValidateLogicals, OpSelectWrongRightObject) {
@@ -631,7 +633,7 @@ TEST_F(ValidateLogicals, OpSelectWrongRightObject) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected both objects to be of type type_id: Select"));
+      "Expected both objects to be of Result Type: Select"));
 }
 
 TEST_F(ValidateLogicals, OpIEqualSuccess) {
@@ -655,7 +657,7 @@ TEST_F(ValidateLogicals, OpIEqualWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: IEqual"));
+      "Expected bool scalar or vector type as Result Type: IEqual"));
 }
 
 TEST_F(ValidateLogicals, OpIEqualLeftOperandNotInt) {
@@ -677,7 +679,7 @@ TEST_F(ValidateLogicals, OpIEqualLeftOperandWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operands to be equal: "
+      "Expected vector sizes of Result Type and the operands to be equal: "
       "IEqual"));
 }
 
@@ -706,10 +708,12 @@ TEST_F(ValidateLogicals, OpIEqualDifferentBitWidth) {
 TEST_F(ValidateLogicals, OpUGreaterThanSuccess) {
   const std::string body = R"(
 %val1 = OpUGreaterThan %bool %u32_0 %u32_1
-%val2 = OpUGreaterThan %bool %u64_0 %u64_0
-%val3 = OpUGreaterThan %boolvec2 %u32vec2_12 %u32vec2_12
-%val4 = OpUGreaterThan %boolvec3 %u32vec3_123 %u32vec3_123
-%val5 = OpUGreaterThan %boolvec4 %u32vec4_1234 %u32vec4_1234
+%val2 = OpUGreaterThan %bool %s32_0 %u32_1
+%val3 = OpUGreaterThan %bool %u64_0 %u64_0
+%val4 = OpUGreaterThan %bool %u64_0 %s64_0
+%val5 = OpUGreaterThan %boolvec2 %u32vec2_12 %u32vec2_12
+%val6 = OpUGreaterThan %boolvec3 %s32vec3_123 %u32vec3_123
+%val7 = OpUGreaterThan %boolvec4 %u32vec4_1234 %u32vec4_1234
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -724,7 +728,7 @@ TEST_F(ValidateLogicals, OpUGreaterThanWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: UGreaterThan"));
+      "Expected bool scalar or vector type as Result Type: UGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpUGreaterThanLeftOperandNotInt) {
@@ -735,7 +739,7 @@ TEST_F(ValidateLogicals, OpUGreaterThanLeftOperandNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to be scalar or vector unsigned int: UGreaterThan"));
+      "Expected operands to be scalar or vector int: UGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpUGreaterThanLeftOperandWrongSize) {
@@ -746,7 +750,7 @@ TEST_F(ValidateLogicals, OpUGreaterThanLeftOperandWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operands to be equal: "
+      "Expected vector sizes of Result Type and the operands to be equal: "
       "UGreaterThan"));
 }
 
@@ -758,7 +762,7 @@ TEST_F(ValidateLogicals, OpUGreaterThanRightOperandNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to be scalar or vector unsigned int: UGreaterThan"));
+      "Expected operands to be scalar or vector int: UGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpUGreaterThanDifferentBitWidth) {
@@ -769,16 +773,19 @@ TEST_F(ValidateLogicals, OpUGreaterThanDifferentBitWidth) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected both operands to have the same component bit width: UGreaterThan"));
+      "Expected both operands to have the same component bit width: "
+      "UGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpSGreaterThanSuccess) {
   const std::string body = R"(
 %val1 = OpSGreaterThan %bool %s32_0 %s32_1
-%val2 = OpSGreaterThan %bool %s64_0 %s64_0
-%val3 = OpSGreaterThan %boolvec2 %s32vec2_12 %s32vec2_12
-%val4 = OpSGreaterThan %boolvec3 %s32vec3_123 %s32vec3_123
-%val5 = OpSGreaterThan %boolvec4 %s32vec4_1234 %s32vec4_1234
+%val2 = OpSGreaterThan %bool %u32_0 %s32_1
+%val3 = OpSGreaterThan %bool %s64_0 %s64_0
+%val4 = OpSGreaterThan %bool %s64_0 %u64_0
+%val5 = OpSGreaterThan %boolvec2 %s32vec2_12 %s32vec2_12
+%val6 = OpSGreaterThan %boolvec3 %s32vec3_123 %u32vec3_123
+%val7 = OpSGreaterThan %boolvec4 %s32vec4_1234 %s32vec4_1234
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -793,7 +800,7 @@ TEST_F(ValidateLogicals, OpSGreaterThanWrongTypeId) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected bool scalar or vector type as type_id: SGreaterThan"));
+      "Expected bool scalar or vector type as Result Type: SGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpSGreaterThanLeftOperandNotInt) {
@@ -804,7 +811,7 @@ TEST_F(ValidateLogicals, OpSGreaterThanLeftOperandNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to be scalar or vector signed int: SGreaterThan"));
+      "Expected operands to be scalar or vector int: SGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpSGreaterThanLeftOperandWrongSize) {
@@ -815,7 +822,7 @@ TEST_F(ValidateLogicals, OpSGreaterThanLeftOperandWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector sizes of type_id and the operands to be equal: "
+      "Expected vector sizes of Result Type and the operands to be equal: "
       "SGreaterThan"));
 }
 
@@ -827,7 +834,7 @@ TEST_F(ValidateLogicals, OpSGreaterThanRightOperandNotInt) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to be scalar or vector signed int: SGreaterThan"));
+      "Expected operands to be scalar or vector int: SGreaterThan"));
 }
 
 TEST_F(ValidateLogicals, OpSGreaterThanDifferentBitWidth) {
