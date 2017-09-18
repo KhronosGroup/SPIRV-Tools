@@ -277,7 +277,7 @@ TEST_F(ValidateArithmetics, FNegateTypeIdU32) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected floating scalar or vector type as type_id: FNegate"));
+      "Expected floating scalar or vector type as Result Type: FNegate"));
 }
 
 TEST_F(ValidateArithmetics, FNegateTypeIdVec2U32) {
@@ -288,7 +288,7 @@ TEST_F(ValidateArithmetics, FNegateTypeIdVec2U32) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected floating scalar or vector type as type_id: FNegate"));
+      "Expected floating scalar or vector type as Result Type: FNegate"));
 }
 
 TEST_F(ValidateArithmetics, FNegateWrongOperand) {
@@ -299,7 +299,7 @@ TEST_F(ValidateArithmetics, FNegateWrongOperand) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "FNegate operand index 2"));
 }
 
@@ -311,7 +311,7 @@ TEST_F(ValidateArithmetics, FMulTypeIdU32) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected floating scalar or vector type as type_id: FMul"));
+      "Expected floating scalar or vector type as Result Type: FMul"));
 }
 
 TEST_F(ValidateArithmetics, FMulTypeIdVec2U32) {
@@ -322,7 +322,7 @@ TEST_F(ValidateArithmetics, FMulTypeIdVec2U32) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected floating scalar or vector type as type_id: FMul"));
+      "Expected floating scalar or vector type as Result Type: FMul"));
 }
 
 TEST_F(ValidateArithmetics, FMulWrongOperand1) {
@@ -333,7 +333,7 @@ TEST_F(ValidateArithmetics, FMulWrongOperand1) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "FMul operand index 2"));
 }
 
@@ -345,7 +345,7 @@ TEST_F(ValidateArithmetics, FMulWrongOperand2) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "FMul operand index 3"));
 }
 
@@ -357,7 +357,7 @@ TEST_F(ValidateArithmetics, FMulWrongVectorOperand1) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "FMul operand index 2"));
 }
 
@@ -369,7 +369,7 @@ TEST_F(ValidateArithmetics, FMulWrongVectorOperand2) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "FMul operand index 3"));
 }
 
@@ -381,7 +381,7 @@ TEST_F(ValidateArithmetics, IMulFloatTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as type_id: IMul"));
+      "Expected int scalar or vector type as Result Type: IMul"));
 }
 
 TEST_F(ValidateArithmetics, IMulFloatOperand1) {
@@ -417,7 +417,7 @@ TEST_F(ValidateArithmetics, IMulWrongBitWidthOperand1) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same bit width "
-      "as type_id: IMul operand index 2"));
+      "as Result Type: IMul operand index 2"));
 }
 
 TEST_F(ValidateArithmetics, IMulWrongBitWidthOperand2) {
@@ -429,7 +429,7 @@ TEST_F(ValidateArithmetics, IMulWrongBitWidthOperand2) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same bit width "
-      "as type_id: IMul operand index 3"));
+      "as Result Type: IMul operand index 3"));
 }
 
 TEST_F(ValidateArithmetics, IMulWrongBitWidthVector) {
@@ -441,7 +441,7 @@ TEST_F(ValidateArithmetics, IMulWrongBitWidthVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same bit width "
-      "as type_id: IMul operand index 2"));
+      "as Result Type: IMul operand index 2"));
 }
 
 TEST_F(ValidateArithmetics, IMulVectorScalarOperand1) {
@@ -453,7 +453,7 @@ TEST_F(ValidateArithmetics, IMulVectorScalarOperand1) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same dimension "
-      "as type_id: IMul operand index 2"));
+      "as Result Type: IMul operand index 2"));
 }
 
 TEST_F(ValidateArithmetics, IMulVectorScalarOperand2) {
@@ -465,7 +465,7 @@ TEST_F(ValidateArithmetics, IMulVectorScalarOperand2) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same dimension "
-      "as type_id: IMul operand index 3"));
+      "as Result Type: IMul operand index 3"));
 }
 
 TEST_F(ValidateArithmetics, IMulScalarVectorOperand1) {
@@ -477,7 +477,7 @@ TEST_F(ValidateArithmetics, IMulScalarVectorOperand1) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same dimension "
-      "as type_id: IMul operand index 2"));
+      "as Result Type: IMul operand index 2"));
 }
 
 TEST_F(ValidateArithmetics, IMulScalarVectorOperand2) {
@@ -489,7 +489,7 @@ TEST_F(ValidateArithmetics, IMulScalarVectorOperand2) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected arithmetic operands to have the same dimension "
-      "as type_id: IMul operand index 3"));
+      "as Result Type: IMul operand index 3"));
 }
 
 TEST_F(ValidateArithmetics, SNegateFloat) {
@@ -512,7 +512,7 @@ TEST_F(ValidateArithmetics, UDivFloatType) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected unsigned int scalar or vector type as type_id: UDiv"));
+      "Expected unsigned int scalar or vector type as Result Type: UDiv"));
 }
 
 TEST_F(ValidateArithmetics, UDivSignedIntType) {
@@ -523,7 +523,7 @@ TEST_F(ValidateArithmetics, UDivSignedIntType) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected unsigned int scalar or vector type as type_id: UDiv"));
+      "Expected unsigned int scalar or vector type as Result Type: UDiv"));
 }
 
 TEST_F(ValidateArithmetics, UDivWrongOperand1) {
@@ -534,7 +534,7 @@ TEST_F(ValidateArithmetics, UDivWrongOperand1) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "UDiv operand index 2"));
 }
 
@@ -546,7 +546,7 @@ TEST_F(ValidateArithmetics, UDivWrongOperand2) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected arithmetic operands to have type type_id: "
+      "Expected arithmetic operands to be of Result Type: "
       "UDiv operand index 3"));
 }
 
@@ -567,7 +567,7 @@ TEST_F(ValidateArithmetics, DotWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float scalar type as type_id: Dot"));
+      "Expected float scalar type as Result Type: Dot"));
 }
 
 TEST_F(ValidateArithmetics, DotNotVectorTypeOperand1) {
@@ -600,7 +600,8 @@ TEST_F(ValidateArithmetics, DotWrongComponentOperand1) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected component type to be equal to type_id: Dot operand index 2"));
+      "Expected component type to be equal to Result Type: "
+      "Dot operand index 2"));
 }
 
 TEST_F(ValidateArithmetics, DotWrongComponentOperand2) {
@@ -611,7 +612,8 @@ TEST_F(ValidateArithmetics, DotWrongComponentOperand2) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected component type to be equal to type_id: Dot operand index 3"));
+      "Expected component type to be equal to Result Type: "
+      "Dot operand index 3"));
 }
 
 TEST_F(ValidateArithmetics, DotDifferentVectorSize) {
@@ -642,7 +644,7 @@ TEST_F(ValidateArithmetics, VectorTimesScalarWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float vector type as type_id: "
+      "Expected float vector type as Result Type: "
       "VectorTimesScalar"));
 }
 
@@ -654,7 +656,7 @@ TEST_F(ValidateArithmetics, VectorTimesScalarWrongVector) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected vector operand type to be equal to type_id: "
+      "Expected vector operand type to be equal to Result Type: "
       "VectorTimesScalar"));
 }
 
@@ -687,7 +689,7 @@ TEST_F(ValidateArithmetics, MatrixTimesScalarWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float matrix type as type_id: "
+      "Expected float matrix type as Result Type: "
       "MatrixTimesScalar"));
 }
 
@@ -699,7 +701,7 @@ TEST_F(ValidateArithmetics, MatrixTimesScalarWrongMatrix) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected matrix operand type to be equal to type_id: "
+      "Expected matrix operand type to be equal to Result Type: "
       "MatrixTimesScalar"));
 }
 
@@ -741,7 +743,7 @@ TEST_F(ValidateArithmetics, VectorTimesMatrixWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float vector type as type_id: "
+      "Expected float vector type as Result Type: "
       "VectorTimesMatrix"));
 }
 
@@ -765,7 +767,7 @@ TEST_F(ValidateArithmetics, VectorTimesMatrixWrongVectorComponent) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected component types of type_id and vector to be equal: "
+      "Expected component types of Result Type and vector to be equal: "
       "VectorTimesMatrix"));
 }
 
@@ -789,7 +791,7 @@ TEST_F(ValidateArithmetics, VectorTimesMatrixWrongMatrixComponent) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected component types of type_id and matrix to be equal: "
+      "Expected component types of Result Type and matrix to be equal: "
       "VectorTimesMatrix"));
 }
 
@@ -801,7 +803,7 @@ TEST_F(ValidateArithmetics, VectorTimesMatrix2eq2x23Fail) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected number of columns of the matrix to be equal to the type_id "
+      "Expected number of columns of the matrix to be equal to Result Type "
       "vector size: VectorTimesMatrix"));
 }
 
@@ -843,7 +845,7 @@ TEST_F(ValidateArithmetics, MatrixTimesVectorWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float vector type as type_id: "
+      "Expected float vector type as Result Type: "
       "MatrixTimesVector"));
 }
 
@@ -867,7 +869,7 @@ TEST_F(ValidateArithmetics, MatrixTimesVectorWrongMatrixCol) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected column type of the matrix to be equal to type_id: "
+      "Expected column type of the matrix to be equal to Result Type: "
       "MatrixTimesVector"));
 }
 
@@ -942,7 +944,7 @@ TEST_F(ValidateArithmetics, MatrixTimesMatrixWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float matrix type as type_id: MatrixTimesMatrix"));
+      "Expected float matrix type as Result Type: MatrixTimesMatrix"));
 }
 
 TEST_F(ValidateArithmetics, MatrixTimesMatrixWrongLeftOperand) {
@@ -975,7 +977,7 @@ TEST_F(ValidateArithmetics, MatrixTimesMatrix32x23Fail) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected column types of type_id and left matrix to be equal: "
+      "Expected column types of Result Type and left matrix to be equal: "
       "MatrixTimesMatrix"));
 }
 
@@ -987,7 +989,7 @@ TEST_F(ValidateArithmetics, MatrixTimesMatrixDifferentComponents) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected component types of type_id and right matrix to be equal: "
+      "Expected component types of Result Type and right matrix to be equal: "
       "MatrixTimesMatrix"));
 }
 
@@ -999,7 +1001,7 @@ TEST_F(ValidateArithmetics, MatrixTimesMatrix23x23Fail) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected number of columns of type_id and right matrix to be equal: "
+      "Expected number of columns of Result Type and right matrix to be equal: "
       "MatrixTimesMatrix"));
 }
 
@@ -1050,7 +1052,7 @@ TEST_F(ValidateArithmetics, OuterProductWrongTypeId) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float matrix type as type_id: "
+      "Expected float matrix type as Result Type: "
       "OuterProduct"));
 }
 
@@ -1062,7 +1064,7 @@ TEST_F(ValidateArithmetics, OuterProductWrongLeftOperand) {
   CompileSuccessfully(GenerateCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected column type of the type_id to be equal to the type "
+      "Expected column type of Result Type to be equal to the type "
       "of the left operand: OuterProduct"));
 }
 
