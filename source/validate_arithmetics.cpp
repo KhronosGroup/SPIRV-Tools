@@ -412,7 +412,50 @@ spv_result_t ArithmeticsPass(ValidationState_t& _,
       break;
     }
 
-    // TODO(atgoo@github.com): Support other operations.
+    case SpvOpIAddCarry:
+    case SpvOpISubBorrow:
+    case SpvOpUMulExtended:
+    case SpvOpSMulExtended: {
+      std::vector<uint32_t> result_types;
+      if (!_.GetStructMemberTypes(result_type, &result_types))
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected a struct as Result Type: "
+            << spvOpcodeString(opcode);
+
+      if (result_types.size() != 2)
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Result Type struct to have two members: "
+            << spvOpcodeString(opcode);
+
+      if (opcode == SpvOpSMulExtended) {
+        if (!_.IsIntScalarType(result_types[0]) &&
+            !_.IsIntVectorType(result_types[0]))
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Result Type struct member types to be integer scalar "
+            << "or vector: " << spvOpcodeString(opcode);
+      } else {
+        if (!_.IsUnsignedIntScalarType(result_types[0]) &&
+            !_.IsUnsignedIntVectorType(result_types[0]))
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Result Type struct member types to be unsigned "
+            << "integer scalar or vector: " << spvOpcodeString(opcode);
+      }
+
+      if (result_types[0] != result_types[1])
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Result Type struct member types to be identical: "
+            << spvOpcodeString(opcode);
+
+      const uint32_t left_type_id = GetOperandTypeId(_, inst, 2);
+      const uint32_t right_type_id = GetOperandTypeId(_, inst, 3);
+
+      if (left_type_id != result_types[0] || right_type_id != result_types[0])
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected both operands to be of Result Type member type: "
+            << spvOpcodeString(opcode);
+
+      break;
+    }
 
     default:
       break;

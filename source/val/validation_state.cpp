@@ -630,4 +630,24 @@ bool ValidationState_t::GetMatrixTypeInfo(
   return true;
 }
 
+bool ValidationState_t::GetStructMemberTypes(
+    uint32_t struct_type_id, std::vector<uint32_t>* member_types) const {
+  member_types->clear();
+  if (!struct_type_id)
+    return false;
+
+  const Instruction* inst = FindDef(struct_type_id);
+  assert(inst);
+  if (inst->opcode() != SpvOpTypeStruct)
+    return false;
+
+  *member_types = std::vector<uint32_t>(inst->words().cbegin() + 2,
+                                        inst->words().cend());
+
+ if (member_types->empty())
+   return false;
+
+  return true;
+}
+
 }  /// namespace libspirv

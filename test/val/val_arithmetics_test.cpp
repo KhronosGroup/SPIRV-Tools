@@ -73,6 +73,14 @@ OpEntryPoint Fragment %main "main"
 %f32mat33 = OpTypeMatrix %f32vec3 3
 %f64mat22 = OpTypeMatrix %f64vec2 2
 
+%struct_f32_f32 = OpTypeStruct %f32 %f32
+%struct_u32_u32 = OpTypeStruct %u32 %u32
+%struct_u32_u32_u32 = OpTypeStruct %u32 %u32 %u32
+%struct_s32_s32 = OpTypeStruct %s32 %s32
+%struct_s32_u32 = OpTypeStruct %s32 %u32
+%struct_u32vec2_u32vec2 = OpTypeStruct %u32vec2 %u32vec2
+%struct_s32vec2_s32vec2 = OpTypeStruct %s32vec2 %s32vec2
+
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
 %f32_2 = OpConstant %f32 2
@@ -1100,6 +1108,108 @@ TEST_F(ValidateArithmetics, OuterProductRightOperandWrongDimension) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected number of columns of the matrix to be equal to the "
       "vector size of the right operand: OuterProduct"));
+}
+
+TEST_F(ValidateArithmetics, IAddCarrySuccess) {
+  const std::string body = R"(
+%val1 = OpIAddCarry %struct_u32_u32 %u32_0 %u32_1
+%val2 = OpIAddCarry %struct_u32vec2_u32vec2 %u32vec2_01 %u32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, IAddCarryResultTypeNotStruct) {
+  const std::string body = R"(
+%val = OpIAddCarry %u32 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected a struct as Result Type: IAddCarry"));
+}
+
+TEST_F(ValidateArithmetics, IAddCarryResultTypeNotTwoMembers) {
+  const std::string body = R"(
+%val = OpIAddCarry %struct_u32_u32_u32 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected Result Type struct to have two members: IAddCarry"));
+}
+
+TEST_F(ValidateArithmetics, IAddCarryResultTypeMemberNotUnsignedInt) {
+  const std::string body = R"(
+%val = OpIAddCarry %struct_s32_s32 %s32_0 %s32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected Result Type struct member types to be unsigned integer scalar "
+      "or vector: IAddCarry"));
+}
+
+TEST_F(ValidateArithmetics, IAddCarryWrongLeftOperand) {
+  const std::string body = R"(
+%val = OpIAddCarry %struct_u32_u32 %s32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected both operands to be of Result Type member type: IAddCarry"));
+}
+
+TEST_F(ValidateArithmetics, IAddCarryWrongRightOperand) {
+  const std::string body = R"(
+%val = OpIAddCarry %struct_u32_u32 %u32_0 %s32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected both operands to be of Result Type member type: IAddCarry"));
+}
+
+TEST_F(ValidateArithmetics, OpSMulExtendedSuccess) {
+  const std::string body = R"(
+%val1 = OpSMulExtended %struct_u32_u32 %u32_0 %u32_1
+%val2 = OpSMulExtended %struct_s32_s32 %s32_0 %s32_1
+%val3 = OpSMulExtended %struct_u32vec2_u32vec2 %u32vec2_01 %u32vec2_12
+%val4 = OpSMulExtended %struct_s32vec2_s32vec2 %s32vec2_01 %s32vec2_12
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, SMulExtendedResultTypeMemberNotInt) {
+  const std::string body = R"(
+%val = OpSMulExtended %struct_f32_f32 %f32_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected Result Type struct member types to be integer scalar "
+      "or vector: SMulExtended"));
+}
+
+TEST_F(ValidateArithmetics, SMulExtendedResultTypeMembersNotIdentical) {
+  const std::string body = R"(
+%val = OpSMulExtended %struct_s32_u32 %s32_0 %s32_1
+)";
+
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Expected Result Type struct member types to be identical: "
+      "SMulExtended"));
 }
 
 }  // anonymous namespace
