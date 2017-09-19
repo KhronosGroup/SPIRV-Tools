@@ -100,6 +100,7 @@ uint32_t LocalMultiStoreElimPass::MergeBlockIdIfAny(const ir::BasicBlock& blk,
 }
 
 void LocalMultiStoreElimPass::ComputeStructuredSuccessors(ir::Function* func) {
+  block2structured_succs_.clear();
   for (auto& blk : *func) {
     // If no predecessors in function, make successor to pseudo entry
     if (label2preds_[blk.id()].size() == 0)
@@ -378,13 +379,16 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
   ir::BasicBlock* header = id2block_[header_id];
   auto phiItr = header->begin();
   for (; phiItr->opcode() == SpvOpPhi; ++phiItr) {
+    // find phi operand index for back edge
     uint32_t cnt = 0;
-    uint32_t idx;
+    uint32_t idx = phiItr->NumInOperands();
     phiItr->ForEachInId([&cnt,&back_id,&idx](uint32_t* iid) {
       if (cnt % 2 == 1 && *iid == back_id) idx = cnt - 1;
       ++cnt;
     });
-    // Use undef if variable not in backedge predecessor map
+    assert(idx != phiItr->NumInOperands());
+    // Replace temporary phi operand with variable's value in backedge block
+    // map. Use undef if variable not in map.
     const uint32_t varId = phiItr->GetSingleWordInOperand(idx);
     const auto valItr = label2ssa_map_[back_id].find(varId);
     uint32_t valId = (valItr != label2ssa_map_[back_id].end()) ?
