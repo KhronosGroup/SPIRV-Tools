@@ -108,6 +108,9 @@ Options:
                Convert conditional branches with constant condition to the
                indicated unconditional brranch. Delete all resulting dead
                code. Performed only on entry point call tree functions.
+  --eliminate-dead-functions
+               Deletes functions that cannot be reached from entry points or
+               exported functions.
   --merge-blocks
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
@@ -194,6 +197,8 @@ int main(int argc, char** argv) {
         optimizer.RegisterPass(CreateBlockMergePass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-branches")) {
         optimizer.RegisterPass(CreateDeadBranchElimPass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-dead-functions")) {
+        optimizer.RegisterPass(CreateEliminateDeadFunctionsPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-local-multi-store")) {
         optimizer.RegisterPass(CreateLocalMultiStoreElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-common-uniform")) {

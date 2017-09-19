@@ -113,6 +113,16 @@ add_spvtools_unittest(TARGET pass_eliminate_dead_const
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_eliminate_dead_functions
+  SRCS eliminate_dead_functions_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET pass_pass
+  SRCS pass_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET pass_utils
   SRCS utils_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

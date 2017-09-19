@@ -95,6 +95,13 @@ Optimizer::PassToken CreateStripDebugInfoPass() {
       MakeUnique<opt::StripDebugInfoPass>());
 }
 
+
+Optimizer::PassToken CreateEliminateDeadFunctionsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadFunctionsPass>());
+}
+
+
 Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::string>& id_value_map) {
   return MakeUnique<Optimizer::PassToken::Impl>(

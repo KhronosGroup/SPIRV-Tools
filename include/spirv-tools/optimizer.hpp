@@ -102,6 +102,12 @@ Optimizer::PassToken CreateNullPass();
 // Section 3.32.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
 Optimizer::PassToken CreateStripDebugInfoPass();
 
+// Creates an eliminate-dead-functions pass.
+// An eliminate-dead-functions pass will remove all functions that are not in the
+// call trees rooted at entry points and exported functions.  These functions
+// are not needed because they will never be called.
+Optimizer::PassToken CreateEliminateDeadFunctionsPass();
+
 // Creates a set-spec-constant-default-value pass from a mapping from spec-ids
 // to the default values in the form of string.
 // A set-spec-constant-default-value pass sets the default values for the
@@ -204,7 +210,7 @@ Optimizer::PassToken CreateStrengthReductionPass();
 // this time it does not guarantee all such sequences are eliminated.
 //
 // Presence of phi instructions can inhibit this optimization. Handling
-// these is left for future improvements. 
+// these is left for future improvements.
 Optimizer::PassToken CreateBlockMergePass();
 
 // Creates an exhaustive inline pass.
@@ -215,7 +221,7 @@ Optimizer::PassToken CreateBlockMergePass();
 // there is no attempt to optimize for size or runtime performance. Functions
 // that are not in the call tree of an entry point are not changed.
 Optimizer::PassToken CreateInlineExhaustivePass();
-  
+
 // Creates an opaque inline pass.
 // An opaque inline pass inlines all function calls in all functions in all
 // entry point call trees where the called function contains an opaque type
@@ -226,9 +232,9 @@ Optimizer::PassToken CreateInlineExhaustivePass();
 // not legal in Vulkan. Functions that are not in the call tree of an entry
 // point are not changed.
 Optimizer::PassToken CreateInlineOpaquePass();
-  
+
 // Creates a single-block local variable load/store elimination pass.
-// For every entry point function, do single block memory optimization of 
+// For every entry point function, do single block memory optimization of
 // function variables referenced only with non-access-chain loads and stores.
 // For each targeted variable load, if previous store to that variable in the
 // block, replace the load's result id with the value id of the store.
@@ -240,9 +246,9 @@ Optimizer::PassToken CreateInlineOpaquePass();
 // The presence of access chain references and function calls can inhibit
 // the above optimization.
 //
-// Only modules with logical addressing are currently processed. 
+// Only modules with logical addressing are currently processed.
 //
-// This pass is most effective if preceeded by Inlining and 
+// This pass is most effective if preceeded by Inlining and
 // LocalAccessChainConvert. This pass will reduce the work needed to be done
 // by LocalSingleStoreElim and LocalMultiStoreElim.
 //
@@ -266,7 +272,7 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // Creates an SSA local variable load/store elimination pass.
 // For every entry point function, eliminate all loads and stores of function
 // scope variables only referenced with non-access-chain loads and stores.
-// Eliminate the variables as well. 
+// Eliminate the variables as well.
 //
 // The presence of access chain references and function calls can inhibit
 // the above optimization.
@@ -275,7 +281,7 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // Currently modules with any extensions enabled are not processed. This
 // is left for future work.
 //
-// This pass is most effective if preceeded by Inlining and 
+// This pass is most effective if preceeded by Inlining and
 // LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
 // will reduce the work that this pass has to do.
 Optimizer::PassToken CreateLocalMultiStoreElimPass();
@@ -320,7 +326,7 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 Optimizer::PassToken CreateAggressiveDCEPass();
 
 // Creates a local single store elimination pass.
-// For each entry point function, this pass eliminates loads and stores for 
+// For each entry point function, this pass eliminates loads and stores for
 // function scope variable that are stored to only once, where possible. Only
 // whole variable loads and stores are eliminated; access-chain references are
 // not optimized. Replace all loads of such variables with the value that is
@@ -362,7 +368,7 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates a pass to consolidate uniform references.
 // For each entry point function in the module, first change all constant index
-// access chain loads into equivalent composite extracts. Then consolidate 
+// access chain loads into equivalent composite extracts. Then consolidate
 // identical uniform loads into one uniform load. Finally, consolidate
 // identical uniform extracts into one uniform extract. This may require
 // moving a load or extract to a point which dominates all uses.
