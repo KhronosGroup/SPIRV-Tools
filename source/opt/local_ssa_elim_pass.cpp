@@ -280,6 +280,8 @@ void LocalMultiStoreElimPass::SSABlockInitLoopHeader(
     const uint32_t phiId = TakeNextId();
     std::unique_ptr<ir::Instruction> newPhi(
       new ir::Instruction(SpvOpPhi, typeId, phiId, phi_in_operands));
+    // The only phis requiring patching are the ones we create.
+    phis_to_patch_.insert(phiId);
     // Only analyze the phi define now; analyze the phi uses after the
     // phi backedge predecessor value is patched.
     def_use_mgr_->AnalyzeInstDef(&*newPhi);
@@ -379,7 +381,11 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
   ir::BasicBlock* header = id2block_[header_id];
   auto phiItr = header->begin();
   for (; phiItr->opcode() == SpvOpPhi; ++phiItr) {
-    // find phi operand index for back edge
+    // Only patch phis that we created in a loop header.
+    // There might be other phis unrelated to our optimizations.
+    if (0 == phis_to_patch_.count(phiItr->result_id())) continue;
+
+    // Find phi operand index for back edge
     uint32_t cnt = 0;
     uint32_t idx = phiItr->NumInOperands();
     phiItr->ForEachInId([&cnt,&back_id,&idx](uint32_t* iid) {
@@ -391,10 +397,11 @@ void LocalMultiStoreElimPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
     // map. Use undef if variable not in map.
     const uint32_t varId = phiItr->GetSingleWordInOperand(idx);
     const auto valItr = label2ssa_map_[back_id].find(varId);
-    uint32_t valId = (valItr != label2ssa_map_[back_id].end()) ?
-      valItr->second :
-      Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
-    phiItr->SetInOperand(idx, { valId });
+    uint32_t valId =
+        (valItr != label2ssa_map_[back_id].end())
+            ? valItr->second
+            : Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
+    phiItr->SetInOperand(idx, {valId});
     // Analyze uses now that they are complete
     def_use_mgr_->AnalyzeInstUse(&*phiItr);
   }
@@ -509,6 +516,7 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
   block2structured_succs_.clear();
   label2preds_.clear();
   label2ssa_map_.clear();
+  phis_to_patch_.clear();
 
   // Start new ids with next availablein module
   next_id_ = module_->id_bound();

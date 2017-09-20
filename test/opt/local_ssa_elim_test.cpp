@@ -1227,6 +1227,37 @@ OpFunctionEnd
       true, true);
 }
 
+TEST_F(LocalSSAElimTest, DontPatchPhiInLoopHeaderThatIsNotAVar) {
+  // From https://github.com/KhronosGroup/SPIRV-Tools/issues/826
+  // Don't try patching the (%16 %7) value/predecessor pair in the OpPhi.
+  // That OpPhi is unrelated to this optimization: we did not set that up
+  // in the SSA initialization for the loop header block.
+  // The pass should be a no-op on this module.
+
+  const std::string before = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%1 = OpFunction %void None %3
+%6 = OpLabel
+OpBranch %7
+%7 = OpLabel
+%8 = OpPhi %float %float_1 %6 %9 %7
+%9 = OpFAdd %float %8 %float_1
+OpLoopMerge %10 %7 None
+OpBranch %7
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(before, before, true,
+                                                      true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    No optimization in the presence of
