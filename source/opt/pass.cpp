@@ -35,15 +35,22 @@ void Pass::AddCalls(ir::Function* func, std::queue<uint32_t>* todo) {
 }
 
 bool Pass::ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module) {
+  // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function;
+  for (auto& fn : *module) id2function[fn.result_id()] = &fn;
+
   // Collect all of the entry points as the roots.
   std::queue<uint32_t> roots;
   for (auto& e : module->entry_points())
     roots.push(e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx));
-  return ProcessCallTreeFromRoots(pfn, module, &roots);
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
 }
 
 bool Pass::ProcessReachableCallTree(ProcessFunction& pfn, ir::Module* module) {
   // Map from function's result id to function
+  std::unordered_map<uint32_t, ir::Function*> id2function;
+  for (auto& fn : *module) id2function[fn.result_id()] = &fn;
+
   std::queue<uint32_t> roots;
 
   // Add all entry points since they can be reached from outside the module.
@@ -61,29 +68,28 @@ bool Pass::ProcessReachableCallTree(ProcessFunction& pfn, ir::Module* module) {
         uint32_t lastOperand = a.NumOperands() - 1;
         if (a.GetSingleWordOperand(lastOperand) ==
             SpvLinkageType::SpvLinkageTypeExport) {
-          roots.push(a.GetSingleWordOperand(0));
+          uint32_t id = a.GetSingleWordOperand(0);
+          if (id2function.count(id) != 0) roots.push(id);
         }
       }
     }
   }
 
-  return ProcessCallTreeFromRoots(pfn, module, &roots);
+  return ProcessCallTreeFromRoots(pfn, id2function, &roots);
 }
 
-bool Pass::ProcessCallTreeFromRoots(ProcessFunction& pfn, ir::Module* module,
-                                    std::queue<uint32_t>* roots) {
+bool Pass::ProcessCallTreeFromRoots(
+    ProcessFunction& pfn,
+    const std::unordered_map<uint32_t, ir::Function*>& id2function,
+    std::queue<uint32_t>* roots) {
   // Process call tree
   bool modified = false;
   std::unordered_set<uint32_t> done;
 
-  // Map from function's result id to function
-  std::unordered_map<uint32_t, ir::Function*> id2function;
-  for (auto& fn : *module) id2function[fn.result_id()] = &fn;
-
   while (!roots->empty()) {
     const uint32_t fi = roots->front();
     if (done.find(fi) == done.end()) {
-      ir::Function* fn = id2function[fi];
+      ir::Function* fn = id2function.at(fi);
       modified = pfn(fn) || modified;
       done.insert(fi);
       AddCalls(fn, roots);

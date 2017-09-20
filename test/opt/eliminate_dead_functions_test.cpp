@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Google Inc.
+// Copyright (c) 2017 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,13 +33,10 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicDeleteDeadFunction) {
   const std::vector<const char*> common_code = {
       // clang-format off
                "OpCapability Shader",
-          "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
                "OpExecutionMode %main OriginUpperLeft",
                "OpSource GLSL 150",
-               "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"",
-               "OpSourceExtension \"GL_GOOGLE_include_directive\"",
                "OpName %main \"main\"",
                "OpName %Dead \"Dead\"",
                "OpName %Constant \"Constant\"",
@@ -91,16 +88,13 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepLiveFunction) {
   const std::vector<const char*> text = {
       // clang-format off
                "OpCapability Shader",
-          "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
                "OpExecutionMode %main OriginUpperLeft",
                "OpSource GLSL 150",
-               "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"",
-               "OpSourceExtension \"GL_GOOGLE_include_directive\"",
                "OpName %main \"main\"",
-               "OpName %Dead_ \"Dead\"",
-               "OpName %Constant_ \"Constant\"",
+               "OpName %Dead \"Dead\"",
+               "OpName %Constant \"Constant\"",
                "OpName %gl_FragColor \"gl_FragColor\"",
                "OpDecorate %gl_FragColor Location 0",
        "%void = OpTypeVoid",
@@ -115,26 +109,29 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepLiveFunction) {
     "%float_1 = OpConstant %float 1",
        "%main = OpFunction %void None %7",
          "%15 = OpLabel",
-         "%16 = OpFunctionCall %float %Constant_",
-         "%17 = OpFunctionCall %float %Dead_",
+         "%16 = OpFunctionCall %float %Constant",
+         "%17 = OpFunctionCall %float %Dead",
          "%18 = OpCompositeConstruct %v4float %16 %17 %float_0_8 %float_1",
                "OpStore %gl_FragColor %18",
                "OpReturn",
                "OpFunctionEnd",
-      "%Dead_ = OpFunction %float None %9",
+      "%Dead = OpFunction %float None %9",
          "%19 = OpLabel",
                "OpReturnValue %float_0_5",
                "OpFunctionEnd",
-  "%Constant_ = OpFunction %float None %9",
+  "%Constant = OpFunction %float None %9",
          "%20 = OpLabel",
                "OpReturnValue %float_0_8",
                "OpFunctionEnd"
       // clang-format on
   };
 
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  std::string assembly = JoinAllInsts(text);
   auto result = SinglePassRunAndDisassemble<opt::EliminateDeadFunctionsPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      assembly, /* skip_nop = */ true);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(assembly, std::get<0>(result));
 }
 
 TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
@@ -144,16 +141,13 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
       // clang-format off
                "OpCapability Shader",
                "OpCapability Linkage",
-          "%1 = OpExtInstImport \"GLSL.std.450\"",
                "OpMemoryModel Logical GLSL450",
                "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
                "OpExecutionMode %main OriginUpperLeft",
                "OpSource GLSL 150",
-               "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"",
-               "OpSourceExtension \"GL_GOOGLE_include_directive\"",
                "OpName %main \"main\"",
                "OpName %ExportedFunc \"ExportedFunc\"",
-               "OpName %Constant_ \"Constant\"",
+               "OpName %Constant \"Constant\"",
                "OpName %gl_FragColor \"gl_FragColor\"",
                "OpDecorate %gl_FragColor Location 0",
                "OpDecorate %ExportedFunc LinkageAttributes \"ExportedFunc\" Export",
@@ -175,18 +169,21 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
                "OpFunctionEnd",
 "%ExportedFunc = OpFunction %float None %9",
          "%19 = OpLabel",
-         "%16 = OpFunctionCall %float %Constant_",
-               "OpReturnValue %f16",
+         "%16 = OpFunctionCall %float %Constant",
+               "OpReturnValue %16",
                "OpFunctionEnd",
-  "%Constant_ = OpFunction %float None %9",
+  "%Constant = OpFunction %float None %9",
          "%20 = OpLabel",
                "OpReturnValue %float_0_8",
                "OpFunctionEnd"
       // clang-format on
   };
 
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  std::string assembly = JoinAllInsts(text);
   auto result = SinglePassRunAndDisassemble<opt::EliminateDeadFunctionsPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+      assembly, /* skip_nop = */ true);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(assembly, std::get<0>(result));
 }
 }  // anonymous namespace

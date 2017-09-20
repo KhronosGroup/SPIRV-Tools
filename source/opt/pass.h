@@ -81,8 +81,10 @@ class Pass {
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.  After returning
   // |roots| will be empty.
-  bool ProcessCallTreeFromRoots(ProcessFunction& pfn, ir::Module* module,
-                                std::queue<uint32_t>* roots);
+  bool ProcessCallTreeFromRoots(
+      ProcessFunction& pfn,
+      const std::unordered_map<uint32_t, ir::Function*>& id2function,
+      std::queue<uint32_t>* roots);
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
