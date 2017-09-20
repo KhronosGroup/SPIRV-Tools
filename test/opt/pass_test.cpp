@@ -60,28 +60,30 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
           %8 = OpTypeFunction %float
-  %float_0_5 = OpConstant %float 0.5
-  %float_0_8 = OpConstant %float 0.8
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
     %float_1 = OpConstant %float 1
+; Start of main.  Entry point, should be processed
          %10 = OpFunction %void None %6
          %14 = OpLabel
          %15 = OpFunctionCall %float %11
          %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_0_8 %float_1
+         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
                OpStore %gl_FragColor %17
                OpReturn
                OpFunctionEnd
-   %11 = OpFunction %float None %8
+; Start of Constant.  Should be processed
+         %11 = OpFunction %float None %8
          %18 = OpLabel
-               OpReturnValue %float_0_8
+               OpReturnValue %float_1
                OpFunctionEnd
+; Start of Dead.  Should not be processed.
        %Dead = OpFunction %float None %8
          %19 = OpLabel
-               OpReturnValue %float_0_5
+               OpReturnValue %float_1
                OpFunctionEnd
+; Start of exported function.  Not reached from entry point, so not processed.
 %ExportedFunc = OpFunction %float None %9
          %20 = OpLabel
          %21 = OpFunctionCall %float %11
@@ -126,8 +128,6 @@ TEST_F(PassClassTest, BasicVisitReachable) {
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
           %8 = OpTypeFunction %float
-  %float_0_5 = OpConstant %float 0.5
-  %float_0_8 = OpConstant %float 0.8
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
@@ -136,17 +136,17 @@ TEST_F(PassClassTest, BasicVisitReachable) {
          %14 = OpLabel
          %15 = OpFunctionCall %float %11
          %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_0_8 %float_1
+         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
                OpStore %gl_FragColor %17
                OpReturn
                OpFunctionEnd
          %11 = OpFunction %float None %8
          %18 = OpLabel
-               OpReturnValue %float_0_8
+               OpReturnValue %float_1
                OpFunctionEnd
        %Dead = OpFunction %float None %8
          %19 = OpLabel
-               OpReturnValue %float_0_5
+               OpReturnValue %float_1
                OpFunctionEnd
          %12 = OpFunction %float None %9
          %20 = OpLabel
@@ -155,7 +155,7 @@ TEST_F(PassClassTest, BasicVisitReachable) {
                OpFunctionEnd
          %13 = OpFunction %float None %8
          %22 = OpLabel
-               OpReturnValue %float_0_8
+               OpReturnValue %float_1
                OpFunctionEnd
 )";
   // clang-format on
@@ -195,8 +195,6 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
           %8 = OpTypeFunction %float
-  %float_0_5 = OpConstant %float 0.5
-  %float_0_8 = OpConstant %float 0.8
     %v4float = OpTypeVector %float 4
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
@@ -205,17 +203,17 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
          %14 = OpLabel
          %15 = OpFunctionCall %float %11
          %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_0_8 %float_1
+         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
                OpStore %gl_FragColor %17
                OpReturn
                OpFunctionEnd
          %11 = OpFunction %float None %8
          %18 = OpLabel
-               OpReturnValue %float_0_8
+               OpReturnValue %float_1
                OpFunctionEnd
        %Dead = OpFunction %float None %8
          %19 = OpLabel
-               OpReturnValue %float_0_5
+               OpReturnValue %float_1
                OpFunctionEnd
          %12 = OpFunction %float None %9
          %20 = OpLabel
@@ -256,11 +254,11 @@ TEST_F(PassClassTest, BasicDontVisitExportedVariable) {
        %void = OpTypeVoid
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
-  %float_0_5 = OpConstant %float 0.5
+  %float_1 = OpConstant %float 1
          %12 = OpVariable %float Output
          %10 = OpFunction %void None %6
          %14 = OpLabel
-               OpStore %12 %float_0_5
+               OpStore %12 %float_1
                OpReturn
                OpFunctionEnd
 )";
