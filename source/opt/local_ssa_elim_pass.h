@@ -176,6 +176,10 @@ class LocalMultiStoreElimPass : public MemPass {
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
       label2ssa_map_;
 
+  // The Ids of OpPhi instructions that are in a loop header and which require
+  // patching of the value for the loop back-edge.
+  std::unordered_set<uint32_t> phis_to_patch_;
+
   // Extra block whose successors are all blocks with no predecessors
   // in function.
   ir::BasicBlock pseudo_entry_block_;
