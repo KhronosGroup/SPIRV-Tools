@@ -570,10 +570,11 @@ OpStore %y %f32vec4_1234
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Using pointers with OpSelect requires capability VariablePointers"));
+      "Using pointers with OpSelect requires capability VariablePointers "
+      "or VariablePointersStorageBuffer"));
 }
 
-TEST_F(ValidateLogicals, OpSelectPointerWithCapability) {
+TEST_F(ValidateLogicals, OpSelectPointerWithCapability1) {
   const std::string body = R"(
 %x = OpVariable %f32vec4ptr Function
 %y = OpVariable %f32vec4ptr Function
@@ -584,6 +585,24 @@ OpStore %y %f32vec4_1234
 
   const std::string extra_cap_ext = R"(
 OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra_cap_ext).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLogicals, OpSelectPointerWithCapability2) {
+  const std::string body = R"(
+%x = OpVariable %f32vec4ptr Function
+%y = OpVariable %f32vec4ptr Function
+OpStore %x %f32vec4_0123
+OpStore %y %f32vec4_1234
+%val1 = OpSelect %f32vec4ptr %true %x %y
+)";
+
+  const std::string extra_cap_ext = R"(
+OpCapability VariablePointersStorageBuffer
 OpExtension "SPV_KHR_variable_pointers"
 )";
 

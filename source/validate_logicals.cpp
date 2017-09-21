@@ -179,10 +179,11 @@ spv_result_t LogicalsPass(ValidationState_t& _,
         const SpvOp type_opcode = type_inst->opcode();
         switch (type_opcode) {
           case SpvOpTypePointer: {
-            if (!_.features().variable_pointers)
+            if (!_.features().variable_pointers &&
+                !_.features().variable_pointers_storage_buffer)
               return _.diag(SPV_ERROR_INVALID_DATA)
                   << "Using pointers with OpSelect requires capability "
-                  << "VariablePointers";
+                  << "VariablePointers or VariablePointersStorageBuffer";
             break;
           }
 
