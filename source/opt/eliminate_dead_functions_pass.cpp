@@ -21,6 +21,7 @@ namespace opt {
 
 Pass::Status EliminateDeadFunctionsPass::Process(ir::Module* module) {
   bool modified = false;
+  module_ = module;
 
   // Identify live functions first.  Those that are not live
   // are dead.
@@ -32,6 +33,7 @@ Pass::Status EliminateDeadFunctionsPass::Process(ir::Module* module) {
   ProcessReachableCallTree(mark_live, module);
 
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
+  FindNamedOrDecoratedIds();
   for (auto funcIter = module->begin(); funcIter != module->end();) {
     if (live_function_set.count(&*funcIter) == 0) {
       modified = true;

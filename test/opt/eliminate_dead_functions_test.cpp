@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -34,44 +33,29 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicDeleteDeadFunction) {
       // clang-format off
                "OpCapability Shader",
                "OpMemoryModel Logical GLSL450",
-               "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
-               "OpExecutionMode %main OriginUpperLeft",
-               "OpSource GLSL 150",
+               "OpEntryPoint Fragment %main \"main\"",
                "OpName %main \"main\"",
-               "OpName %Dead \"Dead\"",
-               "OpName %Constant \"Constant\"",
-               "OpName %gl_FragColor \"gl_FragColor\"",
-               "OpDecorate %gl_FragColor Location 0",
+               "OpName %Live \"Live\"",
        "%void = OpTypeVoid",
           "%7 = OpTypeFunction %void",
-      "%float = OpTypeFloat 32",
-          "%9 = OpTypeFunction %float",
-  "%float_0_5 = OpConstant %float 0.5",
-  "%float_0_8 = OpConstant %float 0.8",
-    "%v4float = OpTypeVector %float 4",
-"%_ptr_Output_v4float = OpTypePointer Output %v4float",
-"%gl_FragColor = OpVariable %_ptr_Output_v4float Output",
-    "%float_1 = OpConstant %float 1",
        "%main = OpFunction %void None %7",
          "%15 = OpLabel",
-         "%16 = OpFunctionCall %float %Constant",
-         "%17 = OpFunctionCall %float %Constant",
-         "%18 = OpCompositeConstruct %v4float %16 %17 %float_0_8 %float_1",
-               "OpStore %gl_FragColor %18",
+         "%16 = OpFunctionCall %void %Live",
+         "%17 = OpFunctionCall %void %Live",
                "OpReturn",
                "OpFunctionEnd",
-  "%Constant = OpFunction %float None %9",
+  "%Live = OpFunction %void None %7",
          "%20 = OpLabel",
-               "OpReturnValue %float_0_8",
+               "OpReturn",
                "OpFunctionEnd"
       // clang-format on
   };
 
   const std::vector<const char*> dead_function = {
       // clang-format off
-      "%Dead = OpFunction %float None %9",
+      "%Dead = OpFunction %void None %7",
          "%19 = OpLabel",
-               "OpReturnValue %float_0_5",
+               "OpReturn",
                "OpFunctionEnd",
       // clang-format on
   };
@@ -89,39 +73,25 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepLiveFunction) {
       // clang-format off
                "OpCapability Shader",
                "OpMemoryModel Logical GLSL450",
-               "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
-               "OpExecutionMode %main OriginUpperLeft",
-               "OpSource GLSL 150",
+               "OpEntryPoint Fragment %main \"main\"",
                "OpName %main \"main\"",
-               "OpName %Dead \"Dead\"",
-               "OpName %Constant \"Constant\"",
-               "OpName %gl_FragColor \"gl_FragColor\"",
-               "OpDecorate %gl_FragColor Location 0",
+               "OpName %Live1 \"Live1\"",
+               "OpName %Live2 \"Live2\"",
        "%void = OpTypeVoid",
           "%7 = OpTypeFunction %void",
-      "%float = OpTypeFloat 32",
-          "%9 = OpTypeFunction %float",
-  "%float_0_5 = OpConstant %float 0.5",
-  "%float_0_8 = OpConstant %float 0.8",
-    "%v4float = OpTypeVector %float 4",
-"%_ptr_Output_v4float = OpTypePointer Output %v4float",
-"%gl_FragColor = OpVariable %_ptr_Output_v4float Output",
-    "%float_1 = OpConstant %float 1",
        "%main = OpFunction %void None %7",
          "%15 = OpLabel",
-         "%16 = OpFunctionCall %float %Constant",
-         "%17 = OpFunctionCall %float %Dead",
-         "%18 = OpCompositeConstruct %v4float %16 %17 %float_0_8 %float_1",
-               "OpStore %gl_FragColor %18",
+         "%16 = OpFunctionCall %void %Live2",
+         "%17 = OpFunctionCall %void %Live1",
                "OpReturn",
                "OpFunctionEnd",
-      "%Dead = OpFunction %float None %9",
+      "%Live1 = OpFunction %void None %7",
          "%19 = OpLabel",
-               "OpReturnValue %float_0_5",
+               "OpReturn",
                "OpFunctionEnd",
-  "%Constant = OpFunction %float None %9",
+      "%Live2 = OpFunction %void None %7",
          "%20 = OpLabel",
-               "OpReturnValue %float_0_8",
+               "OpReturn",
                "OpFunctionEnd"
       // clang-format on
   };
@@ -142,39 +112,25 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
                "OpCapability Shader",
                "OpCapability Linkage",
                "OpMemoryModel Logical GLSL450",
-               "OpEntryPoint Fragment %main \"main\" %gl_FragColor",
-               "OpExecutionMode %main OriginUpperLeft",
-               "OpSource GLSL 150",
+               "OpEntryPoint Fragment %main \"main\"",
                "OpName %main \"main\"",
                "OpName %ExportedFunc \"ExportedFunc\"",
-               "OpName %Constant \"Constant\"",
-               "OpName %gl_FragColor \"gl_FragColor\"",
-               "OpDecorate %gl_FragColor Location 0",
+               "OpName %Live \"Live\"",
                "OpDecorate %ExportedFunc LinkageAttributes \"ExportedFunc\" Export",
        "%void = OpTypeVoid",
           "%7 = OpTypeFunction %void",
-      "%float = OpTypeFloat 32",
-          "%9 = OpTypeFunction %float",
-  "%float_0_5 = OpConstant %float 0.5",
-  "%float_0_8 = OpConstant %float 0.8",
-    "%v4float = OpTypeVector %float 4",
-"%_ptr_Output_v4float = OpTypePointer Output %v4float",
-"%gl_FragColor = OpVariable %_ptr_Output_v4float Output",
-    "%float_1 = OpConstant %float 1",
        "%main = OpFunction %void None %7",
          "%15 = OpLabel",
-         "%18 = OpCompositeConstruct %v4float %float_0_5 %float_0_5 %float_0_8 %float_1",
-               "OpStore %gl_FragColor %18",
                "OpReturn",
                "OpFunctionEnd",
-"%ExportedFunc = OpFunction %float None %9",
+"%ExportedFunc = OpFunction %void None %7",
          "%19 = OpLabel",
-         "%16 = OpFunctionCall %float %Constant",
-               "OpReturnValue %16",
+         "%16 = OpFunctionCall %void %Live",
+               "OpReturn",
                "OpFunctionEnd",
-  "%Constant = OpFunction %float None %9",
+  "%Live = OpFunction %void None %7",
          "%20 = OpLabel",
-               "OpReturnValue %float_0_8",
+               "OpReturn",
                "OpFunctionEnd"
       // clang-format on
   };
@@ -185,5 +141,66 @@ TEST_F(EliminateDeadFunctionsBasicTest, BasicKeepExportFunctions) {
       assembly, /* skip_nop = */ true);
   EXPECT_EQ(opt::Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(assembly, std::get<0>(result));
+}
+
+TEST_F(EliminateDeadFunctionsBasicTest, BasicRemoveDecorationsAndNames) {
+  // We want to remove the names and decorations associated with results that
+  // are removed.  This test will check for that.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+               OpName %Dead "Dead"
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpDecorate %x RelaxedPrecision
+               OpDecorate %y RelaxedPrecision
+               OpDecorate %z RelaxedPrecision
+               OpDecorate %6 RelaxedPrecision
+               OpDecorate %7 RelaxedPrecision
+               OpDecorate %8 RelaxedPrecision
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_1 = OpConstant %float 1
+       %main = OpFunction %void None %10
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+       %Dead = OpFunction %void None %10
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_float Function
+          %y = OpVariable %_ptr_Function_float Function
+          %z = OpVariable %_ptr_Function_float Function
+               OpStore %x %float_1
+               OpStore %y %float_1
+          %6 = OpLoad %float %x
+          %7 = OpLoad %float %y
+          %8 = OpFAdd %float %6 %7
+               OpStore %z %8
+               OpReturn
+               OpFunctionEnd)";
+
+  const std::string expected_output = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpName %main "main"
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_1 = OpConstant %float 1
+%main = OpFunction %void None %10
+%14 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<opt::EliminateDeadFunctionsPass>(text, expected_output,
+                                                         /* skip_nop = */ true);
 }
 }  // anonymous namespace

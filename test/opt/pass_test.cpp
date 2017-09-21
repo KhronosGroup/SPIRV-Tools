@@ -46,48 +46,32 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %10 "main" %gl_FragColor
-               OpExecutionMode %10 OriginUpperLeft
-               OpSource GLSL 150
+               OpEntryPoint Fragment %10 "main"
                OpName %10 "main"
                OpName %Dead "Dead"
                OpName %11 "Constant"
-               OpName %gl_FragColor "gl_FragColor"
                OpName %ExportedFunc "ExportedFunc"
-               OpDecorate %gl_FragColor Location 0
                OpDecorate %ExportedFunc LinkageAttributes "ExportedFunc" Export
        %void = OpTypeVoid
           %6 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-          %8 = OpTypeFunction %float
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
-; Start of main.  Entry point, should be processed
          %10 = OpFunction %void None %6
          %14 = OpLabel
-         %15 = OpFunctionCall %float %11
-         %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
-               OpStore %gl_FragColor %17
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %11
                OpReturn
                OpFunctionEnd
-; Start of Constant.  Should be processed
-         %11 = OpFunction %float None %8
+         %11 = OpFunction %void None %6
          %18 = OpLabel
-               OpReturnValue %float_1
+               OpReturn
                OpFunctionEnd
-; Start of Dead.  Should not be processed.
-       %Dead = OpFunction %float None %8
+       %Dead = OpFunction %void None %6
          %19 = OpLabel
-               OpReturnValue %float_1
+               OpReturn
                OpFunctionEnd
-; Start of exported function.  Not reached from entry point, so not processed.
-%ExportedFunc = OpFunction %float None %9
+%ExportedFunc = OpFunction %void None %7
          %20 = OpLabel
-         %21 = OpFunctionCall %float %11
-               OpReturnValue %16
+         %21 = OpFunctionCall %void %11
+               OpReturn
                OpFunctionEnd
 )";
   // clang-format on
@@ -113,49 +97,37 @@ TEST_F(PassClassTest, BasicVisitReachable) {
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %10 "main" %gl_FragColor
-               OpExecutionMode %10 OriginUpperLeft
-               OpSource GLSL 150
+               OpEntryPoint Fragment %10 "main"
                OpName %10 "main"
                OpName %Dead "Dead"
                OpName %11 "Constant"
-               OpName %gl_FragColor "gl_FragColor"
                OpName %12 "ExportedFunc"
                OpName %13 "Constant2"
-               OpDecorate %gl_FragColor Location 0
                OpDecorate %12 LinkageAttributes "ExportedFunc" Export
        %void = OpTypeVoid
           %6 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-          %8 = OpTypeFunction %float
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
          %10 = OpFunction %void None %6
          %14 = OpLabel
-         %15 = OpFunctionCall %float %11
-         %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
-               OpStore %gl_FragColor %17
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %11
                OpReturn
                OpFunctionEnd
-         %11 = OpFunction %float None %8
+         %11 = OpFunction %void None %6
          %18 = OpLabel
-               OpReturnValue %float_1
+               OpReturn
                OpFunctionEnd
-       %Dead = OpFunction %float None %8
+       %Dead = OpFunction %void None %6
          %19 = OpLabel
-               OpReturnValue %float_1
+               OpReturn
                OpFunctionEnd
-         %12 = OpFunction %float None %9
+         %12 = OpFunction %void None %9
          %20 = OpLabel
-         %21 = OpFunctionCall %float %13
-               OpReturnValue %21
+         %21 = OpFunctionCall %void %13
+               OpReturn
                OpFunctionEnd
-         %13 = OpFunction %float None %8
+         %13 = OpFunction %void None %6
          %22 = OpLabel
-               OpReturnValue %float_1
+               OpReturn
                OpFunctionEnd
 )";
   // clang-format on
@@ -182,43 +154,31 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %10 "main" %gl_FragColor
-               OpExecutionMode %10 OriginUpperLeft
-               OpSource GLSL 150
                OpName %10 "main"
                OpName %Dead "Dead"
                OpName %11 "Constant"
-               OpName %gl_FragColor "gl_FragColor"
                OpName %12 "ExportedFunc"
-               OpDecorate %gl_FragColor Location 0
                OpDecorate %12 LinkageAttributes "ExportedFunc" Export
        %void = OpTypeVoid
           %6 = OpTypeFunction %void
-      %float = OpTypeFloat 32
-          %8 = OpTypeFunction %float
-    %v4float = OpTypeVector %float 4
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%gl_FragColor = OpVariable %_ptr_Output_v4float Output
-    %float_1 = OpConstant %float 1
          %10 = OpFunction %void None %6
          %14 = OpLabel
-         %15 = OpFunctionCall %float %11
-         %16 = OpFunctionCall %float %11
-         %17 = OpCompositeConstruct %v4float %15 %16 %float_1 %float_1
-               OpStore %gl_FragColor %17
+         %15 = OpFunctionCall %void %11
+         %16 = OpFunctionCall %void %12
                OpReturn
                OpFunctionEnd
-         %11 = OpFunction %float None %8
+         %11 = OpFunction %void None %6
          %18 = OpLabel
-               OpReturnValue %float_1
+         %19 = OpFunctionCall %void %12
+               OpReturn
                OpFunctionEnd
-       %Dead = OpFunction %float None %8
-         %19 = OpLabel
-               OpReturnValue %float_1
-               OpFunctionEnd
-         %12 = OpFunction %float None %9
+       %Dead = OpFunction %void None %6
          %20 = OpLabel
-         %21 = OpFunctionCall %float %12
-               OpReturnValue %21
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %void None %9
+         %21 = OpLabel
+               OpReturn
                OpFunctionEnd
 )";
   // clang-format on
