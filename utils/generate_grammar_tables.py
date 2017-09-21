@@ -17,7 +17,6 @@
 from __future__ import print_function
 
 import errno
-import functools
 import json
 import os.path
 import re
@@ -57,6 +56,7 @@ SPV_AMD_shader_fragment_mask
 """
 
 
+
 def make_path_to_file(f):
     """Makes all ancestor directories to the given file, if they
     don't yet exist.
@@ -72,6 +72,7 @@ def make_path_to_file(f):
             pass
         else:
             raise
+
 
 def compose_capability_list(caps):
     """Returns a string containing a braced list of capabilities as enums.
@@ -94,7 +95,8 @@ def compose_extension_list(exts):
     Returns:
       a string containing the braced list of extensions named by exts.
     """
-    return "{" + ", ".join(['libspirv::Extension::k{}'.format(e) for e in exts]) + "}"
+    return "{" + ", ".join(
+        ['libspirv::Extension::k{}'.format(e) for e in exts]) + "}"
 
 
 def convert_operand_kind(operand_tuple):
@@ -183,7 +185,6 @@ class InstInitializer(object):
         self.ref_type_id = 'IdResultType' in operands
         self.def_result_id = 'IdResult' in operands
 
-
     def fix_syntax(self):
         """Fix an instruction's syntax, adjusting for differences between
         the officially released grammar and how SPIRV-Tools uses the grammar.
@@ -193,9 +194,8 @@ class InstInitializer(object):
             https://github.com/KhronosGroup/SPIRV-Tools/issues/233
         """
         if (self.opname == 'ExtInst'
-            and self.operands[-1] == 'SPV_OPERAND_TYPE_VARIABLE_ID'):
-           self.operands.pop()
-
+                and self.operands[-1] == 'SPV_OPERAND_TYPE_VARIABLE_ID'):
+            self.operands.pop()
 
     def __str__(self):
         template = ['{{"{opname}"', 'SpvOp{opname}', '{caps_mask}',
@@ -330,12 +330,12 @@ def generate_enum_operand_kind_entry(entry):
     return str(EnumerantInitializer(enumerant, value, caps, exts, params))
 
 
-def generate_enum_operand_kind(enum):
+def generate_enum_operand_kind(enum, version):
     """Returns the C definition for the given operand kind."""
     kind = enum.get('kind')
     assert kind is not None
 
-    name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
+    name = '{}_{}Entries_{}'.format(PYGEN_VARIABLE_PREFIX, kind, version)
     entries = ['  {}'.format(generate_enum_operand_kind_entry(e))
                for e in enum.get('enumerants', [])]
 
@@ -348,10 +348,10 @@ def generate_enum_operand_kind(enum):
     return kind, name, entries
 
 
-def generate_operand_kind_table(enums):
+def generate_operand_kind_table(enums, version):
     """Returns the info table containing all SPIR-V operand kinds."""
     # We only need to output info tables for those operand kinds that are enums.
-    enums = [generate_enum_operand_kind(e)
+    enums = [generate_enum_operand_kind(e, version)
              for e in enums
              if e.get('category') in ['ValueEnum', 'BitEnum']]
     # We have three operand kinds that requires their optional counterpart to
@@ -372,10 +372,10 @@ def generate_operand_kind_table(enums):
                      for e in table_entries]
 
     template = [
-        'static const spv_operand_desc_group_t {p}_OperandInfoTable[] = {{',
+        'static const spv_operand_desc_group_t {p}_OperandInfoTable_{v}[] = {{',
         '{enums}', '}};']
     table = '\n'.join(template).format(
-        p=PYGEN_VARIABLE_PREFIX, enums=',\n'.join(table_entries))
+        p=PYGEN_VARIABLE_PREFIX, v=version, enums=',\n'.join(table_entries))
 
     return '\n\n'.join(enum_entries + (table,))
 
@@ -479,7 +479,7 @@ def generate_capability_to_string_mapping(operands):
     function += '  switch (capability) {\n'
     template = '    case SpvCapability{capability}:\n' \
         '      return "{capability}";\n'
-    emitted = set() # The values of capabilities we already have emitted
+    emitted = set()  # The values of capabilities we already have emitted
     for capability in get_capabilities(operands):
         value = capability.get('value')
         if value not in emitted:
@@ -504,6 +504,7 @@ def generate_all_string_enum_mappings(operands):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Generate SPIR-V info tables')
+
     parser.add_argument('--spirv-core-grammar', metavar='<path>',
                         type=str, required=False,
                         help='input JSON grammar file for core SPIR-V '
@@ -516,6 +517,7 @@ def main():
                         type=str, required=False, default=None,
                         help='input JSON grammar file for OpenCL extended '
                         'instruction set')
+
     parser.add_argument('--core-insts-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for core SPIR-V instructions')
@@ -578,9 +580,13 @@ def main():
             if args.core_insts_output is not None:
                 make_path_to_file(args.core_insts_output)
                 make_path_to_file(args.operand_kinds_output)
-                print(generate_instruction_table(grammar['instructions'], False),
+                print(generate_instruction_table(
+                        grammar['instructions'], False),
                       file=open(args.core_insts_output, 'w'))
-                print(generate_operand_kind_table(grammar['operand_kinds']),
+                version = '{}_{}'.format(grammar['major_version'],
+                                         grammar['minor_version'])
+                print(generate_operand_kind_table(
+                        grammar['operand_kinds'], version),
                       file=open(args.operand_kinds_output, 'w'))
             if args.extension_enum_output is not None:
                 make_path_to_file(args.extension_enum_output)
