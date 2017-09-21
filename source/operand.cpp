@@ -20,30 +20,23 @@
 
 #include "macro.h"
 
-// Pull in operand info tables automatically generated from JSON grammar.
-namespace v1_0 {
-#include "operand.kinds-1.0.inc"
-}  // namespace v1_0
-namespace v1_1 {
-#include "operand.kinds-1.1.inc"
-}  // namespace v1_1
-namespace v1_2 {
-#include "operand.kinds-1.2.inc"
-}  // namespace v1_2
-
 spv_result_t spvOperandTableGet(spv_operand_table* pOperandTable,
                                 spv_target_env env) {
   if (!pOperandTable) return SPV_ERROR_INVALID_POINTER;
 
+#include "operand.kinds-1.0.inc"
+#include "operand.kinds-1.1.inc"
+#include "operand.kinds-1.2.inc"
+
   static const spv_operand_table_t table_1_0 = {
-      ARRAY_SIZE(v1_0::pygen_variable_OperandInfoTable),
-      v1_0::pygen_variable_OperandInfoTable};
+      ARRAY_SIZE(pygen_variable_OperandInfoTable_1_0),
+      pygen_variable_OperandInfoTable_1_0};
   static const spv_operand_table_t table_1_1 = {
-      ARRAY_SIZE(v1_1::pygen_variable_OperandInfoTable),
-      v1_1::pygen_variable_OperandInfoTable};
+      ARRAY_SIZE(pygen_variable_OperandInfoTable_1_1),
+      pygen_variable_OperandInfoTable_1_1};
   static const spv_operand_table_t table_1_2 = {
-      ARRAY_SIZE(v1_2::pygen_variable_OperandInfoTable),
-      v1_2::pygen_variable_OperandInfoTable};
+      ARRAY_SIZE(pygen_variable_OperandInfoTable_1_2),
+      pygen_variable_OperandInfoTable_1_2};
 
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
@@ -225,7 +218,7 @@ void spvPushOperandTypes(const spv_operand_type_t* types,
   for (endTypes = types; *endTypes != SPV_OPERAND_TYPE_NONE; ++endTypes)
     ;
   while (endTypes-- != types) {
-      pattern->push_back(*endTypes);
+    pattern->push_back(*endTypes);
   }
 }
 
@@ -235,7 +228,8 @@ void spvPushOperandTypesForMask(const spv_operand_table operandTable,
                                 spv_operand_pattern_t* pattern) {
   // Scan from highest bits to lowest bits because we will append in LIFO
   // fashion, and we need the operands for lower order bits to be consumed first
-  for (uint32_t candidate_bit = (1u << 31u); candidate_bit; candidate_bit >>= 1) {
+  for (uint32_t candidate_bit = (1u << 31u); candidate_bit;
+       candidate_bit >>= 1) {
     if (candidate_bit & mask) {
       spv_operand_desc entry = nullptr;
       if (SPV_SUCCESS == spvOperandTableValueLookup(operandTable, type,
@@ -304,16 +298,17 @@ spv_operand_type_t spvTakeFirstMatchableOperand(
 
 spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
     const spv_operand_pattern_t& pattern) {
-
-  auto it = std::find(pattern.crbegin(), pattern.crend(), SPV_OPERAND_TYPE_RESULT_ID);
+  auto it =
+      std::find(pattern.crbegin(), pattern.crend(), SPV_OPERAND_TYPE_RESULT_ID);
   if (it != pattern.crend()) {
-    spv_operand_pattern_t alternatePattern(it - pattern.crbegin() + 2, SPV_OPERAND_TYPE_OPTIONAL_CIV);
+    spv_operand_pattern_t alternatePattern(it - pattern.crbegin() + 2,
+                                           SPV_OPERAND_TYPE_OPTIONAL_CIV);
     alternatePattern[1] = SPV_OPERAND_TYPE_RESULT_ID;
     return alternatePattern;
   }
 
   // No result-id found, so just expect CIVs.
-  return{ SPV_OPERAND_TYPE_OPTIONAL_CIV };
+  return {SPV_OPERAND_TYPE_OPTIONAL_CIV};
 }
 
 bool spvIsIdType(spv_operand_type_t type) {

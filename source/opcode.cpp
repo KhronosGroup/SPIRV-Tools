@@ -27,25 +27,25 @@
 #include "spirv_endian.h"
 
 namespace {
+struct OpcodeDescPtrLen {
+  const spv_opcode_desc_t* ptr;
+  uint32_t len;
+};
 
-// Descriptions of each opcode.  Each entry describes the format of the
-// instruction that follows a particular opcode.
-const spv_opcode_desc_t opcodeTableEntries_1_0[] = {
-#include "core.insts-1.0.inc"
-};
-const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
-#include "core.insts-1.1.inc"
-};
-const spv_opcode_desc_t opcodeTableEntries_1_2[] = {
+OpcodeDescPtrLen getOpcodeTableEntries_1_2() {
+  static const spv_opcode_desc_t opcodeTableEntries_1_2[] = {
 #include "core.insts-1.2.inc"
-};
+  };
+
+  return {opcodeTableEntries_1_2, ARRAY_SIZE(opcodeTableEntries_1_2)};
+}
 
 // Represents a vendor tool entry in the SPIR-V XML Regsitry.
 struct VendorTool {
   uint32_t value;
   const char* vendor;
-  const char* tool; // Might be empty string.
-  const char* vendor_tool; // Combiantion of vendor and tool.
+  const char* tool;         // Might be empty string.
+  const char* vendor_tool;  // Combiantion of vendor and tool.
 };
 
 const VendorTool vendor_tools[] = {
@@ -82,12 +82,22 @@ spv_result_t spvOpcodeTableGet(spv_opcode_table* pInstTable,
                                spv_target_env env) {
   if (!pInstTable) return SPV_ERROR_INVALID_POINTER;
 
+  // Descriptions of each opcode.  Each entry describes the format of the
+  // instruction that follows a particular opcode.
+  static const spv_opcode_desc_t opcodeTableEntries_1_0[] = {
+#include "core.insts-1.0.inc"
+  };
+  static const spv_opcode_desc_t opcodeTableEntries_1_1[] = {
+#include "core.insts-1.1.inc"
+  };
+
+  const auto ptr_len = getOpcodeTableEntries_1_2();
+
   static const spv_opcode_table_t table_1_0 = {
       ARRAY_SIZE(opcodeTableEntries_1_0), opcodeTableEntries_1_0};
   static const spv_opcode_table_t table_1_1 = {
       ARRAY_SIZE(opcodeTableEntries_1_1), opcodeTableEntries_1_1};
-  static const spv_opcode_table_t table_1_2 = {
-      ARRAY_SIZE(opcodeTableEntries_1_2), opcodeTableEntries_1_2};
+  static const spv_opcode_table_t table_1_2 = {ptr_len.len, ptr_len.ptr};
 
   switch (env) {
     case SPV_ENV_UNIVERSAL_1_0:
@@ -173,10 +183,12 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
-  for (uint32_t i = 0; i < ARRAY_SIZE(opcodeTableEntries_1_2); ++i) {
-    if (opcodeTableEntries_1_2[i].opcode == opcode)
-      return opcodeTableEntries_1_2[i].name;
+  const auto entries = getOpcodeTableEntries_1_2();
+
+  for (uint32_t i = 0; i < entries.len; ++i) {
+    if (entries.ptr[i].opcode == opcode) return entries.ptr[i].name;
   }
+
   assert(0 && "Unreachable!");
   return "unknown";
 }
