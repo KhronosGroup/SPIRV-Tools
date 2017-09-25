@@ -61,9 +61,10 @@ script:
             -DANDROID_NATIVE_API_LEVEL=android-9
             -DCMAKE_BUILD_TYPE=Release
             -DANDROID_ABI="armeabi-v7a with NEON"
+            -DSPIRV_BUILD_COMPRESSION=ON
             -DSPIRV_SKIP_TESTS=ON ..;
     else
-      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..;
+      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON ..;
     fi
   # Due to the limitation of Travis platform, we cannot start too many concurrent jobs.
   # Otherwise GCC will panic with internal error, possibility because of memory issues.

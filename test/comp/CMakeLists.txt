@@ -17,7 +17,9 @@ set(VAL_TEST_COMMON_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../unit_spirv.h
 )
 
-add_spvtools_unittest(TARGET markv_codec
-  SRCS markv_codec_test.cpp ${VAL_TEST_COMMON_SRCS}
-  LIBS SPIRV-Tools-comp ${SPIRV_TOOLS}
-)
+if(SPIRV_BUILD_COMPRESSION)
+  add_spvtools_unittest(TARGET markv_codec
+    SRCS markv_codec_test.cpp ${VAL_TEST_COMMON_SRCS}
+    LIBS SPIRV-Tools-comp ${SPIRV_TOOLS}
+  )
+endif(SPIRV_BUILD_COMPRESSION)
