@@ -36,7 +36,7 @@ build:
 
 build_script:
   - mkdir build && cd build
-  - cmake ..
+  - cmake -DBUILD_SPIRV_COMPRESSION=ON ..
   - cmake --build . --config %CONFIGURATION%
 
 test_script:
