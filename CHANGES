@@ -1,15 +1,26 @@
 Revision history for SPIRV-Tools
 
 v2017.1-dev 2017-09-01
+ - General:
+   - Avoid static-duration variables of class type (with constructors).
  - Validator:
    - Type check basic arithmetic operations
+   - Type check Relational and Logical instructions
    - OpModuleProcessed is only allowed after debug names section and before annotations
      section.
    - Recognize extensions listed on SPIR-V registry,
      through #25 SPV_AMD_shader_fragment_mask
+ - Optimizer:
+   - Add eliminater-dead-function transform
+   - Add strength reduction transform: For now, convert multiply by power of 2
+     to a bit shift.
+   - Extract-insert elimination: Recognize the case where the first instruction
+     in the sequence is an OpCompositeConstruct or OpConstantComposite
  - Fixes:
    #798: spirv-as should fail when given unrecognized long option
    #800: Inliner: Fix inlining function into header of multi-block loop
+   #824: Eliminate-local-multi-store: Fix a crash
+   #826: Elimiante-local-multi-store: Fix a crash
    #834: Add Cmake option to build the compressing codec. Off by default.
 
 v2017.0 2017-09-01
