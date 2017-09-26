@@ -88,13 +88,12 @@ bool Pass::ProcessCallTreeFromRoots(
 
   while (!roots->empty()) {
     const uint32_t fi = roots->front();
-    if (done.find(fi) == done.end()) {
+    roots->pop();
+    if (done.insert(fi).second) {
       ir::Function* fn = id2function.at(fi);
       modified = pfn(fn) || modified;
-      done.insert(fi);
       AddCalls(fn, roots);
     }
-    roots->pop();
   }
   return modified;
 }
