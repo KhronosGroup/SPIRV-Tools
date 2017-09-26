@@ -30,7 +30,8 @@ Pass::Status CompactIdsPass::Process(ir::Module* module) {
   module->ForEachInst([&result_id_mapping, &modified] (Instruction* inst) {
     auto operand = inst->begin();
     while (operand != inst->end()) {
-      if (spvIsIdType(operand->type)) {
+      const auto type = operand->type;
+      if (spvIsIdType(type)) {
         assert(operand->words.size() == 1);
         uint32_t& id = operand->words[0];
         auto it = result_id_mapping.find(id);
@@ -44,6 +45,12 @@ Pass::Status CompactIdsPass::Process(ir::Module* module) {
         if (id != it->second) {
           modified = true;
           id = it->second;
+          // Update data cached in the instruction object.
+          if (type == SPV_OPERAND_TYPE_RESULT_ID) {
+            inst->SetResultId(id);
+          } else if (type == SPV_OPERAND_TYPE_TYPE_ID) {
+            inst->SetResultType(id);
+          }
         }
       }
       ++operand;
