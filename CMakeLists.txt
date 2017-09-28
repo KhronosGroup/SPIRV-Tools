@@ -188,6 +188,8 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
       ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools/)
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
-add_test(NAME spirv-tools-copyrights
-         COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+if (NOT "${SPIRV_SKIP_TESTS}")
+  add_test(NAME spirv-tools-copyrights
+           COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+ endif()
