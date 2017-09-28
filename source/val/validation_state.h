@@ -378,9 +378,20 @@ class ValidationState_t {
   bool IsSignedIntVectorType(uint32_t id) const;
   bool IsBoolScalarType(uint32_t id) const;
   bool IsBoolVectorType(uint32_t id) const;
+  bool IsPointerType(uint32_t id) const;
 
   // Returns type_id if id has type or zero otherwise.
   uint32_t GetTypeId(uint32_t id) const;
+
+  // Returns type_id for given id operand if it has a type or zero otherwise.
+  // |operand_index| is expected to be pointing towards an operand which is an
+  // id.
+  uint32_t GetOperandTypeId(const spv_parsed_instruction_t* inst,
+                            size_t operand_index) const;
+
+  // Provides information on pointer type. Returns false iff not pointer type.
+  bool GetPointerTypeInfo(
+      uint32_t id, uint32_t* data_type, uint32_t* storage_class) const;
 
  private:
   ValidationState_t(const ValidationState_t&);

@@ -115,6 +115,10 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
 spv_result_t ArithmeticsPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
+/// Validates correctness of conversion instructions.
+spv_result_t ConversionPass(ValidationState_t& _,
+                            const spv_parsed_instruction_t* inst);
+
 /// Validates correctness of logical instructions.
 spv_result_t LogicalsPass(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst);

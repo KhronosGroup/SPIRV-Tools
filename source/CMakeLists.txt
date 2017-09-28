@@ -255,8 +255,9 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_arithmetics.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_bitwise.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/validate_cfg.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_capability.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_cfg.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_conversion.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_datarules.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_decorations.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_id.cpp

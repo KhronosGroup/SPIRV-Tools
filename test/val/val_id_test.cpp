@@ -2005,7 +2005,8 @@ TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
               HasSubstr("ID 8 has not been defined"));
 }
 
-TEST_F(ValidateIdWithMessage, OpLoadLogicalPointerBad) {
+// Disabled as bitcasting type to object is now not valid.
+TEST_F(ValidateIdWithMessage, DISABLED_OpLoadLogicalPointerBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
@@ -2065,7 +2066,8 @@ TEST_F(ValidateIdWithMessage, OpStorePointerBad) {
               HasSubstr("OpStore Pointer <id> '3' is not a logical pointer."));
 }
 
-TEST_F(ValidateIdWithMessage, OpStoreLogicalPointerBad) {
+// Disabled as bitcasting type to object is now not valid.
+TEST_F(ValidateIdWithMessage, DISABLED_OpStoreLogicalPointerBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
