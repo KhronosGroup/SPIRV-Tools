@@ -177,13 +177,25 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
 void DefUseManager::EraseUseRecordsOfOperandIds(const ir::Instruction* inst) {
   // Go through all ids used by this instruction, remove this instruction's
   // uses of them.
+  //
+  // We cache end iterators to avoid the cost of repeatedly constructing
+  // and destructing their value.  This cuts runtime on some examples by
+  // a factor of about 3 (e.g. on Windows debug builds, with many thousands
+  // of instructions).
   auto iter = inst_to_used_ids_.find(inst);
   if (iter != inst_to_used_ids_.end()) {
+    // Cache the end iterator on the map.  The end iterator on
+    // an unordered map does not get invalidated when erasing an
+    // element.
+    const auto& id_to_uses_end = id_to_uses_.end();
     for (const auto use_id : iter->second) {
       auto uses_iter = id_to_uses_.find(use_id);
-      if (uses_iter == id_to_uses_.end()) continue;
+      if (uses_iter == id_to_uses_end) continue;
       auto& uses = uses_iter->second;
-      for (auto it = uses.begin(); it != uses.end();) {
+      // Similarly, cache this end iterator.  It is not invalidated
+      // by erasure of an element from the list.
+      const auto& uses_end = uses.end();
+      for (auto it = uses.begin(); it != uses_end;) {
         if (it->inst == inst) {
           it = uses.erase(it);
         } else {
