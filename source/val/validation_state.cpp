@@ -655,4 +655,34 @@ bool ValidationState_t::GetStructMemberTypes(
   return true;
 }
 
+bool ValidationState_t::IsPointerType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  assert(inst);
+  return inst->opcode() == SpvOpTypePointer;
+}
+
+bool ValidationState_t::GetPointerTypeInfo(
+    uint32_t id, uint32_t* data_type, uint32_t* storage_class) const {
+  if (!id)
+    return false;
+
+  const Instruction* inst = FindDef(id);
+  assert(inst);
+  if (inst->opcode() != SpvOpTypePointer)
+    return false;
+
+  *storage_class = inst->word(2);
+  *data_type = inst->word(3);
+  return true;
+}
+
+uint32_t ValidationState_t::GetOperandTypeId(
+    const spv_parsed_instruction_t* inst,
+    size_t operand_index) const {
+  assert(operand_index < inst->num_operands);
+  const spv_parsed_operand_t& operand = inst->operands[operand_index];
+  assert(operand.num_words == 1);
+  return GetTypeId(inst->words[operand.offset]);
+}
+
 }  /// namespace libspirv
