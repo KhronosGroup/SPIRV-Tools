@@ -33,7 +33,7 @@ const uint32_t kExtInstInstructionInIndx = 1;
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   const SpvOp op = varInst->opcode();
-  if (op != SpvOpVariable && op != SpvOpFunctionParameter) 
+  if (op != SpvOpVariable) 
     return false;
   const uint32_t varTypeId = varInst->type_id();
   const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
