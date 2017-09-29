@@ -1051,6 +1051,77 @@ OpFunctionEnd
       defs_before + func_before, defs_after + func_after, true, true);
 }
 
+TEST_F(AggressiveDCETest, NoParamStoreElim) {
+  // Should not eliminate stores to params
+  //
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void foo(in vec4 v1, out vec4 v2)
+  // {
+  //     v2 = -v1;
+  // }
+  // 
+  // void main()
+  // {
+  //     foo(BaseColor, OutColor);
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_vf4_vf4_ "foo(vf4;vf4;"
+OpName %v1 "v1"
+OpName %v2 "v2"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpName %param "param"
+OpName %param_0 "param"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%15 = OpTypeFunction %void %_ptr_Function_v4float %_ptr_Function_v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %11
+%18 = OpLabel
+%param = OpVariable %_ptr_Function_v4float Function
+%param_0 = OpVariable %_ptr_Function_v4float Function
+%19 = OpLoad %v4float %BaseColor
+OpStore %param %19
+%20 = OpFunctionCall %void %foo_vf4_vf4_ %param %param_0
+%21 = OpLoad %v4float %param_0
+OpStore %OutColor %21
+OpReturn
+OpFunctionEnd
+%foo_vf4_vf4_ = OpFunction %void None %15
+%v1 = OpFunctionParameter %_ptr_Function_v4float
+%v2 = OpFunctionParameter %_ptr_Function_v4float
+%22 = OpLabel
+%23 = OpLoad %v4float %v1
+%24 = OpFNegate %v4float %23
+OpStore %v2 %24
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
