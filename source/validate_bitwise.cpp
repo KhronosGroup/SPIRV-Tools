@@ -235,12 +235,6 @@ spv_result_t BitwisePass(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Base dimension to be equal to Result Type dimension: "
             << spvOpcodeString(opcode);
-
-      //TODO(dneto): Add a check for:
-      // "The components must be wide enough to hold the unsigned Width of Base
-      // as an unsigned value. That is, no sign bit is needed or counted when
-      // checking for a wide enough result width."
-
       break;
     }
 
