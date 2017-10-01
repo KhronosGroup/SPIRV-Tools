@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
+#include <sstream>
+
+#include "gmock/gmock.h"
 #include "unit_spirv.h"
 
 namespace {
 
 using libspirv::DiagnosticStream;
+using ::testing::Eq;
 
 // Returns a newly created diagnostic value.
 spv_diagnostic MakeValidDiagnostic() {
@@ -73,6 +78,27 @@ TEST(DiagnosticStream, ConversionToResultType) {
   // Check conversion via constructor.
   EXPECT_EQ(SPV_FAILED_MATCH,
             spv_result_t(DiagnosticStream({}, nullptr, SPV_FAILED_MATCH)));
+}
+
+TEST(DiagnosticStream, MoveConstructorPreservesPreviousMessagesAndPreventsOutputFromExpiringValue) {
+  std::ostringstream messages;
+  int message_count = 0;
+  auto consumer = [&messages, &message_count](spv_message_level_t, const char*,
+                                              const spv_position_t&,
+                                              const char* msg) {
+    message_count++;
+    messages << msg;
+  };
+
+  // Enclose the DiagnosticStream variables in a scope to force destruction.
+  {
+    DiagnosticStream ds0({}, consumer, SPV_ERROR_INVALID_BINARY);
+    ds0 << "First";
+    DiagnosticStream ds1(std::move(ds0));
+    ds1 << "Second";
+  }
+  EXPECT_THAT(message_count, Eq(1));
+  EXPECT_THAT(messages.str(), Eq("FirstSecond"));
 }
 
 }  // anonymous namespace

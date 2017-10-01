@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include "table.h"
 
@@ -65,6 +66,19 @@ spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic) {
 }
 
 namespace libspirv {
+
+DiagnosticStream::DiagnosticStream(DiagnosticStream&& other)
+    : stream_(),
+      position_(other.position_),
+      consumer_(other.consumer_),
+      error_(other.error_) {
+  // Prevent the other object from emitting output during destruction.
+  other.error_ = SPV_FAILED_MATCH;
+  // Some platforms are missing support for std::ostringstream functionality,
+  // including:  move constructor, swap method.  Either would have been a
+  // better choice than copying the string.
+  stream_ << other.stream_.str();
+}
 
 DiagnosticStream::~DiagnosticStream() {
   if (error_ != SPV_FAILED_MATCH && consumer_ != nullptr) {
