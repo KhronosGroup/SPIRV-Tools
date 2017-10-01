@@ -15,6 +15,8 @@
 #include "gmock/gmock.h"
 #include "linker_fixture.h"
 
+// TODO(dneto): Fix performance issue for debug builds on Windows
+#if !(defined(SPIRV_WINDOWS) && defined(_DEBUG))
 namespace {
 
 using ::testing::HasSubstr;
@@ -145,5 +147,6 @@ TEST_F(EntryPoints, OverLimit) {
               HasSubstr("The limit of global values, 65535, was exceeded; "
                         "65536 global values were found."));
 }
+#endif // !(defined(SPIRV_WINDOWS) && defined(_DEBUG))
 
 }  // anonymous namespace

@@ -57,6 +57,9 @@ class DecorationManager {
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDecorations(ir::Module* module);
 
+  template <typename T>
+  std::vector<T> InternalGetDecorationsFor(uint32_t id, bool include_linkage);
+
   // Mapping from ids to the instructions applying a decoration to them. In
   // other words, for each id you get all decoration instructions referencing
   // that id, be it directly (SpvOpDecorate, SpvOpMemberDecorate and

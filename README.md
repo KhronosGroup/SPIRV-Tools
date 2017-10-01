@@ -109,10 +109,8 @@ Currently supported optimizations:
   * Eliminate dead branches
   * Merge single successor / single predecessor block pairs
   * Eliminate common uniform loads
-  * Remove duplicate capabilities
-  * Remove duplicate extended instruction imports
-  * Remove duplicate types
-  * Remove duplicate decorations
+  * Remove duplicates: Capabilities, extended instruction imports, types, and
+    decorations.
 
 For the latest list with detailed documentation, please refer to
 [`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).
@@ -125,11 +123,12 @@ For suggestions on using the code reduction options, please refer to this [white
 *Note:* The linker is still under development.
 
 Current features:
-* Link multiple SPIR-V binary modules together
-* Link into an executable or a library
+* Combine multiple SPIR-V binary modules together.
+* Combine into a library (exports are retained) or an executable (no symbols
+  are exported).
 
-See the [CHANGES](CHANGES) file for reports on completed work, and the [Linker
-sub-project](https://github.com/KhronosGroup/SPIRV-Tools/projects/5) for
+See the [CHANGES](CHANGES) file for reports on completed work, and the [General
+sub-project](https://github.com/KhronosGroup/SPIRV-Tools/projects/2) for
 planned and in-progress work.
 
 ### Extras
@@ -242,7 +241,7 @@ and C++ API.
 
 In order to use the library from an application, the include path should point
 to `<spirv-dir>/include`, which will enable the application to include the
-header `<spirv-dir>/include/spirv-tools/libspirv.h{|pp}` then linking against
+header `<spirv-dir>/include/spirv-tools/libspirv.h{|pp}` then combining against
 the static library in `<spirv-build-dir>/source/libSPIRV-Tools.a` or
 `<spirv-build-dir>/source/SPIRV-Tools.lib`.
 For optimization, the header file is
@@ -276,7 +275,7 @@ The C++ interface is comprised of three classes, `SpirvTools`, `Optimizer` and
 `Linker`, all in the `spvtools` namespace.
 * `SpirvTools` provides `Assemble`, `Disassemble`, and `Validate` methods.
 * `Optimizer` provides methods for registering and running optimization passes.
-* `Linker` provides methods for linking together multiple binaries.
+* `Linker` provides methods for combining together multiple binaries.
 
 ## Command line tools
 
@@ -315,11 +314,12 @@ on Linux, Windows, and OS X.
 
 ### Linker tool
 
-The linker links multiple SPIR-V binary modules together, resulting in a single
+The linker combines multiple SPIR-V binary modules together, resulting in a single
 binary module as output.
 
-This is a work in progress, with the linker not allowing mathematical flags
-similar to the ones from OpenCL, for example.
+This is a work in progress.
+The linker does not support OpenCL program linking options related to math
+flags. (See section 5.6.5.2 in OpenCL 1.2)
 
 * `spirv-link` - the standalone linker
   * `<spirv-dir>/tools/link`

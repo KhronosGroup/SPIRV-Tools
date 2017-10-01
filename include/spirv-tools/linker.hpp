@@ -67,7 +67,9 @@ class Linker {
   // invoked once for each message communicated from the library.
   void SetMessageConsumer(MessageConsumer consumer);
 
-  // Links one or more SPIR-V modules into a new SPIR-V module.
+  // Links one or more SPIR-V modules into a new SPIR-V module. That is,
+  // combine several SPIR-V modules into one, resolving link dependencies
+  // between them.
   //
   // At least one binary has to be provided in |binaries|. Those binaries do
   // not have to be valid, but they should be at least parseable.
@@ -77,7 +79,8 @@ class Linker {
   // * The input modules used different addressing or memory models;
   // * The ID or global variable number limit were exceeded;
   // * Some entry points were defined multiple times;
-  // * Some imported symbols did not have an exported counterpart.
+  // * Some imported symbols did not have an exported counterpart;
+  // * Possibly other reasons.
   spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
                     const LinkerOptions& options = LinkerOptions()) const;
