@@ -143,4 +143,53 @@ OpFunctionEnd
   EXPECT_THAT(disassembly, ::testing::Eq(expected));
 }
 
+TEST(CompactIds, HeaderIsUpdated) {
+  const std::string input(R"(OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %100 "main"
+%200 = OpTypeVoid
+%300 = OpTypeFunction %200
+%100 = OpFunction %300 None %200
+%400 = OpLabel
+OpReturn
+OpFunctionEnd
+)");
+
+  std::vector<uint32_t> binary;
+  const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
+  spvtools::SpirvTools tools(env);
+  auto assembled = tools.Assemble(
+      input, &binary, SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(assembled);
+
+  spvtools::Optimizer optimizer(env);
+  optimizer.RegisterPass(CreateCompactIdsPass());
+  // The exhaustive inliner will use the result_id
+  optimizer.RegisterPass(CreateInlineExhaustivePass());
+
+  // This should not crash!
+  optimizer.Run(binary.data(), binary.size(), &binary);
+
+  std::string disassembly;
+  tools.Disassemble(binary, &disassembly, SPV_BINARY_TO_TEXT_OPTION_NONE);
+
+  const std::string expected(R"(; SPIR-V
+; Version: 1.0
+; Generator: Khronos SPIR-V Tools Assembler; 0
+; Bound: 5
+; Schema: 0
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %1 "main"
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %3 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)");
+
+  EXPECT_THAT(disassembly, ::testing::Eq(expected));
+}
+
 }  // anonymous namespace
