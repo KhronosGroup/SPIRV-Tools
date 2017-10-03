@@ -13,7 +13,7 @@
 # limitations under the License.
 
 if(SPIRV_BUILD_COMPRESSION)
-  add_library(SPIRV-Tools-comp markv_codec.cpp markv_autogen.cpp)
+  add_library(SPIRV-Tools-comp markv_codec.cpp)
 
   spvtools_default_compile_options(SPIRV-Tools-comp)
   target_include_directories(SPIRV-Tools-comp

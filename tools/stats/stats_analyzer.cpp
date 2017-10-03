@@ -25,7 +25,7 @@
 
 #include "spirv/1.2/spirv.h"
 #include "source/enum_string_mapping.h"
-#include "source/comp/markv_autogen.h"
+#include "source/comp/markv_model.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
@@ -38,7 +38,8 @@ namespace {
 
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
-const uint64_t kMarkvNoneOfTheAbove = GetMarkvNonOfTheAbove();
+const uint64_t kMarkvNoneOfTheAbove =
+    spvtools::MarkvModel::GetMarkvNoneOfTheAbove();
 
 inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
                                             uint32_t num_operands) {
