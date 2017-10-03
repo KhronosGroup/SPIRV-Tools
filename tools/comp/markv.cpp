@@ -20,9 +20,10 @@
 #include <memory>
 #include <vector>
 
+#include "markv_model_factory.h"
+#include "source/comp/markv.h"
 #include "source/spirv_target_env.h"
 #include "source/table.h"
-#include "spirv-tools/markv.h"
 #include "tools/io.h"
 
 namespace {
@@ -63,6 +64,7 @@ Options:
   -h, --help      Print this help.
   --comments      Write codec comments to stdout.
   --version       Display MARK-V codec version.
+  --validate      Validate SPIR-V while encoding or decoding.
 
   -o <filename>   Set the output filename.
                   Output goes to standard output if this option is
@@ -119,6 +121,7 @@ int main(int argc, char** argv) {
   }
 
   bool want_comments = false;
+  bool validate_spirv_binary = false;
 
   for (int argi = 2; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -143,6 +146,8 @@ int main(int argc, char** argv) {
           } else if (0 == strcmp(argv[argi], "--version")) {
             fprintf(stderr, "error: Not implemented\n");
             return 1;
+          } else if (0 == strcmp(argv[argi], "--validate")) {
+            validate_spirv_binary = true;
           } else {
             print_usage(argv[0]);
             return 1;
@@ -179,69 +184,69 @@ int main(int argc, char** argv) {
   const bool write_to_stdout = output_filename == nullptr ||
       0 == strcmp(output_filename, "-");
 
-  spv_text comments = nullptr;
-  spv_text* comments_ptr = want_comments ? &comments : nullptr;
+  std::string comments;
+  std::string* comments_ptr = want_comments ? &comments : nullptr;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
+
+  std::unique_ptr<spvtools::MarkvModel> model =
+      spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
 
   if (task == kEncode) {
-    std::vector<uint32_t> contents;
-    if (!ReadFile<uint32_t>(input_filename, "rb", &contents)) return 1;
+    std::vector<uint32_t> spirv;
+    if (!ReadFile<uint32_t>(input_filename, "rb", &spirv)) return 1;
 
-    std::unique_ptr<spv_markv_encoder_options_t,
-        std::function<void(spv_markv_encoder_options_t*)>> options(
-            spvMarkvEncoderOptionsCreate(), &spvMarkvEncoderOptionsDestroy);
-    spv_markv_binary markv_binary = nullptr;
+    spvtools::MarkvEncoderOptions options;
+    options.validate_spirv_binary = validate_spirv_binary;
 
-    if (SPV_SUCCESS !=
-        spvSpirvToMarkv(ctx.context, contents.data(), contents.size(),
-                        options.get(), &markv_binary, comments_ptr, nullptr)) {
+    std::vector<uint8_t> markv;
+
+    if (SPV_SUCCESS != spvtools::SpirvToMarkv(
+        ctx.context, spirv, options, *model, DiagnosticsMessageHandler,
+        &markv, comments_ptr)) {
       std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
                 << std::endl;
       return 1;
     }
 
     if (want_comments) {
-      if (!WriteFile<char>(nullptr, "w", comments->str,
-                           comments->length)) return 1;
+      if (!WriteFile<char>(nullptr, "w", comments.c_str(),
+                           comments.length())) return 1;
     }
 
     if (!want_comments || !write_to_stdout) {
-      if (!WriteFile<uint8_t>(output_filename, "wb", markv_binary->data,
-                              markv_binary->length)) return 1;
+      if (!WriteFile<uint8_t>(output_filename, "wb", markv.data(),
+                              markv.size())) return 1;
     }
   } else if (task == kDecode) {
-    std::vector<uint8_t> contents;
-    if (!ReadFile<uint8_t>(input_filename, "rb", &contents)) return 1;
+    std::vector<uint8_t> markv;
+    if (!ReadFile<uint8_t>(input_filename, "rb", &markv)) return 1;
 
-    std::unique_ptr<spv_markv_decoder_options_t,
-        std::function<void(spv_markv_decoder_options_t*)>> options(
-            spvMarkvDecoderOptionsCreate(), &spvMarkvDecoderOptionsDestroy);
-    spv_binary spirv_binary = nullptr;
+    spvtools::MarkvDecoderOptions options;
+    options.validate_spirv_binary = validate_spirv_binary;
 
-    if (SPV_SUCCESS !=
-        spvMarkvToSpirv(ctx.context, contents.data(), contents.size(),
-                        options.get(), &spirv_binary, comments_ptr, nullptr)) {
-      std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
+    std::vector<uint32_t> spirv;
+
+    if (SPV_SUCCESS != spvtools::MarkvToSpirv(
+        ctx.context, markv, options, *model, DiagnosticsMessageHandler,
+        &spirv, comments_ptr)) {
+      std::cerr << "error: Failed to decode " << input_filename << " to SPIR-V "
                 << std::endl;
       return 1;
     }
 
     if (want_comments) {
-      if (!WriteFile<char>(nullptr, "w", comments->str,
-                           comments->length)) return 1;
+      if (!WriteFile<char>(nullptr, "w", comments.c_str(),
+                           comments.length())) return 1;
     }
 
     if (!want_comments || !write_to_stdout) {
-      if (!WriteFile<uint32_t>(output_filename, "wb", spirv_binary->code,
-                              spirv_binary->wordCount)) return 1;
+      if (!WriteFile<uint32_t>(output_filename, "wb", spirv.data(),
+                               spirv.size())) return 1;
     }
   } else {
     assert(false && "Unknown task");
   }
-
-  spvTextDestroy(comments);
 
   return 0;
 }

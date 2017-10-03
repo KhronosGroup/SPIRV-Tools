@@ -19,8 +19,9 @@
 #include <string>
 
 #include "gmock/gmock.h"
-#include "spirv-tools/markv.h"
+#include "source/comp/markv.h"
 #include "test_fixture.h"
+#include "tools/comp/markv_model_factory.h"
 #include "unit_spirv.h"
 
 namespace {
@@ -82,52 +83,15 @@ void Disassemble(const std::vector<uint32_t>& words,
   spvTextDestroy(text);
 }
 
-// Encodes SPIR-V |words| to |markv_binary|. |comments| context snippets of
-// disassembly and bit sequences for debugging.
-void Encode(const std::vector<uint32_t>& words,
-            spv_markv_binary* markv_binary,
-            std::string* comments,
-            spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
-  ScopedContext ctx(env);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
-
-  std::unique_ptr<spv_markv_encoder_options_t,
-      std::function<void(spv_markv_encoder_options_t*)>> options(
-          spvMarkvEncoderOptionsCreate(), &spvMarkvEncoderOptionsDestroy);
-  spv_text spv_text_comments;
-  ASSERT_EQ(SPV_SUCCESS, spvSpirvToMarkv(ctx.context, words.data(),
-                                         words.size(), options.get(),
-                                         markv_binary, &spv_text_comments,
-                                         nullptr));
-
-  *comments = std::string(spv_text_comments->str, spv_text_comments->length);
-  spvTextDestroy(spv_text_comments);
-}
-
-// Decodes |markv_binary| to SPIR-V |words|.
-void Decode(const spv_markv_binary markv_binary,
-            std::vector<uint32_t>* words,
-            spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
-  ScopedContext ctx(env);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
-
-  spv_binary spirv_binary = nullptr;
-  std::unique_ptr<spv_markv_decoder_options_t,
-      std::function<void(spv_markv_decoder_options_t*)>> options(
-          spvMarkvDecoderOptionsCreate(), &spvMarkvDecoderOptionsDestroy);
-  ASSERT_EQ(SPV_SUCCESS, spvMarkvToSpirv(ctx.context, markv_binary->data,
-                                         markv_binary->length, options.get(),
-                                         &spirv_binary, nullptr, nullptr));
-
-  *words = std::vector<uint32_t>(
-      spirv_binary->code, spirv_binary->code + spirv_binary->wordCount);
-
-  spvBinaryDestroy(spirv_binary);
-}
-
 // Encodes/decodes |original|, assembles/dissasembles |original|, then compares
 // the results of the two operations.
 void TestEncodeDecode(const std::string& original_text) {
+  ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
+  std::unique_ptr<spvtools::MarkvModel> model =
+      spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
+  spvtools::MarkvEncoderOptions encoder_options;
+  spvtools::MarkvDecoderOptions decoder_options;
+
   std::vector<uint32_t> expected_binary;
   Compile(original_text, &expected_binary);
   ASSERT_FALSE(expected_binary.empty());
@@ -141,17 +105,17 @@ void TestEncodeDecode(const std::string& original_text) {
           SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_FALSE(binary_to_encode.empty());
 
-  spv_markv_binary markv_binary = nullptr;
+  std::vector<uint8_t> markv;
   std::string encoder_comments;
-  Encode(binary_to_encode, &markv_binary, &encoder_comments);
-  ASSERT_NE(nullptr, markv_binary);
-
-  // std::cerr << encoder_comments << std::endl;
-  // std::cerr << "SPIR-V size: " << expected_binary.size() * 4 << std::endl;
-  // std::cerr << "MARK-V size: " << markv_binary->length << std::endl;
+  ASSERT_EQ(SPV_SUCCESS, spvtools::SpirvToMarkv(
+      ctx.context, binary_to_encode, encoder_options, *model,
+      DiagnosticsMessageHandler, &markv, &encoder_comments));
+  ASSERT_FALSE(markv.empty());
 
   std::vector<uint32_t> decoded_binary;
-  Decode(markv_binary, &decoded_binary);
+  ASSERT_EQ(SPV_SUCCESS, spvtools::MarkvToSpirv(
+      ctx.context, markv, decoder_options, *model,
+      DiagnosticsMessageHandler, &decoded_binary, nullptr));
   ASSERT_FALSE(decoded_binary.empty());
 
   EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments;
@@ -161,8 +125,6 @@ void TestEncodeDecode(const std::string& original_text) {
   ASSERT_FALSE(decoded_text.empty());
 
   EXPECT_EQ(expected_text, decoded_text) << encoder_comments;
-
-  spvMarkvBinaryDestroy(markv_binary);
 }
 
 void TestEncodeDecodeShaderMainBody(const std::string& body) {

@@ -61,7 +61,10 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                             spirv-cfg spirv-link)
 
   if(SPIRV_BUILD_COMPRESSION)
-    add_spvtools_tool(TARGET spirv-markv SRCS comp/markv.cpp
+    add_spvtools_tool(TARGET spirv-markv
+                      SRCS comp/markv.cpp
+                           comp/markv_model_factory.cpp
+                           comp/markv_model_shader_default.cpp
 	              LIBS SPIRV-Tools-comp ${SPIRV_TOOLS})
     target_include_directories(spirv-markv PRIVATE ${spirv-tools_SOURCE_DIR}
                                                    ${SPIRV_HEADER_INCLUDE_DIR})
