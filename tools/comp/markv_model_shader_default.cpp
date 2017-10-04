@@ -31,10 +31,6 @@ namespace {
 // needs to be used.
 const uint64_t kMarkvNoneOfTheAbove = MarkvModel::GetMarkvNoneOfTheAbove();
 
-// Signals that the mtf rank is too large to be encoded with Huffman.
-const uint32_t kMtfRankEncodedByValueSignal =
-    std::numeric_limits<uint32_t>::max();
-
 inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
                                             uint32_t num_operands) {
   return opcode | (num_operands << 16);
