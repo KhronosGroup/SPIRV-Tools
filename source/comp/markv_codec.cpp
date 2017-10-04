@@ -323,21 +323,6 @@ class CommentLogger {
   bool use_delimiter_ = false;
 };
 
-// Creates spv_text object containing text from |str|.
-// The returned value is owned by the caller and needs to be destroyed with
-// spvTextDestroy.
-spv_text CreateSpvText(const std::string& str) {
-  spv_text out = new spv_text_t();
-  assert(out);
-  char* cstr = new char[str.length() + 1];
-  assert(cstr);
-  std::strncpy(cstr, str.c_str(), str.length());
-  cstr[str.length()] = '\0';
-  out->str = cstr;
-  out->length = str.length();
-  return out;
-}
-
 // Base class for MARK-V encoder and decoder. Contains common functionality
 // such as:
 // - Validator connection and validation state.
