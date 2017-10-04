@@ -1,6 +1,7 @@
 Revision history for SPIRV-Tools
 
 v2017.1-dev 2017-09-01
+ - Update README with details on the public_spirv_tools_dev@khronos.org mailing list.
  - General:
    - Avoid static-duration variables of class type (with constructors).
  - Validator:

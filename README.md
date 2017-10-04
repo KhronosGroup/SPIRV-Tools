@@ -18,11 +18,6 @@ own library, which depends on the core library.
 The interfaces have stabilized:
 We don't anticipate making a breaking change for existing features.
 
-See [`projects.md`](projects.md) to see how we use the
-[GitHub Project
-feature](https://help.github.com/articles/tracking-the-progress-of-your-work-with-projects/)
-to organize planned and in-progress work.
-
 SPIR-V is defined by the Khronos Group Inc.
 See the [SPIR-V Registry][spirv-registry] for the SPIR-V specification,
 headers, and XML registry.
@@ -138,15 +133,31 @@ planned and in-progress work.
   Copy that file into your `$HOME/.vim/syntax` directory to get SPIR-V assembly syntax
   highlighting in Vim.  This build target is not built by default.
 
-## Source code
+## Contributing
 
-The SPIR-V Tools are maintained by members of the The Khronos Group Inc.,
-at https://github.com/KhronosGroup/SPIRV-Tools.
+The SPIR-V Tools project is maintained by members of the The Khronos Group Inc.,
+and is hosted at https://github.com/KhronosGroup/SPIRV-Tools.
+
+Consider joining the `public_spirv_tools_dev@khronos.org` mailing list, via
+[https://www.khronos.org/spir/spirv-tools-mailing-list/](https://www.khronos.org/spir/spirv-tools-mailing-list/).
+The mailing list is used to discuss development plans for the SPIRV-Tools as an open source project.
+Once discussion is resolved,
+specific work is tracked via issues and sometimes in one of the
+[projects][spirv-tools-projects].
+
+(To provide feedback on the SPIR-V _specification_, file an issue on the
+[SPIRV-Headers][spirv-headers] GitHub repository.)
+
+See [`projects.md`](projects.md) to see how we use the
+[GitHub Project
+feature](https://help.github.com/articles/tracking-the-progress-of-your-work-with-projects/)
+to organize planned and in-progress work.
 
 Contributions via merge request are welcome. Changes should:
 * Be provided under the [Apache 2.0](#license).
-  You'll be prompted with a one-time "click-through" Contributor's License
-  Agreement (CLA) dialog as part of submitting your pull request or
+* You'll be prompted with a one-time "click-through"
+  [Khronos Open Source Contributor License Agreement][spirv-tools-cla]
+  (CLA) dialog as part of submitting your pull request or
   other contribution to GitHub.
 * Include tests to cover updated functionality.
 * C++ code should follow the [Google C++ Style Guide][cpp-style-guide].
@@ -451,6 +462,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
+[spirv-tools-cla]: https://cla-assistant.io/KhronosGroup/SPIRV-Tools
+[spirv-tools-projects]: https://github.com/KhronosGroup/SPIRV-Tools/projects
+[spirv-tools-mailing-list]: https://www.khronos.org/spir/spirv-tools-mailing-list
 [spirv-registry]: https://www.khronos.org/registry/spir-v/
 [spirv-headers]: https://github.com/KhronosGroup/SPIRV-Headers
 [googletest]: https://github.com/google/googletest
