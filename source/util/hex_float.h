@@ -25,6 +25,13 @@
 
 #include "bitutils.h"
 
+#ifndef __GNUC__
+#define GCC_VERSION 0
+#else
+#define GCC_VERSION \
+  (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#endif
+
 namespace spvutils {
 
 class Float16 {
@@ -439,11 +446,38 @@ class HexFloat {
     return significand;
   }
 
+#if GCC_VERSION == 40801
   // These exist because MSVC throws warnings on negative right-shifts
   // even if they are not going to be executed. Eg:
   // constant_number < 0? 0: constant_number
   // These convert the negative left-shifts into right shifts.
+  template <int_type N>
+  struct negatable_left_shift {
+    static uint_type val(uint_type val) {
+      if (N > 0) {
+        return static_cast<uint_type>(val << N);
+      } else {
+        return static_cast<uint_type>(val >> N);
+      }
+    }
+  };
 
+  template <int_type N>
+  struct negatable_right_shift {
+    static uint_type val(uint_type val) {
+      if (N > 0) {
+        return static_cast<uint_type>(val >> N);
+      } else {
+        return static_cast<uint_type>(val << N);
+      }
+    }
+  };
+
+#else
+  // These exist because MSVC throws warnings on negative right-shifts
+  // even if they are not going to be executed. Eg:
+  // constant_number < 0? 0: constant_number
+  // These convert the negative left-shifts into right shifts.
   template <int_type N, typename enable = void>
   struct negatable_left_shift {
     static uint_type val(uint_type val) {
@@ -471,6 +505,7 @@ class HexFloat {
       return static_cast<uint_type>(val >> N);
     }
   };
+#endif
 
   // Returns the significand, rounded to fit in a significand in
   // other_T. This is shifted so that the most significant
@@ -1071,6 +1106,6 @@ inline std::ostream& operator<<<Float16>(std::ostream& os,
   os << HexFloat<FloatProxy<Float16>>(value);
   return os;
 }
-}
+}  // namespace spvutils
 
 #endif  // LIBSPIRV_UTIL_HEX_FLOAT_H_
