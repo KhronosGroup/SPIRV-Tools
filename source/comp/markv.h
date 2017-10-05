@@ -25,15 +25,15 @@
 #include <vector>
 
 #include "markv_model.h"
-#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 
-struct markv_encoder_options_t {
+struct MarkvEncoderOptions {
   bool validate_spirv_binary = false;
 };
 
-struct markv_decoder_options_t {
+struct MarkvDecoderOptions {
   bool validate_spirv_binary = false;
 };
 
@@ -41,22 +41,23 @@ struct markv_decoder_options_t {
 // If |comments| is not nullptr, it would contain a textual description of
 // how encoding was done (with snippets of disassembly and bit sequences).
 spv_result_t SpirvToMarkv(spv_const_context context,
-                             const std::vector<uint32_t>& spirv,
-                             const markv_encoder_options_t& options,
-                             const MarkvModel* markv_model,
-                             std::vector<uint8_t>* markv,
-                             std::string* comments, spv_diagnostic* diagnostic);
+                          const std::vector<uint32_t>& spirv,
+                          const MarkvEncoderOptions& options,
+                          const MarkvModel& markv_model,
+                          MessageConsumer message_consumer,
+                          std::vector<uint8_t>* markv,
+                          std::string* comments);
 
 // Decodes a SPIR-V binary from the given MARK-V binary.
 // If |comments| is not nullptr, it would contain a textual description of
 // how decoding was done (with snippets of disassembly and bit sequences).
 spv_result_t MarkvToSpirv(spv_const_context context,
-                             const std::vector<uint8_t>& markv,
-                             const markv_decoder_options_t& options,
-                             const MarkvModel* markv_model,
-                             std::vector<uint32_t>* spirv,
-                             std::string* /* comments */,
-                             spv_diagnostic* diagnostic);
+                          const std::vector<uint8_t>& markv,
+                          const MarkvDecoderOptions& options,
+                          const MarkvModel& markv_model,
+                          MessageConsumer message_consumer,
+                          std::vector<uint32_t>* spirv,
+                          std::string* comments);
 
 }  // namespace spvtools
 

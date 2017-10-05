@@ -188,7 +188,6 @@ int main(int argc, char** argv) {
   std::string* comments_ptr = want_comments ? &comments : nullptr;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   std::unique_ptr<spvtools::MarkvModel> model =
       spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
@@ -197,14 +196,14 @@ int main(int argc, char** argv) {
     std::vector<uint32_t> spirv;
     if (!ReadFile<uint32_t>(input_filename, "rb", &spirv)) return 1;
 
-    spvtools::markv_encoder_options_t options;
+    spvtools::MarkvEncoderOptions options;
     options.validate_spirv_binary = validate_spirv_binary;
 
     std::vector<uint8_t> markv;
 
     if (SPV_SUCCESS != spvtools::SpirvToMarkv(
-        ctx.context, spirv, options, model.get(), &markv, comments_ptr,
-        nullptr)) {
+        ctx.context, spirv, options, *model, DiagnosticsMessageHandler,
+        &markv, comments_ptr)) {
       std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
                 << std::endl;
       return 1;
@@ -223,14 +222,14 @@ int main(int argc, char** argv) {
     std::vector<uint8_t> markv;
     if (!ReadFile<uint8_t>(input_filename, "rb", &markv)) return 1;
 
-    spvtools::markv_decoder_options_t options;
+    spvtools::MarkvDecoderOptions options;
     options.validate_spirv_binary = validate_spirv_binary;
 
     std::vector<uint32_t> spirv;
 
     if (SPV_SUCCESS != spvtools::MarkvToSpirv(
-        ctx.context, markv, options, model.get(), &spirv, comments_ptr,
-        nullptr)) {
+        ctx.context, markv, options, *model, DiagnosticsMessageHandler,
+        &spirv, comments_ptr)) {
       std::cerr << "error: Failed to decode " << input_filename << " to SPIR-V "
                 << std::endl;
       return 1;

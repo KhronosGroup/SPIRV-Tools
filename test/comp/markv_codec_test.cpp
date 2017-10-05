@@ -87,11 +87,10 @@ void Disassemble(const std::vector<uint32_t>& words,
 // the results of the two operations.
 void TestEncodeDecode(const std::string& original_text) {
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
   std::unique_ptr<spvtools::MarkvModel> model =
       spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
-  spvtools::markv_encoder_options_t encoder_options;
-  spvtools::markv_decoder_options_t decoder_options;
+  spvtools::MarkvEncoderOptions encoder_options;
+  spvtools::MarkvDecoderOptions decoder_options;
 
   std::vector<uint32_t> expected_binary;
   Compile(original_text, &expected_binary);
@@ -109,14 +108,14 @@ void TestEncodeDecode(const std::string& original_text) {
   std::vector<uint8_t> markv;
   std::string encoder_comments;
   ASSERT_EQ(SPV_SUCCESS, spvtools::SpirvToMarkv(
-      ctx.context, binary_to_encode, encoder_options, model.get(),
-      &markv, &encoder_comments, nullptr));
+      ctx.context, binary_to_encode, encoder_options, *model,
+      DiagnosticsMessageHandler, &markv, &encoder_comments));
   ASSERT_FALSE(markv.empty());
 
   std::vector<uint32_t> decoded_binary;
   ASSERT_EQ(SPV_SUCCESS, spvtools::MarkvToSpirv(
-      ctx.context, markv, decoder_options, model.get(),
-      &decoded_binary, nullptr, nullptr));
+      ctx.context, markv, decoder_options, *model,
+      DiagnosticsMessageHandler, &decoded_binary, nullptr));
   ASSERT_FALSE(decoded_binary.empty());
 
   EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments;

@@ -355,6 +355,8 @@ class MarkvCodecBase {
     uint32_t spirv_generator;
   };
 
+  // |model| is owned by the caller, must be not null and valid during the
+  // lifetime of the codec.
   explicit MarkvCodecBase(spv_const_context context,
                           spv_validator_options validator_options,
                           const MarkvModel* model)
@@ -498,6 +500,8 @@ class MarkvCodecBase {
   spv_validator_options validator_options_ = nullptr;
   const libspirv::AssemblyGrammar grammar_;
   MarkvHeader header_;
+
+  // MARK-V model, not owned.
   const MarkvModel* model_ = nullptr;
 
   // Current instruction, current operand and current operand index.
@@ -565,8 +569,10 @@ class MarkvCodecBase {
 // on how encoding was done, which can later be accessed with GetComments().
 class MarkvEncoder : public MarkvCodecBase {
  public:
+  // |model| is owned by the caller, must be not null and valid during the
+  // lifetime of MarkvEncoder.
   MarkvEncoder(spv_const_context context,
-               const markv_encoder_options_t& options,
+               const MarkvEncoderOptions& options,
                const MarkvModel* model)
       : MarkvCodecBase(context, GetValidatorOptions(options), model),
         options_(options) {
@@ -644,7 +650,7 @@ class MarkvEncoder : public MarkvCodecBase {
  private:
   // Creates and returns validator options. Returned value owned by the caller.
   static spv_validator_options GetValidatorOptions(
-      const markv_encoder_options_t& options) {
+      const MarkvEncoderOptions& options) {
     return options.validate_spirv_binary ?
         spvValidatorOptionsCreate() : nullptr;
   }
@@ -686,7 +692,7 @@ class MarkvEncoder : public MarkvCodecBase {
   // Encodes a literal number operand and writes it to the bit stream.
   spv_result_t EncodeLiteralNumber(const spv_parsed_operand_t& operand);
 
-  markv_encoder_options_t options_;
+  MarkvEncoderOptions options_;
 
   // Bit stream where encoded instructions are written.
   BitWriterWord64 writer_;
@@ -702,9 +708,11 @@ class MarkvEncoder : public MarkvCodecBase {
 // Decodes MARK-V buffers written by MarkvEncoder.
 class MarkvDecoder : public MarkvCodecBase {
  public:
+  // |model| is owned by the caller, must be not null and valid during the
+  // lifetime of MarkvEncoder.
   MarkvDecoder(spv_const_context context,
                const std::vector<uint8_t>& markv,
-               const markv_decoder_options_t& options,
+               const MarkvDecoderOptions& options,
                const MarkvModel* model)
       : MarkvCodecBase(context, GetValidatorOptions(options), model),
         options_(options), reader_(markv) {
@@ -728,7 +736,7 @@ class MarkvDecoder : public MarkvCodecBase {
 
   // Creates and returns validator options. Returned value owned by the caller.
   static spv_validator_options GetValidatorOptions(
-      const markv_decoder_options_t& options) {
+      const MarkvDecoderOptions& options) {
     return options.validate_spirv_binary ?
         spvValidatorOptionsCreate() : nullptr;
   }
@@ -814,7 +822,7 @@ class MarkvDecoder : public MarkvCodecBase {
   // kind SPV_NUMBER_NONE.
   void RecordNumberType();
 
-  markv_decoder_options_t options_;
+  MarkvDecoderOptions options_;
 
   // Temporary sink where decoded SPIR-V words are written. Once it contains the
   // entire module, the container is moved and returned.
@@ -2831,15 +2839,13 @@ spv_result_t EncodeInstruction(
 
 spv_result_t SpirvToMarkv(spv_const_context context,
                           const std::vector<uint32_t>& spirv,
-                          const markv_encoder_options_t& options,
-                          const MarkvModel* markv_model,
+                          const MarkvEncoderOptions& options,
+                          const MarkvModel& markv_model,
+                          MessageConsumer message_consumer,
                           std::vector<uint8_t>* markv,
-                          std::string* comments, spv_diagnostic* diagnostic) {
+                          std::string* comments) {
   spv_context_t hijack_context = *context;
-  if (diagnostic) {
-    *diagnostic = nullptr;
-    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, diagnostic);
-  }
+  SetContextMessageConsumer(&hijack_context, message_consumer);
 
   spv_const_binary_t spirv_binary = {spirv.data(), spirv.size()};
 
@@ -2858,7 +2864,7 @@ spv_result_t SpirvToMarkv(spv_const_context context,
         << "Invalid SPIR-V header.";
   }
 
-  MarkvEncoder encoder(&hijack_context, options, markv_model);
+  MarkvEncoder encoder(&hijack_context, options, &markv_model);
 
   if (comments) {
     encoder.CreateCommentsLogger();
@@ -2878,7 +2884,7 @@ spv_result_t SpirvToMarkv(spv_const_context context,
 
   if (spvBinaryParse(
       &hijack_context, &encoder, spirv.data(), spirv.size(), EncodeHeader,
-      EncodeInstruction, diagnostic) != SPV_SUCCESS) {
+      EncodeInstruction, nullptr) != SPV_SUCCESS) {
     return DiagnosticStream(position, hijack_context.consumer,
                             SPV_ERROR_INVALID_BINARY)
         << "Unable to encode to MARK-V.";
@@ -2893,19 +2899,16 @@ spv_result_t SpirvToMarkv(spv_const_context context,
 
 spv_result_t MarkvToSpirv(spv_const_context context,
                           const std::vector<uint8_t>& markv,
-                          const markv_decoder_options_t& options,
-                          const MarkvModel* markv_model,
+                          const MarkvDecoderOptions& options,
+                          const MarkvModel& markv_model,
+                          MessageConsumer message_consumer,
                           std::vector<uint32_t>* spirv,
-                          std::string* /* comments */,
-                          spv_diagnostic* diagnostic) {
+                          std::string* /* comments */) {
   spv_position_t position = {};
   spv_context_t hijack_context = *context;
-  if (diagnostic) {
-    *diagnostic = nullptr;
-    libspirv::UseDiagnosticAsMessageConsumer(&hijack_context, diagnostic);
-  }
+  SetContextMessageConsumer(&hijack_context, message_consumer);
 
-  MarkvDecoder decoder(&hijack_context, markv, options, markv_model);
+  MarkvDecoder decoder(&hijack_context, markv, options, &markv_model);
 
   if (decoder.DecodeModule(spirv) != SPV_SUCCESS) {
     return DiagnosticStream(position, hijack_context.consumer,

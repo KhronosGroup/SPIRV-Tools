@@ -122,6 +122,9 @@ class MarkvModel {
     return 1111111111111111111;
   }
 
+  MarkvModel(const MarkvModel&) = delete;
+  const MarkvModel& operator=(const MarkvModel&) = delete;
+
  protected:
   // Huffman codec for base-rate of opcode_and_num_operands.
   std::unique_ptr<spvutils::HuffmanCodec<uint64_t>>
