@@ -260,6 +260,9 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 // BranchConditionals with constant condition and convert to a Branch to
 // the indicated label. It will delete resulting dead blocks.
 //
+// For all phi functions in merge block, replace all uses with the id
+// corresponding to the living predecessor.
+//
 // This pass only works on shaders (guaranteed to have structured control
 // flow). Note that some such branches and blocks may be left to avoid
 // creating invalid control flow. Improving this is left to future work.
@@ -332,17 +335,6 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass();
 // passes to delete the inserts. This pass performs best after access chains are
 // converted to inserts and extracts and local loads and stores are eliminated.
 Optimizer::PassToken CreateInsertExtractElimPass();
-
-// Create dead branch elimination pass.
-// For each entry point function, this pass will look for BranchConditionals
-// with constant condition and convert to a branch. The BranchConditional must
-// be preceeded by OpSelectionMerge. For all phi functions in merge block,
-// replace all uses with the id corresponding to the living predecessor.
-//
-// This pass is most effective when preceeded by passes which eliminate
-// local loads and stores, effectively propagating constant values where
-// possible.
-Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates a pass to consolidate uniform references.
 // For each entry point function in the module, first change all constant index
