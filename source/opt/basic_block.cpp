@@ -14,8 +14,19 @@
 
 #include "basic_block.h"
 
+#include "make_unique.h"
+
 namespace spvtools {
 namespace ir {
+
+BasicBlock::BasicBlock(const BasicBlock& bb)
+    : function_(nullptr),
+      label_(MakeUnique<Instruction>(bb.GetLabelInst())),
+      insts_() {
+  insts_.reserve(bb.insts_.size());
+  for (auto& inst : bb.insts_)
+    AddInstruction(MakeUnique<Instruction>(*inst.get()));
+}
 
 const Instruction* BasicBlock::GetMergeInst() const {
   const Instruction* result = nullptr;

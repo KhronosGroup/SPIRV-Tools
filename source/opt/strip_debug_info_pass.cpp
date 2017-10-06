@@ -18,7 +18,7 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status StripDebugInfoPass::Process(ir::Module* module) {
-  bool modified = !module->debugs().empty();
+  bool modified = !module->debugs1().empty() || !module->debugs2().empty();
   module->debug_clear();
 
   module->ForEachInst([&modified](ir::Instruction* inst) {

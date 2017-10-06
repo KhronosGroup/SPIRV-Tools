@@ -58,8 +58,16 @@ struct Operand {
   spv_operand_type_t type;      // Type of this logical operand.
   std::vector<uint32_t> words;  // Binary segments of this logical operand.
 
+  friend bool operator==(const Operand& o1, const Operand& o2) {
+    return o1.type == o2.type && o1.words == o2.words;
+  }
+
   // TODO(antiagainst): create fields for literal number kind, width, etc.
 };
+
+inline bool operator!=(const Operand& o1, const Operand& o2) {
+  return !(o1 == o2);
+}
 
 // A SPIR-V instruction. It contains the opcode and any additional logical
 // operand, including the result id (if any) and result type id (if any). It
@@ -139,6 +147,10 @@ class Instruction {
   inline void SetResultType(uint32_t ty_id);
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
+  // Remove the |index|-th operand
+  void RemoveOperand(uint32_t index) {
+    operands_.erase(operands_.begin() + index);
+  }
 
   // The following methods are similar to the above, but are for in operands.
   uint32_t NumInOperands() const {
@@ -150,6 +162,9 @@ class Instruction {
   }
   uint32_t GetSingleWordInOperand(uint32_t index) const {
     return GetSingleWordOperand(index + TypeResultIdCount());
+  }
+  void RemoveInOperand(uint32_t index) {
+    operands_.erase(operands_.begin() + index + TypeResultIdCount());
   }
 
   // Returns true if this instruction is OpNop.
@@ -165,6 +180,12 @@ class Instruction {
                           bool run_on_debug_line_insts = false);
   inline void ForEachInst(const std::function<void(const Instruction*)>& f,
                           bool run_on_debug_line_insts = false) const;
+
+  // Runs the given function |f| on all operand ids.
+  //
+  // |f| should not transform an ID into 0, as 0 is an invalid ID.
+  inline void ForEachId(const std::function<void(uint32_t*)>& f);
+  inline void ForEachId(const std::function<void(const uint32_t*)>& f) const;
 
   // Runs the given function |f| on all "in" operand ids
   inline void ForEachInId(const std::function<void(uint32_t*)>& f);
@@ -244,6 +265,20 @@ inline void Instruction::ForEachInst(
   if (run_on_debug_line_insts)
     for (auto& dbg_line : dbg_line_insts_) f(&dbg_line);
   f(this);
+}
+
+inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
+  for (auto& opnd : operands_)
+    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+  if (type_id_ != 0u)
+    type_id_ = GetSingleWordOperand(0u);
+  if (result_id_ != 0u) result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
+}
+
+inline void Instruction::ForEachId(
+    const std::function<void(const uint32_t*)>& f) const {
+  for (const auto& opnd : operands_)
+    if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
 }
 
 inline void Instruction::ForEachInId(const std::function<void(uint32_t*)>& f) {

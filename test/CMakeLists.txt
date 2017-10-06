@@ -180,6 +180,7 @@ add_spvtools_unittest(
   LIBS ${SPIRV_TOOLS})
 
 add_subdirectory(comp)
+add_subdirectory(link)
 add_subdirectory(opt)
 add_subdirectory(stats)
 add_subdirectory(val)

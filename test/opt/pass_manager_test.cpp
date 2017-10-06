@@ -70,17 +70,17 @@ TEST(PassManager, Interface) {
   EXPECT_STREQ("null-with-args", manager.GetPass(6)->name());
 }
 
-// A pass that appends an OpNop instruction to the debug section.
+// A pass that appends an OpNop instruction to the debug1 section.
 class AppendOpNopPass : public opt::Pass {
  public:
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::Module* module) override {
-    module->AddDebugInst(MakeUnique<ir::Instruction>());
+    module->AddDebug1Inst(MakeUnique<ir::Instruction>());
     return Status::SuccessWithChange;
   }
 };
 
-// A pass that appends specified number of OpNop instructions to the debug
+// A pass that appends specified number of OpNop instructions to the debug1
 // section.
 class AppendMultipleOpNopPass : public opt::Pass {
  public:
@@ -89,7 +89,7 @@ class AppendMultipleOpNopPass : public opt::Pass {
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::Module* module) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      module->AddDebugInst(MakeUnique<ir::Instruction>());
+      module->AddDebug1Inst(MakeUnique<ir::Instruction>());
     }
     return Status::SuccessWithChange;
   }
@@ -98,13 +98,13 @@ class AppendMultipleOpNopPass : public opt::Pass {
   uint32_t num_nop_;
 };
 
-// A pass that duplicates the last instruction in the debug section.
+// A pass that duplicates the last instruction in the debug1 section.
 class DuplicateInstPass : public opt::Pass {
  public:
   const char* name() const override { return "DuplicateInst"; }
   Status Process(ir::Module* module) override {
-    auto inst = MakeUnique<ir::Instruction>(*(--module->debug_end()));
-    module->AddDebugInst(std::move(inst));
+    auto inst = MakeUnique<ir::Instruction>(*(--module->debug1_end()));
+    module->AddDebug1Inst(std::move(inst));
     return Status::SuccessWithChange;
   }
 };

@@ -28,6 +28,7 @@ Pass::Status PassManager::Run(ir::Module* module) {
   if (status == Pass::Status::SuccessWithChange) {
     module->SetIdBound(module->ComputeIdBound());
   }
+  passes_.clear();
   return status;
 }
 

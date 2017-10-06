@@ -190,6 +190,7 @@ set_property(TARGET spirv-tools-build-version PROPERTY FOLDER "SPIRV-Tools build
 
 add_subdirectory(comp)
 add_subdirectory(opt)
+add_subdirectory(link)
 
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h

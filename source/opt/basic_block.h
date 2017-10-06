@@ -40,6 +40,12 @@ class BasicBlock {
   // Creates a basic block with the given starting |label|.
   inline explicit BasicBlock(std::unique_ptr<Instruction> label);
 
+  // Creates a basic block from the given basic block |bb|.
+  //
+  // The parent function will default to null and needs to be explicitly set by
+  // the user.
+  explicit BasicBlock(const BasicBlock& bb);
+
   // Sets the enclosing function for this basic block.
   void SetParent(Function* function) { function_ = function; }
 
@@ -51,6 +57,7 @@ class BasicBlock {
 
   // The label starting this basic block.
   Instruction* GetLabelInst() { return label_.get(); }
+  const Instruction& GetLabelInst() const { return *label_; }
 
   // Returns the merge instruction in this basic block, if it exists.
   // Otherwise return null.  May be used whenever tail() can be used.

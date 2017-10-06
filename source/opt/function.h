@@ -38,8 +38,14 @@ class Function {
   // Creates a function instance declared by the given OpFunction instruction
   // |def_inst|.
   inline explicit Function(std::unique_ptr<Instruction> def_inst);
+  // Creates a function instance based on the given function |f|.
+  //
+  // The parent module will default to null and needs to be explicitly set by
+  // the user.
+  explicit Function(const Function& f);
   // The OpFunction instruction that begins the definition of this function.
   Instruction& DefInst() { return *def_inst_; }
+  const Instruction& DefInst() const { return *def_inst_; }
 
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }
@@ -51,10 +57,17 @@ class Function {
   // Saves the given function end instruction.
   inline void SetFunctionEnd(std::unique_ptr<Instruction> end_inst);
 
+  // Returns the given function end instruction.
+  inline Instruction* function_end() { return end_inst_.get(); }
+  inline const Instruction& function_end() const { return *end_inst_; }
+
   // Returns function's id
   inline uint32_t result_id() const { return def_inst_->result_id(); }
 
-  // Returns function's type id
+//  // Returns function's type id
+//  inline uint32_t type_id() const { return def_inst_->GetSingleWordInOperand(1u); }
+
+  // Returns function's return type id
   inline uint32_t type_id() const { return def_inst_->type_id(); }
 
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }

@@ -42,6 +42,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_spvtools_tool(TARGET spirv-dis SRCS dis/dis.cpp LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-val SRCS val/val.cpp LIBS ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-opt SRCS opt/opt.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS})
+  add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS})
   add_spvtools_tool(TARGET spirv-stats
 	            SRCS stats/stats.cpp
 		         stats/stats_analyzer.cpp
@@ -56,7 +57,8 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   target_include_directories(spirv-stats PRIVATE ${spirv-tools_SOURCE_DIR}
                                                  ${SPIRV_HEADER_INCLUDE_DIR})
 
-  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-stats spirv-cfg)
+  set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt spirv-stats
+                            spirv-cfg spirv-link)
 
   if(SPIRV_BUILD_COMPRESSION)
     add_spvtools_tool(TARGET spirv-markv SRCS comp/markv.cpp
