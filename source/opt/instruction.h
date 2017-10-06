@@ -191,6 +191,11 @@ class Instruction {
   inline void ForEachInId(const std::function<void(uint32_t*)>& f);
   inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
 
+  // Runs the given function |f| on all "in" operands
+  inline void ForEachInOperand(const std::function<void(uint32_t*)>& f);
+  inline void ForEachInOperand(const std::function<void(const uint32_t*)>& f)
+      const;
+
   // Returns true if any operands can be labels
   inline bool HasLabels() const;
 
@@ -303,6 +308,34 @@ inline void Instruction::ForEachInId(
         break;
       default:
         if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
+        break;
+    }
+  }
+}
+
+inline void Instruction::ForEachInOperand(
+      const std::function<void(uint32_t*)>& f) {
+  for (auto& opnd : operands_) {
+    switch (opnd.type) {
+      case SPV_OPERAND_TYPE_RESULT_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+        break;
+      default:
+        f(&opnd.words[0]);
+        break;
+    }
+  }
+}
+
+inline void Instruction::ForEachInOperand(
+    const std::function<void(const uint32_t*)>& f) const {
+  for (const auto& opnd : operands_) {
+    switch (opnd.type) {
+      case SPV_OPERAND_TYPE_RESULT_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+        break;
+      default:
+        f(&opnd.words[0]);
         break;
     }
   }

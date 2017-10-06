@@ -24,13 +24,9 @@ namespace opt {
 
 namespace {
 
-const uint32_t kBranchCondConditionalIdInIdx = 0;
 const uint32_t kBranchCondTrueLabIdInIdx = 1;
 const uint32_t kBranchCondFalseLabIdInIdx = 2;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
-const uint32_t kPhiVal0IdInIdx = 0;
-const uint32_t kPhiLab0IdInIdx = 1;
-const uint32_t kPhiVal1IdInIdx = 2;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
@@ -92,29 +88,48 @@ void DeadBranchElimPass::ComputeStructuredOrder(
       ignore_edge);
 }
 
-void DeadBranchElimPass::GetConstCondition(
-    uint32_t condId, bool* condVal, bool* condIsConst) {
+bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
+  bool condIsConst;
   ir::Instruction* cInst = def_use_mgr_->GetDef(condId);
   switch (cInst->opcode()) {
     case SpvOpConstantFalse: {
       *condVal = false;
-      *condIsConst = true;
+      condIsConst = true;
     } break;
     case SpvOpConstantTrue: {
       *condVal = true;
-      *condIsConst = true;
+      condIsConst = true;
     } break;
     case SpvOpLogicalNot: {
       bool negVal;
-      (void)GetConstCondition(cInst->GetSingleWordInOperand(0),
-          &negVal, condIsConst);
-      if (*condIsConst)
+      condIsConst = GetConstCondition(cInst->GetSingleWordInOperand(0),
+          &negVal);
+      if (condIsConst)
         *condVal = !negVal;
     } break;
     default: {
-      *condIsConst = false;
+      condIsConst = false;
     } break;
   }
+  return condIsConst;
+}
+
+bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
+  ir::Instruction* sInst = def_use_mgr_->GetDef(selId);
+  uint32_t typeId = sInst->type_id();
+  ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  // TODO(greg-lunarg): Support non-32 bit ints
+  if (typeInst->GetSingleWordInOperand(0) != 32)
+    return false;
+  if (sInst->opcode() == SpvOpConstant) {
+    *selVal = sInst->GetSingleWordInOperand(0);
+    return true;
+  }
+  else if (sInst->opcode() == SpvOpConstantNull) {
+    *selVal = 0;
+    return true;
+  }
+  return false;
 }
 
 void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
@@ -153,25 +168,21 @@ void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   });
 }
 
-bool DeadBranchElimPass::GetConstConditionalSelectionBranch(ir::BasicBlock* bp,
+bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
-    uint32_t *condId, bool *condVal) {
+    uint32_t *condId) {
   auto ii = bp->end();
   --ii;
   *branchInst = &*ii;
-  if ((*branchInst)->opcode() != SpvOpBranchConditional)
-    return false;
   if (ii == bp->begin())
     return false;
   --ii;
   *mergeInst = &*ii;
   if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
     return false;
-  bool condIsConst;
-  *condId = (*branchInst)->GetSingleWordInOperand(
-      kBranchCondConditionalIdInIdx);
-  (void) GetConstCondition(*condId, condVal, &condIsConst);
-  return condIsConst;
+  // Both BranchConidtional and Switch have their conditional value at 0.
+  *condId = (*branchInst)->GetSingleWordInOperand(0);
+  return true;
 }
 
 bool DeadBranchElimPass::HasNonPhiRef(uint32_t labelId) {
@@ -194,28 +205,59 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     // Skip blocks that are already in the elimination set
     if (elimBlocks.find(*bi) != elimBlocks.end())
       continue;
-    // Skip blocks that don't have constant conditional branch preceded
+    // Skip blocks that don't have conditional branch preceded
     // by OpSelectionMerge
     ir::Instruction* br;
     ir::Instruction* mergeInst;
     uint32_t condId;
-    bool condVal;
-    if (!GetConstConditionalSelectionBranch(*bi, &br, &mergeInst, &condId,
-        &condVal))
+    if (!GetSelectionBranch(*bi, &br, &mergeInst, &condId))
       continue;
 
-    // Replace conditional branch with unconditional branch
-    const uint32_t trueLabId =
-        br->GetSingleWordInOperand(kBranchCondTrueLabIdInIdx);
-    const uint32_t falseLabId =
-        br->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
+    // If constant condition/selector, replace conditional branch/switch
+    // with unconditional branch and delete merge
+    uint32_t liveLabId;
+    if (br->opcode() == SpvOpBranchConditional) {
+      bool condVal;
+      if (!GetConstCondition(condId, &condVal))
+        continue;
+      liveLabId = (condVal == true) ? 
+          br->GetSingleWordInOperand(kBranchCondTrueLabIdInIdx) :
+          br->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
+    }
+    else {
+      // Search switch operands for selector value, set liveLabId to
+      // corresponding label, use default if not found
+      uint32_t selVal;
+      if (!GetConstInteger(condId, &selVal))
+        continue;
+      uint32_t icnt = 0;
+      uint32_t caseVal;
+      br->ForEachInOperand(
+            [&icnt,&caseVal,&selVal,&liveLabId](const uint32_t* idp) {
+        if (icnt == 1) {
+          // Start with default label
+          liveLabId = *idp;
+        }
+        else if (icnt > 1) {
+          if (icnt % 2 == 0) {
+            caseVal = *idp;
+          }
+          else {
+            if (caseVal == selVal)
+              liveLabId = *idp;
+          }
+        }
+        ++icnt;
+      });
+    }
+
     const uint32_t mergeLabId =
         mergeInst->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-    const uint32_t liveLabId = condVal == true ? trueLabId : falseLabId;
-    const uint32_t deadLabId = condVal == true ? falseLabId : trueLabId;
     AddBranch(liveLabId, *bi);
     def_use_mgr_->KillInst(br);
     def_use_mgr_->KillInst(mergeInst);
+
+    modified = true;
 
     // Initialize live block set to the live label
     std::unordered_set<uint32_t> liveLabIds;
@@ -245,46 +287,88 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       dLabId = (*dbi)->id();
     }
 
-    // Process phi instructions in merge block.
-    // elimBlocks are now blocks which cannot precede merge block. Also,
-    // if eliminated branch is to merge label, remember the conditional block
-    // also cannot precede merge block.
-    uint32_t deadCondLabId = 0;
-    if (deadLabId == mergeLabId)
-      deadCondLabId = (*bi)->id();
-    (*dbi)->ForEachPhiInst([&elimBlocks, &deadCondLabId, this](
-        ir::Instruction* phiInst) {
-      const uint32_t phiLabId0 =
-          phiInst->GetSingleWordInOperand(kPhiLab0IdInIdx);
-      const bool useFirst =
-          elimBlocks.find(id2block_[phiLabId0]) == elimBlocks.end() &&
-          phiLabId0 != deadCondLabId;
-      const uint32_t phiValIdx =
-          useFirst ? kPhiVal0IdInIdx : kPhiVal1IdInIdx;
-      const uint32_t replId = phiInst->GetSingleWordInOperand(phiValIdx);
-      const uint32_t phiId = phiInst->result_id();
+    // If merge block is unreachable, continue eliminating blocks until
+    // a live block or last block is reached.
+    while (!HasNonPhiRef(dLabId)) {
+      KillAllInsts(*dbi);
+      elimBlocks.insert(*dbi);
+      ++dbi;
+      if (dbi == structuredOrder.end())
+        break;
+      dLabId = (*dbi)->id();
+    }
+
+    // If last block reached, look for next dead branch
+    if (dbi == structuredOrder.end())
+      continue;
+
+    // Create set of dead predecessors in preparation for phi update.
+    // Add the header block if the live branch is not the merge block.
+    std::unordered_set<ir::BasicBlock*> deadPreds(elimBlocks);
+    if (liveLabId != dLabId)
+      deadPreds.insert(*bi);
+
+    // Update phi instructions in terminating block.
+    for (auto pii = (*dbi)->begin(); ; ++pii) {
+      // Skip NoOps, break at end of phis
+      SpvOp op = pii->opcode();
+      if (op == SpvOpNop)
+        continue;
+      if (op != SpvOpPhi)
+        break;
+      // Count phi's live predecessors with lcnt and remember last one
+      // with lidx.
+      uint32_t lcnt = 0;
+      uint32_t lidx = 0;
+      uint32_t icnt = 0;
+      pii->ForEachInId(
+          [&deadPreds,&icnt,&lcnt,&lidx,this](uint32_t* idp) {
+        if (icnt % 2 == 1) {
+          if (deadPreds.find(id2block_[*idp]) == deadPreds.end()) {
+            ++lcnt;
+            lidx = icnt - 1;
+          }
+        }
+        ++icnt;
+      });
+      // If just one live predecessor, replace resultid with live value id.
+      uint32_t replId;
+      if (lcnt == 1) {
+        replId = pii->GetSingleWordInOperand(lidx);
+      }
+      else {
+        // Otherwise create new phi eliminating dead predecessor entries
+        assert(lcnt > 1);
+        replId = TakeNextId();
+        std::vector<ir::Operand> phi_in_opnds;
+        icnt = 0;
+        uint32_t lastId;
+        pii->ForEachInId(
+            [&deadPreds,&icnt,&phi_in_opnds,&lastId,this](uint32_t* idp) {
+          if (icnt % 2 == 1) {
+            if (deadPreds.find(id2block_[*idp]) == deadPreds.end()) {
+              phi_in_opnds.push_back(
+                  {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {lastId}});
+              phi_in_opnds.push_back(
+                  {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*idp}});
+            }
+          }
+          else {
+            lastId = *idp;
+          }
+          ++icnt;
+        });
+        std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
+            SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
+        def_use_mgr_->AnalyzeInstDefUse(&*newPhi);
+        pii = pii.InsertBefore(std::move(newPhi));
+        ++pii;
+      }
+      const uint32_t phiId = pii->result_id();
       KillNamesAndDecorates(phiId);
       (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
-      def_use_mgr_->KillInst(phiInst);
-    });
-
-    // If merge block has no predecessors, replace the new branch with
-    // a MergeSelection/BranchCondition using the original constant condition
-    // and the mergeblock as the false branch. This is done so the merge block
-    // is not orphaned, which could cause invalid control flow in certain case.
-    // TODO(greg-lunarg): Do this only in cases where invalid code is caused.
-    if (!HasNonPhiRef(mergeLabId)) {
-      auto eii = (*bi)->end();
-      --eii;
-      ir::Instruction* nbr = &*eii;
-      AddSelectionMerge(mergeLabId, *bi);
-      if (condVal == true)
-        AddBranchConditional(condId, liveLabId, mergeLabId, *bi);
-      else
-        AddBranchConditional(condId, mergeLabId, liveLabId, *bi);
-      def_use_mgr_->KillInst(nbr);
+      def_use_mgr_->KillInst(&*pii);
     }
-    modified = true;
   }
 
   // Erase dead blocks
@@ -311,6 +395,9 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
 
   // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+
+  // Initialize next unused Id.
+  next_id_ = module->id_bound();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -348,6 +435,7 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
     return EliminateDeadBranches(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
+  FinalizeNextId(module_);
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
