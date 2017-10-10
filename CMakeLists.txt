@@ -13,6 +13,9 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 2.8.12)
+if (POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif()
 if (POLICY CMP0054)
   # Avoid dereferencing variables or interpret keywords that have been
   # quoted or bracketed.
