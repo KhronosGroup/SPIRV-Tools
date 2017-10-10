@@ -181,8 +181,8 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
   *mergeInst = &*ii;
   if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
     return false;
-  *condId = (*branchInst)->GetSingleWordInOperand(
-      kBranchCondConditionalIdInIdx);
+  // Both BranchConidtional and Switch have their conditional value at 0.
+  *condId = (*branchInst)->GetSingleWordInOperand(0);
   return true;
 }
 
