@@ -27,10 +27,12 @@ namespace {
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
+const uint32_t kEntryPointFunctionIdInIdx = 1;
 
 }  // namespace anonymous
 
-bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
+bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, 
+      uint32_t storageClass) {
   const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
   const SpvOp op = varInst->opcode();
   if (op != SpvOpVariable) 
@@ -40,7 +42,12 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
   if (varTypeInst->opcode() != SpvOpTypePointer)
     return false;
   return varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) ==
-      SpvStorageClassFunction;
+      storageClass;
+}
+
+bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
+ return IsVarOfStorage(varId, SpvStorageClassFunction) ||
+        (IsVarOfStorage(varId, SpvStorageClassPrivate) && private_like_local_);
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
@@ -121,6 +128,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Add all control flow and instructions with external side effects 
   // to worklist
   // TODO(greg-lunarg): Handle Frexp, Modf more optimally
+  call_in_func_ = false;
+  func_is_entry_point_ = false;
+  private_stores_.clear();
   for (auto& blk : *func) {
     for (auto& inst : blk) {
       uint32_t op = inst.opcode();
@@ -128,10 +138,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         case SpvOpStore: {
           uint32_t varId;
           (void) GetPtr(&inst, &varId);
-          // non-function-scope stores
-          if (!IsLocalVar(varId)) {
+          // Mark stores as live if their variable is not function scope
+          // and is not private scope. Remember private stores for possible
+          // later inclusion
+          if (IsVarOfStorage(varId, SpvStorageClassPrivate))
+            private_stores_.push_back(&inst);
+          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
             worklist_.push(&inst);
-          }
         } break;
         case SpvOpExtInst: {
           // eg. GLSL frexp, modf
@@ -144,10 +157,28 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           // TODO(greg-lunarg): function calls live only if write to non-local
           if (!IsCombinator(op))
             worklist_.push(&inst);
+          // Remember function calls
+          if (op == SpvOpFunctionCall)
+            call_in_func_ = true;
         } break;
       }
     }
   }
+  // See if current function is an entry point
+  for (auto& ei : module_->entry_points()) {
+    if (ei.GetSingleWordInOperand(kEntryPointFunctionIdInIdx) ==
+        func->result_id()) {
+      func_is_entry_point_ = true;
+      break;
+    }
+  }
+  // If the current function is an entry point and has no function calls,
+  // we can optimize private variables as locals
+  private_like_local_ = func_is_entry_point_ && !call_in_func_;
+  // If privates are not like local, add their stores to worklist
+  if (!private_like_local_)
+    for (auto& ps : private_stores_)
+      worklist_.push(ps);
   // Add OpGroupDecorates to worklist because they are a pain to remove
   // ids from.
   // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate

@@ -1122,6 +1122,272 @@ OpFunctionEnd
       assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, PrivateStoreElimInEntryNoCalls) {
+  // Eliminate stores to private in entry point with no calls
+  // Note: Not legal GLSL
+  //
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 1) in vec4 Dead;
+  // layout(location = 0) out vec4 OutColor;
+  //
+  // private vec4 dv;
+  // 
+  // void main()
+  // {
+  //     vec4 v = BaseColor;
+  //     dv = Dead;
+  //     OutColor = v;
+  // }
+
+  const std::string predefs =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %Dead %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %v "v"
+OpName %BaseColor "BaseColor"
+OpName %dv "dv"
+OpName %Dead "Dead"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %Dead Location 1
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Private_v4float = OpTypePointer Private %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%Dead = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%dv = OpVariable %_ptr_Private_v4float Private
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string main_before =
+      R"(%main = OpFunction %void None %9
+%16 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%17 = OpLoad %v4float %BaseColor
+OpStore %v %17
+%18 = OpLoad %v4float %Dead
+OpStore %dv %18
+%19 = OpLoad %v4float %v
+%20 = OpFNegate %v4float %19
+OpStore %OutColor %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string main_after =
+      R"(%main = OpFunction %void None %9
+%16 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%17 = OpLoad %v4float %BaseColor
+OpStore %v %17
+%19 = OpLoad %v4float %v
+%20 = OpFNegate %v4float %19
+OpStore %OutColor %20
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs + main_before, predefs + main_after, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoPrivateStoreElimIfLoad) {
+  // Should not eliminate stores to private when there is a load
+  // Note: Not legal GLSL
+  //
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  //
+  // private vec4 pv;
+  // 
+  // void main()
+  // {
+  //     pv = BaseColor;
+  //     OutColor = pv;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %pv "pv"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Private_v4float = OpTypePointer Private %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%pv = OpVariable %_ptr_Private_v4float Private
+%main = OpFunction %void None %7
+%13 = OpLabel
+%14 = OpLoad %v4float %BaseColor
+OpStore %pv %14
+%15 = OpLoad %v4float %pv
+%16 = OpFNegate %v4float %15
+OpStore %OutColor %16
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoPrivateStoreElimWithCall) {
+  // Should not eliminate stores to private when function contains call
+  // Note: Not legal GLSL
+  //
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  //
+  // private vec4 v1;
+  // 
+  // void foo()
+  // {
+  //     OutColor = -v1;
+  // }
+  // 
+  // void main()
+  // {
+  //     v1 = BaseColor;
+  //     foo();
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %OutColor %BaseColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+OpName %OutColor "OutColor"
+OpName %v1 "v1"
+OpName %BaseColor "BaseColor"
+OpDecorate %OutColor Location 0
+OpDecorate %BaseColor Location 0
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Private_v4float = OpTypePointer Private %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%v1 = OpVariable %_ptr_Private_v4float Private
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%main = OpFunction %void None %8
+%14 = OpLabel
+%15 = OpLoad %v4float %BaseColor
+OpStore %v1 %15
+%16 = OpFunctionCall %void %foo_
+OpReturn
+OpFunctionEnd
+%foo_ = OpFunction %void None %8
+%17 = OpLabel
+%18 = OpLoad %v4float %v1
+%19 = OpFNegate %v4float %18
+OpStore %OutColor %19
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoPrivateStoreElimInNonEntry) {
+  // Should not eliminate stores to private when function is not entry point
+  // Note: Not legal GLSL
+  //
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  //
+  // private vec4 v1;
+  // 
+  // void foo()
+  // {
+  //     v1 = BaseColor;
+  // }
+  // 
+  // void main()
+  // {
+  //     foo();
+  //     OutColor = -v1;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %foo_ "foo("
+OpName %v1 "v1"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Private_v4float = OpTypePointer Private %v4float
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%v1 = OpVariable %_ptr_Private_v4float Private
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %8
+%14 = OpLabel
+%15 = OpFunctionCall %void %foo_
+%16 = OpLoad %v4float %v1
+%17 = OpFNegate %v4float %16
+OpStore %OutColor %17
+OpReturn
+OpFunctionEnd
+%foo_ = OpFunction %void None %8
+%18 = OpLabel
+%19 = OpLoad %v4float %BaseColor
+OpStore %v1 %19
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
