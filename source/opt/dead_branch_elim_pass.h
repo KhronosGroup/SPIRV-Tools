@@ -114,21 +114,8 @@ class DeadBranchElimPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Next unused ID
-  uint32_t next_id_;
 
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;

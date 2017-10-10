@@ -397,7 +397,7 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Initialize next unused Id.
-  next_id_ = module->id_bound();
+  InitNextId();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -435,7 +435,7 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
     return EliminateDeadBranches(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

@@ -292,7 +292,7 @@ void MemPass::ReplaceAndDeleteLoad(
   DCEInst(loadInst);
 }
 
-MemPass::MemPass() : module_(nullptr), def_use_mgr_(nullptr) {}
+MemPass::MemPass() : module_(nullptr), def_use_mgr_(nullptr), next_id_(0) {}
 
 }  // namespace opt
 }  // namespace spvtools
