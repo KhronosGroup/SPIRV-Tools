@@ -113,6 +113,21 @@ class MemPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
+  // Initialize next available id from |module|.
+  void InitNextId() {
+    next_id_ = module_->IdBound();
+  }
+
+  // Save next available id into |module|.
+  void FinalizeNextId() {
+    module_->SetIdBound(next_id_);
+  }
+
+  // Return next available id and calculate next.
+  inline uint32_t TakeNextId() {
+    return next_id_++;
+  }
+
   // Module this pass is processing
   ir::Module* module_;
 
@@ -127,6 +142,9 @@ class MemPass : public Pass {
 
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;
+
+  // Next unused ID
+  uint32_t next_id_;
 };
 
 }  // namespace opt

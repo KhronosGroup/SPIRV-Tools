@@ -271,7 +271,7 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Initialize next unused Id.
-  next_id_ = module->id_bound();
+  InitNextId();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -311,11 +311,11 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
     return ConvertLocalAccessChains(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalAccessChainConvertPass::LocalAccessChainConvertPass() : next_id_(0) {}
+LocalAccessChainConvertPass::LocalAccessChainConvertPass() {}
 
 Pass::Status LocalAccessChainConvertPass::Process(ir::Module* module) {
   Initialize(module);

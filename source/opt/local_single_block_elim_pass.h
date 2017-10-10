@@ -53,16 +53,6 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // where possible. Assumes logical addressing.
   bool LocalSingleBlockLoadStoreElim(ir::Function* func);
 
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   // Initialize extensions whitelist
   void InitExtensions();
 
@@ -99,9 +89,6 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // Variables that are only referenced by supported operations for this
   // pass ie. loads and stores.
   std::unordered_set<uint32_t> supported_ref_ptrs_;
-
-  // Next unused ID
-  uint32_t next_id_;
 };
 
 }  // namespace opt

@@ -258,7 +258,7 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Initialize next unused Id
-  next_id_ = module_->id_bound();
+  InitNextId();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -295,7 +295,7 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
     return LocalSingleStoreElim(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
@@ -303,8 +303,7 @@ LocalSingleStoreElimPass::LocalSingleStoreElimPass()
     : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))),
-      next_id_(0) {}
+          new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))) {}
 
 Pass::Status LocalSingleStoreElimPass::Process(ir::Module* module) {
   Initialize(module);

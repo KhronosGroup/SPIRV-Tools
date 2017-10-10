@@ -152,7 +152,7 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
 
   // Start new ids with next availablein module
-  next_id_ = module_->id_bound();
+  InitNextId();
 
   // Initialize extensions whitelist
   InitExtensions();
@@ -190,12 +190,11 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
     return LocalSingleBlockLoadStoreElim(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass()
-    : next_id_(0) {}
+LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElimPass() {}
 
 Pass::Status LocalSingleBlockLoadStoreElimPass::Process(ir::Module* module) {
   Initialize(module);

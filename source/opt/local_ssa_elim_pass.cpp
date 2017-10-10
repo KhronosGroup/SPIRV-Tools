@@ -519,7 +519,7 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
   phis_to_patch_.clear();
 
   // Start new ids with next availablein module
-  next_id_ = module_->id_bound();
+  InitNextId();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -561,14 +561,13 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
     return EliminateMultiStoreLocal(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 LocalMultiStoreElimPass::LocalMultiStoreElimPass()
     : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, 0, {}))),
-      next_id_(0) {}
+          new ir::Instruction(SpvOpLabel, 0, 0, {}))) {}
 
 Pass::Status LocalMultiStoreElimPass::Process(ir::Module* module) {
   Initialize(module);

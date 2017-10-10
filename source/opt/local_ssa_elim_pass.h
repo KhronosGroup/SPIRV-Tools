@@ -137,16 +137,6 @@ class LocalMultiStoreElimPass : public MemPass {
   // the runtime and effectiveness of this function.
   bool EliminateMultiStoreLocal(ir::Function* func);
 
-  // Save next available id into |module|.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
@@ -186,9 +176,6 @@ class LocalMultiStoreElimPass : public MemPass {
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
-
-  // Next unused ID
-  uint32_t next_id_;
 };
 
 }  // namespace opt
