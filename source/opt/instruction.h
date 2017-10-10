@@ -192,8 +192,8 @@ class Instruction {
   inline void ForEachInId(const std::function<void(const uint32_t*)>& f) const;
 
   // Runs the given function |f| on all "in" operands
-  inline void ForEachInOpnd(const std::function<void(uint32_t*)>& f);
-  inline void ForEachInOpnd(const std::function<void(const uint32_t*)>& f)
+  inline void ForEachInOperand(const std::function<void(uint32_t*)>& f);
+  inline void ForEachInOperand(const std::function<void(const uint32_t*)>& f)
       const;
 
   // Returns true if any operands can be labels
@@ -313,7 +313,7 @@ inline void Instruction::ForEachInId(
   }
 }
 
-inline void Instruction::ForEachInOpnd(
+inline void Instruction::ForEachInOperand(
       const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_) {
     switch (opnd.type) {
@@ -327,7 +327,7 @@ inline void Instruction::ForEachInOpnd(
   }
 }
 
-inline void Instruction::ForEachInOpnd(
+inline void Instruction::ForEachInOperand(
     const std::function<void(const uint32_t*)>& f) const {
   for (const auto& opnd : operands_) {
     switch (opnd.type) {

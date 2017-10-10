@@ -115,7 +115,7 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
   return condIsConst;
 }
 
-bool DeadBranchElimPass::GetConstSelector(uint32_t selId, uint32_t* selVal) {
+bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
   ir::Instruction* sInst = def_use_mgr_->GetDef(selId);
   uint32_t typeId = sInst->type_id();
   ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
@@ -229,11 +229,11 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       // Search switch operands for selector value, set liveLabId to
       // corresponding label, use default if not found
       uint32_t selVal;
-      if (!GetConstSelector(condId, &selVal))
+      if (!GetConstInteger(condId, &selVal))
         continue;
       uint32_t icnt = 0;
       uint32_t caseVal;
-      br->ForEachInOpnd(
+      br->ForEachInOperand(
             [&icnt,&caseVal,&selVal,&liveLabId](const uint32_t* idp) {
         if (icnt == 1) {
           // Start with default label

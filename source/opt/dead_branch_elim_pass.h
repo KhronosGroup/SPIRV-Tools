@@ -73,9 +73,9 @@ class DeadBranchElimPass : public MemPass {
   // return true, otherwise return false.
   bool GetConstCondition(uint32_t condId, bool* condVal);
 
-  // If |condId| is an integer constant, return selector value in |sVal| and
+  // If |valId| is a 32-bit integer constant, return value via |value| and
   // return true, otherwise return false.
-  bool GetConstSelector(uint32_t condId, uint32_t* sVal);
+  bool GetConstInteger(uint32_t valId, uint32_t* value);
 
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
