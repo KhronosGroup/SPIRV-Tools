@@ -46,13 +46,17 @@ class AggressiveDCEPass : public MemPass {
   Status Process(ir::Module*) override;
 
  private:
+  // Return true if |varId| is variable of |storageClass|.
+  bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);
+
+  // Return true if |varId| is variable of function storage class or is
+  // private variable and privates can be optimized like locals (see
+  // privates_like_local_)
+  bool IsLocalVar(uint32_t varId);
+
   // Add all store instruction which use |ptrId|, directly or indirectly,
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
-
-  // Return true if object with |varId| is function scope variable or
-  // function parameter with pointer type.
-  bool IsLocalVar(uint32_t varId);
 
   // Initialize combinator data structures
   void InitCombinatorSets();
@@ -94,12 +98,24 @@ class AggressiveDCEPass : public MemPass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
+  // True if current function has a call instruction contained in it
+  bool call_in_func_;
+
+  // True if current function is an entry point
+  bool func_is_entry_point_;
+
+  // True if current function is entry point and has no function calls.
+  bool private_like_local_;
+
   // Live Instruction Worklist.  An instruction is added to this list
   // if it might have a side effect, either directly or indirectly.
   // If we don't know, then add it to this list.  Instructions are
   // removed from this list as the algorithm traces side effects,
   // building up the live instructions set |live_insts_|.
   std::queue<ir::Instruction*> worklist_;
+
+  // Store instructions to variables of private storage
+  std::vector<ir::Instruction*> private_stores_;
 
   // Live Instructions
   std::unordered_set<const ir::Instruction*> live_insts_;
