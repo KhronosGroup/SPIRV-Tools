@@ -1377,6 +1377,26 @@ TEST_F(ValidateCFG, BasicBlockIsEntryBlockOfTwoConstructsGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Linkage
+               OpMemoryModel Logical GLSL450
+        %int = OpTypeInt 32 1
+   %int_func = OpTypeFunction %int
+    %testfun = OpFunction %int None %int_func
+    %label_1 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv);
+  ASSERT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpReturn can only be called from a function with void return type"));
+}
+
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
 }  /// namespace

@@ -401,8 +401,17 @@ spv_result_t CfgPass(ValidationState_t& _,
       }
       _.current_function().RegisterBlockEnd({cases}, opcode);
     } break;
+    case SpvOpReturn: {
+      const uint32_t return_type = _.current_function().result_type_id();
+      const Instruction* return_type_inst = _.FindDef(return_type);
+      assert(return_type_inst);
+      if (return_type_inst->opcode() != SpvOpTypeVoid)
+        return _.diag(SPV_ERROR_INVALID_CFG)
+            << "OpReturn can only be called from a function with void "
+            << "return type.";
+    }
+    // Fallthrough.
     case SpvOpKill:
-    case SpvOpReturn:
     case SpvOpReturnValue:
     case SpvOpUnreachable:
       _.current_function().RegisterBlockEnd(vector<uint32_t>(), opcode);

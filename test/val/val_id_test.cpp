@@ -330,10 +330,11 @@ TEST_F(ValidateIdWithMessage, OpEntryPointReturnTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
      OpEntryPoint GLCompute %3 ""
 %1 = OpTypeInt 32 0
+%ret = OpConstant %1 0
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 None %2
 %4 = OpLabel
-     OpReturn
+     OpReturnValue %ret
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -2936,7 +2937,7 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
 %4 = OpTypeFunction %1 %2 %2
 %5 = OpFunction %2 None %4
 %6 = OpLabel
-     OpReturn
+     OpReturnValue %3
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -4085,7 +4086,7 @@ OpDecorate %1 SpecId 200
 %1 = OpConstant %int 3
 %main = OpFunction %1 None %2
 %4 = OpLabel
-OpReturn
+OpReturnValue %1
 OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
@@ -4107,7 +4108,7 @@ OpDecorate %1 SpecId 200
 %1 = OpSpecConstantOp %int IAdd %3 %4
 %main = OpFunction %1 None %2
 %6 = OpLabel
-OpReturn
+OpReturnValue %3
 OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
@@ -4124,10 +4125,11 @@ OpDecorate %1 SpecId 200
 %void = OpTypeVoid
 %2 = OpTypeFunction %void
 %int = OpTypeInt 32 0
+%3 = OpConstant %int 1
 %1 = OpSpecConstantComposite %int
 %main = OpFunction %1 None %2
 %4 = OpLabel
-OpReturn
+OpReturnValue %3
 OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());

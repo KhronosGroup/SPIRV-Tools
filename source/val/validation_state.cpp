@@ -261,6 +261,11 @@ Function& ValidationState_t::current_function() {
   return module_functions_.back();
 }
 
+const Function& ValidationState_t::current_function() const {
+  assert(in_function_body());
+  return module_functions_.back();
+}
+
 bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
