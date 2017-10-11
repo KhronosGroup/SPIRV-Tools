@@ -310,7 +310,13 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       deadPreds.insert(*bi);
 
     // Update phi instructions in terminating block.
-    for (auto pii = (*dbi)->begin(); pii->opcode() == SpvOpPhi; ++pii) {
+    for (auto pii = (*dbi)->begin(); ; ++pii) {
+      // Skip NoOps, break at end of phis
+      SpvOp op = pii->opcode();
+      if (op == SpvOpNop)
+        continue;
+      if (op != SpvOpPhi)
+        break;
       // Count phi's live predecessors with lcnt and remember last one
       // with lidx.
       uint32_t lcnt = 0;
