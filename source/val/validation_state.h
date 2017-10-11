@@ -138,6 +138,7 @@ class ValidationState_t {
 
   /// Returns the function states
   Function& current_function();
+  const Function& current_function() const;
 
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
