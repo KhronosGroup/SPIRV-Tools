@@ -118,12 +118,16 @@ class IntrusiveList {
   // Incrementing |end()| iterator will give |begin()|.
   //
   // Decrementing |begin()| will give |end()|.
-  iterator begin() noexcept;
-  iterator end() noexcept;
-  const_iterator begin() const noexcept;
-  const_iterator end() const noexcept;
-  const_iterator cbegin() const noexcept;
-  const_iterator cend() const noexcept;
+  //
+  // TODO: Not marking these functions as noexcept because Visual Studio 2013
+  // does not support it.  When we no longer care about that compiler, we should
+  // mark these as noexcept.
+  iterator begin();
+  iterator end();
+  const_iterator begin() const;
+  const_iterator end() const;
+  const_iterator cbegin() const;
+  const_iterator cend() const;
 
   // Appends |node| to the end of the list.  If |node| is already in a list, it
   // will be removed from that list first.
@@ -179,37 +183,37 @@ IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::iterator
-IntrusiveList<NodeType>::begin() noexcept {
+IntrusiveList<NodeType>::begin() {
   return iterator(sentinel_.next_node_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::iterator
-IntrusiveList<NodeType>::end() noexcept {
+IntrusiveList<NodeType>::end() {
   return iterator(&sentinel_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::begin() const noexcept {
+IntrusiveList<NodeType>::begin() const {
   return const_iterator(sentinel_.next_node_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::end() const noexcept {
+IntrusiveList<NodeType>::end() const {
   return const_iterator(&sentinel_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::cbegin() const noexcept {
+IntrusiveList<NodeType>::cbegin() const {
   return const_iterator(sentinel_.next_node_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::cend() const noexcept {
+IntrusiveList<NodeType>::cend() const {
   return const_iterator(&sentinel_);
 }
 
