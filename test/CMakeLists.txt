@@ -182,4 +182,5 @@ add_spvtools_unittest(
 add_subdirectory(comp)
 add_subdirectory(opt)
 add_subdirectory(stats)
+add_subdirectory(util)
 add_subdirectory(val)

@@ -183,8 +183,3 @@ add_spvtools_unittest(TARGET pass_strength_reduction
   SRCS strength_reduction_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
-
-add_spvtools_unittest(TARGET util_intrusive_list
-  SRCS ilist_test.cpp pass_utils.cpp
-  LIBS SPIRV-Tools-opt
-)

@@ -17,7 +17,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "opt/ilist.h"
+#include "util/ilist.h"
 
 namespace {
 
@@ -63,6 +63,46 @@ TestList BuildList(TestNode nodes[], int n) {
     list.push_back(&nodes[i]);
   }
   return list;
+}
+
+// Test decrementing begin()
+TEST(IListTest, DecrementingBegin) {
+  TestNode nodes[10];
+  TestList list = BuildList(nodes, 10);
+  std::vector<int> output;
+  for (auto i : list) output.push_back(i.data);
+
+  EXPECT_EQ(--list.begin(), list.end());
+}
+
+// Test incrementing end()
+TEST(IListTest, IncrementingEnd1) {
+  TestNode nodes[10];
+  TestList list = BuildList(nodes, 10);
+  std::vector<int> output;
+  for (auto i : list) output.push_back(i.data);
+
+  EXPECT_EQ((++list.end())->data, 0);
+}
+
+// Test incrementing end() should equal begin()
+TEST(IListTest, IncrementingEnd2) {
+  TestNode nodes[10];
+  TestList list = BuildList(nodes, 10);
+  std::vector<int> output;
+  for (auto i : list) output.push_back(i.data);
+
+  EXPECT_EQ(++list.end(), list.begin());
+}
+
+// Test decrementing end()
+TEST(IListTest, DecrementingEnd) {
+  TestNode nodes[10];
+  TestList list = BuildList(nodes, 10);
+  std::vector<int> output;
+  for (auto i : list) output.push_back(i.data);
+
+  EXPECT_EQ((--list.end())->data, 9);
 }
 
 // Test the move constructor for the list class.

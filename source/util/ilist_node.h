@@ -23,8 +23,8 @@ namespace utils {
 template <class NodeType>
 class IntrusiveList;
 
-// IntrusiveNodeBase is the class when creating classes than can be inserted
-// into an IntrusiveList.  See the comments in ilist.h on how to use the class.
+// IntrusiveNodeBase is the base class for nodes in an IntrusiveList.
+// See the comments in ilist.h on how to use the class.
 
 template <class NodeType>
 class IntrusiveNodeBase {
@@ -42,29 +42,34 @@ class IntrusiveNodeBase {
   // list, the return value is nullptr.
   inline NodeType* PreviousNode() const;
 
-  // Will insert the given node immediately before pos in the list.
-  // This the given node is already in a list, it will first be removed
+  // Inserts the given node immediately before |pos| in the list.
+  // If the given node is already in a list, it will first be removed
   // from that list.
   //
-  // It is assumed that the given node is of type NodeType.  It is an error is
-  // pos is not already in a list.
+  // It is assumed that the given node is of type NodeType.  It is an error if
+  // |pos| is not already in a list.
   inline void InsertBefore(NodeType* pos);
 
-  // Will insert the given node immediately after pos in the list.
-  // This the given node is already in a list, it will first be removed
+  // Inserts the given node immediately after |pos| in the list.
+  // If the given node is already in a list, it will first be removed
   // from that list.
   //
-  // It is assumed that the given node is of type NodeType.  It is an error is
-  // pos is not already in a list.
+  // It is assumed that the given node is of type NodeType.  It is an error if
+  // |pos| is not already in a list.
   inline void InsertAfter(NodeType* pos);
 
-  // Removes the given node from the list.  Note that this does not free any
-  // storage related to the node.
+  // Removes the given node from the list.  It is assumed that the node is
+  // in a list.  Note that this does not free any storage related to the node.
   inline void RemoveFromList();
 
  private:
+  // The pointers to the next and previous nodes in the list.
+  // If the current node is not part of a list, then |next_node_| and
+  // |previous_node_| are equal to |nullptr|.
   NodeType* next_node_;
   NodeType* previous_node_;
+
+  // Only true for the sentinel node stored in the list itself.
   bool is_sentinel_;
 
   friend IntrusiveList<NodeType>;
@@ -115,6 +120,9 @@ inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
+  assert(this->next_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
+  assert(this->previous_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
+
   this->next_node_->previous_node_ = this->previous_node_;
   this->previous_node_->next_node_ = this->next_node_;
   this->next_node_ = nullptr;

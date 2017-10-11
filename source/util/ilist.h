@@ -27,12 +27,12 @@ namespace utils {
 // intended convention for using this container is:
 //
 //      class Node : public IntrusiveNodeBase<Node> {
-//        // Node that "Node", the class being defined is the template.
+//        // Note that "Node", the class being defined is the template.
 //        // Must have a default constructor accessible to List.
 //        // Add whatever data is needed in the node
 //      };
 //
-//      typedef IntrusiveList<Node> List;
+//      using List = IntrusiveList<Node>;
 //
 // You can also inherit from IntrusiveList instead of a typedef if you want to
 // add more functionality.
@@ -58,7 +58,7 @@ class IntrusiveList {
   IntrusiveList(IntrusiveList&&);
 
   // Destorys the list.  Note that the elements of the list will not be deleted,
-  // but thy will be removed from the list.
+  // but they will be removed from the list.
   ~IntrusiveList();
 
   // Moves all of the elements in the list on the RHS to the list on the LHS.
@@ -69,21 +69,25 @@ class IntrusiveList {
   template <class T>
   class iterator_template {
    public:
-    inline iterator_template(const iterator_template& i) : node_(i.node_) {}
-    inline iterator_template& operator++() {
-      node_ = node_->NextNode();
+    iterator_template(const iterator_template& i) : node_(i.node_) {}
+
+    iterator_template& operator++() {
+      node_ = node_->next_node_;
       return *this;
     }
-    inline iterator_template& operator--() {
-      node_ = node_->PreviousNode();
+
+    iterator_template& operator--() {
+      node_ = node_->previous_node_;
       return *this;
     }
-    inline iterator_template& operator=(const iterator_template& i) {
+
+    iterator_template& operator=(const iterator_template& i) {
       node_ = i.node_;
       return *this;
     }
-    inline T& operator*() const { return *node_; }
-    inline T* operator->() const { return node_; }
+
+    T& operator*() const { return *node_; }
+    T* operator->() const { return node_; }
 
     friend inline bool operator==(const iterator_template& lhs,
                                   const iterator_template& rhs) {
@@ -95,29 +99,42 @@ class IntrusiveList {
     }
 
    private:
+    iterator_template() = delete;
     inline iterator_template(T* node) { node_ = node; }
     T* node_;
 
     friend IntrusiveList;
   };
 
-  typedef iterator_template<NodeType> iterator;
-  typedef iterator_template<const NodeType> const_iterator;
+  using iterator = iterator_template<NodeType>;
+  using const_iterator = iterator_template<const NodeType>;
 
-  iterator begin();
-  iterator end();
-  const_iterator begin() const;
-  const_iterator end() const;
+  // Various types of iterators for the start (begin) and one past the end (end)
+  // of the list.
+  //
+  // Decrementing |end()| iterator will give and iterator pointing to the last
+  // element in the list, if one exists.
+  //
+  // Incrementing |end()| iterator will give |begin()|.
+  //
+  // Decrementing |begin()| will give |end()|.
+  iterator begin() noexcept;
+  iterator end() noexcept;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
 
-  // Appends |node| to the end of the list.
+  // Appends |node| to the end of the list.  If |node| is already in a list, it
+  // will be removed from that list first.
   void push_back(NodeType* node);
 
  private:
   // Doing a deep copy of the list does not make sense if the list does not own
   // the data.  It is not clear who will own the newly created data.  Making
   // copies illegal for that reason.
-  IntrusiveList(const IntrusiveList&);
-  IntrusiveList& operator=(const IntrusiveList&);
+  IntrusiveList(const IntrusiveList&) = delete;
+  IntrusiveList& operator=(const IntrusiveList&) = delete;
 
   // A special node used to represent both the start and end of the list,
   // without being part of the list.
@@ -136,8 +153,8 @@ inline IntrusiveList<NodeType>::IntrusiveList() : sentinel_() {
 template <class NodeType>
 IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) {
   this->sentinel_ = list.sentinel_;
-  this->sentinel_.next_node_->previous_node_ = &sentinel_;
-  this->sentinel_.previous_node_->next_node_ = &sentinel_;
+  this->sentinel_.next_node_->previous_node_ = &this->sentinel_;
+  this->sentinel_.previous_node_->next_node_ = &this->sentinel_;
 
   list.sentinel_.next_node_ = &list.sentinel_;
   list.sentinel_.previous_node_ = &list.sentinel_;
@@ -152,8 +169,8 @@ template <class NodeType>
 IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
     IntrusiveList<NodeType>&& list) {
   this->sentinel_ = list.sentinel_;
-  this->sentinel_.next_node_->previous_node_ = &sentinel_;
-  this->sentinel_.previous_node_->next_node_ = &sentinel_;
+  this->sentinel_.next_node_->previous_node_ = &this->sentinel_;
+  this->sentinel_.previous_node_->next_node_ = &this->sentinel_;
 
   list.sentinel_.next_node_ = &list.sentinel_;
   list.sentinel_.previous_node_ = &list.sentinel_;
@@ -162,27 +179,40 @@ IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::iterator
-IntrusiveList<NodeType>::begin() {
-  return iterator(sentinel_.NextNode());
+IntrusiveList<NodeType>::begin() noexcept {
+  return iterator(sentinel_.next_node_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::iterator
-IntrusiveList<NodeType>::end() {
-  return iterator(nullptr);
+IntrusiveList<NodeType>::end() noexcept {
+  return iterator(&sentinel_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::begin() const {
-  return const_iterator(sentinel_.NextNode());
+IntrusiveList<NodeType>::begin() const noexcept {
+  return const_iterator(sentinel_.next_node_);
 }
 
 template <class NodeType>
 inline typename IntrusiveList<NodeType>::const_iterator
-IntrusiveList<NodeType>::end() const {
-  return const_iterator(nullptr);
+IntrusiveList<NodeType>::end() const noexcept {
+  return const_iterator(&sentinel_);
 }
+
+template <class NodeType>
+inline typename IntrusiveList<NodeType>::const_iterator
+IntrusiveList<NodeType>::cbegin() const noexcept {
+  return const_iterator(sentinel_.next_node_);
+}
+
+template <class NodeType>
+inline typename IntrusiveList<NodeType>::const_iterator
+IntrusiveList<NodeType>::cend() const noexcept {
+  return const_iterator(&sentinel_);
+}
+
 template <class NodeType>
 void IntrusiveList<NodeType>::push_back(NodeType* node) {
   node->InsertBefore(&sentinel_);
