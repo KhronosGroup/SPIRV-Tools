@@ -24,7 +24,6 @@ namespace opt {
 
 namespace {
 
-const uint32_t kBranchCondConditionalIdInIdx = 0;
 const uint32_t kBranchCondTrueLabIdInIdx = 1;
 const uint32_t kBranchCondFalseLabIdInIdx = 2;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
