@@ -49,11 +49,7 @@ spv_result_t TypeUniquePass(ValidationState_t& _,
     }
 
     if (!_.RegisterUniqueTypeDeclaration(*inst)) {
-      // TODO(atgoo@github) Error logging temporarily disabled because it's
-      // failing vulkancts tests. Message in the diagnostics is for unit tests.
-      // See https://github.com/KhronosGroup/SPIRV-Tools/issues/559
-      // return _.diag(SPV_ERROR_INVALID_DATA)
-      return _.diag(SPV_SUCCESS)
+      return _.diag(SPV_ERROR_INVALID_DATA)
           << "Duplicate non-aggregate type declarations are not allowed."
           << " Opcode: " << spvOpcodeString(SpvOp(inst->opcode))
           << " id: " << inst->result_id;
