@@ -118,6 +118,7 @@ bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
   ir::Instruction* sInst = def_use_mgr_->GetDef(selId);
   uint32_t typeId = sInst->type_id();
   ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  if (!typeInst || (typeInst->opcode() != SpvOpTypeInt)) return false;
   // TODO(greg-lunarg): Support non-32 bit ints
   if (typeInst->GetSingleWordInOperand(0) != 32)
     return false;
@@ -180,6 +181,10 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
   *mergeInst = &*ii;
   if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
     return false;
+  // SPIR-V says the terminator for an OpSelectionMerge must be
+  // either a conditional branch or a switch.
+  assert((*branchInst)->opcode() == SpvOpBranchConditional ||
+         (*branchInst)->opcode() == SpvOpSwitch);
   // Both BranchConidtional and Switch have their conditional value at 0.
   *condId = (*branchInst)->GetSingleWordInOperand(0);
   return true;
@@ -225,6 +230,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
           br->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
     }
     else {
+      assert(br->opcode() == SpvOpSwitch);
       // Search switch operands for selector value, set liveLabId to
       // corresponding label, use default if not found
       uint32_t selVal;
