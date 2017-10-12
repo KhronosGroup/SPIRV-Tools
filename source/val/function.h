@@ -137,7 +137,7 @@ class Function {
   uint32_t id() const { return id_; }
 
   /// Returns return type id of the function
-  uint32_t result_type_id() const { return result_type_id_; }
+  uint32_t GetResultTypeId() const { return result_type_id_; }
 
   /// Returns the number of blocks in the current function being parsed
   size_t undefined_block_count() const;
