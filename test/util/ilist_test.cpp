@@ -34,7 +34,9 @@ class TestNode : public IntrusiveNodeBase<TestNode> {
 
 class TestList : public IntrusiveList<TestNode> {
  public:
-  TestList() : IntrusiveList<TestNode>() {}
+  TestList() = default;
+  TestList(TestList&&) = default;
+  TestList& operator=(TestList&&) = default;
 };
 
 // This test checks the push_back method, as well as using an iterator to
