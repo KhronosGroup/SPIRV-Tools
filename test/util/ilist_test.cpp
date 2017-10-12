@@ -35,8 +35,11 @@ class TestNode : public IntrusiveNodeBase<TestNode> {
 class TestList : public IntrusiveList<TestNode> {
  public:
   TestList() = default;
-  TestList(TestList&&) = default;
-  TestList& operator=(TestList&&) = default;
+  TestList(TestList&& that) : IntrusiveList<TestNode>(std::move(that)) {}
+  TestList& operator=(TestList&& that) {
+    static_cast<IntrusiveList<TestNode>&>(*this) = static_cast<IntrusiveList<TestNode>&&>(that);
+    return *this;
+  }
 };
 
 // This test checks the push_back method, as well as using an iterator to
