@@ -2945,6 +2945,22 @@ TEST_F(ValidateIdWithMessage, OpFunctionResultTypeBad) {
               HasSubstr("OpFunction Result Type <id> '2' does not match the "
                         "Function Type <id> '2's return type."));
 }
+TEST_F(ValidateIdWithMessage, OpReturnValueTypeBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpTypeInt 32 0
+%2 = OpTypeFloat 32
+%3 = OpConstant %2 0
+%4 = OpTypeFunction %1
+%5 = OpFunction %1 None %4
+%6 = OpLabel
+     OpReturnValue %3
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpReturnValue Value <id> '3's type does not match "
+                        "OpFunction's return type."));
+}
 TEST_F(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
