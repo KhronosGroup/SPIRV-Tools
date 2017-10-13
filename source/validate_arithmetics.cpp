@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Ensures type declarations are unique unless allowed by the specification.
+// Performs validation of arithmetic instructions.
 
 #include "validate.h"
 
