@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "operand.h"
+#include "util/ilist_node.h"
 
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.2/spirv.h"
@@ -30,13 +31,14 @@ namespace ir {
 
 class Function;
 class Module;
+class InstructionList;
 
 // About operand:
 //
 // In the SPIR-V specification, the term "operand" is used to mean any single
 // SPIR-V word following the leading wordcount-opcode word. Here, the term
 // "operand" is used to mean a *logical* operand. A logical operand may consist
-// of mulitple SPIR-V words, which together make up the same component. For
+// of multiple SPIR-V words, which together make up the same component. For
 // example, a logical operand of a 64-bit integer needs two words to express.
 //
 // Further, we categorize logical operands into *in* and *out* operands.
@@ -75,16 +77,24 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
 // appearing before this instruction. Note that the result id of an instruction
 // should never change after the instruction being built. If the result id
 // needs to change, the user should create a new instruction instead.
-class Instruction {
+class Instruction : public utils::IntrusiveNodeBase<Instruction> {
  public:
   using iterator = std::vector<Operand>::iterator;
   using const_iterator = std::vector<Operand>::const_iterator;
 
   // Creates a default OpNop instruction.
-  Instruction() : opcode_(SpvOpNop), type_id_(0), result_id_(0) {}
+  Instruction()
+      : utils::IntrusiveNodeBase<Instruction>(),
+        opcode_(SpvOpNop),
+        type_id_(0),
+        result_id_(0) {}
   // Creates an instruction with the given opcode |op| and no additional logical
   // operands.
-  Instruction(SpvOp op) : opcode_(op), type_id_(0), result_id_(0) {}
+  Instruction(SpvOp op)
+      : utils::IntrusiveNodeBase<Instruction>(),
+        opcode_(op),
+        type_id_(0),
+        result_id_(0) {}
   // Creates an instruction using the given spv_parsed_instruction_t |inst|. All
   // the data inside |inst| will be copied and owned in this instance. And keep
   // record of line-related debug instructions |dbg_line| ahead of this
@@ -97,11 +107,22 @@ class Instruction {
   Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
               const std::vector<Operand>& in_operands);
 
+  // TODO: I will want to remove these, but will first have to remove the use of
+  // std::vector<Instruction>.
   Instruction(const Instruction&) = default;
   Instruction& operator=(const Instruction&) = default;
 
   Instruction(Instruction&&);
   Instruction& operator=(Instruction&&);
+
+  virtual ~Instruction() = default;
+
+  // Returns a newly allocated instruction that has the same operands, result,
+  // and type as |this|.  The new instruction is not linked into any list.
+  // It is the responsibility of the caller to make sure that the storage is
+  // removed. It is the caller's responsibility to make sure that there is only
+  // one instruction for each result id.
+  Instruction* Clone() const;
 
   SpvOp opcode() const { return opcode_; }
   // Sets the opcode of this instruction to a specific opcode. Note this may
@@ -117,6 +138,11 @@ class Instruction {
   const std::vector<Instruction>& dbg_line_insts() const {
     return dbg_line_insts_;
   }
+
+  // Same semantics as in the base class except the list the InstructionList
+  // containing |pos| will now assume ownership of |this|.
+  // inline void MoveBefore(Instruction* pos);
+  // inline void InsertAfter(Instruction* pos);
 
   // Begin and end iterators for operands.
   iterator begin() { return operands_.begin(); }
@@ -222,6 +248,8 @@ class Instruction {
   // Instructions representing OpLine or OpNonLine itself, this field should be
   // empty.
   std::vector<Instruction> dbg_line_insts_;
+
+  friend InstructionList;
 };
 
 inline const Operand& Instruction::GetOperand(uint32_t index) const {

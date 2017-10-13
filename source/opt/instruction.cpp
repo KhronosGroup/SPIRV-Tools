@@ -40,7 +40,11 @@ Instruction::Instruction(const spv_parsed_instruction_t& inst,
 
 Instruction::Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
                          const std::vector<Operand>& in_operands)
-    : opcode_(op), type_id_(ty_id), result_id_(res_id), operands_() {
+    : utils::IntrusiveNodeBase<Instruction>(),
+      opcode_(op),
+      type_id_(ty_id),
+      result_id_(res_id),
+      operands_() {
   if (type_id_ != 0) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
                            std::initializer_list<uint32_t>{type_id_});
@@ -53,7 +57,8 @@ Instruction::Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
 }
 
 Instruction::Instruction(Instruction&& that)
-    : opcode_(that.opcode_),
+    : utils::IntrusiveNodeBase<Instruction>(),
+      opcode_(that.opcode_),
       type_id_(that.type_id_),
       result_id_(that.result_id_),
       operands_(std::move(that.operands_)),
@@ -66,6 +71,16 @@ Instruction& Instruction::operator=(Instruction&& that) {
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
   return *this;
+}
+
+Instruction* Instruction::Clone() const {
+  Instruction* clone = new Instruction();
+  clone->opcode_ = opcode_;
+  clone->type_id_ = type_id_;
+  clone->result_id_ = result_id_;
+  clone->operands_ = operands_;
+  clone->dbg_line_insts_ = dbg_line_insts_;
+  return clone;
 }
 
 uint32_t Instruction::GetSingleWordOperand(uint32_t index) const {
