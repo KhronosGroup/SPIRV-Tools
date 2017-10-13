@@ -91,7 +91,7 @@ add_library(SPIRV-Tools-opt
   types.cpp
   type_manager.cpp
   unify_const_pass.cpp
-)
+        instruction_list.cpp)
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt

@@ -31,6 +31,18 @@ class IntrusiveNodeBase {
  public:
   // Creates a new node that is not in a list.
   inline IntrusiveNodeBase();
+  inline IntrusiveNodeBase(const IntrusiveNodeBase& that);
+  inline IntrusiveNodeBase& operator=(const IntrusiveNodeBase&);
+  inline IntrusiveNodeBase(IntrusiveNodeBase&& that);
+
+  // Will destroy a node.  It is an error to destroy a node that is part of a
+  // list, unless it is an sentinel.
+  virtual ~IntrusiveNodeBase();
+
+  IntrusiveNodeBase& operator=(IntrusiveNodeBase&& that);
+
+  // Returns true if |this| is in a list.
+  inline bool IsInAList() const;
 
   // Returns the node that comes after the given node in the list, if one
   // exists.  If the given node is not in a list or is at the end of the list,
@@ -59,10 +71,11 @@ class IntrusiveNodeBase {
   inline void InsertAfter(NodeType* pos);
 
   // Removes the given node from the list.  It is assumed that the node is
-  // in a list.  Note that this does not free any storage related to the node.
+  // in a list.  Note that this does not free any storage related to the node,
+  // it becomes the caller's responsibility to free the storage.
   inline void RemoveFromList();
 
- private:
+ protected:
   // The pointers to the next and previous nodes in the list.
   // If the current node is not part of a list, then |next_node_| and
   // |previous_node_| are equal to |nullptr|.
@@ -81,6 +94,73 @@ template <class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase()
     : next_node_(nullptr), previous_node_(nullptr), is_sentinel_(false) {}
 
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
+    const IntrusiveNodeBase& that) {
+  assert(!that.is_sentinel_);
+  next_node_ = nullptr;
+  previous_node_ = nullptr;
+  is_sentinel_ = false;
+}
+
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
+    const IntrusiveNodeBase&) {
+  if (IsInAList()) RemoveFromList();
+  return *this;
+}
+
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
+    IntrusiveNodeBase&& that) {
+  *this = static_cast<IntrusiveNodeBase&&>(that);
+}
+
+template<class NodeType>
+IntrusiveNodeBase<NodeType>::~IntrusiveNodeBase() {
+  assert(is_sentinel_ || !IsInAList());
+}
+
+template<class NodeType>
+IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
+    IntrusiveNodeBase&& that) {
+  if (is_sentinel_) {
+    assert(next_node_ == this);
+    assert(that.is_sentinel_);
+  } else {
+    assert(IsInAList() && "Sentinel nodes must always be part of a list.");
+    assert(!that.is_sentinel_ &&
+        "Cannot turn a sentinel node into one that is not.");
+  }
+
+  if (that.next_node_ != &that) {
+    this->next_node_ = that.next_node_;
+    this->previous_node_ = that.previous_node_;
+
+    this->next_node_->previous_node_ = static_cast<NodeType*>(this);
+    this->previous_node_->next_node_ = static_cast<NodeType*>(this);
+
+    this->is_sentinel_ = that.is_sentinel_;
+
+    if (!that.is_sentinel_) {
+      that.next_node_ = nullptr;
+      that.previous_node_ = nullptr;
+    } else {
+      that.next_node_ = static_cast<NodeType*>(&that);
+      that.previous_node_ = static_cast<NodeType*>(&that);
+    }
+  } else {
+    this->next_node_ = static_cast<NodeType*>(this);
+    this->previous_node_ = static_cast<NodeType*>(this);
+  }
+  return *this;
+}
+
+template<class NodeType>
+inline bool IntrusiveNodeBase<NodeType>::IsInAList() const {
+  return next_node_ != nullptr;
+}
+
 template <class NodeType>
 inline NodeType* IntrusiveNodeBase<NodeType>::NextNode() const {
   if (!next_node_->is_sentinel_) return next_node_;
@@ -96,8 +176,8 @@ inline NodeType* IntrusiveNodeBase<NodeType>::PreviousNode() const {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertBefore(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(pos->previous_node_ != nullptr && "Pos should already be in a list.");
-  if (this->previous_node_ != nullptr) this->RemoveFromList();
+  assert(pos->IsInAList() && "Pos should already be in a list.");
+  if (this->IsInAList()) this->RemoveFromList();
 
   this->next_node_ = pos;
   this->previous_node_ = pos->previous_node_;
@@ -108,8 +188,8 @@ inline void IntrusiveNodeBase<NodeType>::InsertBefore(NodeType* pos) {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(pos->previous_node_ != nullptr && "Pos should already be in a list.");
-  if (this->previous_node_ != nullptr) this->RemoveFromList();
+  assert(pos->IsInAList() && "Pos should already be in a list.");
+  if (this->IsInAList()) this->RemoveFromList();
 
   this->previous_node_ = pos;
   this->next_node_ = pos->next_node_;
@@ -120,8 +200,8 @@ inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(this->next_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
-  assert(this->previous_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
+  assert(this->IsInAList() &&
+      "Cannot remove a node from a list if it is not in a list.");
 
   this->next_node_->previous_node_ = this->previous_node_;
   this->previous_node_->next_node_ = this->next_node_;

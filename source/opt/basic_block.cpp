@@ -23,9 +23,8 @@ BasicBlock::BasicBlock(const BasicBlock& bb)
     : function_(nullptr),
       label_(MakeUnique<Instruction>(bb.GetLabelInst())),
       insts_() {
-  insts_.reserve(bb.insts_.size());
   for (auto& inst : bb.insts_)
-    AddInstruction(MakeUnique<Instruction>(*inst.get()));
+    AddInstruction(std::unique_ptr<Instruction>(inst.Clone()));
 }
 
 const Instruction* BasicBlock::GetMergeInst() const {
@@ -78,7 +77,7 @@ Instruction* BasicBlock::GetLoopMergeInst() {
 
 void BasicBlock::ForEachSuccessorLabel(
     const std::function<void(const uint32_t)>& f) {
-  const auto br = &*insts_.back();
+  const auto br = &insts_.back();
   switch (br->opcode()) {
     case SpvOpBranch: {
       f(br->GetOperand(0).words[0]);
@@ -102,9 +101,9 @@ void BasicBlock::ForMergeAndContinueLabel(
   --ii;
   if (ii == insts_.begin()) return;
   --ii;
-  if ((*ii)->opcode() == SpvOpSelectionMerge || 
-      (*ii)->opcode() == SpvOpLoopMerge)
-    (*ii)->ForEachInId([&f](const uint32_t* idp) {
+  if (ii->opcode() == SpvOpSelectionMerge || 
+      ii->opcode() == SpvOpLoopMerge)
+    ii->ForEachInId([&f](const uint32_t* idp) {
       f(*idp);
     });
 }
