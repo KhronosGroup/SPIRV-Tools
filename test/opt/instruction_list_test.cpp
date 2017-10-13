@@ -48,8 +48,8 @@ std::vector<TestInstruction*> TestInstruction::deleted_instructions_;
 // for every element that is in the list.
 TEST(InstructionListTest, Destructor) {
   InstructionList* list = new InstructionList();
-  list->push_back(new Instruction());
-  list->push_back(new Instruction());
+  list->push_back(std::unique_ptr<Instruction>(new Instruction()));
+  list->push_back(std::unique_ptr<Instruction>(new Instruction()));
   delete list;
 
   // Sorting because we do not care if the order of create and destruction is

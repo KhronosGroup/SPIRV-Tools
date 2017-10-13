@@ -53,12 +53,12 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
   }
 
   // Destroy this list and any instructions in the list.
-  virtual ~InstructionList();
+  inline virtual ~InstructionList();
 
   class iterator : public utils::IntrusiveList<Instruction>::iterator {
    public:
     iterator(const utils::IntrusiveList<Instruction>::iterator& i)
-        : utils::IntrusiveList<Instruction>::iterator(&*i) {}
+        : utils::IntrusiveList<Instruction>::iterator(i) {}
     iterator(Instruction* i) : utils::IntrusiveList<Instruction>::iterator(i) {}
 
     // DEPRECATED: Please use MoveBefore with an InstructionList instead.
@@ -74,6 +74,16 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
     // will be an iterator pointing to the newly inserted node.  The owner of
     // |*i| becomes |*this|
     iterator InsertBefore(std::unique_ptr<Instruction>&& i);
+
+    // Removes the node from the list, and deletes the storage.  Returns a valid
+    // iterator to the next node.
+    iterator Erase() {
+      iterator_template next_node = *this;
+      ++next_node;
+      node_->RemoveFromList();
+      delete node_;
+      return next_node;
+    }
   };
 
   iterator begin() { return utils::IntrusiveList<Instruction>::begin(); }
@@ -84,7 +94,24 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
   const_iterator end() const {
     return utils::IntrusiveList<Instruction>::end();
   }
+
+  void push_back(std::unique_ptr<Instruction>&& inst) {
+    utils::IntrusiveList<Instruction>::push_back(inst.release());
+  }
+
+  // Same as in the base class, except it will delete the data as well.
+  inline void clear();
 };
+
+InstructionList::~InstructionList() { clear(); }
+
+void InstructionList::clear() {
+  while (!empty()) {
+    Instruction* inst = &front();
+    inst->RemoveFromList();
+    delete inst;
+  }
+}
 
 }  // namespace ir
 }  // namespace spvtools

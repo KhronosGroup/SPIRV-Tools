@@ -262,8 +262,9 @@ TEST(IListTest, MoveBefore1) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i)
+  for (auto i = list1.begin(); i != list1.end(); ++i) {
     output.push_back(i->data_);
+  }
 
   EXPECT_THAT(output, ElementsAre(0, 0, 1, 2, 1, 2, 3, 4, 5));
 }
@@ -278,8 +279,9 @@ TEST(IListTest, MoveBefore2) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i)
+  for (auto i = list1.begin(); i != list1.end(); ++i) {
     output.push_back(i->data_);
+  }
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 0, 1, 2, 3, 4, 5));
 }
@@ -294,8 +296,9 @@ TEST(IListTest, MoveBefore3) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i)
+  for (auto i = list1.begin(); i != list1.end(); ++i) {
     output.push_back(i->data_);
+  }
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 0, 1, 2));
 }
@@ -310,8 +313,9 @@ TEST(IListTest, MoveBefore4) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i)
+  for (auto i = list1.begin(); i != list1.end(); ++i) {
     output.push_back(i->data_);
+  }
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }

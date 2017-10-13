@@ -121,9 +121,23 @@ class IteratorRange {
   IteratorType end_;
 };
 
+// Returns a (begin, end) iterator pair for the given iterators.
+// The iterators must belong to the same container.
+template<typename IteratorType>
+inline IteratorRange<IteratorType> make_range(IteratorType& begin, IteratorType& end) {
+  return {begin, end};
+}
+
+// Returns a (begin, end) iterator pair for the given iterators.
+// The iterators must belong to the same container.
+template<typename IteratorType>
+inline IteratorRange<IteratorType> make_range(IteratorType&& begin, IteratorType&& end) {
+  return {begin, end};
+}
+
 // Returns a (begin, end) iterator pair for the given container.
-template <typename ValueType,
-          class IteratorType = UptrVectorIterator<ValueType>>
+template<typename ValueType,
+    class IteratorType = UptrVectorIterator<ValueType>>
 inline IteratorRange<IteratorType> make_range(
     std::vector<std::unique_ptr<ValueType>>& container) {
   return {IteratorType(&container, container.begin()),

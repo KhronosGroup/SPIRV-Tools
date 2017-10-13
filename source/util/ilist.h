@@ -122,6 +122,17 @@ class IntrusiveList {
       return iterator(first_node);
     }
 
+    // Define standard iterator types needs so this class can be
+    // used with <algorithms>.
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = size_t;
+
    protected:
     iterator_template() = delete;
     inline iterator_template(T* node) { node_ = node; }
@@ -159,6 +170,9 @@ class IntrusiveList {
 
   // Returns true if the list is empty.
   bool empty() const;
+
+  // Makes the current list empty.
+  inline void clear();
 
   // Returns references to the first or last element in the list.  It is an
   // error to call these functions on an empty list.
@@ -202,9 +216,7 @@ IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) : sentinel_() {
 
 template <class NodeType>
 IntrusiveList<NodeType>::~IntrusiveList() {
-  while (!empty()) {
-    front().RemoveFromList();
-  }
+  clear();
 }
 
 template <class NodeType>
@@ -258,6 +270,13 @@ void IntrusiveList<NodeType>::push_back(NodeType* node) {
 template <class NodeType>
 bool IntrusiveList<NodeType>::empty() const {
   return sentinel_.NextNode() == nullptr;
+}
+
+template<class NodeType>
+void IntrusiveList<NodeType>::clear() {
+  while (!empty()) {
+    front().RemoveFromList();
+  }
 }
 
 template <class NodeType>
