@@ -31,7 +31,7 @@ class IntrusiveNodeBase {
  public:
   // Creates a new node that is not in a list.
   inline IntrusiveNodeBase();
-  inline IntrusiveNodeBase(const IntrusiveNodeBase& that);
+  inline IntrusiveNodeBase(const IntrusiveNodeBase&);
   inline IntrusiveNodeBase& operator=(const IntrusiveNodeBase&);
   inline IntrusiveNodeBase(IntrusiveNodeBase&& that);
 
@@ -96,8 +96,7 @@ inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase()
 
 template<class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
-    const IntrusiveNodeBase& that) {
-  assert(!that.is_sentinel_);
+    const IntrusiveNodeBase&) {
   next_node_ = nullptr;
   previous_node_ = nullptr;
   is_sentinel_ = false;
