@@ -1701,12 +1701,41 @@ bool idUsage::isValid<OpVectorInsertDynamic>(
     const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
 #endif
 
-#if 0
 template <>
-bool idUsage::isValid<OpVectorShuffle>(const spv_instruction_t *inst,
-                                       const spv_opcode_desc opcodeEntry) {
+bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
+                                          const spv_opcode_desc) {
+  auto instr_name = [&inst]() {
+    std::string name =
+        "Op" + std::string(spvOpcodeString(static_cast<SpvOp>(inst->opcode)));
+    return name;
+  };
+
+  // Result Type must be an OpTypeVector.
+  auto resultTypeIndex = 1;
+  auto resultType = module_.FindDef(inst->words[resultTypeIndex]);
+  if (!resultType || resultType->opcode() != SpvOpTypeVector) {
+    DIAG(resultTypeIndex) << "The Result Type of " << instr_name()
+                          << " must be OpTypeVector. Found Op"
+                          << spvOpcodeString(
+                                 static_cast<SpvOp>(resultType->opcode()))
+                          << ".";
+    return false;
+  }
+
+  // The number of components in Result Type must be the same as the number of
+  // Component operands.
+  auto componentCount = inst->words.size() - 5;
+  auto resultVectorDimension = resultType->words()[3];
+  if (componentCount != resultVectorDimension) {
+    DIAG(inst->words.size() - 1)
+        << instr_name() << " component literals count does not match "
+                           "Result Type <id> '"
+        << resultType->id() << "'s vector component count.";
+    return false;
+  }
+
+  return true;
 }
-#endif
 
 #if 0
 template <>
@@ -2903,7 +2932,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     TODO(OpSatConvertUToS)
     TODO(OpVectorExtractDynamic)
     TODO(OpVectorInsertDynamic)
-    TODO(OpVectorShuffle)
+    CASE(OpVectorShuffle)
     TODO(OpCompositeConstruct)
     CASE(OpCompositeExtract)
     CASE(OpCompositeInsert)
