@@ -592,7 +592,7 @@ FoldSpecConstantOpAndCompositePass::BuildInstructionAndAddToModule(
   if (!new_inst) return nullptr;
   auto* new_inst_ptr = new_inst.get();
   *pos = pos->InsertBefore(std::move(new_inst));
-  (*pos)++;
+  ++(*pos);
   def_use_mgr_->AnalyzeInstDefUse(new_inst_ptr);
   return new_inst_ptr;
 }
