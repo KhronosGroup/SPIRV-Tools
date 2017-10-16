@@ -29,22 +29,46 @@ using libspirv::ValidationState_t;
 
 namespace { // utils
 
+enum AnyValue { kAnyBits=-3, kAnySize=-2, kAnySign=-1 };
+enum Signedness { kUnsigned=0, kSigned=1 };
+
+// Struct modeling the OpTypeInt/Float/Bool "elemental" types 
 struct ElemType {
   SpvOp type; // Elemental type (e.g. int, float, bool)
   int bits; // Bits number (e.g. 32, 16, 64), 0 means any number
   int sign; // Signedness (0=unsigned, 1=signed, -1=no applicable)
 
-  ElemType(SpvOp type_, int bits_=0, int sign_=-1)
+  ElemType(SpvOp type_, int bits_=kAnyBits, int sign_=kAnySign)
     : type(type_), bits(bits_), sign(sign_) { }
 };
 
+// Struct modeling the OpTypeVector/Array "composed" types
 struct CompType {
   SpvOp type; // Composed type (e.g. vector, array)
   int size; // Number of components, 0 means any number
 
-  CompType(SpvOp type_=SpvOpNop, int size_=0)
+  CompType(SpvOp type_=SpvOpNop, int size_=kAnySize)
     : type(type_), size(size_) { }
 };
+
+// Returns the integer signedness of the target environment
+int Sign(ValidationState_t& vstate) {
+  switch (vstate.context()->target_env) {
+    case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_OPENGL_4_0:
+    case SPV_ENV_OPENGL_4_1:
+    case SPV_ENV_OPENGL_4_2:
+    case SPV_ENV_OPENGL_4_3:
+    case SPV_ENV_OPENGL_4_5:
+      return kSigned;
+    case SPV_ENV_OPENCL_2_1:
+    case SPV_ENV_OPENCL_2_2:
+      return kUnsigned;
+    default:
+      return kAnySign;
+  }
+  return kAnySign;
+}
 
 // Returns true if |elem| is in the given vector
 bool IsIncluded(uint32_t elem, const std::vector<uint32_t>& vec) {
@@ -190,7 +214,7 @@ spv_result_t CheckBuiltInType(ValidationState_t& vstate,
       return error(vstate);
     }
     // ... and it must match the number of components / size
-    int size = -1;
+    int size = kAnySize;
     if (comp.type == SpvOpTypeVector) { // size as literal
       uint32_t literal = inst->word(3);
       size = static_cast<int>(literal);
@@ -202,7 +226,7 @@ spv_result_t CheckBuiltInType(ValidationState_t& vstate,
     } else {
       assert(false);
     }
-    if (comp.size != 0) // 0 = any size ok
+    if (comp.size != kAnySize)
       if (size != comp.size)
         return error(vstate);
     // Gets elemental type
@@ -213,11 +237,17 @@ spv_result_t CheckBuiltInType(ValidationState_t& vstate,
   if (inst->opcode() != elem.type) {
     return error(vstate);
   }
-  // ... and it must match the number of bits
-  int size = static_cast<int>(inst->word(2));
-  if (elem.bits != 0) // 0 = any bits size ok
-    if (size != elem.bits)
+  // ... and it must match the number of bits...
+  int bits = static_cast<int>(inst->word(2));
+  if (elem.bits != kAnyBits)
+    if (bits != elem.bits)
       return error(vstate);
+  // ... and the sign, if applicable
+  if (elem.type == SpvOpTypeInt && elem.sign != kAnySign) {
+    int sign = static_cast<int>(inst->word(3));
+    if (sign != elem.sign)
+      return error(vstate);
+  }
   return SPV_SUCCESS;
 }
 
@@ -1036,11 +1066,13 @@ spv_result_t CheckNumWorkgroups(ValidationState_t& vstate, const Instruction* in
 
   // NumWorkgroups must be declared as
   // a three-component vector of 32-bit integers.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
   
+  // TODO(jcaraban): depending on SPV_ENV_VULKAN / CL, the int is signed or unsgined
+
   return SPV_SUCCESS;
 }
 
@@ -1077,7 +1109,7 @@ spv_result_t CheckWorkgroupSize(ValidationState_t& vstate, const Instruction* in
   
   // The object decorated with WorkgroupSize must be declared as
   // a three-component vector of 32-bit integers.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1106,7 +1138,7 @@ spv_result_t CheckWorkgroupId(ValidationState_t& vstate, const Instruction* inst
 
   // WorkgroupId must be declared as
   // a three-component vector of 32-bit integers.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1135,7 +1167,7 @@ spv_result_t CheckLocalInvocationId(ValidationState_t& vstate, const Instruction
     
   // LocalInvocationId must be declared as
   // a three-component vector of 32-bit integers.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1164,7 +1196,7 @@ spv_result_t CheckGlobalInvocationId(ValidationState_t& vstate, const Instructio
 
   // GlobalInvocationId must be declared as
   // a three-component vector of 32-bit integers.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1192,7 +1224,7 @@ spv_result_t CheckLocalInvocationIndex(ValidationState_t& vstate, const Instruct
     return error;
 
   // GlobalInvocationId must be declared as a scalar 32-bit integer.
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, Sign(vstate) };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
      return error;
 
@@ -1217,7 +1249,7 @@ spv_result_t CheckWorkDim(ValidationState_t& vstate, const Instruction* inst,
     return error;
 
   // WorkDim is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
      return error;
 
@@ -1242,7 +1274,7 @@ spv_result_t CheckGlobalSize(ValidationState_t& vstate, const Instruction* inst,
     return error;
 
   // GlobalSize is a three-component vector of 32-bit integers
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1268,7 +1300,7 @@ spv_result_t CheckEnqueuedWorkgroupSize(ValidationState_t& vstate, const Instruc
     return error;
 
   // EnqueuedWorkgroupSize is a three-component vector of 32-bit integers
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
@@ -1294,7 +1326,7 @@ spv_result_t CheckGlobalOffset(ValidationState_t& vstate, const Instruction* ins
       return error;
   
     // GlobalOffset is a three-component vector of 32-bit integers
-    ElemType elem = { SpvOpTypeInt, 32 };
+    ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
     CompType comp = { SpvOpTypeVector, 3 };
     if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
       return error;
@@ -1320,7 +1352,7 @@ spv_result_t CheckGlobalLinearId(ValidationState_t& vstate, const Instruction* i
     return error;
 
   // GlobalLinearId is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
      return error;
 
@@ -1345,7 +1377,7 @@ spv_result_t CheckSubgroupSize(ValidationState_t& vstate, const Instruction* ins
     return error;
 
   // SubgroupSize is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
@@ -1370,7 +1402,7 @@ spv_result_t CheckSubgroupMaxSize(ValidationState_t& vstate, const Instruction* 
     return error;
 
   // SubgroupMaxSize is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
@@ -1395,7 +1427,7 @@ spv_result_t CheckNumSubgroups(ValidationState_t& vstate, const Instruction* ins
     return error;
 
   // NumSubgroups is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
@@ -1420,7 +1452,7 @@ spv_result_t CheckNumEnqueuedSubgroups(ValidationState_t& vstate, const Instruct
     return error;
 
   // NumEnqueuedSubgroups is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
@@ -1445,7 +1477,7 @@ spv_result_t CheckSubgroupId(ValidationState_t& vstate, const Instruction* inst,
     return error;
 
   // SubgroupId is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
@@ -1470,7 +1502,7 @@ spv_result_t CheckSubgroupLocalInvocationId(ValidationState_t& vstate, const Ins
     return error;
 
   // SubgroupLocalInvocationId is a scalar 32-bit integer
-  ElemType elem = { SpvOpTypeInt, 32 };
+  ElemType elem = { SpvOpTypeInt, 32, kUnsigned };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem) )
     return error;
 
