@@ -35,9 +35,11 @@ class TestNode : public IntrusiveNodeBase<TestNode> {
 class TestList : public IntrusiveList<TestNode> {
  public:
   TestList() = default;
-  TestList(TestList&& that) : IntrusiveList<TestNode>(std::move(that)) {}
+  TestList(TestList&& that) : IntrusiveList<TestNode>(std::move(that)) {
+  }
   TestList& operator=(TestList&& that) {
-    static_cast<IntrusiveList<TestNode>&>(*this) = static_cast<IntrusiveList<TestNode>&&>(that);
+    static_cast<IntrusiveList<TestNode>&>(*this) =
+        static_cast<IntrusiveList<TestNode>&&>(that);
     return *this;
   }
 };
@@ -74,9 +76,6 @@ TestList BuildList(TestNode nodes[], int n) {
 TEST(IListTest, DecrementingBegin) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
-
   EXPECT_EQ(--list.begin(), list.end());
 }
 
@@ -84,9 +83,6 @@ TEST(IListTest, DecrementingBegin) {
 TEST(IListTest, IncrementingEnd1) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
-
   EXPECT_EQ((++list.end())->data, 0);
 }
 
@@ -94,9 +90,6 @@ TEST(IListTest, IncrementingEnd1) {
 TEST(IListTest, IncrementingEnd2) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
-
   EXPECT_EQ(++list.end(), list.begin());
 }
 
@@ -104,9 +97,6 @@ TEST(IListTest, IncrementingEnd2) {
 TEST(IListTest, DecrementingEnd) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
-
   EXPECT_EQ((--list.end())->data, 9);
 }
 
@@ -156,8 +146,8 @@ TEST(IListTest, InsertAfter1) {
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }
 
-// Test inserting a new element in the middle of a list using the IntrusiveNodeBase
-// "InsertAfter" function.
+// Test inserting a new element in the middle of a list using the
+// IntrusiveNodeBase "InsertAfter" function.
 TEST(IListTest, InsertAfter2) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 5);
@@ -171,8 +161,8 @@ TEST(IListTest, InsertAfter2) {
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 5, 3, 4));
 }
 
-// Test moving an element already in the list in the middle of a list using the IntrusiveNodeBase
-// "InsertAfter" function.
+// Test moving an element already in the list in the middle of a list using the
+// IntrusiveNodeBase "InsertAfter" function.
 TEST(IListTest, MoveUsingInsertAfter1) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 6);
@@ -256,12 +246,71 @@ TEST(IListTest, IteratorEqual) {
   TestList list = BuildList(nodes, 6);
 
   std::vector<int> output;
-  for( auto i = list.begin(); i != list.end(); ++i )
-    for( auto j = list.begin(); j != list.end(); ++j )
-      if (i == j)
-        output.push_back(i->data);
+  for (auto i = list.begin(); i != list.end(); ++i)
+    for (auto j = list.begin(); j != list.end(); ++j)
+      if (i == j) output.push_back(i->data);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }
 
+// Test MoveBefore.  Moving into middle of a list.
+TEST(IListTest, MoveBefore1) {
+  TestNode nodes[10];
+  TestList list1 = BuildList(nodes, 6);
+  TestList list2 = BuildList(nodes + 6, 3);
+
+  TestList::iterator insertion_point = list1.begin();
+  ++insertion_point;
+  insertion_point.MoveBefore(&list2);
+
+  std::vector<int> output;
+  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+
+  EXPECT_THAT(output, ElementsAre(0, 0, 1, 2, 1, 2, 3, 4, 5));
+}
+
+// Test MoveBefore.  Moving to the start of a list.
+TEST(IListTest, MoveBefore2) {
+  TestNode nodes[10];
+  TestList list1 = BuildList(nodes, 6);
+  TestList list2 = BuildList(nodes + 6, 3);
+
+  TestList::iterator insertion_point = list1.begin();
+  insertion_point.MoveBefore(&list2);
+
+  std::vector<int> output;
+  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+
+  EXPECT_THAT(output, ElementsAre(0, 1, 2, 0, 1, 2, 3, 4, 5));
+}
+
+// Test MoveBefore.  Moving to the end of a list.
+TEST(IListTest, MoveBefore3) {
+  TestNode nodes[10];
+  TestList list1 = BuildList(nodes, 6);
+  TestList list2 = BuildList(nodes + 6, 3);
+
+  TestList::iterator insertion_point = list1.end();
+  insertion_point.MoveBefore(&list2);
+
+  std::vector<int> output;
+  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+
+  EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 0, 1, 2));
+}
+
+// Test MoveBefore.  Moving an empty list.
+TEST(IListTest, MoveBefore4) {
+  TestNode nodes[10];
+  TestList list1 = BuildList(nodes, 6);
+  TestList list2;
+
+  TestList::iterator insertion_point = list1.end();
+  insertion_point.MoveBefore(&list2);
+
+  std::vector<int> output;
+  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+
+  EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
+}
 }  // namespace

@@ -190,17 +190,22 @@ inline IntrusiveList<NodeType>::IntrusiveList() : sentinel_() {
   sentinel_.next_node_ = &sentinel_;
   sentinel_.previous_node_ = &sentinel_;
   sentinel_.is_sentinel_ = true;
+  Check(&sentinel_);
 }
 
 template <class NodeType>
 IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) : sentinel_() {
-  this->sentinel_ = std::move(list.sentinel_);
-  this->sentinel_.next_node_->previous_node_ = &this->sentinel_;
-  this->sentinel_.previous_node_->next_node_ = &this->sentinel_;
+  sentinel_.next_node_ = &sentinel_;
+  sentinel_.previous_node_ = &sentinel_;
+  sentinel_.is_sentinel_ = true;
+  list.sentinel_.ReplaceWith(&sentinel_);
+  Check(&sentinel_);
+  Check(&list.sentinel_);
 }
 
 template <class NodeType>
 IntrusiveList<NodeType>::~IntrusiveList() {
+  Check(&sentinel_);
   while (!empty()) {
     front().RemoveFromList();
   }
@@ -209,7 +214,9 @@ IntrusiveList<NodeType>::~IntrusiveList() {
 template <class NodeType>
 IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
     IntrusiveList<NodeType>&& list) {
-  this->sentinel_ = std::move(list.sentinel_);
+  list.sentinel_.ReplaceWith(&sentinel_);
+  Check(&sentinel_);
+  Check(&list.sentinel_);
   return *this;
 }
 
@@ -289,16 +296,25 @@ const NodeType& IntrusiveList<NodeType>::back() const {
 
 template <class NodeType>
 void IntrusiveList<NodeType>::Check(NodeType* start) {
-  for (NodeType* p = start->next_node_; p != start; p = p->next_node_) {
+  int sentinel_count = 0;
+  NodeType* p = start;
+  do {
     assert(p != nullptr);
     assert(p->next_node_->previous_node_ == p);
     assert(p->previous_node_->next_node_ == p);
-  }
-  for (NodeType* p = start->previous_node_; p != start; p = p->previous_node_) {
+    if (p->is_sentinel_) sentinel_count++;
+    p = p->next_node_;
+  } while (p != start);
+  assert(sentinel_count == 1 && "List should have exactly 1 sentinel node.");
+
+  p = start;
+  do {
     assert(p != nullptr);
-    assert(p->next_node_->previous_node_ == p);
     assert(p->previous_node_->next_node_ == p);
-  }
+    assert(p->next_node_->previous_node_ == p);
+    if (p->is_sentinel_) sentinel_count++;
+    p = p->previous_node_;
+  } while (p != start);
 }
 
 }  // namespace utils

@@ -76,6 +76,11 @@ class IntrusiveNodeBase {
   inline void RemoveFromList();
 
  protected:
+  // This function will replace |this| with |target|.  No nodes that are not
+  // sentinels, |target| takes the place of |this|.  If the nodes are sentinels,
+  // then it will cause all of the nodes to be move from one list to another.
+  void ReplaceWith(NodeType* target);
+
   // The pointers to the next and previous nodes in the list.
   // If the current node is not part of a list, then |next_node_| and
   // |previous_node_| are equal to |nullptr|.
@@ -105,14 +110,21 @@ inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
 template<class NodeType>
 inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
     const IntrusiveNodeBase&) {
+  assert(!is_sentinel_);
   if (IsInAList()) RemoveFromList();
   return *this;
 }
 
 template<class NodeType>
-inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
-    IntrusiveNodeBase&& that) {
-  *this = static_cast<IntrusiveNodeBase&&>(that);
+inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(IntrusiveNodeBase&& that)
+    : next_node_(nullptr),
+      previous_node_(nullptr),
+      is_sentinel_(that.is_sentinel_) {
+  if (is_sentinel_) {
+    next_node_ = this;
+    previous_node_ = this;
+  }
+  that.ReplaceWith(this);
 }
 
 template<class NodeType>
@@ -123,35 +135,7 @@ IntrusiveNodeBase<NodeType>::~IntrusiveNodeBase() {
 template<class NodeType>
 IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
     IntrusiveNodeBase&& that) {
-  if (is_sentinel_) {
-    assert(next_node_ == this);
-    assert(that.is_sentinel_);
-  } else {
-    assert(IsInAList() && "Sentinel nodes must always be part of a list.");
-    assert(!that.is_sentinel_ &&
-        "Cannot turn a sentinel node into one that is not.");
-  }
-
-  if (that.next_node_ != &that) {
-    this->next_node_ = that.next_node_;
-    this->previous_node_ = that.previous_node_;
-
-    this->next_node_->previous_node_ = static_cast<NodeType*>(this);
-    this->previous_node_->next_node_ = static_cast<NodeType*>(this);
-
-    this->is_sentinel_ = that.is_sentinel_;
-
-    if (!that.is_sentinel_) {
-      that.next_node_ = nullptr;
-      that.previous_node_ = nullptr;
-    } else {
-      that.next_node_ = static_cast<NodeType*>(&that);
-      that.previous_node_ = static_cast<NodeType*>(&that);
-    }
-  } else {
-    this->next_node_ = static_cast<NodeType*>(this);
-    this->previous_node_ = static_cast<NodeType*>(this);
-  }
+  that.ReplaceWith(this);
   return *this;
 }
 
@@ -206,6 +190,37 @@ inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   this->previous_node_->next_node_ = this->next_node_;
   this->next_node_ = nullptr;
   this->previous_node_ = nullptr;
+}
+
+template<class NodeType>
+void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
+  if (is_sentinel_) {
+    assert(target->next_node_ == target);
+    assert(this->is_sentinel_);
+  } else {
+    assert(IsInAList() && "Sentinel nodes must always be part of a list.");
+    assert(!this->is_sentinel_ &&
+        "Cannot turn a sentinel node into one that is not.");
+  }
+
+  if (this->next_node_ != this) {
+    target->next_node_ = this->next_node_;
+    target->previous_node_ = this->previous_node_;
+
+    target->next_node_->previous_node_ = static_cast<NodeType*>(target);
+    target->previous_node_->next_node_ = static_cast<NodeType*>(target);
+
+    if (!this->is_sentinel_) {
+      this->next_node_ = nullptr;
+      this->previous_node_ = nullptr;
+    } else {
+      this->next_node_ = static_cast<NodeType*>(this);
+      this->previous_node_ = static_cast<NodeType*>(this);
+    }
+  } else {
+    target->next_node_ = static_cast<NodeType*>(target);
+    target->previous_node_ = static_cast<NodeType*>(target);
+  }
 }
 
 }  // namespace utils
