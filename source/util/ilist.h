@@ -100,6 +100,28 @@ class IntrusiveList {
       return !(lhs == rhs);
     }
 
+    // The nodes in |list| will be moved to the list that |this| points to.  The
+    // positions of the nodes will be immediately before the element pointed to
+    // by the iterator.  The return value will be an iterator pointing to the
+    // first of the newly inserted elements.
+    iterator_template MoveBefore(IntrusiveList* list) {
+      if (list->empty()) return *this;
+
+      NodeType* first_node = list->sentinel_.next_node_;
+      NodeType* last_node = list->sentinel_.previous_node_;
+
+      this->node_->previous_node_->next_node_ = first_node;
+      first_node->previous_node_ = this->node_->previous_node_;
+
+      last_node->next_node_ = this->node_;
+      this->node_->previous_node_ = last_node;
+
+      list->sentinel_.next_node_ = &list->sentinel_;
+      list->sentinel_.previous_node_ = &list->sentinel_;
+
+      return iterator(first_node);
+    }
+
    protected:
     iterator_template() = delete;
     inline iterator_template(T* node) { node_ = node; }

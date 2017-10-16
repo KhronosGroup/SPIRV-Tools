@@ -139,7 +139,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   // Same semantics as in the base class except the list the InstructionList
   // containing |pos| will now assume ownership of |this|.
-  // inline void InsertBefore(Instruction* pos);
+  // inline void MoveBefore(Instruction* pos);
   // inline void InsertAfter(Instruction* pos);
 
   // Begin and end iterators for operands.

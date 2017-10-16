@@ -56,15 +56,7 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
     // by the iterator.  The return value will be an iterator pointing to the
     // first of the newly inserted elements.  Ownership if the elements in
     // |list| is now pass on to the new list that contains them.
-    iterator InsertBefore(InstructionList* list);
-
-    // The nodes in |list| will be moved to the list that |this| points to.  The
-    // positions of the nodes will be immediately before the element pointed to
-    // by the iterator.  The return value will be an iterator pointing to the
-    // first of the newly inserted elements.  Ownership if the elements in
-    // |list| is now pass on to the new list that contains them.
-    iterator InsertBefore(
-        std::vector<std::unique_ptr<Instruction>>* list);
+    iterator InsertBefore(std::vector<std::unique_ptr<Instruction>>* list);
 
     // The node |i| will be inserted immediatly before |this|. The return value
     // will be an iterator pointing to the newly inserted node.  The owner of

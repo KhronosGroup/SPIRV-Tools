@@ -26,23 +26,6 @@ InstructionList::~InstructionList() {
 }
 
 InstructionList::iterator InstructionList::iterator::InsertBefore(
-    InstructionList* list) {
-  Instruction* first_node = list->sentinel_.next_node_;
-  Instruction* last_node = list->sentinel_.previous_node_;
-
-  this->node_->previous_node_->next_node_ = first_node;
-  first_node->previous_node_ = this->node_->previous_node_;
-
-  last_node->next_node_ = this->node_;
-  this->node_->previous_node_ = last_node;
-
-  list->sentinel_.next_node_ = &list->sentinel_;
-  list->sentinel_.previous_node_ = &list->sentinel_;
-
-  return iterator(first_node);
-}
-
-InstructionList::iterator InstructionList::iterator::InsertBefore(
     std::vector<std::unique_ptr<Instruction>>* list) {
   Instruction* first_node = list->front().get();
   for (auto& i : *list) {

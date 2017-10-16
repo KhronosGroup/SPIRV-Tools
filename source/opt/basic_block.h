@@ -126,7 +126,7 @@ inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
 
 inline void BasicBlock::AddInstructions(BasicBlock* bp) {
   auto bEnd = end();
-  (void)bEnd.InsertBefore(&bp->insts_);
+  (void) bEnd.MoveBefore(&bp->insts_);
 }
 
 inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
