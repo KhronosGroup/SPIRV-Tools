@@ -97,8 +97,11 @@ class DeadBranchElimPass : public MemPass {
   bool GetSelectionBranch(ir::BasicBlock* bp, ir::Instruction** branchInst,
     ir::Instruction** mergeInst, uint32_t *condId);
 
-  // Return true if |labelId| has any non-phi references
-  bool HasNonPhiRef(uint32_t labelId);
+  // Return true if |labelId| has any non-phi, non-backedge references
+  bool HasNonPhiNonBackedgeRef(uint32_t labelId);
+
+  // Compute backedges for blocks in |structuredOrder|.
+  void ComputeBackEdges(std::list<ir::BasicBlock*>& structuredOrder);
 
   // For function |func|, look for BranchConditionals with constant condition
   // and convert to a Branch to the indicated label. Delete resulting dead
@@ -125,6 +128,9 @@ class DeadBranchElimPass : public MemPass {
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
   
+  // All backedge branches in current function
+  std::unordered_set<ir::Instruction*> backedges_;
+
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 };

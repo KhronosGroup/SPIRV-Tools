@@ -24,6 +24,7 @@ namespace opt {
 
 namespace {
 
+const uint32_t kBranchTargetLabIdInIdx = 0;
 const uint32_t kBranchCondTrueLabIdInIdx = 1;
 const uint32_t kBranchCondFalseLabIdInIdx = 2;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
@@ -185,20 +186,57 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
   return true;
 }
 
-bool DeadBranchElimPass::HasNonPhiRef(uint32_t labelId) {
+bool DeadBranchElimPass::HasNonPhiNonBackedgeRef(uint32_t labelId) {
   analysis::UseList* uses = def_use_mgr_->GetUses(labelId);
   if (uses == nullptr)
     return false;
-  for (auto u : *uses)
-    if (u.inst->opcode() != SpvOpPhi)
+  for (auto u : *uses) {
+    if (u.inst->opcode() != SpvOpPhi &&
+        backedges_.find(u.inst) == backedges_.end())
       return true;
+  }
   return false;
+}
+
+void DeadBranchElimPass::ComputeBackEdges(
+    std::list<ir::BasicBlock*>& structuredOrder) {
+  backedges_.clear();
+  std::unordered_set<uint32_t> visited;
+  // In structured order, edges to visited blocks are back edges
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    auto ii = (*bi)->end();
+    --ii;
+    switch(ii->opcode()) {
+      case SpvOpBranch: {
+        const uint32_t labId = ii->GetSingleWordInOperand(
+            kBranchTargetLabIdInIdx);
+        if (visited.find(labId) != visited.end())
+          backedges_.insert(&*ii);
+      } break;
+      case SpvOpBranchConditional: {
+        const uint32_t tLabId = ii->GetSingleWordInOperand(
+            kBranchCondTrueLabIdInIdx);
+        if (visited.find(tLabId) != visited.end()) {
+          backedges_.insert(&*ii);
+          break;
+        }
+        const uint32_t fLabId = ii->GetSingleWordInOperand(
+            kBranchCondFalseLabIdInIdx);
+        if (visited.find(fLabId) != visited.end())
+          backedges_.insert(&*ii);
+      } break;
+      default:
+        break;
+    }
+    visited.insert((*bi)->id());
+  }
 }
 
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   // Traverse blocks in structured order
   std::list<ir::BasicBlock*> structuredOrder;
   ComputeStructuredOrder(func, &structuredOrder);
+  ComputeBackEdges(structuredOrder);
   std::unordered_set<ir::BasicBlock*> elimBlocks;
   bool modified = false;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
@@ -259,29 +297,15 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
     modified = true;
 
-    // Initialize live block set to the live label
-    std::unordered_set<uint32_t> liveLabIds;
-    liveLabIds.insert(liveLabId);
-
     // Iterate to merge block adding dead blocks to elimination set
     auto dbi = bi;
     ++dbi;
     uint32_t dLabId = (*dbi)->id();
     while (dLabId != mergeLabId) {
-      if (liveLabIds.find(dLabId) == liveLabIds.end()) {
+      if (!HasNonPhiNonBackedgeRef(dLabId)) {
         // Kill use/def for all instructions and mark block for elimination
         KillAllInsts(*dbi);
         elimBlocks.insert(*dbi);
-      }
-      else {
-        // Mark all successors as live
-        (*dbi)->ForEachSuccessorLabel([&liveLabIds](const uint32_t succId){
-          liveLabIds.insert(succId);
-        });
-        // Mark merge and continue blocks as live
-        (*dbi)->ForMergeAndContinueLabel([&liveLabIds](const uint32_t succId){
-          liveLabIds.insert(succId);
-        });
       }
       ++dbi;
       dLabId = (*dbi)->id();
@@ -289,7 +313,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
     // If merge block is unreachable, continue eliminating blocks until
     // a live block or last block is reached.
-    while (!HasNonPhiRef(dLabId)) {
+    while (!HasNonPhiNonBackedgeRef(dLabId)) {
       KillAllInsts(*dbi);
       elimBlocks.insert(*dbi);
       ++dbi;
