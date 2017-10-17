@@ -38,7 +38,7 @@ class InstructionList;
 // In the SPIR-V specification, the term "operand" is used to mean any single
 // SPIR-V word following the leading wordcount-opcode word. Here, the term
 // "operand" is used to mean a *logical* operand. A logical operand may consist
-// of mulitple SPIR-V words, which together make up the same component. For
+// of multiple SPIR-V words, which together make up the same component. For
 // example, a logical operand of a 64-bit integer needs two words to express.
 //
 // Further, we categorize logical operands into *in* and *out* operands.
@@ -115,10 +115,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   Instruction(Instruction&&);
   Instruction& operator=(Instruction&&);
 
+  virtual ~Instruction() = default;
+
   // Return a newly allocated instruction that has the same operands, result,
   // and type as |this|.  The new instruction is not linked into any list.
   // It is the responsibility of the caller to make sure that the storage is
-  // remove. It is the caller's responsibility to make sure that there is only
+  // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
   Instruction* Clone() const;
 

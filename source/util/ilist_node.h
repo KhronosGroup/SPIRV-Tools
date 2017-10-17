@@ -172,7 +172,9 @@ template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
   assert(pos->IsInAList() && "Pos should already be in a list.");
-  if (this->IsInAList()) this->RemoveFromList();
+  if (this->IsInAList()) {
+    this->RemoveFromList();
+  }
 
   this->previous_node_ = pos;
   this->next_node_ = pos->next_node_;

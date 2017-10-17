@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "gtest/gtest.h"
 
 #include "util/ilist.h"
 
@@ -35,8 +34,7 @@ class TestNode : public IntrusiveNodeBase<TestNode> {
 class TestList : public IntrusiveList<TestNode> {
  public:
   TestList() = default;
-  TestList(TestList&& that) : IntrusiveList<TestNode>(std::move(that)) {
-  }
+  TestList(TestList&& that) : IntrusiveList<TestNode>(std::move(that)) {}
   TestList& operator=(TestList&& that) {
     static_cast<IntrusiveList<TestNode>&>(*this) =
         static_cast<IntrusiveList<TestNode>&&>(that);

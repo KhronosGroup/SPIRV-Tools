@@ -190,7 +190,6 @@ inline IntrusiveList<NodeType>::IntrusiveList() : sentinel_() {
   sentinel_.next_node_ = &sentinel_;
   sentinel_.previous_node_ = &sentinel_;
   sentinel_.is_sentinel_ = true;
-  Check(&sentinel_);
 }
 
 template <class NodeType>
@@ -199,13 +198,10 @@ IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) : sentinel_() {
   sentinel_.previous_node_ = &sentinel_;
   sentinel_.is_sentinel_ = true;
   list.sentinel_.ReplaceWith(&sentinel_);
-  Check(&sentinel_);
-  Check(&list.sentinel_);
 }
 
 template <class NodeType>
 IntrusiveList<NodeType>::~IntrusiveList() {
-  Check(&sentinel_);
   while (!empty()) {
     front().RemoveFromList();
   }
@@ -215,8 +211,6 @@ template <class NodeType>
 IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
     IntrusiveList<NodeType>&& list) {
   list.sentinel_.ReplaceWith(&sentinel_);
-  Check(&sentinel_);
-  Check(&list.sentinel_);
   return *this;
 }
 

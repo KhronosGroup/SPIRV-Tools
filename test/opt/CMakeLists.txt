@@ -17,6 +17,11 @@ add_spvtools_unittest(TARGET instruction
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET instruction_list
+        SRCS instruction_list_test.cpp
+        LIBS SPIRV-Tools-opt
+        )
+
 add_spvtools_unittest(TARGET ir_loader
   SRCS ir_loader_test.cpp
   LIBS SPIRV-Tools-opt
