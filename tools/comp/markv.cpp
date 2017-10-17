@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -24,14 +25,18 @@
 #include "source/comp/markv.h"
 #include "source/spirv_target_env.h"
 #include "source/table.h"
+#include "spirv-tools/optimizer.hpp"
 #include "tools/io.h"
 
 namespace {
+
+const auto kSpvEnv = SPV_ENV_UNIVERSAL_1_2;
 
 enum Task {
   kNoTask = 0,
   kEncode,
   kDecode,
+  kTest,
 };
 
 struct ScopedContext {
@@ -44,7 +49,7 @@ void print_usage(char* argv0) {
   printf(
       R"(%s - Encodes or decodes a SPIR-V binary to or from a MARK-V binary.
 
-USAGE: %s [e|d] [options] [<filename>]
+USAGE: %s [e|d|t] [options] [<filename>]
 
 The input binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
@@ -59,16 +64,19 @@ software is used (is doesn't write or handle version numbers yet).
 Tasks:
   e               Encode SPIR-V to MARK-V.
   d               Decode MARK-V to SPIR-V.
+  t               Test the codec by first encoding the given SPIR-V file to
+                  MARK-V, then decoding it back to SPIR-V and comparing results.
 
 Options:
   -h, --help      Print this help.
-  --comments      Write codec comments to stdout.
+  --comments      Write codec comments to stderr.
   --version       Display MARK-V codec version.
   --validate      Validate SPIR-V while encoding or decoding.
 
   -o <filename>   Set the output filename.
                   Output goes to standard output if this option is
                   not specified, or if the filename is "-".
+                  Not needed for 't' task (testing).
 )",
       argv0, argv0);
 }
@@ -84,11 +92,11 @@ void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
                 << std::endl;
       break;
     case SPV_MSG_WARNING:
-      std::cout << "warning: " << position.index << ": " << message
+      std::cerr << "warning: " << position.index << ": " << message
                 << std::endl;
       break;
     case SPV_MSG_INFO:
-      std::cout << "info: " << position.index << ": " << message << std::endl;
+      std::cerr << "info: " << position.index << ": " << message << std::endl;
       break;
     default:
       break;
@@ -113,6 +121,8 @@ int main(int argc, char** argv) {
     task = kEncode;
   } else if (0 == strcmp("d", task_char)) {
     task = kDecode;
+  } else if (0 == strcmp("t", task_char)) {
+    task = kTest;
   }
 
   if (task == kNoTask) {
@@ -130,7 +140,8 @@ int main(int argc, char** argv) {
           print_usage(argv[0]);
           return 0;
         case 'o': {
-          if (!output_filename && argi + 1 < argc) {
+          if (!output_filename && argi + 1 < argc &&
+              (task == kEncode || task == kDecode)) {
             output_filename = argv[++argi];
           } else {
             print_usage(argv[0]);
@@ -176,76 +187,168 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (task == kDecode && want_comments) {
-    fprintf(stderr, "warning: Decoder comments not yet implemented\n");
-    want_comments = false;
-  }
+  const auto no_comments = spvtools::MarkvLogConsumer();
+  const auto output_to_stderr = [](const std::string& str) {
+    std::cerr << str;
+  };
 
-  const bool write_to_stdout = output_filename == nullptr ||
-      0 == strcmp(output_filename, "-");
-
-  std::string comments;
-  std::string* comments_ptr = want_comments ? &comments : nullptr;
-
-  ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
+  ScopedContext ctx(kSpvEnv);
 
   std::unique_ptr<spvtools::MarkvModel> model =
       spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
 
+  std::vector<uint32_t> spirv;
+  std::vector<uint8_t> markv;
+
+  spvtools::MarkvCodecOptions options;
+  options.validate_spirv_binary = validate_spirv_binary;
+
   if (task == kEncode) {
-    std::vector<uint32_t> spirv;
     if (!ReadFile<uint32_t>(input_filename, "rb", &spirv)) return 1;
-
-    spvtools::MarkvEncoderOptions options;
-    options.validate_spirv_binary = validate_spirv_binary;
-
-    std::vector<uint8_t> markv;
+    assert(!spirv.empty());
 
     if (SPV_SUCCESS != spvtools::SpirvToMarkv(
         ctx.context, spirv, options, *model, DiagnosticsMessageHandler,
-        &markv, comments_ptr)) {
+        want_comments ? output_to_stderr : no_comments,
+        spvtools::MarkvDebugConsumer(), &markv)) {
       std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
                 << std::endl;
       return 1;
     }
 
-    if (want_comments) {
-      if (!WriteFile<char>(nullptr, "w", comments.c_str(),
-                           comments.length())) return 1;
-    }
-
-    if (!want_comments || !write_to_stdout) {
-      if (!WriteFile<uint8_t>(output_filename, "wb", markv.data(),
-                              markv.size())) return 1;
-    }
+    if (!WriteFile<uint8_t>(output_filename, "wb", markv.data(),
+                            markv.size())) return 1;
   } else if (task == kDecode) {
-    std::vector<uint8_t> markv;
     if (!ReadFile<uint8_t>(input_filename, "rb", &markv)) return 1;
-
-    spvtools::MarkvDecoderOptions options;
-    options.validate_spirv_binary = validate_spirv_binary;
-
-    std::vector<uint32_t> spirv;
+    assert(!markv.empty());
 
     if (SPV_SUCCESS != spvtools::MarkvToSpirv(
         ctx.context, markv, options, *model, DiagnosticsMessageHandler,
-        &spirv, comments_ptr)) {
+        want_comments ? output_to_stderr : no_comments,
+        spvtools::MarkvDebugConsumer(), &spirv)) {
       std::cerr << "error: Failed to decode " << input_filename << " to SPIR-V "
                 << std::endl;
       return 1;
     }
 
-    if (want_comments) {
-      if (!WriteFile<char>(nullptr, "w", comments.c_str(),
-                           comments.length())) return 1;
+    if (!WriteFile<uint32_t>(output_filename, "wb", spirv.data(),
+                             spirv.size())) return 1;
+  } else if (task == kTest) {
+    if (!ReadFile<uint32_t>(input_filename, "rb", &spirv)) return 1;
+    assert(!spirv.empty());
+
+    std::vector<uint32_t> spirv_before;
+    spvtools::Optimizer optimizer(kSpvEnv);
+    optimizer.RegisterPass(spvtools::CreateCompactIdsPass());
+    if (!optimizer.Run(spirv.data(), spirv.size(), &spirv_before)) {
+      std::cerr << "error: Optimizer failure on: "
+                << input_filename << std::endl;
     }
 
-    if (!want_comments || !write_to_stdout) {
-      if (!WriteFile<uint32_t>(output_filename, "wb", spirv.data(),
-                               spirv.size())) return 1;
+    std::vector<std::string> encoder_instruction_bits;
+    std::vector<std::string> encoder_instruction_comments;
+    std::vector<std::vector<uint32_t>> encoder_instruction_words;
+    std::vector<std::string> decoder_instruction_bits;
+    std::vector<std::string> decoder_instruction_comments;
+    std::vector<std::vector<uint32_t>> decoder_instruction_words;
+
+    const auto encoder_debug_consumer = [&](
+        const std::vector<uint32_t>& words, const std::string& bits,
+        const std::string& comment) {
+      encoder_instruction_words.push_back(words);
+      encoder_instruction_bits.push_back(bits);
+      encoder_instruction_comments.push_back(comment);
+      return true;
+    };
+
+    if (SPV_SUCCESS != spvtools::SpirvToMarkv(
+        ctx.context, spirv_before, options, *model, DiagnosticsMessageHandler,
+        want_comments ? output_to_stderr : no_comments,
+        encoder_debug_consumer, &markv)) {
+      std::cerr << "error: Failed to encode " << input_filename << " to MARK-V "
+                << std::endl;
+      return 1;
     }
-  } else {
-    assert(false && "Unknown task");
+
+    const auto write_bug_report = [&]() {
+      for (size_t inst_index = 0; inst_index < decoder_instruction_words.size();
+           ++inst_index) {
+        std::cerr << "\nInstruction #" << inst_index << std::endl;
+        std::cerr << "\nEncoder words: ";
+        for (uint32_t word : encoder_instruction_words[inst_index])
+          std::cerr << word << " ";
+        std::cerr << "\nDecoder words: ";
+        for (uint32_t word : decoder_instruction_words[inst_index])
+          std::cerr << word << " ";
+        std::cerr << std::endl;
+
+        std::cerr << "\nEncoder bits: " << encoder_instruction_bits[inst_index];
+        std::cerr << "\nDecoder bits: " << decoder_instruction_bits[inst_index];
+        std::cerr << std::endl;
+
+        std::cerr << "\nEncoder comments:\n"
+                  << encoder_instruction_comments[inst_index];
+        std::cerr << "Decoder comments:\n"
+                  << decoder_instruction_comments[inst_index];
+        std::cerr << std::endl;
+      }
+    };
+
+    const auto decoder_debug_consumer = [&](
+        const std::vector<uint32_t>& words, const std::string& bits,
+        const std::string& comment) {
+      const size_t inst_index = decoder_instruction_words.size();
+      if (inst_index >= encoder_instruction_words.size()) {
+        write_bug_report();
+        std::cerr << "error: Decoder has more instructions than encoder: "
+                  << input_filename << std::endl;
+        return false;
+      }
+
+      decoder_instruction_words.push_back(words);
+      decoder_instruction_bits.push_back(bits);
+      decoder_instruction_comments.push_back(comment);
+
+      if (encoder_instruction_words[inst_index] !=
+          decoder_instruction_words[inst_index]) {
+        write_bug_report();
+        std::cerr << "error: Words of the last decoded instruction differ from "
+                  "reference: " << input_filename << std::endl;
+        return false;
+      }
+
+      if (encoder_instruction_bits[inst_index] !=
+          decoder_instruction_bits[inst_index]) {
+        write_bug_report();
+        std::cerr << "error: Bits of the last decoded instruction differ from "
+                  "reference: " << input_filename << std::endl;
+        return false;
+      }
+      return true;
+    };
+
+    std::vector<uint32_t> spirv_after;
+    const spv_result_t decoding_result = spvtools::MarkvToSpirv(
+        ctx.context, markv, options, *model, DiagnosticsMessageHandler,
+        want_comments ? output_to_stderr : no_comments,
+        decoder_debug_consumer, &spirv_after);
+
+    if (decoding_result == SPV_REQUESTED_TERMINATION) {
+      std::cerr << "error: Decoding interrupted by the debugger: "
+                << input_filename << std::endl;
+      return 1;
+    }
+
+    if (decoding_result != SPV_SUCCESS) {
+      std::cerr << "error: Failed to decode encoded " << input_filename
+                << " back to SPIR-V " << std::endl;
+      return 1;
+    }
+
+    assert(spirv_before.size() == spirv_after.size());
+    assert(std::mismatch(std::next(spirv_before.begin(), 5), spirv_before.end(),
+                         std::next(spirv_after.begin(), 5)) ==
+           std::make_pair(spirv_before.end(), spirv_after.end()));
   }
 
   return 0;

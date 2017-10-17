@@ -436,9 +436,26 @@ class BitReaderWord64 : public BitReaderInterface {
   bool OnlyZeroesLeft() const override;
 
   BitReaderWord64() = delete;
+
+  // Sets callback to emit bit sequences after every read.
+  void SetCallback(std::function<void(const std::string&)> callback) {
+    callback_ = callback;
+  }
+
+ protected:
+  // Sends string generated from arguments to callback_ if defined.
+  void EmitSequence(uint64_t bits, size_t num_bits) const {
+    if (callback_)
+      callback_(BitsToStream(bits, num_bits));
+  }
+
  private:
   const std::vector<uint64_t> buffer_;
   size_t pos_;
+
+  // If not null, the reader will use the callback to emit the read bit
+  // sequence as a string of '0' and '1'.
+  std::function<void(const std::string&)> callback_;
 };
 
 }  // namespace spvutils
