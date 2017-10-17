@@ -64,7 +64,6 @@ using libspirv::IdDescriptorCollection;
 using libspirv::Instruction;
 using libspirv::ValidationState_t;
 using libspirv::DiagnosticStream;
-using spvtools::ValidateInstructionAndUpdateValidationState;
 using spvutils::BitReaderWord64;
 using spvutils::BitWriterWord64;
 using spvutils::HuffmanCodec;
@@ -276,8 +275,11 @@ uint32_t GetMarkvVersion() {
   return kVersionMinor | (kVersionMajor << 16);
 }
 
-class CommentLogger {
+class MarkvLogger {
  public:
+  MarkvLogger(MarkvLogConsumer log_consumer, MarkvDebugConsumer debug_consumer)
+      : log_consumer_(log_consumer), debug_consumer_(debug_consumer) {}
+
   void AppendText(const std::string& str) {
     Append(str);
     use_delimiter_ = false;
@@ -290,6 +292,8 @@ class CommentLogger {
   }
 
   void AppendBitSequence(const std::string& str) {
+    if (debug_consumer_)
+      instruction_bits_ << str;
     if (use_delimiter_)
       Append("-");
     Append(str);
@@ -306,17 +310,36 @@ class CommentLogger {
     use_delimiter_ = false;
   }
 
-  std::string GetText() const {
-    return ss_.str();
+  bool DebugInstruction(const spv_parsed_instruction_t& inst) {
+    bool result = true;
+    if (debug_consumer_) {
+      result = debug_consumer_(
+          std::vector<uint32_t>(inst.words, inst.words + inst.num_words),
+          instruction_bits_.str(), instruction_comment_.str());
+      instruction_bits_.str(std::string());
+      instruction_comment_.str(std::string());
+    }
+    return result;
   }
 
  private:
+  MarkvLogger(const MarkvLogger&) = delete;
+  MarkvLogger(MarkvLogger&&) = delete;
+  MarkvLogger& operator=(const MarkvLogger&) = delete;
+  MarkvLogger& operator=(MarkvLogger&&) = delete;
+
   void Append(const std::string& str) {
-    ss_ << str;
-    // std::cerr << str;
+    if (log_consumer_)
+      log_consumer_(str);
+    if (debug_consumer_)
+      instruction_comment_ << str;
   }
 
-  std::stringstream ss_;
+  MarkvLogConsumer log_consumer_;
+  MarkvDebugConsumer debug_consumer_;
+
+  std::stringstream instruction_bits_;
+  std::stringstream instruction_comment_;
 
   // If true a delimiter will be appended before the next bit sequence.
   // Used to generate outputs like: 1100-0 1110-1-1100-1-1111-0 110-0.
@@ -547,6 +570,9 @@ class MarkvCodecBase {
   std::map<uint64_t, std::unique_ptr<HuffmanCodec<uint32_t>>>
       mtf_huffman_codecs_;
 
+  // If not nullptr, codec will log comments on the compression process.
+  std::unique_ptr<MarkvLogger> logger_;
+
  private:
   spv_const_context context_ = nullptr;
 
@@ -572,7 +598,7 @@ class MarkvEncoder : public MarkvCodecBase {
   // |model| is owned by the caller, must be not null and valid during the
   // lifetime of MarkvEncoder.
   MarkvEncoder(spv_const_context context,
-               const MarkvEncoderOptions& options,
+               const MarkvCodecOptions& options,
                const MarkvModel* model)
       : MarkvCodecBase(context, GetValidatorOptions(options), model),
         options_(options) {
@@ -588,6 +614,15 @@ class MarkvEncoder : public MarkvCodecBase {
     header_.spirv_version = version;
     header_.spirv_generator = generator;
     return SPV_SUCCESS;
+  }
+
+  // Creates an internal logger which writes comments on the encoding process.
+  void CreateLogger(MarkvLogConsumer log_consumer,
+                    MarkvDebugConsumer debug_consumer) {
+    logger_.reset(new MarkvLogger(log_consumer, debug_consumer));
+    writer_.SetCallback([this](const std::string& str){
+      logger_->AppendBitSequence(str);
+    });
   }
 
   // Encodes SPIR-V instruction to MARK-V and writes to bit stream.
@@ -615,15 +650,6 @@ class MarkvEncoder : public MarkvCodecBase {
     return markv;
   }
 
-  // Creates an internal logger which writes comments on the encoding process.
-  // Output can later be accessed with GetComments().
-  void CreateCommentsLogger() {
-    logger_.reset(new CommentLogger());
-    writer_.SetCallback([this](const std::string& str){
-      logger_->AppendBitSequence(str);
-    });
-  }
-
   // Optionally adds disassembly to the comments.
   // Disassembly should contain all instructions in the module separated by
   // \n, and no header.
@@ -640,17 +666,10 @@ class MarkvEncoder : public MarkvCodecBase {
     }
   }
 
-  // Extracts the text from the comment logger.
-  std::string GetComments() const {
-    if (!logger_)
-      return "";
-    return logger_->GetText();
-  }
-
  private:
   // Creates and returns validator options. Returned value owned by the caller.
   static spv_validator_options GetValidatorOptions(
-      const MarkvEncoderOptions& options) {
+      const MarkvCodecOptions& options) {
     return options.validate_spirv_binary ?
         spvValidatorOptionsCreate() : nullptr;
   }
@@ -692,13 +711,10 @@ class MarkvEncoder : public MarkvCodecBase {
   // Encodes a literal number operand and writes it to the bit stream.
   spv_result_t EncodeLiteralNumber(const spv_parsed_operand_t& operand);
 
-  MarkvEncoderOptions options_;
+  MarkvCodecOptions options_;
 
   // Bit stream where encoded instructions are written.
   BitWriterWord64 writer_;
-
-  // If not nullptr, encoder will write comments.
-  std::unique_ptr<CommentLogger> logger_;
 
   // If not nullptr, disassembled instruction lines will be written to comments.
   // Format: \n separated instruction lines, no header.
@@ -712,7 +728,7 @@ class MarkvDecoder : public MarkvCodecBase {
   // lifetime of MarkvEncoder.
   MarkvDecoder(spv_const_context context,
                const std::vector<uint8_t>& markv,
-               const MarkvDecoderOptions& options,
+               const MarkvCodecOptions& options,
                const MarkvModel* model)
       : MarkvCodecBase(context, GetValidatorOptions(options), model),
         options_(options), reader_(markv) {
@@ -720,6 +736,12 @@ class MarkvDecoder : public MarkvCodecBase {
     SetIdBound(1);
     parsed_operands_.reserve(25);
     inst_words_.reserve(25);
+  }
+
+  // Creates an internal logger which writes comments on the decoding process.
+  void CreateLogger(MarkvLogConsumer log_consumer,
+                    MarkvDebugConsumer debug_consumer) {
+    logger_.reset(new MarkvLogger(log_consumer, debug_consumer));
   }
 
   // Decodes SPIR-V from MARK-V and stores the words in |spirv_binary|.
@@ -736,7 +758,7 @@ class MarkvDecoder : public MarkvCodecBase {
 
   // Creates and returns validator options. Returned value owned by the caller.
   static spv_validator_options GetValidatorOptions(
-      const MarkvDecoderOptions& options) {
+      const MarkvCodecOptions& options) {
     return options.validate_spirv_binary ?
         spvValidatorOptionsCreate() : nullptr;
   }
@@ -822,7 +844,7 @@ class MarkvDecoder : public MarkvCodecBase {
   // kind SPV_NUMBER_NONE.
   void RecordNumberType();
 
-  MarkvDecoderOptions options_;
+  MarkvCodecOptions options_;
 
   // Temporary sink where decoded SPIR-V words are written. Once it contains the
   // entire module, the container is moved and returned.
@@ -2260,6 +2282,8 @@ spv_result_t MarkvEncoder::EncodeInstruction(
   if (logger_) {
     logger_->NewLine();
     logger_->NewLine();
+    if (!logger_->DebugInstruction(inst_))
+      return SPV_REQUESTED_TERMINATION;
   }
 
   ProcessCurInstruction();
@@ -2309,6 +2333,12 @@ spv_result_t MarkvDecoder::DecodeModule(std::vector<uint32_t>* spirv_binary) {
   spirv_[0] = kSpirvMagicNumber;
   spirv_[1] = header_.spirv_version;
   spirv_[2] = header_.spirv_generator;
+
+  if (logger_) {
+    reader_.SetCallback([this](const std::string& str){
+      logger_->AppendBitSequence(str);
+    });
+  }
 
   while (reader_.GetNumReadBits() < header_.markv_length_in_bits) {
     inst_ = {};
@@ -2777,6 +2807,19 @@ spv_result_t MarkvDecoder::DecodeInstruction() {
     return Diag(SPV_ERROR_INVALID_BINARY)
         << "Failed to read to byte break";
 
+  if (logger_) {
+    logger_->NewLine();
+    std::stringstream ss;
+    ss << spvOpcodeString(opcode) << " ";
+    for (size_t index = 1; index < inst_words_.size(); ++index)
+      ss << inst_words_[index] << " ";
+    logger_->AppendText(ss.str());
+    logger_->NewLine();
+    logger_->NewLine();
+    if (!logger_->DebugInstruction(inst_))
+      return SPV_REQUESTED_TERMINATION;
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -2839,11 +2882,12 @@ spv_result_t EncodeInstruction(
 
 spv_result_t SpirvToMarkv(spv_const_context context,
                           const std::vector<uint32_t>& spirv,
-                          const MarkvEncoderOptions& options,
+                          const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,
                           MessageConsumer message_consumer,
-                          std::vector<uint8_t>* markv,
-                          std::string* comments) {
+                          MarkvLogConsumer log_consumer,
+                          MarkvDebugConsumer debug_consumer,
+                          std::vector<uint8_t>* markv) {
   spv_context_t hijack_context = *context;
   SetContextMessageConsumer(&hijack_context, message_consumer);
 
@@ -2866,8 +2910,8 @@ spv_result_t SpirvToMarkv(spv_const_context context,
 
   MarkvEncoder encoder(&hijack_context, options, &markv_model);
 
-  if (comments) {
-    encoder.CreateCommentsLogger();
+  if (log_consumer || debug_consumer) {
+    encoder.CreateLogger(log_consumer, debug_consumer);
 
     spv_text text = nullptr;
     if (spvBinaryToText(&hijack_context, spirv.data(), spirv.size(),
@@ -2890,25 +2934,26 @@ spv_result_t SpirvToMarkv(spv_const_context context,
         << "Unable to encode to MARK-V.";
   }
 
-  if (comments)
-    *comments = encoder.GetComments();
-
   *markv = encoder.GetMarkvBinary();
   return SPV_SUCCESS;
 }
 
 spv_result_t MarkvToSpirv(spv_const_context context,
                           const std::vector<uint8_t>& markv,
-                          const MarkvDecoderOptions& options,
+                          const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,
                           MessageConsumer message_consumer,
-                          std::vector<uint32_t>* spirv,
-                          std::string* /* comments */) {
+                          MarkvLogConsumer log_consumer,
+                          MarkvDebugConsumer debug_consumer,
+                          std::vector<uint32_t>* spirv) {
   spv_position_t position = {};
   spv_context_t hijack_context = *context;
   SetContextMessageConsumer(&hijack_context, message_consumer);
 
   MarkvDecoder decoder(&hijack_context, markv, options, &markv_model);
+
+  if (log_consumer || debug_consumer)
+    decoder.CreateLogger(log_consumer, debug_consumer);
 
   if (decoder.DecodeModule(spirv) != SPV_SUCCESS) {
     return DiagnosticStream(position, hijack_context.consumer,

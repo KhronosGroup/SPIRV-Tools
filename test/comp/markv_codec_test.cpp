@@ -89,8 +89,7 @@ void TestEncodeDecode(const std::string& original_text) {
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
   std::unique_ptr<spvtools::MarkvModel> model =
       spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
-  spvtools::MarkvEncoderOptions encoder_options;
-  spvtools::MarkvDecoderOptions decoder_options;
+  spvtools::MarkvCodecOptions options;
 
   std::vector<uint32_t> expected_binary;
   Compile(original_text, &expected_binary);
@@ -105,26 +104,33 @@ void TestEncodeDecode(const std::string& original_text) {
           SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_FALSE(binary_to_encode.empty());
 
+  std::stringstream encoder_comments;
+  const auto output_to_string_stream =
+      [&encoder_comments](const std::string& str) {
+    encoder_comments << str;
+  };
+
   std::vector<uint8_t> markv;
-  std::string encoder_comments;
   ASSERT_EQ(SPV_SUCCESS, spvtools::SpirvToMarkv(
-      ctx.context, binary_to_encode, encoder_options, *model,
-      DiagnosticsMessageHandler, &markv, &encoder_comments));
+      ctx.context, binary_to_encode, options, *model,
+      DiagnosticsMessageHandler, output_to_string_stream,
+      spvtools::MarkvDebugConsumer(), &markv));
   ASSERT_FALSE(markv.empty());
 
   std::vector<uint32_t> decoded_binary;
   ASSERT_EQ(SPV_SUCCESS, spvtools::MarkvToSpirv(
-      ctx.context, markv, decoder_options, *model,
-      DiagnosticsMessageHandler, &decoded_binary, nullptr));
+      ctx.context, markv, options, *model,
+      DiagnosticsMessageHandler, spvtools::MarkvLogConsumer(),
+      spvtools::MarkvDebugConsumer(), &decoded_binary));
   ASSERT_FALSE(decoded_binary.empty());
 
-  EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments;
+  EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments.str();
 
   std::string decoded_text;
   Disassemble(decoded_binary, &decoded_text);
   ASSERT_FALSE(decoded_text.empty());
 
-  EXPECT_EQ(expected_text, decoded_text) << encoder_comments;
+  EXPECT_EQ(expected_text, decoded_text) << encoder_comments.str();
 }
 
 void TestEncodeDecodeShaderMainBody(const std::string& body) {

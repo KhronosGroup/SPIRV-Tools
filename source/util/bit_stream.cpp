@@ -414,6 +414,7 @@ size_t BitReaderWord64::ReadBits(uint64_t* bits, size_t num_bits) {
 
   if (pos_ >= buffer_.size() * 64) {
     // Reached end of buffer_.
+    EmitSequence(*bits, num_read_from_first_word);
     return num_read_from_first_word;
   }
 
@@ -426,6 +427,7 @@ size_t BitReaderWord64::ReadBits(uint64_t* bits, size_t num_bits) {
 
   // We likely have written more bits than requested. Clear excessive bits.
   *bits = GetLowerBits(*bits, num_bits);
+  EmitSequence(*bits, num_bits);
   return num_bits;
 }
 

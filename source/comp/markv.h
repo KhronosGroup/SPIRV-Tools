@@ -29,35 +29,51 @@
 
 namespace spvtools {
 
-struct MarkvEncoderOptions {
+struct MarkvCodecOptions {
   bool validate_spirv_binary = false;
 };
 
-struct MarkvDecoderOptions {
-  bool validate_spirv_binary = false;
-};
+// Debug callback. Called once per instruction.
+// |words| is instruction SPIR-V words.
+// |bits| is a textual representation of the MARK-V bit sequence used to encode
+// the instruction (char '0' for 0, char '1' for 1).
+// |comment| contains all logs generated while processing the instruction.
+using MarkvDebugConsumer = std::function<bool(
+    const std::vector<uint32_t>& words, const std::string& bits,
+    const std::string& comment)>;
+
+// Logging callback. Called often (if decoder reads a single bit, the log
+// consumer will receive 1 character string with that bit).
+// This callback is more suitable for continous output than MarkvDebugConsumer,
+// for example if the codec crashes it would allow to pinpoint on which operand
+// or bit the crash happened.
+// |snippet| could be any atomic fragment of text logged by the codec. It can
+// contain a paragraph of text with newlines, or can be just one character.
+using MarkvLogConsumer = std::function<void(const std::string& snippet)>;
 
 // Encodes the given SPIR-V binary to MARK-V binary.
-// If |comments| is not nullptr, it would contain a textual description of
-// how encoding was done (with snippets of disassembly and bit sequences).
+// |log_consumer| is optional (pass MarkvLogConsumer() to disable).
+// |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
 spv_result_t SpirvToMarkv(spv_const_context context,
                           const std::vector<uint32_t>& spirv,
-                          const MarkvEncoderOptions& options,
+                          const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,
                           MessageConsumer message_consumer,
-                          std::vector<uint8_t>* markv,
-                          std::string* comments);
+                          MarkvLogConsumer log_consumer,
+                          MarkvDebugConsumer debug_consumer,
+                          std::vector<uint8_t>* markv);
 
 // Decodes a SPIR-V binary from the given MARK-V binary.
-// If |comments| is not nullptr, it would contain a textual description of
-// how decoding was done (with snippets of disassembly and bit sequences).
+// |log_consumer| is optional (pass MarkvLogConsumer() to disable).
+// |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
 spv_result_t MarkvToSpirv(spv_const_context context,
                           const std::vector<uint8_t>& markv,
-                          const MarkvDecoderOptions& options,
+                          const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,
                           MessageConsumer message_consumer,
-                          std::vector<uint32_t>* spirv,
-                          std::string* comments);
+                          MarkvLogConsumer log_consumer,
+                          MarkvDebugConsumer debug_consumer,
+                          std::vector<uint32_t>* spirv);
 
 }  // namespace spvtools
 
