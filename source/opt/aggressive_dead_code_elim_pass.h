@@ -54,6 +54,22 @@ class AggressiveDCEPass : public MemPass {
   // privates_like_local_)
   bool IsLocalVar(uint32_t varId);
 
+  // Return true if |op| is branch instruction
+  bool IsBranch(SpvOp op) {
+    return op == SpvOpBranch || op == SpvOpBranchConditional;
+  }
+
+  // Return true if |inst| is marked live
+  bool IsLive(ir::Instruction* inst) {
+    return live_insts_.find(inst) != live_insts_.end();
+  }
+
+  // Add |inst| to worklist_ and live_insts_.
+  void AddToWorklist(ir::Instruction* inst) {
+    worklist_.push(inst);
+    live_insts_.insert(inst);
+  }
+
   // Add all store instruction which use |ptrId|, directly or indirectly,
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
@@ -84,6 +100,22 @@ class AggressiveDCEPass : public MemPass {
   // If |varId| is local, mark all stores of varId as live.
   void ProcessLoad(uint32_t varId);
 
+  // If |bp| is structured if header block, return true and set |branchInst|
+  // to the conditional branch and |mergeBlockId| to the merge block.
+  bool IsStructuredIfHeader(ir::BasicBlock* bp,
+    ir::Instruction** mergeInst, ir::Instruction** branchInst,
+    uint32_t* mergeBlockId);
+
+  // Initialize block2branch_ and block2merge_ using |structuredOrder| to
+  // order blocks.
+  void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
+
+  // Initialize inst2block_ for |func|.
+  void ComputeInst2BlockMap(ir::Function* func);
+
+  // Add branch to |labelId| to end of block |bp|.
+  void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true
@@ -113,6 +145,25 @@ class AggressiveDCEPass : public MemPass {
   // removed from this list as the algorithm traces side effects,
   // building up the live instructions set |live_insts_|.
   std::queue<ir::Instruction*> worklist_;
+
+  // Map from block to the branch instruction in the header of the most
+  // immediate controlling structured if.
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
+
+  // Map from block to the merge instruction in the header of the most
+  // immediate controlling structured if.
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerMerge_;
+
+  // Map from instruction containing block
+  std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;
+
+  // Map from block's label id to block.
+  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
+
+  // Map from block to its structured successor blocks. See 
+  // ComputeStructuredSuccessors() for definition.
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+      block2structured_succs_;
 
   // Store instructions to variables of private storage
   std::vector<ir::Instruction*> private_stores_;

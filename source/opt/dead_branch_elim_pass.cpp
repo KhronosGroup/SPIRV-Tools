@@ -105,13 +105,6 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
   bp->AddInstruction(std::move(newBranchCond));
 }
 
-void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
-  bp->ForEachInst([this](ir::Instruction* ip) {
-    KillNamesAndDecorates(ip);
-    get_def_use_mgr()->KillInst(ip);
-  });
-}
-
 bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
     uint32_t *condId) {
@@ -182,7 +175,7 @@ void DeadBranchElimPass::ComputeBackEdges(
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   // Traverse blocks in structured order
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &structuredOrder);
+  ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   ComputeBackEdges(structuredOrder);
   std::unordered_set<ir::BasicBlock*> elimBlocks;
   bool modified = false;

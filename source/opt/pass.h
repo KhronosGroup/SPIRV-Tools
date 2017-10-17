@@ -133,18 +133,19 @@ class Pass {
 
   // Compute structured successors for function |func|. A block's structured
   // successors are the blocks it branches to together with its declared merge
-  // block if it has one. When order matters, the merge block always appears
-  // first. This assures correct depth first search in the presence of early
-  // returns and kills. If the successor vector contain duplicates if the merge
-  // block, they are safely ignored by DFS. TODO(dnovillo): This belongs in a
-  // CFG class.
+  // block and continue block if it has them. When order matters, the merge
+  // block and continue block always appear first. This assures correct depth
+  // first search in the presence of early returns and kills. If the successor
+  // vector contain duplicates of the merge or continue blocks, they are safely
+  // ignored by DFS. TODO(dnovillo): This belongs in a CFG class.
   void ComputeStructuredSuccessors(ir::Function* func);
 
-  // Compute structured block order for |func| into |structuredOrder|. This
-  // order has the property that dominators come before all blocks they
-  // dominate and merge blocks come after all blocks that are in the control
-  // constructs of their header. TODO(dnovillo): This belongs in a CFG class.
-  void ComputeStructuredOrder(ir::Function* func,
+  // Compute structured block order into |structuredOrder| for |func| starting
+  // at |root|. This order has the property that dominators come before all
+  // blocks they dominate and merge blocks come after all blocks that are in
+  // the control constructs of their header. TODO(dnovillo): This belongs in
+  // a CFG class.
+  void ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                               std::list<ir::BasicBlock*>* order);
 
   // Return type id for |ptrInst|'s pointee
