@@ -82,6 +82,9 @@ class MemPass : public Pass {
   // Kill all name and decorate ops using |id|
   void KillNamesAndDecorates(uint32_t id);
 
+  // Kill all instructions in block |bp|.
+  void KillAllInsts(ir::BasicBlock* bp);
+
   // Collect all named or decorated ids in module
   void FindNamedOrDecoratedIds();
 

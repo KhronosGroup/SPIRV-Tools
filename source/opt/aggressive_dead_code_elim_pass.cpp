@@ -16,8 +16,11 @@
 
 #include "aggressive_dead_code_elim_pass.h"
 
+#include "cfa.h"
 #include "iterator.h"
 #include "spirv/1.0/GLSL.std.450.h"
+
+#include <stack>
 
 namespace spvtools {
 namespace opt {
@@ -28,6 +31,9 @@ const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kExtInstSetIdInIndx = 0;
 const uint32_t kExtInstInstructionInIndx = 1;
 const uint32_t kEntryPointFunctionIdInIdx = 1;
+const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
+const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 }  // namespace anonymous
 
@@ -67,8 +73,8 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       // If default, assume it stores eg frexp, modf, function call
       case SpvOpStore:
       default: {
-        if (live_insts_.find(u.inst) == live_insts_.end())
-          worklist_.push(u.inst);
+        if (!IsLive(u.inst))
+          AddToWorklist(u.inst);
       } break;
     }
   }
@@ -123,7 +129,132 @@ void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
   live_local_vars_.insert(varId);
 }
 
+uint32_t AggressiveDCEPass::MergeBlockIdIfAny(
+    const ir::BasicBlock& blk, uint32_t* cbid) const {
+  auto merge_ii = blk.cend();
+  --merge_ii;
+  uint32_t mbid = 0;
+  *cbid = 0;
+  if (merge_ii != blk.cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
+      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
+      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+    }
+    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
+      mbid = merge_ii->GetSingleWordInOperand(
+          kSelectionMergeMergeBlockIdInIdx);
+    }
+  }
+  return mbid;
+}
+
+void AggressiveDCEPass::ComputeStructuredSuccessors(ir::Function* func) {
+  // If header, make merge block first successor. If a loop header, make
+  // the second successor the continue target.
+  for (auto& blk : *func) {
+    uint32_t cbid;
+    uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
+    if (mbid != 0) {
+      block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      if (cbid != 0)
+        block2structured_succs_[&blk].push_back(id2block_[cbid]);
+    }
+    // add true successors
+    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
+      block2structured_succs_[&blk].push_back(id2block_[sbid]);
+    });
+  }
+}
+
+void AggressiveDCEPass::ComputeStructuredOrder(
+    ir::Function* func, std::list<ir::BasicBlock*>* order) {
+  // Compute structured successors and do DFS
+  ComputeStructuredSuccessors(func);
+  auto ignore_block = [](cbb_ptr) {};
+  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+  auto get_structured_successors = [this](const ir::BasicBlock* block) {
+      return &(block2structured_succs_[block]); };
+  // TODO(greg-lunarg): Get rid of const_cast by making moving const
+  // out of the cfa.h prototypes and into the invoking code.
+  auto post_order = [&](cbb_ptr b) {
+      order->push_front(const_cast<ir::BasicBlock*>(b)); };
+
+  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
+      &*func->begin(), get_structured_successors, ignore_block, post_order,
+      ignore_edge);
+}
+
+bool AggressiveDCEPass::IsStructuredIfHeader(ir::BasicBlock* bp,
+      ir::Instruction** mergeInst, ir::Instruction** branchInst,
+      uint32_t* mergeBlockId) {
+  auto ii = bp->end();
+  --ii;
+  if (ii->opcode() != SpvOpBranchConditional)
+    return false;
+  if (ii == bp->begin())
+    return false;
+  *branchInst = &*ii;
+  --ii;
+  if (ii->opcode() != SpvOpSelectionMerge)
+    return false;
+  *mergeInst = &*ii;
+  *mergeBlockId = ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+  return true;
+}
+
+void AggressiveDCEPass::ComputeBlock2BranchMaps(
+      std::list<ir::BasicBlock*>& structuredOrder) {
+  block2merge_.clear();
+  block2branch_.clear();
+  std::stack<ir::Instruction*> currentMergeInst;
+  std::stack<ir::Instruction*> currentBranchInst;
+  std::stack<uint32_t> currentMergeBlockId;
+  currentMergeInst.push(nullptr);
+  currentBranchInst.push(nullptr);
+  currentMergeBlockId.push(0);
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    if ((*bi)->id() == currentMergeBlockId.top()) {
+      currentMergeBlockId.pop();
+      currentMergeInst.pop();
+      currentBranchInst.pop();
+    }
+    block2merge_[*bi] = currentMergeInst.top();
+    block2branch_[*bi] = currentBranchInst.top();
+    ir::Instruction* mergeInst;
+    ir::Instruction* branchInst;
+    uint32_t mergeBlockId;
+    if (IsStructuredIfHeader(*bi, &mergeInst, &branchInst, &mergeBlockId)) {
+      currentMergeBlockId.push(mergeBlockId);
+      currentMergeInst.push(mergeInst);
+      currentBranchInst.push(branchInst);
+    }
+  }
+}
+
+void AggressiveDCEPass::ComputeInst2BlockMap(ir::Function* func) {
+  for (auto& blk : *func) {
+    blk.ForEachInst([&blk,this](ir::Instruction* ip) {
+      inst2block_[ip] = &blk;
+    });
+  }
+}
+
+void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
+  std::unique_ptr<ir::Instruction> newBranch(
+    new ir::Instruction(SpvOpBranch, 0, 0,
+        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
+  def_use_mgr_->AnalyzeInstDefUse(&*newBranch);
+  bp->AddInstruction(std::move(newBranch));
+}
+
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
+  // Compute map from instruction to block
+  ComputeInst2BlockMap(func);
+  // Compute map from block to controlling conditional branch
+  std::list<ir::BasicBlock*> structuredOrder;
+  ComputeStructuredOrder(func, &structuredOrder);
+  ComputeBlock2BranchMaps(structuredOrder);
   bool modified = false;
   // Add all control flow and instructions with external side effects 
   // to worklist
@@ -131,32 +262,60 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   call_in_func_ = false;
   func_is_entry_point_ = false;
   private_stores_.clear();
-  for (auto& blk : *func) {
-    for (auto& inst : blk) {
-      uint32_t op = inst.opcode();
+  std::stack<bool> skip_control_flow;
+  std::stack<uint32_t> currentMergeBlockId;
+  skip_control_flow.push(false);
+  currentMergeBlockId.push(false);
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    if ((*bi)->id() == currentMergeBlockId.top()) {
+      skip_control_flow.pop();
+      currentMergeBlockId.pop();
+    }
+    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
+      SpvOp op = ii->opcode();
       switch (op) {
         case SpvOpStore: {
           uint32_t varId;
-          (void) GetPtr(&inst, &varId);
+          (void) GetPtr(&*ii, &varId);
           // Mark stores as live if their variable is not function scope
           // and is not private scope. Remember private stores for possible
           // later inclusion
           if (IsVarOfStorage(varId, SpvStorageClassPrivate))
-            private_stores_.push_back(&inst);
+            private_stores_.push_back(&*ii);
           else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
-            worklist_.push(&inst);
+            AddToWorklist(&*ii);
         } break;
         case SpvOpExtInst: {
           // eg. GLSL frexp, modf
-          if (!IsCombinatorExt(&inst))
-            worklist_.push(&inst);
+          if (!IsCombinatorExt(&*ii))
+            AddToWorklist(&*ii);
+        } break;
+        case SpvOpLoopMerge: {
+          skip_control_flow.push(false);
+          currentMergeBlockId.push(
+              ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
+          AddToWorklist(&*ii);
+        } break;
+        case SpvOpSelectionMerge: {
+          auto bri = ii;
+          ++bri;
+          bool is_structured_if = bri->opcode() == SpvOpBranchConditional;
+          skip_control_flow.push(is_structured_if);
+          currentMergeBlockId.push(
+              ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
+          if (!is_structured_if)
+            AddToWorklist(&*ii);
+        } break;
+        case SpvOpBranch:
+        case SpvOpBranchConditional: {
+          if (!skip_control_flow.top())
+            AddToWorklist(&*ii);
         } break;
         default: {
-          // eg. control flow, function call, atomics, function param,
-          // function return
+          // Function calls, atomics, function params, function returns, etc.
           // TODO(greg-lunarg): function calls live only if write to non-local
           if (!IsCombinator(op))
-            worklist_.push(&inst);
+            AddToWorklist(&*ii);
           // Remember function calls
           if (op == SpvOpFunctionCall)
             call_in_func_ = true;
@@ -178,24 +337,31 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // If privates are not like local, add their stores to worklist
   if (!private_like_local_)
     for (auto& ps : private_stores_)
-      worklist_.push(ps);
+      AddToWorklist(ps);
   // Add OpGroupDecorates to worklist because they are a pain to remove
   // ids from.
   // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate
   for (auto& ai : module_->annotations()) {
     if (ai.opcode() == SpvOpGroupDecorate)
-      worklist_.push(&ai);
+      AddToWorklist(&ai);
   }
   // Perform closure on live instruction set. 
   while (!worklist_.empty()) {
     ir::Instruction* liveInst = worklist_.front();
-    live_insts_.insert(liveInst);
     // Add all operand instructions if not already live
     liveInst->ForEachInId([this](const uint32_t* iid) {
       ir::Instruction* inInst = def_use_mgr_->GetDef(*iid);
-      if (live_insts_.find(inInst) == live_insts_.end())
-        worklist_.push(inInst);
+      if (!IsLive(inInst))
+        AddToWorklist(inInst);
     });
+    // If in a structured if construct, add the controlling conditional branch
+    // and its merge
+    ir::BasicBlock* blk = inst2block_[liveInst];
+    ir::Instruction* branchInst = block2branch_[blk];
+    if (branchInst != nullptr && !IsLive(branchInst)) {
+      AddToWorklist(branchInst);
+      AddToWorklist(block2merge_[blk]);
+    }
     // If local load, add all variable's stores if variable not already live
     if (liveInst->opcode() == SpvOpLoad) {
       uint32_t varId;
@@ -218,12 +384,20 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
     worklist_.pop();
   }
-  // Mark all non-live instructions dead
-  for (auto& blk : *func) {
-    for (auto& inst : blk) {
-      if (live_insts_.find(&inst) != live_insts_.end())
+  // Mark all non-live instructions dead, except non-if branches
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
+      if (IsLive(&*ii))
         continue;
-      dead_insts_.insert(&inst);
+      if (IsBranch(ii->opcode())) {
+        if (ii == (*bi)->begin())
+          continue;
+        auto mi = ii;
+        --mi;
+        if (mi->opcode() != SpvOpSelectionMerge)
+          continue;
+      }
+      dead_insts_.insert(&*ii);
     }
   }
   // Remove debug and annotation statements referencing dead instructions.
@@ -241,15 +415,41 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     if (KillInstIfTargetDead(&ai))
       modified = true;
   }
-  // Kill dead instructions
-  for (auto& blk : *func) {
-    for (auto& inst : blk) {
-      if (dead_insts_.find(&inst) == dead_insts_.end())
+  // Kill dead instructions and remember dead blocks
+  std::unordered_set<ir::BasicBlock*> dead_blocks;
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
+    uint32_t mergeBlockId = 0;
+    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
+      if (dead_insts_.find(&*ii) == dead_insts_.end())
         continue;
-      def_use_mgr_->KillInst(&inst);
+      // If dead instruction is selection merge, remember merge block
+      // for new branch at end of block
+      if (ii->opcode() == SpvOpSelectionMerge)
+        mergeBlockId = 
+            ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+      def_use_mgr_->KillInst(&*ii);
       modified = true;
     }
+    // If a structured if was deleted, add a branch to its merge block,
+    // and traverse to the merge block killing all instructions on the way
+    // and remembering dead blocks for later deletion from function.
+    if (mergeBlockId != 0) {
+      AddBranch(mergeBlockId, *bi);
+      for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
+        KillAllInsts(*bi);
+        dead_blocks.insert(*bi);
+      }
+    }
+    else {
+      ++bi;
+    }
   }
+  // Erase dead blocks from function
+  for (auto ebi = func->begin(); ebi != func->end(); )
+  if (dead_blocks.find(&*ebi) != dead_blocks.end())
+    ebi = ebi.Erase();
+  else
+    ++ebi;
   return modified;
 }
 
@@ -263,6 +463,13 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
   dead_insts_.clear();
   combinator_ops_shader_.clear();
   combinator_ops_glsl_std_450_.clear();
+  block2structured_succs_.clear();
+
+  // Initialize block map
+  id2block_.clear();
+  for (auto& fn : *module_)
+    for (auto& blk : fn)
+      id2block_[blk.id()] = &blk;
 
   // TODO(greg-lunarg): Reuse def/use from previous passes
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));

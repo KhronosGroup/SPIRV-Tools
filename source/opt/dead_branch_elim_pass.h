@@ -88,9 +88,6 @@ class DeadBranchElimPass : public MemPass {
   void AddBranchConditional(uint32_t condId, uint32_t trueLabId,
       uint32_t falseLabId, ir::BasicBlock* bp);
 
-  // Kill all instructions in block |bp|.
-  void KillAllInsts(ir::BasicBlock* bp);
-
   // If block |bp| contains conditional branch or switch preceeded by an
   // OpSelctionMerge, return true and return branch and merge instructions
   // in |branchInst| and |mergeInst| and the conditional id in |condId|. 

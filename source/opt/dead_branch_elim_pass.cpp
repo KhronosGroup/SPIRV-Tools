@@ -163,13 +163,6 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
   bp->AddInstruction(std::move(newBranchCond));
 }
 
-void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
-  bp->ForEachInst([this](ir::Instruction* ip) {
-    KillNamesAndDecorates(ip);
-    def_use_mgr_->KillInst(ip);
-  });
-}
-
 bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
     ir::Instruction** branchInst, ir::Instruction** mergeInst,
     uint32_t *condId) {

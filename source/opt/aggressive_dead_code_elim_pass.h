@@ -54,6 +54,22 @@ class AggressiveDCEPass : public MemPass {
   // privates_like_local_)
   bool IsLocalVar(uint32_t varId);
 
+  // Return true if |op| is branch instruction
+  bool IsBranch(SpvOp op) {
+    return op == SpvOpBranch || op == SpvOpBranchConditional;
+  }
+
+  // Return true if |inst| is marked live
+  bool IsLive(ir::Instruction* inst) {
+    return live_insts_.find(inst) != live_insts_.end();
+  }
+
+  // Add |inst| to worklist_ and live_insts_.
+  void AddToWorklist(ir::Instruction* inst) {
+    worklist_.push(inst);
+    live_insts_.insert(inst);
+  }
+
   // Add all store instruction which use |ptrId|, directly or indirectly,
   // to the live instruction worklist.
   void AddStores(uint32_t ptrId);
@@ -84,6 +100,44 @@ class AggressiveDCEPass : public MemPass {
   // If |varId| is local, mark all stores of varId as live.
   void ProcessLoad(uint32_t varId);
 
+  // Returns the id of the merge block declared by a merge instruction in 
+  // this block |blk|, if any. If none, returns zero. If loop merge, returns
+  // the continue target id in |cbid|. Otherwise sets to zero.
+  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) const;
+
+  // Compute structured successors for function |func|.
+  // A block's structured successors are the blocks it branches to
+  // together with its declared merge block if it has one.
+  // When order matters, the merge block always appears first and if
+  // a loop merge block, the continue target always appears second.
+  // This assures correct depth first search in the presence of early 
+  // returns and kills. If the successor vector contain duplicates
+  // of the merge and continue blocks, they are safely ignored by DFS.
+  void ComputeStructuredSuccessors(ir::Function* func);
+
+  // Compute structured block order |order| for function |func|. This order
+  // has the property that dominators are before all blocks they dominate and
+  // merge blocks are after all blocks that are in the control constructs of
+  // their header.
+  void ComputeStructuredOrder(
+      ir::Function* func, std::list<ir::BasicBlock*>* order);
+
+  // If |bp| is structured if header block, return true and set |branchInst|
+  // to the conditional branch and |mergeBlockId| to the merge block.
+  bool IsStructuredIfHeader(ir::BasicBlock* bp,
+    ir::Instruction** mergeInst, ir::Instruction** branchInst,
+    uint32_t* mergeBlockId);
+
+  // Initialize block2branch_ and block2merge_ using |structuredOrder| to
+  // order blocks.
+  void ComputeBlock2BranchMaps(std::list<ir::BasicBlock*>& structuredOrder);
+
+  // Initialize inst2block_ for |func|.
+  void ComputeInst2BlockMap(ir::Function* func);
+
+  // Add branch to |labelId| to end of block |bp|.
+  void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true
@@ -113,6 +167,24 @@ class AggressiveDCEPass : public MemPass {
   // removed from this list as the algorithm traces side effects,
   // building up the live instructions set |live_insts_|.
   std::queue<ir::Instruction*> worklist_;
+
+  // Map from block to most immediate controlling structured conditional
+  // branch.
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2branch_;
+
+  // Map from block to most immediate controlling conditional merge.
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2merge_;
+
+  // Map from instruction containing block
+  std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;
+
+  // Map from block's label id to block.
+  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
+
+  // Map from block to its structured successor blocks. See 
+  // ComputeStructuredSuccessors() for definition.
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+      block2structured_succs_;
 
   // Store instructions to variables of private storage
   std::vector<ir::Instruction*> private_stores_;

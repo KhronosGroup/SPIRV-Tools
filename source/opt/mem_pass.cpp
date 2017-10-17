@@ -197,6 +197,13 @@ void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
   KillNamesAndDecorates(rId);
 }
 
+void MemPass::KillAllInsts(ir::BasicBlock* bp) {
+  bp->ForEachInst([this](ir::Instruction* ip) {
+    KillNamesAndDecorates(ip);
+    def_use_mgr_->KillInst(ip);
+  });
+}
+
 bool MemPass::HasLoads(uint32_t varId) const {
   analysis::UseList* uses = def_use_mgr_->GetUses(varId);
   if (uses == nullptr)
