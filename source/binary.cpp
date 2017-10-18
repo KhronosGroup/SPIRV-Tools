@@ -111,6 +111,11 @@ class Parser {
   spv_result_t setNumericTypeInfoForType(spv_parsed_operand_t* parsed_operand,
                                          uint32_t type_id);
 
+  // For literal numbers that aren not multiple of 32 bits (i.e. 16b, 8b),
+  // verifies that the upper bits of the word are all 0 or sign-extended
+  spv_result_t verifyLiteralUpperBits(
+    const spv_parsed_operand_t& parsed_operand, uint32_t word);
+
   // Records the number type for an instruction at the given offset, if that
   // instruction generates a type.  For types that aren't scalar numbers,
   // record something with number kind SPV_NUMBER_NONE.
@@ -505,7 +510,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       break;
 
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
-    case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_OPTIONAL_TYPED_LITERAL_INTEGER: {
       parsed_operand.type = SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER;
       if (opcode == SpvOpSwitch) {
         // The literal operands have the same type as the value
@@ -541,7 +546,9 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                 setNumericTypeInfoForType(&parsed_operand, inst->type_id))
           return error;
       }
-      break;
+      if (auto error = verifyLiteralUpperBits(parsed_operand,word))
+        return error;
+    } break;
 
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
@@ -729,6 +736,41 @@ spv_result_t Parser::setNumericTypeInfoForType(
   parsed_operand->number_bit_width = info.bit_width;
   // Round up the word count.
   parsed_operand->num_words = static_cast<uint16_t>((info.bit_width + 31) / 32);
+  return SPV_SUCCESS;
+}
+
+spv_result_t Parser::verifyLiteralUpperBits(
+    const spv_parsed_operand_t& parsed_operand, uint32_t word) {
+  // Verify the upper bits of literal numbers not multiple of 32 bits
+  auto verify = [&](uint32_t mask, std::vector<uint32_t> valid_patterns)
+      -> spv_result_t {
+    uint32_t upper = word & mask;
+    for (uint32_t valid : valid_patterns)
+        if (upper == valid)
+          return SPV_SUCCESS;
+    return diagnostic() << "Upper bits of literal number are invalid";
+  };
+
+  switch (parsed_operand.number_kind) {
+    case SPV_NUMBER_SIGNED_INT:
+      switch (parsed_operand.number_bit_width) {
+        case 8:  return verify(0xFFFFFF00,{0x00000000,0xFFFFFF00});
+        case 16: return verify(0xFFFF0000,{0x00000000,0xFFFF0000});
+        default: return SPV_SUCCESS;
+      }
+    case SPV_NUMBER_UNSIGNED_INT:
+      switch (parsed_operand.number_bit_width) {
+        case 8:  return verify(0xFFFFFF00,{0x00000000});
+        case 16: return verify(0xFFFF0000,{0x00000000});
+        default: return SPV_SUCCESS;
+      }
+    case SPV_NUMBER_FLOATING:
+      switch (parsed_operand.number_bit_width) {
+        case 16: return verify(0xFFFF0000,{0x00000000});
+        default: return SPV_SUCCESS;
+      }
+    default: assert(0 && "unreachable");
+  }
   return SPV_SUCCESS;
 }
 
