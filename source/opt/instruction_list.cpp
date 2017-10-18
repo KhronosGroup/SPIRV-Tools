@@ -36,7 +36,7 @@ InstructionList::iterator InstructionList::iterator::InsertBefore(
 }
 
 InstructionList::iterator InstructionList::iterator::InsertBefore(
-    std::unique_ptr<Instruction> i) {
+    std::unique_ptr<Instruction>&& i) {
   i.get()->InsertBefore(node_);
   return iterator(i.release());
 }

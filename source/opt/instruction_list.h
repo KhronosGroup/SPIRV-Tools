@@ -36,7 +36,7 @@ namespace ir {
 // list, the caller is assuming responsibility for deleting the storage.
 //
 // TODO: Because there are a number of other data structures that will want
-// pointers to instruction, owndership should probably be moved to the module.
+// pointers to instruction, ownership should probably be moved to the module.
 // Because of that I have not made the ownership passing in this class fully
 // explicit.  For example, RemoveFromList takes ownership from the list, but does
 // not return an std::unique_ptr to signal that.  When we fully decide on
@@ -73,7 +73,7 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
     // The node |i| will be inserted immediately before |this|. The return value
     // will be an iterator pointing to the newly inserted node.  The owner of
     // |*i| becomes |*this|
-    iterator InsertBefore(std::unique_ptr<Instruction> i);
+    iterator InsertBefore(std::unique_ptr<Instruction>&& i);
   };
 
   iterator begin() { return utils::IntrusiveList<Instruction>::begin(); }
