@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -29,17 +30,13 @@ using ::testing::ContainerEq;
 using ::testing::ElementsAre;
 using InstructionListTest = ::testing::Test;
 
+// A class that overrides the destructor, so we can trace it.
 class TestInstruction : public Instruction {
  public:
-  TestInstruction() : Instruction() {
-    created_instructions_.push_back(this);
-    static int counter = 0;
-    data = ++counter;
-  }
+  TestInstruction() : Instruction() { created_instructions_.push_back(this); }
 
   ~TestInstruction() { deleted_instructions_.push_back(this); }
 
-  int data;
   static std::vector<TestInstruction*> created_instructions_;
   static std::vector<TestInstruction*> deleted_instructions_;
 };
@@ -55,6 +52,12 @@ TEST(InstructionListTest, Destructor) {
   list->push_back(new Instruction());
   delete list;
 
+  // Sorting because we do not care if the order of create and destruction is
+  // the same.  Using generic sort just incase things are changed above.
+  std::sort(TestInstruction::created_instructions_.begin(),
+            TestInstruction::created_instructions_.end());
+  std::sort(TestInstruction::deleted_instructions_.begin(),
+            TestInstruction::deleted_instructions_.end());
   EXPECT_THAT(TestInstruction::created_instructions_,
               ContainerEq(TestInstruction::deleted_instructions_));
 }
@@ -62,25 +65,31 @@ TEST(InstructionListTest, Destructor) {
 // Test the |InsertBefore| with a single instruction in the iterator class.
 // Need to make sure the elements are inserted in the correct order, and the
 // return value points to the correct location.
+//
+// Comparing addresses to make sure they remain stable, so other data structures
+// can have pointers to instructions in InstructionList.
 TEST(InstructionListTest, InsertBefore1) {
   InstructionList list;
-  std::vector<Instruction*> created_instructions;
+  std::vector<Instruction*> inserted_instructions;
   for (int i = 0; i < 4; i++) {
     std::unique_ptr<Instruction> inst(new Instruction());
-    created_instructions.push_back(inst.get());
+    inserted_instructions.push_back(inst.get());
     auto new_element = list.end().InsertBefore(std::move(inst));
-    EXPECT_THAT(&*new_element, created_instructions.back());
+    EXPECT_EQ(&*new_element, inserted_instructions.back());
   }
 
   std::vector<Instruction*> output;
   for (auto& i : list) {
     output.push_back(&i);
   }
-  EXPECT_THAT(output, ContainerEq(created_instructions));
+  EXPECT_THAT(output, ContainerEq(inserted_instructions));
 }
 
 // Test inserting an entire vector of instructions using InsertBefore.  Checking
 // the order of insertion and the return value.
+//
+// Comparing addresses to make sure they remain stable, so other data structures
+// can have pointers to instructions in InstructionList.
 TEST(InstructionListTest, InsertBefore2) {
   InstructionList list;
   std::vector<std::unique_ptr<Instruction>> new_instructions;

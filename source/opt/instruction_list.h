@@ -38,8 +38,8 @@ namespace ir {
 // TODO: Because there are a number of other data structures that will want
 // pointers to instruction, ownership should probably be moved to the module.
 // Because of that I have not made the ownership passing in this class fully
-// explicit.  For example, RemoveFromList takes ownership from the list, but does
-// not return an std::unique_ptr to signal that.  When we fully decide on
+// explicit.  For example, RemoveFromList takes ownership from the list, but
+// does not return an std::unique_ptr to signal that.  When we fully decide on
 // ownership, this will have to be fixed up one way or the other.
 class InstructionList : public utils::IntrusiveList<Instruction> {
  public:

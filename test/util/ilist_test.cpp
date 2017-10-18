@@ -28,7 +28,7 @@ using IListTest = ::testing::Test;
 class TestNode : public IntrusiveNodeBase<TestNode> {
  public:
   TestNode() : IntrusiveNodeBase<TestNode>() {}
-  int data;
+  int data_;
 };
 
 class TestList : public IntrusiveList<TestNode> {
@@ -44,17 +44,17 @@ class TestList : public IntrusiveList<TestNode> {
 
 // This test checks the push_back method, as well as using an iterator to
 // traverse the list from begin() to end().  This implicitly test the
-// PreviousNode and NextNode fucntions.
+// PreviousNode and NextNode functions.
 TEST(IListTest, PushBack) {
   TestNode nodes[10];
   TestList list;
   for (int i = 0; i < 10; i++) {
-    nodes[i].data = i;
+    nodes[i].data_ = i;
     list.push_back(&nodes[i]);
   }
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
@@ -64,7 +64,7 @@ TEST(IListTest, PushBack) {
 TestList BuildList(TestNode nodes[], int n) {
   TestList list;
   for (int i = 0; i < n; i++) {
-    nodes[i].data = i;
+    nodes[i].data_ = i;
     list.push_back(&nodes[i]);
   }
   return list;
@@ -81,7 +81,7 @@ TEST(IListTest, DecrementingBegin) {
 TEST(IListTest, IncrementingEnd1) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  EXPECT_EQ((++list.end())->data, 0);
+  EXPECT_EQ((++list.end())->data_, 0);
 }
 
 // Test incrementing end() should equal begin()
@@ -95,7 +95,7 @@ TEST(IListTest, IncrementingEnd2) {
 TEST(IListTest, DecrementingEnd) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
-  EXPECT_EQ((--list.end())->data, 9);
+  EXPECT_EQ((--list.end())->data_, 9);
 }
 
 // Test the move constructor for the list class.
@@ -103,7 +103,7 @@ TEST(IListTest, MoveConstructor) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 10);
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
@@ -113,7 +113,7 @@ TEST(IListTest, ConstIterator) {
   TestNode nodes[10];
   const TestList list = BuildList(nodes, 10);
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
@@ -124,7 +124,7 @@ TEST(IListTest, MoveAssignment) {
   TestList list;
   list = BuildList(nodes, 10);
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
@@ -135,11 +135,11 @@ TEST(IListTest, InsertAfter1) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 5);
 
-  nodes[5].data = 5;
+  nodes[5].data_ = 5;
   nodes[5].InsertAfter(&nodes[4]);
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }
@@ -150,11 +150,11 @@ TEST(IListTest, InsertAfter2) {
   TestNode nodes[10];
   TestList list = BuildList(nodes, 5);
 
-  nodes[5].data = 5;
+  nodes[5].data_ = 5;
   nodes[5].InsertAfter(&nodes[2]);
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 5, 3, 4));
 }
@@ -168,7 +168,7 @@ TEST(IListTest, MoveUsingInsertAfter1) {
   nodes[5].InsertAfter(&nodes[2]);
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 5, 3, 4));
 }
@@ -181,7 +181,7 @@ TEST(IListTest, MoveUsingInsertAfter2) {
   nodes[0].InsertAfter(&nodes[2]);
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(1, 2, 0, 3, 4, 5));
 }
@@ -194,7 +194,7 @@ TEST(IListTest, MoveUsingInsertAfter3) {
   nodes[2].InsertAfter(&nodes[5]);
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 3, 4, 5, 2));
 }
@@ -207,7 +207,7 @@ TEST(IListTest, Remove1) {
   nodes[2].RemoveFromList();
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 3, 4, 5));
 }
@@ -220,7 +220,7 @@ TEST(IListTest, Remove2) {
   nodes[0].RemoveFromList();
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(1, 2, 3, 4, 5));
 }
@@ -233,7 +233,7 @@ TEST(IListTest, Remove3) {
   nodes[5].RemoveFromList();
 
   std::vector<int> output;
-  for (auto& i : list) output.push_back(i.data);
+  for (auto& i : list) output.push_back(i.data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4));
 }
@@ -246,7 +246,7 @@ TEST(IListTest, IteratorEqual) {
   std::vector<int> output;
   for (auto i = list.begin(); i != list.end(); ++i)
     for (auto j = list.begin(); j != list.end(); ++j)
-      if (i == j) output.push_back(i->data);
+      if (i == j) output.push_back(i->data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }
@@ -262,7 +262,8 @@ TEST(IListTest, MoveBefore1) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+  for (auto i = list1.begin(); i != list1.end(); ++i)
+    output.push_back(i->data_);
 
   EXPECT_THAT(output, ElementsAre(0, 0, 1, 2, 1, 2, 3, 4, 5));
 }
@@ -277,7 +278,8 @@ TEST(IListTest, MoveBefore2) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+  for (auto i = list1.begin(); i != list1.end(); ++i)
+    output.push_back(i->data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 0, 1, 2, 3, 4, 5));
 }
@@ -292,7 +294,8 @@ TEST(IListTest, MoveBefore3) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+  for (auto i = list1.begin(); i != list1.end(); ++i)
+    output.push_back(i->data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5, 0, 1, 2));
 }
@@ -307,7 +310,8 @@ TEST(IListTest, MoveBefore4) {
   insertion_point.MoveBefore(&list2);
 
   std::vector<int> output;
-  for (auto i = list1.begin(); i != list1.end(); ++i) output.push_back(i->data);
+  for (auto i = list1.begin(); i != list1.end(); ++i)
+    output.push_back(i->data_);
 
   EXPECT_THAT(output, ElementsAre(0, 1, 2, 3, 4, 5));
 }

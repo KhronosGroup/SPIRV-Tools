@@ -81,6 +81,9 @@ class IntrusiveNodeBase {
   // then it will cause all of the nodes to be move from one list to another.
   void ReplaceWith(NodeType* target);
 
+  // Returns true if |this| is the sentinel node of an empty list.
+  bool IsEmptyList();
+
   // The pointers to the next and previous nodes in the list.
   // If the current node is not part of a list, then |next_node_| and
   // |previous_node_| are equal to |nullptr|.
@@ -196,33 +199,50 @@ inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
 
 template<class NodeType>
 void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
-  if (is_sentinel_) {
-    assert(target->next_node_ == target);
-    assert(this->is_sentinel_);
+  if (this->is_sentinel_) {
+    target->IsEmptyList();
   } else {
-    assert(IsInAList() && "Sentinel nodes must always be part of a list.");
-    assert(!this->is_sentinel_ &&
+    assert(IsInAList() && "The node being replaced must be in a list.");
+    assert(!target->is_sentinel_ &&
         "Cannot turn a sentinel node into one that is not.");
   }
 
-  if (this->next_node_ != this) {
+  if (!this->IsEmptyList()) {
+    // Link target into the same position that |this| was in.
     target->next_node_ = this->next_node_;
     target->previous_node_ = this->previous_node_;
+    target->next_node_->previous_node_ = target;
+    target->previous_node_->next_node_ = target;
 
-    target->next_node_->previous_node_ = static_cast<NodeType*>(target);
-    target->previous_node_->next_node_ = static_cast<NodeType*>(target);
-
+    // Reset |this| to itself default value.
     if (!this->is_sentinel_) {
+      // Reset |this| so that it is not in a list.
       this->next_node_ = nullptr;
       this->previous_node_ = nullptr;
     } else {
+      // Reset |this| so that it is the head of an empty list.
+      // We cannot treat sentinel nodes like others because it is invalid for
+      // a sentinel node to not be in a list.
       this->next_node_ = static_cast<NodeType*>(this);
       this->previous_node_ = static_cast<NodeType*>(this);
     }
   } else {
-    target->next_node_ = static_cast<NodeType*>(target);
-    target->previous_node_ = static_cast<NodeType*>(target);
+    // If |this| points to itself, it must be a sentinel node with an empty
+    // list.  Reset |this| so that it is the head of an empty list.  We want
+    // |target| to be the same.  The asserts above guarantee that.
   }
+}
+
+template<class NodeType>
+bool IntrusiveNodeBase<NodeType>::IsEmptyList() {
+  if (next_node_ == this) {
+    assert(is_sentinel_
+               && "None sentinel nodes should never point to themselves.");
+    assert(previous_node_ == this
+               && "Inconsistency with the previous and next nodes.");
+    return true;
+  }
+  return false;
 }
 
 }  // namespace utils
