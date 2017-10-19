@@ -111,7 +111,7 @@ class Parser {
   spv_result_t setNumericTypeInfoForType(spv_parsed_operand_t* parsed_operand,
                                          uint32_t type_id);
 
-  // For literal numbers that aren not multiple of 32 bits (i.e. 16b, 8b),
+  // For literal numbers that are not multiple of 32 bits (i.e. 16b, 8b),
   // verifies that the upper bits of the word are all 0 or sign-extended
   spv_result_t verifyLiteralUpperBits(
     const spv_parsed_operand_t& parsed_operand, uint32_t word);
@@ -741,13 +741,15 @@ spv_result_t Parser::setNumericTypeInfoForType(
 
 spv_result_t Parser::verifyLiteralUpperBits(
     const spv_parsed_operand_t& parsed_operand, uint32_t word) {
-  // Verify the upper bits of literal numbers not multiple of 32 bits
+  // Verify that the upper bits are either set to 0, or sign-extended
   auto verify = [&](uint32_t mask, std::vector<uint32_t> valid_patterns)
       -> spv_result_t {
     uint32_t upper = word & mask;
-    for (uint32_t valid : valid_patterns)
-        if (upper == valid)
-          return SPV_SUCCESS;
+    for (uint32_t valid : valid_patterns) {
+      if (upper == valid) {
+        return SPV_SUCCESS;
+      }
+    }
     return diagnostic() << "Upper bits of literal number are invalid";
   };
 
