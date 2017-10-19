@@ -128,6 +128,10 @@ spv_result_t BitwisePass(ValidationState_t& _,
 spv_result_t CapabilityPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
+// Validates correctness of branch instructions.
+spv_result_t BranchPass(ValidationState_t& _,
+                        const spv_parsed_instruction_t* inst);
+
 }  // namespace libspirv
 
 /// @brief Validate the ID usage of the instruction stream
