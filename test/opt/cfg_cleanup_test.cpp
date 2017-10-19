@@ -233,4 +233,216 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::CFGCleanupPass>(before, after, true, true);
 }
+
+TEST_F(CFGCleanupTest, RemoveNamedLabels) {
+  const std::string before = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %dead "dead"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %main = OpFunction %void None %5
+          %6 = OpLabel
+               OpReturn
+       %dead = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+    const std::string after = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 430
+OpName %main "main"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%main = OpFunction %void None %5
+%6 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::CFGCleanupPass>(before, after, true, true);
+}
+
+TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
+    const std::string before = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %y %outparm
+               OpName %main "main"
+               OpName %y "y"
+               OpName %outparm "outparm"
+               OpDecorate %y Flat
+               OpDecorate %y Location 0
+               OpDecorate %outparm Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Input_int = OpTypePointer Input %int
+          %y = OpVariable %_ptr_Input_int Input
+     %int_42 = OpConstant %int 42
+%_ptr_Output_int = OpTypePointer Output %int
+    %outparm = OpVariable %_ptr_Output_int Output
+     %int_14 = OpConstant %int 14
+     %int_15 = OpConstant %int 15
+      %int_5 = OpConstant %int 5
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpBranch %40
+         %41 = OpLabel
+         %11 = OpLoad %int %y
+               OpBranch %40
+         %40 = OpLabel
+         %12 = OpLoad %int %y
+               OpSelectionMerge %16 None
+               OpSwitch %12 %16 10 %13 13 %14 18 %15
+         %13 = OpLabel
+               OpBranch %16
+         %14 = OpLabel
+               OpStore %outparm %int_14
+               OpBranch %16
+         %15 = OpLabel
+               OpStore %outparm %int_15
+               OpBranch %16
+         %16 = OpLabel
+         %30 = OpPhi %int %11 %41 %int_42 %13 %11 %14 %11 %15
+         %28 = OpIAdd %int %30 %int_5
+               OpStore %outparm %28
+               OpReturn
+               OpFunctionEnd)";
+
+    const std::string after = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %y %outparm
+OpName %main "main"
+OpName %y "y"
+OpName %outparm "outparm"
+OpDecorate %y Flat
+OpDecorate %y Location 0
+OpDecorate %outparm Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Input_int = OpTypePointer Input %int
+%y = OpVariable %_ptr_Input_int Input
+%int_42 = OpConstant %int 42
+%_ptr_Output_int = OpTypePointer Output %int
+%outparm = OpVariable %_ptr_Output_int Output
+%int_14 = OpConstant %int 14
+%int_15 = OpConstant %int 15
+%int_5 = OpConstant %int 5
+%26 = OpUndef %int
+%main = OpFunction %void None %6
+%15 = OpLabel
+OpBranch %16
+%16 = OpLabel
+%19 = OpLoad %int %y
+OpSelectionMerge %20 None
+OpSwitch %19 %20 10 %21 13 %22 18 %23
+%21 = OpLabel
+OpBranch %20
+%22 = OpLabel
+OpStore %outparm %int_14
+OpBranch %20
+%23 = OpLabel
+OpStore %outparm %int_15
+OpBranch %20
+%20 = OpLabel
+%24 = OpPhi %int %int_42 %21 %26 %22 %26 %23
+%25 = OpIAdd %int %24 %int_5
+OpStore %outparm %25
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::CFGCleanupPass>(before, after, true, true);
+}
+
+TEST_F(CFGCleanupTest, RemovePhiConstantArgs) {
+    const std::string before = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %y %outparm
+               OpName %main "main"
+               OpName %y "y"
+               OpName %outparm "outparm"
+               OpDecorate %y Flat
+               OpDecorate %y Location 0
+               OpDecorate %outparm Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+          %y = OpVariable %_ptr_Input_int Input
+     %int_10 = OpConstant %int 10
+       %bool = OpTypeBool
+%_ptr_Function_int = OpTypePointer Function %int
+     %int_23 = OpConstant %int 23
+      %int_5 = OpConstant %int 5
+%_ptr_Output_int = OpTypePointer Output %int
+    %outparm = OpVariable %_ptr_Output_int Output
+         %24 = OpUndef %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpBranch %14
+         %40 = OpLabel
+          %9 = OpLoad %int %y
+         %12 = OpSGreaterThan %bool %9 %int_10
+               OpSelectionMerge %14 None
+               OpBranchConditional %12 %13 %14
+         %13 = OpLabel
+               OpBranch %14
+         %14 = OpLabel
+         %25 = OpPhi %int %24 %5 %int_23 %13
+         %20 = OpIAdd %int %25 %int_5
+               OpStore %outparm %20
+               OpReturn
+               OpFunctionEnd)";
+
+    const std::string after = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %y %outparm
+OpName %main "main"
+OpName %y "y"
+OpName %outparm "outparm"
+OpDecorate %y Flat
+OpDecorate %y Location 0
+OpDecorate %outparm Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%y = OpVariable %_ptr_Input_int Input
+%int_10 = OpConstant %int 10
+%bool = OpTypeBool
+%_ptr_Function_int = OpTypePointer Function %int
+%int_23 = OpConstant %int 23
+%int_5 = OpConstant %int 5
+%_ptr_Output_int = OpTypePointer Output %int
+%outparm = OpVariable %_ptr_Output_int Output
+%15 = OpUndef %int
+%main = OpFunction %void None %6
+%16 = OpLabel
+OpBranch %17
+%17 = OpLabel
+%22 = OpPhi %int %15 %16
+%23 = OpIAdd %int %22 %int_5
+OpStore %outparm %23
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::CFGCleanupPass>(before, after, true, true);
+}
 }  // anonymous namespace

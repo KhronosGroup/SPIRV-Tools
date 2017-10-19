@@ -24,15 +24,14 @@ add_library(SPIRV-Tools-opt
   decoration_manager.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
-  eliminate_dead_functions_pass.h
   flatten_decoration_pass.h
+  function.h
   fold.h
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
-  function.h
+  inline_pass.h
   inline_exhaustive_pass.h
   inline_opaque_pass.h
-  inline_pass.h
   insert_extract_elim.h
   instruction.h
   ir_loader.h
@@ -41,19 +40,20 @@ add_library(SPIRV-Tools-opt
   local_single_store_elim_pass.h
   local_ssa_elim_pass.h
   log.h
-  mem_pass.h
   module.h
   null_pass.h
-  passes.h
-  pass.h
-  pass_manager.h
   reflect.h
+  mem_pass.h
+  pass.h
+  passes.h
+  pass_manager.h
+  eliminate_dead_functions_pass.h
   remove_duplicates_pass.h
   set_spec_constant_default_value_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
-  type_manager.h
   types.h
+  type_manager.h
   unify_const_pass.h
 
   aggressive_dead_code_elim_pass.cpp
@@ -63,19 +63,18 @@ add_library(SPIRV-Tools-opt
   cfg_cleanup_pass.cpp
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
-  dead_branch_elim_pass.cpp
   decoration_manager.cpp
   def_use_manager.cpp
+  dead_branch_elim_pass.cpp
   eliminate_dead_constant_pass.cpp
-  eliminate_dead_functions_pass.cpp
   flatten_decoration_pass.cpp
   fold.cpp
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
+  inline_pass.cpp
   inline_exhaustive_pass.cpp
   inline_opaque_pass.cpp
-  inline_pass.cpp
   insert_extract_elim.cpp
   instruction.cpp
   ir_loader.cpp
@@ -83,17 +82,18 @@ add_library(SPIRV-Tools-opt
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
   local_ssa_elim_pass.cpp
-  mem_pass.cpp
   module.cpp
-  optimizer.cpp
-  pass.cpp
-  pass_manager.cpp
+  eliminate_dead_functions_pass.cpp
   remove_duplicates_pass.cpp
   set_spec_constant_default_value_pass.cpp
+  optimizer.cpp
+  mem_pass.cpp
+  pass.cpp
+  pass_manager.cpp
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
-  type_manager.cpp
   types.cpp
+  type_manager.cpp
   unify_const_pass.cpp
 )
 
