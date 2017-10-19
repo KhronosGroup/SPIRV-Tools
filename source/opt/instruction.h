@@ -117,7 +117,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   virtual ~Instruction() = default;
 
-  // Return a newly allocated instruction that has the same operands, result,
+  // Returns a newly allocated instruction that has the same operands, result,
   // and type as |this|.  The new instruction is not linked into any list.
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only

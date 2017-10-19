@@ -35,8 +35,8 @@ class IntrusiveNodeBase {
   inline IntrusiveNodeBase& operator=(const IntrusiveNodeBase&);
   inline IntrusiveNodeBase(IntrusiveNodeBase&& that);
 
-  // Will destroy a node.  It is an error to destroy a node that is part of a
-  // list, unless it is an sentinel.
+  // Destroys a node.  It is an error to destroy a node that is part of a
+  // list, unless it is a sentinel.
   virtual ~IntrusiveNodeBase();
 
   IntrusiveNodeBase& operator=(IntrusiveNodeBase&& that);
@@ -76,7 +76,7 @@ class IntrusiveNodeBase {
   inline void RemoveFromList();
 
  protected:
-  // This function will replace |this| with |target|.  No nodes that are not
+  // Replaces |this| with |target|.  No nodes that are not
   // sentinels, |target| takes the place of |this|.  If the nodes are sentinels,
   // then it will cause all of the nodes to be move from one list to another.
   void ReplaceWith(NodeType* target);

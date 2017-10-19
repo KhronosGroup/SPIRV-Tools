@@ -100,7 +100,7 @@ class IntrusiveList {
       return !(lhs == rhs);
     }
 
-    // The nodes in |list| will be moved to the list that |this| points to.  The
+    // Moves the nodes in |list| to the list that |this| points to.  The
     // positions of the nodes will be immediately before the element pointed to
     // by the iterator.  The return value will be an iterator pointing to the
     // first of the newly inserted elements.
@@ -157,7 +157,7 @@ class IntrusiveList {
   // will be removed from that list first.
   void push_back(NodeType* node);
 
-  // Return true if the list is empty.
+  // Returns true if the list is empty.
   bool empty() const;
 
   // Returns references to the first or last element in the list.  It is an

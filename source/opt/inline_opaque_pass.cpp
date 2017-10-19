@@ -85,7 +85,7 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // Insert new function variables.
-        if (newVars.size() > 0) func->begin()->begin().InsertBefore(&newVars);
+        if (newVars.size() > 0) func->begin()->begin().InsertBefore(std::move(newVars));
         // Restart inlining at beginning of calling block.
         ii = bi->begin();
         modified = true;

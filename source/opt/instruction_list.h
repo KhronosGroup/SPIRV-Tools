@@ -63,12 +63,12 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
 
     // DEPRECATED: Please use MoveBefore with an InstructionList instead.
     //
-    // The nodes in |list| will be moved to the list that |this| points to.  The
+    // Moves the nodes in |list| to the list that |this| points to.  The
     // positions of the nodes will be immediately before the element pointed to
     // by the iterator.  The return value will be an iterator pointing to the
     // first of the newly inserted elements.  Ownership of the elements in
     // |list| is now passed on to |*this|.
-    iterator InsertBefore(std::vector<std::unique_ptr<Instruction>>* list);
+    iterator InsertBefore(std::vector<std::unique_ptr<Instruction>>&& list);
 
     // The node |i| will be inserted immediately before |this|. The return value
     // will be an iterator pointing to the newly inserted node.  The owner of

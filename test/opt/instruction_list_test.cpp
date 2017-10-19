@@ -99,7 +99,7 @@ TEST(InstructionListTest, InsertBefore2) {
     created_instructions.push_back(inst.get());
     new_instructions.push_back(std::move(inst));
   }
-  auto new_element = list.begin().InsertBefore(&new_instructions);
+  auto new_element = list.begin().InsertBefore(std::move(new_instructions));
   EXPECT_TRUE(new_instructions.empty());
   EXPECT_EQ(&*new_element, created_instructions.front());
 

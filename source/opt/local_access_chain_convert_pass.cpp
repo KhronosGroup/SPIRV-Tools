@@ -227,7 +227,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
             GenAccessChainLoadReplacement(ptrInst, &newInsts);
         ReplaceAndDeleteLoad(&*ii, replId);
         ++ii;
-        ii = ii.InsertBefore(&newInsts);
+        ii = ii.InsertBefore(std::move(newInsts));
         ++ii;
         modified = true;
       } break;
@@ -244,7 +244,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
         def_use_mgr_->KillInst(&*ii);
         DeleteIfUseless(ptrInst);
         ++ii;
-        ii = ii.InsertBefore(&newInsts);
+        ii = ii.InsertBefore(std::move(newInsts));
         ++ii;
         ++ii;
         modified = true;

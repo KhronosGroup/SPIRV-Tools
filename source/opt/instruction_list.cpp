@@ -26,12 +26,12 @@ InstructionList::~InstructionList() {
 }
 
 InstructionList::iterator InstructionList::iterator::InsertBefore(
-    std::vector<std::unique_ptr<Instruction>>* list) {
-  Instruction* first_node = list->front().get();
-  for (auto& i : *list) {
+    std::vector<std::unique_ptr<Instruction>>&& list) {
+  Instruction* first_node = list.front().get();
+  for (auto& i : list) {
     i.release()->InsertBefore(node_);
   }
-  list->clear();
+  list.clear();
   return iterator(first_node);
 }
 
@@ -40,6 +40,5 @@ InstructionList::iterator InstructionList::iterator::InsertBefore(
   i.get()->InsertBefore(node_);
   return iterator(i.release());
 }
-
 }  // namespace ir
 }  // namespace spvtools
