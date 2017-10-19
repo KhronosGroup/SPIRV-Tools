@@ -196,6 +196,10 @@ Options:
                'spirv-opt --merge-blocks -O ...' applies the transformation
                --merge-blocks followed by all the transformations implied by
                -O.
+  --cfg-cleanup
+               Cleanup the control flow graph. This will remove any unnecessary
+               code from the CFG like unreachable code. Performed on entry
+               point call tree functions and exported functions.
   -h, --help
                Print this help.
   --version
@@ -375,6 +379,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         if (status.action != OPT_CONTINUE) {
           return status;
         }
+      } else if (0 == strcmp(cur_arg, "--cfg-cleanup")) {
+        optimizer->RegisterPass(CreateCFGCleanupPass());
       } else if ('\0' == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!*in_file) {
