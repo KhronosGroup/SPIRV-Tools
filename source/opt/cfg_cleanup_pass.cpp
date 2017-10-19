@@ -92,6 +92,7 @@ void CFGCleanupPass::RemovePhiOperands(
     std::unordered_set<ir::BasicBlock*> reachable_blocks) {
   std::vector<ir::Operand> keep_operands;
   uint32_t type_id = 0;
+  // The id of an undefined value we've generated.
   uint32_t undef_id = 0;
 
   // Traverse all the operands in |phi|. Build the new operand vector by adding
@@ -126,10 +127,9 @@ void CFGCleanupPass::RemovePhiOperands(
       // If the current |phi| argument was defined in an unreachable block, it
       // means that this |phi| argument is no longer defined. Replace it with
       // |undef_id|.
-      if (!undef_created) {
+      if (!undef_id) {
         type_id = def_use_mgr_->GetDef(arg_id)->type_id();
         undef_id = TypeToUndef(type_id);
-        undef_created = true;
       }
       keep_operands.push_back(
           ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {undef_id}));
@@ -214,11 +214,11 @@ bool CFGCleanupPass::RemoveUnreachableBlocks(ir::Function* func) {
 
     // If the block is reachable and has Phi instructions, remove all
     // operands from its Phi instructions that reference unreachable blocks.
-    if (block.HasPhiInstructions()) {
-      block.ForEachPhiInst(
-          [&block, &reachable_blocks, this](ir::Instruction* phi) {
-            RemovePhiOperands(phi, reachable_blocks);
-          });
+    // If the block has no Phi instructions, this is a no-op.
+    block.ForEachPhiInst(
+        [&block, &reachable_blocks, this](ir::Instruction* phi) {
+          RemovePhiOperands(phi, reachable_blocks);
+        });
     }
   }
 
