@@ -96,6 +96,8 @@ spv_result_t ConversionPass(ValidationState_t& _,
       break;
     }
 
+#if 0
+    // TODO(atgoo@github.com) Reenable this once VulkanCTS can pass this test.
     case SpvOpUConvert: {
       if (!_.IsUnsignedIntScalarType(result_type) &&
           !_.IsUnsignedIntVectorType(result_type))
@@ -121,6 +123,7 @@ spv_result_t ConversionPass(ValidationState_t& _,
             << spvOpcodeString(opcode);
       break;
     }
+#endif
 
     case SpvOpSConvert: {
       if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type))

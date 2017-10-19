@@ -401,6 +401,8 @@ TEST_F(ValidateConversion, UConvertSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+#if 0
+// TODO(atgoo@github.com) Reenable the test once the check is reenabled.
 TEST_F(ValidateConversion, UConvertWrongResultType) {
   const std::string body = R"(
 %val = OpUConvert %s32 %s32_1
@@ -444,6 +446,7 @@ TEST_F(ValidateConversion, UConvertSameBitWidth) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected input to have different bit width from Result Type: UConvert"));
 }
+#endif
 
 TEST_F(ValidateConversion, SConvertSuccess) {
   const std::string body = R"(
