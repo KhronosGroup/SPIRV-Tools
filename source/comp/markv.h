@@ -34,8 +34,9 @@ struct MarkvCodecOptions {
 };
 
 // Debug callback. Called once per instruction.
-// |words| is instriuction SPIR-V words.
-// |bits| is a string of MARK-V bits used to encode the instruction.
+// |words| is instruction SPIR-V words.
+// |bits| is a textual representation of the MARK-V bit sequence used to encode
+// the instruction (char '0' for 0, char '1' for 1).
 // |comment| contains all logs generated while processing the instruction.
 using MarkvDebugConsumer = std::function<bool(
     const std::vector<uint32_t>& words, const std::string& bits,
@@ -46,6 +47,8 @@ using MarkvDebugConsumer = std::function<bool(
 // This callback is more suitable for continous output than MarkvDebugConsumer,
 // for example if the codec crashes it would allow to pinpoint on which operand
 // or bit the crash happened.
+// |snippet| could be any atomic fragment of text logged by the codec. It can
+// contain a paragraph of text with newlines, or can be just one character.
 using MarkvLogConsumer = std::function<void(const std::string& snippet)>;
 
 // Encodes the given SPIR-V binary to MARK-V binary.
