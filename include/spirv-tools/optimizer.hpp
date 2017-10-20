@@ -101,7 +101,7 @@ class Optimizer {
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
   // pass manager is destroyed.
-  std::vector<const char *> GetPassNames() const;
+  std::vector<const char*> GetPassNames() const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.
@@ -118,9 +118,9 @@ Optimizer::PassToken CreateNullPass();
 Optimizer::PassToken CreateStripDebugInfoPass();
 
 // Creates an eliminate-dead-functions pass.
-// An eliminate-dead-functions pass will remove all functions that are not in the
-// call trees rooted at entry points and exported functions.  These functions
-// are not needed because they will never be called.
+// An eliminate-dead-functions pass will remove all functions that are not in
+// the call trees rooted at entry points and exported functions.  These
+// functions are not needed because they will never be called.
 Optimizer::PassToken CreateEliminateDeadFunctionsPass();
 
 // Creates a set-spec-constant-default-value pass from a mapping from spec-ids
@@ -400,6 +400,11 @@ Optimizer::PassToken CreateRemoveDuplicatesPass();
 //
 // - Removal of unreachable basic blocks.
 Optimizer::PassToken CreateCFGCleanupPass();
+
+// Create dead variable elimination pass.
+// This pass will delete module scope variables, along with their decorations,
+// that are not referenced.
+Optimizer::PassToken CreateDeadVariableEliminationPass();
 
 }  // namespace spvtools
 

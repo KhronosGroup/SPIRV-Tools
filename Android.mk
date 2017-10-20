@@ -55,6 +55,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/compact_ids_pass.cpp \
 		source/opt/common_uniform_elim_pass.cpp \
 		source/opt/dead_branch_elim_pass.cpp \
+		source/opt/dead_variable_elimination.cpp \
 		source/opt/decoration_manager.cpp \
 		source/opt/def_use_manager.cpp \
 		source/opt/eliminate_dead_constant_pass.cpp \

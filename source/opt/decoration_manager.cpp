@@ -64,7 +64,8 @@ std::vector<ir::Instruction*> DecorationManager::GetDecorationsFor(
 
 std::vector<const ir::Instruction*> DecorationManager::GetDecorationsFor(
     uint32_t id, bool include_linkage) const {
-  return const_cast<DecorationManager*>(this)->InternalGetDecorationsFor<const ir::Instruction*>(id, include_linkage);
+  return const_cast<DecorationManager*>(this)
+      ->InternalGetDecorationsFor<const ir::Instruction*>(id, include_linkage);
 }
 
 // TODO(pierremoreau): The code will return true for { deco1, deco1 }, { deco1,
@@ -180,13 +181,12 @@ void DecorationManager::AnalyzeDecorations(ir::Module* module) {
 }
 
 template <typename T>
-std::vector<T> DecorationManager::InternalGetDecorationsFor(uint32_t id,
-                                                    bool include_linkage) {
+std::vector<T> DecorationManager::InternalGetDecorationsFor(
+    uint32_t id, bool include_linkage) {
   std::vector<T> decorations;
   std::stack<uint32_t> ids_to_process;
 
-  const auto process = [&ids_to_process,
-                        &decorations](T inst) {
+  const auto process = [&ids_to_process, &decorations](T inst) {
     if (inst->opcode() == SpvOpGroupDecorate ||
         inst->opcode() == SpvOpGroupMemberDecorate)
       ids_to_process.push(inst->GetSingleWordInOperand(0u));
@@ -227,6 +227,35 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(uint32_t id,
   }
 
   return decorations;
+}
+
+void DecorationManager::ForEachDecoration(uint32_t id,
+                                          uint32_t decoration,
+                                          std::function<void(const ir::Instruction&)> f) const {
+  auto decoration_list = id_to_decoration_insts_.find(id);
+  if (decoration_list != id_to_decoration_insts_.end()) {
+    for (const ir::Instruction* inst : decoration_list->second) {
+      switch (inst->opcode()) {
+        case SpvOpDecorate:
+          if (inst->GetSingleWordInOperand(1) == decoration) {
+            f(*inst);
+          }
+          break;
+        case SpvOpMemberDecorate:
+          if (inst->GetSingleWordInOperand(2) == decoration) {
+            f(*inst);
+          }
+          break;
+        case SpvOpDecorateId:
+          if (inst->GetSingleWordInOperand(1) == decoration) {
+            f(*inst);
+          }
+          break;
+        default:
+          assert(false && "Unexpected decoration instruction");
+      }
+    }
+  }
 }
 
 }  // namespace analysis

@@ -22,6 +22,7 @@
 #include "common_uniform_elim_pass.h"
 #include "compact_ids_pass.h"
 #include "dead_branch_elim_pass.h"
+#include "dead_variable_elimination.h"
 #include "eliminate_dead_constant_pass.h"
 #include "flatten_decoration_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
