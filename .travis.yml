@@ -57,28 +57,24 @@ before_script:
   - git clone --depth=1 https://github.com/google/googletest          external/googletest
 
 script:
-  - mkdir build && cd build
-  - if [[ "$BUILD_ANDROID_CMAKE" == "ON" ]]; then
+  # Due to the limitation of Travis platform, we cannot start too many concurrent jobs.
+  # Otherwise GCC will panic with internal error, possibility because of memory issues.
+  # ctest with the current tests doesn't profit from using more than 4 threads.
+  - export NPROC=4;
+  - mkdir build && cd build;
+  - if [[ "$BUILD_ANDROID_MK" == "ON" ]]; then
+      $ANDROID_NDK/ndk-build -C ../android_test NDK_PROJECT_PATH=. NDK_APP_OUT=$(pwd) -j4;
+    elif [[ "$BUILD_ANDROID_CMAKE" == "ON" ]]; then
       cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_PATH}
             -DANDROID_NATIVE_API_LEVEL=android-9
             -DCMAKE_BUILD_TYPE=Release
             -DANDROID_ABI="armeabi-v7a with NEON"
             -DSPIRV_BUILD_COMPRESSION=ON
             -DSPIRV_SKIP_TESTS=ON ..;
-    elif [[ "$BUILD_ANDROID_MK" == "ON" ]]; then
-      $ANDROID_NDK/ndk-build -C ../android_test NDK_PROJECT_PATH=. NDK_APP_OUT=$(pwd) -j4;
+      make -j${NPROC};
     else
       cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON ..;
-    fi
-  # Due to the limitation of Travis platform, we cannot start too many concurrent jobs.
-  # Otherwise GCC will panic with internal error, possibility because of memory issues.
-  - make -j4
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      export NPROC=`nproc`;
-    else
-      export NPROC=`sysctl -n hw.ncpu`;
-    fi
-  - if [[ "$BUILD_ANDROID_CMAKE" != "ON" ]] && [[ "$BUILD_ANDROID_MK" != "ON" ]]; then
+      make -j${NPROC};
       ctest -j${NPROC} --output-on-failure --timeout 300;
     fi
 
