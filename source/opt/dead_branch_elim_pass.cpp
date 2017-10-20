@@ -204,6 +204,7 @@ void DeadBranchElimPass::ComputeBackEdges(
   std::unordered_set<uint32_t> visited;
   // In structured order, edges to visited blocks are back edges
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    visited.insert((*bi)->id());
     auto ii = (*bi)->end();
     --ii;
     switch(ii->opcode()) {
@@ -228,7 +229,6 @@ void DeadBranchElimPass::ComputeBackEdges(
       default:
         break;
     }
-    visited.insert((*bi)->id());
   }
 }
 
