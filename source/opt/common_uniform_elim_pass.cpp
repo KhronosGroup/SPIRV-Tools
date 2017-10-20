@@ -306,7 +306,7 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
       GenACLoadRepl(ptrInst, &newInsts, &replId);
       ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
       ++ii;
-      ii = ii.InsertBefore(&newInsts);
+      ii = ii.InsertBefore(std::move(newInsts));
       ++ii;
       modified = true;
     }

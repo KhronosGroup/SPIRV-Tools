@@ -16,7 +16,9 @@
 #define LIBSPIRV_OPT_ILIST_H_
 
 #include <cassert>
+#include <memory>
 #include <type_traits>
+#include <vector>
 
 #include "ilist_node.h"
 
@@ -59,7 +61,7 @@ class IntrusiveList {
 
   // Destorys the list.  Note that the elements of the list will not be deleted,
   // but they will be removed from the list.
-  ~IntrusiveList();
+  virtual ~IntrusiveList();
 
   // Moves all of the elements in the list on the RHS to the list on the LHS.
   IntrusiveList& operator=(IntrusiveList&&);
@@ -98,7 +100,29 @@ class IntrusiveList {
       return !(lhs == rhs);
     }
 
-   private:
+    // Moves the nodes in |list| to the list that |this| points to.  The
+    // positions of the nodes will be immediately before the element pointed to
+    // by the iterator.  The return value will be an iterator pointing to the
+    // first of the newly inserted elements.
+    iterator_template MoveBefore(IntrusiveList* list) {
+      if (list->empty()) return *this;
+
+      NodeType* first_node = list->sentinel_.next_node_;
+      NodeType* last_node = list->sentinel_.previous_node_;
+
+      this->node_->previous_node_->next_node_ = first_node;
+      first_node->previous_node_ = this->node_->previous_node_;
+
+      last_node->next_node_ = this->node_;
+      this->node_->previous_node_ = last_node;
+
+      list->sentinel_.next_node_ = &list->sentinel_;
+      list->sentinel_.previous_node_ = &list->sentinel_;
+
+      return iterator(first_node);
+    }
+
+   protected:
     iterator_template() = delete;
     inline iterator_template(T* node) { node_ = node; }
     T* node_;
@@ -133,12 +157,26 @@ class IntrusiveList {
   // will be removed from that list first.
   void push_back(NodeType* node);
 
- private:
+  // Returns true if the list is empty.
+  bool empty() const;
+
+  // Returns references to the first or last element in the list.  It is an
+  // error to call these functions on an empty list.
+  NodeType& front();
+  NodeType& back();
+  const NodeType& front() const;
+  const NodeType& back() const;
+
+ protected:
   // Doing a deep copy of the list does not make sense if the list does not own
   // the data.  It is not clear who will own the newly created data.  Making
   // copies illegal for that reason.
   IntrusiveList(const IntrusiveList&) = delete;
   IntrusiveList& operator=(const IntrusiveList&) = delete;
+
+  // This function will assert if it finds the list containing |node| is not in
+  // a valid state.
+  static void Check(NodeType* node);
 
   // A special node used to represent both the start and end of the list,
   // without being part of the list.
@@ -155,29 +193,24 @@ inline IntrusiveList<NodeType>::IntrusiveList() : sentinel_() {
 }
 
 template <class NodeType>
-IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) {
-  this->sentinel_ = list.sentinel_;
-  this->sentinel_.next_node_->previous_node_ = &this->sentinel_;
-  this->sentinel_.previous_node_->next_node_ = &this->sentinel_;
-
-  list.sentinel_.next_node_ = &list.sentinel_;
-  list.sentinel_.previous_node_ = &list.sentinel_;
+IntrusiveList<NodeType>::IntrusiveList(IntrusiveList&& list) : sentinel_() {
+  sentinel_.next_node_ = &sentinel_;
+  sentinel_.previous_node_ = &sentinel_;
+  sentinel_.is_sentinel_ = true;
+  list.sentinel_.ReplaceWith(&sentinel_);
 }
 
 template <class NodeType>
 IntrusiveList<NodeType>::~IntrusiveList() {
-  for (auto i : *this) i.RemoveFromList();
+  while (!empty()) {
+    front().RemoveFromList();
+  }
 }
 
 template <class NodeType>
 IntrusiveList<NodeType>& IntrusiveList<NodeType>::operator=(
     IntrusiveList<NodeType>&& list) {
-  this->sentinel_ = list.sentinel_;
-  this->sentinel_.next_node_->previous_node_ = &this->sentinel_;
-  this->sentinel_.previous_node_->next_node_ = &this->sentinel_;
-
-  list.sentinel_.next_node_ = &list.sentinel_;
-  list.sentinel_.previous_node_ = &list.sentinel_;
+  list.sentinel_.ReplaceWith(&sentinel_);
   return *this;
 }
 
@@ -220,6 +253,62 @@ IntrusiveList<NodeType>::cend() const {
 template <class NodeType>
 void IntrusiveList<NodeType>::push_back(NodeType* node) {
   node->InsertBefore(&sentinel_);
+}
+
+template <class NodeType>
+bool IntrusiveList<NodeType>::empty() const {
+  return sentinel_.NextNode() == nullptr;
+}
+
+template <class NodeType>
+NodeType& IntrusiveList<NodeType>::front() {
+  NodeType* node = sentinel_.NextNode();
+  assert(node != nullptr && "Can't get the front of an empty list.");
+  return *node;
+}
+
+template <class NodeType>
+NodeType& IntrusiveList<NodeType>::back() {
+  NodeType* node = sentinel_.PreviousNode();
+  assert(node != nullptr && "Can't get the back of an empty list.");
+  return *node;
+}
+
+template <class NodeType>
+const NodeType& IntrusiveList<NodeType>::front() const {
+  NodeType* node = sentinel_.NextNode();
+  assert(node != nullptr && "Can't get the front of an empty list.");
+  return *node;
+}
+
+template <class NodeType>
+const NodeType& IntrusiveList<NodeType>::back() const {
+  NodeType* node = sentinel_.PreviousNode();
+  assert(node != nullptr && "Can't get the back of an empty list.");
+  return *node;
+}
+
+template <class NodeType>
+void IntrusiveList<NodeType>::Check(NodeType* start) {
+  int sentinel_count = 0;
+  NodeType* p = start;
+  do {
+    assert(p != nullptr);
+    assert(p->next_node_->previous_node_ == p);
+    assert(p->previous_node_->next_node_ == p);
+    if (p->is_sentinel_) sentinel_count++;
+    p = p->next_node_;
+  } while (p != start);
+  assert(sentinel_count == 1 && "List should have exactly 1 sentinel node.");
+
+  p = start;
+  do {
+    assert(p != nullptr);
+    assert(p->previous_node_->next_node_ == p);
+    assert(p->next_node_->previous_node_ == p);
+    if (p->is_sentinel_) sentinel_count++;
+    p = p->previous_node_;
+  } while (p != start);
 }
 
 }  // namespace utils

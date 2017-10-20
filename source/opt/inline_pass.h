@@ -86,7 +86,7 @@ class InlinePass : public Pass {
 
   // Map callee params to caller args
   void MapParams(ir::Function* calleeFn,
-                 ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+                 ir::BasicBlock::iterator call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
   // Clone and map callee locals
@@ -131,7 +131,7 @@ class InlinePass : public Pass {
   // call_block_itr is replaced with new_blocks.
   void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
-                     ir::UptrVectorIterator<ir::Instruction> call_inst_itr,
+                     ir::BasicBlock::iterator call_inst_itr,
                      ir::UptrVectorIterator<ir::BasicBlock> call_block_itr);
 
   // Return true if |inst| is a function call that can be inlined.

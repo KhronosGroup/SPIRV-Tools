@@ -31,6 +31,18 @@ class IntrusiveNodeBase {
  public:
   // Creates a new node that is not in a list.
   inline IntrusiveNodeBase();
+  inline IntrusiveNodeBase(const IntrusiveNodeBase&);
+  inline IntrusiveNodeBase& operator=(const IntrusiveNodeBase&);
+  inline IntrusiveNodeBase(IntrusiveNodeBase&& that);
+
+  // Destroys a node.  It is an error to destroy a node that is part of a
+  // list, unless it is a sentinel.
+  virtual ~IntrusiveNodeBase();
+
+  IntrusiveNodeBase& operator=(IntrusiveNodeBase&& that);
+
+  // Returns true if |this| is in a list.
+  inline bool IsInAList() const;
 
   // Returns the node that comes after the given node in the list, if one
   // exists.  If the given node is not in a list or is at the end of the list,
@@ -59,10 +71,27 @@ class IntrusiveNodeBase {
   inline void InsertAfter(NodeType* pos);
 
   // Removes the given node from the list.  It is assumed that the node is
-  // in a list.  Note that this does not free any storage related to the node.
+  // in a list.  Note that this does not free any storage related to the node,
+  // it becomes the caller's responsibility to free the storage.
   inline void RemoveFromList();
 
- private:
+ protected:
+  // Replaces |this| with |target|.  |this| is a sentinel if and only if
+  // |target| is also a sentinel.
+  //
+  // If neither node is a sentinel, |target| takes
+  // the place of |this|.  It is assumed that |target| is not in a list.
+  //
+  // If both are sentinels, then it will cause all of the
+  // nodes in the list containing |this| to be moved to the list containing
+  // |target|.  In this case, it is assumed that |target| is an empty list.
+  //
+  // No storage will be deleted.
+  void ReplaceWith(NodeType* target);
+
+  // Returns true if |this| is the sentinel node of an empty list.
+  bool IsEmptyList();
+
   // The pointers to the next and previous nodes in the list.
   // If the current node is not part of a list, then |next_node_| and
   // |previous_node_| are equal to |nullptr|.
@@ -81,6 +110,51 @@ template <class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase()
     : next_node_(nullptr), previous_node_(nullptr), is_sentinel_(false) {}
 
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
+    const IntrusiveNodeBase&) {
+  next_node_ = nullptr;
+  previous_node_ = nullptr;
+  is_sentinel_ = false;
+}
+
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
+    const IntrusiveNodeBase&) {
+  assert(!is_sentinel_);
+  if (IsInAList()) RemoveFromList();
+  return *this;
+}
+
+template<class NodeType>
+inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(IntrusiveNodeBase&& that)
+    : next_node_(nullptr),
+      previous_node_(nullptr),
+      is_sentinel_(that.is_sentinel_) {
+  if (is_sentinel_) {
+    next_node_ = this;
+    previous_node_ = this;
+  }
+  that.ReplaceWith(this);
+}
+
+template<class NodeType>
+IntrusiveNodeBase<NodeType>::~IntrusiveNodeBase() {
+  assert(is_sentinel_ || !IsInAList());
+}
+
+template<class NodeType>
+IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
+    IntrusiveNodeBase&& that) {
+  that.ReplaceWith(this);
+  return *this;
+}
+
+template<class NodeType>
+inline bool IntrusiveNodeBase<NodeType>::IsInAList() const {
+  return next_node_ != nullptr;
+}
+
 template <class NodeType>
 inline NodeType* IntrusiveNodeBase<NodeType>::NextNode() const {
   if (!next_node_->is_sentinel_) return next_node_;
@@ -96,8 +170,8 @@ inline NodeType* IntrusiveNodeBase<NodeType>::PreviousNode() const {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertBefore(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(pos->previous_node_ != nullptr && "Pos should already be in a list.");
-  if (this->previous_node_ != nullptr) this->RemoveFromList();
+  assert(pos->IsInAList() && "Pos should already be in a list.");
+  if (this->IsInAList()) this->RemoveFromList();
 
   this->next_node_ = pos;
   this->previous_node_ = pos->previous_node_;
@@ -108,8 +182,10 @@ inline void IntrusiveNodeBase<NodeType>::InsertBefore(NodeType* pos) {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(pos->previous_node_ != nullptr && "Pos should already be in a list.");
-  if (this->previous_node_ != nullptr) this->RemoveFromList();
+  assert(pos->IsInAList() && "Pos should already be in a list.");
+  if (this->IsInAList()) {
+    this->RemoveFromList();
+  }
 
   this->previous_node_ = pos;
   this->next_node_ = pos->next_node_;
@@ -120,13 +196,63 @@ inline void IntrusiveNodeBase<NodeType>::InsertAfter(NodeType* pos) {
 template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
-  assert(this->next_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
-  assert(this->previous_node_ != nullptr && "Cannot remove a node from a list if it is not in a list.");
+  assert(this->IsInAList() &&
+      "Cannot remove a node from a list if it is not in a list.");
 
   this->next_node_->previous_node_ = this->previous_node_;
   this->previous_node_->next_node_ = this->next_node_;
   this->next_node_ = nullptr;
   this->previous_node_ = nullptr;
+}
+
+template<class NodeType>
+void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
+  if (this->is_sentinel_) {
+    assert(target->IsEmptyList() &&
+        "If target is not an empty list, the nodes in that list would not "
+            "be linked to a sentinel.");
+  } else {
+    assert(IsInAList() && "The node being replaced must be in a list.");
+    assert(!target->is_sentinel_ &&
+        "Cannot turn a sentinel node into one that is not.");
+  }
+
+  if (!this->IsEmptyList()) {
+    // Link target into the same position that |this| was in.
+    target->next_node_ = this->next_node_;
+    target->previous_node_ = this->previous_node_;
+    target->next_node_->previous_node_ = target;
+    target->previous_node_->next_node_ = target;
+
+    // Reset |this| to itself default value.
+    if (!this->is_sentinel_) {
+      // Reset |this| so that it is not in a list.
+      this->next_node_ = nullptr;
+      this->previous_node_ = nullptr;
+    } else {
+      // Set |this| so that it is the head of an empty list.
+      // We cannot treat sentinel nodes like others because it is invalid for
+      // a sentinel node to not be in a list.
+      this->next_node_ = static_cast<NodeType*>(this);
+      this->previous_node_ = static_cast<NodeType*>(this);
+    }
+  } else {
+    // If |this| points to itself, it must be a sentinel node with an empty
+    // list.  Reset |this| so that it is the head of an empty list.  We want
+    // |target| to be the same.  The asserts above guarantee that.
+  }
+}
+
+template<class NodeType>
+bool IntrusiveNodeBase<NodeType>::IsEmptyList() {
+  if (next_node_ == this) {
+    assert(is_sentinel_ &&
+               "None sentinel nodes should never point to themselves.");
+    assert(previous_node_ == this &&
+        "Inconsistency with the previous and next nodes.");
+    return true;
+  }
+  return false;
 }
 
 }  // namespace utils

@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "instruction.h"
+#include "instruction_list.h"
 #include "iterator.h"
 
 namespace spvtools {
@@ -34,8 +35,8 @@ class Function;
 // A SPIR-V basic block.
 class BasicBlock {
  public:
-  using iterator = UptrVectorIterator<Instruction>;
-  using const_iterator = UptrVectorIterator<Instruction, true>;
+  using iterator = InstructionList::iterator;
+  using const_iterator = InstructionList::const_iterator;
 
   // Creates a basic block with the given starting |label|.
   inline explicit BasicBlock(std::unique_ptr<Instruction> label);
@@ -71,26 +72,22 @@ class BasicBlock {
   // Returns the id of the label at the top of this block
   inline uint32_t id() const { return label_->result_id(); }
 
-  iterator begin() { return iterator(&insts_, insts_.begin()); }
-  iterator end() { return iterator(&insts_, insts_.end()); }
-  const_iterator cbegin() const {
-    return const_iterator(&insts_, insts_.cbegin());
-  }
-  const_iterator cend() const {
-    return const_iterator(&insts_, insts_.cend());
-  }
+  iterator begin() { return insts_.begin(); }
+  iterator end() { return insts_.end(); }
+  const_iterator cbegin() const { return insts_.cbegin(); }
+  const_iterator cend() const { return insts_.cend(); }
 
   // Returns an iterator pointing to the last instruction.  This may only
   // be used if this block has an instruction other than the OpLabel
   // that defines it.
   iterator tail() {
     assert(!insts_.empty());
-    return iterator(&insts_, std::prev(insts_.end()));
+    return --end();
   }
   // Returns a const iterator, but othewrise similar to tail().
   const_iterator ctail() const {
     assert(!insts_.empty());
-    return const_iterator(&insts_, std::prev(insts_.cend()));
+    return --insts_.cend();
   }
 
   // Runs the given function |f| on each instruction in this basic block, and
@@ -106,12 +103,10 @@ class BasicBlock {
                              bool run_on_debug_line_insts = false);
 
   // Runs the given function |f| on each label id of each successor block
-  void ForEachSuccessorLabel(
-      const std::function<void(const uint32_t)>& f);
+  void ForEachSuccessorLabel(const std::function<void(const uint32_t)>& f);
 
   // Runs the given function |f| on the merge and continue label, if any
-  void ForMergeAndContinueLabel(
-      const std::function<void(const uint32_t)>& f);
+  void ForMergeAndContinueLabel(const std::function<void(const uint32_t)>& f);
 
   // Returns true if this basic block has any Phi instructions.
   bool HasPhiInstructions() {
@@ -129,25 +124,25 @@ class BasicBlock {
   // The label starting this basic block.
   std::unique_ptr<Instruction> label_;
   // Instructions inside this basic block, but not the OpLabel.
-  std::vector<std::unique_ptr<Instruction>> insts_;
+  InstructionList insts_;
 };
 
 inline BasicBlock::BasicBlock(std::unique_ptr<Instruction> label)
     : function_(nullptr), label_(std::move(label)) {}
 
 inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
-  insts_.emplace_back(std::move(i));
+  insts_.push_back(i.release());
 }
 
 inline void BasicBlock::AddInstructions(BasicBlock* bp) {
   auto bEnd = end();
-  (void) bEnd.InsertBefore(&bp->insts_);
+  (void) bEnd.MoveBefore(&bp->insts_);
 }
 
 inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
                                     bool run_on_debug_line_insts) {
   if (label_) label_->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& inst : insts_) inst->ForEachInst(f, run_on_debug_line_insts);
+  for (auto& inst : insts_) inst.ForEachInst(f, run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachInst(
@@ -157,15 +152,15 @@ inline void BasicBlock::ForEachInst(
     static_cast<const Instruction*>(label_.get())
         ->ForEachInst(f, run_on_debug_line_insts);
   for (const auto& inst : insts_)
-    static_cast<const Instruction*>(inst.get())
+    static_cast<const Instruction*>(&inst)
         ->ForEachInst(f, run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachPhiInst(
     const std::function<void(Instruction*)>& f, bool run_on_debug_line_insts) {
   for (auto& inst : insts_) {
-    if (inst->opcode() != SpvOpPhi) break;
-    inst->ForEachInst(f, run_on_debug_line_insts);
+    if (inst.opcode() != SpvOpPhi) break;
+    inst.ForEachInst(f, run_on_debug_line_insts);
   }
 }
 
