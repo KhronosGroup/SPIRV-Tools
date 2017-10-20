@@ -76,9 +76,17 @@ class IntrusiveNodeBase {
   inline void RemoveFromList();
 
  protected:
-  // Replaces |this| with |target|.  No nodes that are not
-  // sentinels, |target| takes the place of |this|.  If the nodes are sentinels,
-  // then it will cause all of the nodes to be move from one list to another.
+  // Replaces |this| with |target|.  |this| is a sentinel if and only if
+  // |target| is also a sentinel.
+  //
+  // If neither node is a sentinel, |target| takes
+  // the place of |this|.  It is assumed that |target| is not in a list.
+  //
+  // If both are sentinels, then it will cause all of the
+  // nodes in the list containing |this| to be moved to the list containing
+  // |target|.  In this case, it is assumed that |target| is an empty list.
+  //
+  // No storage will be deleted.
   void ReplaceWith(NodeType* target);
 
   // Returns true if |this| is the sentinel node of an empty list.
@@ -200,7 +208,9 @@ inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
 template<class NodeType>
 void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
   if (this->is_sentinel_) {
-    target->IsEmptyList();
+    assert(target->IsEmptyList() &&
+        "If target is not an empty list, the nodes in that list would not "
+            "be linked to a sentinel.");
   } else {
     assert(IsInAList() && "The node being replaced must be in a list.");
     assert(!target->is_sentinel_ &&
@@ -220,7 +230,7 @@ void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
       this->next_node_ = nullptr;
       this->previous_node_ = nullptr;
     } else {
-      // Reset |this| so that it is the head of an empty list.
+      // Set |this| so that it is the head of an empty list.
       // We cannot treat sentinel nodes like others because it is invalid for
       // a sentinel node to not be in a list.
       this->next_node_ = static_cast<NodeType*>(this);
@@ -236,10 +246,10 @@ void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
 template<class NodeType>
 bool IntrusiveNodeBase<NodeType>::IsEmptyList() {
   if (next_node_ == this) {
-    assert(is_sentinel_
-               && "None sentinel nodes should never point to themselves.");
-    assert(previous_node_ == this
-               && "Inconsistency with the previous and next nodes.");
+    assert(is_sentinel_ &&
+               "None sentinel nodes should never point to themselves.");
+    assert(previous_node_ == this &&
+        "Inconsistency with the previous and next nodes.");
     return true;
   }
   return false;
