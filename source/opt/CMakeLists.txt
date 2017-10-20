@@ -21,6 +21,7 @@ add_library(SPIRV-Tools-opt
   compact_ids_pass.h
   constants.h
   dead_branch_elim_pass.h
+        dead_variable_elimination.h
   decoration_manager.h
   def_use_manager.h
   eliminate_dead_constant_pass.h
@@ -66,6 +67,7 @@ add_library(SPIRV-Tools-opt
   decoration_manager.cpp
   def_use_manager.cpp
   dead_branch_elim_pass.cpp
+        dead_variable_elimination.cpp
   eliminate_dead_constant_pass.cpp
   flatten_decoration_pass.cpp
   fold.cpp

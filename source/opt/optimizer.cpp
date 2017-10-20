@@ -165,6 +165,11 @@ Optimizer::PassToken CreateEliminateDeadConstantPass() {
       MakeUnique<opt::EliminateDeadConstantPass>());
 }
 
+Optimizer::PassToken CreateDeadVariableEliminationPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DeadVariableElimination>());
+}
+
 Optimizer::PassToken CreateStrengthReductionPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::StrengthReductionPass>());

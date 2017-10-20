@@ -153,6 +153,8 @@ Options:
                call tree functions.
   --strength-reduction
                Replaces instructions with equivalent and less expensive ones.
+  --eliminate-dead-variables
+               Deletes module scope variables that are not referenced.
   -O
                Optimize for performance. Apply a sequence of transformations
                in an attempt to improve the performance of the generated
@@ -353,6 +355,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCommonUniformElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-const")) {
         optimizer->RegisterPass(CreateEliminateDeadConstantPass());
+      } else if (0 == strcmp(cur_arg, "--eliminate-dead-variables")) {
+        optimizer->RegisterPass(CreateDeadVariableEliminationPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
         optimizer->RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
       } else if (0 == strcmp(cur_arg, "--strength-reduction")) {

@@ -50,6 +50,8 @@ class DecorationManager {
   bool AreDecorationsTheSame(const ir::Instruction* inst1,
                              const ir::Instruction* inst2) const;
 
+  const ir::Instruction* GetDecoration(uint32_t id, uint32_t decoration) const;
+
  private:
   using IdToDecorationInstsMap =
       std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
