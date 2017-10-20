@@ -103,6 +103,8 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddDebug1Inst(std::move(spv_inst));
       } else if (IsDebug2Inst(opcode)) {
         module_->AddDebug2Inst(std::move(spv_inst));
+      } else if (IsDebug3Inst(opcode)) {
+        module_->AddDebug3Inst(std::move(spv_inst));
       } else if (IsAnnotationInst(opcode)) {
         module_->AddAnnotationInst(std::move(spv_inst));
       } else if (IsTypeInst(opcode)) {

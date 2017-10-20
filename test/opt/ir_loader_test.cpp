@@ -298,6 +298,19 @@ TEST(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
   // clang-format on
 }
 
+TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
+  DoRoundTripCheck(
+   // clang-format off
+               "OpCapability Shader\n"
+               "OpMemoryModel Logical GLSL450\n"
+          "%1 = OpString \"minimal.vert\"\n"
+               "OpName %void \"void\"\n"
+               "OpModuleProcessed \"Made it faster\"\n"
+               "OpModuleProcessed \".. and smaller\"\n"
+       "%void = OpTypeVoid\n");
+  // clang-format on
+}
+
 // Checks the given |error_message| is reported when trying to build a module
 // from the given |assembly|.
 void DoErrorMessageCheck(const std::string& assembly,

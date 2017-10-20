@@ -74,6 +74,9 @@ class Module {
   // "debug 2" instructions are the ones in layout section 7.b), see section
   // 2.4 Logical Layout of a Module from the SPIR-V specification.
   inline void AddDebug2Inst(std::unique_ptr<Instruction> d);
+  // Appends a debug 3 instruction (OpModuleProcessed) to this module.
+  // This is due to decision by the SPIR Working Group, pending publication.
+  inline void AddDebug3Inst(std::unique_ptr<Instruction> d);
   // Appends an annotation instruction to this module.
   inline void AddAnnotationInst(std::unique_ptr<Instruction> a);
   // Appends a type-declaration instruction to this module.
@@ -118,19 +121,34 @@ class Module {
   inline Instruction* GetMemoryModel() { return memory_model_.get(); }
   inline const Instruction* GetMemoryModel() const { return memory_model_.get(); }
 
+  // There are several kinds of debug instructions, according to where they can
+  // appear in the logical layout of a module:
+  //  - Section 7a:  OpString, OpSourceExtension, OpSource, OpSourceContinued
+  //  - Section 7b:  OpName, OpMemberName
+  //  - Section 7c:  OpModuleProcessed
+  //  - Mostly anywhere: OpLine and OpNoLine
+  //
+
   // Iterators for debug 1 instructions (excluding OpLine & OpNoLine) contained
-  // in this module.
+  // in this module.  These are for layout section 7a.
   inline inst_iterator debug1_begin();
   inline inst_iterator debug1_end();
   inline IteratorRange<inst_iterator> debugs1();
   inline IteratorRange<const_inst_iterator> debugs1() const;
 
   // Iterators for debug 2 instructions (excluding OpLine & OpNoLine) contained
-  // in this module.
+  // in this module.  These are for layout section 7b.
   inline inst_iterator debug2_begin();
   inline inst_iterator debug2_end();
   inline IteratorRange<inst_iterator> debugs2();
   inline IteratorRange<const_inst_iterator> debugs2() const;
+
+  // Iterators for debug 3 instructions (excluding OpLine & OpNoLine) contained
+  // in this module.  These are for layout section 7c.
+  inline inst_iterator debug3_begin();
+  inline inst_iterator debug3_end();
+  inline IteratorRange<inst_iterator> debugs3();
+  inline IteratorRange<const_inst_iterator> debugs3() const;
 
   // Iterators for entry point instructions contained in this module
   inline IteratorRange<inst_iterator> entry_points();
@@ -143,13 +161,16 @@ class Module {
   inline IteratorRange<const_inst_iterator> execution_modes() const;
 
   // Clears all debug instructions (excluding OpLine & OpNoLine).
-  void debug_clear() { debug1_clear(); debug2_clear(); }
+  void debug_clear() { debug1_clear(); debug2_clear(); debug3_clear(); }
 
   // Clears all debug 1 instructions (excluding OpLine & OpNoLine).
   void debug1_clear() { debugs1_.clear(); }
 
   // Clears all debug 2 instructions (excluding OpLine & OpNoLine).
   void debug2_clear() { debugs2_.clear(); }
+
+  // Clears all debug 3 instructions (excluding OpLine & OpNoLine).
+  void debug3_clear() { debugs3_.clear(); }
 
   // Iterators for annotation instructions contained in this module.
   inline inst_iterator annotation_begin();
@@ -210,6 +231,7 @@ class Module {
   std::vector<std::unique_ptr<Instruction>> execution_modes_;
   std::vector<std::unique_ptr<Instruction>> debugs1_;
   std::vector<std::unique_ptr<Instruction>> debugs2_;
+  std::vector<std::unique_ptr<Instruction>> debugs3_;
   std::vector<std::unique_ptr<Instruction>> annotations_;
   // Type declarations, constants, and global variable declarations.
   std::vector<std::unique_ptr<Instruction>> types_values_;
@@ -246,6 +268,10 @@ inline void Module::AddDebug1Inst(std::unique_ptr<Instruction> d) {
 
 inline void Module::AddDebug2Inst(std::unique_ptr<Instruction> d) {
   debugs2_.emplace_back(std::move(d));
+}
+
+inline void Module::AddDebug3Inst(std::unique_ptr<Instruction> d) {
+  debugs3_.emplace_back(std::move(d));
 }
 
 inline void Module::AddAnnotationInst(std::unique_ptr<Instruction> a) {
@@ -322,6 +348,21 @@ inline IteratorRange<Module::inst_iterator> Module::debugs2() {
 
 inline IteratorRange<Module::const_inst_iterator> Module::debugs2() const {
   return make_const_range(debugs2_);
+}
+
+inline Module::inst_iterator Module::debug3_begin() {
+  return inst_iterator(&debugs3_, debugs3_.begin());
+}
+inline Module::inst_iterator Module::debug3_end() {
+  return inst_iterator(&debugs3_, debugs3_.end());
+}
+
+inline IteratorRange<Module::inst_iterator> Module::debugs3() {
+  return make_range(debugs3_);
+}
+
+inline IteratorRange<Module::const_inst_iterator> Module::debugs3() const {
+  return make_const_range(debugs3_);
 }
 
 inline IteratorRange<Module::inst_iterator> Module::entry_points() {
