@@ -63,7 +63,7 @@ script:
   - export NPROC=4;
   - mkdir build && cd build;
   - if [[ "$BUILD_ANDROID_MK" == "ON" ]]; then
-      $ANDROID_NDK/ndk-build -C ../android_test NDK_PROJECT_PATH=. NDK_APP_OUT=$(pwd) -j4;
+      $ANDROID_NDK/ndk-build -C ../android_test NDK_PROJECT_PATH=. NDK_APP_OUT=$(pwd) -j${NPROC};
     elif [[ "$BUILD_ANDROID_CMAKE" == "ON" ]]; then
       cmake -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_PATH}
             -DANDROID_NATIVE_API_LEVEL=android-9
