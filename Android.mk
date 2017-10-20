@@ -35,8 +35,9 @@ SPVTOOLS_SRC_FILES := \
 		source/validate.cpp \
 		source/validate_arithmetics.cpp \
 		source/validate_bitwise.cpp \
-		source/validate_cfg.cpp \
 		source/validate_capability.cpp \
+		source/validate_cfg.cpp \
+		source/validate_conversion.cpp \
 		source/validate_datarules.cpp \
 		source/validate_decorations.cpp \
 		source/validate_id.cpp \
