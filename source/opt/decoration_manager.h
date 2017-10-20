@@ -15,6 +15,7 @@
 #ifndef LIBSPIRV_OPT_DECORATION_MANAGER_H_
 #define LIBSPIRV_OPT_DECORATION_MANAGER_H_
 
+#include <functional>
 #include <unordered_map>
 #include <vector>
 
@@ -50,7 +51,10 @@ class DecorationManager {
   bool AreDecorationsTheSame(const ir::Instruction* inst1,
                              const ir::Instruction* inst2) const;
 
-  const ir::Instruction* GetDecoration(uint32_t id, uint32_t decoration) const;
+  // |f| is run on each decoration instruction for |id| with decoration
+  // |decoration|.
+  void ForEachDecoration(uint32_t id, uint32_t decoration,
+                         std::function<void(const ir::Instruction& f)>) const;
 
  private:
   using IdToDecorationInstsMap =

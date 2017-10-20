@@ -229,25 +229,26 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
   return decorations;
 }
 
-const ir::Instruction* DecorationManager::GetDecoration(
-    uint32_t id, uint32_t decoration) const {
+void DecorationManager::ForEachDecoration(uint32_t id,
+                                          uint32_t decoration,
+                                          std::function<void(const ir::Instruction&)> f) const {
   auto decoration_list = id_to_decoration_insts_.find(id);
   if (decoration_list != id_to_decoration_insts_.end()) {
     for (const ir::Instruction* inst : decoration_list->second) {
       switch (inst->opcode()) {
         case SpvOpDecorate:
           if (inst->GetSingleWordInOperand(1) == decoration) {
-            return inst;
+            f(*inst);
           }
           break;
         case SpvOpMemberDecorate:
           if (inst->GetSingleWordInOperand(2) == decoration) {
-            return inst;
+            f(*inst);
           }
           break;
         case SpvOpDecorateId:
           if (inst->GetSingleWordInOperand(1) == decoration) {
-            return inst;
+            f(*inst);
           }
           break;
         default:
@@ -255,7 +256,6 @@ const ir::Instruction* DecorationManager::GetDecoration(
       }
     }
   }
-  return nullptr;
 }
 
 }  // namespace analysis

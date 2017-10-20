@@ -36,16 +36,13 @@ class DeadVariableElimination : public MemPass {
   // Keeps track of the number of references of an id.  Once that value is 0, it
   // is safe to remove the corresponding instruction.
   //
-  // Note that the special value MUST_KEEP is used to indicate that the
+  // Note that the special value kMustKeep is used to indicate that the
   // instruction cannot be deleted for reasons other that is being explicitly
   // referenced.
   std::unordered_map<uint32_t, size_t> reference_count_;
 
-  //  Decoration manager to help organize decorations.
-  std::unique_ptr<analysis::DecorationManager> decoration_manager_;
-
   // Special value used to indicate that an id cannot be safely deleted.
-  const uint32_t MUST_KEEP = INT_MAX;
+  enum { kMustKeep = INT_MAX };
 };
 
 }  // namespace opt

@@ -19,50 +19,59 @@
 namespace spvtools {
 namespace opt {
 
+// This optimization removes global variables that are not needed because they
+// are definitely not accessed.
 Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
+  // The algorithm will compute the reference count for every global variable.
+  // Anything with a reference count of 0 will then be deleted.  For variables
+  // that might have references that are not explicit in this module, we use the
+  // value kMustKeep as the reference count.
+
   bool modified = false;
   module_ = module;
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
   FindNamedOrDecoratedIds();
-  decoration_manager_ = std::unique_ptr<analysis::DecorationManager>(
-      new analysis::DecorationManager(module));
+
+  //  Decoration manager to help organize decorations.
+  analysis::DecorationManager decoration_manager(module);
 
   std::vector<uint32_t> ids_to_remove;
 
   // Get the reference count for all of the global OpVariable instructions.
   for (auto& inst : module->types_values()) {
-    if (inst.opcode() == SpvOp::SpvOpVariable) {
-      size_t count = 0;
-      uint32_t result_id = inst.result_id();
+    if (inst.opcode() != SpvOp::SpvOpVariable) {
+      continue;
+    }
 
-      // Check the linkage.  If it is exported, it could be reference somewhere
-      // else, so we must keep the variable around.
-      const ir::Instruction* linkage_instruction =
-          decoration_manager_->GetDecoration(result_id,
-                                             SpvDecorationLinkageAttributes);
-      if (linkage_instruction != NULL) {
-        uint32_t last_operand = linkage_instruction->NumOperands() - 1;
-        if (linkage_instruction->GetSingleWordOperand(last_operand) ==
-            SpvLinkageTypeExport) {
-          count = MUST_KEEP;
-        }
-      }
+    size_t count = 0;
+    uint32_t result_id = inst.result_id();
 
-      if (count != MUST_KEEP) {
-        // If we don't have to keep the instruction for other reasons, then look
-        // at the uses and count the number of real references.
-        if (analysis::UseList* uses = def_use_mgr_->GetUses(result_id)) {
-          count = std::count_if(
-              uses->begin(), uses->end(), [](const analysis::Use& u) {
-                return (!ir::IsAnnotationInst(u.inst->opcode()) &&
-                    u.inst->opcode() != SpvOpName);
-              });
-        }
+    // Check the linkage.  If it is exported, it could be reference somewhere
+    // else, so we must keep the variable around.
+    decoration_manager.ForEachDecoration(
+        result_id, SpvDecorationLinkageAttributes,
+        [&count](const ir::Instruction& linkage_instruction) {
+          uint32_t last_operand = linkage_instruction.NumOperands() - 1;
+          if (linkage_instruction.GetSingleWordOperand(last_operand) ==
+              SpvLinkageTypeExport) {
+            count = kMustKeep;
+          }
+        });
+
+    if (count != kMustKeep) {
+      // If we don't have to keep the instruction for other reasons, then look
+      // at the uses and count the number of real references.
+      if (analysis::UseList* uses = def_use_mgr_->GetUses(result_id)) {
+        count = std::count_if(
+            uses->begin(), uses->end(), [](const analysis::Use& u) {
+              return (!ir::IsAnnotationInst(u.inst->opcode()) &&
+                  u.inst->opcode() != SpvOpName);
+            });
       }
-      reference_count_[result_id] = count;
-      if (count == 0) {
-        ids_to_remove.push_back(result_id);
-      }
+    }
+    reference_count_[result_id] = count;
+    if (count == 0) {
+      ids_to_remove.push_back(result_id);
     }
   }
 
@@ -86,10 +95,14 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
   if (inst->NumOperands() == 4) {
     ir::Instruction* initializer =
         def_use_mgr_->GetDef(inst->GetSingleWordOperand(3));
+
+    // TODO: Handle OpSpecConstantOP which might be defined in terms of other
+    // variables.  Will probably require a unified dead code pass that does all
+    // instruction types.  (Issue 906)
     if (initializer->opcode() == SpvOpVariable) {
       uint32_t initializer_id = initializer->result_id();
       size_t& count = reference_count_[initializer_id];
-      if (count != MUST_KEEP) {
+      if (count != kMustKeep) {
         --count;
       }
 
