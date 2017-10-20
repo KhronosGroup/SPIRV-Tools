@@ -103,6 +103,11 @@ add_spvtools_unittest(TARGET pass_dead_branch_elim
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_dead_variable_elim
+        SRCS dead_variable_elim_test.cpp pass_utils.cpp
+        LIBS SPIRV-Tools-opt
+        )
+
 add_spvtools_unittest(TARGET pass_aggressive_dce
   SRCS aggressive_dead_code_elim_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
