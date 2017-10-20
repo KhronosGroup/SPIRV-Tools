@@ -97,7 +97,6 @@ void CFGCleanupPass::RemovePhiOperands(
 
   // Traverse all the operands in |phi|. Build the new operand vector by adding
   // all the original operands from |phi| except the unwanted ones.
-  bool undef_created = false;
   for (uint32_t i = 0; i < phi->NumOperands();) {
     if (i < 2) {
       // The first two arguments are always preserved.
@@ -219,7 +218,6 @@ bool CFGCleanupPass::RemoveUnreachableBlocks(ir::Function* func) {
         [&block, &reachable_blocks, this](ir::Instruction* phi) {
           RemovePhiOperands(phi, reachable_blocks);
         });
-    }
   }
 
   // Erase unreachable blocks.
