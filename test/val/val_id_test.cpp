@@ -218,6 +218,20 @@ TEST_F(ValidateIdWithMessage, OpGroupDecorateGood) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
+TEST_F(ValidateIdWithMessage, OpDecorationGroupBad) {
+  string spirv = kGLSL450MemoryModel + R"(
+%1 = OpDecorationGroup
+     OpDecorate %1 Uniform
+     OpDecorate %1 GLSLShared
+     OpMemberDecorate %1 0 Constant
+    )";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result id of OpDecorationGroup can only "
+                        "be targeted by OpName, OpGroupDecorate, "
+                        "OpDecorate, and OpGroupMemberDecorate"));
+}
 TEST_F(ValidateIdWithMessage, OpGroupDecorateDecorationGroupBad) {
   string spirv = R"(
     OpCapability Shader

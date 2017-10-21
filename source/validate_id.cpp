@@ -181,6 +181,27 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
 }
 
 template <>
+bool idUsage::isValid<SpvOpDecorationGroup>(const spv_instruction_t* inst,
+                                     const spv_opcode_desc) {
+  auto decorationGroupIndex = 1;
+  auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
+
+  for (auto pair : decorationGroup->uses()) {
+    auto use = pair.first;
+    if (use->opcode() != SpvOpDecorate &&
+        use->opcode() != SpvOpGroupDecorate &&
+        use->opcode() != SpvOpGroupMemberDecorate &&
+        use->opcode() != SpvOpName ) {
+      DIAG(decorationGroupIndex) << "Result id of OpDecorationGroup can only "
+                                 << "be targeted by OpName, OpGroupDecorate, "
+                                 << "OpDecorate, and OpGroupMemberDecorate";
+      return false;
+    }
+  }                                        
+  return true;
+}
+
+template <>
 bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t* inst,
                                           const spv_opcode_desc) {
   auto decorationGroupIndex = 1;
@@ -2362,6 +2383,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpLine)
     CASE(OpDecorate)
     CASE(OpMemberDecorate)
+    CASE(OpDecorationGroup)
     CASE(OpGroupDecorate)
     CASE(OpGroupMemberDecorate)
     TODO(OpExtInst)
