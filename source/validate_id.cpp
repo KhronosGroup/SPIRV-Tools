@@ -1725,13 +1725,59 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
   // The number of components in Result Type must be the same as the number of
   // Component operands.
   auto componentCount = inst->words.size() - 5;
-  auto resultVectorDimension = resultType->words()[3];
+  auto vectorComponentCountIndex = 3;
+  auto resultVectorDimension = resultType->words()[vectorComponentCountIndex];
   if (componentCount != resultVectorDimension) {
     DIAG(inst->words.size() - 1)
         << instr_name() << " component literals count does not match "
                            "Result Type <id> '"
         << resultType->id() << "'s vector component count.";
     return false;
+  }
+
+  // Vector 1 and Vector 2 must both have vector types, with the same Component
+  // Type as Result Type.
+  auto vector1Index = 3;
+  auto vector1Object = module_.FindDef(inst->words[vector1Index]);
+  auto vector1Type = module_.FindDef(vector1Object->type_id());
+  auto vector2Index = 4;
+  auto vector2Object = module_.FindDef(inst->words[vector2Index]);
+  auto vector2Type = module_.FindDef(vector2Object->type_id());
+  if (!vector1Type || vector1Type->opcode() != SpvOpTypeVector) {
+    DIAG(vector1Index) << "The type of Vector 1 must be OpTypeVector.";
+    return false;
+  }
+  if (!vector2Type || vector2Type->opcode() != SpvOpTypeVector) {
+    DIAG(vector2Index) << "The type of Vector 2 must be OpTypeVector.";
+    return false;
+  }
+  auto vectorComponentTypeIndex = 2;
+  auto resultComponentType = resultType->words()[vectorComponentTypeIndex];
+  auto vector1ComponentType = vector1Type->words()[vectorComponentTypeIndex];
+  if (vector1ComponentType != resultComponentType) {
+    DIAG(vector1Index) << "The Component Type of Vector 1 must be the same "
+                          "as ResultType.";
+    return false;
+  }
+  auto vector2ComponentType = vector2Type->words()[vectorComponentTypeIndex];
+  if (vector2ComponentType != resultComponentType) {
+    DIAG(vector2Index) << "The Component Type of Vector 2 must be the same "
+                          "as ResultType.";
+    return false;
+  }
+
+  // All Component literals must either be FFFFFFFF or in [0, N - 1].
+  auto vector1ComponentCount = vector1Type->words()[vectorComponentCountIndex];
+  auto vector2ComponentCount = vector2Type->words()[vectorComponentCountIndex];
+  auto N = vector1ComponentCount + vector2ComponentCount;
+  auto firstLiteralIndex = 5;
+  for (size_t i = firstLiteralIndex; i < inst->words.size(); ++i) {
+    auto literal = inst->words[i];
+    if (literal != 0xFFFFFFFF && literal >= N) {
+      DIAG(i) << "Component literal value " << literal << " is greater than "
+              << N - 1 << ".";
+      return false;
+    }
   }
 
   return true;
