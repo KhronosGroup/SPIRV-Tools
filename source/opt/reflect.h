@@ -26,11 +26,10 @@ namespace ir {
 
 inline bool IsDebug1Inst(SpvOp opcode) {
   return (opcode >= SpvOpSourceContinued && opcode <= SpvOpSourceExtension) ||
-         opcode == SpvOpString || opcode == SpvOpLine || opcode == SpvOpNoLine;
+         opcode == SpvOpString;
 }
 inline bool IsDebug2Inst(SpvOp opcode) {
-  return opcode == SpvOpName || opcode == SpvOpMemberName ||
-         opcode == SpvOpNoLine;
+  return opcode == SpvOpName || opcode == SpvOpMemberName;
 }
 inline bool IsDebug3Inst(SpvOp opcode) {
   return opcode == SpvOpModuleProcessed;
