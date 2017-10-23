@@ -77,7 +77,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
-      .RegisterPass(CreateCommonUniformElimPass());
+      .RegisterPass(CreateCommonUniformElimPass())
+      .RegisterPass(CreateDeadVariableEliminationPass());
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
@@ -91,7 +92,8 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
-      .RegisterPass(CreateCommonUniformElimPass());
+      .RegisterPass(CreateCommonUniformElimPass())
+      .RegisterPass(CreateDeadVariableEliminationPass());
 }
 
 bool Optimizer::Run(const uint32_t* original_binary,
