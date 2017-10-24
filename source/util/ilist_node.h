@@ -122,7 +122,9 @@ template<class NodeType>
 inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
     const IntrusiveNodeBase&) {
   assert(!is_sentinel_);
-  if (IsInAList()) RemoveFromList();
+  if (IsInAList()) {
+    RemoveFromList();
+  }
   return *this;
 }
 
