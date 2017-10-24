@@ -15,9 +15,7 @@
 // limitations under the License.
 
 #include "common_uniform_elim_pass.h"
-
 #include "cfa.h"
-#include "iterator.h"
 
 namespace spvtools {
 namespace opt {
@@ -128,6 +126,68 @@ ir::Instruction* CommonUniformElimPass::GetPtr(
     objInst = def_use_mgr_->GetDef(*objId);
   }
   return ptrInst;
+}
+
+bool CommonUniformElimPass::IsVolatileStruct(uint32_t type_id) {
+  assert(def_use_mgr_->GetDef(type_id)->opcode() == SpvOpTypeStruct);
+  bool has_volatile_deco = false;
+  dec_mgr_->ForEachDecoration(type_id, SpvDecorationVolatile,
+                              [&has_volatile_deco](const ir::Instruction&){ has_volatile_deco = true;});
+  return has_volatile_deco;
+}
+
+bool CommonUniformElimPass::IsAccessChainToVolatileStructType(const ir::Instruction &AccessChainInst) {
+  assert(AccessChainInst.opcode() == SpvOpAccessChain);
+
+  uint32_t ptr_id = AccessChainInst.GetSingleWordInOperand(0);
+  const ir::Instruction* ptr_inst = def_use_mgr_->GetDef(ptr_id);
+  uint32_t pointee_type_id = GetPointeeTypeId(ptr_inst);
+  const uint32_t num_operands = AccessChainInst.NumOperands();
+
+  // walk the type tree:
+  for (uint32_t idx = 3; idx < num_operands; ++idx) {
+    ir::Instruction* pointee_type = def_use_mgr_->GetDef(pointee_type_id);
+
+    switch (pointee_type->opcode()) {
+      case SpvOpTypeMatrix:
+      case SpvOpTypeVector:
+      case SpvOpTypeArray:
+      case SpvOpTypeRuntimeArray:
+        pointee_type_id = pointee_type->GetSingleWordOperand(1);
+        break;
+      case SpvOpTypeStruct:
+        // check for volatile decorations:
+        if (IsVolatileStruct(pointee_type_id)) return true;
+
+        if (idx < num_operands - 1) {
+          const uint32_t index_id = AccessChainInst.GetSingleWordOperand(idx);
+          const ir::Instruction* index_inst = def_use_mgr_->GetDef(index_id);
+          uint32_t index_value = index_inst->GetSingleWordOperand(2); // TODO: replace with GetUintValueFromConstant()
+          pointee_type_id = pointee_type->GetSingleWordInOperand(index_value);
+        }
+        break;
+      default:
+        assert(false && "Unhandled pointee type.");
+    }
+  }
+  return false;
+}
+
+bool CommonUniformElimPass::IsVolatileLoad(const ir::Instruction& loadInst) {
+  assert(loadInst.opcode() == SpvOpLoad);
+  // Check if this Load instruction has Volatile Memory Access flag
+  if (loadInst.NumOperands() == 4) {
+    uint32_t memory_access_mask = loadInst.GetSingleWordOperand(3);
+    if (memory_access_mask & SpvMemoryAccessVolatileMask)
+      return true;
+  }
+  // If we load a struct directly (result type is struct),
+  // check if the struct is decorated volatile
+  uint32_t type_id = loadInst.type_id();
+  if (def_use_mgr_->GetDef(type_id)->opcode() == SpvOpTypeStruct)
+    return IsVolatileStruct(type_id);
+  else
+    return false;
 }
 
 bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
@@ -301,6 +361,10 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
         continue;
       if (HasUnsupportedDecorates(ptrInst->result_id()))
         continue;
+      if (IsVolatileLoad(*ii))
+        continue;
+      if (IsAccessChainToVolatileStructType(*ptrInst))
+        continue;
       std::vector<std::unique_ptr<ir::Instruction>> newInsts;
       uint32_t replId;
       GenACLoadRepl(ptrInst, &newInsts, &replId);
@@ -386,6 +450,8 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
         continue;
       if (HasUnsupportedDecorates(ii->result_id()))
         continue;
+      if (IsVolatileLoad(*ii))
+        continue;
       uint32_t replId;
       const auto uItr = uniform2load_id_.find(varId);
       if (uItr != uniform2load_id_.end()) {
@@ -437,6 +503,8 @@ bool CommonUniformElimPass::CommonUniformLoadElimBlock(ir::Function* func) {
       if (!IsSamplerOrImageVar(varId))
         continue;
       if (HasUnsupportedDecorates(ii->result_id()))
+        continue;
+      if (IsVolatileLoad(*ii))
         continue;
       uint32_t replId;
       const auto uItr = uniform2load_id_.find(varId);
@@ -527,6 +595,7 @@ void CommonUniformElimPass::Initialize(ir::Module* module) {
 
   // TODO(greg-lunarg): Use def/use from previous pass
   def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+  dec_mgr_.reset(new analysis::DecorationManager(module_));
 
   // Initialize next unused Id.
   next_id_ = module->id_bound();
