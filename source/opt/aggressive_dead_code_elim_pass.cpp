@@ -256,8 +256,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   ComputeStructuredOrder(func, &structuredOrder);
   ComputeBlock2BranchMaps(structuredOrder);
   bool modified = false;
-  // Add all control flow and instructions with external side effects 
-  // to worklist
+  // Add instructions with external side effects to worklist. Also add branches
+  // EXCEPT those immediately contained in an "if" selection construct.
   // TODO(greg-lunarg): Handle Frexp, Modf more optimally
   call_in_func_ = false;
   func_is_entry_point_ = false;
