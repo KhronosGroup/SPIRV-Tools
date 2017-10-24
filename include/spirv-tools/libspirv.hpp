@@ -44,6 +44,10 @@ class ValidatorOptions {
     spvValidatorOptionsSetUniversalLimit(options_, limit_type, limit);
   }
 
+  void SetRelaxStructStore(bool val) {
+    spvValidatorOptionsSetRelaxStoreStruct(options_, val);
+  }
+
  private:
   spv_validator_options options_;
 };

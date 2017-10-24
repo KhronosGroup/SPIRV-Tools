@@ -58,20 +58,26 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
                                           spv_validator_limit limit_type,
                                           uint32_t limit) {
   assert(options && "Validator options object may not be Null");
-  switch(limit_type) {
+  switch (limit_type) {
 #define LIMIT(TYPE, FIELD)                    \
-    case TYPE:                                \
-      options->universal_limits_.FIELD = limit; \
-      break;
-  LIMIT(spv_validator_limit_max_struct_members, max_struct_members)
-  LIMIT(spv_validator_limit_max_struct_depth, max_struct_depth)
-  LIMIT(spv_validator_limit_max_local_variables, max_local_variables)
-  LIMIT(spv_validator_limit_max_global_variables, max_global_variables)
-  LIMIT(spv_validator_limit_max_switch_branches, max_switch_branches)
-  LIMIT(spv_validator_limit_max_function_args, max_function_args)
-  LIMIT(spv_validator_limit_max_control_flow_nesting_depth,
-        max_control_flow_nesting_depth)
-  LIMIT(spv_validator_limit_max_access_chain_indexes, max_access_chain_indexes)
+  case TYPE:                                  \
+    options->universal_limits_.FIELD = limit; \
+    break;
+    LIMIT(spv_validator_limit_max_struct_members, max_struct_members)
+    LIMIT(spv_validator_limit_max_struct_depth, max_struct_depth)
+    LIMIT(spv_validator_limit_max_local_variables, max_local_variables)
+    LIMIT(spv_validator_limit_max_global_variables, max_global_variables)
+    LIMIT(spv_validator_limit_max_switch_branches, max_switch_branches)
+    LIMIT(spv_validator_limit_max_function_args, max_function_args)
+    LIMIT(spv_validator_limit_max_control_flow_nesting_depth,
+          max_control_flow_nesting_depth)
+    LIMIT(spv_validator_limit_max_access_chain_indexes,
+          max_access_chain_indexes)
 #undef LIMIT
   }
+}
+
+void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
+                                            bool val) {
+  options->relax_struct_store = val;
 }
