@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "def_use_manager.h"
+#include "decoration_manager.h"
 #include "module.h"
 #include "basic_block.h"
 #include "pass.h"
@@ -65,6 +66,20 @@ class CommonUniformElimPass : public Pass {
 
   // Return true if variable is uniform
   bool IsUniformVar(uint32_t varId);
+
+  // Given the type id for a struct type, checks if the struct type
+  // or any struct member is volatile decorated
+  bool IsVolatileStruct(uint32_t type_id);
+
+  // Given an OpAccessChain instruction, return true
+  // if the accessed variable belongs to a volatile
+  // decorated object or member of a struct type
+  bool IsAccessChainToVolatileStructType(const ir::Instruction &AccessChainInst);
+
+  // Given an OpLoad instruction, return true if
+  // OpLoad has a Volatile Memory Access flag or if
+  // the resulting type is a volatile decorated struct
+  bool IsVolatileLoad(const ir::Instruction& loadInst);
 
   // Return true if any uses of |id| are decorate ops.
   bool HasUnsupportedDecorates(uint32_t id) const;
@@ -178,6 +193,9 @@ class CommonUniformElimPass : public Pass {
 
   // Def-Uses for the module we are processing
   std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
+  // Decorations for the module we are processing
+  std::unique_ptr<analysis::DecorationManager> dec_mgr_;
 
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
