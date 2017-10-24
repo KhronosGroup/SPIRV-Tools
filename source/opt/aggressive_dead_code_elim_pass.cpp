@@ -265,7 +265,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   std::stack<bool> skip_control_flow;
   std::stack<uint32_t> currentMergeBlockId;
   skip_control_flow.push(false);
-  currentMergeBlockId.push(false);
+  currentMergeBlockId.push(0);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     if ((*bi)->id() == currentMergeBlockId.top()) {
       skip_control_flow.pop();
@@ -293,13 +293,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         case SpvOpLoopMerge: {
           skip_control_flow.push(false);
           currentMergeBlockId.push(
-              ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
+              ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
           AddToWorklist(&*ii);
         } break;
         case SpvOpSelectionMerge: {
-          auto bri = ii;
-          ++bri;
-          bool is_structured_if = bri->opcode() == SpvOpBranchConditional;
+          auto brii = ii;
+          ++brii;
+          bool is_structured_if = brii->opcode() == SpvOpBranchConditional;
           skip_control_flow.push(is_structured_if);
           currentMergeBlockId.push(
               ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
