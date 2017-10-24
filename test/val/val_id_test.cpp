@@ -3625,7 +3625,243 @@ TEST_F(ValidateIdWithMessage, OpFunctionCallArgumentCountBar) {
 // TODO: OpSatConvertUToS
 // TODO: OpVectorExtractDynamic
 // TODO: OpVectorInsertDynamic
-// TODO: OpVectorShuffle
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleIntGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec3 = OpTypeVector %int 3
+%ivec4 = OpTypeVector %int 4
+%ptr_ivec3 = OpTypePointer Function %ivec3
+%undef = OpUndef %ivec4
+%int_42 = OpConstant %int 42
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%1 = OpConstantComposite %ivec3 %int_42 %int_0 %int_2
+%2 = OpTypeFunction %ivec3
+%3 = OpFunction %ivec3 None %2
+%4 = OpLabel
+%var = OpVariable %ptr_ivec3 Function %1
+%5 = OpLoad %ivec3 %var
+%6 = OpVectorShuffle %ivec3 %5 %undef 2 1 0
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleFloatGood) {
+  string spirv = kGLSL450MemoryModel + R"(
+%float = OpTypeFloat 32
+%vec2 = OpTypeVector %float 2
+%vec3 = OpTypeVector %float 3
+%vec4 = OpTypeVector %float 4
+%ptr_vec2 = OpTypePointer Function %vec2
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %vec2 %float_2 %float_1
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_vec2 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %vec2 %var
+%7 = OpLoad %vec3 %var2
+%8 = OpVectorShuffle %vec4 %6 %7 4 3 1 0xffffffff
+     OpReturnValue %8
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleScalarResultType) {
+  string spirv = kGLSL450MemoryModel + R"(
+%float = OpTypeFloat 32
+%vec2 = OpTypeVector %float 2
+%ptr_vec2 = OpTypePointer Function %vec2
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %vec2 %float_2 %float_1
+%2 = OpTypeFunction %float
+%3 = OpFunction %float None %2
+%4 = OpLabel
+%var = OpVariable %ptr_vec2 Function %1
+%5 = OpLoad %vec2 %var
+%6 = OpVectorShuffle %float %5 %5 0
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Result Type of OpVectorShuffle must be OpTypeVector."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleComponentCount) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec3 = OpTypeVector %int 3
+%ptr_ivec3 = OpTypePointer Function %ivec3
+%int_42 = OpConstant %int 42
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%1 = OpConstantComposite %ivec3 %int_42 %int_0 %int_2
+%2 = OpTypeFunction %ivec3
+%3 = OpFunction %ivec3 None %2
+%4 = OpLabel
+%var = OpVariable %ptr_ivec3 Function %1
+%5 = OpLoad %ivec3 %var
+%6 = OpVectorShuffle %ivec3 %5 %5 0 1
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpVectorShuffle component literals count does not match "
+                "Result Type <id> '2's vector component count."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleVector1Type) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec2 = OpTypeVector %int 2
+%ptr_int = OpTypePointer Function %int
+%undef = OpUndef %ivec2
+%int_42 = OpConstant %int 42
+%2 = OpTypeFunction %ivec2
+%3 = OpFunction %ivec2 None %2
+%4 = OpLabel
+%var = OpVariable %ptr_int Function %int_42
+%5 = OpLoad %int %var
+%6 = OpVectorShuffle %ivec2 %5 %undef 0 0
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The type of Vector 1 must be OpTypeVector."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleVector2Type) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec2 = OpTypeVector %int 2
+%ptr_ivec2 = OpTypePointer Function %ivec2
+%undef = OpUndef %int
+%int_42 = OpConstant %int 42
+%1 = OpConstantComposite %ivec2 %int_42 %int_42
+%2 = OpTypeFunction %ivec2
+%3 = OpFunction %ivec2 None %2
+%4 = OpLabel
+%var = OpVariable %ptr_ivec2 Function %1
+%5 = OpLoad %ivec2 %var
+%6 = OpVectorShuffle %ivec2 %5 %undef 0 1
+     OpReturnValue %6
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The type of Vector 2 must be OpTypeVector."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleVector1ComponentType) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec3 = OpTypeVector %int 3
+%ptr_ivec3 = OpTypePointer Function %ivec3
+%int_42 = OpConstant %int 42
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%float = OpTypeFloat 32
+%vec3 = OpTypeVector %float 3
+%vec4 = OpTypeVector %float 4
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %ivec3 %int_42 %int_0 %int_2
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_ivec3 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %ivec3 %var
+%7 = OpLoad %vec3 %var2
+%8 = OpVectorShuffle %vec4 %6 %7 4 3 1 0
+     OpReturnValue %8
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Component Type of Vector 1 must be the same as "
+                "ResultType."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleVector2ComponentType) {
+  string spirv = kGLSL450MemoryModel + R"(
+%int = OpTypeInt 32 0
+%ivec3 = OpTypeVector %int 3
+%ptr_ivec3 = OpTypePointer Function %ivec3
+%int_42 = OpConstant %int 42
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%float = OpTypeFloat 32
+%vec3 = OpTypeVector %float 3
+%vec4 = OpTypeVector %float 4
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %ivec3 %int_42 %int_0 %int_2
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_ivec3 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %vec3 %var2
+%7 = OpLoad %ivec3 %var
+%8 = OpVectorShuffle %vec4 %6 %7 4 3 1 0
+     OpReturnValue %8
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Component Type of Vector 2 must be the same as "
+                "ResultType."));
+}
+
+TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
+  string spirv = kGLSL450MemoryModel + R"(
+%float = OpTypeFloat 32
+%vec2 = OpTypeVector %float 2
+%vec3 = OpTypeVector %float 3
+%vec4 = OpTypeVector %float 4
+%ptr_vec2 = OpTypePointer Function %vec2
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %vec2 %float_2 %float_1
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_vec2 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %vec2 %var
+%7 = OpLoad %vec3 %var2
+%8 = OpVectorShuffle %vec4 %6 %7 0 5 2 6
+     OpReturnValue %8
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component literal value 5 is greater than 4."));
+}
+
 // TODO: OpCompositeConstruct
 // TODO: OpCompositeExtract
 // TODO: OpCompositeInsert
