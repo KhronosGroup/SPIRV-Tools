@@ -145,6 +145,7 @@ void InlinePass::CloneAndMapLocals(
   while (callee_var_itr->opcode() == SpvOp::SpvOpVariable) {
     std::unique_ptr<ir::Instruction> var_inst(callee_var_itr->Clone());
     uint32_t newId = TakeNextId();
+    dec_mgr_->CloneDecorations(callee_var_itr->result_id(), newId);
     var_inst->SetResultId(newId);
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
@@ -197,6 +198,7 @@ void InlinePass::CloneSameBlockOps(
             CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr);
             const uint32_t rid = sb_inst->result_id();
             const uint32_t nid = this->TakeNextId();
+            dec_mgr_->CloneDecorations(rid, nid);
             sb_inst->SetResultId(nid);
             (*postCallSB)[rid] = nid;
             *iid = nid;
@@ -475,6 +477,7 @@ void InlinePass::GenInlineCode(
             nid = this->TakeNextId();
             callee2caller[rid] = nid;
           }
+          dec_mgr_->CloneDecorations(rid, nid);
           cp_inst->SetResultId(nid);
         }
         new_blk_ptr->AddInstruction(std::move(cp_inst));
@@ -641,6 +644,8 @@ bool InlinePass::IsInlinableFunction(ir::Function* func) {
 
 void InlinePass::InitializeInline(ir::IRContext* c) {
   InitializeProcessing(c);
+
+  dec_mgr_.reset(new analysis::DecorationManager(c->module()));
 
   false_id_ = 0;
 

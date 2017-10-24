@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "def_use_manager.h"
+#include "decoration_manager.h"
 #include "module.h"
 #include "pass.h"
 
@@ -160,6 +161,9 @@ class InlinePass : public Pass {
 
   // Initialize state for optimization of |module|
   void InitializeInline(ir::IRContext* c);
+
+  // Decorations for the module we are processing. TODO: move this to ir_context as well
+  std::unique_ptr<analysis::DecorationManager> dec_mgr_;
 
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;

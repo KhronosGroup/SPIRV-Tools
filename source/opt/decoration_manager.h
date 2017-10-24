@@ -30,7 +30,10 @@ namespace analysis {
 class DecorationManager {
  public:
   // Constructs a decoration manager from the given |module|
-  DecorationManager(ir::Module* module) { AnalyzeDecorations(module); }
+  DecorationManager(ir::Module* module) {
+    AnalyzeDecorations(module);
+    module_ = module;
+  }
   // Removes all decorations from |id|, which should not be a group ID, except
   // for linkage decorations if |keep_linkage| is set.
   void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
@@ -54,7 +57,13 @@ class DecorationManager {
   // |f| is run on each decoration instruction for |id| with decoration
   // |decoration|.
   void ForEachDecoration(uint32_t id, uint32_t decoration,
-                         std::function<void(const ir::Instruction& f)>) const;
+                         std::function<void(const ir::Instruction& f)>);
+
+  // Clone all decorations from one id |from|.
+  // The cloned decorations are assigned to the given id |to| and are
+  // added to the module. The purpose is to decorate cloned instructions.
+  // This function does not check, if the id |to| is already decorated.
+  void CloneDecorations(uint32_t from, uint32_t to);
 
  private:
   using IdToDecorationInstsMap =
@@ -74,6 +83,8 @@ class DecorationManager {
   IdToDecorationInstsMap id_to_decoration_insts_;
   // Mapping from group ids to all the decoration instructions they apply.
   IdToDecorationInstsMap group_to_decoration_insts_;
+
+  ir::Module* module_;
 };
 
 }  // namespace analysis

@@ -230,33 +230,60 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
   return decorations;
 }
 
-void DecorationManager::ForEachDecoration(
-    uint32_t id, uint32_t decoration,
-    std::function<void(const ir::Instruction&)> f) const {
-  auto decoration_list = id_to_decoration_insts_.find(id);
-  if (decoration_list != id_to_decoration_insts_.end()) {
-    for (const ir::Instruction* inst : decoration_list->second) {
-      switch (inst->opcode()) {
-        case SpvOpDecorate:
-          if (inst->GetSingleWordInOperand(1) == decoration) {
-            f(*inst);
-          }
-          break;
-        case SpvOpMemberDecorate:
-          if (inst->GetSingleWordInOperand(2) == decoration) {
-            f(*inst);
-          }
-          break;
-        case SpvOpDecorateId:
-          if (inst->GetSingleWordInOperand(1) == decoration) {
-            f(*inst);
-          }
-          break;
-        default:
-          assert(false && "Unexpected decoration instruction");
-      }
+void DecorationManager::ForEachDecoration(uint32_t id,
+                                          uint32_t decoration,
+                                          std::function<void(const ir::Instruction&)> f) {
+  for (const ir::Instruction* inst : GetDecorationsFor(id, false)) {
+    switch (inst->opcode()) {
+      case SpvOpDecorate:
+        if (inst->GetSingleWordInOperand(1) == decoration) {
+          f(*inst);
+        }
+        break;
+      case SpvOpMemberDecorate:
+        if (inst->GetSingleWordInOperand(2) == decoration) {
+          f(*inst);
+        }
+        break;
+      case SpvOpDecorateId:
+        if (inst->GetSingleWordInOperand(1) == decoration) {
+          f(*inst);
+        }
+        break;
+      default:
+        assert(false && "Unexpected decoration instruction");
     }
   }
+}
+
+void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
+  auto const decoration_list = id_to_decoration_insts_.find(from);
+  if (decoration_list == id_to_decoration_insts_.end()) return;
+  for (ir::Instruction* inst : decoration_list->second) {
+    switch (inst->opcode()) {
+      case SpvOpGroupDecorate:
+        // add |to| to list of decorated id's
+        inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+        id_to_decoration_insts_[to].push_back(inst);
+        break;
+      case SpvOpGroupMemberDecorate:
+        // TODO: for each (id == from), get literal and add (to, literal) as operands
+        break;
+      case SpvOpDecorate:
+      case SpvOpMemberDecorate:
+      case SpvOpDecorateId: {
+        // simply clone decoration and change |target-id| to |to|
+        std::unique_ptr<ir::Instruction> newInst(inst->Clone());
+        newInst->SetInOperand(0, {to});
+        id_to_decoration_insts_[to].push_back(newInst.get());
+        module_->AddAnnotationInst(std::move(newInst));
+        break;
+      }
+      default:
+        assert(false && "Unexpected decoration instruction");
+    }
+  }
+
 }
 
 }  // namespace analysis

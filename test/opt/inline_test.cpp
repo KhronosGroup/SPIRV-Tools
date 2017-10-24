@@ -2248,6 +2248,128 @@ OpFunctionEnd
       true);
 }
 
+TEST_F(InlineTest, Decorated1) {
+  // Same test as Simple with the difference
+  // that OpFAdd in the outlined function is
+  // decorated with RelaxedPrecision
+  //
+  // #version 140
+  //
+  // in vec4 BaseColor;
+  //
+  // float foo(vec4 bar)
+  // {
+  //     return bar.x + bar.y;
+  // }
+  //
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color;
+  // }
+
+  const std::string predefs =
+  R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %bar "bar"
+OpName %color "color"
+OpName %BaseColor "BaseColor"
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %9 RelaxedPrecision
+)";
+
+  const std::string before =
+  R"(%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%15 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %11
+%22 = OpLabel
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %param %23
+%24 = OpFunctionCall %float %foo_vf4_ %param
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %color %25
+%26 = OpLoad %v4float %color
+OpStore %gl_FragColor %26
+OpReturn
+OpFunctionEnd
+)";
+
+
+  const std::string after =
+  R"(OpDecorate %37 RelaxedPrecision
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%15 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %11
+%22 = OpLabel
+%32 = OpVariable %_ptr_Function_float Function
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%23 = OpLoad %v4float %BaseColor
+OpStore %param %23
+%33 = OpAccessChain %_ptr_Function_float %param %uint_0
+%34 = OpLoad %float %33
+%35 = OpAccessChain %_ptr_Function_float %param %uint_1
+%36 = OpLoad %float %35
+%37 = OpFAdd %float %34 %36
+OpStore %32 %37
+%24 = OpLoad %float %32
+%25 = OpCompositeConstruct %v4float %24 %24 %24 %24
+OpStore %color %25
+%26 = OpLoad %v4float %color
+OpStore %gl_FragColor %26
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string nonEntryFuncs =
+  R"(%foo_vf4_ = OpFunction %float None %15
+%bar = OpFunctionParameter %_ptr_Function_v4float
+%27 = OpLabel
+%28 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%29 = OpLoad %float %28
+%30 = OpAccessChain %_ptr_Function_float %bar %uint_1
+%31 = OpLoad %float %30
+%9 = OpFAdd %float %29 %31
+OpReturnValue %9
+OpFunctionEnd
+)";
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
+  true);
+}
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
