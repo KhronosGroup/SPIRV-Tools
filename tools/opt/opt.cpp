@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <spirv_validator_options.h>
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -155,6 +156,10 @@ Options:
                Replaces instructions with equivalent and less expensive ones.
   --eliminate-dead-variables
                Deletes module scope variables that are not referenced.
+  --relax-store-struct
+               Allow store from one struct type to a different, but 
+               interchangeable, type.  This option is forwarded to the 
+               validator.
   -O
                Optimize for performance. Apply a sequence of transformations
                in an attempt to improve the performance of the generated
@@ -242,7 +247,8 @@ bool ReadFlagsFromFile(const char* oconfig_flag,
 }
 
 OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
-                     const char** in_file, const char** out_file);
+                     const char** in_file, const char** out_file,
+                     spv_validator_options options);
 
 // Parses and handles the -Oconfig flag. |prog_name| contains the name of
 // the spirv-opt binary (used to build a new argv vector for the recursive
@@ -276,7 +282,7 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
   }
 
   return ParseFlags(static_cast<int>(flags.size()), new_argv, optimizer,
-                    in_file, out_file);
+                    in_file, out_file, nullptr);
 }
 
 // Parses command-line flags. |argc| contains the number of command-line flags.
@@ -288,7 +294,8 @@ OptStatus ParseOconfigFlag(const char* prog_name, const char* opt_flag,
 // optimization should continue and a status code indicating an error or
 // success.
 OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
-                     const char** in_file, const char** out_file) {
+                     const char** in_file, const char** out_file,
+                     spv_validator_options options) {
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -369,6 +376,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCompactIdsPass());
       } else if (0 == strcmp(cur_arg, "--cfg-cleanup")) {
         optimizer->RegisterPass(CreateCFGCleanupPass());
+      } else if (0 == strcmp(cur_arg, "--relax-store-struct")) {
+        options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "-O")) {
         optimizer->RegisterPerformancePasses();
       } else if (0 == strcmp(cur_arg, "-Os")) {
@@ -414,6 +423,7 @@ int main(int argc, const char** argv) {
   const char* out_file = nullptr;
 
   spv_target_env target_env = SPV_ENV_UNIVERSAL_1_2;
+  spv_validator_options options = spvValidatorOptionsCreate();
 
   spvtools::Optimizer optimizer(target_env);
   optimizer.SetMessageConsumer([](spv_message_level_t level, const char* source,
@@ -423,7 +433,9 @@ int main(int argc, const char** argv) {
               << std::endl;
   });
 
-  OptStatus status = ParseFlags(argc, argv, &optimizer, &in_file, &out_file);
+  OptStatus status =
+      ParseFlags(argc, argv, &optimizer, &in_file, &out_file, options);
+
   if (status.action == OPT_STOP) {
     return status.code;
   }
@@ -442,14 +454,17 @@ int main(int argc, const char** argv) {
   spv_context context = spvContextCreate(target_env);
   spv_diagnostic diagnostic = nullptr;
   spv_const_binary_t binary_struct = {binary.data(), binary.size()};
-  spv_result_t error = spvValidate(context, &binary_struct, &diagnostic);
+  spv_result_t error =
+      spvValidateWithOptions(context, options, &binary_struct, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);
+    spvValidatorOptionsDestroy(options);
     spvContextDestroy(context);
     return error;
   }
   spvDiagnosticDestroy(diagnostic);
+  spvValidatorOptionsDestroy(options);
   spvContextDestroy(context);
 
   // By using the same vector as input and output, we save time in the case

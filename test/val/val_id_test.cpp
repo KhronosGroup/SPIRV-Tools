@@ -28,8 +28,8 @@
 
 namespace {
 
-using ::testing::ValuesIn;
 using ::testing::HasSubstr;
+using ::testing::ValuesIn;
 using spvtest::ScopedContext;
 using std::ostringstream;
 using std::string;
@@ -367,7 +367,6 @@ TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceIsNotVariableTypeBad) {
                         "OpTypeVariable. Found OpTypePointer."));
 }
 
-
 TEST_F(ValidateIdWithMessage, OpEntryPointInterfaceStorageClassBad) {
   string spirv = R"(
                OpCapability Shader
@@ -564,7 +563,7 @@ class OpTypeArrayLengthTest
   ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
 
   // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
-  spv_result_t Val(const SpirvVector& v, const std::string &expected_err = "") {
+  spv_result_t Val(const SpirvVector& v, const std::string& expected_err = "") {
     spv_const_binary_t cbinary{v.data(), v.size()};
     const auto status =
         spvValidate(ScopedContext().context, &cbinary, &diagnostic_);
@@ -1957,8 +1956,7 @@ TEST_F(ValidateIdWithMessage, OpLoadVarPtrOpFunctionCallGood) {
     %result    = OpLoad %f32 %varptr
   )";
 
-  createVariablePointerSpirvProgram(&spirv,
-                                    result_strategy,
+  createVariablePointerSpirvProgram(&spirv, result_strategy,
                                     true /* Add VariablePointers Capability?*/,
                                     true /* Use Helper Function? */);
   CompileSuccessfully(spirv.str());
@@ -2001,8 +1999,7 @@ TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   // Prove that SSA checks trigger for a bad Id value.
   // The next test case show the not-a-logical-pointer case.
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 8 has not been defined"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 8 has not been defined"));
 }
 
 // Disabled as bitcasting type to object is now not valid.
@@ -2163,6 +2160,177 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '7's type does not match Object "
                         "<id> '3's type."));
+}
+
+// The next series of test check test a relaxation of the rules for stores to
+// structs.  The first test checks that we get a failure when the option is not
+// set to relax the rule.
+TEST_F(ValidateIdWithMessage, OpStoreTypeBadStruct) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 0
+     OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 4
+%3 = OpTypeVoid
+%4 = OpTypeFloat 32
+%1 = OpTypeStruct %4 %4
+%5 = OpTypePointer UniformConstant %1
+%2 = OpTypeStruct %4 %4
+%6 = OpTypeFunction %3
+%7 = OpConstant %4 3.14
+%8 = OpVariable %5 UniformConstant
+%9 = OpFunction %3 None %6
+%10 = OpLabel
+%11 = OpCompositeConstruct %2 %7 %7
+      OpStore %8 %11
+      OpReturn
+      OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpStore Pointer <id> '8's type does not match Object "
+                            "<id> '2's type."));
+}
+
+// Same code as the last test.  The difference is that we relax the rule.
+// Because the structs %3 and %5 are defined the same way.
+TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedStruct) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 0
+     OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 4
+%3 = OpTypeVoid
+%4 = OpTypeFloat 32
+%1 = OpTypeStruct %4 %4
+%5 = OpTypePointer UniformConstant %1
+%2 = OpTypeStruct %4 %4
+%6 = OpTypeFunction %3
+%7 = OpConstant %4 3.14
+%8 = OpVariable %5 UniformConstant
+%9 = OpFunction %3 None %6
+%10 = OpLabel
+%11 = OpCompositeConstruct %2 %7 %7
+      OpStore %8 %11
+      OpReturn
+      OpFunctionEnd)";
+  spvValidatorOptionsSetRelaxStoreStruct(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// This test check that we recursively traverse the struct to check if they are
+// interchangable.
+TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedNestedStruct) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 0
+     OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 8
+     OpMemberDecorate %3 0 Offset 0
+     OpMemberDecorate %3 1 Offset 4
+     OpMemberDecorate %4 0 Offset 0
+     OpMemberDecorate %4 1 Offset 8
+%5 = OpTypeVoid
+%6 = OpTypeInt 32 0
+%7 = OpTypeFloat 32
+%1 = OpTypeStruct %7 %6
+%2 = OpTypeStruct %1 %1
+%8 = OpTypePointer UniformConstant %2
+%3 = OpTypeStruct %7 %6
+%4 = OpTypeStruct %3 %3
+%9 = OpTypeFunction %5
+%10 = OpConstant %6 7
+%11 = OpConstant %7 3.14
+%12 = OpVariable %8 UniformConstant
+%13 = OpFunction %5 None %9
+%14 = OpLabel
+%15 = OpCompositeConstruct %3 %11 %6
+%16 = OpCompositeConstruct %4 %11 %11
+      OpStore %12 %16
+      OpReturn
+      OpFunctionEnd)";
+  spvValidatorOptionsSetRelaxStoreStruct(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// This test check that the even with the relaxed rules an error is identified
+// if the members of the struct are in a different order.
+TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 0
+     OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 8
+     OpMemberDecorate %3 0 Offset 0
+     OpMemberDecorate %3 1 Offset 4
+     OpMemberDecorate %4 0 Offset 0
+     OpMemberDecorate %4 1 Offset 8
+%5 = OpTypeVoid
+%6 = OpTypeInt 32 0
+%7 = OpTypeFloat 32
+%1 = OpTypeStruct %6 %7
+%2 = OpTypeStruct %1 %1
+%8 = OpTypePointer UniformConstant %2
+%3 = OpTypeStruct %7 %6
+%4 = OpTypeStruct %3 %3
+%9 = OpTypeFunction %5
+%10 = OpConstant %6 7
+%11 = OpConstant %7 3.14
+%12 = OpVariable %8 UniformConstant
+%13 = OpFunction %5 None %9
+%14 = OpLabel
+%15 = OpCompositeConstruct %3 %11 %6
+%16 = OpCompositeConstruct %4 %11 %11
+      OpStore %12 %16
+      OpReturn
+      OpFunctionEnd)";
+  spvValidatorOptionsSetRelaxStoreStruct(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpStore Pointer <id> '12's type does not match Object "
+                            "<id> '4's type."));
+}
+
+// This test check that the even with the relaxed rules an error is identified
+// if the members of the struct are at different offsets.
+TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 4
+     OpMemberDecorate %1 1 Offset 0
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 8
+     OpMemberDecorate %3 0 Offset 0
+     OpMemberDecorate %3 1 Offset 4
+     OpMemberDecorate %4 0 Offset 0
+     OpMemberDecorate %4 1 Offset 8
+%5 = OpTypeVoid
+%6 = OpTypeInt 32 0
+%7 = OpTypeFloat 32
+%1 = OpTypeStruct %7 %6
+%2 = OpTypeStruct %1 %1
+%8 = OpTypePointer UniformConstant %2
+%3 = OpTypeStruct %7 %6
+%4 = OpTypeStruct %3 %3
+%9 = OpTypeFunction %5
+%10 = OpConstant %6 7
+%11 = OpConstant %7 3.14
+%12 = OpVariable %8 UniformConstant
+%13 = OpFunction %5 None %9
+%14 = OpLabel
+%15 = OpCompositeConstruct %3 %11 %6
+%16 = OpCompositeConstruct %4 %11 %11
+      OpStore %12 %16
+      OpReturn
+      OpFunctionEnd)";
+  spvValidatorOptionsSetRelaxStoreStruct(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpStore Pointer <id> '12's type does not match Object "
+                            "<id> '4's type."));
 }
 
 TEST_F(ValidateIdWithMessage, OpStoreVoid) {
@@ -2436,7 +2604,8 @@ TEST_P(AccessChainInstructionTest, AccessChainGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup +
                  "%float_entry = " + instr +
-                 R"( %_ptr_Private_float %my_matrix )" + elem + R"(%int_0 %int_1
+      R"( %_ptr_Private_float %my_matrix )" + elem +
+      R"(%int_0 %int_1
               OpReturn
               OpFunctionEnd
           )";
@@ -2469,7 +2638,8 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %float_entry = )" +
-                 instr + " %_ptr_Private_float %void " + elem + R"(%int_0 %int_1
+      instr + " %_ptr_Private_float %void " + elem +
+      R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -2486,7 +2656,8 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_float %_ptr_Private_float )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2506,7 +2677,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Function_float %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2527,7 +2699,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(%int_0
 OpReturn
 OpFunctionEnd
@@ -2546,7 +2719,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -2561,7 +2735,8 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_mat4x3 %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -2710,9 +2885,10 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+  string spirv =
+      kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
-                 R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
+          R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -2729,8 +2905,9 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%f = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
-                 elem + R"(%int_0 %spec_int %int_2
+%f = )" +
+      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+      R"(%int_0 %spec_int %int_2
 OpReturn
 OpFunctionEnd
   )";
@@ -2748,7 +2925,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_1 %int_2
 OpReturn
@@ -2768,7 +2946,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_2 %int_2
 OpReturn
@@ -2787,7 +2966,8 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_3 %int_2 %int_2
 OpReturn
@@ -2874,7 +3054,8 @@ TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem +
                  R"(%int_0 %int_1 %int_0
 OpReturn
@@ -2894,7 +3075,8 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" + instr +
+%entry = )" +
+      instr +
                  R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -3836,7 +4018,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsVariableInLogical) {
 TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrGood) {
   std::ostringstream spirv;
   createVariablePointerSpirvProgram(&spirv,
-                                    ""   /* Instructions to add to "main" */,
+                                    "" /* Instructions to add to "main" */,
                                     true /* Add VariablePointers Capability?*/,
                                     true /* Use Helper Function? */);
   CompileSuccessfully(spirv.str());
@@ -3850,9 +4032,9 @@ TEST_F(ValidateIdWithMessage, OpReturnValueVarPtrGood) {
 TEST_F(ValidateIdWithMessage, DISABLED_OpReturnValueVarPtrBad) {
   std::ostringstream spirv;
   createVariablePointerSpirvProgram(&spirv,
-                                    ""    /* Instructions to add to "main" */,
+                                    "" /* Instructions to add to "main" */,
                                     false /* Add VariablePointers Capability?*/,
-                                    true  /* Use Helper Function? */);
+                                    true /* Use Helper Function? */);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),

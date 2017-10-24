@@ -41,6 +41,7 @@ struct spv_validator_options_t {
       : universal_limits_() {}
 
   validator_universal_limits_t universal_limits_;
+  bool relax_struct_store{false};
 };
 
 #endif  // LIBSPIRV_SPIRV_VALIDATOR_OPTIONS_H_

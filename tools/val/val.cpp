@@ -44,6 +44,7 @@ Options:
   --max-function-args              <maximum number arguments allowed per function>
   --max-control-flow-nesting-depth <maximum Control Flow nesting depth allowed>
   --max-access-chain-indexes       <maximum number of indexes allowed to use for Access Chain instructions>
+  --relax-struct-store             Allow store from one struct type to a different, but interchangeable, type.
   --version                        Display validator version information.
   --target-env                     {vulkan1.0|spv1.0|spv1.1|spv1.2}
                                    Use Vulkan1.0/SPIR-V1.0/SPIR-V1.1/SPIR-V1.2 validation rules.
@@ -109,6 +110,8 @@ int main(int argc, char** argv) {
           continue_processing = false;
           return_code = 1;
         }
+      } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
+        options.SetRelaxStructStore(true);
       } else if (0 == cur_arg[1]) {
         // Setting a filename of "-" to indicate stdin.
         if (!inFile) {
