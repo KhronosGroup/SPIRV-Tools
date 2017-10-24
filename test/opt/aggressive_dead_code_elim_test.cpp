@@ -1388,6 +1388,271 @@ OpFunctionEnd
       assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, EliminateDeadIf) {
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     float d;
+  //     if (BaseColor.x == 0)
+  //       d = BaseColor.y;
+  //     else
+  //       d = BaseColor.z;
+  //     OutColor = vec4(1.0,1.0,1.0,1.0);
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %d "d"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%float_1 = OpConstant %float 1
+%21 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%float_1 = OpConstant %float 1
+%21 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %7
+%22 = OpLabel
+%d = OpVariable %_ptr_Function_float Function
+%23 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%24 = OpLoad %float %23
+%25 = OpFOrdEqual %bool %24 %float_0 
+OpSelectionMerge %26 None
+OpBranchConditional %25 %27 %28
+%27 = OpLabel
+%29 = OpAccessChain %_ptr_Input_float %BaseColor %uint_1
+%30 = OpLoad %float %29
+OpStore %d %30
+OpBranch %26
+%28 = OpLabel
+%31 = OpAccessChain %_ptr_Input_float %BaseColor %uint_2
+%32 = OpLoad %float %31
+OpStore %d %32
+OpBranch %26
+%26 = OpLabel
+OpStore %OutColor %21
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %7
+%22 = OpLabel
+OpBranch %26
+%26 = OpLabel
+OpStore %OutColor %21
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs_before + func_before, 
+      predefs_after + func_after, 
+      true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateLiveIf) {
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     float t;
+  //     if (BaseColor.x == 0)
+  //       t = BaseColor.y;
+  //     else
+  //       t = BaseColor.z;
+  //     OutColor = vec4(t);
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %t "t"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %7
+%20 = OpLabel
+%t = OpVariable %_ptr_Function_float Function
+%21 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%22 = OpLoad %float %21
+%23 = OpFOrdEqual %bool %22 %float_0
+OpSelectionMerge %24 None
+OpBranchConditional %23 %25 %26
+%25 = OpLabel
+%27 = OpAccessChain %_ptr_Input_float %BaseColor %uint_1
+%28 = OpLoad %float %27
+OpStore %t %28
+OpBranch %24
+%26 = OpLabel
+%29 = OpAccessChain %_ptr_Input_float %BaseColor %uint_2
+%30 = OpLoad %float %29
+OpStore %t %30
+OpBranch %24
+%24 = OpLabel
+%31 = OpLoad %float %t
+%32 = OpCompositeConstruct %v4float %31 %31 %31 %31
+OpStore %OutColor %32
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateIfWithPhi) {
+  // Note: Assembly hand-optimized from GLSL
+  //
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     float t;
+  //     if (BaseColor.x == 0)
+  //       t = 0.0;
+  //     else
+  //       t = 1.0;
+  //     OutColor = vec4(t);
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%float_1 = OpConstant %float 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %6
+%18 = OpLabel
+%19 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%20 = OpLoad %float %19
+%21 = OpFOrdEqual %bool %20 %float_0
+OpSelectionMerge %22 None
+OpBranchConditional %21 %23 %24
+%23 = OpLabel
+OpBranch %22
+%24 = OpLabel
+OpBranch %22
+%22 = OpLabel
+%25 = OpPhi %float %float_0 %23 %float_1 %24
+%26 = OpCompositeConstruct %v4float %25 %25 %25 %25
+OpStore %OutColor %26
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      assembly, assembly, true, true);
+}
+
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
