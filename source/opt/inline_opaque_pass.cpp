@@ -26,7 +26,7 @@ namespace {
 } // anonymous namespace
 
 bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
-  const ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  const ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   switch (typeInst->opcode()) {
     case SpvOpTypeSampler:
     case SpvOpTypeImage:
@@ -58,7 +58,7 @@ bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
   int ocnt = 0;
   callInst->ForEachInId([&icnt,&ocnt,this](const uint32_t *iid) {
     if (icnt > 0) {
-      const ir::Instruction* argInst = def_use_mgr_->GetDef(*iid);
+      const ir::Instruction* argInst = get_def_use_mgr()->GetDef(*iid);
       if (IsOpaqueType(argInst->type_id()))
         ++ocnt;
     }
@@ -106,8 +106,8 @@ Pass::Status InlineOpaquePass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return InlineOpaque(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
+  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

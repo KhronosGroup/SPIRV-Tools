@@ -20,8 +20,7 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status EliminateDeadFunctionsPass::Process(ir::Module* module) {
-  bool modified = false;
-  module_ = module;
+  InitializeProcessing(module);
 
   // Identify live functions first.  Those that are not live
   // are dead.
@@ -32,8 +31,8 @@ Pass::Status EliminateDeadFunctionsPass::Process(ir::Module* module) {
   };
   ProcessReachableCallTree(mark_live, module);
 
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
   FindNamedOrDecoratedIds();
+  bool modified = false;
   for (auto funcIter = module->begin(); funcIter != module->end();) {
     if (live_function_set.count(&*funcIter) == 0) {
       modified = true;
@@ -53,7 +52,7 @@ void EliminateDeadFunctionsPass::EliminateFunction(ir::Function* func) {
   func->ForEachInst(
       [this](ir::Instruction* inst) {
         KillNamesAndDecorates(inst);
-        def_use_mgr_->KillInst(inst);
+        get_def_use_mgr()->KillInst(inst);
       },
       true);
 }

@@ -30,7 +30,7 @@ const uint32_t kStoreValIdInIdx = 1;
 bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
     return true;
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
@@ -68,7 +68,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           if (pinned_vars_.find(varId) == pinned_vars_.end()) {
             auto si = var2store_.find(varId);
             if (si != var2store_.end()) {
-              def_use_mgr_->KillInst(si->second);
+              get_def_use_mgr()->KillInst(si->second);
             }
           }
           var2store_[varId] = &*ii;
@@ -138,8 +138,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
 }
 
 void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
-
-  module_ = module;
+  InitializeProcessing(module);
 
   // Initialize Target Type Caches
   seen_target_vars_.clear();
@@ -148,19 +147,13 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::Module* module) {
   // Clear collections
   supported_ref_ptrs_.clear();
 
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
-  // Start new ids with next availablein module
-  InitNextId();
-
   // Initialize extensions whitelist
   InitExtensions();
 };
 
 bool LocalSingleBlockLoadStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -171,12 +164,12 @@ bool LocalSingleBlockLoadStoreElimPass::AllExtensionsSupported() const {
 
 Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
-  if (module_->HasCapability(SpvCapabilityAddresses))
+  if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
-  for (auto& ai : module_->annotations())
+  for (auto& ai : get_module()->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // If any extensions in the module are not explicitly supported,
@@ -189,7 +182,7 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return LocalSingleBlockLoadStoreElim(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

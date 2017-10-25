@@ -47,28 +47,6 @@ class DeadBranchElimPass : public MemPass {
   Status Process(ir::Module*) override;
 
  private:
-  // Returns the id of the merge block declared by a merge instruction in 
-  // this block |blk|, if any. If none, returns zero. If loop merge, returns
-  // the continue target id in |cbid|. Otherwise sets to zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) const;
-
-  // Compute structured successors for function |func|.
-  // A block's structured successors are the blocks it branches to
-  // together with its declared merge block if it has one.
-  // When order matters, the merge block always appears first and if
-  // a loop merge block, the continue target always appears second.
-  // This assures correct depth first search in the presence of early 
-  // returns and kills. If the successor vector contain duplicates
-  // of the merge and continue blocks, they are safely ignored by DFS.
-  void ComputeStructuredSuccessors(ir::Function* func);
-
-  // Compute structured block order |order| for function |func|. This order
-  // has the property that dominators are before all blocks they dominate and
-  // merge blocks are after all blocks that are in the control constructs of
-  // their header.
-  void ComputeStructuredOrder(
-    ir::Function* func, std::list<ir::BasicBlock*>* order);
-
   // If |condId| is boolean constant, return conditional value in |condVal| and
   // return true, otherwise return false.
   bool GetConstCondition(uint32_t condId, bool* condVal);
@@ -120,14 +98,6 @@ class DeadBranchElimPass : public MemPass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Map from block's label id to block.
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
-  // Map from block to its structured successor blocks. See 
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-  
   // All backedge branches in current function
   std::unordered_set<ir::Instruction*> backedges_;
 
