@@ -266,9 +266,29 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
         inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
         id_to_decoration_insts_[to].push_back(inst);
         break;
-      case SpvOpGroupMemberDecorate:
-        // TODO: for each (id == from), get literal and add (to, literal) as operands
+      case SpvOpGroupMemberDecorate: {
+        bool is_id = false; // we start with decoration group id, followed by target-id, literal, target-id...
+        bool to_add = false;
+        // for each (id == from), get literal and add (to, literal) as operands
+        inst->ForEachInOperand([&](uint32_t* operand) {
+          if (is_id) {
+            if (*operand == from) {
+              to_add = true;
+              inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+            }
+            is_id = false;
+          } else { // is literal
+            if (to_add) {
+              to_add = false;
+              inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*operand}));
+            }
+            is_id = true;
+          }
+        });
+        assert(is_id && "mal-formed SpvOpGroupMemberDecorate encountered.");
+        id_to_decoration_insts_[to].push_back(inst);
         break;
+      }
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateId: {

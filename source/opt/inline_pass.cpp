@@ -174,6 +174,7 @@ uint32_t InlinePass::CreateReturnVar(
           {SpvStorageClassFunction}}}));
     new_vars->push_back(std::move(var_inst));
   }
+  dec_mgr_->CloneDecorations(calleeFn->result_id(), returnVarId);
   return returnVarId;
 }
 
@@ -477,8 +478,8 @@ void InlinePass::GenInlineCode(
             nid = this->TakeNextId();
             callee2caller[rid] = nid;
           }
-          dec_mgr_->CloneDecorations(rid, nid);
           cp_inst->SetResultId(nid);
+          dec_mgr_->CloneDecorations(rid, nid);
         }
         new_blk_ptr->AddInstruction(std::move(cp_inst));
       } break;

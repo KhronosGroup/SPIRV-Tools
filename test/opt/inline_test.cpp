@@ -2252,6 +2252,8 @@ TEST_F(InlineTest, Decorated1) {
   // Same test as Simple with the difference
   // that OpFAdd in the outlined function is
   // decorated with RelaxedPrecision
+  // Expected result is an equal decoration
+  // of the corresponding inlined instruction
   //
   // #version 140
   //
@@ -2371,6 +2373,130 @@ OpFunctionEnd
   true);
 }
 
+TEST_F(InlineTest, Decorated2) {
+  // Same test as Simple with the difference
+  // that the Result <id> of the outlined OpFunction
+  // is decorated with RelaxedPrecision
+  // Expected result is an equal decoration
+  // of the created return variable
+  //
+  // #version 140
+  //
+  // in vec4 BaseColor;
+  //
+  // float foo(vec4 bar)
+  // {
+  //     return bar.x + bar.y;
+  // }
+  //
+  // void main()
+  // {
+  //     vec4 color = vec4(foo(BaseColor));
+  //     gl_FragColor = color;
+  // }
+
+  const std::string predefs =
+  R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %foo_vf4_ "foo(vf4;"
+OpName %bar "bar"
+OpName %color "color"
+OpName %BaseColor "BaseColor"
+OpName %param "param"
+OpName %gl_FragColor "gl_FragColor"
+OpDecorate %foo_vf4_ RelaxedPrecision
+)";
+
+  const std::string before =
+  R"(%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%14 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %10
+%21 = OpLabel
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %BaseColor
+OpStore %param %22
+%23 = OpFunctionCall %float %foo_vf4_ %param
+%24 = OpCompositeConstruct %v4float %23 %23 %23 %23
+OpStore %color %24
+%25 = OpLoad %v4float %color
+OpStore %gl_FragColor %25
+OpReturn
+OpFunctionEnd
+)";
+
+
+  const std::string after =
+  R"(OpDecorate %32 RelaxedPrecision
+%void = OpTypeVoid
+%10 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%14 = OpTypeFunction %float %_ptr_Function_v4float
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+%main = OpFunction %void None %10
+%21 = OpLabel
+%32 = OpVariable %_ptr_Function_float Function
+%color = OpVariable %_ptr_Function_v4float Function
+%param = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %BaseColor
+OpStore %param %22
+%33 = OpAccessChain %_ptr_Function_float %param %uint_0
+%34 = OpLoad %float %33
+%35 = OpAccessChain %_ptr_Function_float %param %uint_1
+%36 = OpLoad %float %35
+%37 = OpFAdd %float %34 %36
+OpStore %32 %37
+%23 = OpLoad %float %32
+%24 = OpCompositeConstruct %v4float %23 %23 %23 %23
+OpStore %color %24
+%25 = OpLoad %v4float %color
+OpStore %gl_FragColor %25
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string nonEntryFuncs =
+  R"(%foo_vf4_ = OpFunction %float None %14
+%bar = OpFunctionParameter %_ptr_Function_v4float
+%26 = OpLabel
+%27 = OpAccessChain %_ptr_Function_float %bar %uint_0
+%28 = OpLoad %float %27
+%29 = OpAccessChain %_ptr_Function_float %bar %uint_1
+%30 = OpLoad %float %29
+%31 = OpFAdd %float %28 %30
+OpReturnValue %31
+OpFunctionEnd
+)";
+  SinglePassRunAndCheck<opt::InlineExhaustivePass>(
+  predefs + before + nonEntryFuncs, predefs + after + nonEntryFuncs, false,
+  true);
+}
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
