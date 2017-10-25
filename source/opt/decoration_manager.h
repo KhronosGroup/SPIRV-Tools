@@ -62,7 +62,7 @@ class DecorationManager {
   // Clone all decorations from one id |from|.
   // The cloned decorations are assigned to the given id |to| and are
   // added to the module. The purpose is to decorate cloned instructions.
-  // This function does not check, if the id |to| is already decorated.
+  // This function does not check if the id |to| is already decorated.
   void CloneDecorations(uint32_t from, uint32_t to);
 
  private:

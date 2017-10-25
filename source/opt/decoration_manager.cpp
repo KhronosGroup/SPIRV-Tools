@@ -233,7 +233,7 @@ std::vector<T> DecorationManager::InternalGetDecorationsFor(
 void DecorationManager::ForEachDecoration(uint32_t id,
                                           uint32_t decoration,
                                           std::function<void(const ir::Instruction&)> f) {
-  for (const ir::Instruction* inst : GetDecorationsFor(id, false)) {
+  for (const ir::Instruction* inst : GetDecorationsFor(id, true)) {
     switch (inst->opcode()) {
       case SpvOpDecorate:
         if (inst->GetSingleWordInOperand(1) == decoration) {
