@@ -85,11 +85,13 @@ class AggressiveDCEPass : public MemPass {
   // If |varId| is local, mark all stores of varId as live.
   void ProcessLoad(uint32_t varId);
 
-  // If |bp| is structured if header block, return true and set |branchInst|
-  // to the conditional branch and |mergeBlockId| to the merge block.
-  bool IsStructuredIfHeader(ir::BasicBlock* bp, ir::Instruction** mergeInst,
-                            ir::Instruction** branchInst,
-                            uint32_t* mergeBlockId);
+  // If |bp| is structured if or loop header block, return true and set
+  // |mergeInst| to the merge instruction, |branchInst| to the conditional
+  // branch and |mergeBlockId| to the merge block if they are not nullptr.
+  bool IsStructuredIfOrLoopHeader(ir::BasicBlock* bp,
+                                  ir::Instruction** mergeInst,
+                                  ir::Instruction** branchInst,
+                                  uint32_t* mergeBlockId);
 
   // Initialize block2branch_ and block2merge_ using |structuredOrder| to
   // order blocks.
@@ -101,7 +103,7 @@ class AggressiveDCEPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
-  // Add all branches to |labelId| to worklist if not already live
+  // Add all branches targeting |labelId| to worklist if not already live
   void AddBranchesToWorklist(uint32_t labelId);
 
   // For function |func|, mark all Stores to non-function-scope variables
