@@ -270,6 +270,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_image.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_instruction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/validate_literals.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_logicals.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_primitives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/validate_type_unique.cpp
