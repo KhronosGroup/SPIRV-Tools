@@ -24,7 +24,8 @@
 typedef struct spv_opcode_desc_t {
   const char* name;
   const SpvOp opcode;
-  const libspirv::CapabilitySet capabilities;
+  const uint32_t numCapabilities;
+  const SpvCapability* capabilities;
   // operandTypes[0..numTypes-1] describe logical operands for the instruction.
   // The operand types include result id and result-type id, followed by
   // the types of arguments.
@@ -37,12 +38,14 @@ typedef struct spv_opcode_desc_t {
 typedef struct spv_operand_desc_t {
   const char* name;
   const uint32_t value;
-  const libspirv::CapabilitySet capabilities;
+  const uint32_t numCapabilities;
+  const SpvCapability* capabilities;
   // A set of extensions that enable this feature. If empty then this operand
   // value is always enabled, i.e. it's in core. The assembler, binary parser,
   // and disassembler ignore this rule, so you can freely process invalid
   // modules.
-  const libspirv::ExtensionSet extensions;
+  const uint32_t numExtensions;
+  const libspirv::Extension* extensions;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_operand_desc_t;
 
@@ -55,7 +58,8 @@ typedef struct spv_operand_desc_group_t {
 typedef struct spv_ext_inst_desc_t {
   const char* name;
   const uint32_t ext_inst;
-  const libspirv::CapabilitySet capabilities;
+  const uint32_t numCapabilities;
+  const SpvCapability* capabilities;
   const spv_operand_type_t operandTypes[16];  // TODO: Smaller/larger?
 } spv_ext_inst_desc_t;
 

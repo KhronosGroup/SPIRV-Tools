@@ -80,17 +80,18 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
 // Checks if |capability| was enabled by extension.
 bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
   spv_operand_desc operand_desc = nullptr;
-  _.grammar().lookupOperand(
-      SPV_OPERAND_TYPE_CAPABILITY, capability, &operand_desc);
+  _.grammar().lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability,
+                            &operand_desc);
 
   // operand_desc is expected to be not null, otherwise validator would have
   // failed at an earlier stage. This 'assert' is 'just in case'.
   assert(operand_desc);
 
-  if (operand_desc->extensions.IsEmpty())
-    return false;
+  ExtensionSet operand_exts(operand_desc->numExtensions,
+                            operand_desc->extensions);
+  if (operand_exts.IsEmpty()) return false;
 
-  return _.HasAnyOfExtensions(operand_desc->extensions);
+  return _.HasAnyOfExtensions(operand_exts);
 }
 
 }  // namespace
@@ -100,8 +101,7 @@ bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
 spv_result_t CapabilityPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  if (opcode != SpvOpCapability)
-    return SPV_SUCCESS;
+  if (opcode != SpvOpCapability) return SPV_SUCCESS;
 
   assert(inst->num_operands == 1);
 
@@ -118,9 +118,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
         !IsSupportOptionalVulkan_1_0(capability) &&
         !IsEnabledByExtension(_, capability)) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY)
-          << "Capability value " << capability
-          << " is not allowed by Vulkan 1.0 specification"
-          << " (or requires extension)";
+             << "Capability value " << capability
+             << " is not allowed by Vulkan 1.0 specification"
+             << " (or requires extension)";
     }
   }
 

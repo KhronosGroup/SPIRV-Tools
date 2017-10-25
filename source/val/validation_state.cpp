@@ -215,15 +215,13 @@ bool ValidationState_t::IsDefinedId(uint32_t id) const {
 
 const Instruction* ValidationState_t::FindDef(uint32_t id) const {
   auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end())
-    return nullptr;
+  if (it == all_definitions_.end()) return nullptr;
   return it->second;
 }
 
 Instruction* ValidationState_t::FindDef(uint32_t id) {
   auto it = all_definitions_.find(id);
-  if (it == all_definitions_.end())
-    return nullptr;
+  if (it == all_definitions_.end()) return nullptr;
   return it->second;
 }
 
@@ -283,8 +281,8 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
   spv_operand_desc desc;
   if (SPV_SUCCESS ==
       grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, cap, &desc)) {
-    desc->capabilities.ForEach(
-        [this](SpvCapability c) { RegisterCapability(c); });
+    CapabilitySet(desc->numCapabilities, desc->capabilities)
+        .ForEach([this](SpvCapability c) { RegisterCapability(c); });
   }
 
   switch (cap) {
@@ -464,8 +462,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
       break;
   }
 
-  if (inst->type_id())
-    return GetComponentType(inst->type_id());
+  if (inst->type_id()) return GetComponentType(inst->type_id());
 
   assert(0);
   return 0;
@@ -489,8 +486,7 @@ uint32_t ValidationState_t::GetDimension(uint32_t id) const {
       break;
   }
 
-  if (inst->type_id())
-    return GetDimension(inst->type_id());
+  if (inst->type_id()) return GetDimension(inst->type_id());
 
   assert(0);
   return 0;
@@ -504,8 +500,7 @@ uint32_t ValidationState_t::GetBitWidth(uint32_t id) const {
   if (inst->opcode() == SpvOpTypeFloat || inst->opcode() == SpvOpTypeInt)
     return inst->word(2);
 
-  if (inst->opcode() == SpvOpTypeBool)
-    return 1;
+  if (inst->opcode() == SpvOpTypeBool) return 1;
 
   assert(0);
   return 0;
@@ -607,16 +602,15 @@ bool ValidationState_t::IsFloatMatrixType(uint32_t id) const {
   return false;
 }
 
-bool ValidationState_t::GetMatrixTypeInfo(
-    uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
-    uint32_t* column_type, uint32_t* component_type) const {
-  if (!id)
-    return false;
+bool ValidationState_t::GetMatrixTypeInfo(uint32_t id, uint32_t* num_rows,
+                                          uint32_t* num_cols,
+                                          uint32_t* column_type,
+                                          uint32_t* component_type) const {
+  if (!id) return false;
 
   const Instruction* mat_inst = FindDef(id);
   assert(mat_inst);
-  if (mat_inst->opcode() != SpvOpTypeMatrix)
-    return false;
+  if (mat_inst->opcode() != SpvOpTypeMatrix) return false;
 
   const uint32_t vec_type = mat_inst->word(2);
   const Instruction* vec_inst = FindDef(vec_type);
@@ -638,19 +632,16 @@ bool ValidationState_t::GetMatrixTypeInfo(
 bool ValidationState_t::GetStructMemberTypes(
     uint32_t struct_type_id, std::vector<uint32_t>* member_types) const {
   member_types->clear();
-  if (!struct_type_id)
-    return false;
+  if (!struct_type_id) return false;
 
   const Instruction* inst = FindDef(struct_type_id);
   assert(inst);
-  if (inst->opcode() != SpvOpTypeStruct)
-    return false;
+  if (inst->opcode() != SpvOpTypeStruct) return false;
 
-  *member_types = std::vector<uint32_t>(inst->words().cbegin() + 2,
-                                        inst->words().cend());
+  *member_types =
+      std::vector<uint32_t>(inst->words().cbegin() + 2, inst->words().cend());
 
- if (member_types->empty())
-   return false;
+  if (member_types->empty()) return false;
 
   return true;
 }
@@ -661,15 +652,13 @@ bool ValidationState_t::IsPointerType(uint32_t id) const {
   return inst->opcode() == SpvOpTypePointer;
 }
 
-bool ValidationState_t::GetPointerTypeInfo(
-    uint32_t id, uint32_t* data_type, uint32_t* storage_class) const {
-  if (!id)
-    return false;
+bool ValidationState_t::GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
+                                           uint32_t* storage_class) const {
+  if (!id) return false;
 
   const Instruction* inst = FindDef(id);
   assert(inst);
-  if (inst->opcode() != SpvOpTypePointer)
-    return false;
+  if (inst->opcode() != SpvOpTypePointer) return false;
 
   *storage_class = inst->word(2);
   *data_type = inst->word(3);
@@ -677,12 +666,11 @@ bool ValidationState_t::GetPointerTypeInfo(
 }
 
 uint32_t ValidationState_t::GetOperandTypeId(
-    const spv_parsed_instruction_t* inst,
-    size_t operand_index) const {
+    const spv_parsed_instruction_t* inst, size_t operand_index) const {
   assert(operand_index < inst->num_operands);
   const spv_parsed_operand_t& operand = inst->operands[operand_index];
   assert(operand.num_words == 1);
   return GetTypeId(inst->words[operand.offset]);
 }
 
-}  /// namespace libspirv
+}  // namespace libspirv

@@ -46,6 +46,9 @@ class EnumSet {
   EnumSet(std::initializer_list<EnumType> cs) {
     for (auto c : cs) Add(c);
   }
+  EnumSet(uint32_t count, const EnumType* ptr) {
+    for (uint32_t i = 0; i < count; ++i) Add(ptr[i]);
+  }
   // Copy constructor.
   EnumSet(const EnumSet& other) { *this = other; }
   // Move constructor.  The moved-from set is emptied.
@@ -95,15 +98,12 @@ class EnumSet {
   bool HasAnyOf(const EnumSet<EnumType>& in_set) const {
     if (in_set.IsEmpty()) return true;
 
-    if (mask_ & in_set.mask_)
-      return true;
+    if (mask_ & in_set.mask_) return true;
 
-    if (!overflow_ || !in_set.overflow_)
-      return false;
+    if (!overflow_ || !in_set.overflow_) return false;
 
     for (uint32_t item : *in_set.overflow_) {
-      if (overflow_->find(item) != overflow_->end())
-        return true;
+      if (overflow_->find(item) != overflow_->end()) return true;
     }
 
     return false;
