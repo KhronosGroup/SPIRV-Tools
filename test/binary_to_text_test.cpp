@@ -189,16 +189,6 @@ INSTANTIATE_TEST_CASE_P(
          "%2 = OpTypeVector %1 4",
          spvtest::MakeInstruction(SpvOpConstant, {2, 3, 999}),
          "Type Id 2 is not a scalar numeric type"},
-        // Three tests to check the upper bits of literal numbers
-        {"%1 = OpTypeInt 8 1",
-        spvtest::MakeInstruction(SpvOpConstant, {1, 2, 0xABCDEF00}),
-        "Upper bits of literal number are invalid"},
-        {"%1 = OpTypeInt 16 1",
-         spvtest::MakeInstruction(SpvOpConstant, {1, 2, 0xABCD0000}),
-         "Upper bits of literal number are invalid"},
-        {"%1 = OpTypeFloat 16",
-         spvtest::MakeInstruction(SpvOpConstant, {1, 2, 0x0E0F0000}),
-         "Upper bits of literal number are invalid"},
     }), );
 
 INSTANTIATE_TEST_CASE_P(
