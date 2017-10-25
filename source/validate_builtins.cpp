@@ -32,7 +32,7 @@ namespace { // utils
 enum AnyValue { kAnyBits=-3, kAnySize=-2, kAnySign=-1 };
 enum Signedness { kUnsigned=0, kSigned=1 };
 
-// Struct modeling the OpTypeInt/Float/Bool "elemental" types 
+// Struct representing the OpTypeInt/Float/Bool "elemental" types
 struct ElemType {
   SpvOp type; // Elemental type (e.g. int, float, bool)
   int bits; // Bits number (e.g. 32, 16, 64), 0 means any number
@@ -42,7 +42,7 @@ struct ElemType {
     : type(type_), bits(bits_), sign(sign_) { }
 };
 
-// Struct modeling the OpTypeVector/Array "composed" types
+// Struct representing the OpTypeVector/Array "composed" types
 struct CompType {
   SpvOp type; // Composed type (e.g. vector, array)
   int size; // Number of components, 0 means any number
@@ -52,6 +52,7 @@ struct CompType {
 };
 
 // Returns the integer signedness of the target environment
+// Depending on SPV_ENV_VULKAN / CL, the int is signed or unsgined
 int Sign(ValidationState_t& vstate) {
   switch (vstate.context()->target_env) {
     case SPV_ENV_VULKAN_1_0:
@@ -60,10 +61,10 @@ int Sign(ValidationState_t& vstate) {
     case SPV_ENV_OPENGL_4_2:
     case SPV_ENV_OPENGL_4_3:
     case SPV_ENV_OPENGL_4_5:
-      return kSigned;
+      return kSigned; // Shader models prefer integers ints
     case SPV_ENV_OPENCL_2_1:
     case SPV_ENV_OPENCL_2_2:
-      return kUnsigned;
+      return kUnsigned; // Kernel model required unsigned ints
     default:
       return kAnySign;
   }
@@ -162,7 +163,7 @@ std::vector<uint32_t> getExecutionModes(const Instruction* entry_point) {
 // Ensures |exec_model| is included in the list of compatible |models|
 spv_result_t CheckExecutionModel(ValidationState_t& vstate, const string& name,
       uint32_t exec_model, const std::vector<uint32_t>& models) {
-  if (not IsIncluded(exec_model, models)) {
+  if (!IsIncluded(exec_model, models)) {
     return vstate.diag(SPV_ERROR_INVALID_ID) << name
         << " built-in is restricted to certain EXECUTION MODELS"
            " (see SPIR-V, Vulkan, OpenGL, OpenCL specifications)";
@@ -177,7 +178,7 @@ spv_result_t CheckStorageClass(ValidationState_t& vstate,
   // If 'exec_model' is included in the list of 'models'
   if (IsIncluded(exec_model, models)) {
     // But 'storage_class' is not one of the compatible 'storages'
-    if (not IsIncluded(storage_class, storages)) {
+    if (!IsIncluded(storage_class, storages)) {
       return vstate.diag(SPV_ERROR_INVALID_ID) << name
           << " built-in is restricted to certain STORAGE CLASSES,"
              " depending on the execution model (see SPIR-V spec)";
@@ -543,8 +544,8 @@ spv_result_t CheckPrimitiveId(ValidationState_t& vstate, const Instruction* inst
   //                 should it be tested in validate_builtins.cpp instead?
 
   #if 0
-  if (not vstate.HasCapability(SpvCapabilityGeometry) &&
-      not vstate.HasCapability(SpvCapabilityTessellation)) {
+  if (!vstate.HasCapability(SpvCapabilityGeometry) &&
+      !vstate.HasCapability(SpvCapabilityTessellation)) {
     return vstate.diag(SPV_ERROR_INVALID_ID)
         << "In a fragment shader, any variable decorated with "
            "PrimitiveId must be declared using the Input storage "
@@ -993,7 +994,7 @@ spv_result_t CheckFragDepth(ValidationState_t& vstate, const Instruction* inst,
   auto entry_vec = getEntryPoints(vstate,inst);
   for (auto entry_point : entry_vec) {
     auto mode_vec = getExecutionModes(entry_point);
-    if (not IsIncluded(SpvExecutionModeDepthReplacing,mode_vec)) {
+    if (!IsIncluded(SpvExecutionModeDepthReplacing,mode_vec)) {
       return vstate.diag(SPV_ERROR_INVALID_ID)
           << "To write to FragDepth, a shader must declare the "
             "DepthReplacing execution mode (see Vulkan spec)";
@@ -1070,14 +1071,12 @@ spv_result_t CheckNumWorkgroups(ValidationState_t& vstate, const Instruction* in
   CompType comp = { SpvOpTypeVector, 3 };
   if (auto error = CheckBuiltInType(vstate, name, inst, elem, comp))
     return error;
-  
-  // TODO(jcaraban): depending on SPV_ENV_VULKAN / CL, the int is signed or unsgined
 
   return SPV_SUCCESS;
 }
 
 spv_result_t CheckWorkgroupSize(ValidationState_t& vstate, const Instruction* inst,
-    uint32_t storage_class, uint32_t exec_model)
+    uint32_t , uint32_t exec_model)
 {
   const string name = "WorkgroupSize";
   std::vector<uint32_t> exec_vec, stor_vec;
@@ -1085,8 +1084,7 @@ spv_result_t CheckWorkgroupSize(ValidationState_t& vstate, const Instruction* in
   // If an object is decorated with the WorkgroupSize decoration,
   // this must take precedence over any execution mode set for LocalSize
 
-  // TODO(jcaraban): can this be verified now?
-  //                 i.e. is this a compile or runtime restriction?
+  // TODO(jcaraban): can this be verified? or is this a rule for the drivers?
 
   // The WorkgroupSize decoration must be used only within compute shaders
   exec_vec = { SpvExecutionModelGLCompute,
@@ -1104,8 +1102,7 @@ spv_result_t CheckWorkgroupSize(ValidationState_t& vstate, const Instruction* in
   }
 
   // WrokgroupSize should not have storage class, and if it does,
-  // other validation should complain before reaching this line
-  assert(storage_class == SpvStorageClassMax);
+  // other validation pass should complain about it
   
   // The object decorated with WorkgroupSize must be declared as
   // a three-component vector of 32-bit integers.
@@ -2268,7 +2265,7 @@ spv_result_t ValidateBuiltIns(ValidationState_t& _)
   // For every instruction decorated with a built-in...
   for (const auto& inst_ref : _.ordered_instructions()) {
     const Instruction *inst = &inst_ref;
-    if (not IsBuiltIn(inst, _))
+    if (!IsBuiltIn(inst, _))
       continue;
     auto storage_class = GetStorageClass(inst);
     auto built_in = GetBuiltInEnum(inst, _);

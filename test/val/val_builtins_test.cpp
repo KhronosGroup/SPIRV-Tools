@@ -180,7 +180,7 @@ string GenerateKernelCode(const BuiltInCase& bic)
 // PARAMETERIZED TESTS
 //
 
-TEST_P(ValidateBuiltIn, BuiltInValid) {
+TEST_P(ValidateBuiltIn, BuiltInGood) {
   CompileSuccessfully(GenerateShaderCode(GetParam()),SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
@@ -251,13 +251,13 @@ INSTANTIATE_TEST_CASE_P(ExtendedBuiltIn, ValidateBuiltIn,
   ));
 // clang-format on
 
-TEST_P(ValidateBuiltInCL, BuiltInCLOK) {
+TEST_P(ValidateBuiltInCL, BuiltInCLGood) {
   CompileSuccessfully(GenerateKernelCode(GetParam()),SPV_ENV_OPENCL_2_2);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
 }
 
 // clang-format off
-INSTANTIATE_TEST_CASE_P(BuiltInCLOK, ValidateBuiltInCL,
+INSTANTIATE_TEST_CASE_P(KernelBuiltIn, ValidateBuiltInCL,
   ::testing::Values(
        BuiltInCase{"NumWorkgroups","%vecu3","Input","Kernel"},
        // WorkgroupSize is tested individually
@@ -657,7 +657,7 @@ TEST_F(ValidateBuiltIn, FragDepthNeedsDepthReplacing) {
 }
 #endif
 
-TEST_F(ValidateBuiltIn, WorkgroupSizeOK) {
+TEST_F(ValidateBuiltIn, WorkgroupSizeGood) {
   string spirv = R"(
     OpCapability Shader
     OpCapability Linkage
