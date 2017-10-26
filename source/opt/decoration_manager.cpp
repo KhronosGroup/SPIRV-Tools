@@ -261,49 +261,51 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
   if (decoration_list == id_to_decoration_insts_.end()) return;
   for (ir::Instruction* inst : decoration_list->second) {
     switch (inst->opcode()) {
-      case SpvOpGroupDecorate:
-        // add |to| to list of decorated id's
-        inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
-        id_to_decoration_insts_[to].push_back(inst);
+      case SpvOpNop: break;
+      case SpvOpGroupDecorate: {
+        // replace decoration instruction with one containing the new id as well.
+        std::vector<ir::Operand> new_operands;
+        new_operands.insert(inst->begin(), inst->begin(), inst->end());
+        new_operands.push_back(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+        std::unique_ptr<ir::Instruction> new_inst(new ir::Instruction(inst->opcode(), inst->type_id(), inst->result_id(), new_operands));
+        id_to_decoration_insts_[from].push_back(new_inst.get());
+        module_->AddAnnotationInst(std::move(new_inst));
+        inst->ToNop();
         break;
+      }
       case SpvOpGroupMemberDecorate: {
-        bool is_id = false; // we start with decoration group id, followed by target-id, literal, target-id...
-        bool to_add = false;
-        // for each (id == from), get literal and add (to, literal) as operands
-        inst->ForEachInOperand([&](uint32_t* operand) {
-          if (is_id) {
-            if (*operand == from) {
-              to_add = true;
-              inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
-            }
-            is_id = false;
-          } else { // is literal
-            if (to_add) {
-              to_add = false;
-              inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {*operand}));
-            }
-            is_id = true;
+        // replace decoration with one which contains additional the same pairs of (id, literal) for the new id:
+        std::vector<ir::Operand> new_operands;
+        new_operands.insert(inst->begin(), inst->begin(), inst->end());
+        for (auto op = ++inst->begin(); op != inst->end(); ++op) { // emit decoration group id
+          if (op->words[0] == from) { // add new pair of operands: (to, literal)
+            new_operands.push_back(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+            ++op;
+            new_operands.push_back(*op);
+          } else {
+            ++op;
           }
-        });
-        assert(is_id && "mal-formed SpvOpGroupMemberDecorate encountered.");
-        id_to_decoration_insts_[to].push_back(inst);
+        }
+        std::unique_ptr<ir::Instruction> new_inst(new ir::Instruction(inst->opcode(), inst->type_id(), inst->result_id(), new_operands));
+        id_to_decoration_insts_[from].push_back(new_inst.get());
+        module_->AddAnnotationInst(std::move(new_inst));
+        inst->ToNop();
         break;
       }
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateId: {
         // simply clone decoration and change |target-id| to |to|
-        std::unique_ptr<ir::Instruction> newInst(inst->Clone());
-        newInst->SetInOperand(0, {to});
-        id_to_decoration_insts_[to].push_back(newInst.get());
-        module_->AddAnnotationInst(std::move(newInst));
+        std::unique_ptr<ir::Instruction> new_inst(inst->Clone());
+        new_inst->SetInOperand(0, {to});
+        id_to_decoration_insts_[to].push_back(new_inst.get());
+        module_->AddAnnotationInst(std::move(new_inst));
         break;
       }
       default:
         assert(false && "Unexpected decoration instruction");
     }
   }
-
 }
 
 }  // namespace analysis
