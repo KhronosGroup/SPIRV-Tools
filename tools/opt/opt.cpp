@@ -157,8 +157,8 @@ Options:
   --eliminate-dead-variables
                Deletes module scope variables that are not referenced.
   --relax-store-struct
-               Allow store from one struct type to a different, but 
-               interchangeable, type.  This option is forwarded to the 
+               Allow store from one struct type to a different type with
+               compatible layout and members. This option is forwarded to the
                validator.
   -O
                Optimize for performance. Apply a sequence of transformations

@@ -85,16 +85,16 @@ class idUsage {
 
   // Returns true if the two instructions represent structs that, as far as the
   // validator can tell, have the exact same data layout.
-  bool AreInterchangeableSructs(const libspirv::Instruction* type1,
-                                const libspirv::Instruction* type2);
+  bool AreLayoutCompatibleStructs(const libspirv::Instruction* type1,
+                                  const libspirv::Instruction* type2);
 
-  // Returns true if the operands to the OpTypeStruct instruction defining  the
-  // types are the same or are interchangeable types. |type1| and |type2| must
+  // Returns true if the operands to the OpTypeStruct instruction defining the
+  // types are the same or are layout compatible types. |type1| and |type2| must
   // be OpTypeStruct instructions.
-  bool HaveSameOpTypeStruct(const libspirv::Instruction* type1,
-                            const libspirv::Instruction* type2);
+  bool HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
+                                   const libspirv::Instruction* type2);
 
-  // Returns true if all decorations that effect the data layout of the struct
+  // Returns true if all decorations that affect the data layout of the struct
   // (like Offset), are the same for the two types. |type1| and |type2| must be
   // OpTypeStruct instructions.
   bool HaveSameLayoutDecorations(const libspirv::Instruction* type1,
@@ -1215,12 +1215,21 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   }
 
   if (type->id() != objectType->id()) {
-    if (!module_.options()->relax_struct_store ||
-        !AreInterchangeableSructs(type, objectType)) {
+    if (!module_.options()->relax_struct_store
+        || type->opcode() != SpvOpTypeStruct
+        || objectType->opcode() != SpvOpTypeStruct) {
       DIAG(pointerIndex) << "OpStore Pointer <id> '"
                          << inst->words[pointerIndex]
                          << "'s type does not match Object <id> '"
-                         << objectType->id() << "'s type.";
+                         << object->id() << "'s type.";
+      return false;
+    }
+
+    if (!AreLayoutCompatibleStructs(type, objectType)) {
+      DIAG(pointerIndex) << "OpStore Pointer <id> '"
+                         << inst->words[pointerIndex]
+                         << "'s layout does not match Object <id> '"
+                         << object->id() << "'s layout.";
       return false;
     }
   }
@@ -2518,8 +2527,9 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
 #undef TODO
 #undef CASE
 }
-bool idUsage::AreInterchangeableSructs(const libspirv::Instruction* type1,
-                                       const libspirv::Instruction* type2) {
+
+bool idUsage::AreLayoutCompatibleStructs(const libspirv::Instruction* type1,
+                                         const libspirv::Instruction* type2) {
   if (type1->opcode() != SpvOpTypeStruct) {
     return false;
   }
@@ -2527,12 +2537,13 @@ bool idUsage::AreInterchangeableSructs(const libspirv::Instruction* type1,
     return false;
   }
 
-  if (!HaveSameOpTypeStruct(type1, type2)) return false;
+  if (!HaveLayoutCompatibleMembers(type1, type2)) return false;
 
   return HaveSameLayoutDecorations(type1, type2);
 }
-bool idUsage::HaveSameOpTypeStruct(const libspirv::Instruction* type1,
-                                   const libspirv::Instruction* type2) {
+
+bool idUsage::HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
+                                          const libspirv::Instruction* type2) {
   assert(type1->opcode() == SpvOpTypeStruct &&
       "type1 must be and OpTypeStruct instruction.");
   assert(type2->opcode() == SpvOpTypeStruct &&
@@ -2547,13 +2558,14 @@ bool idUsage::HaveSameOpTypeStruct(const libspirv::Instruction* type1,
     if (type1->word(operand) != type2->word(operand)) {
       auto def1 = module_.FindDef(type1->word(operand));
       auto def2 = module_.FindDef(type2->word(operand));
-      if (!AreInterchangeableSructs(def1, def2)) {
+      if (!AreLayoutCompatibleStructs(def1, def2)) {
         return false;
       }
     }
   }
   return true;
 }
+
 bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
                                         const libspirv::Instruction* type2) {
   assert(type1->opcode() == SpvOpTypeStruct &&
@@ -2565,6 +2577,14 @@ bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
   const std::vector<Decoration>& type2_decorations =
       module_.id_decorations(type2->id());
 
+  // For shader modules, it is required for composite objects to have
+  // decorations that completely defines their layout.  See section 2.16.2 of
+  // the SPIR-V specification. The important point is that layout decoration for
+  // type1 all found in type2, then type 2 cannot have extra layout decoration
+  // because they will be inconsistent with another decoration.  For example, if
+  // type1 has a RowMajor decoration, and the same one is found in type1, then
+  // type2 cannot have a ColMajor decoration.  This means we do not need to
+  // traverse the decorations of type2 to see if they are in type1.
   for (const Decoration& decoration : type1_decorations) {
     switch (decoration.dec_type()) {
       case SpvDecorationArrayStride:
@@ -2572,7 +2592,7 @@ bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
       case SpvDecorationMatrixStride:
       case SpvDecorationRowMajor:
       case SpvDecorationColMajor:
-        // Since these effect the layout of the struct, they must be present in
+        // Since these affect the layout of the struct, they must be present in
         // both structs.
         if (std::find(type2_decorations.begin(), type2_decorations.end(),
                       decoration) == type2_decorations.end()) {
@@ -2580,7 +2600,7 @@ bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
         }
         break;
       default:
-        // This decoration does not effect the layout of the structure, so just
+        // This decoration does not affect the layout of the structure, so just
         // moving on.
         break;
     }

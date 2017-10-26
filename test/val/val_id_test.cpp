@@ -2159,7 +2159,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '7's type does not match Object "
-                        "<id> '3's type."));
+                            "<id> '6's type."));
 }
 
 // The next series of test check test a relaxation of the rules for stores to
@@ -2174,11 +2174,11 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadStruct) {
 %3 = OpTypeVoid
 %4 = OpTypeFloat 32
 %1 = OpTypeStruct %4 %4
-%5 = OpTypePointer UniformConstant %1
+%5 = OpTypePointer Uniform %1
 %2 = OpTypeStruct %4 %4
 %6 = OpTypeFunction %3
 %7 = OpConstant %4 3.14
-%8 = OpVariable %5 UniformConstant
+%8 = OpVariable %5 Uniform
 %9 = OpFunction %3 None %6
 %10 = OpLabel
 %11 = OpCompositeConstruct %2 %7 %7
@@ -2189,7 +2189,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadStruct) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '8's type does not match Object "
-                            "<id> '2's type."));
+                            "<id> '11's type."));
 }
 
 // Same code as the last test.  The difference is that we relax the rule.
@@ -2203,11 +2203,11 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedStruct) {
 %3 = OpTypeVoid
 %4 = OpTypeFloat 32
 %1 = OpTypeStruct %4 %4
-%5 = OpTypePointer UniformConstant %1
+%5 = OpTypePointer Uniform %1
 %2 = OpTypeStruct %4 %4
 %6 = OpTypeFunction %3
 %7 = OpConstant %4 3.14
-%8 = OpVariable %5 UniformConstant
+%8 = OpVariable %5 Uniform
 %9 = OpFunction %3 None %6
 %10 = OpLabel
 %11 = OpCompositeConstruct %2 %7 %7
@@ -2236,13 +2236,13 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedNestedStruct) {
 %7 = OpTypeFloat 32
 %1 = OpTypeStruct %7 %6
 %2 = OpTypeStruct %1 %1
-%8 = OpTypePointer UniformConstant %2
+%8 = OpTypePointer Uniform %2
 %3 = OpTypeStruct %7 %6
 %4 = OpTypeStruct %3 %3
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 UniformConstant
+%12 = OpVariable %8 Uniform
 %13 = OpFunction %5 None %9
 %14 = OpLabel
 %15 = OpCompositeConstruct %3 %11 %6
@@ -2272,13 +2272,13 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
 %7 = OpTypeFloat 32
 %1 = OpTypeStruct %6 %7
 %2 = OpTypeStruct %1 %1
-%8 = OpTypePointer UniformConstant %2
+%8 = OpTypePointer Uniform %2
 %3 = OpTypeStruct %7 %6
 %4 = OpTypeStruct %3 %3
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 UniformConstant
+%12 = OpVariable %8 Uniform
 %13 = OpFunction %5 None %9
 %14 = OpLabel
 %15 = OpCompositeConstruct %3 %11 %6
@@ -2289,9 +2289,10 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
   spvValidatorOptionsSetRelaxStoreStruct(options_, true);
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Pointer <id> '12's type does not match Object "
-                            "<id> '4's type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
+                    "<id> '16's layout."));
 }
 
 // This test check that the even with the relaxed rules an error is identified
@@ -2311,13 +2312,13 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
 %7 = OpTypeFloat 32
 %1 = OpTypeStruct %7 %6
 %2 = OpTypeStruct %1 %1
-%8 = OpTypePointer UniformConstant %2
+%8 = OpTypePointer Uniform %2
 %3 = OpTypeStruct %7 %6
 %4 = OpTypeStruct %3 %3
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 UniformConstant
+%12 = OpVariable %8 Uniform
 %13 = OpFunction %5 None %9
 %14 = OpLabel
 %15 = OpCompositeConstruct %3 %11 %6
@@ -2328,9 +2329,10 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
   spvValidatorOptionsSetRelaxStoreStruct(options_, true);
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpStore Pointer <id> '12's type does not match Object "
-                            "<id> '4's type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
+                    "<id> '16's layout."));
 }
 
 TEST_F(ValidateIdWithMessage, OpStoreVoid) {

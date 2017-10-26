@@ -421,9 +421,15 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
                                           uint32_t limit);
 
 // Record whether or not the validator should relax the rules on types for
-// stores to structs.  When relaxed, it will allows a type mismatch between the
-// value being stored and the variable being stored to as long as the types are
-// defined the same.
+// stores to structs.  When relaxed, it will allow a type mismatch as long as
+// the types are structs with the same layout.  Two structs have the same layout
+// if
+//
+// 1) The members of the struct are either the same type or are structs with
+// same layout.
+//
+// 2) The decorations that affect the memory layout are identical for both
+// types.  Other decorations are not relevant.
 void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
                                             bool val);
 
