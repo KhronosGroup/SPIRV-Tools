@@ -130,7 +130,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Initialize block2branch_ and block2merge_ using |structuredOrder| to
   // order blocks.
-  void ComputeBlock2BranchMaps(std::list<ir::BasicBlock*>& structuredOrder);
+  void ComputeBlock2HeaderMaps(std::list<ir::BasicBlock*>& structuredOrder);
 
   // Initialize inst2block_ for |func|.
   void ComputeInst2BlockMap(ir::Function* func);
@@ -170,10 +170,10 @@ class AggressiveDCEPass : public MemPass {
 
   // Map from block to most immediate controlling structured conditional
   // branch.
-  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2branch_;
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
   // Map from block to most immediate controlling conditional merge.
-  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2merge_;
+  std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerMerge_;
 
   // Map from instruction containing block
   std::unordered_map<ir::Instruction*, ir::BasicBlock*> inst2block_;

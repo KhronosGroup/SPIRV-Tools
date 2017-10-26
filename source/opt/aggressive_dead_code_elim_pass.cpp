@@ -203,10 +203,10 @@ bool AggressiveDCEPass::IsStructuredIfHeader(ir::BasicBlock* bp,
   return true;
 }
 
-void AggressiveDCEPass::ComputeBlock2BranchMaps(
+void AggressiveDCEPass::ComputeBlock2HeaderMaps(
       std::list<ir::BasicBlock*>& structuredOrder) {
-  block2merge_.clear();
-  block2branch_.clear();
+  block2headerMerge_.clear();
+  block2headerBranch_.clear();
   std::stack<ir::Instruction*> currentMergeInst;
   std::stack<ir::Instruction*> currentBranchInst;
   std::stack<uint32_t> currentMergeBlockId;
@@ -219,8 +219,8 @@ void AggressiveDCEPass::ComputeBlock2BranchMaps(
       currentMergeInst.pop();
       currentBranchInst.pop();
     }
-    block2merge_[*bi] = currentMergeInst.top();
-    block2branch_[*bi] = currentBranchInst.top();
+    block2headerMerge_[*bi] = currentMergeInst.top();
+    block2headerBranch_[*bi] = currentBranchInst.top();
     ir::Instruction* mergeInst;
     ir::Instruction* branchInst;
     uint32_t mergeBlockId;
@@ -254,7 +254,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
   ComputeStructuredOrder(func, &structuredOrder);
-  ComputeBlock2BranchMaps(structuredOrder);
+  ComputeBlock2HeaderMaps(structuredOrder);
   bool modified = false;
   // Add instructions with external side effects to worklist. Also add branches
   // EXCEPT those immediately contained in an "if" selection construct.
@@ -357,10 +357,10 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     // If in a structured if construct, add the controlling conditional branch
     // and its merge
     ir::BasicBlock* blk = inst2block_[liveInst];
-    ir::Instruction* branchInst = block2branch_[blk];
+    ir::Instruction* branchInst = block2headerBranch_[blk];
     if (branchInst != nullptr && !IsLive(branchInst)) {
       AddToWorklist(branchInst);
-      AddToWorklist(block2merge_[blk]);
+      AddToWorklist(block2headerMerge_[blk]);
     }
     // If local load, add all variable's stores if variable not already live
     if (liveInst->opcode() == SpvOpLoad) {
