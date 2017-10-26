@@ -16,8 +16,8 @@
 
 #include "mem_pass.h"
 
-#include "iterator.h"
 #include "cfa.h"
+#include "iterator.h"
 
 namespace spvtools {
 namespace opt {
@@ -27,9 +27,7 @@ namespace {
 const uint32_t kAccessChainPtrIdInIdx = 0;
 const uint32_t kCopyObjectOperandInIdx = 0;
 const uint32_t kLoadPtrIdInIdx = 0;
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kStorePtrIdInIdx = 0;
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kTypePointerStorageClassInIdx = 0;
@@ -37,37 +35,33 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 }  // namespace
 
-bool MemPass::IsBaseTargetType(
-    const ir::Instruction* typeInst) const {
+bool MemPass::IsBaseTargetType(const ir::Instruction* typeInst) const {
   switch (typeInst->opcode()) {
-  case SpvOpTypeInt:
-  case SpvOpTypeFloat:
-  case SpvOpTypeBool:
-  case SpvOpTypeVector:
-  case SpvOpTypeMatrix:
-  case SpvOpTypeImage:
-  case SpvOpTypeSampler:
-  case SpvOpTypeSampledImage:
-    return true;
-  default:
-    break;
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeBool:
+    case SpvOpTypeVector:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeSampledImage:
+      return true;
+    default:
+      break;
   }
   return false;
 }
 
-bool MemPass::IsTargetType(
-    const ir::Instruction* typeInst) const {
-  if (IsBaseTargetType(typeInst))
-    return true;
+bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
+  if (IsBaseTargetType(typeInst)) return true;
   if (typeInst->opcode() == SpvOpTypeArray)
     return IsBaseTargetType(
-        def_use_mgr_->GetDef(typeInst->GetSingleWordOperand(1)));
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
+        get_def_use_mgr()->GetDef(typeInst->GetSingleWordOperand(1)));
+  if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // All struct members must be math type
   int nonMathComp = 0;
-  typeInst->ForEachInId([&nonMathComp,this](const uint32_t* tid) {
-    ir::Instruction* compTypeInst = def_use_mgr_->GetDef(*tid);
+  typeInst->ForEachInId([&nonMathComp, this](const uint32_t* tid) {
+    ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
     if (!IsBaseTargetType(compTypeInst)) ++nonMathComp;
   });
   return nonMathComp == 0;
@@ -79,46 +73,41 @@ bool MemPass::IsNonPtrAccessChain(const SpvOp opcode) const {
 
 bool MemPass::IsPtr(uint32_t ptrId) {
   uint32_t varId = ptrId;
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(varId);
+  ir::Instruction* ptrInst = get_def_use_mgr()->GetDef(varId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
     varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(varId);
+    ptrInst = get_def_use_mgr()->GetDef(varId);
   }
   const SpvOp op = ptrInst->opcode();
-  if (op == SpvOpVariable || IsNonPtrAccessChain(op))
-    return true;
-  if (op != SpvOpFunctionParameter)
-    return false;
+  if (op == SpvOpVariable || IsNonPtrAccessChain(op)) return true;
+  if (op != SpvOpFunctionParameter) return false;
   const uint32_t varTypeId = ptrInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   return varTypeInst->opcode() == SpvOpTypePointer;
 }
 
-ir::Instruction* MemPass::GetPtr(
-      uint32_t ptrId, uint32_t* varId) {
+ir::Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
   *varId = ptrId;
-  ir::Instruction* ptrInst = def_use_mgr_->GetDef(*varId);
+  ir::Instruction* ptrInst = get_def_use_mgr()->GetDef(*varId);
   while (ptrInst->opcode() == SpvOpCopyObject) {
     *varId = ptrInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
-    ptrInst = def_use_mgr_->GetDef(*varId);
+    ptrInst = get_def_use_mgr()->GetDef(*varId);
   }
   ir::Instruction* varInst = ptrInst;
-  while (varInst->opcode() != SpvOpVariable && 
-      varInst->opcode() != SpvOpFunctionParameter) {
+  while (varInst->opcode() != SpvOpVariable &&
+         varInst->opcode() != SpvOpFunctionParameter) {
     if (IsNonPtrAccessChain(varInst->opcode())) {
       *varId = varInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-    }
-    else {
+    } else {
       assert(varInst->opcode() == SpvOpCopyObject);
       *varId = varInst->GetSingleWordInOperand(kCopyObjectOperandInIdx);
     }
-    varInst = def_use_mgr_->GetDef(*varId);
+    varInst = get_def_use_mgr()->GetDef(*varId);
   }
   return ptrInst;
 }
 
-ir::Instruction* MemPass::GetPtr(
-      ir::Instruction* ip, uint32_t* varId) {
+ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
   const SpvOp op = ip->opcode();
   assert(op == SpvOpStore || op == SpvOpLoad);
   const uint32_t ptrId = ip->GetSingleWordInOperand(
@@ -128,79 +117,68 @@ ir::Instruction* MemPass::GetPtr(
 
 void MemPass::FindNamedOrDecoratedIds() {
   named_or_decorated_ids_.clear();
-  for (auto& di : module_->debugs2())
+  for (auto& di : get_module()->debugs2())
     if (di.opcode() == SpvOpName)
       named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
-  for (auto& ai : module_->annotations())
+  for (auto& ai : get_module()->annotations())
     if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
       named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
 }
 
 bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return true;
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
+  if (uses == nullptr) return true;
   if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
     return false;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsNonTypeDecorate(op))
-      return false;
+    if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
   }
   return true;
 }
 
 void MemPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and 
+  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and
   // kill if no other operands.
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return;
-  analysis::UseList* uses = def_use_mgr_->GetUses(id);
-  if (uses == nullptr)
-    return;
+  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end()) return;
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
+  if (uses == nullptr) return;
   std::list<ir::Instruction*> killList;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
-    if (op == SpvOpName || IsNonTypeDecorate(op))
-      killList.push_back(u.inst);
+    if (op == SpvOpName || IsNonTypeDecorate(op)) killList.push_back(u.inst);
   }
-  for (auto kip : killList)
-    def_use_mgr_->KillInst(kip);
+  for (auto kip : killList) get_def_use_mgr()->KillInst(kip);
 }
 
 void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
   const uint32_t rId = inst->result_id();
-  if (rId == 0)
-    return;
+  if (rId == 0) return;
   KillNamesAndDecorates(rId);
 }
 
 bool MemPass::HasLoads(uint32_t varId) const {
-  analysis::UseList* uses = def_use_mgr_->GetUses(varId);
-  if (uses == nullptr)
-    return false;
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(varId);
+  if (uses == nullptr) return false;
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
     // TODO(): The following is slightly conservative. Could be
     // better handling of non-store/name.
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-      if (HasLoads(u.inst->result_id()))
-        return true;
-    }
-    else if (op != SpvOpStore && op != SpvOpName)
+      if (HasLoads(u.inst->result_id())) return true;
+    } else if (op != SpvOpStore && op != SpvOpName)
       return true;
   }
   return false;
 }
 
 bool MemPass::IsLiveVar(uint32_t varId) const {
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
+  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   // assume live if not a variable eg. function parameter
-  if (varInst->opcode() != SpvOpVariable)
-    return true;
+  if (varInst->opcode() != SpvOpVariable) return true;
   // non-function scope vars are live
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
       SpvStorageClassFunction)
     return true;
@@ -211,13 +189,12 @@ bool MemPass::IsLiveVar(uint32_t varId) const {
 bool MemPass::IsLiveStore(ir::Instruction* storeInst) {
   // get store's variable
   uint32_t varId;
-  (void) GetPtr(storeInst, &varId);
+  (void)GetPtr(storeInst, &varId);
   return IsLiveVar(varId);
 }
 
-void MemPass::AddStores(
-    uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptr_id);
+void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(ptr_id);
   if (uses != nullptr) {
     for (auto u : *uses) {
       if (IsNonPtrAccessChain(u.inst->opcode()))
@@ -240,49 +217,37 @@ void MemPass::DCEInst(ir::Instruction* inst) {
     }
     // Remember operands
     std::vector<uint32_t> ids;
-    di->ForEachInId([&ids](uint32_t* iid) {
-      ids.push_back(*iid);
-    });
+    di->ForEachInId([&ids](uint32_t* iid) { ids.push_back(*iid); });
     uint32_t varId = 0;
     // Remember variable if dead load
-    if (di->opcode() == SpvOpLoad)
-      (void) GetPtr(di, &varId);
+    if (di->opcode() == SpvOpLoad) (void)GetPtr(di, &varId);
     KillNamesAndDecorates(di);
-    def_use_mgr_->KillInst(di);
+    get_def_use_mgr()->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
     for (auto id : ids)
       if (HasOnlyNamesAndDecorates(id))
-        deadInsts.push(def_use_mgr_->GetDef(id));
+        deadInsts.push(get_def_use_mgr()->GetDef(id));
     // if a load was deleted and it was the variable's
     // last load, add all its stores to dead queue
-    if (varId != 0 && !IsLiveVar(varId))
-      AddStores(varId, &deadInsts);
+    if (varId != 0 && !IsLiveVar(varId)) AddStores(varId, &deadInsts);
     deadInsts.pop();
   }
 }
 
-void MemPass::ReplaceAndDeleteLoad(
-    ir::Instruction* loadInst, uint32_t replId) {
+void MemPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
   KillNamesAndDecorates(loadId);
-  (void) def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
+  (void)get_def_use_mgr()->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
 }
 
-MemPass::MemPass()
-    : module_(nullptr),
-      def_use_mgr_(nullptr),
-      next_id_(0),
-      pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, 0, {}))) {}
+MemPass::MemPass() {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
-  if (supported_ref_vars_.find(varId) != supported_ref_vars_.end())
-    return true;
-  analysis::UseList* uses = def_use_mgr_->GetUses(varId);
-  if (uses == nullptr)
-    return true;
+  if (supported_ref_vars_.find(varId) != supported_ref_vars_.end()) return true;
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(varId);
+  if (uses == nullptr) return true;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
     if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
@@ -297,7 +262,7 @@ void MemPass::InitSSARewrite(ir::Function* func) {
   // Initialize function and block maps.
   id2block_.clear();
   block2structured_succs_.clear();
-  for (auto& fn : *module_)
+  for (auto& fn : *get_module())
     for (auto& blk : fn) id2block_[blk.id()] = &blk;
 
   // Clear collections.
@@ -340,73 +305,13 @@ void MemPass::InitSSARewrite(ir::Function* func) {
   }
 }
 
-uint32_t MemPass::MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) {
-  auto merge_ii = blk.cend();
-  --merge_ii;
-  *cbid = 0;
-  uint32_t mbid = 0;
-  if (merge_ii != blk.cbegin()) {
-    --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
-    }
-    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-    }
-  }
-  return mbid;
-}
-
-void MemPass::ComputeStructuredSuccessors(ir::Function *func) {
-  block2structured_succs_.clear();
-  for (auto& blk : *func) {
-    // If no predecessors in function, make successor to pseudo entry
-    if (label2preds_[blk.id()].size() == 0)
-      block2structured_succs_[&pseudo_entry_block_].push_back(&blk);
-    // If header, make merge block first successor.
-    uint32_t cbid;
-    const uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-      if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
-    }
-    // add true successors
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-void MemPass::ComputeStructuredOrder(ir::Function* func,
-                                     std::list<ir::BasicBlock*>* order) {
-  // Compute structured successors and do DFS
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
-    return &(block2structured_succs_[block]);
-  };
-
-  // TODO(greg-lunarg): Get rid of const_cast by making moving const
-  // out of the cfa.h prototypes and into the invoking code.
-  auto post_order = [&](cbb_ptr b) {
-    order->push_front(const_cast<ir::BasicBlock*>(b));
-  };
-
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      &pseudo_entry_block_, get_structured_successors, ignore_block, post_order,
-      ignore_edge);
-}
-
 bool MemPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
   // For now, return very conservative result: true. This will result in
   // correct, but possibly usused, phi code to be generated. A subsequent
   // DCE pass should eliminate this code.
   // TODO(greg-lunarg): Return more accurate information
-  (void) var_id;
-  (void) label;
+  (void)var_id;
+  (void)label;
   return true;
 }
 
@@ -418,20 +323,14 @@ void MemPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
   label2ssa_map_[label] = label2ssa_map_[predLabel];
 }
 
-uint32_t MemPass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
-  const uint32_t ptrTypeId = ptrInst->type_id();
-  const ir::Instruction* ptrTypeInst = def_use_mgr_->GetDef(ptrTypeId);
-  return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-}
-
 uint32_t MemPass::Type2Undef(uint32_t type_id) {
   const auto uitr = type2undefs_.find(type_id);
   if (uitr != type2undefs_.end()) return uitr->second;
   const uint32_t undefId = TakeNextId();
   std::unique_ptr<ir::Instruction> undef_inst(
       new ir::Instruction(SpvOpUndef, type_id, undefId, {}));
-  def_use_mgr_->AnalyzeInstDefUse(&*undef_inst);
-  module_->AddGlobalValue(std::move(undef_inst));
+  get_def_use_mgr()->AnalyzeInstDefUse(&*undef_inst);
+  get_module()->AddGlobalValue(std::move(undef_inst));
   type2undefs_[type_id] = undefId;
   return undefId;
 }
@@ -525,7 +424,7 @@ void MemPass::SSABlockInitLoopHeader(
     // edge predecessor. For predecessors that do not define a value,
     // use undef.
     std::vector<ir::Operand> phi_in_operands;
-    uint32_t typeId = GetPointeeTypeId(def_use_mgr_->GetDef(varId));
+    uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
     for (uint32_t predLabel : label2preds_[label]) {
       uint32_t valId;
       if (predLabel == backLabel) {
@@ -549,7 +448,7 @@ void MemPass::SSABlockInitLoopHeader(
     phis_to_patch_.insert(phiId);
     // Only analyze the phi define now; analyze the phi uses after the
     // phi backedge predecessor value is patched.
-    def_use_mgr_->AnalyzeInstDef(&*newPhi);
+    get_def_use_mgr()->AnalyzeInstDef(&*newPhi);
     insertItr = insertItr.InsertBefore(std::move(newPhi));
     ++insertItr;
     label2ssa_map_[label].insert({varId, phiId});
@@ -574,8 +473,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   auto insertItr = block_ptr->begin();
   for (auto var_val : liveVars) {
     const uint32_t varId = var_val.first;
-    if (!IsLiveAfter(varId, label))
-      continue;
+    if (!IsLiveAfter(varId, label)) continue;
     const uint32_t val0Id = var_val.second;
     bool differs = false;
     for (uint32_t predLabel : label2preds_[label]) {
@@ -599,12 +497,13 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     // Val differs across predecessors. Add phi op to block and add its result
     // id to the map.
     std::vector<ir::Operand> phi_in_operands;
-    const uint32_t typeId = GetPointeeTypeId(def_use_mgr_->GetDef(varId));
+    const uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
     for (uint32_t predLabel : label2preds_[label]) {
       const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
       // If variable not defined on this path, use undef
-      const uint32_t valId = (var_val_itr != label2ssa_map_[predLabel].end()) ?
-          var_val_itr->second : Type2Undef(typeId);
+      const uint32_t valId = (var_val_itr != label2ssa_map_[predLabel].end())
+                                 ? var_val_itr->second
+                                 : Type2Undef(typeId);
       phi_in_operands.push_back(
           {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {valId}});
       phi_in_operands.push_back(
@@ -612,8 +511,8 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     }
     const uint32_t phiId = TakeNextId();
     std::unique_ptr<ir::Instruction> newPhi(
-      new ir::Instruction(SpvOpPhi, typeId, phiId, phi_in_operands));
-    def_use_mgr_->AnalyzeInstDefUse(&*newPhi);
+        new ir::Instruction(SpvOpPhi, typeId, phiId, phi_in_operands));
+    get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
     insertItr = insertItr.InsertBefore(std::move(newPhi));
     ++insertItr;
     label2ssa_map_[label].insert({varId, phiId});
@@ -622,8 +521,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
 
 void MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
   const size_t numPreds = label2preds_[(*block_itr)->id()].size();
-  if (numPreds == 0)
-    return;
+  if (numPreds == 0) return;
   if (numPreds == 1)
     SSABlockInitSinglePred(*block_itr);
   else if (IsLoopHeader(*block_itr))
@@ -635,36 +533,26 @@ void MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
 bool MemPass::IsTargetVar(uint32_t varId) {
   if (seen_non_target_vars_.find(varId) != seen_non_target_vars_.end())
     return false;
-  if (seen_target_vars_.find(varId) != seen_target_vars_.end())
-    return true;
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
-  if (varInst->opcode() != SpvOpVariable)
-    return false;;
+  if (seen_target_vars_.find(varId) != seen_target_vars_.end()) return true;
+  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
+  if (varInst->opcode() != SpvOpVariable) return false;
+  ;
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) !=
-    SpvStorageClassFunction) {
+      SpvStorageClassFunction) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   const uint32_t varPteTypeId =
-    varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
-  ir::Instruction* varPteTypeInst = def_use_mgr_->GetDef(varPteTypeId);
+      varTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
+  ir::Instruction* varPteTypeInst = get_def_use_mgr()->GetDef(varPteTypeId);
   if (!IsTargetType(varPteTypeInst)) {
     seen_non_target_vars_.insert(varId);
     return false;
   }
   seen_target_vars_.insert(varId);
   return true;
-}
-
-bool MemPass::IsLoopHeader(ir::BasicBlock* block_ptr) const {
-  auto iItr = block_ptr->end();
-  --iItr;
-  if (iItr == block_ptr->begin())
-    return false;
-  --iItr;
-  return iItr->opcode() == SpvOpLoopMerge;
 }
 
 void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
@@ -678,7 +566,7 @@ void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
     // Find phi operand index for back edge
     uint32_t cnt = 0;
     uint32_t idx = phiItr->NumInOperands();
-    phiItr->ForEachInId([&cnt,&back_id,&idx](uint32_t* iid) {
+    phiItr->ForEachInId([&cnt, &back_id, &idx](uint32_t* iid) {
       if (cnt % 2 == 1 && *iid == back_id) idx = cnt - 1;
       ++cnt;
     });
@@ -690,18 +578,18 @@ void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
     uint32_t valId =
         (valItr != label2ssa_map_[back_id].end())
             ? valItr->second
-            : Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
+            : Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
     phiItr->SetInOperand(idx, {valId});
     // Analyze uses now that they are complete
-    def_use_mgr_->AnalyzeInstUse(&*phiItr);
+    get_def_use_mgr()->AnalyzeInstUse(&*phiItr);
   }
 }
 
-Pass::Status MemPass::InsertPhiInstructions(ir::Function *func) {
+Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
   // TODO(dnovillo) the current Phi placement mechanism assumes structured
   // control-flow. This should be generalized
   // (https://github.com/KhronosGroup/SPIRV-Tools/issues/893).
-  if (!module_->HasCapability(SpvCapabilityShader))
+  if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
 
   // Collect all named and decorated ids.
@@ -717,8 +605,7 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function *func) {
   ComputeStructuredOrder(func, &structuredOrder);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     // Skip pseudo entry block
-    if (*bi == &pseudo_entry_block_)
-      continue;
+    if (*bi == &pseudo_entry_block_) continue;
     // Initialize this block's label2ssa_map_ entry using predecessor maps.
     // Then process all stores and loads of targeted variables.
     SSABlockInit(bi);
@@ -728,52 +615,46 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function *func) {
       switch (ii->opcode()) {
         case SpvOpStore: {
           uint32_t varId;
-          (void) GetPtr(&*ii, &varId);
-          if (!IsTargetVar(varId))
-            break;
+          (void)GetPtr(&*ii, &varId);
+          if (!IsTargetVar(varId)) break;
           // Register new stored value for the variable
           label2ssa_map_[label][varId] =
               ii->GetSingleWordInOperand(kStoreValIdInIdx);
         } break;
         case SpvOpLoad: {
           uint32_t varId;
-          (void) GetPtr(&*ii, &varId);
-          if (!IsTargetVar(varId))
-            break;
+          (void)GetPtr(&*ii, &varId);
+          if (!IsTargetVar(varId)) break;
           uint32_t replId = 0;
           const auto ssaItr = label2ssa_map_.find(label);
           if (ssaItr != label2ssa_map_.end()) {
             const auto valItr = ssaItr->second.find(varId);
-            if (valItr != ssaItr->second.end())
-              replId = valItr->second;
+            if (valItr != ssaItr->second.end()) replId = valItr->second;
           }
           // If variable is not defined, use undef
           if (replId == 0) {
-            replId = Type2Undef(GetPointeeTypeId(def_use_mgr_->GetDef(varId)));
+            replId = Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
           }
           // Replace load's id with the last stored value id for variable
           // and delete load. Kill any names or decorates using id before
           // replacing to prevent incorrect replacement in those instructions.
           const uint32_t loadId = ii->result_id();
           KillNamesAndDecorates(loadId);
-          (void)def_use_mgr_->ReplaceAllUsesWith(loadId, replId);
-          def_use_mgr_->KillInst(&*ii);
+          (void)get_def_use_mgr()->ReplaceAllUsesWith(loadId, replId);
+          get_def_use_mgr()->KillInst(&*ii);
         } break;
-        default: {
-        } break;
-      }
+        default: { } break; }
     }
     visitedBlocks_.insert(label);
     // Look for successor backedge and patch phis in loop header
     // if found.
     uint32_t header = 0;
-    bp->ForEachSuccessorLabel([&header,this](uint32_t succ) {
+    bp->ForEachSuccessorLabel([&header, this](uint32_t succ) {
       if (visitedBlocks_.find(succ) == visitedBlocks_.end()) return;
       assert(header == 0);
       header = succ;
     });
-    if (header != 0)
-      PatchPhis(header, label);
+    if (header != 0) PatchPhis(header, label);
   }
 
   return Status::SuccessWithChange;

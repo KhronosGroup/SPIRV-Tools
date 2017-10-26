@@ -29,6 +29,8 @@ using Words = std::vector<uint32_t>;
 using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
 
 Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
+  InitializeProcessing(module);
+
   bool modified = false;
 
   // The target Id of OpDecorationGroup instructions.

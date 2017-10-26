@@ -149,10 +149,7 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
 
   // The maximum used ID.
   uint32_t max_id_;
-  // A pointer to the module under process.
-  ir::Module* module_;
-  // DefUse manager
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+
   // Type manager
   std::unique_ptr<analysis::TypeManager> type_mgr_;
 

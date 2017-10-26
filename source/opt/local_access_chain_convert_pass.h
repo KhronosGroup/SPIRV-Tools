@@ -44,7 +44,9 @@ class LocalAccessChainConvertPass : public MemPass {
 
  private:
   // Return true if all refs through |ptrId| are only loads or stores and
-  // cache ptrId in supported_ref_ptrs_.
+  // cache ptrId in supported_ref_ptrs_. TODO(dnovillo): This function is
+  // replicated in other passes and it's slightly different in every pass. Is it
+  // possible to make one common implementation?
   bool HasOnlySupportedRefs(uint32_t ptrId);
 
   // Search |func| and cache function scope variables of target type that are
@@ -54,9 +56,6 @@ class LocalAccessChainConvertPass : public MemPass {
 
   // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.
   void DeleteIfUseless(ir::Instruction* inst);
-
-  // Return type id for |ptrInst|'s pointee
-  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
   // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
   // Append to |newInsts|.

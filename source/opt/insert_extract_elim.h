@@ -70,12 +70,6 @@ class InsertExtractElimPass : public Pass {
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
 };

@@ -56,9 +56,6 @@ class CommonUniformElimPass : public Pass {
   // Returns true if |varId| is a variable containing a sampler or image.
   bool IsSamplerOrImageVar(uint32_t varId) const;
 
-  // Return true if |block_ptr| is loop header block
-  bool IsLoopHeader(ir::BasicBlock* block_ptr);
-
   // Given a load or store pointed at by |ip|, return the top-most
   // non-CopyObj in its pointer operand. Also return the base pointer
   // in |objId|.
@@ -102,9 +99,6 @@ class CommonUniformElimPass : public Pass {
     uint32_t replId,
     ir::Instruction* ptrInst);
 
-  // Return type id for pointer's pointee
-  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst);
-
   // For the (constant index) access chain ptrInst, create an
   // equivalent load and extract
   void GenACLoadRepl(const ir::Instruction* ptrInst,
@@ -117,23 +111,25 @@ class CommonUniformElimPass : public Pass {
   // Convert all uniform access chain loads into load/extract.
   bool UniformAccessChainConvert(ir::Function* func);
 
-  // Returns the id of the merge block declared by a merge instruction in 
-  // this block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
-
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.
   // When order matters, the merge block always appears first.
-  // This assures correct depth first search in the presence of early 
+  // This assures correct depth first search in the presence of early
   // returns and kills. If the successor vector contain duplicates
   // if the merge block, they are safely ignored by DFS.
+  //
+  // TODO(dnovillo): This pass computes structured successors slightly different
+  // than the implementation in class Pass. Can this be re-factored?
   void ComputeStructuredSuccessors(ir::Function* func);
 
   // Compute structured block order for |func| into |structuredOrder|. This
   // order has the property that dominators come before all blocks they
   // dominate and merge blocks come after all blocks that are in the control
   // constructs of their header.
+  //
+  // TODO(dnovillo): This pass computes structured order slightly different
+  // than the implementation in class Pass. Can this be re-factored?
   void ComputeStructuredOrder(ir::Function* func,
       std::list<ir::BasicBlock*>* order);
 
@@ -177,36 +173,11 @@ class CommonUniformElimPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
-
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Decorations for the module we are processing
   std::unique_ptr<analysis::DecorationManager> dec_mgr_;
-
-  // Map from block's label id to block.
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
-  // Map from block to its structured successor blocks. See 
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-
-  // Map from block's label id to its predecessor blocks ids
-  std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
 
   // Map from uniform variable id to its common load id
   std::unordered_map<uint32_t, uint32_t> uniform2load_id_;
@@ -218,9 +189,6 @@ class CommonUniformElimPass : public Pass {
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
-
-  // Next unused ID
-  uint32_t next_id_;
 };
 
 }  // namespace opt

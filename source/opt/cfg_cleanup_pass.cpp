@@ -27,22 +27,6 @@
 namespace spvtools {
 namespace opt {
 
-uint32_t CFGCleanupPass::TypeToUndef(uint32_t type_id) {
-  const auto uitr = type2undefs_.find(type_id);
-  if (uitr != type2undefs_.end()) {
-    return uitr->second;
-  }
-
-  const uint32_t undefId = TakeNextId();
-  std::unique_ptr<ir::Instruction> undef_inst(
-      new ir::Instruction(SpvOpUndef, type_id, undefId, {}));
-  def_use_mgr_->AnalyzeInstDefUse(&*undef_inst);
-  module_->AddGlobalValue(std::move(undef_inst));
-  type2undefs_[type_id] = undefId;
-
-  return undefId;
-}
-
 // Remove all |phi| operands coming from unreachable blocks (i.e., blocks not in
 // |reachable_blocks|).  There are two types of removal that this function can
 // perform:
@@ -127,8 +111,8 @@ void CFGCleanupPass::RemovePhiOperands(
       // means that this |phi| argument is no longer defined. Replace it with
       // |undef_id|.
       if (!undef_id) {
-        type_id = def_use_mgr_->GetDef(arg_id)->type_id();
-        undef_id = TypeToUndef(type_id);
+        type_id = get_def_use_mgr()->GetDef(arg_id)->type_id();
+        undef_id = Type2Undef(type_id);
       }
       keep_operands.push_back(
           ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {undef_id}));
@@ -157,14 +141,14 @@ void CFGCleanupPass::RemoveBlock(ir::Function::iterator* bi) {
     // removal of phi operands.
     if (inst != rm_block.GetLabelInst()) {
       KillNamesAndDecorates(inst);
-      def_use_mgr_->KillInst(inst);
+      get_def_use_mgr()->KillInst(inst);
     }
   });
 
   // Remove the label instruction last.
   auto label = rm_block.GetLabelInst();
   KillNamesAndDecorates(label);
-  def_use_mgr_->KillInst(label);
+  get_def_use_mgr()->KillInst(label);
 
   *bi = bi->Erase();
 }
@@ -240,15 +224,8 @@ bool CFGCleanupPass::CFGCleanup(ir::Function* func) {
 }
 
 void CFGCleanupPass::Initialize(ir::Module* module) {
-  // Initialize the DefUse manager. TODO(dnovillo): Re-factor all this into the
-  // module or some other context class for the optimizer.
-  module_ = module;
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
+  InitializeProcessing(module);
   FindNamedOrDecoratedIds();
-
-  // Initialize next unused Id. TODO(dnovillo): Re-factor into the module or
-  // some other context class for the optimizer.
-  next_id_ = module_->id_bound();
 
   // Initialize block lookup map.
   label2block_.clear();
@@ -276,7 +253,7 @@ Pass::Status CFGCleanupPass::Process(ir::Module* module) {
   // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) { return CFGCleanup(fp); };
   bool modified = ProcessReachableCallTree(pfn, module);
-  FinalizeNextId(module_);
+  FinalizeNextId();
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
 }

@@ -34,8 +34,8 @@ namespace opt {
 
 uint32_t InlinePass::FindPointerToType(uint32_t type_id,
                                        SpvStorageClass storage_class) {
-  ir::Module::inst_iterator type_itr = module_->types_values_begin();
-  for (; type_itr != module_->types_values_end(); ++type_itr) {
+  ir::Module::inst_iterator type_itr = get_module()->types_values_begin();
+  for (; type_itr != get_module()->types_values_end(); ++type_itr) {
     const ir::Instruction* type_inst = &*type_itr;
     if (type_inst->opcode() == SpvOpTypePointer &&
         type_inst->GetSingleWordOperand(kSpvTypePointerTypeId) == type_id &&
@@ -54,7 +54,7 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
         {uint32_t(storage_class)}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
-  module_->AddType(std::move(type_inst));
+  get_module()->AddType(std::move(type_inst));
   return resultId;
 }
 
@@ -111,16 +111,16 @@ std::unique_ptr<ir::Instruction> InlinePass::NewLabel(uint32_t label_id) {
 uint32_t InlinePass::GetFalseId() {
   if (false_id_ != 0)
     return false_id_;
-  false_id_ = module_->GetGlobalValue(SpvOpConstantFalse);
+  false_id_ = get_module()->GetGlobalValue(SpvOpConstantFalse);
   if (false_id_ != 0)
     return false_id_;
-  uint32_t boolId = module_->GetGlobalValue(SpvOpTypeBool);
+  uint32_t boolId = get_module()->GetGlobalValue(SpvOpTypeBool);
   if (boolId == 0) {
     boolId = TakeNextId();
-    module_->AddGlobalValue(SpvOpTypeBool, boolId, 0);
+    get_module()->AddGlobalValue(SpvOpTypeBool, boolId, 0);
   }
   false_id_ = TakeNextId();
-  module_->AddGlobalValue(SpvOpConstantFalse, false_id_, boolId);
+  get_module()->AddGlobalValue(SpvOpConstantFalse, false_id_, boolId);
   return false_id_;
 }
 
@@ -160,7 +160,7 @@ uint32_t InlinePass::CreateReturnVar(
   uint32_t returnVarId = 0;
   const uint32_t calleeTypeId = calleeFn->type_id();
   const ir::Instruction* calleeType =
-      def_use_mgr_->id_to_defs().find(calleeTypeId)->second;
+      get_def_use_mgr()->id_to_defs().find(calleeTypeId)->second;
   if (calleeType->opcode() != SpvOpTypeVoid) {
     // Find or create ptr to callee return type.
     uint32_t returnVarTypeId =
@@ -560,24 +560,11 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
   return multipleReturns;
 }
 
-uint32_t InlinePass::MergeBlockIdIfAny(const ir::BasicBlock& blk) {
-  auto merge_ii = blk.cend();
-  --merge_ii;
-  uint32_t mbid = 0;
-  if (merge_ii != blk.cbegin()) {
-    --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge)
-      mbid = merge_ii->GetSingleWordOperand(kSpvLoopMergeMergeBlockId);
-    else if (merge_ii->opcode() == SpvOpSelectionMerge)
-      mbid = merge_ii->GetSingleWordOperand(kSpvSelectionMergeMergeBlockId);
-  }
-  return mbid;
-}
 
 void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
   // If header, make merge block first successor.
   for (auto& blk : *func) {
-    uint32_t mbid = MergeBlockIdIfAny(blk);
+    uint32_t mbid = MergeBlockIdIfAny(blk, nullptr);
     if (mbid != 0)
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
     // add true successors
@@ -586,7 +573,6 @@ void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
     });
   }
 }
-
 InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   return [this](const ir::BasicBlock* block) {
     return &(block2structured_succs_[block]);
@@ -596,7 +582,7 @@ InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
 bool InlinePass::HasNoReturnInLoop(ir::Function* func) {
   // If control not structured, do not do loop/return analysis
   // TODO: Analyze returns in non-structured control flow
-  if (!module_->HasCapability(SpvCapabilityShader))
+  if (!get_module()->HasCapability(SpvCapabilityShader))
     return false;
   // Compute structured block order. This order has the property
   // that dominators are before all blocks they dominate and merge blocks
@@ -664,13 +650,7 @@ bool InlinePass::IsInlinableFunction(ir::Function* func) {
 }
 
 void InlinePass::InitializeInline(ir::Module* module) {
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
-
-  // Initialize next unused Id.
-  next_id_ = module->id_bound();
-
-  // Save module.
-  module_ = module;
+  InitializeProcessing(module);
 
   false_id_ = 0;
 
@@ -682,7 +662,7 @@ void InlinePass::InitializeInline(ir::Module* module) {
   no_return_in_loop_.clear();
   multi_return_funcs_.clear();
 
-  for (auto& fn : *module_) {
+  for (auto& fn : *get_module()) {
     // Initialize function and block maps.
     id2function_[fn.result_id()] = &fn;
     for (auto& blk : fn) {
@@ -694,9 +674,7 @@ void InlinePass::InitializeInline(ir::Module* module) {
   }
 };
 
-
-InlinePass::InlinePass()
-    : module_(nullptr), def_use_mgr_(nullptr), next_id_(0) {}
+InlinePass::InlinePass() {}
 
 }  // namespace opt
 }  // namespace spvtools

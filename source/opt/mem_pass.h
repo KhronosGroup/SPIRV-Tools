@@ -105,15 +105,6 @@ class MemPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
-  // Initialize next available id from |module|.
-  void InitNextId() { next_id_ = module_->IdBound(); }
-
-  // Save next available id into |module|.
-  void FinalizeNextId() { module_->SetIdBound(next_id_); }
-
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() { return next_id_++; }
-
   // Return true if |varId| is a previously identified target variable.
   // Return false if |varId| is a previously identified non-target variable.
   //
@@ -126,39 +117,9 @@ class MemPass : public Pass {
   // non-target variables.
   bool IsTargetVar(uint32_t varId);
 
-  // Return true if all uses of |varId| are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_vars_;
-  bool HasOnlySupportedRefs(uint32_t varId);
-
-  // Returns the id of the merge block declared by a merge instruction in this
-  // block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
-
-  // Compute structured successors for function |func|. A block's structured
-  // successors are the blocks it branches to together with its declared merge
-  // block if it has one. When order matters, the merge block always appears
-  // first. This assures correct depth first search in the presence of early
-  // returns and kills. If the successor vector contain duplicates if the merge
-  // block, they are safely ignored by DFS.
-  void ComputeStructuredSuccessors(ir::Function* func);
-
   // Initialize data structures used by EliminateLocalMultiStore for
   // function |func|, specifically block predecessors and target variables.
   void InitSSARewrite(ir::Function* func);
-
-  // Compute structured block order for |func| into |structuredOrder|. This
-  // order has the property that dominators come before all blocks they
-  // dominate and merge blocks come after all blocks that are in the control
-  // constructs of their header.
-  void ComputeStructuredOrder(ir::Function* func,
-                              std::list<ir::BasicBlock*>* order);
-
-  // Return true if variable is loaded in block with |label| or in any
-  // succeeding block in structured order.
-  bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
-
-  // Return type id for |ptrInst|'s pointee
-  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
   // Return undef in function for type. Create and insert an undef after the
   // first non-variable in the function if it doesn't already exist. Add
@@ -170,63 +131,19 @@ class MemPass : public Pass {
   // code.
   Pass::Status InsertPhiInstructions(ir::Function* func);
 
-  // Module this pass is processing.
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing.
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Cache of verified target vars
   std::unordered_set<uint32_t> seen_target_vars_;
 
   // Cache of verified non-target vars
   std::unordered_set<uint32_t> seen_non_target_vars_;
 
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
-
-  // Next unused ID
-  uint32_t next_id_;
-
-  // Map from block to its structured successor blocks. See
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-
-  // Extra block whose successors are all blocks with no predecessors
-  // in function. TODO(dnovillo) Needed?
-  ir::BasicBlock pseudo_entry_block_;
-
-  // Map from block's label id to its predecessor blocks ids
-  std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
-
-  // Map from block's label id to a map of a variable to its value at the
-  // end of the block.
-  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
-      label2ssa_map_;
-
-  // Set of label ids of visited blocks
-  std::unordered_set<uint32_t> visitedBlocks_;
-
-  // Variables that are only referenced by supported operations for this
-  // pass ie. loads and stores.
-  std::unordered_set<uint32_t> supported_ref_vars_;
-
-  // Map from block's label id to block.
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
-  // Map from type to undef
-  std::unordered_map<uint32_t, uint32_t> type2undefs_;
-
-  // The Ids of OpPhi instructions that are in a loop header and which require
-  // patching of the value for the loop back-edge.
-  std::unordered_set<uint32_t> phis_to_patch_;
-
  private:
-  using cbb_ptr = const ir::BasicBlock*;
-
-  // Return true if loop header block
-  bool IsLoopHeader(ir::BasicBlock* block_ptr) const;
+  // Return true if all uses of |varId| are only through supported reference
+  // operations ie. loads and store. Also cache in supported_ref_vars_.
+  // TODO(dnovillo): This function is replicated in other passes and it's
+  // slightly different in every pass. Is it possible to make one common
+  // implementation?
+  bool HasOnlySupportedRefs(uint32_t varId);
 
   // Patch phis in loop header block |header_id| now that the map is complete
   // for the backedge predecessor |back_id|. Specifically, for each phi, find
@@ -262,6 +179,33 @@ class MemPass : public Pass {
   // blocks must have been visited by EliminateLocalMultiStore except for
   // backedges.
   void SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
+
+  // Return true if variable is loaded in block with |label| or in any
+  // succeeding block in structured order.
+  bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
+
+  // named or decorated ids
+  std::unordered_set<uint32_t> named_or_decorated_ids_;
+
+  // Map from block's label id to a map of a variable to its value at the
+  // end of the block.
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
+      label2ssa_map_;
+
+  // Set of label ids of visited blocks
+  std::unordered_set<uint32_t> visitedBlocks_;
+
+  // Variables that are only referenced by supported operations for this
+  // pass ie. loads and stores.
+  std::unordered_set<uint32_t> supported_ref_vars_;
+
+  // Map from type to undef
+  std::unordered_map<uint32_t, uint32_t> type2undefs_;
+
+  // The Ids of OpPhi instructions that are in a loop header and which require
+  // patching of the value for the loop back-edge.
+  std::unordered_set<uint32_t> phis_to_patch_;
+
 };
 
 }  // namespace opt

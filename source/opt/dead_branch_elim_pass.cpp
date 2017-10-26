@@ -33,65 +33,9 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 } // anonymous namespace
 
-uint32_t DeadBranchElimPass::MergeBlockIdIfAny(
-    const ir::BasicBlock& blk, uint32_t* cbid) const {
-  auto merge_ii = blk.cend();
-  --merge_ii;
-  uint32_t mbid = 0;
-  *cbid = 0;
-  if (merge_ii != blk.cbegin()) {
-    --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
-    }
-    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(
-          kSelectionMergeMergeBlockIdInIdx);
-    }
-  }
-  return mbid;
-}
-
-void DeadBranchElimPass::ComputeStructuredSuccessors(ir::Function* func) {
-  // If header, make merge block first successor. If a loop header, make
-  // the second successor the continue target.
-  for (auto& blk : *func) {
-    uint32_t cbid;
-    uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-      if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
-    }
-    // add true successors
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-void DeadBranchElimPass::ComputeStructuredOrder(
-    ir::Function* func, std::list<ir::BasicBlock*>* order) {
-  // Compute structured successors and do DFS
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
-      return &(block2structured_succs_[block]); };
-  // TODO(greg-lunarg): Get rid of const_cast by making moving const
-  // out of the cfa.h prototypes and into the invoking code.
-  auto post_order = [&](cbb_ptr b) {
-      order->push_front(const_cast<ir::BasicBlock*>(b)); };
-  
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      &*func->begin(), get_structured_successors, ignore_block, post_order,
-      ignore_edge);
-}
-
 bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
   bool condIsConst;
-  ir::Instruction* cInst = def_use_mgr_->GetDef(condId);
+  ir::Instruction* cInst = get_def_use_mgr()->GetDef(condId);
   switch (cInst->opcode()) {
     case SpvOpConstantFalse: {
       *condVal = false;
@@ -116,9 +60,9 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
 }
 
 bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
-  ir::Instruction* sInst = def_use_mgr_->GetDef(selId);
+  ir::Instruction* sInst = get_def_use_mgr()->GetDef(selId);
   uint32_t typeId = sInst->type_id();
-  ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   if (!typeInst || (typeInst->opcode() != SpvOpTypeInt)) return false;
   // TODO(greg-lunarg): Support non-32 bit ints
   if (typeInst->GetSingleWordInOperand(0) != 32)
@@ -138,7 +82,7 @@ void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranch(
     new ir::Instruction(SpvOpBranch, 0, 0,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newBranch);
+  get_def_use_mgr()->AnalyzeInstDefUse(&*newBranch);
   bp->AddInstruction(std::move(newBranch));
 }
 
@@ -148,7 +92,7 @@ void DeadBranchElimPass::AddSelectionMerge(uint32_t labelId,
     new ir::Instruction(SpvOpSelectionMerge, 0, 0,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newMerge);
+  get_def_use_mgr()->AnalyzeInstDefUse(&*newMerge);
   bp->AddInstruction(std::move(newMerge));
 }
 
@@ -159,14 +103,14 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condId}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {trueLabId}},
          {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {falseLabId}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newBranchCond);
+  get_def_use_mgr()->AnalyzeInstDefUse(&*newBranchCond);
   bp->AddInstruction(std::move(newBranchCond));
 }
 
 void DeadBranchElimPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
     KillNamesAndDecorates(ip);
-    def_use_mgr_->KillInst(ip);
+    get_def_use_mgr()->KillInst(ip);
   });
 }
 
@@ -192,7 +136,7 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
 }
 
 bool DeadBranchElimPass::HasNonPhiNonBackedgeRef(uint32_t labelId) {
-  analysis::UseList* uses = def_use_mgr_->GetUses(labelId);
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(labelId);
   if (uses == nullptr)
     return false;
   for (auto u : *uses) {
@@ -298,8 +242,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     const uint32_t mergeLabId =
         mergeInst->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
     AddBranch(liveLabId, *bi);
-    def_use_mgr_->KillInst(br);
-    def_use_mgr_->KillInst(mergeInst);
+    get_def_use_mgr()->KillInst(br);
+    get_def_use_mgr()->KillInst(mergeInst);
 
     modified = true;
 
@@ -390,14 +334,14 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         });
         std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
             SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
-        def_use_mgr_->AnalyzeInstDefUse(&*newPhi);
+        get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
         pii = pii.InsertBefore(std::move(newPhi));
         ++pii;
       }
       const uint32_t phiId = pii->result_id();
       KillNamesAndDecorates(phiId);
-      (void)def_use_mgr_->ReplaceAllUsesWith(phiId, replId);
-      def_use_mgr_->KillInst(&*pii);
+      (void)get_def_use_mgr()->ReplaceAllUsesWith(phiId, replId);
+      get_def_use_mgr()->KillInst(&*pii);
     }
   }
 
@@ -411,23 +355,16 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 }
 
 void DeadBranchElimPass::Initialize(ir::Module* module) {
-
-  module_ = module;
+  InitializeProcessing(module);
 
   // Initialize function and block maps
   id2block_.clear();
   block2structured_succs_.clear();
 
   // Initialize block map
-  for (auto& fn : *module_)
+  for (auto& fn : *get_module())
     for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
-
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
-  // Initialize next unused Id.
-  InitNextId();
 
   // Initialize extension whitelist
   InitExtensions();
@@ -435,7 +372,7 @@ void DeadBranchElimPass::Initialize(ir::Module* module) {
 
 bool DeadBranchElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -447,12 +384,12 @@ bool DeadBranchElimPass::AllExtensionsSupported() const {
 Pass::Status DeadBranchElimPass::ProcessImpl() {
   // Current functionality assumes structured control flow. 
   // TODO(greg-lunarg): Handle non-structured control-flow.
-  if (!module_->HasCapability(SpvCapabilityShader))
+  if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
-  for (auto& ai : module_->annotations())
+  for (auto& ai : get_module()->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
@@ -464,7 +401,7 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateDeadBranches(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

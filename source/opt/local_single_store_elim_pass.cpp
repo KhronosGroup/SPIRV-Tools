@@ -20,9 +20,6 @@
 #include "iterator.h"
 #include "spirv/1.0/GLSL.std.450.h"
 
-// Universal Limit of ResultID + 1
-static const int kInvalidId = 0x400000;
-
 namespace spvtools {
 namespace opt {
 
@@ -35,7 +32,7 @@ const uint32_t kStoreValIdInIdx = 1;
 bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
     return true;
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
@@ -236,11 +233,11 @@ bool LocalSingleStoreElimPass::LocalSingleStoreElim(ir::Function* func) {
 }
 
 void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
-  module_ = module;
+  InitializeProcessing(module);
 
   // Initialize function and block maps
   label2block_.clear();
-  for (auto& fn : *module_) {
+  for (auto& fn : *get_module()) {
     for (auto& blk : fn) {
       uint32_t bid = blk.id();
       label2block_[bid] = &blk;
@@ -254,19 +251,13 @@ void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
   // Initialize Supported Ref Pointer Cache
   supported_ref_ptrs_.clear();
 
-  // TODO: Reuse def/use (and other state) from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
-  // Initialize next unused Id
-  InitNextId();
-
   // Initialize extension whitelist
   InitExtensions();
 };
 
 bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -277,12 +268,12 @@ bool LocalSingleStoreElimPass::AllExtensionsSupported() const {
 
 Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   // Assumes logical addressing only
-  if (module_->HasCapability(SpvCapabilityAddresses))
+  if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
-  for (auto& ai : module_->annotations())
+  for (auto& ai : get_module()->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
@@ -294,16 +285,12 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return LocalSingleStoreElim(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-LocalSingleStoreElimPass::LocalSingleStoreElimPass()
-    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, 0, {}))),
-      pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))) {}
+LocalSingleStoreElimPass::LocalSingleStoreElimPass() {}
 
 Pass::Status LocalSingleStoreElimPass::Process(ir::Module* module) {
   Initialize(module);

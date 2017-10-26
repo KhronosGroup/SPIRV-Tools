@@ -47,14 +47,7 @@ bool LocalMultiStoreElimPass::EliminateMultiStoreLocal(ir::Function* func) {
 }
 
 void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
-
-  module_ = module;
-
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
-  // Start new ids with next availablein module
-  InitNextId();
+  InitializeProcessing(module);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -62,7 +55,7 @@ void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
 
 bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -74,16 +67,16 @@ bool LocalMultiStoreElimPass::AllExtensionsSupported() const {
 Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Assumes all control flow structured.
   // TODO(greg-lunarg): Do SSA rewrite for non-structured control flow
-  if (!module_->HasCapability(SpvCapabilityShader))
+  if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
   // Assumes logical addressing only
   // TODO(greg-lunarg): Add support for physical addressing
-  if (module_->HasCapability(SpvCapabilityAddresses))
+  if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
-  for (auto& ai : module_->annotations()) 
+  for (auto& ai : get_module()->annotations()) 
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
@@ -95,7 +88,7 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateMultiStoreLocal(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

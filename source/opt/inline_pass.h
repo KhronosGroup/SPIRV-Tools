@@ -43,14 +43,6 @@ class InlinePass : public Pass {
   virtual ~InlinePass() = default;
 
  protected:
-  // Return the next available Id and increment it.
-  inline uint32_t TakeNextId() { return next_id_++; }
-
-  // Write the next available Id back to the module.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
   // Find pointer to type and storage in module, return its resultId,
   // 0 if not found. TODO(greg-lunarg): Move this into type manager.
   uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
@@ -137,10 +129,6 @@ class InlinePass : public Pass {
   // Return true if |inst| is a function call that can be inlined.
   bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
-  // Returns the id of the merge block declared by a merge instruction in 
-  // this block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk);
-
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.
@@ -175,12 +163,6 @@ class InlinePass : public Pass {
   // Initialize state for optimization of |module|
   void InitializeInline(ir::Module* module);
 
-  // Module being processed by this pass
-  ir::Module* module_;
-
-  // Def/Use database
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
@@ -196,16 +178,8 @@ class InlinePass : public Pass {
   // Set of ids of inlinable functions
   std::set<uint32_t> inlinable_;
 
-  // Map from block to its structured successor blocks. See 
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-
   // result id for OpConstantFalse
   uint32_t false_id_;
-
-  // Next unused ID
-  uint32_t next_id_;
 };
 
 }  // namespace opt
