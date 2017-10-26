@@ -2038,11 +2038,47 @@ bool idUsage::isValid<OpBranch>(const spv_instruction_t *inst,
                                 const spv_opcode_desc opcodeEntry) {}
 #endif
 
-#if 0
 template <>
-bool idUsage::isValid<OpBranchConditional>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
+bool idUsage::isValid<SpvOpBranchConditional>(
+    const spv_instruction_t *inst, const spv_opcode_desc) {
+  const size_t numOperands = inst->words.size() - 1;
+  const size_t condOperandIndex = 1;
+  const size_t targetTrueIndex = 2;
+  const size_t targetFalseIndex = 3;
+
+  // num_operands is either 3 or 5 --- if 5, the last two need to be literal integers
+  if (numOperands != 3 &&
+      numOperands != 5) {
+    DIAG(0) << "OpBranchConditional requires either 3 or 5 parameters";
+    return false;
+  }
+
+  bool ret = true;
+
+  // grab the condition operand and check that it is a bool
+  const auto condOp = module_.FindDef(inst->words[condOperandIndex]);
+  if (!condOp || !module_.IsBoolScalarType(condOp->type_id())) {
+    DIAG(0) << "Condition operand for OpBranchConditional must be of boolean type";
+    ret = false;
+  }
+
+  // target operands must be OpLabel
+  // note that we don't need to check that the target labels are in the same function,
+  // PerformCfgChecks already checks for that
+  const auto targetOpTrue = module_.FindDef(inst->words[targetTrueIndex]);
+  if (!targetOpTrue || SpvOpLabel != targetOpTrue->opcode()) {
+    DIAG(0) << "The 'True Label' operand for OpBranchConditional must be the ID of an OpLabel instruction";
+    ret = false;
+  }
+
+  const auto targetOpFalse = module_.FindDef(inst->words[targetFalseIndex]);
+  if (!targetOpFalse || SpvOpLabel != targetOpFalse->opcode()) {
+    DIAG(0) << "The 'False Label' operand for OpBranchConditional must be the ID of an OpLabel instruction";
+    ret = false;
+  }
+
+  return ret;
+}
 
 #if 0
 template <>
@@ -2558,7 +2594,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     TODO(OpLoopMerge)
     TODO(OpSelectionMerge)
     TODO(OpBranch)
-    TODO(OpBranchConditional)
+    CASE(OpBranchConditional)
     TODO(OpSwitch)
     CASE(OpReturnValue)
     TODO(OpLifetimeStart)
