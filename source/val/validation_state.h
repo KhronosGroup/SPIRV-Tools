@@ -371,19 +371,30 @@ class ValidationState_t {
   // Only works for types not for objects.
   bool IsFloatScalarType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
+  bool IsFloatScalarOrVectorType(uint32_t id) const;
   bool IsFloatMatrixType(uint32_t id) const;
   bool IsIntScalarType(uint32_t id) const;
   bool IsIntVectorType(uint32_t id) const;
+  bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
   bool IsUnsignedIntVectorType(uint32_t id) const;
   bool IsSignedIntScalarType(uint32_t id) const;
   bool IsSignedIntVectorType(uint32_t id) const;
   bool IsBoolScalarType(uint32_t id) const;
   bool IsBoolVectorType(uint32_t id) const;
+  bool IsBoolScalarOrVectorType(uint32_t id) const;
   bool IsPointerType(uint32_t id) const;
+
+  // Gets value from OpConstant and OpSpecConstant as uint64.
+  // Returns false on failure (no instruction, wrong instruction, not int).
+  bool GetConstantValUint64(uint32_t id, uint64_t* val) const;
 
   // Returns type_id if id has type or zero otherwise.
   uint32_t GetTypeId(uint32_t id) const;
+
+  // Returns opcode of the instruction which issued the id or OpNop if the
+  // instruction is not registered.
+  SpvOp GetIdOpcode(uint32_t id) const;
 
   // Returns type_id for given id operand if it has a type or zero otherwise.
   // |operand_index| is expected to be pointing towards an operand which is an

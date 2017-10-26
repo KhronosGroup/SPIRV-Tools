@@ -1402,6 +1402,10 @@ make_pair(string(kOpenCLMemoryModel) +
           MatrixDependencies()))),);
 // clang-format on
 
+#if 0
+// TODO(atgoo@github.com) The following test is not valid as it generates
+// invalid combinations of images, instructions and image operands.
+//
 // Creates assembly containing an OpImageFetch instruction using operands for
 // the image-operands part.  The assembly defines constants %fzero and %izero
 // that can be used for operands where IDs are required.  The assembly is valid,
@@ -1448,6 +1452,7 @@ INSTANTIATE_TEST_CASE_P(
                          vector<string>{"MinLod"}),
                make_pair(ImageOperandsTemplate("Lod|Sample %fzero %izero"),
                          AllCapabilities()))), );
+#endif
 
 // TODO(umar): Instruction capability checks
 
