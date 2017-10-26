@@ -94,6 +94,52 @@ string sampledImageSetup = R"(
             %sampler_inst = OpLoad %sampler_type %s
 )";
 
+string BranchConditionalSetup = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 140
+               OpName %main "main"
+
+             ; type definitions
+       %bool = OpTypeBool
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+
+             ; constants
+         %i0 = OpConstant %int 0
+         %i1 = OpConstant %int 1
+         %f0 = OpConstant %float 0
+         %f1 = OpConstant %float 1
+
+
+             ; main function header
+       %void = OpTypeVoid
+   %voidfunc = OpTypeFunction %void
+       %main = OpFunction %void None %voidfunc
+      %lmain = OpLabel
+
+               OpSelectionMerge %end None
+)";
+
+string BranchConditionalTail = R"(
+   %target_t = OpLabel
+               OpNop
+               OpBranch %end
+   %target_f = OpLabel
+               OpNop
+               OpBranch %end
+
+        %end = OpLabel
+
+               OpReturn
+               OpFunctionEnd
+)";
+
 // TODO: OpUndef
 
 TEST_F(ValidateIdWithMessage, OpName) {
@@ -3946,7 +3992,101 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
 // TODO: OpLoopMerge
 // TODO: OpSelectionMerge
 // TODO: OpBranch
-// TODO: OpBranchConditional
+
+TEST_F(ValidateIdWithMessage, OpBranchConditionalGood) {
+  string spirv = BranchConditionalSetup + R"(
+    %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpBranchConditional %branch_cond %target_t %target_f
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditionalWithWeightsGood) {
+  string spirv = BranchConditionalSetup + R"(
+    %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpBranchConditional %branch_cond %target_t %target_f 1 1
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditional_CondIsScalarInt) {
+  string spirv = BranchConditionalSetup + R"(
+    OpBranchConditional %i0 %target_t %target_f
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Condition operand for OpBranchConditional must be of boolean type"));
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
+  string spirv = BranchConditionalSetup + R"(
+                   OpBranchConditional %i0 %i0 %target_f
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // EXPECT_THAT(
+  //     getDiagnosticString(),
+  //     HasSubstr("The 'True Label' operand for OpBranchConditional must be the ID of an OpLabel instruction"));
+
+  // xxxnsubtil: this is actually caught by the ID validation instead
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("are referenced but not defined in function"));
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
+  string spirv = BranchConditionalSetup + R"(
+    OpBranchConditional %i0 %target_t %i0
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  // EXPECT_THAT(
+  //     getDiagnosticString(),
+  //     HasSubstr("The 'False Label' operand for OpBranchConditional must be the ID of an OpLabel instruction"));
+
+  // xxxnsubtil: this is actually caught by the ID validation
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("are referenced but not defined in function"));
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditional_NotEnoughWeights) {
+  string spirv = BranchConditionalSetup + R"(
+    %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpBranchConditional %branch_cond %target_t %target_f 1
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpBranchConditional requires either 3 or 5 parameters"));
+}
+
+TEST_F(ValidateIdWithMessage, OpBranchConditional_TooManyWeights) {
+  string spirv = BranchConditionalSetup + R"(
+    %branch_cond = OpINotEqual %bool %i0 %i1
+                   OpBranchConditional %branch_cond %target_t %target_f 1 2 3
+  )" + BranchConditionalTail;
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpBranchConditional requires either 3 or 5 parameters"));
+}
+
 // TODO: OpSwitch
 
 TEST_F(ValidateIdWithMessage, OpReturnValueConstantGood) {
