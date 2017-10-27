@@ -103,8 +103,6 @@ enum : uint64_t {
   kMtfTypeIntScalarOrVector,
   // All types declared as return types in OpTypeFunction.
   kMtfTypeReturnedByFunction,
-  // All object ids which are integer constants.
-  kMtfConstInteger,
   // All composite objects.
   kMtfComposite,
   // All bool objects or vectors of bools.
@@ -138,10 +136,6 @@ enum : uint64_t {
   // Id descriptor space (32-bit).
   kMtfIdDescriptorSpaceBegin = 0x100000000,
 };
-
-// Used by "presumed index" technique which does special treatment of integer
-// constants no greater than this value.
-const uint32_t kMarkvMaxPresumedAccessIndex = 31;
 
 // Signals that the value is not in the coding scheme and a fallback method
 // needs to be used.
@@ -271,7 +265,7 @@ size_t GetNumBitsToNextByte(size_t bit_pos) {
 // Defines and returns current MARK-V version.
 uint32_t GetMarkvVersion() {
   const uint32_t kVersionMajor = 1;
-  const uint32_t kVersionMinor = 2;
+  const uint32_t kVersionMinor = 3;
   return kVersionMinor | (kVersionMajor << 16);
 }
 
@@ -555,11 +549,6 @@ class MarkvCodecBase {
 
   // List of instructions in the order they are given in the module.
   std::vector<std::unique_ptr<const Instruction>> instructions_;
-
-  // Maps used for the 'presumed id' techniques. Maps small constant integer
-  // value to its id and back.
-  std::map<uint32_t, uint32_t> presumed_index_to_id_;
-  std::map<uint32_t, uint32_t> id_to_presumed_index_;
 
   // Container/computer for id descriptors.
   IdDescriptorCollection id_descriptors_;
@@ -1009,21 +998,6 @@ void MarkvCodecBase::ProcessCurInstruction() {
 
     if (multi_mtf_.HasValue(kMtfTypeComposite, inst_.type_id))
       multi_mtf_.Insert(kMtfComposite, inst_.result_id);
-
-    if (inst_.opcode == SpvOpConstant) {
-      if (multi_mtf_.HasValue(
-          GetMtfIdGeneratedByOpcode(SpvOpTypeInt), inst_.type_id)) {
-        multi_mtf_.Insert(kMtfConstInteger, inst_.result_id);
-        const uint32_t presumed_index = inst_.words[3];
-        if (presumed_index <= kMarkvMaxPresumedAccessIndex) {
-          const auto result =
-              presumed_index_to_id_.emplace(presumed_index, inst_.result_id);
-          if (result.second) {
-            id_to_presumed_index_.emplace(inst_.result_id, presumed_index);
-          }
-        }
-      }
-    }
 
     switch (type_inst->opcode()) {
       case SpvOpTypeInt:
@@ -1799,19 +1773,6 @@ spv_result_t MarkvDecoder::DecodeExistingId(uint64_t mtf, uint32_t* id) {
 }
 
 spv_result_t MarkvEncoder::EncodeRefId(uint32_t id) {
-  // TODO(atgoo@github.com) This might not be needed as EncodeIdWithDescriptor
-  // can handle SpvOpAccessChain indices if enough statistics is collected.
-  if (inst_.opcode == SpvOpAccessChain && operand_index_ >= 3) {
-    const auto it = id_to_presumed_index_.find(id);
-    if (it != id_to_presumed_index_.end()) {
-      writer_.WriteBits(1, 1);
-      writer_.WriteFixedWidth(it->second, kMarkvMaxPresumedAccessIndex);
-      return SPV_SUCCESS;
-    }
-
-    writer_.WriteBits(0, 1);
-  }
-
   {
     // Try to encode using id descriptor mtfs.
     const spv_result_t result = EncodeIdWithDescriptor(id);
@@ -1849,32 +1810,6 @@ spv_result_t MarkvEncoder::EncodeRefId(uint32_t id) {
 }
 
 spv_result_t MarkvDecoder::DecodeRefId(uint32_t* id) {
-  if (inst_.opcode == SpvOpAccessChain && operand_index_ >= 3) {
-    uint64_t use_presumed_index_technique = 0;
-    if (!reader_.ReadBits(&use_presumed_index_technique, 1))
-      return Diag(SPV_ERROR_INVALID_BINARY)
-          << "Failed to read use_presumed_index_technique flag";
-
-    if (use_presumed_index_technique) {
-      uint64_t value = 0;
-      if (!reader_.ReadFixedWidth(&value, kMarkvMaxPresumedAccessIndex))
-        return Diag(SPV_ERROR_INVALID_BINARY)
-            << "Failed to read presumed_index";
-
-      const uint32_t presumed_index = static_cast<uint32_t>(value);
-
-      const auto it = presumed_index_to_id_.find(presumed_index);
-      if (it == presumed_index_to_id_.end()) {
-        assert(0);
-        return Diag(SPV_ERROR_INTERNAL)
-            << "Presumed index id not found";
-      }
-
-      *id = it->second;
-      return SPV_SUCCESS;
-    }
-  }
-
   {
     const spv_result_t result = DecodeIdWithDescriptor(id);
     if (result != SPV_UNSUPPORTED)
