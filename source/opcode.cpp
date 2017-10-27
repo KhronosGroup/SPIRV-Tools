@@ -140,13 +140,16 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  // TODO: As above this lookup is not optimal.
-  for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
-    if (opcode == table->entries[opcodeIndex].opcode) {
-      // NOTE: Found the Opcode!
-      *pEntry = &table->entries[opcodeIndex];
-      return SPV_SUCCESS;
-    }
+  auto beg = table->entries;
+  auto end = table->entries + table->count;
+  auto value = spv_opcode_desc_t{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
+    return lhs.opcode < rhs.opcode;
+  };
+  auto it = std::lower_bound(beg, end, value, comp);
+  if (it->opcode == opcode) {
+    *pEntry = it;
+    return SPV_SUCCESS;
   }
 
   return SPV_ERROR_INVALID_LOOKUP;
