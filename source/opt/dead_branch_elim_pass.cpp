@@ -28,8 +28,6 @@ const uint32_t kBranchTargetLabIdInIdx = 0;
 const uint32_t kBranchCondTrueLabIdInIdx = 1;
 const uint32_t kBranchCondFalseLabIdInIdx = 2;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
-const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 } // anonymous namespace
 

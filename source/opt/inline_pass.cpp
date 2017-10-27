@@ -27,7 +27,6 @@ static const int kSpvTypePointerStorageClass = 1;
 static const int kSpvTypePointerTypeId = 2;
 static const int kSpvLoopMergeMergeBlockId = 0;
 static const int kSpvLoopMergeContinueTargetIdInIdx = 1;
-static const int kSpvSelectionMergeMergeBlockId = 0;
 
 namespace spvtools {
 namespace opt {
