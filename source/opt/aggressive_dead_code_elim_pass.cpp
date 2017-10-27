@@ -265,13 +265,15 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   call_in_func_ = false;
   func_is_entry_point_ = false;
   private_stores_.clear();
-  std::stack<bool> skip_control_flow;
+  // Stacks to keep track of when we are inside an if-construct. When not
+  // immediately inside an in-construct,  we must assume all branches are live. 
+  std::stack<bool> assume_branches_live;
   std::stack<uint32_t> currentMergeBlockId;
-  skip_control_flow.push(false);
+  assume_branches_live.push(true);
   currentMergeBlockId.push(0);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     if ((*bi)->id() == currentMergeBlockId.top()) {
-      skip_control_flow.pop();
+      assume_branches_live.pop();
       currentMergeBlockId.pop();
     }
     for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
@@ -294,7 +296,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
             AddToWorklist(&*ii);
         } break;
         case SpvOpLoopMerge: {
-          skip_control_flow.push(false);
+          assume_branches_live.push(true);
           currentMergeBlockId.push(
               ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
           AddToWorklist(&*ii);
@@ -303,7 +305,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           auto brii = ii;
           ++brii;
           bool is_structured_if = brii->opcode() == SpvOpBranchConditional;
-          skip_control_flow.push(is_structured_if);
+          assume_branches_live.push(!is_structured_if);
           currentMergeBlockId.push(
               ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
           if (!is_structured_if)
@@ -311,7 +313,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         } break;
         case SpvOpBranch:
         case SpvOpBranchConditional: {
-          if (!skip_control_flow.top())
+          if (assume_branches_live.top())
             AddToWorklist(&*ii);
         } break;
         default: {
