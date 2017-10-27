@@ -327,12 +327,17 @@ def generate_instruction(inst, version, is_ext_inst):
 
 def generate_instruction_table(inst_table, version):
     """Returns the info table containing all SPIR-V instructions,
-    prefixed by capability arrays.
+    sorted by opcode, and prefixed by capability arrays.
+    
+    Note:
+      - the built-in sorted() function is guaranteed to be stable.
+        https://docs.python.org/3/library/functions.html#sorted
 
     Arguments:
-      - inst_table: a dict containing all SPIR-V instructions.
+      - inst_table: a list containing all SPIR-V instructions.
       - vesion: SPIR-V version.
     """
+    inst_table = sorted(inst_table, key=lambda k: k['opcode'])
     caps_arrays = generate_capability_arrays(
         [inst.get('capabilities', []) for inst in inst_table], version)
     insts = [generate_instruction(inst, version, False) for inst in inst_table]
@@ -344,12 +349,13 @@ def generate_instruction_table(inst_table, version):
 
 def generate_extended_instruction_table(inst_table, set_name, version):
     """Returns the info table containing all SPIR-V extended instructions,
-    prefixed by capability arrays.
+    sorted by opcode, and prefixed by capability arrays.
 
     Arguments:
-      - inst_table: a dict containing all SPIR-V instructions.
+      - inst_table: a list containing all SPIR-V instructions.
       - set_name: the name of the extended instruction set.
     """
+    inst_table = sorted(inst_table, key=lambda k: k['opcode'])
     caps = [inst.get('capabilities', []) for inst in inst_table]
     caps_arrays = generate_capability_arrays(caps, version)
     insts = [generate_instruction(inst, version, True) for inst in inst_table]

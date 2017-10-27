@@ -140,13 +140,16 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  // TODO: As above this lookup is not optimal.
-  for (uint64_t opcodeIndex = 0; opcodeIndex < table->count; ++opcodeIndex) {
-    if (opcode == table->entries[opcodeIndex].opcode) {
-      // NOTE: Found the Opcode!
-      *pEntry = &table->entries[opcodeIndex];
-      return SPV_SUCCESS;
-    }
+  const auto beg = table->entries;
+  const auto end = table->entries + table->count;
+  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
+    return lhs.opcode < rhs.opcode;
+  };
+  auto it = std::lower_bound(beg, end, value, comp);
+  if (it!=end && it->opcode == opcode) {
+    *pEntry = it;
+    return SPV_SUCCESS;
   }
 
   return SPV_ERROR_INVALID_LOOKUP;
@@ -172,9 +175,16 @@ void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
 const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
-  for (uint32_t i = 0; i < ARRAY_SIZE(kOpcodeTableEntries_1_2); ++i) {
-    if (kOpcodeTableEntries_1_2[i].opcode == opcode)
-      return kOpcodeTableEntries_1_2[i].name;
+
+  const auto beg = kOpcodeTableEntries_1_2;
+  const auto end = kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
+  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
+    return lhs.opcode < rhs.opcode;
+  };
+  auto it = std::lower_bound(beg, end, value, comp);
+  if (it!=end && it->opcode == opcode) {
+    return it->name;
   }
 
   assert(0 && "Unreachable!");
