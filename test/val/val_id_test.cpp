@@ -2159,12 +2159,15 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '7's type does not match Object "
-                            "<id> '6's type."));
+                        "<id> '6's type."));
 }
 
 // The next series of test check test a relaxation of the rules for stores to
 // structs.  The first test checks that we get a failure when the option is not
 // set to relax the rule.
+// TODO: Add tests for layout compatible arrays and matricies when the validator
+//       relaxes the rules for them as well.  Also need test to check for layout
+//       decorations specific to those types.
 TEST_F(ValidateIdWithMessage, OpStoreTypeBadStruct) {
   string spirv = kGLSL450MemoryModel + R"(
      OpMemberDecorate %1 0 Offset 0
@@ -2189,7 +2192,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadStruct) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpStore Pointer <id> '8's type does not match Object "
-                            "<id> '11's type."));
+                        "<id> '11's type."));
 }
 
 // Same code as the last test.  The difference is that we relax the rule.
@@ -2198,6 +2201,34 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedStruct) {
   string spirv = kGLSL450MemoryModel + R"(
      OpMemberDecorate %1 0 Offset 0
      OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %2 0 Offset 0
+     OpMemberDecorate %2 1 Offset 4
+%3 = OpTypeVoid
+%4 = OpTypeFloat 32
+%1 = OpTypeStruct %4 %4
+%5 = OpTypePointer Uniform %1
+%2 = OpTypeStruct %4 %4
+%6 = OpTypeFunction %3
+%7 = OpConstant %4 3.14
+%8 = OpVariable %5 Uniform
+%9 = OpFunction %3 None %6
+%10 = OpLabel
+%11 = OpCompositeConstruct %2 %7 %7
+      OpStore %8 %11
+      OpReturn
+      OpFunctionEnd)";
+  spvValidatorOptionsSetRelaxStoreStruct(options_, true);
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Same code as the last test excect for an extra decoration on one of the
+// members. With the relaxed rules, the code is still valid.
+TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedStructWithExtraDecoration) {
+  string spirv = kGLSL450MemoryModel + R"(
+     OpMemberDecorate %1 0 Offset 0
+     OpMemberDecorate %1 1 Offset 4
+     OpMemberDecorate %1 0 RelaxedPrecision
      OpMemberDecorate %2 0 Offset 0
      OpMemberDecorate %2 1 Offset 4
 %3 = OpTypeVoid
@@ -2292,7 +2323,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
-                    "<id> '16's layout."));
+                "<id> '16's layout."));
 }
 
 // This test check that the even with the relaxed rules an error is identified
@@ -2332,7 +2363,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
-                    "<id> '16's layout."));
+                "<id> '16's layout."));
 }
 
 TEST_F(ValidateIdWithMessage, OpStoreVoid) {

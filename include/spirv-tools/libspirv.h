@@ -425,10 +425,10 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
 // the types are structs with the same layout.  Two structs have the same layout
 // if
 //
-// 1) The members of the struct are either the same type or are structs with
-// same layout.
+// 1) the members of the structs are either the same type or are structs with
+// same layout, and
 //
-// 2) The decorations that affect the memory layout are identical for both
+// 2) the decorations that affect the memory layout are identical for both
 // types.  Other decorations are not relevant.
 void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
                                             bool val);

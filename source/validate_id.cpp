@@ -1225,6 +1225,7 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
       return false;
     }
 
+    // TODO: Check for layout compatible matricies and arrays as well.
     if (!AreLayoutCompatibleStructs(type, objectType)) {
       DIAG(pointerIndex) << "OpStore Pointer <id> '"
                          << inst->words[pointerIndex]
@@ -2577,14 +2578,16 @@ bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
   const std::vector<Decoration>& type2_decorations =
       module_.id_decorations(type2->id());
 
-  // For shader modules, it is required for composite objects to have
-  // decorations that completely defines their layout.  See section 2.16.2 of
-  // the SPIR-V specification. The important point is that layout decoration for
-  // type1 all found in type2, then type 2 cannot have extra layout decoration
-  // because they will be inconsistent with another decoration.  For example, if
-  // type1 has a RowMajor decoration, and the same one is found in type1, then
-  // type2 cannot have a ColMajor decoration.  This means we do not need to
-  // traverse the decorations of type2 to see if they are in type1.
+  // For shader modules, it is required that composite objects have
+  // decorations that completely define their layout.  See section 2.16.2 of
+  // the SPIR-V specification.
+  //
+  // A corollary to that is that we only need to ensure that type1's layout
+  // decorations apply to type2 as well.  To understand why, consider the RowMajor
+  // and ColMajor decorations.  If type1 is a matrix, it must have at exactly one
+  // of them, say RowMajor.  If we found a RowMajor decoration that applies to
+  // type2, it cannot have a ColMajor decoration as well.  So no need to search
+  // type2 in a subsequent step for these decorations.  Other decorations are similar.
   for (const Decoration& decoration : type1_decorations) {
     switch (decoration.dec_type()) {
       case SpvDecorationArrayStride:
