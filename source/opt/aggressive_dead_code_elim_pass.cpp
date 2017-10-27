@@ -194,12 +194,15 @@ bool AggressiveDCEPass::IsStructuredIfHeader(ir::BasicBlock* bp,
     return false;
   if (ii == bp->begin())
     return false;
-  *branchInst = &*ii;
+  if (branchInst != nullptr) *branchInst = &*ii;
   --ii;
   if (ii->opcode() != SpvOpSelectionMerge)
     return false;
-  *mergeInst = &*ii;
-  *mergeBlockId = ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+  if (mergeInst != nullptr)
+    *mergeInst = &*ii;
+  if (mergeBlockId != nullptr)
+    *mergeBlockId =
+        ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
   return true;
 }
 
@@ -384,19 +387,15 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
     worklist_.pop();
   }
-  // Mark all non-live instructions dead, except non-if branches
+  // Mark all non-live instructions dead, except branches which are not
+  // at the end of an if-header, which indicate a dead if.
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
       if (IsLive(&*ii))
         continue;
-      if (IsBranch(ii->opcode())) {
-        if (ii == (*bi)->begin())
-          continue;
-        auto mi = ii;
-        --mi;
-        if (mi->opcode() != SpvOpSelectionMerge)
-          continue;
-      }
+      if (IsBranch(ii->opcode()) &&
+          !IsStructuredIfHeader(*bi, nullptr, nullptr, nullptr))
+        continue;
       dead_insts_.insert(&*ii);
     }
   }
