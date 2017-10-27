@@ -235,16 +235,12 @@ void DecorationManager::ForEachDecoration(uint32_t id,
                                           std::function<void(const ir::Instruction&)> f) {
   for (const ir::Instruction* inst : GetDecorationsFor(id, true)) {
     switch (inst->opcode()) {
-      case SpvOpDecorate:
-        if (inst->GetSingleWordInOperand(1) == decoration) {
-          f(*inst);
-        }
-        break;
       case SpvOpMemberDecorate:
         if (inst->GetSingleWordInOperand(2) == decoration) {
           f(*inst);
         }
         break;
+      case SpvOpDecorate:
       case SpvOpDecorateId:
         if (inst->GetSingleWordInOperand(1) == decoration) {
           f(*inst);
@@ -260,38 +256,26 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to) {
   auto const decoration_list = id_to_decoration_insts_.find(from);
   if (decoration_list == id_to_decoration_insts_.end()) return;
   for (ir::Instruction* inst : decoration_list->second) {
+    // TODO: update def-use manager (additional use of |to| )
     switch (inst->opcode()) {
-      case SpvOpNop: break;
-      case SpvOpGroupDecorate: {
-        // replace decoration instruction with one containing the new id as well.
-        std::vector<ir::Operand> new_operands;
-        new_operands.insert(inst->begin(), inst->begin(), inst->end());
-        new_operands.push_back(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
-        std::unique_ptr<ir::Instruction> new_inst(new ir::Instruction(inst->opcode(), inst->type_id(), inst->result_id(), new_operands));
-        id_to_decoration_insts_[from].push_back(new_inst.get());
-        module_->AddAnnotationInst(std::move(new_inst));
-        inst->ToNop();
+      case SpvOpGroupDecorate:
+        // add |to| to list of decorated id's
+        inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+        id_to_decoration_insts_[to].push_back(inst);
         break;
-      }
-      case SpvOpGroupMemberDecorate: {
-        // replace decoration with one which contains additional the same pairs of (id, literal) for the new id:
-        std::vector<ir::Operand> new_operands;
-        new_operands.insert(inst->begin(), inst->begin(), inst->end());
+      case SpvOpGroupMemberDecorate:
+        // for each (id == from), add (to, literal) as operands
         for (auto op = ++inst->begin(); op != inst->end(); ++op) { // emit decoration group id
           if (op->words[0] == from) { // add new pair of operands: (to, literal)
-            new_operands.push_back(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
+            inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
             ++op;
-            new_operands.push_back(*op);
+            inst->AddOperand(*op);
           } else {
             ++op;
           }
         }
-        std::unique_ptr<ir::Instruction> new_inst(new ir::Instruction(inst->opcode(), inst->type_id(), inst->result_id(), new_operands));
-        id_to_decoration_insts_[from].push_back(new_inst.get());
-        module_->AddAnnotationInst(std::move(new_inst));
-        inst->ToNop();
+        id_to_decoration_insts_[to].push_back(inst);
         break;
-      }
       case SpvOpDecorate:
       case SpvOpMemberDecorate:
       case SpvOpDecorateId: {

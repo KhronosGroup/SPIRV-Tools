@@ -55,7 +55,8 @@ class DecorationManager {
                              const ir::Instruction* inst2) const;
 
   // |f| is run on each decoration instruction for |id| with decoration
-  // |decoration|.
+  // |decoration|. Processed are all decorations which target |id| either
+  // directly or indirectly by Decoration Groups.
   void ForEachDecoration(uint32_t id, uint32_t decoration,
                          std::function<void(const ir::Instruction& f)>);
 
