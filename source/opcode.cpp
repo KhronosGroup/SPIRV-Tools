@@ -140,14 +140,14 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  auto beg = table->entries;
-  auto end = table->entries + table->count;
-  auto value = spv_opcode_desc_t{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  const auto beg = table->entries;
+  const auto end = table->entries + table->count;
+  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
   auto it = std::lower_bound(beg, end, value, comp);
-  if (it->opcode == opcode) {
+  if (it!=end && it->opcode == opcode) {
     *pEntry = it;
     return SPV_SUCCESS;
   }
@@ -176,14 +176,14 @@ const char* spvOpcodeString(const SpvOp opcode) {
   // Use the latest SPIR-V version, which should be backward-compatible with all
   // previous ones.
 
-  auto beg = kOpcodeTableEntries_1_2;
-  auto end = kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
-  auto value = spv_opcode_desc_t{"", opcode, 0, nullptr, 0, {}, 0, 0};
+  const auto beg = kOpcodeTableEntries_1_2;
+  const auto end = kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
+  spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
   auto it = std::lower_bound(beg, end, value, comp);
-  if (it->opcode == opcode) {
+  if (it!=end && it->opcode == opcode) {
     return it->name;
   }
 
