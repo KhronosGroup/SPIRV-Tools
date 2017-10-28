@@ -297,6 +297,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
             AddToWorklist(&*ii);
         } break;
         case SpvOpLoopMerge: {
+          // Assume loops live (for now)
+          // TODO(greg-lunarg): Add dead loop elimination
           assume_branches_live.push(true);
           currentMergeBlockId.push(
               ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
