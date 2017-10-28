@@ -452,10 +452,11 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   }
   // Erase dead blocks from function
   for (auto ebi = func->begin(); ebi != func->end(); )
-  if (dead_blocks.find(&*ebi) != dead_blocks.end())
-    ebi = ebi.Erase();
-  else
-    ++ebi;
+    if (dead_blocks.find(&*ebi) != dead_blocks.end())
+      ebi = ebi.Erase();
+    else
+      ++ebi;
+
   return modified;
 }
 
