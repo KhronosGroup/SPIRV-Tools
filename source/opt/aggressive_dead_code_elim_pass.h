@@ -168,11 +168,12 @@ class AggressiveDCEPass : public MemPass {
   // building up the live instructions set |live_insts_|.
   std::queue<ir::Instruction*> worklist_;
 
-  // Map from block to most immediate controlling structured conditional
-  // branch.
+  // Map from block to the branch instruction in the header of the most
+  // immediate controlling structured if.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerBranch_;
 
-  // Map from block to most immediate controlling conditional merge.
+  // Map from block to the merge instruction in the header of the most
+  // immediate controlling structured if.
   std::unordered_map<ir::BasicBlock*, ir::Instruction*> block2headerMerge_;
 
   // Map from instruction containing block
