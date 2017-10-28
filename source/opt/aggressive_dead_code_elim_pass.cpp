@@ -269,6 +269,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // immediately inside an in-construct,  we must assume all branches are live. 
   std::stack<bool> assume_branches_live;
   std::stack<uint32_t> currentMergeBlockId;
+  // Push sentinel values on stack for when outside of any control flow.
   assume_branches_live.push(true);
   currentMergeBlockId.push(0);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
