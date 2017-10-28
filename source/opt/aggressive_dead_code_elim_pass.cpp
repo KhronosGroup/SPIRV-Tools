@@ -363,7 +363,8 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         AddToWorklist(inInst);
     });
     // If in a structured if construct, add the controlling conditional branch
-    // and its merge
+    // and its merge. Any containing if construct is marked live when the
+    // the merge and branch are processed out of the worklist.
     ir::BasicBlock* blk = inst2block_[liveInst];
     ir::Instruction* branchInst = block2headerBranch_[blk];
     if (branchInst != nullptr && !IsLive(branchInst)) {
