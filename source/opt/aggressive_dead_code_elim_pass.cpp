@@ -438,6 +438,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     // If a structured if was deleted, add a branch to its merge block,
     // and traverse to the merge block killing all instructions on the way
     // and remembering dead blocks for later deletion from function.
+    // The block still exists as the OpLabel at least is still intact.
     if (mergeBlockId != 0) {
       AddBranch(mergeBlockId, *bi);
       for (++bi; (*bi)->id() != mergeBlockId; ++bi) {

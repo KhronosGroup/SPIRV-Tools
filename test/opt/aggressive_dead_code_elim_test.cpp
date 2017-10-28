@@ -2017,6 +2017,121 @@ OpFunctionEnd
       assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, EliminateEntireFunctionBody) {
+  // #version 450
+  // 
+  // layout(location = 0) in vec4 BaseColor;
+  // layout(location = 0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     float d;
+  //     if (BaseColor.x == 0)
+  //       d = BaseColor.y;
+  //     else
+  //       d = BaseColor.z;
+  // }
+
+  const std::string predefs_before =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %d "d"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %OutColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %OutColor "OutColor"
+OpDecorate %BaseColor Location 0
+OpDecorate %OutColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+%float_0 = OpConstant %float 0
+%bool = OpTypeBool
+%_ptr_Function_float = OpTypePointer Function %float
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string func_before =
+      R"(%main = OpFunction %void None %7
+%20 = OpLabel
+%d = OpVariable %_ptr_Function_float Function
+%21 = OpAccessChain %_ptr_Input_float %BaseColor %uint_0
+%22 = OpLoad %float %21
+%23 = OpFOrdEqual %bool %22 %float_0 
+OpSelectionMerge %24 None
+OpBranchConditional %23 %25 %26
+%25 = OpLabel
+%27 = OpAccessChain %_ptr_Input_float %BaseColor %uint_1
+%28 = OpLoad %float %27
+OpStore %d %28
+OpBranch %24
+%26 = OpLabel
+%29 = OpAccessChain %_ptr_Input_float %BaseColor %uint_2
+%30 = OpLoad %float %29
+OpStore %d %30
+OpBranch %24
+%24 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string func_after =
+      R"(%main = OpFunction %void None %7
+%20 = OpLabel
+OpBranch %24
+%24 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(
+      predefs_before + func_before, 
+      predefs_after + func_after, 
+      true, true);
+}
+
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
