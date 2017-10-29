@@ -24,7 +24,7 @@ namespace spvtools {
 // A helper function to compose and return a string from the message in the
 // following format:
 //   "<level>: <source>:<line>:<column>:<index>: <message>"
-std::string StringifyMessage(spv_message_level_t level, const char* source,
+SPIRV_TOOLS_EXPORT std::string StringifyMessage(spv_message_level_t level, const char* source,
                              const spv_position_t& position,
                              const char* message);
 

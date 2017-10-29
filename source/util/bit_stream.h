@@ -25,6 +25,8 @@
 #include <sstream>
 #include <vector>
 
+#include <spirv-tools_export.h>
+
 namespace spvutils {
 
 // Returns rounded down log2(val). log2(0) is considered 0.
@@ -193,10 +195,10 @@ inline std::string BitsToStream(uint64_t bits, size_t num_bits = 64) {
 }
 
 // Base class for writing sequences of bits.
-class BitWriterInterface {
+class SPIRV_TOOLS_EXPORT BitWriterInterface {
  public:
-  BitWriterInterface() {}
-  virtual ~BitWriterInterface() {}
+  inline BitWriterInterface() {}
+  inline virtual ~BitWriterInterface() {}
 
   // Writes lower |num_bits| in |bits| to the stream.
   // |num_bits| must be no greater than 64.
@@ -267,7 +269,7 @@ class BitWriterInterface {
   }
 
   // Returns buffer size in bytes.
-  size_t GetDataSizeBytes() const {
+  inline size_t GetDataSizeBytes() const {
     return NumBitsToNumWords<8>(GetNumBits());
   }
 
@@ -282,35 +284,41 @@ class BitWriterInterface {
 // std::vector<uint64_t> to store written bits.
 class BitWriterWord64 : public BitWriterInterface {
  public:
-  explicit BitWriterWord64(size_t reserve_bits = 64);
+  SPIRV_TOOLS_EXPORT explicit BitWriterWord64(size_t reserve_bits = 64);
 
-  void WriteBits(uint64_t bits, size_t num_bits) override;
+  SPIRV_TOOLS_EXPORT void WriteBits(uint64_t bits, size_t num_bits) override;
 
+  inline
   size_t GetNumBits() const override {
     return end_;
   }
 
+  inline
   const uint8_t* GetData() const override {
     return reinterpret_cast<const uint8_t*>(buffer_.data());
   }
 
+  inline
   std::vector<uint8_t> GetDataCopy() const override {
     return std::vector<uint8_t>(GetData(), GetData() + GetDataSizeBytes());
   }
 
   // Returns written stream as std::string, padded with zeroes so that the
   // length is a multiple of 64.
+  inline
   std::string GetStreamPadded64() const {
     return BufferToStream(buffer_);
   }
 
   // Sets callback to emit bit sequences after every write.
+  inline
   void SetCallback(std::function<void(const std::string&)> callback) {
     callback_ = callback;
   }
 
  protected:
   // Sends string generated from arguments to callback_ if defined.
+  inline
   void EmitSequence(uint64_t bits, size_t num_bits) const {
     if (callback_)
       callback_(BitsToStream(bits, num_bits));
@@ -327,10 +335,10 @@ class BitWriterWord64 : public BitWriterInterface {
 };
 
 // Base class for reading sequences of bits.
-class BitReaderInterface {
+class SPIRV_TOOLS_EXPORT BitReaderInterface {
  public:
-  BitReaderInterface() {}
-  virtual ~BitReaderInterface() {}
+  inline BitReaderInterface() {}
+  inline virtual ~BitReaderInterface() {}
 
   // Reads |num_bits| from the stream, stores them in |bits|.
   // Returns number of read bits. |num_bits| must be no greater than 64.
@@ -351,6 +359,7 @@ class BitReaderInterface {
   // Reads |num_bits| from the stream, returns string in left-to-right order.
   // The length of the returned string may be less than |num_bits| if end was
   // reached.
+  inline
   std::string ReadStream(size_t num_bits) {
     uint64_t bits = 0;
     size_t num_read = ReadBits(&bits, num_bits);
@@ -384,7 +393,7 @@ class BitReaderInterface {
   // the buffer stream ends with padding zeroes, and would accept this as a
   // 'soft' EOF. Implementations of this class do not necessarily need to
   // implement this, default behavior can simply delegate to ReachedEnd().
-  virtual bool OnlyZeroesLeft() const {
+  inline virtual bool OnlyZeroesLeft() const {
     return ReachedEnd();
   }
 
@@ -418,32 +427,35 @@ class BitReaderInterface {
 class BitReaderWord64 : public BitReaderInterface {
  public:
   // Consumes and owns the buffer.
-  explicit BitReaderWord64(std::vector<uint64_t>&& buffer);
+  SPIRV_TOOLS_EXPORT explicit BitReaderWord64(std::vector<uint64_t>&& buffer);
 
   // Copies the buffer and casts it to uint64.
   // Consuming the original buffer and casting it to uint64 is difficult,
   // as it would potentially cause data misalignment and poor performance.
-  explicit BitReaderWord64(const std::vector<uint8_t>& buffer);
-  BitReaderWord64(const void* buffer, size_t num_bytes);
+  SPIRV_TOOLS_EXPORT explicit BitReaderWord64(const std::vector<uint8_t>& buffer);
+  SPIRV_TOOLS_EXPORT BitReaderWord64(const void* buffer, size_t num_bytes);
 
-  size_t ReadBits(uint64_t* bits, size_t num_bits) override;
+  SPIRV_TOOLS_EXPORT size_t ReadBits(uint64_t* bits, size_t num_bits) override;
 
+  inline
   size_t GetNumReadBits() const override {
     return pos_;
   }
 
-  bool ReachedEnd() const override;
-  bool OnlyZeroesLeft() const override;
+  SPIRV_TOOLS_EXPORT bool ReachedEnd() const override;
+  SPIRV_TOOLS_EXPORT bool OnlyZeroesLeft() const override;
 
   BitReaderWord64() = delete;
 
   // Sets callback to emit bit sequences after every read.
+  inline
   void SetCallback(std::function<void(const std::string&)> callback) {
     callback_ = callback;
   }
 
  protected:
   // Sends string generated from arguments to callback_ if defined.
+  inline
   void EmitSequence(uint64_t bits, size_t num_bits) const {
     if (callback_)
       callback_(BitsToStream(bits, num_bits));

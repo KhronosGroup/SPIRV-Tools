@@ -22,9 +22,11 @@
 
 #include "libspirv.hpp"
 
+#include "spirv-tools-link_export.h"
+
 namespace spvtools {
 
-class LinkerOptions {
+class SPIRV_TOOLS_LINK_EXPORT LinkerOptions {
  public:
   LinkerOptions() : createLibrary_(false) {}
 
@@ -52,20 +54,20 @@ class Linker {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  explicit Linker(spv_target_env env);
+  SPIRV_TOOLS_LINK_EXPORT explicit Linker(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
-  Linker(const Linker&) = delete;
-  Linker(Linker&&) = delete;
-  Linker& operator=(const Linker&) = delete;
-  Linker& operator=(Linker&&) = delete;
+  SPIRV_TOOLS_LINK_EXPORT Linker(const Linker&) = delete;
+  SPIRV_TOOLS_LINK_EXPORT Linker(Linker&&) = delete;
+  SPIRV_TOOLS_LINK_EXPORT Linker& operator=(const Linker&) = delete;
+  SPIRV_TOOLS_LINK_EXPORT Linker& operator=(Linker&&) = delete;
 
   // Destructs this instance.
-  ~Linker();
+  SPIRV_TOOLS_LINK_EXPORT ~Linker();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.
-  void SetMessageConsumer(MessageConsumer consumer);
+  SPIRV_TOOLS_LINK_EXPORT void SetMessageConsumer(MessageConsumer consumer);
 
   // Links one or more SPIR-V modules into a new SPIR-V module. That is,
   // combine several SPIR-V modules into one, resolving link dependencies
@@ -81,10 +83,10 @@ class Linker {
   // * Some entry points were defined multiple times;
   // * Some imported symbols did not have an exported counterpart;
   // * Possibly other reasons.
-  spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
+  SPIRV_TOOLS_LINK_EXPORT spv_result_t Link(const std::vector<std::vector<uint32_t>>& binaries,
                     std::vector<uint32_t>& linked_binary,
                     const LinkerOptions& options = LinkerOptions()) const;
-  spv_result_t Link(const uint32_t* const* binaries, const size_t* binary_sizes,
+  SPIRV_TOOLS_LINK_EXPORT spv_result_t Link(const uint32_t* const* binaries, const size_t* binary_sizes,
                     size_t num_binaries, std::vector<uint32_t>& linked_binary,
                     const LinkerOptions& options = LinkerOptions()) const;
 

@@ -33,46 +33,46 @@ class Function;
 /// instruction's result id
 class Instruction {
  public:
-  explicit Instruction(const spv_parsed_instruction_t* inst,
+  SPIRV_TOOLS_EXPORT explicit Instruction(const spv_parsed_instruction_t* inst,
                        Function* defining_function = nullptr,
                        BasicBlock* defining_block = nullptr);
 
   /// Registers the use of the Instruction in instruction \p inst at \p index
-  void RegisterUse(const Instruction* inst, uint32_t index);
+  SPIRV_TOOLS_EXPORT void RegisterUse(const Instruction* inst, uint32_t index);
 
-  uint32_t id() const { return inst_.result_id; }
-  uint32_t type_id() const { return inst_.type_id; }
-  SpvOp opcode() const { return static_cast<SpvOp>(inst_.opcode); }
+  inline uint32_t id() const { return inst_.result_id; }
+  inline uint32_t type_id() const { return inst_.type_id; }
+  inline SpvOp opcode() const { return static_cast<SpvOp>(inst_.opcode); }
 
   /// Returns the Function where the instruction was defined. nullptr if it was
   /// defined outside of a Function
-  const Function* function() const { return function_; }
+  inline const Function* function() const { return function_; }
 
   /// Returns the BasicBlock where the instruction was defined. nullptr if it
   /// was defined outside of a BasicBlock
-  const BasicBlock* block() const { return block_; }
+  inline const BasicBlock* block() const { return block_; }
 
   /// Returns a vector of pairs of all references to this instruction's result
   /// id. The first element is the instruction in which this result id was
   /// referenced and the second is the index of the word in that instruction
   /// where this result id appeared
-  const std::vector<std::pair<const Instruction*, uint32_t>>& uses() const {
+  inline const std::vector<std::pair<const Instruction*, uint32_t>>& uses() const {
     return uses_;
   }
 
   /// The word used to define the Instruction
-  uint32_t word(size_t index) const { return words_[index]; }
+  inline uint32_t word(size_t index) const { return words_[index]; }
 
   /// The words used to define the Instruction
-  const std::vector<uint32_t>& words() const { return words_; }
+  inline const std::vector<uint32_t>& words() const { return words_; }
 
   /// The operands of the Instruction
-  const std::vector<spv_parsed_operand_t>& operands() const {
+  inline const std::vector<spv_parsed_operand_t>& operands() const {
     return operands_;
   }
 
   /// Provides direct access to the stored C instruction object.
-  const spv_parsed_instruction_t& c_inst() const {
+  inline const spv_parsed_instruction_t& c_inst() const {
     return inst_;
   }
 

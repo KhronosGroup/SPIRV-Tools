@@ -31,7 +31,7 @@ namespace libspirv {
 using NameMapper = std::function<std::string(uint32_t)>;
 
 // Returns a NameMapper which always maps an Id to its decimal representation.
-NameMapper GetTrivialNameMapper();
+SPIRV_TOOLS_EXPORT NameMapper GetTrivialNameMapper();
 
 // A FriendlyNameMapper parses a module upon construction.  If the parse is
 // successful, then the NameForId method maps an Id to a friendly name

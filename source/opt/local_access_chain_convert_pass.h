@@ -36,9 +36,9 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class LocalAccessChainConvertPass : public MemPass {
  public:
-  LocalAccessChainConvertPass();
-  const char* name() const override { return "convert-local-access-chains"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT LocalAccessChainConvertPass();
+  inline const char* name() const override { return "convert-local-access-chains"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
   using ProcessFunction = std::function<bool(ir::Function*)>;
 
@@ -90,7 +90,7 @@ class LocalAccessChainConvertPass : public MemPass {
   // Return true if all indices of access chain |acp| are OpConstant integers
   bool IsConstantIndexAccessChain(const ir::Instruction* acp) const;
 
-  // Identify all function scope variables of target type which are 
+  // Identify all function scope variables of target type which are
   // accessed only with loads, stores and access chains with constant
   // indices. Convert all loads and stores of such variables into equivalent
   // loads, stores, extracts and inserts. This unifies access to these

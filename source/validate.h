@@ -39,7 +39,7 @@ using get_blocks_func =
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_CFG otherwise
-spv_result_t PerformCfgChecks(ValidationState_t& _);
+SPIRV_TOOLS_EXPORT spv_result_t PerformCfgChecks(ValidationState_t& _);
 
 /// @brief Updates the use vectors of all instructions that can be referenced
 ///
@@ -49,7 +49,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _);
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found.
-spv_result_t UpdateIdUse(ValidationState_t& _);
+SPIRV_TOOLS_EXPORT spv_result_t UpdateIdUse(ValidationState_t& _);
 
 /// @brief This function checks all ID definitions dominate their use in the
 /// CFG.
@@ -61,7 +61,7 @@ spv_result_t UpdateIdUse(ValidationState_t& _);
 /// @param[in] _ the validation state of the module
 ///
 /// @return SPV_SUCCESS if no errors are found. SPV_ERROR_INVALID_ID otherwise
-spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
+SPIRV_TOOLS_EXPORT spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 
 /// @brief Updates the immediate dominator for each of the block edges
 ///
@@ -71,48 +71,48 @@ spv_result_t CheckIdDefinitionDominateUse(const ValidationState_t& _);
 /// @param[in,out] dom_edges The edges of the dominator tree
 /// @param[in] set_func This function will be called to updated the Immediate
 ///                     dominator
-void UpdateImmediateDominators(
+SPIRV_TOOLS_EXPORT void UpdateImmediateDominators(
     const std::vector<std::pair<BasicBlock*, BasicBlock*>>& dom_edges,
     std::function<void(BasicBlock*, BasicBlock*)> set_func);
 
 /// @brief Prints all of the dominators of a BasicBlock
 ///
 /// @param[in] block The dominators of this block will be printed
-void printDominatorList(BasicBlock& block);
+SPIRV_TOOLS_EXPORT void printDominatorList(BasicBlock& block);
 
 /// Performs logical layout validation as described in section 2.4 of the SPIR-V
 /// spec.
-spv_result_t ModuleLayoutPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t ModuleLayoutPass(ValidationState_t& _,
                               const spv_parsed_instruction_t* inst);
 
 /// Performs Control Flow Graph validation of a module
-spv_result_t CfgPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t CfgPass(ValidationState_t& _,
                      const spv_parsed_instruction_t* inst);
 
 /// Performs Id and SSA validation of a module
-spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
+SPIRV_TOOLS_EXPORT spv_result_t IdPass(ValidationState_t& _, const spv_parsed_instruction_t* inst);
 
 /// Performs validation of the Data Rules subsection of 2.16.1 Universal
 /// Validation Rules.
 /// TODO(ehsann): add more comments here as more validation code is added.
-spv_result_t DataRulesPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t DataRulesPass(ValidationState_t& _,
                            const spv_parsed_instruction_t* inst);
 
 /// Performs instruction validation.
-spv_result_t InstructionPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t InstructionPass(ValidationState_t& _,
                              const spv_parsed_instruction_t* inst);
 
 /// Performs decoration validation.
-spv_result_t ValidateDecorations(ValidationState_t& _);
+SPIRV_TOOLS_EXPORT spv_result_t ValidateDecorations(ValidationState_t& _);
 
 /// Validates that type declarations are unique, unless multiple declarations
 /// of the same data type are allowed by the specification.
 /// (see section 2.8 Types and Variables)
-spv_result_t TypeUniquePass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t TypeUniquePass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
 /// Validates correctness of arithmetic instructions.
-spv_result_t ArithmeticsPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t ArithmeticsPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
 /// Validates correctness of conversion instructions.
@@ -120,16 +120,16 @@ spv_result_t ConversionPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
 /// Validates correctness of logical instructions.
-spv_result_t LogicalsPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t LogicalsPass(ValidationState_t& _,
                           const spv_parsed_instruction_t* inst);
 
 /// Validates correctness of bitwise instructions.
-spv_result_t BitwisePass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t BitwisePass(ValidationState_t& _,
                          const spv_parsed_instruction_t* inst);
 
 // Validates that capability declarations use operands allowed in the current
 // context.
-spv_result_t CapabilityPass(ValidationState_t& _,
+SPIRV_TOOLS_EXPORT spv_result_t CapabilityPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst);
 
 }  // namespace libspirv
@@ -144,7 +144,7 @@ spv_result_t CapabilityPass(ValidationState_t& _,
 /// @param[in,out] position current position in the stream
 ///
 /// @return result code
-spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
+SPIRV_TOOLS_EXPORT spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
                                        const uint64_t instCount,
                                        const spv_opcode_table opcodeTable,
                                        const spv_operand_table operandTable,
@@ -163,7 +163,7 @@ spv_result_t spvValidateInstructionIDs(const spv_instruction_t* pInsts,
 /// @param[in] consumer message consumer callback
 ///
 /// @return result code
-spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
+SPIRV_TOOLS_EXPORT spv_result_t spvValidateIDs(const spv_instruction_t* pInstructions,
                             const uint64_t count, const uint32_t bound,
                             const spv_opcode_table opcodeTable,
                             const spv_operand_table operandTable,
@@ -176,14 +176,14 @@ namespace spvtools {
 // The main difference between this API and spvValidateBinary is that the
 // "Validation State" is not destroyed upon function return; it lives on and is
 // pointed to by the vstate unique_ptr.
-spv_result_t ValidateBinaryAndKeepValidationState(
+SPIRV_TOOLS_EXPORT spv_result_t ValidateBinaryAndKeepValidationState(
     const spv_const_context context, spv_const_validator_options options,
     const uint32_t* words, const size_t num_words, spv_diagnostic* pDiagnostic,
     std::unique_ptr<libspirv::ValidationState_t>* vstate);
 
 // Performs validation for a single instruction and updates given validation
 // state.
-spv_result_t ValidateInstructionAndUpdateValidationState(
+SPIRV_TOOLS_EXPORT spv_result_t ValidateInstructionAndUpdateValidationState(
     libspirv::ValidationState_t* vstate, const spv_parsed_instruction_t* inst);
 
 }  // namespace spvtools

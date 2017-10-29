@@ -34,10 +34,10 @@ namespace opt {
 class InlineExhaustivePass : public InlinePass {
 
  public:
-  InlineExhaustivePass();
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT InlineExhaustivePass();
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
-  const char* name() const override { return "inline-entry-points-exhaustive"; }
+  inline const char* name() const override { return "inline-entry-points-exhaustive"; }
 
  private:
   // Exhaustively inline all function calls in func as well as in

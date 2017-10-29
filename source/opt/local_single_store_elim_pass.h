@@ -30,6 +30,8 @@
 #include "module.h"
 #include "mem_pass.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -38,9 +40,9 @@ class LocalSingleStoreElimPass : public MemPass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-  LocalSingleStoreElimPass();
-  const char* name() const override { return "eliminate-local-single-store"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT LocalSingleStoreElimPass();
+  inline const char* name() const override { return "eliminate-local-single-store"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Return true if all refs through |ptrId| are only loads or stores and
@@ -69,7 +71,7 @@ class LocalSingleStoreElimPass : public MemPass {
   // Calculate immediate dominators for |func|'s CFG. Leaves result
   // in idom_. Entries for augmented CFG (pseudo blocks) are not created.
   void CalculateImmediateDominators(ir::Function* func);
-  
+
   // Return true if instruction in |blk0| at ordinal position |idx0|
   // dominates instruction in |blk1| at position |idx1|.
   bool Dominates(ir::BasicBlock* blk0, uint32_t idx0,

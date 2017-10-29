@@ -25,8 +25,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class StrengthReductionPass : public Pass {
  public:
-  const char* name() const override { return "strength-reduction"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "strength-reduction"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.

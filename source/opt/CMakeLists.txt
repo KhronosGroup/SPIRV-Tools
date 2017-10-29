@@ -11,99 +11,112 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-add_library(SPIRV-Tools-opt
-  aggressive_dead_code_elim_pass.h
-  basic_block.h
-  block_merge_pass.h
-  build_module.h
-  cfg_cleanup_pass.h
-  common_uniform_elim_pass.h
-  compact_ids_pass.h
-  constants.h
-  dead_branch_elim_pass.h
-  dead_variable_elimination.h
-  decoration_manager.h
-  def_use_manager.h
-  eliminate_dead_constant_pass.h
-  flatten_decoration_pass.h
-  function.h
-  fold.h
-  fold_spec_constant_op_and_composite_pass.h
-  freeze_spec_constant_value_pass.h
-  inline_pass.h
-  inline_exhaustive_pass.h
-  inline_opaque_pass.h
-  insert_extract_elim.h
-  instruction.h
-  ir_loader.h
-  local_access_chain_convert_pass.h
-  local_single_block_elim_pass.h
-  local_single_store_elim_pass.h
-  local_ssa_elim_pass.h
-  log.h
-  module.h
-  null_pass.h
-  reflect.h
-  mem_pass.h
-  pass.h
-  passes.h
-  pass_manager.h
-  eliminate_dead_functions_pass.h
-  remove_duplicates_pass.h
-  set_spec_constant_default_value_pass.h
-  strength_reduction_pass.h
-  strip_debug_info_pass.h
-  types.h
-  type_manager.h
-  unify_const_pass.h
 
-  aggressive_dead_code_elim_pass.cpp
-  basic_block.cpp
-  block_merge_pass.cpp
-  build_module.cpp
-  cfg_cleanup_pass.cpp
-  common_uniform_elim_pass.cpp
-  compact_ids_pass.cpp
-  decoration_manager.cpp
-  def_use_manager.cpp
-  dead_branch_elim_pass.cpp
-  dead_variable_elimination.cpp
-  eliminate_dead_constant_pass.cpp
-  flatten_decoration_pass.cpp
-  fold.cpp
-  fold_spec_constant_op_and_composite_pass.cpp
-  freeze_spec_constant_value_pass.cpp
-  function.cpp
-  inline_pass.cpp
-  inline_exhaustive_pass.cpp
-  inline_opaque_pass.cpp
-  insert_extract_elim.cpp
-  instruction.cpp
-  ir_loader.cpp
-  local_access_chain_convert_pass.cpp
-  local_single_block_elim_pass.cpp
-  local_single_store_elim_pass.cpp
-  local_ssa_elim_pass.cpp
-  module.cpp
-  eliminate_dead_functions_pass.cpp
-  remove_duplicates_pass.cpp
-  set_spec_constant_default_value_pass.cpp
-  optimizer.cpp
-  mem_pass.cpp
-  pass.cpp
-  pass_manager.cpp
-  strength_reduction_pass.cpp
-  strip_debug_info_pass.cpp
-  types.cpp
-  type_manager.cpp
-  unify_const_pass.cpp
-  instruction_list.cpp)
+add_library(SPIRV-Tools-opt "")
+
+include(GenerateExportHeader)
+generate_export_header(SPIRV-Tools-opt)
+
+target_sources(SPIRV-Tools-opt
+  PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/spirv-tools-opt_export.h"
+    aggressive_dead_code_elim_pass.h
+    basic_block.h
+    block_merge_pass.h
+    build_module.h
+    cfg_cleanup_pass.h
+    common_uniform_elim_pass.h
+    compact_ids_pass.h
+    constants.h
+    dead_branch_elim_pass.h
+    dead_variable_elimination.h
+    decoration_manager.h
+    def_use_manager.h
+    eliminate_dead_constant_pass.h
+    flatten_decoration_pass.h
+    function.h
+    fold.h
+    fold_spec_constant_op_and_composite_pass.h
+    freeze_spec_constant_value_pass.h
+    inline_pass.h
+    inline_exhaustive_pass.h
+    inline_opaque_pass.h
+    insert_extract_elim.h
+    instruction.h
+    ir_loader.h
+    local_access_chain_convert_pass.h
+    local_single_block_elim_pass.h
+    local_single_store_elim_pass.h
+    local_ssa_elim_pass.h
+    log.h
+    module.h
+    null_pass.h
+    reflect.h
+    mem_pass.h
+    pass.h
+    passes.h
+    pass_manager.h
+    eliminate_dead_functions_pass.h
+    remove_duplicates_pass.h
+    set_spec_constant_default_value_pass.h
+    strength_reduction_pass.h
+    strip_debug_info_pass.h
+    types.h
+    type_manager.h
+    unify_const_pass.h
+
+    aggressive_dead_code_elim_pass.cpp
+    basic_block.cpp
+    block_merge_pass.cpp
+    build_module.cpp
+    cfg_cleanup_pass.cpp
+    common_uniform_elim_pass.cpp
+    compact_ids_pass.cpp
+    decoration_manager.cpp
+    def_use_manager.cpp
+    dead_branch_elim_pass.cpp
+    dead_variable_elimination.cpp
+    eliminate_dead_constant_pass.cpp
+    flatten_decoration_pass.cpp
+    fold.cpp
+    fold_spec_constant_op_and_composite_pass.cpp
+    freeze_spec_constant_value_pass.cpp
+    function.cpp
+    inline_pass.cpp
+    inline_exhaustive_pass.cpp
+    inline_opaque_pass.cpp
+    insert_extract_elim.cpp
+    instruction.cpp
+    ir_loader.cpp
+    local_access_chain_convert_pass.cpp
+    local_single_block_elim_pass.cpp
+    local_single_store_elim_pass.cpp
+    local_ssa_elim_pass.cpp
+    module.cpp
+    eliminate_dead_functions_pass.cpp
+    remove_duplicates_pass.cpp
+    set_spec_constant_default_value_pass.cpp
+    optimizer.cpp
+    mem_pass.cpp
+    pass.cpp
+    pass_manager.cpp
+    strength_reduction_pass.cpp
+    strip_debug_info_pass.cpp
+    types.cpp
+    type_manager.cpp
+    unify_const_pass.cpp
+    instruction_list.cpp
+)
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt
-  PUBLIC ${spirv-tools_SOURCE_DIR}/include
-  PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
-  PRIVATE ${spirv-tools_BINARY_DIR}
+  PUBLIC
+    ${spirv-tools_SOURCE_DIR}/include
+    ${SPIRV_HEADER_INCLUDE_DIR}
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  PRIVATE
+    ${spirv-tools_BINARY_DIR}
 )
 # We need the assembling and disassembling functionalities in the main library.
 target_link_libraries(SPIRV-Tools-opt
@@ -115,6 +128,13 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS SPIRV-Tools-opt
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+  install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/spirv-tools-opt_export.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools
+  )
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
-    
+

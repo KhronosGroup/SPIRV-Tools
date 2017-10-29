@@ -22,6 +22,8 @@
 
 #include "libspirv.hpp"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
@@ -38,15 +40,15 @@ class Optimizer {
   struct PassToken {
     struct Impl;  // Opaque struct for holding inernal data.
 
-    PassToken(std::unique_ptr<Impl>);
+    SPIRV_TOOLS_OPT_EXPORT PassToken(std::unique_ptr<Impl>);
 
     // Tokens can only be moved. Copying is disabled.
-    PassToken(const PassToken&) = delete;
-    PassToken(PassToken&&);
-    PassToken& operator=(const PassToken&) = delete;
-    PassToken& operator=(PassToken&&);
+    SPIRV_TOOLS_OPT_EXPORT PassToken(const PassToken&) = delete;
+    SPIRV_TOOLS_OPT_EXPORT PassToken(PassToken&&);
+    SPIRV_TOOLS_OPT_EXPORT PassToken& operator=(const PassToken&) = delete;
+    SPIRV_TOOLS_OPT_EXPORT PassToken& operator=(PassToken&&);
 
-    ~PassToken();
+    SPIRV_TOOLS_OPT_EXPORT ~PassToken();
 
     std::unique_ptr<Impl> impl_;  // Unique pointer to internal data.
   };
@@ -57,25 +59,25 @@ class Optimizer {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  explicit Optimizer(spv_target_env env);
+  SPIRV_TOOLS_OPT_EXPORT explicit Optimizer(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
-  Optimizer(const Optimizer&) = delete;
-  Optimizer(Optimizer&&) = delete;
-  Optimizer& operator=(const Optimizer&) = delete;
-  Optimizer& operator=(Optimizer&&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT Optimizer(const Optimizer&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT Optimizer(Optimizer&&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT Optimizer& operator=(const Optimizer&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT Optimizer& operator=(Optimizer&&) = delete;
 
   // Destructs this instance.
-  ~Optimizer();
+ SPIRV_TOOLS_OPT_EXPORT  ~Optimizer();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.
-  void SetMessageConsumer(MessageConsumer consumer);
+  SPIRV_TOOLS_OPT_EXPORT void SetMessageConsumer(MessageConsumer consumer);
 
   // Registers the given |pass| to this optimizer. Passes will be run in the
   // exact order of registration. The token passed in will be consumed by this
   // method.
-  Optimizer& RegisterPass(PassToken&& pass);
+  SPIRV_TOOLS_OPT_EXPORT Optimizer& RegisterPass(PassToken&& pass);
 
   // Registers passes that attempt to improve performance of generated code.
   // This sequence of passes is subject to constant review and will change
@@ -95,7 +97,7 @@ class Optimizer {
   // executed and the contents in |optimized_binary| may be invalid.
   //
   // It's allowed to alias |original_binary| to the start of |optimized_binary|.
-  bool Run(const uint32_t* original_binary, size_t original_binary_size,
+  SPIRV_TOOLS_OPT_EXPORT bool Run(const uint32_t* original_binary, size_t original_binary_size,
            std::vector<uint32_t>* optimized_binary) const;
 
   // Returns a vector of strings with all the pass names added to this
@@ -110,25 +112,25 @@ class Optimizer {
 
 // Creates a null pass.
 // A null pass does nothing to the SPIR-V module to be optimized.
-Optimizer::PassToken CreateNullPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateNullPass();
 
 // Creates a strip-debug-info pass.
 // A strip-debug-info pass removes all debug instructions (as documented in
 // Section 3.32.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
-Optimizer::PassToken CreateStripDebugInfoPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateStripDebugInfoPass();
 
 // Creates an eliminate-dead-functions pass.
 // An eliminate-dead-functions pass will remove all functions that are not in
 // the call trees rooted at entry points and exported functions.  These
 // functions are not needed because they will never be called.
-Optimizer::PassToken CreateEliminateDeadFunctionsPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateEliminateDeadFunctionsPass();
 
 // Creates a set-spec-constant-default-value pass from a mapping from spec-ids
 // to the default values in the form of string.
 // A set-spec-constant-default-value pass sets the default values for the
 // spec constants that have SpecId decorations (i.e., those defined by
 // OpSpecConstant{|True|False} instructions).
-Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::string>& id_value_map);
 
 // Creates a set-spec-constant-default-value pass from a mapping from spec-ids
@@ -136,7 +138,7 @@ Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
 // A set-spec-constant-default-value pass sets the default values for the
 // spec constants that have SpecId decorations (i.e., those defined by
 // OpSpecConstant{|True|False} instructions).
-Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
     const std::unordered_map<uint32_t, std::vector<uint32_t>>& id_value_map);
 
 // Creates a flatten-decoration pass.
@@ -146,7 +148,7 @@ Optimizer::PassToken CreateSetSpecConstantDefaultValuePass(
 // instructions with equivalent OpDecorate and OpMemberDecorate instructions.
 // The pass does not attempt to preserve debug information for instructions
 // it removes.
-Optimizer::PassToken CreateFlattenDecorationPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateFlattenDecorationPass();
 
 // Creates a freeze-spec-constant-value pass.
 // A freeze-spec-constant pass specializes the value of spec constants to
@@ -158,7 +160,7 @@ Optimizer::PassToken CreateFlattenDecorationPass();
 // pass does not fold the newly added normal constants and does not process
 // other spec constants defined by OpSpecConstantComposite or
 // OpSpecConstantOp.
-Optimizer::PassToken CreateFreezeSpecConstantValuePass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateFreezeSpecConstantValuePass();
 
 // Creates a fold-spec-constant-op-and-composite pass.
 // A fold-spec-constant-op-and-composite pass folds spec constants defined by
@@ -180,7 +182,7 @@ Optimizer::PassToken CreateFreezeSpecConstantValuePass();
 //   OpSConvert, OpFConvert, OpQuantizeToF16 and
 //   all the operations under Kernel capability.
 // TODO(qining): Add support for the operations listed above.
-Optimizer::PassToken CreateFoldSpecConstantOpAndCompositePass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateFoldSpecConstantOpAndCompositePass();
 
 // Creates a unify-constant pass.
 // A unify-constant pass de-duplicates the constants. Constants with the exact
@@ -196,7 +198,7 @@ Optimizer::PassToken CreateFoldSpecConstantOpAndCompositePass();
 //  constant won't be handled, which means, it won't be used to replace any
 //  other constants, neither can other constants replace it.
 //  3) NaN in float point format with different bit patterns are not unified.
-Optimizer::PassToken CreateUnifyConstantPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateUnifyConstantPass();
 
 // Creates a eliminate-dead-constant pass.
 // A eliminate-dead-constant pass removes dead constants, including normal
@@ -204,13 +206,13 @@ Optimizer::PassToken CreateUnifyConstantPass();
 // OpConstantFalse and spec constants defined by OpSpecConstant,
 // OpSpecConstantComposite, OpSpecConstantTrue, OpSpecConstantFalse or
 // OpSpecConstantOp.
-Optimizer::PassToken CreateEliminateDeadConstantPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateEliminateDeadConstantPass();
 
 // Creates a strength-reduction pass.
 // A strength-reduction pass will look for opportunities to replace an
 // instruction with an equivalent and less expensive one.  For example,
 // multiplying by a power of 2 can be replaced by a bit shift.
-Optimizer::PassToken CreateStrengthReductionPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateStrengthReductionPass();
 
 // Creates a block merge pass.
 // This pass searches for blocks with a single Branch to a block with no
@@ -226,7 +228,7 @@ Optimizer::PassToken CreateStrengthReductionPass();
 //
 // Presence of phi instructions can inhibit this optimization. Handling
 // these is left for future improvements.
-Optimizer::PassToken CreateBlockMergePass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateBlockMergePass();
 
 // Creates an exhaustive inline pass.
 // An exhaustive inline pass attempts to exhaustively inline all function
@@ -235,7 +237,7 @@ Optimizer::PassToken CreateBlockMergePass();
 // calls by subsequent optimization passes. As the inlining is exhaustive,
 // there is no attempt to optimize for size or runtime performance. Functions
 // that are not in the call tree of an entry point are not changed.
-Optimizer::PassToken CreateInlineExhaustivePass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateInlineExhaustivePass();
 
 // Creates an opaque inline pass.
 // An opaque inline pass inlines all function calls in all functions in all
@@ -246,7 +248,7 @@ Optimizer::PassToken CreateInlineExhaustivePass();
 // by subsequent passes in order to remove the storing of opaque types which is
 // not legal in Vulkan. Functions that are not in the call tree of an entry
 // point are not changed.
-Optimizer::PassToken CreateInlineOpaquePass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateInlineOpaquePass();
 
 // Creates a single-block local variable load/store elimination pass.
 // For every entry point function, do single block memory optimization of
@@ -268,7 +270,7 @@ Optimizer::PassToken CreateInlineOpaquePass();
 // by LocalSingleStoreElim and LocalMultiStoreElim.
 //
 // Only functions in the call tree of an entry point are processed.
-Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 
 // Create dead branch elimination pass.
 // For each entry point function, this pass will look for SelectionMerge
@@ -285,7 +287,7 @@ Optimizer::PassToken CreateLocalSingleBlockLoadStoreElimPass();
 // This pass is most effective when preceeded by passes which eliminate
 // local loads and stores, effectively propagating constant values where
 // possible.
-Optimizer::PassToken CreateDeadBranchElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateDeadBranchElimPass();
 
 // Creates an SSA local variable load/store elimination pass.
 // For every entry point function, eliminate all loads and stores of function
@@ -302,7 +304,7 @@ Optimizer::PassToken CreateDeadBranchElimPass();
 // This pass is most effective if preceeded by Inlining and
 // LocalAccessChainConvert. LocalSingleStoreElim and LocalSingleBlockElim
 // will reduce the work that this pass has to do.
-Optimizer::PassToken CreateLocalMultiStoreElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateLocalMultiStoreElimPass();
 
 // Creates a local access chain conversion pass.
 // A local access chain conversion pass identifies all function scope
@@ -319,7 +321,7 @@ Optimizer::PassToken CreateLocalMultiStoreElimPass();
 // subsequent analysis and elimination of these variables along with their
 // loads and stores allowing values to propagate to their points of use where
 // possible.
-Optimizer::PassToken CreateLocalAccessChainConvertPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateLocalAccessChainConvertPass();
 
 // Creates a local single store elimination pass.
 // For each entry point function, this pass eliminates loads and stores for
@@ -337,7 +339,7 @@ Optimizer::PassToken CreateLocalAccessChainConvertPass();
 // This pass will reduce the work needed to be done by LocalSingleBlockElim
 // and LocalMultiStoreElim and can improve the effectiveness of other passes
 // such as DeadBranchElimination which depend on values for their analysis.
-Optimizer::PassToken CreateLocalSingleStoreElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateLocalSingleStoreElimPass();
 
 // Creates an insert/extract elimination pass.
 // This pass processes each entry point function in the module, searching for
@@ -349,7 +351,7 @@ Optimizer::PassToken CreateLocalSingleStoreElimPass();
 // Besides removing extracts this pass enables subsequent dead code elimination
 // passes to delete the inserts. This pass performs best after access chains are
 // converted to inserts and extracts and local loads and stores are eliminated.
-Optimizer::PassToken CreateInsertExtractElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateInsertExtractElimPass();
 
 // Creates a pass to consolidate uniform references.
 // For each entry point function in the module, first change all constant index
@@ -363,7 +365,7 @@ Optimizer::PassToken CreateInsertExtractElimPass();
 // is not enabled. It also currently does not support any extensions.
 //
 // This pass currently only optimizes loads with a single index.
-Optimizer::PassToken CreateCommonUniformElimPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateCommonUniformElimPass();
 
 // Create aggressive dead code elimination pass
 // This pass eliminates unused code from functions. In addition,
@@ -384,14 +386,14 @@ Optimizer::PassToken CreateCommonUniformElimPass();
 // Conversion, which tends to cause cycles of dead code to be left after
 // Store/Load elimination passes are completed. These cycles cannot be
 // eliminated with standard dead code elimination.
-Optimizer::PassToken CreateAggressiveDCEPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateAggressiveDCEPass();
 
 // Creates a compact ids pass.
 // The pass remaps result ids to a compact and gapless range starting from %1.
-Optimizer::PassToken CreateCompactIdsPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateCompactIdsPass();
 
 // Creates a remove duplicate capabilities pass.
-Optimizer::PassToken CreateRemoveDuplicatesPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateRemoveDuplicatesPass();
 
 // Creates a CFG cleanup pass.
 // This pass removes cruft from the control flow graph of functions that are

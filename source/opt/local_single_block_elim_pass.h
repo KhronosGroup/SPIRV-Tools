@@ -36,9 +36,9 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
-  LocalSingleBlockLoadStoreElimPass();
-  const char* name() const override { return "eliminate-local-single-block"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT LocalSingleBlockLoadStoreElimPass();
+  inline const char* name() const override { return "eliminate-local-single-block"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Return true if all uses of |varId| are only through supported reference

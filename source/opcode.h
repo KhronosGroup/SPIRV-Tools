@@ -26,23 +26,23 @@
 // word in the SPIR-V module header.
 //
 // See the registry at https://www.khronos.org/registry/spir-v/api/spir-v.xml.
-const char* spvGeneratorStr(uint32_t generator);
+SPIRV_TOOLS_EXPORT const char* spvGeneratorStr(uint32_t generator);
 
 // Combines word_count and opcode enumerant in single word.
-uint32_t spvOpcodeMake(uint16_t word_count, SpvOp opcode);
+SPIRV_TOOLS_EXPORT uint32_t spvOpcodeMake(uint16_t word_count, SpvOp opcode);
 
 // Splits word into into two constituent parts: word_count and opcode.
-void spvOpcodeSplit(const uint32_t word, uint16_t* word_count,
+SPIRV_TOOLS_EXPORT void spvOpcodeSplit(const uint32_t word, uint16_t* word_count,
                     uint16_t* opcode);
 
 // Finds the named opcode in the given opcode table. On success, returns
 // SPV_SUCCESS and writes a handle of the table entry into *entry.
-spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvOpcodeTableNameLookup(const spv_opcode_table table,
                                       const char* name, spv_opcode_desc* entry);
 
 // Finds the opcode by enumerant in the given opcode table. On success, returns
 // SPV_SUCCESS and writes a handle of the table entry into *entry.
-spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
                                        const SpvOp opcode,
                                        spv_opcode_desc* entry);
 
@@ -50,41 +50,41 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
 // source instruction's stream/opcode/endianness is in the words/opcode/endian
 // parameter. The word_count parameter specifies the number of words to copy.
 // Writes copied instruction into *inst.
-void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
+SPIRV_TOOLS_EXPORT void spvInstructionCopy(const uint32_t* words, const SpvOp opcode,
                         const uint16_t word_count,
                         const spv_endianness_t endian, spv_instruction_t* inst);
 
 // Gets the name of an instruction, without the "Op" prefix.
-const char* spvOpcodeString(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT const char* spvOpcodeString(const SpvOp opcode);
 
 // Determine if the given opcode is a scalar type. Returns zero if false,
 // non-zero otherwise.
-int32_t spvOpcodeIsScalarType(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT int32_t spvOpcodeIsScalarType(const SpvOp opcode);
 
 // Determines if the given opcode is a constant. Returns zero if false, non-zero
 // otherwise.
-int32_t spvOpcodeIsConstant(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT int32_t spvOpcodeIsConstant(const SpvOp opcode);
 
 // Returns true if the given opcode is a constant or undef.
-bool spvOpcodeIsConstantOrUndef(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT bool spvOpcodeIsConstantOrUndef(const SpvOp opcode);
 
 // Returns true if the given opcode is a scalar specialization constant.
-bool spvOpcodeIsScalarSpecConstant(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT bool spvOpcodeIsScalarSpecConstant(const SpvOp opcode);
 
 // Determines if the given opcode is a composite type. Returns zero if false,
 // non-zero otherwise.
-int32_t spvOpcodeIsComposite(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT int32_t spvOpcodeIsComposite(const SpvOp opcode);
 
 // Determines if the given opcode results in a pointer when using the logical
 // addressing model. Returns zero if false, non-zero otherwise.
-int32_t spvOpcodeReturnsLogicalPointer(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT int32_t spvOpcodeReturnsLogicalPointer(const SpvOp opcode);
 
 // Returns whether the given opcode could result in a pointer or a variable
 // pointer when using the logical addressing model.
-bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode);
+SPIRV_TOOLS_EXPORT bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode);
 
 // Determines if the given opcode generates a type. Returns zero if false,
 // non-zero otherwise.
-int32_t spvOpcodeGeneratesType(SpvOp opcode);
+SPIRV_TOOLS_EXPORT int32_t spvOpcodeGeneratesType(SpvOp opcode);
 
 #endif  // LIBSPIRV_OPCODE_H_

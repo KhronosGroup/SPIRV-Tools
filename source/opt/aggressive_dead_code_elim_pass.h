@@ -41,9 +41,9 @@ class AggressiveDCEPass : public MemPass {
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  AggressiveDCEPass();
-  const char* name() const override { return "eliminate-dead-code-aggressive"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT AggressiveDCEPass();
+  inline const char* name() const override { return "eliminate-dead-code-aggressive"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Return true if |varId| is variable of |storageClass|.
@@ -88,7 +88,7 @@ class AggressiveDCEPass : public MemPass {
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true
   // if the function has been modified.
-  // 
+  //
   // Note: This function does not delete useless control structures. All
   // existing control structures will remain. This can leave not-insignificant
   // sequences of ultimately useless code.

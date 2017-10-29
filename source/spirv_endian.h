@@ -18,20 +18,20 @@
 #include "spirv-tools/libspirv.h"
 
 // Converts a word in the specified endianness to the host native endianness.
-uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endianness);
+SPIRV_TOOLS_EXPORT uint32_t spvFixWord(const uint32_t word, const spv_endianness_t endianness);
 
 // Converts a pair of words in the specified endianness to the host native
 // endianness.
-uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
+SPIRV_TOOLS_EXPORT uint64_t spvFixDoubleWord(const uint32_t low, const uint32_t high,
                           const spv_endianness_t endianness);
 
 // Gets the endianness of the SPIR-V module given in the binary parameter.
 // Returns SPV_ENDIANNESS_UNKNOWN if the SPIR-V magic number is invalid,
 // otherwise writes the determined endianness into *endian.
-spv_result_t spvBinaryEndianness(const spv_const_binary binary,
+SPIRV_TOOLS_EXPORT spv_result_t spvBinaryEndianness(const spv_const_binary binary,
                                  spv_endianness_t* endian);
 
 // Returns true if the given endianness matches the host's native endiannes.
-bool spvIsHostEndian(spv_endianness_t endian);
+SPIRV_TOOLS_EXPORT bool spvIsHostEndian(spv_endianness_t endian);
 
 #endif  // LIBSPIRV_SPIRV_ENDIAN_H_

@@ -31,11 +31,11 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class FoldSpecConstantOpAndCompositePass : public Pass {
  public:
-  FoldSpecConstantOpAndCompositePass();
+  SPIRV_TOOLS_OPT_EXPORT FoldSpecConstantOpAndCompositePass();
 
-  const char* name() const override { return "fold-spec-const-op-composite"; }
+  inline const char* name() const override { return "fold-spec-const-op-composite"; }
 
-  Status Process(ir::Module* module) override;
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module* module) override;
 
  private:
   // Initializes the type manager, def-use manager and get the maximal id used

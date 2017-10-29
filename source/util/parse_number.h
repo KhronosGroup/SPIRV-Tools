@@ -214,7 +214,7 @@ enum class EncodeNumberStatus {
 // a nullptr, it will be overwritten with error messages in case of failure. In
 // case of success, |error_msg| will not be touched. Integers up to 64 bits are
 // supported.
-EncodeNumberStatus ParseAndEncodeIntegerNumber(
+SPIRV_TOOLS_EXPORT EncodeNumberStatus ParseAndEncodeIntegerNumber(
     const char* text, const NumberType& type,
     std::function<void(uint32_t)> emit, std::string* error_msg);
 
@@ -227,7 +227,7 @@ EncodeNumberStatus ParseAndEncodeIntegerNumber(
 // a nullptr, it will be overwritten with error messages in case of failure. In
 // case of success, |error_msg| will not be touched. Only 16, 32 and 64 bit
 // floating point numbers are supported.
-EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
+SPIRV_TOOLS_EXPORT EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
     const char* text, const NumberType& type,
     std::function<void(uint32_t)> emit, std::string* error_msg);
 
@@ -240,7 +240,7 @@ EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
 // a nullptr, it will be overwritten with error messages in case of failure. In
 // case of success, |error_msg| will not be touched. Integers up to 64 bits
 // and 16/32/64 bit floating point values are supported.
-EncodeNumberStatus ParseAndEncodeNumber(const char* text,
+SPIRV_TOOLS_EXPORT EncodeNumberStatus ParseAndEncodeNumber(const char* text,
                                         const NumberType& type,
                                         std::function<void(uint32_t)> emit,
                                         std::string* error_msg);

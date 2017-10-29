@@ -102,16 +102,16 @@ struct spv_context_t {
 
 // Sets the message consumer to |consumer| in the given |context|. The original
 // message consumer will be overwritten.
-void SetContextMessageConsumer(spv_context context,
+SPIRV_TOOLS_EXPORT void SetContextMessageConsumer(spv_context context,
                                spvtools::MessageConsumer consumer);
 
 // Populates *table with entries for env.
-spv_result_t spvOpcodeTableGet(spv_opcode_table* table, spv_target_env env);
+SPIRV_TOOLS_EXPORT spv_result_t spvOpcodeTableGet(spv_opcode_table* table, spv_target_env env);
 
 // Populates *table with entries for env.
-spv_result_t spvOperandTableGet(spv_operand_table* table, spv_target_env env);
+SPIRV_TOOLS_EXPORT spv_result_t spvOperandTableGet(spv_operand_table* table, spv_target_env env);
 
 // Populates *table with entries for env.
-spv_result_t spvExtInstTableGet(spv_ext_inst_table* table, spv_target_env env);
+SPIRV_TOOLS_EXPORT spv_result_t spvExtInstTableGet(spv_ext_inst_table* table, spv_target_env env);
 
 #endif  // LIBSPIRV_TABLE_H_

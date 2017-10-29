@@ -24,8 +24,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class FlattenDecorationPass : public Pass {
  public:
-  const char* name() const override { return "flatten-decoration"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "flatten-decoration"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

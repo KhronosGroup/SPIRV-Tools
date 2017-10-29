@@ -24,7 +24,7 @@ namespace libspirv {
 // to the stream.  The operand must be of numeric type.  If integral it may
 // be up to 64 bits wide.  If floating point, then it must be 16, 32, or 64
 // bits wide.
-void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
+SPIRV_TOOLS_EXPORT void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
                         const spv_parsed_operand_t& operand);
 
 }  // namespace libspirv

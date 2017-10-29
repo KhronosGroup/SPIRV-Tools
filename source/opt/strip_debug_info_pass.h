@@ -24,8 +24,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class StripDebugInfoPass : public Pass {
  public:
-  const char* name() const override { return "strip-debug"; }
-  Status Process(ir::Module* module) override;
+  inline const char* name() const override { return "strip-debug"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module* module) override;
 };
 
 }  // namespace opt

@@ -42,9 +42,9 @@ class DeadBranchElimPass : public MemPass {
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  DeadBranchElimPass();
-  const char* name() const override { return "eliminate-dead-branches"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT DeadBranchElimPass();
+  inline const char* name() const override { return "eliminate-dead-branches"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // If |condId| is boolean constant, return conditional value in |condVal| and
@@ -71,7 +71,7 @@ class DeadBranchElimPass : public MemPass {
 
   // If block |bp| contains conditional branch or switch preceeded by an
   // OpSelctionMerge, return true and return branch and merge instructions
-  // in |branchInst| and |mergeInst| and the conditional id in |condId|. 
+  // in |branchInst| and |mergeInst| and the conditional id in |condId|.
   bool GetSelectionBranch(ir::BasicBlock* bp, ir::Instruction** branchInst,
     ir::Instruction** mergeInst, uint32_t *condId);
 

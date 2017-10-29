@@ -119,8 +119,12 @@ class AssemblyContext {
  public:
   AssemblyContext(spv_text text, const spvtools::MessageConsumer& consumer,
                   std::set<uint32_t>&& ids_to_preserve = std::set<uint32_t>())
-      : current_position_({}), consumer_(consumer), text_(text), bound_(1),
-        next_id_(1), ids_to_preserve_(std::move(ids_to_preserve))  {}
+      : current_position_({}),
+        consumer_(consumer),
+        text_(text),
+        bound_(1),
+        next_id_(1),
+        ids_to_preserve_(std::move(ids_to_preserve)) {}
 
   // Assigns a new integer value to the given text ID, or returns the previously
   // assigned integer value if the ID has been seen before.

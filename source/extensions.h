@@ -30,10 +30,10 @@ enum Extension {
 using ExtensionSet = EnumSet<Extension>;
 
 // Returns literal string operand of OpExtension instruction.
-std::string GetExtensionString(const spv_parsed_instruction_t* inst);
+SPIRV_TOOLS_EXPORT std::string GetExtensionString(const spv_parsed_instruction_t* inst);
 
 // Returns text string listing |extensions| separated by whitespace.
-std::string ExtensionSetToString(const ExtensionSet& extensions);
+SPIRV_TOOLS_EXPORT std::string ExtensionSetToString(const ExtensionSet& extensions);
 
 }  // namespace libspirv
 

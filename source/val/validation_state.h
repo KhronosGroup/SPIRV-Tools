@@ -57,7 +57,7 @@ enum ModuleLayoutSection {
 class ValidationState_t {
  public:
   // Features that can optionally be turned on by a capability.
-  struct Feature {
+  struct SPIRV_TOOLS_EXPORT Feature {
     bool declare_int16_type = false;     // Allow OpTypeInt with 16 bit width?
     bool declare_float16_type = false;   // Allow OpTypeFloat with 16 bit width?
     bool free_fp_rounding_mode = false;  // Allow the FPRoundingMode decoration
@@ -71,167 +71,167 @@ class ValidationState_t {
     bool variable_pointers_storage_buffer = false;
   };
 
-  ValidationState_t(const spv_const_context context,
+  SPIRV_TOOLS_EXPORT ValidationState_t(const spv_const_context context,
                     const spv_const_validator_options opt);
 
   /// Returns the context
-  spv_const_context context() const { return context_; }
+  inline spv_const_context context() const { return context_; }
 
   /// Returns the command line options
-  spv_const_validator_options options() const { return options_; }
+  inline spv_const_validator_options options() const { return options_; }
 
   /// Forward declares the id in the module
-  spv_result_t ForwardDeclareId(uint32_t id);
+  SPIRV_TOOLS_EXPORT spv_result_t ForwardDeclareId(uint32_t id);
 
   /// Removes a forward declared ID if it has been defined
-  spv_result_t RemoveIfForwardDeclared(uint32_t id);
+  SPIRV_TOOLS_EXPORT spv_result_t RemoveIfForwardDeclared(uint32_t id);
 
   /// Registers an ID as a forward pointer
-  spv_result_t RegisterForwardPointer(uint32_t id);
+  SPIRV_TOOLS_EXPORT spv_result_t RegisterForwardPointer(uint32_t id);
 
   /// Returns whether or not an ID is a forward pointer
-  bool IsForwardPointer(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsForwardPointer(uint32_t id) const;
 
   /// Assigns a name to an ID
-  void AssignNameToId(uint32_t id, std::string name);
+  SPIRV_TOOLS_EXPORT void AssignNameToId(uint32_t id, std::string name);
 
   /// Returns a string representation of the ID in the format <id>[Name] where
   /// the <id> is the numeric valid of the id and the Name is a name assigned by
   /// the OpName instruction
-  std::string getIdName(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT std::string getIdName(uint32_t id) const;
 
   /// Accessor function for ID bound.
-  uint32_t getIdBound() const;
+  SPIRV_TOOLS_EXPORT uint32_t getIdBound() const;
 
   /// Mutator function for ID bound.
-  void setIdBound(uint32_t bound);
+  SPIRV_TOOLS_EXPORT void setIdBound(uint32_t bound);
 
   /// Like getIdName but does not display the id if the \p id has a name
-  std::string getIdOrName(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT std::string getIdOrName(uint32_t id) const;
 
   /// Returns the number of ID which have been forward referenced but not
   /// defined
-  size_t unresolved_forward_id_count() const;
+  SPIRV_TOOLS_EXPORT size_t unresolved_forward_id_count() const;
 
   /// Returns a vector of unresolved forward ids.
-  std::vector<uint32_t> UnresolvedForwardIds() const;
+  SPIRV_TOOLS_EXPORT std::vector<uint32_t> UnresolvedForwardIds() const;
 
   /// Returns true if the id has been defined
-  bool IsDefinedId(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsDefinedId(uint32_t id) const;
 
   /// Increments the instruction count. Used for diagnostic
-  int increment_instruction_count();
+  SPIRV_TOOLS_EXPORT int increment_instruction_count();
 
   /// Returns the current layout section which is being processed
-  ModuleLayoutSection current_layout_section() const;
+  SPIRV_TOOLS_EXPORT ModuleLayoutSection current_layout_section() const;
 
   /// Increments the module_layout_order_section_
-  void ProgressToNextLayoutSectionOrder();
+  SPIRV_TOOLS_EXPORT void ProgressToNextLayoutSectionOrder();
 
   /// Determines if the op instruction is part of the current section
-  bool IsOpcodeInCurrentLayoutSection(SpvOp op);
+  SPIRV_TOOLS_EXPORT bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
-  libspirv::DiagnosticStream diag(spv_result_t error_code) const;
-
-  /// Returns the function states
-  std::deque<Function>& functions();
+  SPIRV_TOOLS_EXPORT libspirv::DiagnosticStream diag(spv_result_t error_code) const;
 
   /// Returns the function states
-  Function& current_function();
-  const Function& current_function() const;
+  SPIRV_TOOLS_EXPORT std::deque<Function>& functions();
+
+  /// Returns the function states
+  SPIRV_TOOLS_EXPORT Function& current_function();
+  SPIRV_TOOLS_EXPORT const Function& current_function() const;
 
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
-  bool in_function_body() const;
+  SPIRV_TOOLS_EXPORT bool in_function_body() const;
 
   /// Returns true if called after a label instruction but before a branch
   /// instruction
-  bool in_block() const;
+  SPIRV_TOOLS_EXPORT bool in_block() const;
 
   /// Registers the given <id> as an Entry Point.
-  void RegisterEntryPointId(const uint32_t id) {
+  inline void RegisterEntryPointId(const uint32_t id) {
     entry_points_.push_back(id);
     entry_point_interfaces_.insert(std::make_pair(id, std::vector<uint32_t>()));
   }
 
   /// Returns a list of entry point function ids
-  const std::vector<uint32_t>& entry_points() const { return entry_points_; }
+  inline const std::vector<uint32_t>& entry_points() const { return entry_points_; }
 
   /// Adds a new interface id to the interfaces of the given entry point.
-  void RegisterInterfaceForEntryPoint(uint32_t entry_point,
+  inline void RegisterInterfaceForEntryPoint(uint32_t entry_point,
                                       uint32_t interface) {
     entry_point_interfaces_[entry_point].push_back(interface);
   }
 
   /// Returns the interfaces of a given entry point. If the given id is not a
   /// valid Entry Point id, std::out_of_range exception is thrown.
-  const std::vector<uint32_t>& entry_point_interfaces(
+  inline const std::vector<uint32_t>& entry_point_interfaces(
       uint32_t entry_point) const {
     return entry_point_interfaces_.at(entry_point);
   }
 
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
-  void AddFunctionCallTarget(const uint32_t id) {
+  inline void AddFunctionCallTarget(const uint32_t id) {
     function_call_targets_.insert(id);
   }
 
   /// Returns whether or not a function<id> is the target of OpFunctionCall.
-  bool IsFunctionCallTarget(const uint32_t id) {
+  inline bool IsFunctionCallTarget(const uint32_t id) {
     return (function_call_targets_.find(id) != function_call_targets_.end());
   }
 
   /// Registers the capability and its dependent capabilities
-  void RegisterCapability(SpvCapability cap);
+  SPIRV_TOOLS_EXPORT void RegisterCapability(SpvCapability cap);
 
   /// Registers the extension.
-  void RegisterExtension(Extension ext);
+  SPIRV_TOOLS_EXPORT void RegisterExtension(Extension ext);
 
   /// Registers the function in the module. Subsequent instructions will be
   /// called against this function
-  spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
+  SPIRV_TOOLS_EXPORT spv_result_t RegisterFunction(uint32_t id, uint32_t ret_type_id,
                                 SpvFunctionControlMask function_control,
                                 uint32_t function_type_id);
 
   /// Register a function end instruction
-  spv_result_t RegisterFunctionEnd();
+  SPIRV_TOOLS_EXPORT spv_result_t RegisterFunctionEnd();
 
   /// Returns true if the capability is enabled in the module.
-  bool HasCapability(SpvCapability cap) const {
+  inline bool HasCapability(SpvCapability cap) const {
     return module_capabilities_.Contains(cap);
   }
 
   /// Returns true if the extension is enabled in the module.
-  bool HasExtension(Extension ext) const {
+  inline bool HasExtension(Extension ext) const {
     return module_extensions_.Contains(ext);
   }
 
   /// Returns true if any of the capabilities is enabled, or if |capabilities|
   /// is an empty set.
-  bool HasAnyOfCapabilities(const libspirv::CapabilitySet& capabilities) const;
+  SPIRV_TOOLS_EXPORT bool HasAnyOfCapabilities(const libspirv::CapabilitySet& capabilities) const;
 
   /// Returns true if any of the extensions is enabled, or if |extensions|
   /// is an empty set.
-  bool HasAnyOfExtensions(const libspirv::ExtensionSet& extensions) const;
+  SPIRV_TOOLS_EXPORT bool HasAnyOfExtensions(const libspirv::ExtensionSet& extensions) const;
 
   /// Sets the addressing model of this module (logical/physical).
-  void set_addressing_model(SpvAddressingModel am);
+  SPIRV_TOOLS_EXPORT void set_addressing_model(SpvAddressingModel am);
 
   /// Returns the addressing model of this module, or Logical if uninitialized.
-  SpvAddressingModel addressing_model() const;
+  SPIRV_TOOLS_EXPORT SpvAddressingModel addressing_model() const;
 
   /// Sets the memory model of this module.
-  void set_memory_model(SpvMemoryModel mm);
+  SPIRV_TOOLS_EXPORT void set_memory_model(SpvMemoryModel mm);
 
   /// Returns the memory model of this module, or Simple if uninitialized.
-  SpvMemoryModel memory_model() const;
+  SPIRV_TOOLS_EXPORT SpvMemoryModel memory_model() const;
 
-  const AssemblyGrammar& grammar() const { return grammar_; }
+  inline const AssemblyGrammar& grammar() const { return grammar_; }
 
   /// Registers the instruction
-  void RegisterInstruction(const spv_parsed_instruction_t& inst);
+  SPIRV_TOOLS_EXPORT void RegisterInstruction(const spv_parsed_instruction_t& inst);
 
   /// Registers the decoration for the given <id>
-  void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
+  inline void RegisterDecorationForId(uint32_t id, const Decoration& dec) {
     id_decorations_[id].push_back(dec);
   }
 
@@ -257,7 +257,7 @@ class ValidationState_t {
   /// Returns all the decorations for the given <id>. If no decorations exist
   /// for the <id>, it registers an empty vector for it in the map and
   /// returns the empty vector.
-  std::vector<Decoration>& id_decorations(uint32_t id) {
+  inline std::vector<Decoration>& id_decorations(uint32_t id) {
     return id_decorations_[id];
   }
   const std::vector<Decoration>& id_decorations(uint32_t id) const {
@@ -266,80 +266,80 @@ class ValidationState_t {
 
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
   /// nullptr
-  const Instruction* FindDef(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT const Instruction* FindDef(uint32_t id) const;
 
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
   /// nullptr
-  Instruction* FindDef(uint32_t id);
+  SPIRV_TOOLS_EXPORT Instruction* FindDef(uint32_t id);
 
   /// Returns a deque of instructions in the order they appear in the binary
-  const std::deque<Instruction>& ordered_instructions() const {
+  inline const std::deque<Instruction>& ordered_instructions() const {
     return ordered_instructions_;
   }
 
   /// Returns a map of instructions mapped by their result id
-  const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
+  inline const std::unordered_map<uint32_t, Instruction*>& all_definitions() const {
     return all_definitions_;
   }
 
   /// Returns a vector containing the Ids of instructions that consume the given
   /// SampledImage id.
-  std::vector<uint32_t> getSampledImageConsumers(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT std::vector<uint32_t> getSampledImageConsumers(uint32_t id) const;
 
   /// Records cons_id as a consumer of sampled_image_id.
-  void RegisterSampledImageConsumer(uint32_t sampled_image_id,
+  SPIRV_TOOLS_EXPORT void RegisterSampledImageConsumer(uint32_t sampled_image_id,
                                     uint32_t cons_id);
 
   /// Returns the set of Global Variables.
-  std::unordered_set<uint32_t>& global_vars() { return global_vars_; }
+  inline std::unordered_set<uint32_t>& global_vars() { return global_vars_; }
 
   /// Returns the set of Local Variables.
-  std::unordered_set<uint32_t>& local_vars() { return local_vars_; }
+  inline std::unordered_set<uint32_t>& local_vars() { return local_vars_; }
 
   /// Returns the number of Global Variables.
-  size_t num_global_vars() { return global_vars_.size(); }
+  inline size_t num_global_vars() { return global_vars_.size(); }
 
   /// Returns the number of Local Variables.
-  size_t num_local_vars() { return local_vars_.size(); }
+  inline size_t num_local_vars() { return local_vars_.size(); }
 
   /// Inserts a new <id> to the set of Global Variables.
-  void registerGlobalVariable(const uint32_t id) { global_vars_.insert(id); }
+  inline void registerGlobalVariable(const uint32_t id) { global_vars_.insert(id); }
 
   /// Inserts a new <id> to the set of Local Variables.
-  void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
+  inline void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
 
   /// Sets the struct nesting depth for a given struct ID
-  void set_struct_nesting_depth(uint32_t id, uint32_t depth) {
+  inline void set_struct_nesting_depth(uint32_t id, uint32_t depth) {
     struct_nesting_depth_[id] = depth;
   }
 
   /// Returns the nesting depth of a given structure ID
-  uint32_t struct_nesting_depth(uint32_t id) {
+  inline uint32_t struct_nesting_depth(uint32_t id) {
     return struct_nesting_depth_[id];
   }
 
   /// Records that the structure type has a member decorated with a built-in.
-  void RegisterStructTypeWithBuiltInMember(uint32_t id) {
+  inline void RegisterStructTypeWithBuiltInMember(uint32_t id) {
     builtin_structs_.insert(id);
   }
 
   /// Returns true if the struct type with the given Id has a BuiltIn member.
-  bool IsStructTypeWithBuiltInMember(uint32_t id) const {
+  inline bool IsStructTypeWithBuiltInMember(uint32_t id) const {
     return (builtin_structs_.find(id) != builtin_structs_.end());
   }
 
   // Returns the state of optional features.
-  const Feature& features() const { return features_; }
+  inline const Feature& features() const { return features_; }
 
   /// Adds the instruction data to unique_type_declarations_.
   /// Returns false if an identical type declaration already exists.
-  bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
+  SPIRV_TOOLS_EXPORT bool RegisterUniqueTypeDeclaration(const spv_parsed_instruction_t& inst);
 
   // Returns type_id of the scalar component of |id|.
   // |id| can be either
   // - scalar, vector or matrix type
   // - object of either scalar, vector or matrix type
-  uint32_t GetComponentType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT uint32_t GetComponentType(uint32_t id) const;
 
   // Returns
   // - 1 for scalar types or objects
@@ -347,44 +347,44 @@ class ValidationState_t {
   // - num columns for matrix types or objects
   // Should not be called with any other arguments (will return zero and invoke
   // assertion).
-  uint32_t GetDimension(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT uint32_t GetDimension(uint32_t id) const;
 
   // Returns bit width of scalar or component.
   // |id| can be
   // - scalar, vector or matrix type
   // - object of either scalar, vector or matrix type
   // Will invoke assertion and return 0 if |id| is none of the above.
-  uint32_t GetBitWidth(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT uint32_t GetBitWidth(uint32_t id) const;
 
   // Provides detailed information on matrix type.
   // Returns false iff |id| is not matrix type.
-  bool GetMatrixTypeInfo(
+  SPIRV_TOOLS_EXPORT bool GetMatrixTypeInfo(
       uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
       uint32_t* column_type, uint32_t* component_type) const;
 
   // Collects struct member types into |member_types|.
   // Returns false iff not struct type or has no members.
   // Deletes prior contents of |member_types|.
-  bool GetStructMemberTypes(
+  SPIRV_TOOLS_EXPORT bool GetStructMemberTypes(
       uint32_t struct_type_id, std::vector<uint32_t>* member_types) const;
 
   // Returns true iff |id| is a type corresponding to the name of the function.
   // Only works for types not for objects.
-  bool IsFloatScalarType(uint32_t id) const;
-  bool IsFloatVectorType(uint32_t id) const;
-  bool IsFloatMatrixType(uint32_t id) const;
-  bool IsIntScalarType(uint32_t id) const;
-  bool IsIntVectorType(uint32_t id) const;
-  bool IsUnsignedIntScalarType(uint32_t id) const;
-  bool IsUnsignedIntVectorType(uint32_t id) const;
-  bool IsSignedIntScalarType(uint32_t id) const;
-  bool IsSignedIntVectorType(uint32_t id) const;
-  bool IsBoolScalarType(uint32_t id) const;
-  bool IsBoolVectorType(uint32_t id) const;
-  bool IsPointerType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsFloatScalarType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsFloatVectorType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsFloatMatrixType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsIntScalarType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsIntVectorType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsUnsignedIntScalarType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsUnsignedIntVectorType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsSignedIntScalarType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsSignedIntVectorType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsBoolScalarType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsBoolVectorType(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT bool IsPointerType(uint32_t id) const;
 
   // Returns type_id if id has type or zero otherwise.
-  uint32_t GetTypeId(uint32_t id) const;
+  SPIRV_TOOLS_EXPORT uint32_t GetTypeId(uint32_t id) const;
 
   // Returns type_id for given id operand if it has a type or zero otherwise.
   // |operand_index| is expected to be pointing towards an operand which is an

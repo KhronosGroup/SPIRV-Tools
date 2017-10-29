@@ -28,6 +28,8 @@
 #include "spirv-tools/libspirv.hpp"
 #include "basic_block.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -52,10 +54,10 @@ class Pass {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  Pass();
+  SPIRV_TOOLS_OPT_EXPORT Pass();
 
   // Destructs the pass.
-  virtual ~Pass() = default;
+  SPIRV_TOOLS_OPT_EXPORT virtual ~Pass() = default;
 
   // Returns a descriptive name for this pass.
   //
@@ -63,42 +65,42 @@ class Pass {
   // compatible with the corresponding spirv-opt command-line flag. For example,
   // if you add the flag --my-pass to spirv-opt, make this function return
   // "my-pass" (no leading hyphens).
-  virtual const char* name() const = 0;
+  SPIRV_TOOLS_OPT_EXPORT virtual const char* name() const = 0;
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
-  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
+  inline void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Returns the reference to the message consumer for this pass.
-  const MessageConsumer& consumer() const { return consumer_; }
+  inline const MessageConsumer& consumer() const { return consumer_; }
 
   // Returns the def-use manager used for this pass. TODO(dnovillo): This should
   // be handled by the pass manager.
-  analysis::DefUseManager* get_def_use_mgr() const {
+  inline analysis::DefUseManager* get_def_use_mgr() const {
     return def_use_mgr_.get();
   }
 
   // Returns a pointer to the current module for this pass.
-  ir::Module* get_module() const { return module_; }
+  inline ir::Module* get_module() const { return module_; }
 
   // Add to |todo| all ids of functions called in |func|.
-  void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
+  SPIRV_TOOLS_OPT_EXPORT void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
 
   // Applies |pfn| to every function in the call trees that are rooted at the
   // entry points.  Returns true if any call |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.
-  bool ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT bool ProcessEntryPointCallTree(ProcessFunction& pfn, ir::Module* module);
 
   // Applies |pfn| to every function in the call trees rooted at the entry
   // points and exported functions.  Returns true if any call |pfn| returns
   // true.  By convention |pfn| should return true if it modified the module.
-  bool ProcessReachableCallTree(ProcessFunction& pfn, ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT bool ProcessReachableCallTree(ProcessFunction& pfn, ir::Module* module);
 
   // Applies |pfn| to every function in the call trees rooted at the elements of
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
   // |pfn| should return true if it modified the module.  After returning
   // |roots| will be empty.
-  bool ProcessCallTreeFromRoots(
+  SPIRV_TOOLS_OPT_EXPORT bool ProcessCallTreeFromRoots(
       ProcessFunction& pfn,
       const std::unordered_map<uint32_t, ir::Function*>& id2function,
       std::queue<uint32_t>* roots);
@@ -106,13 +108,14 @@ class Pass {
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes are made to the module.
-  virtual Status Process(ir::Module* module) = 0;
+  SPIRV_TOOLS_OPT_EXPORT virtual Status Process(ir::Module* module) = 0;
 
  protected:
   // Initialize basic data structures for the pass. This sets up the def-use
   // manager, module and other attributes. TODO(dnovillo): Some of this should
   // be done during pass instantiation. Other things should be outside the pass
   // altogether (e.g., def-use manager).
+  inline
   void InitializeProcessing(ir::Module* module) {
     module_ = module;
     next_id_ = module_->IdBound();
@@ -129,7 +132,7 @@ class Pass {
 
   // Return true if |block_ptr| points to a loop header block. TODO(dnovillo)
   // This belongs in a CFG class.
-  bool IsLoopHeader(ir::BasicBlock* block_ptr) const;
+  SPIRV_TOOLS_OPT_EXPORT bool IsLoopHeader(ir::BasicBlock* block_ptr) const;
 
   // Compute structured successors for function |func|. A block's structured
   // successors are the blocks it branches to together with its declared merge
@@ -138,17 +141,17 @@ class Pass {
   // returns and kills. If the successor vector contain duplicates if the merge
   // block, they are safely ignored by DFS. TODO(dnovillo): This belongs in a
   // CFG class.
-  void ComputeStructuredSuccessors(ir::Function* func);
+  SPIRV_TOOLS_OPT_EXPORT void ComputeStructuredSuccessors(ir::Function* func);
 
   // Compute structured block order for |func| into |structuredOrder|. This
   // order has the property that dominators come before all blocks they
   // dominate and merge blocks come after all blocks that are in the control
   // constructs of their header. TODO(dnovillo): This belongs in a CFG class.
-  void ComputeStructuredOrder(ir::Function* func,
+  SPIRV_TOOLS_OPT_EXPORT void ComputeStructuredOrder(ir::Function* func,
                               std::list<ir::BasicBlock*>* order);
 
   // Return type id for |ptrInst|'s pointee
-  uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
+  SPIRV_TOOLS_OPT_EXPORT uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
   // Return the next available Id and increment it.
   inline uint32_t TakeNextId() { return next_id_++; }
@@ -161,7 +164,7 @@ class Pass {
 
   // Returns the id of the merge block declared by a merge instruction in this
   // block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
+  SPIRV_TOOLS_OPT_EXPORT uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.

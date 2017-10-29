@@ -38,7 +38,7 @@ using spv_operand_pattern_t = std::vector<spv_operand_type_t>;
 // Finds the named operand in the table. The type parameter specifies the
 // operand's group. A handle of the operand table entry for this operand will
 // be written into *entry.
-spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
                                        const spv_operand_type_t type,
                                        const char* name,
                                        const size_t name_length,
@@ -47,31 +47,31 @@ spv_result_t spvOperandTableNameLookup(const spv_operand_table table,
 // Finds the operand with value in the table. The type parameter specifies the
 // operand's group. A handle of the operand table entry for this operand will
 // be written into *entry.
-spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvOperandTableValueLookup(const spv_operand_table table,
                                         const spv_operand_type_t type,
                                         const uint32_t value,
                                         spv_operand_desc* entry);
 
 // Gets the name string of the non-variable operand type.
-const char* spvOperandTypeStr(spv_operand_type_t type);
+SPIRV_TOOLS_EXPORT const char* spvOperandTypeStr(spv_operand_type_t type);
 
 // Returns true if the given type is a concrete and also a mask.
-bool spvOperandIsConcreteMask(spv_operand_type_t type);
+SPIRV_TOOLS_EXPORT bool spvOperandIsConcreteMask(spv_operand_type_t type);
 
 // Returns true if an operand of the given type is optional.
-bool spvOperandIsOptional(spv_operand_type_t type);
+SPIRV_TOOLS_EXPORT bool spvOperandIsOptional(spv_operand_type_t type);
 
 // Returns true if an operand type represents zero or more logical operands.
 //
 // Note that a single logical operand may still be a variable number of words.
 // For example, a literal string may be many words, but is just one logical
 // operand.
-bool spvOperandIsVariable(spv_operand_type_t type);
+SPIRV_TOOLS_EXPORT bool spvOperandIsVariable(spv_operand_type_t type);
 
 // Append a list of operand types to the end of the pattern vector.
 // The types parameter specifies the source array of types, ending with
 // SPV_OPERAND_TYPE_NONE.
-void spvPushOperandTypes(const spv_operand_type_t* types,
+SPIRV_TOOLS_EXPORT void spvPushOperandTypes(const spv_operand_type_t* types,
                          spv_operand_pattern_t* pattern);
 
 // Appends the operands expected after the given typed mask onto the
@@ -82,7 +82,7 @@ void spvPushOperandTypes(const spv_operand_type_t* types,
 // appear after operands for a more significant bit.
 //
 // If a set bit is unknown, then we assume it has no operands.
-void spvPushOperandTypesForMask(const spv_operand_table operand_table,
+SPIRV_TOOLS_EXPORT void spvPushOperandTypesForMask(const spv_operand_table operand_table,
                                 const spv_operand_type_t mask_type,
                                 const uint32_t mask,
                                 spv_operand_pattern_t* pattern);
@@ -106,7 +106,7 @@ void spvPushOperandTypesForMask(const spv_operand_table operand_table,
 // non-optional.
 //
 // Returns true if we modified the pattern.
-bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
+SPIRV_TOOLS_EXPORT bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
                                   spv_operand_pattern_t* pattern);
 
 // Expands the first element in the pattern until it is a matchable operand
@@ -115,21 +115,21 @@ bool spvExpandOperandSequenceOnce(spv_operand_type_t type,
 //
 // A matchable operand type is anything other than a zero-or-more-items
 // operand type.
-spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
+SPIRV_TOOLS_EXPORT spv_operand_type_t spvTakeFirstMatchableOperand(spv_operand_pattern_t* pattern);
 
 // Calculates the corresponding post-immediate alternate pattern, which allows
 // a limited set of operand types.
-spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
+SPIRV_TOOLS_EXPORT spv_operand_pattern_t spvAlternatePatternFollowingImmediate(
     const spv_operand_pattern_t& pattern);
 
 // Is the operand an ID?
-bool spvIsIdType(spv_operand_type_t type);
+SPIRV_TOOLS_EXPORT bool spvIsIdType(spv_operand_type_t type);
 
 // Takes the opcode of an instruction and returns
 // a function object that will return true if the index
 // of the operand can be forward declared. This function will
 // used in the SSA validation stage of the pipeline
-std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
+SPIRV_TOOLS_EXPORT std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     SpvOp opcode);
 
 #endif  // LIBSPIRV_OPERAND_H_
