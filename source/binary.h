@@ -23,7 +23,7 @@
 // Grabs the header from the SPIR-V module given in the binary parameter. The
 // endian parameter specifies the endianness of the binary module. On success,
 // returns SPV_SUCCESS and writes the parsed header into *header.
-spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
+SPIRV_TOOLS_EXPORT spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
                                 const spv_endianness_t endian,
                                 spv_header_t* header);
 
@@ -31,6 +31,6 @@ spv_result_t spvBinaryHeaderGet(const spv_const_binary binary,
 // character, or strsz if there is no null character.  Examines at most the
 // first strsz characters in str.  Returns 0 if str is nullptr.  This is a
 // replacement for C11's strnlen_s which might not exist in all environments.
-size_t spv_strnlen_s(const char* str, size_t strsz);
+SPIRV_TOOLS_EXPORT size_t spv_strnlen_s(const char* str, size_t strsz);
 
 #endif  // LIBSPIRV_BINARY_H_

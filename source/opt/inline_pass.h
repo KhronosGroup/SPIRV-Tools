@@ -39,69 +39,69 @@ class InlinePass : public Pass {
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  InlinePass();
-  virtual ~InlinePass() = default;
+  SPIRV_TOOLS_OPT_EXPORT InlinePass();
+  SPIRV_TOOLS_OPT_EXPORT virtual ~InlinePass() = default;
 
  protected:
   // Find pointer to type and storage in module, return its resultId,
   // 0 if not found. TODO(greg-lunarg): Move this into type manager.
-  uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
+  SPIRV_TOOLS_OPT_EXPORT uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add pointer to type to module and return resultId.
-  uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);
+  SPIRV_TOOLS_OPT_EXPORT uint32_t AddPointerToType(uint32_t type_id, SpvStorageClass storage_class);
 
   // Add unconditional branch to labelId to end of block block_ptr.
-  void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
+  SPIRV_TOOLS_OPT_EXPORT void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add conditional branch to end of block |block_ptr|.
-  void AddBranchCond(uint32_t cond_id, uint32_t true_id,
+  SPIRV_TOOLS_OPT_EXPORT void AddBranchCond(uint32_t cond_id, uint32_t true_id,
     uint32_t false_id, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add unconditional branch to labelId to end of block block_ptr.
-  void AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
+  SPIRV_TOOLS_OPT_EXPORT void AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
                     std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add store of valId to ptrId to end of block block_ptr.
-  void AddStore(uint32_t ptrId, uint32_t valId,
+  SPIRV_TOOLS_OPT_EXPORT void AddStore(uint32_t ptrId, uint32_t valId,
                 std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add load of ptrId into resultId to end of block block_ptr.
-  void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
+  SPIRV_TOOLS_OPT_EXPORT void AddLoad(uint32_t typeId, uint32_t resultId, uint32_t ptrId,
                std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Return new label.
-  std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
+  SPIRV_TOOLS_OPT_EXPORT std::unique_ptr<ir::Instruction> NewLabel(uint32_t label_id);
 
   // Returns the id for the boolean false value. Looks in the module first
   // and creates it if not found. Remembers it for future calls.
-  uint32_t GetFalseId();
+  SPIRV_TOOLS_OPT_EXPORT uint32_t GetFalseId();
 
   // Map callee params to caller args
-  void MapParams(ir::Function* calleeFn,
+  SPIRV_TOOLS_OPT_EXPORT void MapParams(ir::Function* calleeFn,
                  ir::BasicBlock::iterator call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
   // Clone and map callee locals
-  void CloneAndMapLocals(
+  SPIRV_TOOLS_OPT_EXPORT void CloneAndMapLocals(
       ir::Function* calleeFn,
       std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
       std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
   // Create return variable for callee clone code if needed. Return id
   // if created, otherwise 0.
-  uint32_t CreateReturnVar(
+  SPIRV_TOOLS_OPT_EXPORT uint32_t CreateReturnVar(
       ir::Function* calleeFn,
       std::vector<std::unique_ptr<ir::Instruction>>* new_vars);
 
   // Return true if instruction must be in the same block that its result
   // is used.
-  bool IsSameBlockOp(const ir::Instruction* inst) const;
+  SPIRV_TOOLS_OPT_EXPORT bool IsSameBlockOp(const ir::Instruction* inst) const;
 
   // Clone operands which must be in same block as consumer instructions.
   // Look in preCallSB for instructions that need cloning. Look in
   // postCallSB for instructions already cloned. Add cloned instruction
   // to postCallSB.
-  void CloneSameBlockOps(
+  SPIRV_TOOLS_OPT_EXPORT void CloneSameBlockOps(
       std::unique_ptr<ir::Instruction>* inst,
       std::unordered_map<uint32_t, uint32_t>* postCallSB,
       std::unordered_map<uint32_t, ir::Instruction*>* preCallSB,
@@ -121,47 +121,47 @@ class InlinePass : public Pass {
   // Also return in new_vars additional OpVariable instructions required by
   // and to be inserted into the caller function after the block at
   // call_block_itr is replaced with new_blocks.
-  void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
+  SPIRV_TOOLS_OPT_EXPORT void GenInlineCode(std::vector<std::unique_ptr<ir::BasicBlock>>* new_blocks,
                      std::vector<std::unique_ptr<ir::Instruction>>* new_vars,
                      ir::BasicBlock::iterator call_inst_itr,
                      ir::UptrVectorIterator<ir::BasicBlock> call_block_itr);
 
   // Return true if |inst| is a function call that can be inlined.
-  bool IsInlinableFunctionCall(const ir::Instruction* inst);
+  SPIRV_TOOLS_OPT_EXPORT bool IsInlinableFunctionCall(const ir::Instruction* inst);
 
   // Compute structured successors for function |func|.
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.
   // When order matters, the merge block always appears first.
-  // This assures correct depth first search in the presence of early 
+  // This assures correct depth first search in the presence of early
   // returns and kills. If the successor vector contain duplicates
   // if the merge block, they are safely ignored by DFS.
-  void ComputeStructuredSuccessors(ir::Function* func);
-  
+  SPIRV_TOOLS_OPT_EXPORT void ComputeStructuredSuccessors(ir::Function* func);
+
   // Return function to return ordered structure successors for a given block
   // Assumes ComputeStructuredSuccessors() has been called.
-  GetBlocksFunction StructuredSuccessorsFunction();
+  SPIRV_TOOLS_OPT_EXPORT GetBlocksFunction StructuredSuccessorsFunction();
 
   // Return true if |func| has multiple returns
-  bool HasMultipleReturns(ir::Function* func);
+  SPIRV_TOOLS_OPT_EXPORT bool HasMultipleReturns(ir::Function* func);
 
   // Return true if |func| has no return in a loop. The current analysis
   // requires structured control flow, so return false if control flow not
   // structured ie. module is not a shader.
-  bool HasNoReturnInLoop(ir::Function* func);
+  SPIRV_TOOLS_OPT_EXPORT bool HasNoReturnInLoop(ir::Function* func);
 
   // Find all functions with multiple returns and no returns in loops
-  void AnalyzeReturns(ir::Function* func);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeReturns(ir::Function* func);
 
   // Return true if |func| is a function that can be inlined.
-  bool IsInlinableFunction(ir::Function* func);
+  SPIRV_TOOLS_OPT_EXPORT bool IsInlinableFunction(ir::Function* func);
 
   // Update phis in succeeding blocks to point to new last block
-  void UpdateSucceedingPhis(
+  SPIRV_TOOLS_OPT_EXPORT void UpdateSucceedingPhis(
       std::vector<std::unique_ptr<ir::BasicBlock>>& new_blocks);
 
   // Initialize state for optimization of |module|
-  void InitializeInline(ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT void InitializeInline(ir::Module* module);
 
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;

@@ -22,6 +22,8 @@
 
 #include "spirv-tools/libspirv.h"
 
+#include "spirv-tools_export.h"
+
 namespace spvtools {
 
 // Message consumer. The C strings for source and message are only alive for the
@@ -32,7 +34,7 @@ using MessageConsumer = std::function<void(
     )>;
 
 // A RAII wrapper around a validator options object.
-class ValidatorOptions {
+class SPIRV_TOOLS_EXPORT ValidatorOptions {
  public:
   ValidatorOptions() : options_(spvValidatorOptionsCreate()) {}
   ~ValidatorOptions() { spvValidatorOptionsDestroy(options_); }
@@ -75,50 +77,50 @@ class SpirvTools {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  explicit SpirvTools(spv_target_env env);
+  SPIRV_TOOLS_EXPORT explicit SpirvTools(spv_target_env env);
 
   // Disables copy/move constructor/assignment operations.
-  SpirvTools(const SpirvTools&) = delete;
-  SpirvTools(SpirvTools&&) = delete;
-  SpirvTools& operator=(const SpirvTools&) = delete;
-  SpirvTools& operator=(SpirvTools&&) = delete;
+  SPIRV_TOOLS_EXPORT SpirvTools(const SpirvTools&) = delete;
+  SPIRV_TOOLS_EXPORT SpirvTools(SpirvTools&&) = delete;
+  SPIRV_TOOLS_EXPORT SpirvTools& operator=(const SpirvTools&) = delete;
+  SPIRV_TOOLS_EXPORT SpirvTools& operator=(SpirvTools&&) = delete;
 
   // Destructs this instance.
-  ~SpirvTools();
+  SPIRV_TOOLS_EXPORT ~SpirvTools();
 
   // Sets the message consumer to the given |consumer|. The |consumer| will be
   // invoked once for each message communicated from the library.
-  void SetMessageConsumer(MessageConsumer consumer);
+  SPIRV_TOOLS_EXPORT void SetMessageConsumer(MessageConsumer consumer);
 
   // Assembles the given assembly |text| and writes the result to |binary|.
   // Returns true on successful assembling. |binary| will be kept untouched if
   // assembling is unsuccessful.
-  bool Assemble(const std::string& text, std::vector<uint32_t>* binary,
+  SPIRV_TOOLS_EXPORT bool Assemble(const std::string& text, std::vector<uint32_t>* binary,
                 uint32_t options = kDefaultAssembleOption) const;
   // |text_size| specifies the number of bytes in |text|. A terminating null
   // character is not required to present in |text| as long as |text| is valid.
-  bool Assemble(const char* text, size_t text_size,
+  SPIRV_TOOLS_EXPORT bool Assemble(const char* text, size_t text_size,
                 std::vector<uint32_t>* binary,
                 uint32_t options = kDefaultAssembleOption) const;
 
   // Disassembles the given SPIR-V |binary| with the given |options| and writes
   // the assembly to |text|. Returns ture on successful disassembling. |text|
   // will be kept untouched if diassembling is unsuccessful.
-  bool Disassemble(const std::vector<uint32_t>& binary, std::string* text,
+  SPIRV_TOOLS_EXPORT bool Disassemble(const std::vector<uint32_t>& binary, std::string* text,
                    uint32_t options = kDefaultDisassembleOption) const;
   // |binary_size| specifies the number of words in |binary|.
-  bool Disassemble(const uint32_t* binary, size_t binary_size,
+  SPIRV_TOOLS_EXPORT bool Disassemble(const uint32_t* binary, size_t binary_size,
                    std::string* text,
                    uint32_t options = kDefaultDisassembleOption) const;
 
   // Validates the given SPIR-V |binary|. Returns true if no issues are found.
   // Otherwise, returns false and communicates issues via the message consumer
   // registered.
-  bool Validate(const std::vector<uint32_t>& binary) const;
+  SPIRV_TOOLS_EXPORT bool Validate(const std::vector<uint32_t>& binary) const;
   // |binary_size| specifies the number of words in |binary|.
-  bool Validate(const uint32_t* binary, size_t binary_size) const;
+  SPIRV_TOOLS_EXPORT bool Validate(const uint32_t* binary, size_t binary_size) const;
   // Like the previous overload, but takes an options object.
-  bool Validate(const uint32_t* binary, size_t binary_size,
+  SPIRV_TOOLS_EXPORT bool Validate(const uint32_t* binary, size_t binary_size,
                 const ValidatorOptions& options) const;
 
  private:

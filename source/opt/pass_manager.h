@@ -24,6 +24,8 @@
 
 #include "spirv-tools/libspirv.hpp"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -37,13 +39,13 @@ class PassManager {
   // The constructed instance will have an empty message consumer, which just
   // ignores all messages from the library. Use SetMessageConsumer() to supply
   // one if messages are of concern.
-  PassManager() : consumer_(nullptr) {}
+  inline PassManager() : consumer_(nullptr) {}
 
   // Sets the message consumer to the given |consumer|.
-  void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
+  inline void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
 
   // Adds an externally constructed pass.
-  void AddPass(std::unique_ptr<Pass> pass);
+  SPIRV_TOOLS_OPT_EXPORT void AddPass(std::unique_ptr<Pass> pass);
   // Uses the argument |args| to construct a pass instance of type |T|, and adds
   // the pass instance to this pass manger. The pass added will use this pass
   // manager's message consumer.
@@ -51,7 +53,7 @@ class PassManager {
   void AddPass(Args&&... args);
 
   // Returns the number of passes added.
-  uint32_t NumPasses() const;
+  SPIRV_TOOLS_OPT_EXPORT uint32_t NumPasses() const;
   // Returns a pointer to the |index|th pass added.
   inline Pass* GetPass(uint32_t index) const;
 
@@ -65,7 +67,7 @@ class PassManager {
   // whether changes are made to the module.
   //
   // After running all the passes, they are removed from the list.
-  Pass::Status Run(ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT Pass::Status Run(ir::Module* module);
 
  private:
   // Consumer for messages.
@@ -79,7 +81,7 @@ inline void PassManager::AddPass(std::unique_ptr<Pass> pass) {
 }
 
 template <typename T, typename... Args>
-inline void PassManager::AddPass(Args&&... args) {
+void PassManager::AddPass(Args&&... args) {
   passes_.emplace_back(new T(std::forward<Args>(args)...));
   passes_.back()->SetMessageConsumer(consumer_);
 }

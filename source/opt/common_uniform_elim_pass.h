@@ -41,9 +41,9 @@ class CommonUniformElimPass : public Pass {
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  CommonUniformElimPass();
-  const char* name() const override { return "eliminate-common-uniform"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT CommonUniformElimPass();
+  inline const char* name() const override { return "eliminate-common-uniform"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Returns true if |opcode| is a non-ptr access chain op
@@ -149,11 +149,11 @@ class CommonUniformElimPass : public Pass {
   bool CommonExtractElimination(ir::Function* func);
 
   // For function |func|, first change all uniform constant index
-  // access chain loads into equivalent composite extracts. Then consolidate 
+  // access chain loads into equivalent composite extracts. Then consolidate
   // identical uniform loads into one uniform load. Finally, consolidate
   // identical uniform extracts into one uniform extract. This may require
   // moving a load or extract to a point which dominates all uses.
-  // Return true if func is modified. 
+  // Return true if func is modified.
   //
   // This pass requires the function to have structured control flow ie shader
   // capability. It also requires logical addressing ie Addresses capability

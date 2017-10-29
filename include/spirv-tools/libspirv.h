@@ -24,6 +24,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#include "spirv-tools_export.h"
+
 // Helpers
 
 #define SPV_BIT(shift) (1 << (shift))
@@ -360,12 +362,12 @@ typedef const spv_validator_options_t* spv_const_validator_options;
 // Returns the SPIRV-Tools software version as a null-terminated string.
 // The contents of the underlying storage is valid for the remainder of
 // the process.
-const char* spvSoftwareVersionString();
+SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionString();
 // Returns a null-terminated string containing the name of the project,
 // the software version string, and commit details.
 // The contents of the underlying storage is valid for the remainder of
 // the process.
-const char* spvSoftwareVersionDetailsString();
+SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionDetailsString();
 
 // Certain target environments impose additional restrictions on SPIR-V, so it's
 // often necessary to specify which one applies.  SPV_ENV_UNIVERSAL means
@@ -398,25 +400,25 @@ typedef enum {
 } spv_validator_limit;
 
 // Returns a string describing the given SPIR-V target environment.
-const char* spvTargetEnvDescription(spv_target_env env);
+SPIRV_TOOLS_EXPORT const char* spvTargetEnvDescription(spv_target_env env);
 
 // Creates a context object.  Returns null if env is invalid.
-spv_context spvContextCreate(spv_target_env env);
+SPIRV_TOOLS_EXPORT spv_context spvContextCreate(spv_target_env env);
 
 // Destroys the given context object.
-void spvContextDestroy(spv_context context);
+SPIRV_TOOLS_EXPORT void spvContextDestroy(spv_context context);
 
 // Creates a Validator options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // spvValidatorOptionsDestroy.
-spv_validator_options spvValidatorOptionsCreate();
+SPIRV_TOOLS_EXPORT spv_validator_options spvValidatorOptionsCreate();
 
 // Destroys the given Validator options object.
-void spvValidatorOptionsDestroy(spv_validator_options options);
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsDestroy(spv_validator_options options);
 
 // Records the maximum Universal Limit that is considered valid in the given
 // Validator options object. <options> argument must be a valid options object.
-void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
                                           spv_validator_limit limit_type,
                                           uint32_t limit);
 
@@ -438,14 +440,14 @@ void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
 // be stored into *binary. Any error will be written into *diagnostic if
 // diagnostic is non-null. The generated binary is independent of the context
 // and may outlive it.
-spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
+SPIRV_TOOLS_EXPORT spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
                              const size_t length, spv_binary* binary,
                              spv_diagnostic* diagnostic);
 
 // Encodes the given SPIR-V assembly text to its binary representation. Same as
 // spvTextToBinary but with options. The options parameter is a bit field of
 // spv_text_to_binary_options_t.
-spv_result_t spvTextToBinaryWithOptions(const spv_const_context context,
+SPIRV_TOOLS_EXPORT spv_result_t spvTextToBinaryWithOptions(const spv_const_context context,
                                         const char* text, const size_t length,
                                         const uint32_t options,
                                         spv_binary* binary,
@@ -453,54 +455,54 @@ spv_result_t spvTextToBinaryWithOptions(const spv_const_context context,
 
 // Frees an allocated text stream. This is a no-op if the text parameter
 // is a null pointer.
-void spvTextDestroy(spv_text text);
+SPIRV_TOOLS_EXPORT void spvTextDestroy(spv_text text);
 
 // Decodes the given SPIR-V binary representation to its assembly text. The
 // word_count parameter specifies the number of words for binary. The options
 // parameter is a bit field of spv_binary_to_text_options_t. Decoded text will
 // be stored into *text. Any error will be written into *diagnostic if
 // diagnostic is non-null.
-spv_result_t spvBinaryToText(const spv_const_context context,
+SPIRV_TOOLS_EXPORT spv_result_t spvBinaryToText(const spv_const_context context,
                              const uint32_t* binary, const size_t word_count,
                              const uint32_t options, spv_text* text,
                              spv_diagnostic* diagnostic);
 
 // Frees a binary stream from memory. This is a no-op if binary is a null
 // pointer.
-void spvBinaryDestroy(spv_binary binary);
+SPIRV_TOOLS_EXPORT void spvBinaryDestroy(spv_binary binary);
 
 // Validates a SPIR-V binary for correctness. Any errors will be written into
 // *diagnostic if diagnostic is non-null.
-spv_result_t spvValidate(const spv_const_context context,
+SPIRV_TOOLS_EXPORT spv_result_t spvValidate(const spv_const_context context,
                          const spv_const_binary binary,
                          spv_diagnostic* diagnostic);
 
 // Validates a SPIR-V binary for correctness. Uses the provided Validator
 // options. Any errors will be written into *diagnostic if diagnostic is
 // non-null.
-spv_result_t spvValidateWithOptions(const spv_const_context context,
+SPIRV_TOOLS_EXPORT spv_result_t spvValidateWithOptions(const spv_const_context context,
                                     const spv_const_validator_options options,
                                     const spv_const_binary binary,
                                     spv_diagnostic* diagnostic);
 
 // Validates a raw SPIR-V binary for correctness. Any errors will be written
 // into *diagnostic if diagnostic is non-null.
-spv_result_t spvValidateBinary(const spv_const_context context,
+SPIRV_TOOLS_EXPORT spv_result_t spvValidateBinary(const spv_const_context context,
                                const uint32_t* words, const size_t num_words,
                                spv_diagnostic* diagnostic);
 
 // Creates a diagnostic object. The position parameter specifies the location in
 // the text/binary stream. The message parameter, copied into the diagnostic
 // object, contains the error message to display.
-spv_diagnostic spvDiagnosticCreate(const spv_position position,
+SPIRV_TOOLS_EXPORT spv_diagnostic spvDiagnosticCreate(const spv_position position,
                                    const char* message);
 
 // Destroys a diagnostic object.  This is a no-op if diagnostic is a null
 // pointer.
-void spvDiagnosticDestroy(spv_diagnostic diagnostic);
+SPIRV_TOOLS_EXPORT void spvDiagnosticDestroy(spv_diagnostic diagnostic);
 
 // Prints the diagnostic to stderr.
-spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic);
+SPIRV_TOOLS_EXPORT spv_result_t spvDiagnosticPrint(const spv_diagnostic diagnostic);
 
 // The binary parser interface.
 
@@ -533,7 +535,7 @@ typedef spv_result_t (*spv_parsed_instruction_fn_t)(
 // also emits a diagnostic.  If a callback returns anything other than
 // SPV_SUCCESS, then that status code is returned, no further callbacks are
 // issued, and no additional diagnostics are emitted.
-spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
+SPIRV_TOOLS_EXPORT spv_result_t spvBinaryParse(const spv_const_context context, void* user_data,
                             const uint32_t* words, const size_t num_words,
                             spv_parsed_header_fn_t parse_header,
                             spv_parsed_instruction_fn_t parse_instruction,

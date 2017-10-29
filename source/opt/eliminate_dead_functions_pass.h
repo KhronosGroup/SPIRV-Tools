@@ -26,8 +26,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class EliminateDeadFunctionsPass : public MemPass {
  public:
-  const char* name() const override { return "eliminate-dead-functions"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "eliminate-dead-functions"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   void EliminateFunction(ir::Function* func);

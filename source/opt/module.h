@@ -24,6 +24,8 @@
 #include "instruction.h"
 #include "iterator.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace ir {
 
@@ -46,14 +48,14 @@ class Module {
   using const_inst_iterator = InstructionList::const_iterator;
 
   // Creates an empty module with zero'd header.
-  Module() : header_({}) {}
+  inline Module() : header_({}) {}
 
   // Sets the header to the given |header|.
-  void SetHeader(const ModuleHeader& header) { header_ = header; }
+  inline void SetHeader(const ModuleHeader& header) { header_ = header; }
   // Sets the Id bound.
-  void SetIdBound(uint32_t bound) { header_.bound = bound; }
+  inline void SetIdBound(uint32_t bound) { header_.bound = bound; }
   // Returns the Id bound.
-  uint32_t IdBound() { return header_.bound; }
+  inline uint32_t IdBound() { return header_.bound; }
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction> c);
   // Appends an extension instruction to this module.
@@ -88,18 +90,18 @@ class Module {
 
   // Returns a vector of pointers to type-declaration instructions in this
   // module.
-  std::vector<Instruction*> GetTypes();
-  std::vector<const Instruction*> GetTypes() const;
+  SPIRV_TOOLS_OPT_EXPORT std::vector<Instruction*> GetTypes();
+  SPIRV_TOOLS_OPT_EXPORT std::vector<const Instruction*> GetTypes() const;
   // Returns a vector of pointers to constant-creation instructions in this
   // module.
-  std::vector<Instruction*> GetConstants();
-  std::vector<const Instruction*> GetConstants() const;
+  SPIRV_TOOLS_OPT_EXPORT std::vector<Instruction*> GetConstants();
+  SPIRV_TOOLS_OPT_EXPORT std::vector<const Instruction*> GetConstants() const;
 
   // Return result id of global value with |opcode|, 0 if not present.
-  uint32_t GetGlobalValue(SpvOp opcode) const;
+  SPIRV_TOOLS_OPT_EXPORT uint32_t GetGlobalValue(SpvOp opcode) const;
 
   // Add global value with |opcode|, |result_id| and |type_id|
-  void AddGlobalValue(SpvOp opcode, uint32_t result_id, uint32_t type_id);
+  SPIRV_TOOLS_OPT_EXPORT void AddGlobalValue(SpvOp opcode, uint32_t result_id, uint32_t type_id);
 
   inline uint32_t id_bound() const { return header_.bound; }
 
@@ -163,32 +165,32 @@ class Module {
   inline IteratorRange<const_inst_iterator> execution_modes() const;
 
   // Clears all debug instructions (excluding OpLine & OpNoLine).
-  void debug_clear() {
+  inline void debug_clear() {
     debug1_clear();
     debug2_clear();
     debug3_clear();
   }
 
   // Clears all debug 1 instructions (excluding OpLine & OpNoLine).
-  void debug1_clear() { debugs1_.clear(); }
+  inline void debug1_clear() { debugs1_.clear(); }
 
   // Clears all debug 2 instructions (excluding OpLine & OpNoLine).
-  void debug2_clear() { debugs2_.clear(); }
+  inline void debug2_clear() { debugs2_.clear(); }
 
   // Clears all debug 3 instructions (excluding OpLine & OpNoLine).
-  void debug3_clear() { debugs3_.clear(); }
+  inline void debug3_clear() { debugs3_.clear(); }
 
   // Iterators for annotation instructions contained in this module.
   inline inst_iterator annotation_begin();
   inline inst_iterator annotation_end();
-  IteratorRange<inst_iterator> annotations();
-  IteratorRange<const_inst_iterator> annotations() const;
+  inline IteratorRange<inst_iterator> annotations();
+  inline IteratorRange<const_inst_iterator> annotations() const;
 
   // Iterators for extension instructions contained in this module.
   inline inst_iterator extension_begin();
   inline inst_iterator extension_end();
-  IteratorRange<inst_iterator> extensions();
-  IteratorRange<const_inst_iterator> extensions() const;
+  inline IteratorRange<inst_iterator> extensions();
+  inline IteratorRange<const_inst_iterator> extensions() const;
 
   // Iterators for types, constants and global variables instructions.
   inline inst_iterator types_values_begin();
@@ -197,31 +199,31 @@ class Module {
   inline IteratorRange<const_inst_iterator> types_values() const;
 
   // Iterators for functions contained in this module.
-  iterator begin() { return iterator(&functions_, functions_.begin()); }
-  iterator end() { return iterator(&functions_, functions_.end()); }
+  inline iterator begin() { return iterator(&functions_, functions_.begin()); }
+  inline iterator end() { return iterator(&functions_, functions_.end()); }
   inline const_iterator cbegin() const;
   inline const_iterator cend() const;
 
   // Invokes function |f| on all instructions in this module, and optionally on
   // the debug line instructions that precede them.
-  void ForEachInst(const std::function<void(Instruction*)>& f,
+  SPIRV_TOOLS_OPT_EXPORT void ForEachInst(const std::function<void(Instruction*)>& f,
                    bool run_on_debug_line_insts = false);
-  void ForEachInst(const std::function<void(const Instruction*)>& f,
+  SPIRV_TOOLS_OPT_EXPORT void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   // If |skip_nop| is true and this is a OpNop, do nothing.
-  void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
+  SPIRV_TOOLS_OPT_EXPORT void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
 
   // Returns 1 more than the maximum Id value mentioned in the module.
-  uint32_t ComputeIdBound() const;
+  SPIRV_TOOLS_OPT_EXPORT uint32_t ComputeIdBound() const;
 
   // Returns true if module has capability |cap|
-  bool HasCapability(uint32_t cap);
+  SPIRV_TOOLS_OPT_EXPORT bool HasCapability(uint32_t cap);
 
   // Returns id for OpExtInst instruction for extension |extstr|.
   // Returns 0 if not found.
-  uint32_t GetExtInstImportId(const char* extstr);
+  SPIRV_TOOLS_OPT_EXPORT uint32_t GetExtInstImportId(const char* extstr);
 
  private:
   ModuleHeader header_;  // Module header

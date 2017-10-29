@@ -24,7 +24,7 @@ namespace libspirv {
 
 // Encapsulates the grammar to use for SPIR-V assembly.
 // Contains methods to query for valid instructions and operands.
-class AssemblyGrammar {
+class SPIRV_TOOLS_EXPORT AssemblyGrammar {
  public:
   explicit AssemblyGrammar(const spv_const_context context)
       : target_env_(context->target_env),

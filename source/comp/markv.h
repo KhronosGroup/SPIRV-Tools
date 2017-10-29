@@ -27,6 +27,8 @@
 #include "markv_model.h"
 #include "spirv-tools/libspirv.hpp"
 
+#include "spirv-tools-comp_export.h"
+
 namespace spvtools {
 
 struct MarkvCodecOptions {
@@ -54,7 +56,7 @@ using MarkvLogConsumer = std::function<void(const std::string& snippet)>;
 // Encodes the given SPIR-V binary to MARK-V binary.
 // |log_consumer| is optional (pass MarkvLogConsumer() to disable).
 // |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
-spv_result_t SpirvToMarkv(spv_const_context context,
+SPIRV_TOOLS_COMP_EXPORT spv_result_t SpirvToMarkv(spv_const_context context,
                           const std::vector<uint32_t>& spirv,
                           const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,
@@ -66,7 +68,7 @@ spv_result_t SpirvToMarkv(spv_const_context context,
 // Decodes a SPIR-V binary from the given MARK-V binary.
 // |log_consumer| is optional (pass MarkvLogConsumer() to disable).
 // |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
-spv_result_t MarkvToSpirv(spv_const_context context,
+SPIRV_TOOLS_COMP_EXPORT spv_result_t MarkvToSpirv(spv_const_context context,
                           const std::vector<uint8_t>& markv,
                           const MarkvCodecOptions& options,
                           const MarkvModel& markv_model,

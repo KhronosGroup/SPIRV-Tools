@@ -35,22 +35,22 @@ class SetSpecConstantDefaultValuePass : public Pass {
 
   // Constructs a pass instance with a map from spec ids to default values
   // in the form of string.
-  explicit SetSpecConstantDefaultValuePass(
+  inline explicit SetSpecConstantDefaultValuePass(
       const SpecIdToValueStrMap& default_values)
       : spec_id_to_value_str_(default_values), spec_id_to_value_bit_pattern_() {}
-  explicit SetSpecConstantDefaultValuePass(SpecIdToValueStrMap&& default_values)
+  inline explicit SetSpecConstantDefaultValuePass(SpecIdToValueStrMap&& default_values)
       : spec_id_to_value_str_(std::move(default_values)), spec_id_to_value_bit_pattern_() {}
 
   // Constructs a pass instance with a map from spec ids to default values in
   // the form of bit pattern.
-  explicit SetSpecConstantDefaultValuePass(
+  inline explicit SetSpecConstantDefaultValuePass(
       const SpecIdToValueBitPatternMap& default_values)
       : spec_id_to_value_str_(), spec_id_to_value_bit_pattern_(default_values) {}
-  explicit SetSpecConstantDefaultValuePass(SpecIdToValueBitPatternMap&& default_values)
+  inline explicit SetSpecConstantDefaultValuePass(SpecIdToValueBitPatternMap&& default_values)
       : spec_id_to_value_str_(), spec_id_to_value_bit_pattern_(std::move(default_values)) {}
 
-  const char* name() const override { return "set-spec-const-default-value"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "set-spec-const-default-value"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
   // Parses the given null-terminated C string to get a mapping from Spec Id to
   // default value strings. Returns a unique pointer of the mapping from spec
@@ -85,7 +85,7 @@ class SetSpecConstantDefaultValuePass : public Pass {
   //    Spaces before and after default value text is allowed.
   //    Spaces within the text is not allowed.
   //    Empty <default value> is not allowed.
-  static std::unique_ptr<SpecIdToValueStrMap> ParseDefaultValuesString(
+  SPIRV_TOOLS_OPT_EXPORT static std::unique_ptr<SpecIdToValueStrMap> ParseDefaultValuesString(
       const char* str);
 
  private:

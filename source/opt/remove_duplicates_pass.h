@@ -31,10 +31,10 @@ using IdDecorationsList =
 // See optimizer.hpp for documentation.
 class RemoveDuplicatesPass : public Pass {
  public:
-  const char* name() const override { return "remove-duplicates"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "remove-duplicates"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
   // Returns whether two types are equal, and have the same decorations.
-  static bool AreTypesEqual(const ir::Instruction& inst1,
+  SPIRV_TOOLS_OPT_EXPORT static bool AreTypesEqual(const ir::Instruction& inst1,
                             const ir::Instruction& inst2,
                             const analysis::DefUseManager& defUseManager,
                             const analysis::DecorationManager& decoManager);

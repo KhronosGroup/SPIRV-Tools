@@ -30,6 +30,8 @@
 #include "module.h"
 #include "mem_pass.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 
@@ -41,9 +43,9 @@ class LocalMultiStoreElimPass : public MemPass {
    using GetBlocksFunction =
      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
-  LocalMultiStoreElimPass();
-  const char* name() const override { return "eliminate-local-multi-store"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT LocalMultiStoreElimPass();
+  inline const char* name() const override { return "eliminate-local-multi-store"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Initialize extensions whitelist

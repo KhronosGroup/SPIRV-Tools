@@ -24,8 +24,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class CompactIdsPass : public Pass {
  public:
-  const char* name() const override { return "compact-ids"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "compact-ids"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

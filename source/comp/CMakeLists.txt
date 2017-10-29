@@ -13,13 +13,26 @@
 # limitations under the License.
 
 if(SPIRV_BUILD_COMPRESSION)
-  add_library(SPIRV-Tools-comp markv_codec.cpp)
+  add_library(SPIRV-Tools-comp "")
+
+  include(GenerateExportHeader)
+  generate_export_header(SPIRV-Tools-comp)
+
+  target_sources(SPIRV-Tools-comp
+    PRIVATE
+      "markv_codec.cpp"
+      "${CMAKE_CURRENT_BINARY_DIR}/spirv-tools-comp_export.h"
+  )
 
   spvtools_default_compile_options(SPIRV-Tools-comp)
   target_include_directories(SPIRV-Tools-comp
-    PUBLIC ${spirv-tools_SOURCE_DIR}/include
-    PUBLIC ${SPIRV_HEADER_INCLUDE_DIR}
-    PRIVATE ${spirv-tools_BINARY_DIR}
+    PUBLIC
+      ${spirv-tools_SOURCE_DIR}/include
+      ${SPIRV_HEADER_INCLUDE_DIR}
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    PRIVATE
+      ${spirv-tools_BINARY_DIR}
   )
 
   target_link_libraries(SPIRV-Tools-comp
@@ -31,7 +44,13 @@ if(SPIRV_BUILD_COMPRESSION)
     install(TARGETS SPIRV-Tools-comp
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+    install(
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/spirv-tools-comp_export.h
+      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools
+    )
   endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
 endif(SPIRV_BUILD_COMPRESSION)

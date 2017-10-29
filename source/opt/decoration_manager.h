@@ -22,6 +22,8 @@
 #include "instruction.h"
 #include "module.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 namespace analysis {
@@ -30,25 +32,25 @@ namespace analysis {
 class DecorationManager {
  public:
   // Constructs a decoration manager from the given |module|
-  DecorationManager(ir::Module* module) { AnalyzeDecorations(module); }
+  inline DecorationManager(ir::Module* module) { AnalyzeDecorations(module); }
   // Removes all decorations from |id|, which should not be a group ID, except
   // for linkage decorations if |keep_linkage| is set.
-  void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
+  SPIRV_TOOLS_OPT_EXPORT void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
   // Returns a vector of all decorations affecting |id|. If a group is applied
   // to |id|, the decorations of that group are returned rather than the group
   // decoration instruction. If |include_linkage| is not set, linkage
   // decorations won't be returned.
-  std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id,
+  SPIRV_TOOLS_OPT_EXPORT std::vector<ir::Instruction*> GetDecorationsFor(uint32_t id,
                                                   bool include_linkage);
-  std::vector<const ir::Instruction*> GetDecorationsFor(
+  SPIRV_TOOLS_OPT_EXPORT std::vector<const ir::Instruction*> GetDecorationsFor(
       uint32_t id, bool include_linkage) const;
   // Returns whether two IDs have the same decorations. Two SpvOpGroupDecorate
   // instructions that apply the same decorations but to different IDs, still
   // count as being the same.
-  bool HaveTheSameDecorations(uint32_t id1, uint32_t id2) const;
+  SPIRV_TOOLS_OPT_EXPORT bool HaveTheSameDecorations(uint32_t id1, uint32_t id2) const;
   // Returns whether two decorations are the same. SpvOpDecorateId is currently
   // not handled and will return false no matter what.
-  bool AreDecorationsTheSame(const ir::Instruction* inst1,
+  SPIRV_TOOLS_OPT_EXPORT bool AreDecorationsTheSame(const ir::Instruction* inst1,
                              const ir::Instruction* inst2) const;
 
   // |f| is run on each decoration instruction for |id| with decoration
@@ -61,7 +63,7 @@ class DecorationManager {
       std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
-  void AnalyzeDecorations(ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeDecorations(ir::Module* module);
 
   template <typename T>
   std::vector<T> InternalGetDecorationsFor(uint32_t id, bool include_linkage);

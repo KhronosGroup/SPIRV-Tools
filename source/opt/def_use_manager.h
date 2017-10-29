@@ -23,6 +23,8 @@
 #include "module.h"
 #include "spirv-tools/libspirv.hpp"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace opt {
 namespace analysis {
@@ -49,59 +51,59 @@ class DefUseManager {
   // will be communicated to the outside via the given message |consumer|. This
   // instance only keeps a reference to the |consumer|, so the |consumer| should
   // outlive this instance.
-  DefUseManager(const MessageConsumer& consumer, ir::Module* module)
+  inline DefUseManager(const MessageConsumer& consumer, ir::Module* module)
       : consumer_(consumer) {
     AnalyzeDefUse(module);
   }
 
-  DefUseManager(const DefUseManager&) = delete;
-  DefUseManager(DefUseManager&&) = delete;
-  DefUseManager& operator=(const DefUseManager&) = delete;
-  DefUseManager& operator=(DefUseManager&&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT DefUseManager(const DefUseManager&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT DefUseManager(DefUseManager&&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT DefUseManager& operator=(const DefUseManager&) = delete;
+  SPIRV_TOOLS_OPT_EXPORT DefUseManager& operator=(DefUseManager&&) = delete;
 
   // Analyzes the defs in the given |inst|.
-  void AnalyzeInstDef(ir::Instruction* inst);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeInstDef(ir::Instruction* inst);
 
   // Analyzes the uses in the given |inst|.
-  void AnalyzeInstUse(ir::Instruction* inst);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeInstUse(ir::Instruction* inst);
 
   // Analyzes the defs and uses in the given |inst|.
-  void AnalyzeInstDefUse(ir::Instruction* inst);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeInstDefUse(ir::Instruction* inst);
 
   // Returns the def instruction for the given |id|. If there is no instruction
   // defining |id|, returns nullptr.
-  ir::Instruction* GetDef(uint32_t id);
-  const ir::Instruction* GetDef(uint32_t id) const;
+  SPIRV_TOOLS_OPT_EXPORT ir::Instruction* GetDef(uint32_t id);
+  SPIRV_TOOLS_OPT_EXPORT const ir::Instruction* GetDef(uint32_t id) const;
   // Returns the use instructions for the given |id|. If there is no uses of
   // |id|, returns nullptr.
-  UseList* GetUses(uint32_t id);
-  const UseList* GetUses(uint32_t id) const;
+  SPIRV_TOOLS_OPT_EXPORT UseList* GetUses(uint32_t id);
+  SPIRV_TOOLS_OPT_EXPORT const UseList* GetUses(uint32_t id) const;
   // Returns the annotation instrunctions which are a direct use of the given
   // |id|. This means when the decorations are applied through decoration
   // group(s), this function will just return the OpGroupDecorate
   // instrcution(s) which refer to the given id as an operand. The OpDecorate
   // instructions which decorate the decoration group will not be returned.
-  std::vector<ir::Instruction*> GetAnnotations(uint32_t id) const;
+  SPIRV_TOOLS_OPT_EXPORT std::vector<ir::Instruction*> GetAnnotations(uint32_t id) const;
 
   // Returns the map from ids to their def instructions.
-  const IdToDefMap& id_to_defs() const { return id_to_def_; }
+  inline const IdToDefMap& id_to_defs() const { return id_to_def_; }
   // Returns the map from ids to their uses in instructions.
-  const IdToUsesMap& id_to_uses() const { return id_to_uses_; }
+  inline const IdToUsesMap& id_to_uses() const { return id_to_uses_; }
 
   // Turns the instruction defining the given |id| into a Nop. Returns true on
   // success, false if the given |id| is not defined at all. This method also
   // erases both the uses of |id| and the information of this |id|-generating
   // instruction's uses of its operands.
-  bool KillDef(uint32_t id);
+  SPIRV_TOOLS_OPT_EXPORT bool KillDef(uint32_t id);
   // Turns the given instruction |inst| to a Nop. This method erases the
   // information of the given instruction's uses of its operands. If |inst|
   // defines an result id, the uses of the result id will also be erased.
-  void KillInst(ir::Instruction* inst);
+  SPIRV_TOOLS_OPT_EXPORT void KillInst(ir::Instruction* inst);
   // Replaces all uses of |before| id with |after| id. Returns true if any
   // replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and returns
   // false.
-  bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
+  SPIRV_TOOLS_OPT_EXPORT bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
  private:
   using InstToUsedIdsMap =
@@ -109,7 +111,7 @@ class DefUseManager {
 
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
-  void AnalyzeDefUse(ir::Module* module);
+  SPIRV_TOOLS_OPT_EXPORT void AnalyzeDefUse(ir::Module* module);
 
   // Clear the internal def-use record of the given instruction |inst|. This
   // method will update the use information of the operand ids of |inst|. The

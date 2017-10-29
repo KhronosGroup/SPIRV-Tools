@@ -17,6 +17,7 @@
 
 #include "spirv-tools/libspirv.h"
 #include "spirv_constant.h"
+#include "spirv_target_env.h"
 
 const char* spvTargetEnvDescription(spv_target_env env) {
   switch (env) {

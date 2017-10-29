@@ -119,7 +119,7 @@ struct SpirvStats {
 };
 
 // Aggregates existing |stats| with new stats extracted from |binary|.
-spv_result_t AggregateStats(
+SPIRV_TOOLS_EXPORT spv_result_t AggregateStats(
     const spv_context_t& context, const uint32_t* words, const size_t num_words,
     spv_diagnostic* pDiagnostic, SpirvStats* stats);
 

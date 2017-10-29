@@ -28,7 +28,7 @@ namespace libspirv {
 // emitted during the destructor.
 class DiagnosticStream {
  public:
-  DiagnosticStream(spv_position_t position,
+  SPIRV_TOOLS_EXPORT DiagnosticStream(spv_position_t position,
                    const spvtools::MessageConsumer& consumer,
                    spv_result_t error)
       : position_(position), consumer_(consumer), error_(error) {}
@@ -36,12 +36,12 @@ class DiagnosticStream {
   // Creates a DiagnosticStream from an expiring DiagnosticStream.
   // The new object takes the contents of the other, and prevents the
   // other from emitting anything during destruction.
-  DiagnosticStream(DiagnosticStream&& other);
+  SPIRV_TOOLS_EXPORT DiagnosticStream(DiagnosticStream&& other);
 
   // Destroys a DiagnosticStream.
   // If its status code is something other than SPV_FAILED_MATCH
   // then emit the accumulated message to the consumer.
-  ~DiagnosticStream();
+  SPIRV_TOOLS_EXPORT ~DiagnosticStream();
 
   // Adds the given value to the diagnostic message to be written.
   template <typename T>
@@ -65,10 +65,10 @@ class DiagnosticStream {
 //
 // This function expects that |diagnostic| is not nullptr and its content is a
 // nullptr.
-void UseDiagnosticAsMessageConsumer(spv_context context,
+SPIRV_TOOLS_EXPORT void UseDiagnosticAsMessageConsumer(spv_context context,
                                     spv_diagnostic* diagnostic);
 
-std::string spvResultToString(spv_result_t res);
+SPIRV_TOOLS_EXPORT std::string spvResultToString(spv_result_t res);
 
 }  // namespace libspirv
 

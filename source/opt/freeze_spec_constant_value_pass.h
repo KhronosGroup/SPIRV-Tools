@@ -24,8 +24,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class FreezeSpecConstantValuePass : public Pass {
  public:
-  const char* name() const override { return "freeze-spec-const"; }
-  Status Process(ir::Module*) override;
+  inline const char* name() const override { return "freeze-spec-const"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 };
 
 }  // namespace opt

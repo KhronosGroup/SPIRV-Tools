@@ -34,10 +34,10 @@ namespace opt {
 class InlineOpaquePass : public InlinePass {
 
  public:
-  InlineOpaquePass();
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT InlineOpaquePass();
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
-  const char* name() const override { return "inline-entry-points-opaque"; }
+  inline const char* name() const override { return "inline-entry-points-opaque"; }
 
  private:
   // Return true if |typeId| is or contains opaque type

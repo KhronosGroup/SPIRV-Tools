@@ -24,6 +24,8 @@
 #include "instruction.h"
 #include "iterator.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace ir {
 
@@ -42,13 +44,13 @@ class Function {
   //
   // The parent module will default to null and needs to be explicitly set by
   // the user.
-  explicit Function(const Function& f);
+  SPIRV_TOOLS_OPT_EXPORT explicit Function(const Function& f);
   // The OpFunction instruction that begins the definition of this function.
-  Instruction& DefInst() { return *def_inst_; }
-  const Instruction& DefInst() const { return *def_inst_; }
+  inline Instruction& DefInst() { return *def_inst_; }
+  inline const Instruction& DefInst() const { return *def_inst_; }
 
   // Sets the enclosing module for this function.
-  void SetParent(Module* module) { module_ = module; }
+  inline void SetParent(Module* module) { module_ = module; }
   // Appends a parameter to this function.
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.
@@ -71,27 +73,27 @@ class Function {
   inline uint32_t type_id() const { return def_inst_->type_id(); }
 
   // Returns the entry basic block for this function.
-  const std::unique_ptr<BasicBlock>& entry() const { return blocks_.front(); }
+  inline const std::unique_ptr<BasicBlock>& entry() const { return blocks_.front(); }
 
-  iterator begin() { return iterator(&blocks_, blocks_.begin()); }
-  iterator end() { return iterator(&blocks_, blocks_.end()); }
-  const_iterator cbegin() const {
+  inline iterator begin() { return iterator(&blocks_, blocks_.begin()); }
+  inline iterator end() { return iterator(&blocks_, blocks_.end()); }
+  inline const_iterator cbegin() const {
     return const_iterator(&blocks_, blocks_.cbegin());
   }
-  const_iterator cend() const {
+  inline const_iterator cend() const {
     return const_iterator(&blocks_, blocks_.cend());
   }
 
   // Runs the given function |f| on each instruction in this function, and
   // optionally on debug line instructions that might precede them.
-  void ForEachInst(const std::function<void(Instruction*)>& f,
+  SPIRV_TOOLS_OPT_EXPORT void ForEachInst(const std::function<void(Instruction*)>& f,
                    bool run_on_debug_line_insts = false);
-  void ForEachInst(const std::function<void(const Instruction*)>& f,
+  SPIRV_TOOLS_OPT_EXPORT void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
 
   // Runs the given function |f| on each parameter instruction in this function,
   // and optionally on debug line instructions that might precede them.
-  void ForEachParam(const std::function<void(const Instruction*)>& f,
+  SPIRV_TOOLS_OPT_EXPORT void ForEachParam(const std::function<void(const Instruction*)>& f,
                     bool run_on_debug_line_insts = false) const;
 
  private:

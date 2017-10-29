@@ -19,12 +19,12 @@
 #include "table.h"
 
 // Gets the type of the extended instruction set with the specified name.
-spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name);
+SPIRV_TOOLS_EXPORT spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name);
 
 // Finds the named extented instruction of the given type in the given extended
 // instruction table. On success, returns SPV_SUCCESS and writes a handle of
 // the instruction entry into *entry.
-spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
                                        const spv_ext_inst_type_t type,
                                        const char* name,
                                        spv_ext_inst_desc* entry);
@@ -32,7 +32,7 @@ spv_result_t spvExtInstTableNameLookup(const spv_ext_inst_table table,
 // Finds the extented instruction of the given type in the given extended
 // instruction table by value. On success, returns SPV_SUCCESS and writes a
 // handle of the instruction entry into *entry.
-spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
+SPIRV_TOOLS_EXPORT spv_result_t spvExtInstTableValueLookup(const spv_ext_inst_table table,
                                         const spv_ext_inst_type_t type,
                                         const uint32_t value,
                                         spv_ext_inst_desc* pEntry);

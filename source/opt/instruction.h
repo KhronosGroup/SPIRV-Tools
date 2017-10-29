@@ -26,6 +26,8 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/1.2/spirv.h"
 
+#include "spirv-tools-opt_export.h"
+
 namespace spvtools {
 namespace ir {
 
@@ -51,15 +53,16 @@ class InstructionList;
 // A *logical* operand to a SPIR-V instruction. It can be the type id, result
 // id, or other additional operands carried in an instruction.
 struct Operand {
-  Operand(spv_operand_type_t t, std::vector<uint32_t>&& w)
+  SPIRV_TOOLS_OPT_EXPORT Operand(spv_operand_type_t t, std::vector<uint32_t>&& w)
       : type(t), words(std::move(w)) {}
 
-  Operand(spv_operand_type_t t, const std::vector<uint32_t>& w)
+  SPIRV_TOOLS_OPT_EXPORT Operand(spv_operand_type_t t, const std::vector<uint32_t>& w)
       : type(t), words(w) {}
 
   spv_operand_type_t type;      // Type of this logical operand.
   std::vector<uint32_t> words;  // Binary segments of this logical operand.
 
+  inline
   friend bool operator==(const Operand& o1, const Operand& o2) {
     return o1.type == o2.type && o1.words == o2.words;
   }
@@ -83,14 +86,14 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   using const_iterator = std::vector<Operand>::const_iterator;
 
   // Creates a default OpNop instruction.
-  Instruction()
+  inline Instruction()
       : utils::IntrusiveNodeBase<Instruction>(),
         opcode_(SpvOpNop),
         type_id_(0),
         result_id_(0) {}
   // Creates an instruction with the given opcode |op| and no additional logical
   // operands.
-  Instruction(SpvOp op)
+  inline Instruction(SpvOp op)
       : utils::IntrusiveNodeBase<Instruction>(),
         opcode_(op),
         type_id_(0),
@@ -99,21 +102,21 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // the data inside |inst| will be copied and owned in this instance. And keep
   // record of line-related debug instructions |dbg_line| ahead of this
   // instruction, if any.
-  Instruction(const spv_parsed_instruction_t& inst,
+  SPIRV_TOOLS_OPT_EXPORT Instruction(const spv_parsed_instruction_t& inst,
               std::vector<Instruction>&& dbg_line = {});
 
   // Creates an instruction with the given opcode |op|, type id: |ty_id|,
   // result id: |res_id| and input operands: |in_operands|.
-  Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
+  SPIRV_TOOLS_OPT_EXPORT Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
               const std::vector<Operand>& in_operands);
 
   // TODO: I will want to remove these, but will first have to remove the use of
   // std::vector<Instruction>.
-  Instruction(const Instruction&) = default;
-  Instruction& operator=(const Instruction&) = default;
+  SPIRV_TOOLS_OPT_EXPORT Instruction(const Instruction&) = default;
+  SPIRV_TOOLS_OPT_EXPORT Instruction& operator=(const Instruction&) = default;
 
-  Instruction(Instruction&&);
-  Instruction& operator=(Instruction&&);
+  SPIRV_TOOLS_OPT_EXPORT Instruction(Instruction&&);
+  SPIRV_TOOLS_OPT_EXPORT Instruction& operator=(Instruction&&);
 
   virtual ~Instruction() = default;
 
@@ -122,19 +125,20 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
-  Instruction* Clone() const;
+  SPIRV_TOOLS_OPT_EXPORT Instruction* Clone() const;
 
-  SpvOp opcode() const { return opcode_; }
+  inline SpvOp opcode() const { return opcode_; }
   // Sets the opcode of this instruction to a specific opcode. Note this may
   // invalidate the instruction.
   // TODO(qining): Remove this function when instruction building and insertion
   // is well implemented.
-  void SetOpcode(SpvOp op) { opcode_ = op; }
-  uint32_t type_id() const { return type_id_; }
-  uint32_t result_id() const { return result_id_; }
+  inline void SetOpcode(SpvOp op) { opcode_ = op; }
+  inline uint32_t type_id() const { return type_id_; }
+  inline uint32_t result_id() const { return result_id_; }
   // Returns the vector of line-related debug instructions attached to this
   // instruction and the caller can directly modify them.
-  std::vector<Instruction>& dbg_line_insts() { return dbg_line_insts_; }
+  inline std::vector<Instruction>& dbg_line_insts() { return dbg_line_insts_; }
+  inline
   const std::vector<Instruction>& dbg_line_insts() const {
     return dbg_line_insts_;
   }
@@ -145,19 +149,21 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // inline void InsertAfter(Instruction* pos);
 
   // Begin and end iterators for operands.
-  iterator begin() { return operands_.begin(); }
-  iterator end() { return operands_.end(); }
-  const_iterator begin() const { return operands_.cbegin(); }
-  const_iterator end() const { return operands_.cend(); }
+  inline iterator begin() { return operands_.begin(); }
+  inline iterator end() { return operands_.end(); }
+  inline const_iterator begin() const { return operands_.cbegin(); }
+  inline const_iterator end() const { return operands_.cend(); }
   // Const begin and end iterators for operands.
-  const_iterator cbegin() const { return operands_.cbegin(); }
-  const_iterator cend() const { return operands_.cend(); }
+  inline const_iterator cbegin() const { return operands_.cbegin(); }
+  inline const_iterator cend() const { return operands_.cend(); }
 
   // Gets the number of logical operands.
+  inline
   uint32_t NumOperands() const {
     return static_cast<uint32_t>(operands_.size());
   }
   // Gets the number of SPIR-V words occupied by all logical operands.
+  inline
   uint32_t NumOperandWords() const {
     return NumInOperandWords() + TypeResultIdCount();
   }
@@ -166,7 +172,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Gets the |index|-th logical operand as a single SPIR-V word. This method is
   // not expected to be used with logical operands consisting of multiple SPIR-V
   // words.
-  uint32_t GetSingleWordOperand(uint32_t index) const;
+  SPIRV_TOOLS_OPT_EXPORT uint32_t GetSingleWordOperand(uint32_t index) const;
   // Sets the |index|-th in-operand's data to the given |data|.
   inline void SetInOperand(uint32_t index, std::vector<uint32_t>&& data);
   // Sets the result type id.
@@ -174,21 +180,31 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
   // Remove the |index|-th operand
+  inline
   void RemoveOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index);
   }
 
   // The following methods are similar to the above, but are for in operands.
+
+  inline
   uint32_t NumInOperands() const {
     return static_cast<uint32_t>(operands_.size() - TypeResultIdCount());
   }
-  uint32_t NumInOperandWords() const;
+
+  SPIRV_TOOLS_OPT_EXPORT uint32_t NumInOperandWords() const;
+
+  inline
   const Operand& GetInOperand(uint32_t index) const {
     return GetOperand(index + TypeResultIdCount());
   }
+
+  inline
   uint32_t GetSingleWordInOperand(uint32_t index) const {
     return GetSingleWordOperand(index + TypeResultIdCount());
   }
+
+  inline
   void RemoveInOperand(uint32_t index) {
     operands_.erase(operands_.begin() + index + TypeResultIdCount());
   }
@@ -226,7 +242,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool HasLabels() const;
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
-  void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
+  SPIRV_TOOLS_OPT_EXPORT void ToBinaryWithoutAttachedDebugInsts(std::vector<uint32_t>* binary) const;
 
   // Replaces the operands to the instruction with |new_operands|. The caller
   // is responsible for building a complete and valid list of operands for

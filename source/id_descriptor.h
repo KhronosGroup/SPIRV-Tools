@@ -28,6 +28,7 @@ namespace libspirv {
 // were substituted with previously computed descriptors.
 class IdDescriptorCollection {
  public:
+  inline
   IdDescriptorCollection() {
     words_.reserve(16);
   }
@@ -36,9 +37,10 @@ class IdDescriptorCollection {
   // registers it in id_to_descriptor_. Returns the computed descriptor.
   // This function needs to be sequentially called for every instruction in the
   // module.
-  uint32_t ProcessInstruction(const spv_parsed_instruction_t& inst);
+  SPIRV_TOOLS_EXPORT uint32_t ProcessInstruction(const spv_parsed_instruction_t& inst);
 
   // Returns a previously computed descriptor id.
+  inline
   uint32_t GetDescriptor(uint32_t id) const {
     const auto it = id_to_descriptor_.find(id);
     if (it == id_to_descriptor_.end())

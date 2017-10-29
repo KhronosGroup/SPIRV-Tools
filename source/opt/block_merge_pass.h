@@ -35,9 +35,9 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class BlockMergePass : public Pass {
  public:
-  BlockMergePass();
-  const char* name() const override { return "merge-blocks"; }
-  Status Process(ir::Module*) override;
+  SPIRV_TOOLS_OPT_EXPORT BlockMergePass();
+  inline const char* name() const override { return "merge-blocks"; }
+  SPIRV_TOOLS_OPT_EXPORT Status Process(ir::Module*) override;
 
  private:
   // Return true if |labId| has multiple refs. Do not count OpName.
