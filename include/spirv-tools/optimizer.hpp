@@ -82,12 +82,12 @@ class Optimizer {
   // Registers passes that attempt to improve performance of generated code.
   // This sequence of passes is subject to constant review and will change
   // from time to time.
-  Optimizer& RegisterPerformancePasses();
+  SPIRV_TOOLS_OPT_EXPORT Optimizer& RegisterPerformancePasses();
 
   // Registers passes that attempt to improve the size of generated code.
   // This sequence of passes is subject to constant review and will change
   // from time to time.
-  Optimizer& RegisterSizePasses();
+  SPIRV_TOOLS_OPT_EXPORT Optimizer& RegisterSizePasses();
 
   // Optimizes the given SPIR-V module |original_binary| and writes the
   // optimized binary into |optimized_binary|.
@@ -103,7 +103,7 @@ class Optimizer {
   // Returns a vector of strings with all the pass names added to this
   // optimizer's pass manager. These strings are valid until the associated
   // pass manager is destroyed.
-  std::vector<const char*> GetPassNames() const;
+  SPIRV_TOOLS_OPT_EXPORT std::vector<const char*> GetPassNames() const;
 
  private:
   struct Impl;                  // Opaque struct for holding internal data.
@@ -401,12 +401,12 @@ SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateRemoveDuplicatesPass();
 // following functionality:
 //
 // - Removal of unreachable basic blocks.
-Optimizer::PassToken CreateCFGCleanupPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateCFGCleanupPass();
 
 // Create dead variable elimination pass.
 // This pass will delete module scope variables, along with their decorations,
 // that are not referenced.
-Optimizer::PassToken CreateDeadVariableEliminationPass();
+SPIRV_TOOLS_OPT_EXPORT Optimizer::PassToken CreateDeadVariableEliminationPass();
 
 }  // namespace spvtools
 

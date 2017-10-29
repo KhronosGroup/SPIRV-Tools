@@ -19,7 +19,7 @@
 
 // Return true if the command line option for the validator limit is valid (Also
 // returns the Enum for option in this case). Returns false otherwise.
-bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* limit);
+SPIRV_TOOLS_EXPORT bool spvParseUniversalLimitsOptions(const char* s, spv_validator_limit* limit);
 
 // Default initialization of this structure is to the default Universal Limits
 // described in the SPIR-V Spec.
@@ -37,6 +37,7 @@ struct validator_universal_limits_t {
 // Manages command line options passed to the SPIR-V Validator. New struct
 // members may be added for any new option.
 struct spv_validator_options_t {
+  inline
   spv_validator_options_t()
       : universal_limits_(), relax_struct_store(false) {}
 

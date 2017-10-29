@@ -19,6 +19,6 @@
 
 // Parses s into *env and returns true if successful.  If unparsable, returns
 // false and sets *env to SPV_ENV_UNIVERSAL_1_0.
-bool spvParseTargetEnv(const char* s, spv_target_env* env);
+SPIRV_TOOLS_EXPORT bool spvParseTargetEnv(const char* s, spv_target_env* env);
 
 #endif  // LIBSPIRV_SPIRV_TARGET_ENV_H_

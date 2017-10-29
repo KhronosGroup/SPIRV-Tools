@@ -63,11 +63,12 @@ class FriendlyNameMapper {
   // Construct a friendly name mapper, and determine friendly names for each
   // defined Id in the specified module.  The module is specified by the code
   // wordCount, and should be parseable in the specified context.
-  FriendlyNameMapper(const spv_const_context context, const uint32_t* code,
+  SPIRV_TOOLS_EXPORT FriendlyNameMapper(const spv_const_context context, const uint32_t* code,
                      const size_t wordCount);
 
   // Returns a NameMapper which maps ids to the friendly names parsed from the
   // module provided to the constructor.
+  inline
   NameMapper GetNameMapper() {
     return [this](uint32_t id) { return this->NameForId(id); };
   }
@@ -75,7 +76,7 @@ class FriendlyNameMapper {
   // Returns the friendly name for the given id.  If the module parsed during
   // construction is valid, then the mapping satisfies the rules for a
   // NameMapper.
-  std::string NameForId(uint32_t id);
+  SPIRV_TOOLS_EXPORT std::string NameForId(uint32_t id);
 
  private:
   // Transforms the given string so that it is acceptable as an Id name in
