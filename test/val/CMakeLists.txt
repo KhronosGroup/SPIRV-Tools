@@ -116,6 +116,12 @@ add_spvtools_unittest(TARGET val_decoration
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_builtins
+	SRCS val_builtins_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_instructions
 	SRCS val_instructions_test.cpp
        ${VAL_TEST_COMMON_SRCS}
