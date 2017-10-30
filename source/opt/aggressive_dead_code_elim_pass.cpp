@@ -199,7 +199,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   ComputeInst2BlockMap(func);
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
+  cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   ComputeBlock2HeaderMaps(structuredOrder);
   bool modified = false;
   // Add instructions with external side effects to worklist. Also add branches

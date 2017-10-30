@@ -68,6 +68,7 @@ class LocalSingleStoreElimPass : public MemPass {
 
   // Calculate immediate dominators for |func|'s CFG. Leaves result
   // in idom_. Entries for augmented CFG (pseudo blocks) are not created.
+  // TODO(dnovillo): Move to new CFG class.
   void CalculateImmediateDominators(ir::Function* func);
   
   // Return true if instruction in |blk0| at ordinal position |idx0|

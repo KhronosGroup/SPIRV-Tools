@@ -16,7 +16,6 @@
 
 #include "pass.h"
 
-#include "cfa.h"
 #include "iterator.h"
 
 namespace spvtools {
@@ -25,22 +24,12 @@ namespace opt {
 namespace {
 
 const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
-const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kTypePointerTypeIdInIdx = 1;
-
-// Universal Limit of ResultID + 1
-const int kInvalidId = 0x400000;
 
 }  // namespace
 
 Pass::Pass()
-    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, 0, {}))),
-      pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))),
-      consumer_(nullptr),
+    : consumer_(nullptr),
       def_use_mgr_(nullptr),
       next_id_(0),
       context_(nullptr) {}
@@ -117,85 +106,12 @@ bool Pass::ProcessCallTreeFromRoots(
   return modified;
 }
 
-bool Pass::IsLoopHeader(ir::BasicBlock* block_ptr) const {
-  auto iItr = block_ptr->end();
-  --iItr;
-  if (iItr == block_ptr->begin())
-    return false;
-  --iItr;
-  return iItr->opcode() == SpvOpLoopMerge;
-}
-
 uint32_t Pass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst = get_def_use_mgr()->GetDef(ptrTypeId);
   return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 
-void Pass::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
-                                  std::list<ir::BasicBlock*>* order) {
-  // Compute structured successors and do DFS
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
-    return &(block2structured_succs_[block]);
-  };
-
-  // TODO(greg-lunarg): Get rid of const_cast by making moving const
-  // out of the cfa.h prototypes and into the invoking code.
-  auto post_order = [&](cbb_ptr b) {
-    order->push_front(const_cast<ir::BasicBlock*>(b));
-  };
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      root, get_structured_successors, ignore_block, post_order,
-      ignore_edge);
-}
-
-void Pass::ComputeStructuredSuccessors(ir::Function *func) {
-  block2structured_succs_.clear();
-  for (auto& blk : *func) {
-    // If no predecessors in function, make successor to pseudo entry
-    if (label2preds_[blk.id()].size() == 0)
-      block2structured_succs_[&pseudo_entry_block_].push_back(&blk);
-    // If header, make merge block first successor and continue block second
-    // successor if there is one.
-    uint32_t cbid;
-    const uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-      if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
-    }
-    // add true successors
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-
-uint32_t Pass::MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) {
-  auto merge_ii = blk.cend();
-  --merge_ii;
-  if (cbid != nullptr) {
-    *cbid = 0;
-  }
-  uint32_t mbid = 0;
-  if (merge_ii != blk.cbegin()) {
-    --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-      if (cbid != nullptr) {
-        *cbid =
-            merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
-      }
-    } else if (merge_ii->opcode() == SpvOpSelectionMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-    }
-  }
-  return mbid;
-}
 }  // namespace opt
 }  // namespace spvtools
 

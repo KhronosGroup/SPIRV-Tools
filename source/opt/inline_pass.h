@@ -166,7 +166,8 @@ class InlinePass : public Pass {
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;
 
-  // Map from block's label id to block.
+  // Map from block's label id to block. TODO(dnovillo): This is superfluous wrt
+  // opt::CFG. It has functionality not present in opt::CFG. Consolidate.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 
   // Set of ids of functions with multiple returns.
@@ -180,6 +181,13 @@ class InlinePass : public Pass {
 
   // result id for OpConstantFalse
   uint32_t false_id_;
+
+  // Map from block to its structured successor blocks. See
+  // ComputeStructuredSuccessors() for definition. TODO(dnovillo): This is
+  // superfluous wrt opt::CFG, but it seems to be computed in a slightly
+  // different way in the inliner. Can these be consolidated?
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+      block2structured_succs_;
 };
 
 }  // namespace opt

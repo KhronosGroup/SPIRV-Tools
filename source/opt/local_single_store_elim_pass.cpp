@@ -132,16 +132,16 @@ void LocalSingleStoreElimPass::CalculateImmediateDominators(
   // Compute Augmented CFG
   augmented_successors_map_.clear();
   augmented_predecessors_map_.clear();
-  successors_map_[&pseudo_exit_block_] = {};
-  predecessors_map_[&pseudo_entry_block_] = {};
+  successors_map_[cfg()->pseudo_exit_block()] = {};
+  predecessors_map_[cfg()->pseudo_entry_block()] = {};
   auto succ_func = [this](const ir::BasicBlock* b)
     { return &successors_map_[b]; };
   auto pred_func = [this](const ir::BasicBlock* b)
     { return &predecessors_map_[b]; };
   CFA<ir::BasicBlock>::ComputeAugmentedCFG(
     ordered_blocks,
-    &pseudo_entry_block_,
-    &pseudo_exit_block_,
+    cfg()->pseudo_entry_block(),
+    cfg()->pseudo_exit_block(),
     &augmented_successors_map_,
     &augmented_predecessors_map_,
     succ_func,

@@ -64,6 +64,7 @@ class BasicBlock {
   // Otherwise return null.  May be used whenever tail() can be used.
   const Instruction* GetMergeInst() const;
   Instruction* GetMergeInst();
+
   // Returns the OpLoopMerge instruciton in this basic block, if it exists.
   // Otherwise return null.  May be used whenever tail() can be used.
   const Instruction* GetLoopMergeInst() const;
@@ -84,6 +85,7 @@ class BasicBlock {
     assert(!insts_.empty());
     return --end();
   }
+
   // Returns a const iterator, but othewrise similar to tail().
   const_iterator ctail() const {
     assert(!insts_.empty());
@@ -118,6 +120,22 @@ class BasicBlock {
     return count > 0;
   }
 
+  // Return true if this block is a loop header block.
+  bool IsLoopHeader() const {
+    auto iItr = cend();
+    --iItr;
+    if (iItr == cbegin()) {
+      return false;
+    }
+    --iItr;
+    return iItr->opcode() == SpvOpLoopMerge;
+  }
+
+  // Returns the ID of the merge block declared by a merge instruction in this
+  // block, if any.  If none, returns zero.  If |cbid| is not nullptr, the ID of
+  // the continue block in the merge instruction is set in |*cbid|.
+  uint32_t MergeBlockIdIfAny(uint32_t* cbid);
+
  private:
   // The enclosing function.
   Function* function_;
@@ -136,7 +154,7 @@ inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
 
 inline void BasicBlock::AddInstructions(BasicBlock* bp) {
   auto bEnd = end();
-  (void) bEnd.MoveBefore(&bp->insts_);
+  (void)bEnd.MoveBefore(&bp->insts_);
 }
 
 inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
@@ -152,8 +170,8 @@ inline void BasicBlock::ForEachInst(
     static_cast<const Instruction*>(label_.get())
         ->ForEachInst(f, run_on_debug_line_insts);
   for (const auto& inst : insts_)
-    static_cast<const Instruction*>(&inst)
-        ->ForEachInst(f, run_on_debug_line_insts);
+    static_cast<const Instruction*>(&inst)->ForEachInst(
+        f, run_on_debug_line_insts);
 }
 
 inline void BasicBlock::ForEachPhiInst(

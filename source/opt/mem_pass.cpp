@@ -16,6 +16,7 @@
 
 #include "mem_pass.h"
 
+#include "basic_block.h"
 #include "cfa.h"
 #include "iterator.h"
 
@@ -272,18 +273,8 @@ void MemPass::InitSSARewrite(ir::Function* func) {
   visitedBlocks_.clear();
   type2undefs_.clear();
   supported_ref_vars_.clear();
-  block2structured_succs_.clear();
-  label2preds_.clear();
   label2ssa_map_.clear();
   phis_to_patch_.clear();
-
-  // Init predecessors
-  label2preds_.clear();
-  for (auto& blk : *func) {
-    uint32_t blkId = blk.id();
-    blk.ForEachSuccessorLabel(
-        [&blkId, this](uint32_t sbid) { label2preds_[sbid].push_back(blkId); });
-  }
 
   // Collect target (and non-) variable sets. Remove variables with
   // non-load/store refs from target variable set
@@ -319,7 +310,7 @@ bool MemPass::IsLiveAfter(uint32_t var_id, uint32_t label) const {
 void MemPass::SSABlockInitSinglePred(ir::BasicBlock* block_ptr) {
   // Copy map entry from single predecessor
   const uint32_t label = block_ptr->id();
-  const uint32_t predLabel = label2preds_[label].front();
+  const uint32_t predLabel = cfg()->preds(label).front();
   assert(visitedBlocks_.find(predLabel) != visitedBlocks_.end());
   label2ssa_map_[label] = label2ssa_map_[predLabel];
 }
@@ -342,7 +333,7 @@ void MemPass::SSABlockInitLoopHeader(
 
   // Determine the back-edge label.
   uint32_t backLabel = 0;
-  for (uint32_t predLabel : label2preds_[label])
+  for (uint32_t predLabel : cfg()->preds(label))
     if (visitedBlocks_.find(predLabel) == visitedBlocks_.end()) {
       assert(backLabel == 0);
       backLabel = predLabel;
@@ -362,7 +353,7 @@ void MemPass::SSABlockInitLoopHeader(
   // generated based on order and test results will otherwise vary across
   // platforms.
   std::map<uint32_t, uint32_t> liveVars;
-  for (uint32_t predLabel : label2preds_[label]) {
+  for (uint32_t predLabel : cfg()->preds(label)) {
     for (auto var_val : label2ssa_map_[predLabel]) {
       uint32_t varId = var_val.first;
       liveVars[varId] = var_val.second;
@@ -395,7 +386,7 @@ void MemPass::SSABlockInitLoopHeader(
     const uint32_t val0Id = var_val.second;
     bool needsPhi = false;
     if (val0Id != 0) {
-      for (uint32_t predLabel : label2preds_[label]) {
+      for (uint32_t predLabel : cfg()->preds(label)) {
         // Skip back edge predecessor.
         if (predLabel == backLabel) continue;
         const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
@@ -426,7 +417,7 @@ void MemPass::SSABlockInitLoopHeader(
     // use undef.
     std::vector<ir::Operand> phi_in_operands;
     uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
-    for (uint32_t predLabel : label2preds_[label]) {
+    for (uint32_t predLabel : cfg()->preds(label)) {
       uint32_t valId;
       if (predLabel == backLabel) {
         valId = varId;
@@ -462,7 +453,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
   // predecesors. Must be ordered map because phis are generated based on
   // order and test results will otherwise vary across platforms.
   std::map<uint32_t, uint32_t> liveVars;
-  for (uint32_t predLabel : label2preds_[label]) {
+  for (uint32_t predLabel : cfg()->preds(label)) {
     assert(visitedBlocks_.find(predLabel) != visitedBlocks_.end());
     for (auto var_val : label2ssa_map_[predLabel]) {
       const uint32_t varId = var_val.first;
@@ -477,7 +468,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     if (!IsLiveAfter(varId, label)) continue;
     const uint32_t val0Id = var_val.second;
     bool differs = false;
-    for (uint32_t predLabel : label2preds_[label]) {
+    for (uint32_t predLabel : cfg()->preds(label)) {
       const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
       // Missing values cause a difference because we'll need to create an
       // undef for that predecessor.
@@ -499,7 +490,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     // id to the map.
     std::vector<ir::Operand> phi_in_operands;
     const uint32_t typeId = GetPointeeTypeId(get_def_use_mgr()->GetDef(varId));
-    for (uint32_t predLabel : label2preds_[label]) {
+    for (uint32_t predLabel : cfg()->preds(label)) {
       const auto var_val_itr = label2ssa_map_[predLabel].find(varId);
       // If variable not defined on this path, use undef
       const uint32_t valId = (var_val_itr != label2ssa_map_[predLabel].end())
@@ -521,11 +512,11 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
 }
 
 void MemPass::SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr) {
-  const size_t numPreds = label2preds_[(*block_itr)->id()].size();
+  const size_t numPreds = cfg()->preds((*block_itr)->id()).size();
   if (numPreds == 0) return;
   if (numPreds == 1)
     SSABlockInitSinglePred(*block_itr);
-  else if (IsLoopHeader(*block_itr))
+  else if ((*block_itr)->IsLoopHeader())
     SSABlockInitLoopHeader(block_itr);
   else
     SSABlockInitMultiPred(*block_itr);
@@ -557,7 +548,7 @@ bool MemPass::IsTargetVar(uint32_t varId) {
 }
 
 void MemPass::PatchPhis(uint32_t header_id, uint32_t back_id) {
-  ir::BasicBlock* header = id2block_[header_id];
+  ir::BasicBlock* header = cfg()->block(header_id);
   auto phiItr = header->begin();
   for (; phiItr->opcode() == SpvOpPhi; ++phiItr) {
     // Only patch phis that we created in a loop header.
@@ -600,10 +591,14 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
   // simplest?) to make sure all predecessors blocks are processed before
   // a block itself.
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &pseudo_entry_block_, &structuredOrder);
+  cfg()->ComputeStructuredOrder(func, cfg()->pseudo_entry_block(),
+                                &structuredOrder);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     // Skip pseudo entry block
-    if (*bi == &pseudo_entry_block_) continue;
+    if (cfg()->IsPseudoEntryBlock(*bi)) {
+      continue;
+    }
+
     // Initialize this block's label2ssa_map_ entry using predecessor maps.
     // Then process all stores and loads of targeted variables.
     SSABlockInit(bi);
@@ -725,7 +720,7 @@ void MemPass::RemovePhiOperands(
     assert(i % 2 == 0 && i < phi->NumOperands() - 1 &&
            "malformed Phi arguments");
 
-    ir::BasicBlock *in_block = label2block_[phi->GetSingleWordOperand(i + 1)];
+    ir::BasicBlock *in_block = cfg()->block(phi->GetSingleWordOperand(i + 1));
     if (reachable_blocks.find(in_block) == reachable_blocks.end()) {
       // If the incoming block is unreachable, remove both operands as this
       // means that the |phi| has lost an incoming edge.
@@ -798,7 +793,7 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
 
   auto mark_reachable = [&reachable_blocks, &visited_blocks, &worklist,
                          this](uint32_t label_id) {
-    auto successor = label2block_[label_id];
+    auto successor = cfg()->block(label_id);
     if (visited_blocks.count(successor) == 0) {
       reachable_blocks.insert(successor);
       worklist.push(successor);
@@ -855,16 +850,13 @@ bool MemPass::CFGCleanup(ir::Function* func) {
 }
 
 void MemPass::InitializeCFGCleanup(ir::IRContext* c) {
-  // Initialize block lookup map.
-  label2block_.clear();
+  // Build a map between SSA names to the block they are defined in.
+  //
+  // TODO(dnovillo): This is expensive and unnecessary if ir::Instruction
+  // instances could figure out what basic block they belong to. Remove this
+  // once this is possible.
   for (auto& fn : *c->module()) {
     for (auto& block : fn) {
-      label2block_[block.id()] = &block;
-
-      // Build a map between SSA names to the block they are defined in.
-      // TODO(dnovillo): This is expensive and unnecessary if ir::Instruction
-      // instances could figure out what basic block they belong to. Remove this
-      // once this is possible.
       block.ForEachInst([this, &block](ir::Instruction* inst) {
         uint32_t result_id = inst->result_id();
         if (result_id > 0) {
@@ -874,7 +866,6 @@ void MemPass::InitializeCFGCleanup(ir::IRContext* c) {
     }
   }
 }
-
 
 }  // namespace opt
 }  // namespace spvtools

@@ -344,18 +344,19 @@ bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
 }
 
 void CommonUniformElimPass::ComputeStructuredSuccessors(ir::Function* func) {
+  block2structured_succs_.clear();
   for (auto& blk : *func) {
     // If header, make merge block first successor.
     uint32_t cbid;
-    const uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
+    const uint32_t mbid = blk.MergeBlockIdIfAny(&cbid);
     if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      block2structured_succs_[&blk].push_back(cfg()->block(mbid));
       if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
+        block2structured_succs_[&blk].push_back(cfg()->block(mbid));
     }
     // add true successors
     blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
+      block2structured_succs_[&blk].push_back(cfg()->block(sbid));
     });
   }
 }
@@ -445,8 +446,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
     // If we are outside of any control construct and entering one, remember
     // the id of the merge block
     if (mergeBlockId == 0) {
-      uint32_t dummy;
-      mergeBlockId = MergeBlockIdIfAny(*bp, &dummy);
+      mergeBlockId = bp->MergeBlockIdIfAny(nullptr);
     }
   }
   return modified;

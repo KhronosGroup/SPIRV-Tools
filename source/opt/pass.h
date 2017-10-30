@@ -16,18 +16,18 @@
 #define LIBSPIRV_OPT_PASS_H_
 
 #include <algorithm>
-#include <list>
 #include <map>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
+#include "basic_block.h"
+#include "cfg.h"
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "module.h"
 #include "spirv-tools/libspirv.hpp"
-#include "basic_block.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -85,6 +85,10 @@ class Pass {
   // Returns a pointer to the current context for this pass.
   ir::IRContext* context() const { return context_; }
 
+  // Returns a pointer to the CFG for current module. TODO(dnovillo): This
+  // should belong in IRContext.
+  CFG *cfg() const { return cfg_.get(); }
+
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
 
@@ -121,36 +125,8 @@ class Pass {
     context_ = c;
     next_id_ = context_->IdBound();
     def_use_mgr_.reset(new analysis::DefUseManager(consumer(), get_module()));
-    block2structured_succs_.clear();
-    label2preds_.clear();
-    id2block_.clear();
-    for (auto& fn : *context_->module()) {
-      for (auto& blk : fn) {
-        id2block_[blk.id()] = &blk;
-      }
-    }
+    cfg_.reset(new CFG(get_module()));
   }
-
-  // Return true if |block_ptr| points to a loop header block. TODO(dnovillo)
-  // This belongs in a CFG class.
-  bool IsLoopHeader(ir::BasicBlock* block_ptr) const;
-
-  // Compute structured successors for function |func|. A block's structured
-  // successors are the blocks it branches to together with its declared merge
-  // block and continue block if it has them. When order matters, the merge
-  // block and continue block always appear first. This assures correct depth
-  // first search in the presence of early returns and kills. If the successor
-  // vector contain duplicates of the merge or continue blocks, they are safely
-  // ignored by DFS. TODO(dnovillo): This belongs in a CFG class.
-  void ComputeStructuredSuccessors(ir::Function* func);
-
-  // Compute structured block order into |structuredOrder| for |func| starting
-  // at |root|. This order has the property that dominators come before all
-  // blocks they dominate and merge blocks come after all blocks that are in
-  // the control constructs of their header. TODO(dnovillo): This belongs in
-  // a CFG class.
-  void ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
-                              std::list<ir::BasicBlock*>* order);
 
   // Return type id for |ptrInst|'s pointee
   uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
@@ -163,31 +139,7 @@ class Pass {
     return retval;
   }
 
-  // Returns the id of the merge block declared by a merge instruction in this
-  // block, if any.  If none, returns zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid);
-
-  // Map from block to its structured successor blocks. See
-  // ComputeStructuredSuccessors() for definition.
-  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-      block2structured_succs_;
-
-  // Extra block whose successors are all blocks with no predecessors
-  // in function.
-  ir::BasicBlock pseudo_entry_block_;
-
-  // Augmented CFG Exit Block.
-  ir::BasicBlock pseudo_exit_block_;
-
-  // Map from block's label id to its predecessor blocks ids
-  std::unordered_map<uint32_t, std::vector<uint32_t>> label2preds_;
-
-  // Map from block's label id to block.
-  std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
-
  private:
-  using cbb_ptr = const ir::BasicBlock*;
-
   MessageConsumer consumer_;  // Message consumer.
 
   // Def-Uses for the module we are processing
@@ -196,8 +148,11 @@ class Pass {
   // Next unused ID
   uint32_t next_id_;
 
-  // The module that the pass is being applied to.
+  // The context that this pass belongs to.
   ir::IRContext* context_;
+
+  // The CFG for all the functions in this module.
+  std::unique_ptr<CFG> cfg_;
 };
 
 }  // namespace opt

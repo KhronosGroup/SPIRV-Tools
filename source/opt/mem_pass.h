@@ -232,10 +232,6 @@ class MemPass : public Pass {
   // patching of the value for the loop back-edge.
   std::unordered_set<uint32_t> phis_to_patch_;
 
-  // Map from block's label id to block. TODO(dnovillo): Basic blocks ought to
-  // have basic blocks in their pred/succ list.
-  std::unordered_map<uint32_t, ir::BasicBlock*> label2block_;
-
   // Map from an instruction result ID to the block that holds it.
   // TODO(dnovillo): This would be unnecessary if ir::Instruction instances
   // knew what basic block they belong to.

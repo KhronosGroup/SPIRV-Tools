@@ -175,7 +175,7 @@ void DeadBranchElimPass::ComputeBackEdges(
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   // Traverse blocks in structured order
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
+  cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   ComputeBackEdges(structuredOrder);
   std::unordered_set<ir::BasicBlock*> elimBlocks;
   bool modified = false;
@@ -289,7 +289,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       pii->ForEachInId(
           [&deadPreds,&icnt,&lcnt,&lidx,this](uint32_t* idp) {
         if (icnt % 2 == 1) {
-          if (deadPreds.find(id2block_[*idp]) == deadPreds.end()) {
+          if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
             ++lcnt;
             lidx = icnt - 1;
           }
@@ -311,7 +311,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         pii->ForEachInId(
             [&deadPreds,&icnt,&phi_in_opnds,&lastId,this](uint32_t* idp) {
           if (icnt % 2 == 1) {
-            if (deadPreds.find(id2block_[*idp]) == deadPreds.end()) {
+            if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
               phi_in_opnds.push_back(
                   {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {lastId}});
               phi_in_opnds.push_back(
@@ -347,15 +347,6 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
 
 void DeadBranchElimPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-
-  // Initialize function and block maps
-  id2block_.clear();
-  block2structured_succs_.clear();
-
-  // Initialize block map
-  for (auto& fn : *get_module())
-    for (auto& blk : fn)
-      id2block_[blk.id()] = &blk;
 
   // Initialize extension whitelist
   InitExtensions();

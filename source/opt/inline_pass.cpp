@@ -563,7 +563,7 @@ bool InlinePass::HasMultipleReturns(ir::Function* func) {
 void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
   // If header, make merge block first successor.
   for (auto& blk : *func) {
-    uint32_t mbid = MergeBlockIdIfAny(blk, nullptr);
+    uint32_t mbid = blk.MergeBlockIdIfAny(nullptr);
     if (mbid != 0)
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
     // add true successors
@@ -572,6 +572,7 @@ void InlinePass::ComputeStructuredSuccessors(ir::Function* func) {
     });
   }
 }
+
 InlinePass::GetBlocksFunction InlinePass::StructuredSuccessorsFunction() {
   return [this](const ir::BasicBlock* block) {
     return &(block2structured_succs_[block]);
