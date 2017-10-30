@@ -593,7 +593,6 @@ Pass::Status CommonUniformElimPass::ProcessImpl() {
     return EliminateCommonUniform(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
-  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

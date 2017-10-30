@@ -41,6 +41,12 @@ class MemPass : public Pass {
   virtual ~MemPass() = default;
 
  protected:
+  // Initialize basic data structures for the pass.
+  void InitializeProcessing(ir::Module* module) {
+    Pass::InitializeProcessing(module);
+    FindNamedOrDecoratedIds();
+  }
+
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsBaseTargetType(const ir::Instruction* typeInst) const;
@@ -73,9 +79,6 @@ class MemPass : public Pass {
 
   // Kill all name and decorate ops using |id|
   void KillNamesAndDecorates(uint32_t id);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
 
   // Return true if any instruction loads from |varId|
   bool HasLoads(uint32_t varId) const;
@@ -183,6 +186,9 @@ class MemPass : public Pass {
   // Return true if variable is loaded in block with |label| or in any
   // succeeding block in structured order.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
+
+  // Collect all named or decorated ids in module.
+  void FindNamedOrDecoratedIds();
 
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;

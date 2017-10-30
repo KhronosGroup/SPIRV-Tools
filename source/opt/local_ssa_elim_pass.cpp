@@ -82,14 +82,11 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-  // Collect all named and decorated ids
-  FindNamedOrDecoratedIds();
   // Process functions
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateMultiStoreLocal(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
-  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

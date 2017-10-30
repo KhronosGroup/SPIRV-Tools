@@ -290,14 +290,11 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-  // Collect all named and decorated ids
-  FindNamedOrDecoratedIds();
   // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) {
     return ConvertLocalAccessChains(fp);
   };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
-  FinalizeNextId();
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

@@ -113,7 +113,7 @@ class Pass {
   // manager, module and other attributes. TODO(dnovillo): Some of this should
   // be done during pass instantiation. Other things should be outside the pass
   // altogether (e.g., def-use manager).
-  void InitializeProcessing(ir::Module* module) {
+  virtual void InitializeProcessing(ir::Module* module) {
     module_ = module;
     next_id_ = module_->IdBound();
     def_use_mgr_.reset(new analysis::DefUseManager(consumer(), get_module()));
@@ -151,12 +151,11 @@ class Pass {
   uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
 
   // Return the next available Id and increment it.
-  inline uint32_t TakeNextId() { return next_id_++; }
-
-  // Write the next available Id back to the module.
-  inline void FinalizeNextId() {
-    assert(module_);
+  inline uint32_t TakeNextId() {
+    assert(module_ && next_id_ > 0);
+    uint32_t retval = next_id_++;
     module_->SetIdBound(next_id_);
+    return retval;
   }
 
   // Returns the id of the merge block declared by a merge instruction in this

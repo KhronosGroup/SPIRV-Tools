@@ -63,8 +63,6 @@ Pass::Status StrengthReductionPass::Process(ir::Module* module) {
 
   FindIntTypesAndConstants();
   modified = ScanFunctions();
-  // Have to reset the id bound.
-  FinalizeNextId();
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 

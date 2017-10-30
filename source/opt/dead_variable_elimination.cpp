@@ -27,7 +27,6 @@ Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
   // that might have references that are not explicit in this module, we use the
   // value kMustKeep as the reference count.
   InitializeProcessing(module);
-  FindNamedOrDecoratedIds();
 
   //  Decoration manager to help organize decorations.
   analysis::DecorationManager decoration_manager(module);

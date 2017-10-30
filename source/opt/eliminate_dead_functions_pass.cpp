@@ -31,7 +31,6 @@ Pass::Status EliminateDeadFunctionsPass::Process(ir::Module* module) {
   };
   ProcessReachableCallTree(mark_live, module);
 
-  FindNamedOrDecoratedIds();
   bool modified = false;
   for (auto funcIter = module->begin(); funcIter != module->end();) {
     if (live_function_set.count(&*funcIter) == 0) {

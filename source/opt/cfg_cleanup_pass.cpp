@@ -225,7 +225,6 @@ bool CFGCleanupPass::CFGCleanup(ir::Function* func) {
 
 void CFGCleanupPass::Initialize(ir::Module* module) {
   InitializeProcessing(module);
-  FindNamedOrDecoratedIds();
 
   // Initialize block lookup map.
   label2block_.clear();
@@ -253,7 +252,6 @@ Pass::Status CFGCleanupPass::Process(ir::Module* module) {
   // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) { return CFGCleanup(fp); };
   bool modified = ProcessReachableCallTree(pfn, module);
-  FinalizeNextId();
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
 }
