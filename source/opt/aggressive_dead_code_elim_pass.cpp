@@ -414,13 +414,6 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
   dead_insts_.clear();
   combinator_ops_shader_.clear();
   combinator_ops_glsl_std_450_.clear();
-  block2structured_succs_.clear();
-
-  // Initialize block map
-  id2block_.clear();
-  for (auto& fn : *get_module())
-    for (auto& blk : fn)
-      id2block_[blk.id()] = &blk;
 
   // Initialize extensions whitelist
   InitExtensions();
