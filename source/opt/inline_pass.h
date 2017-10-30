@@ -163,7 +163,7 @@ class InlinePass : public Pass {
   void InitializeInline(ir::IRContext* c);
 
   // Update the DefUseManager when cloning decorations.
-  std::function<void(ir::Instruction&, bool)> UpdateDefUseMgr;
+  std::function<void(ir::Instruction&, bool)> update_def_use_mgr_;
 
   // Decorations for the module we are processing TODO: move this to ir_context as well
   std::unique_ptr<analysis::DecorationManager> dec_mgr_;

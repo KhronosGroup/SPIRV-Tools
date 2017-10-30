@@ -30,10 +30,11 @@ namespace analysis {
 class DecorationManager {
  public:
   // Constructs a decoration manager from the given |module|
-  DecorationManager(ir::Module* module) {
-    AnalyzeDecorations(module);
-    module_ = module;
+  explicit DecorationManager(ir::Module* module) : module_(module) {
+    AnalyzeDecorations();
   }
+  DecorationManager() = delete;
+
   // Removes all decorations from |id|, which should not be a group ID, except
   // for linkage decorations if |keep_linkage| is set.
   void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
@@ -74,7 +75,7 @@ class DecorationManager {
       std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
-  void AnalyzeDecorations(ir::Module* module);
+  void AnalyzeDecorations();
 
   template <typename T>
   std::vector<T> InternalGetDecorationsFor(uint32_t id, bool include_linkage);
@@ -87,7 +88,7 @@ class DecorationManager {
   IdToDecorationInstsMap id_to_decoration_insts_;
   // Mapping from group ids to all the decoration instructions they apply.
   IdToDecorationInstsMap group_to_decoration_insts_;
-
+  // The enclosing module.
   ir::Module* module_;
 };
 
