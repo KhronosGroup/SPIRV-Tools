@@ -43,7 +43,7 @@ class LocalMultiStoreElimPass : public MemPass {
 
   LocalMultiStoreElimPass();
   const char* name() const override { return "eliminate-local-multi-store"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   // Initialize extensions whitelist
@@ -59,7 +59,7 @@ class LocalMultiStoreElimPass : public MemPass {
   // the runtime and effectiveness of this function.
   bool EliminateMultiStoreLocal(ir::Function* func);
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Extensions supported by this pass.

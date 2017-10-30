@@ -28,6 +28,7 @@
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,7 +38,7 @@ class InsertExtractElimPass : public Pass {
  public:
   InsertExtractElimPass();
   const char* name() const override { return "eliminate-insert-extract"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
 
  private:
   // Return true if indices of extract |extInst| and insert |insInst| match
@@ -67,7 +68,7 @@ class InsertExtractElimPass : public Pass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Extensions supported by this pass.

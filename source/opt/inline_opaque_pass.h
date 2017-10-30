@@ -35,7 +35,7 @@ class InlineOpaquePass : public InlinePass {
 
  public:
   InlineOpaquePass();
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
   const char* name() const override { return "inline-entry-points-opaque"; }
 
@@ -51,7 +51,7 @@ class InlineOpaquePass : public InlinePass {
   // if func is modified.
   bool InlineOpaque(ir::Function* func);
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 };
 

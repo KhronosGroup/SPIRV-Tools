@@ -27,6 +27,7 @@
 #include "module.h"
 #include "spirv-tools/libspirv.hpp"
 #include "basic_block.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -79,7 +80,10 @@ class Pass {
   }
 
   // Returns a pointer to the current module for this pass.
-  ir::Module* get_module() const { return module_; }
+  ir::Module* get_module() const { return context_->module(); }
+
+  // Returns a pointer to the current context for this pass.
+  ir::IRContext* context() const { return context_; }
 
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
@@ -92,7 +96,7 @@ class Pass {
   // Applies |pfn| to every function in the call trees rooted at the entry
   // points and exported functions.  Returns true if any call |pfn| returns
   // true.  By convention |pfn| should return true if it modified the module.
-  bool ProcessReachableCallTree(ProcessFunction& pfn, ir::Module* module);
+  bool ProcessReachableCallTree(ProcessFunction& pfn, ir::IRContext* irContext);
 
   // Applies |pfn| to every function in the call trees rooted at the elements of
   // |roots|.  Returns true if any call to |pfn| returns true.  By convention
@@ -106,21 +110,21 @@ class Pass {
   // Processes the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
   // succesful to indicate whether changes are made to the module.
-  virtual Status Process(ir::Module* module) = 0;
+  virtual Status Process(ir::IRContext* context) = 0;
 
  protected:
   // Initialize basic data structures for the pass. This sets up the def-use
   // manager, module and other attributes. TODO(dnovillo): Some of this should
   // be done during pass instantiation. Other things should be outside the pass
   // altogether (e.g., def-use manager).
-  virtual void InitializeProcessing(ir::Module* module) {
-    module_ = module;
-    next_id_ = module_->IdBound();
+  virtual void InitializeProcessing(ir::IRContext* c) {
+    context_ = c;
+    next_id_ = context_->IdBound();
     def_use_mgr_.reset(new analysis::DefUseManager(consumer(), get_module()));
     block2structured_succs_.clear();
     label2preds_.clear();
     id2block_.clear();
-    for (auto& fn : *module_) {
+    for (auto& fn : *context_->module()) {
       for (auto& blk : fn) {
         id2block_[blk.id()] = &blk;
       }
@@ -153,9 +157,9 @@ class Pass {
 
   // Return the next available Id and increment it.
   inline uint32_t TakeNextId() {
-    assert(module_ && next_id_ > 0);
+    assert(context_ && next_id_ > 0);
     uint32_t retval = next_id_++;
-    module_->SetIdBound(next_id_);
+    context_->SetIdBound(next_id_);
     return retval;
   }
 
@@ -193,7 +197,7 @@ class Pass {
   uint32_t next_id_;
 
   // The module that the pass is being applied to.
-  ir::Module* module_;
+  ir::IRContext* context_;
 };
 
 }  // namespace opt

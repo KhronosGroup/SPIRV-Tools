@@ -46,8 +46,8 @@ bool LocalMultiStoreElimPass::EliminateMultiStoreLocal(ir::Function* func) {
   return modified;
 }
 
-void LocalMultiStoreElimPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
+void LocalMultiStoreElimPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -92,8 +92,8 @@ Pass::Status LocalMultiStoreElimPass::ProcessImpl() {
 
 LocalMultiStoreElimPass::LocalMultiStoreElimPass() {}
 
-Pass::Status LocalMultiStoreElimPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status LocalMultiStoreElimPass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

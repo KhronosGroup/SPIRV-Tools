@@ -53,7 +53,7 @@ uint32_t InlinePass::AddPointerToType(uint32_t type_id,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_STORAGE_CLASS,
         {uint32_t(storage_class)}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {type_id}}}));
-  get_module()->AddType(std::move(type_inst));
+  context()->AddType(std::move(type_inst));
   return resultId;
 }
 
@@ -648,8 +648,8 @@ bool InlinePass::IsInlinableFunction(ir::Function* func) {
          no_return_in_loop_.cend();
 }
 
-void InlinePass::InitializeInline(ir::Module* module) {
-  InitializeProcessing(module);
+void InlinePass::InitializeInline(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   false_id_ = 0;
 

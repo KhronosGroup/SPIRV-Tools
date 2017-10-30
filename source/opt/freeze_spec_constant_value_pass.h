@@ -17,6 +17,7 @@
 
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,7 +26,7 @@ namespace opt {
 class FreezeSpecConstantValuePass : public Pass {
  public:
   const char* name() const override { return "freeze-spec-const"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
 };
 
 }  // namespace opt

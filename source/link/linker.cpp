@@ -105,7 +105,7 @@ static spv_result_t MergeModules(
 // TODO(pierremoreau): What should be the proper behaviour with built-in
 //                     symbols?
 static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
-                                         const Module& linked_module,
+                                         const ir::IRContext& linked_context,
                                          const DefUseManager& def_use_manager,
                                          const DecorationManager& decoration_manager,
                                          LinkageTable* linkings_to_do);
@@ -135,7 +135,7 @@ static spv_result_t CheckImportExportCompatibility(
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
-    Module* linked_module);
+    ir::IRContext* linked_context);
 
 // Structs for holding the data members for SpvLinker.
 struct Linker::Impl {
@@ -224,13 +224,14 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   libspirv::AssemblyGrammar grammar(impl_->context);
   res = MergeModules(consumer, modules, grammar, linked_module.get());
   if (res != SPV_SUCCESS) return res;
+  ir::IRContext linked_context(std::move(linked_module));
 
-  DefUseManager def_use_manager(consumer, linked_module.get());
+  DefUseManager def_use_manager(consumer, linked_context.module());
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
-  DecorationManager decoration_manager(linked_module.get());
-  res = GetImportExportPairs(consumer, *linked_module, def_use_manager,
+  DecorationManager decoration_manager(linked_context.module());
+  res = GetImportExportPairs(consumer, linked_context, def_use_manager,
                              decoration_manager, &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
@@ -243,30 +244,30 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   PassManager manager;
   manager.SetMessageConsumer(consumer);
   manager.AddPass<RemoveDuplicatesPass>();
-  opt::Pass::Status pass_res = manager.Run(linked_module.get());
+  opt::Pass::Status pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   // Phase 7: Remove linkage specific instructions, such as import/export
   // attributes, linkage capability, etc. if applicable
   res = RemoveLinkageSpecificInstructions(consumer, !options.GetCreateLibrary(),
                                           linkings_to_do, &decoration_manager,
-                                          linked_module.get());
+                                          &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 8: Rematch import variables/functions to export variables/functions
   // TODO(pierremoreau): Keep the previous DefUseManager up-to-date
-  DefUseManager def_use_manager2(consumer, linked_module.get());
+  DefUseManager def_use_manager2(consumer, linked_context.module());
   for (const auto& linking_entry : linkings_to_do)
     def_use_manager2.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
                                         linking_entry.exported_symbol.id);
 
   // Phase 9: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
-  pass_res = manager.Run(linked_module.get());
+  pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   // Phase 10: Output the module
-  linked_module->ToBinary(&linked_binary, true);
+  linked_context.module()->ToBinary(&linked_binary, true);
 
   return SPV_SUCCESS;
 }
@@ -476,7 +477,7 @@ static spv_result_t MergeModules(
 }
 
 static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
-                                         const Module& linked_module,
+                                         const ir::IRContext& linked_context,
                                          const DefUseManager& def_use_manager,
                                          const DecorationManager& decoration_manager,
                                          LinkageTable* linkings_to_do) {
@@ -491,7 +492,7 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
   std::unordered_map<std::string, std::vector<LinkageSymbolInfo>> exports;
 
   // Figure out the imports and exports
-  for (const auto& decoration : linked_module.annotations()) {
+  for (const auto& decoration : linked_context.annotations()) {
     if (decoration.opcode() != SpvOpDecorate ||
         decoration.GetSingleWordInOperand(1u) != SpvDecorationLinkageAttributes)
       continue;
@@ -532,8 +533,8 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
 
       // range-based for loop calls begin()/end(), but never cbegin()/cend(),
       // which will not work here.
-      for (auto func_iter = linked_module.cbegin();
-           func_iter != linked_module.cend(); ++func_iter) {
+      for (auto func_iter = linked_context.module()->cbegin();
+           func_iter != linked_context.module()->cend(); ++func_iter) {
         if (func_iter->result_id() != id) continue;
         func_iter->ForEachParam([&symbol_info](const Instruction* inst) {
           symbol_info.parameter_ids.push_back(inst->result_id());
@@ -628,7 +629,7 @@ static spv_result_t CheckImportExportCompatibility(
 static spv_result_t RemoveLinkageSpecificInstructions(
     const MessageConsumer& consumer, bool create_executable,
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
-    Module* linked_module) {
+    ir::IRContext* linked_context) {
   spv_position_t position = {};
 
   if (decoration_manager == nullptr)
@@ -638,7 +639,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
               "should "
               "not "
               "be empty.";
-  if (linked_module == nullptr)
+  if (linked_context == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
            << "|linked_module| of RemoveLinkageSpecificInstructions should not "
@@ -670,8 +671,8 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove prototypes of imported functions
   for (const auto& linking_entry : linkings_to_do) {
-    for (auto func_iter = linked_module->begin();
-         func_iter != linked_module->end();) {
+    for (auto func_iter = linked_context->module()->begin();
+         func_iter != linked_context->module()->end();) {
       if (func_iter->result_id() == linking_entry.imported_symbol.id)
         func_iter = func_iter.Erase();
       else
@@ -681,12 +682,12 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove declarations of imported variables
   for (const auto& linking_entry : linkings_to_do) {
-    for (auto& inst : linked_module->types_values())
+    for (auto& inst : linked_context->types_values())
       if (inst.result_id() == linking_entry.imported_symbol.id) inst.ToNop();
   }
 
   // Remove import linkage attributes
-  for (auto& inst : linked_module->annotations())
+  for (auto& inst : linked_context->annotations())
     if (inst.opcode() == SpvOpDecorate &&
         inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
         inst.GetSingleWordOperand(3u) == SpvLinkageTypeImport)
@@ -695,13 +696,13 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   // Remove export linkage attributes and Linkage capability if making an
   // executable
   if (create_executable) {
-    for (auto& inst : linked_module->annotations())
+    for (auto& inst : linked_context->annotations())
       if (inst.opcode() == SpvOpDecorate &&
           inst.GetSingleWordOperand(1u) == SpvDecorationLinkageAttributes &&
           inst.GetSingleWordOperand(3u) == SpvLinkageTypeExport)
         inst.ToNop();
 
-    for (auto& inst : linked_module->capabilities())
+    for (auto& inst : linked_context->capabilities())
       if (inst.GetSingleWordInOperand(0u) == SpvCapabilityLinkage) {
         inst.ToNop();
         // The RemoveDuplicatesPass did remove duplicated capabilities, so we

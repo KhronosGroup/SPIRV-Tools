@@ -35,7 +35,7 @@ class InlineExhaustivePass : public InlinePass {
 
  public:
   InlineExhaustivePass();
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
   const char* name() const override { return "inline-entry-points-exhaustive"; }
 
@@ -44,7 +44,7 @@ class InlineExhaustivePass : public InlinePass {
   // all code that is inlined into func. Return true if func is modified.
   bool InlineExhaustive(ir::Function* func);
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 };
 

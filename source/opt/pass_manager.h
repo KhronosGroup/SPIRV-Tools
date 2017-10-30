@@ -23,6 +23,7 @@
 #include "pass.h"
 
 #include "spirv-tools/libspirv.hpp"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -65,7 +66,7 @@ class PassManager {
   // whether changes are made to the module.
   //
   // After running all the passes, they are removed from the list.
-  Pass::Status Run(ir::Module* module);
+  Pass::Status Run(ir::IRContext* context);
 
  private:
   // Consumer for messages.

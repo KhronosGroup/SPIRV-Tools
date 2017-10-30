@@ -21,20 +21,20 @@ namespace opt {
 
 // This optimization removes global variables that are not needed because they
 // are definitely not accessed.
-Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
+Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
   // The algorithm will compute the reference count for every global variable.
   // Anything with a reference count of 0 will then be deleted.  For variables
-  // that might have references that are not explicit in this module, we use the
+  // that might have references that are not explicit in this context, we use the
   // value kMustKeep as the reference count.
-  InitializeProcessing(module);
+  InitializeProcessing(c);
 
   //  Decoration manager to help organize decorations.
-  analysis::DecorationManager decoration_manager(module);
+  analysis::DecorationManager decoration_manager(context()->module());
 
   std::vector<uint32_t> ids_to_remove;
 
   // Get the reference count for all of the global OpVariable instructions.
-  for (auto& inst : module->types_values()) {
+  for (auto& inst : context()->types_values()) {
     if (inst.opcode() != SpvOp::SpvOpVariable) {
       continue;
     }

@@ -27,17 +27,17 @@
 namespace spvtools {
 namespace opt {
 
-void CFGCleanupPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
-  InitializeCFGCleanup(module);
+void CFGCleanupPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
+  InitializeCFGCleanup(c);
 }
 
-Pass::Status CFGCleanupPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status CFGCleanupPass::Process(ir::IRContext* c) {
+  Initialize(c);
 
   // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) { return CFGCleanup(fp); };
-  bool modified = ProcessReachableCallTree(pfn, module);
+  bool modified = ProcessReachableCallTree(pfn, context());
   return modified ? Pass::Status::SuccessWithChange
                   : Pass::Status::SuccessWithoutChange;
 }

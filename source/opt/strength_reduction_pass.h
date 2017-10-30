@@ -18,6 +18,7 @@
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -26,7 +27,7 @@ namespace opt {
 class StrengthReductionPass : public Pass {
  public:
   const char* name() const override { return "strength-reduction"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
 
  private:
   // Replaces multiple by power of 2 with an equivalent bit shift.

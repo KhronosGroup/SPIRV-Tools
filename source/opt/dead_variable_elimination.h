@@ -27,7 +27,7 @@ namespace opt {
 class DeadVariableElimination : public MemPass {
  public:
   const char* name() const override { return "dead-variable-elimination"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   // Deletes the OpVariable instruction who result id is |result_id|.

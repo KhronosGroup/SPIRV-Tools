@@ -17,6 +17,7 @@
 #include "block_merge_pass.h"
 
 #include "iterator.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -94,8 +95,8 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
   return modified;
 }
 
-void BlockMergePass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
+void BlockMergePass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -126,8 +127,8 @@ Pass::Status BlockMergePass::ProcessImpl() {
 
 BlockMergePass::BlockMergePass() {}
 
-Pass::Status BlockMergePass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status BlockMergePass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

@@ -27,7 +27,7 @@ namespace opt {
 class EliminateDeadFunctionsPass : public MemPass {
  public:
   const char* name() const override { return "eliminate-dead-functions"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   void EliminateFunction(ir::Function* func);

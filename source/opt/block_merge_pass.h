@@ -28,6 +28,7 @@
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -37,7 +38,7 @@ class BlockMergePass : public Pass {
  public:
   BlockMergePass();
   const char* name() const override { return "merge-blocks"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
 
  private:
   // Return true if |labId| has multiple refs. Do not count OpName.
@@ -56,7 +57,7 @@ class BlockMergePass : public Pass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Extensions supported by this pass.

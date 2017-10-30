@@ -249,8 +249,8 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
   return modified;
 }
 
-void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
+void LocalAccessChainConvertPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   // Initialize Target Variable Caches
   seen_target_vars_.clear();
@@ -300,8 +300,8 @@ Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
 
 LocalAccessChainConvertPass::LocalAccessChainConvertPass() {}
 
-Pass::Status LocalAccessChainConvertPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status LocalAccessChainConvertPass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

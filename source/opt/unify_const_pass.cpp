@@ -19,6 +19,7 @@
 
 #include "def_use_manager.h"
 #include "make_unique.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -102,13 +103,13 @@ class ResultIdTrie {
 };
 }  // anonymous namespace
 
-Pass::Status UnifyConstantPass::Process(ir::Module* module) {
-  InitializeProcessing(module);
+Pass::Status UnifyConstantPass::Process(ir::IRContext* c) {
+  InitializeProcessing(c);
   bool modified = false;
   ResultIdTrie defined_constants;
-  analysis::DefUseManager def_use_mgr(consumer(), module);
+  analysis::DefUseManager def_use_mgr(consumer(), get_module());
 
-  for (ir::Instruction& inst : module->types_values()) {
+  for (ir::Instruction& inst : context()->types_values()) {
     // Do not handle the instruction when there are decorations upon the result
     // id.
     if (def_use_mgr.GetAnnotations(inst.result_id()).size() != 0) {

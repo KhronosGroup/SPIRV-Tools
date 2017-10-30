@@ -38,7 +38,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
  public:
   LocalSingleBlockLoadStoreElimPass();
   const char* name() const override { return "eliminate-local-single-block"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   // Return true if all uses of |varId| are only through supported reference
@@ -62,7 +62,7 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   // Return true if all extensions in this module are supported by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Map from function scope variable to a store of that variable in the

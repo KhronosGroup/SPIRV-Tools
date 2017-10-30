@@ -232,8 +232,8 @@ bool LocalSingleStoreElimPass::LocalSingleStoreElim(ir::Function* func) {
   return modified;
 }
 
-void LocalSingleStoreElimPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
+void LocalSingleStoreElimPass::Initialize(ir::IRContext* irContext) {
+  InitializeProcessing(irContext);
 
   // Initialize function and block maps
   label2block_.clear();
@@ -289,8 +289,8 @@ Pass::Status LocalSingleStoreElimPass::ProcessImpl() {
 
 LocalSingleStoreElimPass::LocalSingleStoreElimPass() {}
 
-Pass::Status LocalSingleStoreElimPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status LocalSingleStoreElimPass::Process(ir::IRContext* irContext) {
+  Initialize(irContext);
   return ProcessImpl();
 }
 

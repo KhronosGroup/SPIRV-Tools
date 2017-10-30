@@ -24,6 +24,7 @@
 
 #include "decoration_manager.h"
 #include "opcode.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -34,23 +35,23 @@ using ir::Operand;
 using opt::analysis::DefUseManager;
 using opt::analysis::DecorationManager;
 
-Pass::Status RemoveDuplicatesPass::Process(Module* module) {
-  DefUseManager defUseManager(consumer(), module);
-  DecorationManager decManager(module);
+Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* irContext) {
+  DefUseManager defUseManager(consumer(), irContext->module());
+  DecorationManager decManager(irContext->module());
 
-  bool modified = RemoveDuplicateCapabilities(module);
-  modified |= RemoveDuplicatesExtInstImports(module, defUseManager);
-  modified |= RemoveDuplicateTypes(module, defUseManager, decManager);
-  modified |= RemoveDuplicateDecorations(module);
+  bool modified = RemoveDuplicateCapabilities(irContext);
+  modified |= RemoveDuplicatesExtInstImports(irContext, defUseManager);
+  modified |= RemoveDuplicateTypes(irContext, defUseManager, decManager);
+  modified |= RemoveDuplicateDecorations(irContext);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(Module* module) const {
+bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(ir::IRContext* irContext) const {
   bool modified = false;
 
   std::unordered_set<uint32_t> capabilities;
-  for (auto i = module->capability_begin(); i != module->capability_end();) {
+  for (auto i = irContext->capability_begin(); i != irContext->capability_end();) {
     auto res = capabilities.insert(i->GetSingleWordOperand(0u));
 
     if (res.second) {
@@ -67,12 +68,12 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(Module* module) const {
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
-    Module* module, analysis::DefUseManager& defUseManager) const {
+    ir::IRContext* irContext, analysis::DefUseManager& defUseManager) const {
   bool modified = false;
 
   std::unordered_map<std::string, SpvId> extInstImports;
-  for (auto i = module->ext_inst_import_begin();
-       i != module->ext_inst_import_end();) {
+  for (auto i = irContext->ext_inst_import_begin();
+       i != irContext->ext_inst_import_end();) {
     auto res = extInstImports.emplace(
         reinterpret_cast<const char*>(i->GetInOperand(0u).words.data()),
         i->result_id());
@@ -91,14 +92,14 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    Module* module, DefUseManager& defUseManager,
+    ir::IRContext* irContext, DefUseManager& defUseManager,
     DecorationManager& decManager) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
 
-  for (auto i = module->types_values_begin();
-       i != module->types_values_end();) {
+  for (auto i = irContext->types_values_begin();
+       i != irContext->types_values_end();) {
     // We only care about types.
     if (!spvOpcodeGeneratesType((i->opcode())) &&
         i->opcode() != SpvOpTypeForwardPointer) {
@@ -131,19 +132,19 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
-    ir::Module* module) const {
+    ir::IRContext* irContext) const {
   bool modified = false;
 
   std::unordered_map<SpvId, const Instruction*> constants;
-  for (const auto& i : module->types_values())
+  for (const auto& i : irContext->types_values())
     if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
-  for (const auto& i : module->types_values())
+  for (const auto& i : irContext->types_values())
     if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
 
   std::vector<const Instruction*> visitedDecorations;
 
-  opt::analysis::DecorationManager decorationManager(module);
-  for (auto i = module->annotation_begin(); i != module->annotation_end();) {
+  opt::analysis::DecorationManager decorationManager(irContext->module());
+  for (auto i = irContext->annotation_begin(); i != irContext->annotation_end();) {
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
     bool alreadyVisited = false;

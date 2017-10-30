@@ -26,6 +26,7 @@
 #include "type_manager.h"
 #include "types.h"
 #include "util/parse_number.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -187,7 +188,7 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
 }
 };
 
-Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
+Pass::Status SetSpecConstantDefaultValuePass::Process(ir::IRContext* irContext) {
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -201,8 +202,8 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
   const uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
 
   bool modified = false;
-  analysis::DefUseManager def_use_mgr(consumer(), module);
-  analysis::TypeManager type_mgr(consumer(), *module);
+  analysis::DefUseManager def_use_mgr(consumer(), irContext->module());
+  analysis::TypeManager type_mgr(consumer(), *irContext->module());
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'
   // instructions. Then extract the decoration target of those instructions.
   // The decoration targets should be spec constant defining instructions with
@@ -212,7 +213,7 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::Module* module) {
   // is found for a spec id, the string will be parsed according to the target
   // spec constant type. The parsed value will be used to replace the original
   // default value of the target spec constant.
-  for (ir::Instruction& inst : module->annotations()) {
+  for (ir::Instruction& inst : irContext->annotations()) {
     // Only process 'OpDecorate SpecId' instructions
     if (inst.opcode() != SpvOp::SpvOpDecorate) continue;
     if (inst.NumOperands() != kOpDecorateSpecIdNumOperands) continue;

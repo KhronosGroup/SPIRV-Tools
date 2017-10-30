@@ -40,7 +40,7 @@ class LocalSingleStoreElimPass : public MemPass {
  public:
   LocalSingleStoreElimPass();
   const char* name() const override { return "eliminate-local-single-store"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* irContext) override;
 
  private:
   // Return true if all refs through |ptrId| are only loads or stores and
@@ -98,7 +98,7 @@ class LocalSingleStoreElimPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* irContext);
   Pass::Status ProcessImpl();
 
   // Map from block's label id to block

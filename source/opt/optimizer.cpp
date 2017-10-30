@@ -103,14 +103,15 @@ bool Optimizer::Run(const uint32_t* original_binary,
       BuildModule(impl_->target_env, impl_->pass_manager.consumer(),
                   original_binary, original_binary_size);
   if (module == nullptr) return false;
+  ir::IRContext context(std::move(module));
 
-  auto status = impl_->pass_manager.Run(module.get());
+  auto status = impl_->pass_manager.Run(&context);
   if (status == opt::Pass::Status::SuccessWithChange ||
       (status == opt::Pass::Status::SuccessWithoutChange &&
        (optimized_binary->data() != original_binary ||
         optimized_binary->size() != original_binary_size))) {
     optimized_binary->clear();
-    module->ToBinary(optimized_binary, /* skip_nop = */ true);
+    context.module()->ToBinary(optimized_binary, /* skip_nop = */ true);
   }
 
   return status != opt::Pass::Status::Failure;

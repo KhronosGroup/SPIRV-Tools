@@ -26,11 +26,11 @@ class CFGCleanupPass : public MemPass {
  public:
   CFGCleanupPass() = default;
   const char* name() const override { return "cfg-cleanup"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   // Initialize the pass.
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
 };
 
 }  // namespace opt

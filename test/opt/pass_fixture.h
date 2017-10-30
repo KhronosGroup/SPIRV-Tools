@@ -61,10 +61,12 @@ class PassTest : public TestT {
           opt::Pass::Status::Failure);
     }
 
-    const auto status = pass->Process(module.get());
+    ir::IRContext context(std::move(module));
+
+    const auto status = pass->Process(&context);
 
     std::vector<uint32_t> binary;
-    module->ToBinary(&binary, skip_nop);
+    context.module()->ToBinary(&binary, skip_nop);
     return std::make_tuple(binary, status);
   }
 
@@ -169,11 +171,12 @@ class PassTest : public TestT {
     std::unique_ptr<ir::Module> module = BuildModule(
         SPV_ENV_UNIVERSAL_1_1, nullptr, original, assemble_options_);
     ASSERT_NE(nullptr, module);
+    ir::IRContext context(std::move(module));
 
-    manager_->Run(module.get());
+    manager_->Run(&context);
 
     std::vector<uint32_t> binary;
-    module->ToBinary(&binary, /* skip_nop = */ false);
+    context.module()->ToBinary(&binary, /* skip_nop = */ false);
 
     std::string optimized;
     EXPECT_TRUE(tools_.Disassemble(binary, &optimized,

@@ -161,7 +161,7 @@ class InlinePass : public Pass {
       std::vector<std::unique_ptr<ir::BasicBlock>>& new_blocks);
 
   // Initialize state for optimization of |module|
-  void InitializeInline(ir::Module* module);
+  void InitializeInline(ir::IRContext* c);
 
   // Map from function's result id to function.
   std::unordered_map<uint32_t, ir::Function*> id2function_;

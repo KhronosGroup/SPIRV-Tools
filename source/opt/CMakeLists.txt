@@ -36,6 +36,7 @@ add_library(SPIRV-Tools-opt
   insert_extract_elim.h
   instruction.h
   ir_loader.h
+  ir_context.h
   local_access_chain_convert_pass.h
   local_single_block_elim_pass.h
   local_single_store_elim_pass.h
@@ -80,6 +81,7 @@ add_library(SPIRV-Tools-opt
   insert_extract_elim.cpp
   instruction.cpp
   ir_loader.cpp
+  ir_context.cpp
   local_access_chain_convert_pass.cpp
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
@@ -97,7 +99,8 @@ add_library(SPIRV-Tools-opt
   types.cpp
   type_manager.cpp
   unify_const_pass.cpp
-  instruction_list.cpp)
+  instruction_list.cpp
+)
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt

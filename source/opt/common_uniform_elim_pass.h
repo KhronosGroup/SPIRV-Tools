@@ -29,6 +29,7 @@
 #include "module.h"
 #include "basic_block.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -43,7 +44,7 @@ class CommonUniformElimPass : public Pass {
 
   CommonUniformElimPass();
   const char* name() const override { return "eliminate-common-uniform"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
 
  private:
   // Returns true if |opcode| is a non-ptr access chain op
@@ -173,7 +174,7 @@ class CommonUniformElimPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Decorations for the module we are processing

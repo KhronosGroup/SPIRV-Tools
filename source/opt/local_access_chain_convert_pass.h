@@ -38,7 +38,7 @@ class LocalAccessChainConvertPass : public MemPass {
  public:
   LocalAccessChainConvertPass();
   const char* name() const override { return "convert-local-access-chains"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
   using ProcessFunction = std::function<bool(ir::Function*)>;
 
@@ -107,7 +107,7 @@ class LocalAccessChainConvertPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // Variables with only supported references, ie. loads and stores using

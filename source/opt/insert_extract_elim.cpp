@@ -17,6 +17,7 @@
 #include "insert_extract_elim.h"
 
 #include "iterator.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -121,8 +122,8 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
   return modified;
 }
 
-void InsertExtractElimPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
+void InsertExtractElimPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -153,8 +154,8 @@ Pass::Status InsertExtractElimPass::ProcessImpl() {
 
 InsertExtractElimPass::InsertExtractElimPass() {}
 
-Pass::Status InsertExtractElimPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status InsertExtractElimPass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

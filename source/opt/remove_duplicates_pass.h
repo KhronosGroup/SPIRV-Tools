@@ -21,6 +21,7 @@
 #include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -32,7 +33,7 @@ using IdDecorationsList =
 class RemoveDuplicatesPass : public Pass {
  public:
   const char* name() const override { return "remove-duplicates"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext*) override;
   // Returns whether two types are equal, and have the same decorations.
   static bool AreTypesEqual(const ir::Instruction& inst1,
                             const ir::Instruction& inst2,
@@ -40,13 +41,13 @@ class RemoveDuplicatesPass : public Pass {
                             const analysis::DecorationManager& decoManager);
 
  private:
-  bool RemoveDuplicateCapabilities(ir::Module* module) const;
+  bool RemoveDuplicateCapabilities(ir::IRContext* irContext) const;
   bool RemoveDuplicatesExtInstImports(
-      ir::Module* module, analysis::DefUseManager& defUseManager) const;
-  bool RemoveDuplicateTypes(ir::Module* module,
+      ir::IRContext* irContext, analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicateTypes(ir::IRContext* irContext,
                             analysis::DefUseManager& defUseManager,
                             analysis::DecorationManager& decManager) const;
-  bool RemoveDuplicateDecorations(ir::Module* module) const;
+  bool RemoveDuplicateDecorations(ir::IRContext* irContext) const;
 };
 
 }  // namespace opt

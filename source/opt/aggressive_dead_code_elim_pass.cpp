@@ -395,9 +395,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   return modified;
 }
 
-void AggressiveDCEPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
-  InitializeCFGCleanup(module);
+void AggressiveDCEPass::Initialize(ir::IRContext* c) {
+  InitializeProcessing(c);
+  InitializeCFGCleanup(c);
 
   // Clear collections
   worklist_ = std::queue<ir::Instruction*>{};
@@ -436,8 +436,8 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
 AggressiveDCEPass::AggressiveDCEPass() {}
 
-Pass::Status AggressiveDCEPass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status AggressiveDCEPass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

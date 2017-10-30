@@ -24,6 +24,7 @@
 #include "module.h"
 #include "pass.h"
 #include "type_manager.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -35,19 +36,19 @@ class FoldSpecConstantOpAndCompositePass : public Pass {
 
   const char* name() const override { return "fold-spec-const-op-composite"; }
 
-  Status Process(ir::Module* module) override;
+  Status Process(ir::IRContext* irContext) override;
 
  private:
   // Initializes the type manager, def-use manager and get the maximal id used
   // in the module.
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* irContext);
 
   // The real entry of processing. Iterates through the types-constants-globals
   // section of the given module, finds the Spec Constants defined with
   // OpSpecConstantOp and OpSpecConstantComposite instructions. If the result
   // value of those spec constants can be folded, fold them to their
   // corresponding normal constants.
-  Status ProcessImpl(ir::Module*);
+  Status ProcessImpl(ir::IRContext* irContext);
 
   // Processes the OpSpecConstantOp instruction pointed by the given
   // instruction iterator, folds it to normal constants if possible. Returns

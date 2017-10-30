@@ -23,6 +23,7 @@
 #include "def_use_manager.h"
 #include "log.h"
 #include "reflect.h"
+#include "ir_context.h"
 
 namespace {
 // Count the number of trailing zeros in the binary representation of
@@ -52,8 +53,8 @@ bool IsPowerOf2(uint32_t val) {
 namespace spvtools {
 namespace opt {
 
-Pass::Status StrengthReductionPass::Process(ir::Module* module) {
-  InitializeProcessing(module);
+Pass::Status StrengthReductionPass::Process(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   // Initialize the member variables on a per module basis.
   bool modified = false;
@@ -199,7 +200,7 @@ uint32_t StrengthReductionPass::CreateUint32Type() {
                           {0});
   std::unique_ptr<ir::Instruction> newType(new ir::Instruction(
       SpvOp::SpvOpTypeInt, type_id, 0, {widthOperand, signOperand}));
-  get_module()->AddType(std::move(newType));
+  context()->AddType(std::move(newType));
   return type_id;
 }
 

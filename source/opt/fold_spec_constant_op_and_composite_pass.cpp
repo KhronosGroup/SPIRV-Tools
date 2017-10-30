@@ -20,6 +20,7 @@
 
 #include "constants.h"
 #include "make_unique.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -244,21 +245,21 @@ std::vector<uint32_t> OperateVectors(
 FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass()
     : max_id_(0), type_mgr_(nullptr), id_to_const_val_() {}
 
-Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::Module* module) {
-  Initialize(module);
-  return ProcessImpl(module);
+Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::IRContext* irContext) {
+  Initialize(irContext);
+  return ProcessImpl(irContext);
 }
 
-void FoldSpecConstantOpAndCompositePass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
-  type_mgr_.reset(new analysis::TypeManager(consumer(), *module));
+void FoldSpecConstantOpAndCompositePass::Initialize(ir::IRContext* irContext) {
+  InitializeProcessing(irContext);
+  type_mgr_.reset(new analysis::TypeManager(consumer(), *irContext->module()));
   for (const auto& id_def : get_def_use_mgr()->id_to_defs()) {
     max_id_ = std::max(max_id_, id_def.first);
   }
 };
 
 Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
-    ir::Module* module) {
+    ir::IRContext* irContext) {
   bool modified = false;
   // Traverse through all the constant defining instructions. For Normal
   // Constants whose values are determined and do not depend on OpUndef
@@ -280,10 +281,10 @@ Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
   // the dependee Spec Constants, all its dependent constants must have been
   // processed and all its dependent Spec Constants should have been folded if
   // possible.
-  for (ir::Module::inst_iterator inst_iter = module->types_values_begin();
+  for (ir::Module::inst_iterator inst_iter = irContext->types_values_begin();
        // Need to re-evaluate the end iterator since we may modify the list of
        // instructions in this section of the module as the process goes.
-       inst_iter != module->types_values_end(); ++inst_iter) {
+       inst_iter != irContext->types_values_end(); ++inst_iter) {
     ir::Instruction* inst = &*inst_iter;
     // Collect constant values of normal constants and process the
     // OpSpecConstantOp and OpSpecConstantComposite instructions if possible.

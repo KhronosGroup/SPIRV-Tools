@@ -49,8 +49,8 @@ bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
   return modified;
 }
 
-void InlineExhaustivePass::Initialize(ir::Module* module) {
-  InitializeInline(module);
+void InlineExhaustivePass::Initialize(ir::IRContext* c) {
+  InitializeInline(c);
 };
 
 Pass::Status InlineExhaustivePass::ProcessImpl() {
@@ -64,8 +64,8 @@ Pass::Status InlineExhaustivePass::ProcessImpl() {
 
 InlineExhaustivePass::InlineExhaustivePass() {}
 
-Pass::Status InlineExhaustivePass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status InlineExhaustivePass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

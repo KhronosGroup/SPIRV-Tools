@@ -43,7 +43,7 @@ class AggressiveDCEPass : public MemPass {
 
   AggressiveDCEPass();
   const char* name() const override { return "eliminate-dead-code-aggressive"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* c) override;
 
  private:
   // Return true if |varId| is variable of |storageClass|.
@@ -127,7 +127,7 @@ class AggressiveDCEPass : public MemPass {
   // TODO(): Remove useless control constructs.
   bool AggressiveDCE(ir::Function* func);
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // True if current function has a call instruction contained in it

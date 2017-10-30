@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "compact_ids_pass.h"
+#include "ir_context.h"
 
 #include <cassert>
 #include <unordered_map>
@@ -23,13 +24,13 @@ namespace opt {
 using ir::Instruction;
 using ir::Operand;
 
-Pass::Status CompactIdsPass::Process(ir::Module* module) {
-  InitializeProcessing(module);
+Pass::Status CompactIdsPass::Process(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   bool modified = false;
   std::unordered_map<uint32_t, uint32_t> result_id_mapping;
 
-  module->ForEachInst([&result_id_mapping, &modified] (Instruction* inst) {
+  c->module()->ForEachInst([&result_id_mapping, &modified] (Instruction* inst) {
     auto operand = inst->begin();
     while (operand != inst->end()) {
       const auto type = operand->type;
@@ -60,7 +61,7 @@ Pass::Status CompactIdsPass::Process(ir::Module* module) {
   }, true);
 
   if (modified)
-    module->SetIdBound(static_cast<uint32_t>(result_id_mapping.size() + 1));
+    c->SetIdBound(static_cast<uint32_t>(result_id_mapping.size() + 1));
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

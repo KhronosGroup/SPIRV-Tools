@@ -42,8 +42,8 @@ class MemPass : public Pass {
 
  protected:
   // Initialize basic data structures for the pass.
-  void InitializeProcessing(ir::Module* module) {
-    Pass::InitializeProcessing(module);
+  void InitializeProcessing(ir::IRContext* c) {
+    Pass::InitializeProcessing(c);
     FindNamedOrDecoratedIds();
   }
 
@@ -110,7 +110,7 @@ class MemPass : public Pass {
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
   // Initialize CFG Cleanup variables
-  void InitializeCFGCleanup(ir::Module* module);
+  void InitializeCFGCleanup(ir::IRContext* context);
 
   // Call all the cleanup helper functions on |func|.
   bool CFGCleanup(ir::Function* func);

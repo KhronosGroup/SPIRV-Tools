@@ -21,18 +21,19 @@
 #include "def_use_manager.h"
 #include "log.h"
 #include "reflect.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
 
-Pass::Status EliminateDeadConstantPass::Process(ir::Module* module) {
-  analysis::DefUseManager def_use(consumer(), module);
+Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
+  analysis::DefUseManager def_use(consumer(), irContext->module());
   std::unordered_set<ir::Instruction*> working_list;
   // Traverse all the instructions to get the initial set of dead constants as
   // working list and count number of real uses for constants. Uses in
   // annotation instructions do not count.
   std::unordered_map<ir::Instruction*, size_t> use_counts;
-  std::vector<ir::Instruction*> constants = module->GetConstants();
+  std::vector<ir::Instruction*> constants = irContext->GetConstants();
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;

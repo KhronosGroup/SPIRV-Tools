@@ -17,6 +17,7 @@
 
 #include "module.h"
 #include "pass.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -25,7 +26,7 @@ namespace opt {
 class StripDebugInfoPass : public Pass {
  public:
   const char* name() const override { return "strip-debug"; }
-  Status Process(ir::Module* module) override;
+  Status Process(ir::IRContext* irContext) override;
 };
 
 }  // namespace opt

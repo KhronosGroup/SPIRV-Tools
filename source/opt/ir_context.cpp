@@ -12,24 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_
-#define LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_
-
-#include "module.h"
-#include "pass.h"
 #include "ir_context.h"
-
-namespace spvtools {
-namespace opt {
-
-// See optimizer.hpp for documentation.
-class FlattenDecorationPass : public Pass {
- public:
-  const char* name() const override { return "flatten-decoration"; }
-  Status Process(ir::IRContext*) override;
-};
-
-}  // namespace opt
-}  // namespace spvtools
-
-#endif  // LIBSPIRV_OPT_FLATTEN_DECORATION_PASS_H_

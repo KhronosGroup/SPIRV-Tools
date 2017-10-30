@@ -854,10 +854,10 @@ bool MemPass::CFGCleanup(ir::Function* func) {
   return modified;
 }
 
-void MemPass::InitializeCFGCleanup(ir::Module* module) {
+void MemPass::InitializeCFGCleanup(ir::IRContext* c) {
   // Initialize block lookup map.
   label2block_.clear();
-  for (auto& fn : *module) {
+  for (auto& fn : *c->module()) {
     for (auto& block : fn) {
       label2block_[block.id()] = &block;
 

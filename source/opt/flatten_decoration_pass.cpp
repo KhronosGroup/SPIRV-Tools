@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "flatten_decoration_pass.h"
+#include "ir_context.h"
 
 #include <cassert>
 #include <vector>
@@ -28,8 +29,8 @@ using ir::Operand;
 using Words = std::vector<uint32_t>;
 using OrderedUsesMap = std::unordered_map<uint32_t, Words>;
 
-Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
-  InitializeProcessing(module);
+Pass::Status FlattenDecorationPass::Process(ir::IRContext* c) {
+  InitializeProcessing(c);
 
   bool modified = false;
 
@@ -44,7 +45,7 @@ Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
   // their indices, in of appearance.
   OrderedUsesMap member_uses;
 
-  auto annotations = module->annotations();
+  auto annotations = context()->annotations();
 
   // On the first pass, record each OpDecorationGroup with its ordered uses.
   // Rely on unordered_map::operator[] to create its entries on first access.
@@ -74,7 +75,7 @@ Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
   // equivalent normal and struct member uses.
   auto inst_iter = annotations.begin();
   // We have to re-evaluate the end pointer
-  while (inst_iter != module->annotations().end()) {
+  while (inst_iter != context()->annotations().end()) {
     // Should we replace this instruction?
     bool replace = false;
     switch (inst_iter->opcode()) {
@@ -145,8 +146,8 @@ Pass::Status FlattenDecorationPass::Process(ir::Module* module) {
   // An OpDecorationGroup instruction might not have been used by an
   // OpGroupDecorate or OpGroupMemberDecorate instruction.
   if (!group_ids.empty()) {
-    for (auto debug_inst_iter = module->debug2_begin();
-         debug_inst_iter != module->debug2_end();) {
+    for (auto debug_inst_iter = context()->debug2_begin();
+         debug_inst_iter != context()->debug2_end();) {
       if (debug_inst_iter->opcode() == SpvOp::SpvOpName) {
         const uint32_t target = debug_inst_iter->GetSingleWordOperand(0);
         if (group_ids.count(target)) {

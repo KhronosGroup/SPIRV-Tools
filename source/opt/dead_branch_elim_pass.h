@@ -44,7 +44,7 @@ class DeadBranchElimPass : public MemPass {
 
   DeadBranchElimPass();
   const char* name() const override { return "eliminate-dead-branches"; }
-  Status Process(ir::Module*) override;
+  Status Process(ir::IRContext* context) override;
 
  private:
   // If |condId| is boolean constant, return conditional value in |condVal| and
@@ -92,7 +92,7 @@ class DeadBranchElimPass : public MemPass {
   // Return true if all extensions in this module are allowed by this pass.
   bool AllExtensionsSupported() const;
 
-  void Initialize(ir::Module* module);
+  void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
 
   // All backedge branches in current function

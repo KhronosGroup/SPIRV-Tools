@@ -97,8 +97,8 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
   return modified;
 }
 
-void InlineOpaquePass::Initialize(ir::Module* module) {
-  InitializeInline(module);
+void InlineOpaquePass::Initialize(ir::IRContext* c) {
+  InitializeInline(c);
 };
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
@@ -112,8 +112,8 @@ Pass::Status InlineOpaquePass::ProcessImpl() {
 
 InlineOpaquePass::InlineOpaquePass() {}
 
-Pass::Status InlineOpaquePass::Process(ir::Module* module) {
-  Initialize(module);
+Pass::Status InlineOpaquePass::Process(ir::IRContext* c) {
+  Initialize(c);
   return ProcessImpl();
 }
 

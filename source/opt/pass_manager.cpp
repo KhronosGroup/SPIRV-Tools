@@ -13,20 +13,22 @@
 // limitations under the License.
 
 #include "pass_manager.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
 
-Pass::Status PassManager::Run(ir::Module* module) {
+Pass::Status PassManager::Run(ir::IRContext* context) {
   auto status = Pass::Status::SuccessWithoutChange;
   for (const auto& pass : passes_) {
-    const auto one_status = pass->Process(module);
+    const auto one_status = pass->Process(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;
   }
+
   // Set the Id bound in the header in case a pass forgot to do so.
   if (status == Pass::Status::SuccessWithChange) {
-    module->SetIdBound(module->ComputeIdBound());
+    context->SetIdBound(context->module()->ComputeIdBound());
   }
   passes_.clear();
   return status;
