@@ -58,13 +58,16 @@ class DecorationManager {
   // |decoration|. Processed are all decorations which target |id| either
   // directly or indirectly by Decoration Groups.
   void ForEachDecoration(uint32_t id, uint32_t decoration,
-                         std::function<void(const ir::Instruction& f)>);
+                         std::function<void(const ir::Instruction&)> f);
 
   // Clone all decorations from one id |from|.
   // The cloned decorations are assigned to the given id |to| and are
   // added to the module. The purpose is to decorate cloned instructions.
   // This function does not check if the id |to| is already decorated.
-  void CloneDecorations(uint32_t from, uint32_t to);
+  // Function |f| can be used to update context information and is called
+  // with |false|, before an instruction is going to be changed and
+  // with |true| afterwards.
+  void CloneDecorations(uint32_t from, uint32_t to, std::function<void(ir::Instruction&, bool)> f);
 
  private:
   using IdToDecorationInstsMap =

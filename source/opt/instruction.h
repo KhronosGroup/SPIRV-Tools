@@ -166,7 +166,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Adds |operand| to the list of operands of this instruction.
   // It is the responsibility of the caller to make sure
   // that the instruction remains valid.
-  inline void AddOperand(Operand operand);
+  inline void AddOperand(Operand &&operand);
   // Gets the |index|-th logical operand as a single SPIR-V word. This method is
   // not expected to be used with logical operands consisting of multiple SPIR-V
   // words.
@@ -261,7 +261,7 @@ inline const Operand& Instruction::GetOperand(uint32_t index) const {
   return operands_[index];
 };
 
-inline void Instruction::AddOperand(Operand operand) {
+inline void Instruction::AddOperand(Operand &&operand) {
   operands_.push_back(operand);
   return;
 }

@@ -162,7 +162,10 @@ class InlinePass : public Pass {
   // Initialize state for optimization of |module|
   void InitializeInline(ir::IRContext* c);
 
-  // Decorations for the module we are processing. TODO: move this to ir_context as well
+  // Update the DefUseManager when cloning decorations.
+  std::function<void(ir::Instruction&, bool)> UpdateDefUseMgr;
+
+  // Decorations for the module we are processing TODO: move this to ir_context as well
   std::unique_ptr<analysis::DecorationManager> dec_mgr_;
 
   // Map from function's result id to function.
