@@ -131,7 +131,7 @@ inline BasicBlock::BasicBlock(std::unique_ptr<Instruction> label)
     : function_(nullptr), label_(std::move(label)) {}
 
 inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
-  insts_.push_back(i.release());
+  insts_.push_back(std::move(i));
 }
 
 inline void BasicBlock::AddInstructions(BasicBlock* bp) {

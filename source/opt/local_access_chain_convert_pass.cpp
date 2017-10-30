@@ -25,7 +25,6 @@ namespace {
 
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kAccessChainPtrIdInIdx = 0;
-const uint32_t kTypePointerTypeIdInIdx = 1;
 const uint32_t kConstantValueInIdx = 0;
 const uint32_t kTypeIntWidthInIdx = 0;
 
@@ -36,15 +35,8 @@ void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
     KillNamesAndDecorates(resId);
-    def_use_mgr_->KillInst(inst);
+    get_def_use_mgr()->KillInst(inst);
   }
-}
-
-uint32_t LocalAccessChainConvertPass::GetPointeeTypeId(
-    const ir::Instruction* ptrInst) const {
-  const uint32_t ptrTypeId = ptrInst->type_id();
-  const ir::Instruction* ptrTypeInst = def_use_mgr_->GetDef(ptrTypeId);
-  return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 
 void LocalAccessChainConvertPass::BuildAndAppendInst(
@@ -55,7 +47,7 @@ void LocalAccessChainConvertPass::BuildAndAppendInst(
     std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
   std::unique_ptr<ir::Instruction> newInst(new ir::Instruction(
       opcode, typeId, resultId, in_opnds));
-  def_use_mgr_->AnalyzeInstDefUse(&*newInst);
+  get_def_use_mgr()->AnalyzeInstDefUse(&*newInst);
   newInsts->emplace_back(std::move(newInst));
 }
 
@@ -66,7 +58,7 @@ uint32_t LocalAccessChainConvertPass::BuildAndAppendVarLoad(
     std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
   const uint32_t ldResultId = TakeNextId();
   *varId = ptrInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx);
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(*varId);
+  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(*varId);
   assert(varInst->opcode() == SpvOpVariable);
   *varPteTypeId = GetPointeeTypeId(varInst);
   BuildAndAppendInst(SpvOpLoad, *varPteTypeId, ldResultId,
@@ -80,7 +72,7 @@ void LocalAccessChainConvertPass::AppendConstantOperands(
   uint32_t iidIdx = 0;
   ptrInst->ForEachInId([&iidIdx, &in_opnds, this](const uint32_t *iid) {
     if (iidIdx > 0) {
-      const ir::Instruction* cInst = def_use_mgr_->GetDef(*iid);
+      const ir::Instruction* cInst = get_def_use_mgr()->GetDef(*iid);
       uint32_t val = cInst->GetSingleWordInOperand(kConstantValueInIdx);
       in_opnds->push_back(
         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {val}});
@@ -102,10 +94,10 @@ uint32_t LocalAccessChainConvertPass::GenAccessChainLoadReplacement(
   // Build and append Extract
   const uint32_t extResultId = TakeNextId();
   const uint32_t ptrPteTypeId = GetPointeeTypeId(ptrInst);
-  std::vector<ir::Operand> ext_in_opnds = 
-      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
+  std::vector<ir::Operand> ext_in_opnds = {
+      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ldResultId}}};
   AppendConstantOperands(ptrInst, &ext_in_opnds);
-  BuildAndAppendInst(SpvOpCompositeExtract, ptrPteTypeId, extResultId, 
+  BuildAndAppendInst(SpvOpCompositeExtract, ptrPteTypeId, extResultId,
                      ext_in_opnds, newInsts);
   return extResultId;
 }
@@ -143,7 +135,7 @@ bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
   uint32_t nonConstCnt = 0;
   acp->ForEachInId([&inIdx, &nonConstCnt, this](const uint32_t* tid) {
     if (inIdx > 0) {
-      ir::Instruction* opInst = def_use_mgr_->GetDef(*tid);
+      ir::Instruction* opInst = get_def_use_mgr()->GetDef(*tid);
       if (opInst->opcode() != SpvOpConstant) ++nonConstCnt;
     }
     ++inIdx;
@@ -154,7 +146,7 @@ bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
 bool LocalAccessChainConvertPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
     return true;
-  analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
   assert(uses != nullptr);
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
@@ -241,7 +233,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
         uint32_t valId = ii->GetSingleWordInOperand(kStoreValIdInIdx);
         GenAccessChainStoreReplacement(ptrInst, valId, &newInsts);
-        def_use_mgr_->KillInst(&*ii);
+        get_def_use_mgr()->KillInst(&*ii);
         DeleteIfUseless(ptrInst);
         ++ii;
         ii = ii.InsertBefore(std::move(newInsts));
@@ -258,8 +250,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
 }
 
 void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
-
-  module_ = module;
+  InitializeProcessing(module);
 
   // Initialize Target Variable Caches
   seen_target_vars_.clear();
@@ -268,18 +259,13 @@ void LocalAccessChainConvertPass::Initialize(ir::Module* module) {
   // Initialize collections
   supported_ref_ptrs_.clear();
 
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
-  // Initialize next unused Id.
-  InitNextId();
-
   // Initialize extension whitelist
   InitExtensions();
 };
 
 bool LocalAccessChainConvertPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -291,27 +277,24 @@ bool LocalAccessChainConvertPass::AllExtensionsSupported() const {
 Pass::Status LocalAccessChainConvertPass::ProcessImpl() {
   // If non-32-bit integer type in module, terminate processing
   // TODO(): Handle non-32-bit integer constants in access chains
-  for (const ir::Instruction& inst : module_->types_values())
+  for (const ir::Instruction& inst : get_module()->types_values())
     if (inst.opcode() == SpvOpTypeInt &&
         inst.GetSingleWordInOperand(kTypeIntWidthInIdx) != 32)
       return Status::SuccessWithoutChange;
   // Do not process if module contains OpGroupDecorate. Additional
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
-  for (auto& ai : module_->annotations())
+  for (auto& ai : get_module()->annotations())
     if (ai.opcode() == SpvOpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
   if (!AllExtensionsSupported())
     return Status::SuccessWithoutChange;
-  // Collect all named and decorated ids
-  FindNamedOrDecoratedIds();
   // Process all entry point functions.
   ProcessFunction pfn = [this](ir::Function* fp) {
     return ConvertLocalAccessChains(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId();
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

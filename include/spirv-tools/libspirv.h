@@ -420,6 +420,19 @@ void spvValidatorOptionsSetUniversalLimit(spv_validator_options options,
                                           spv_validator_limit limit_type,
                                           uint32_t limit);
 
+// Record whether or not the validator should relax the rules on types for
+// stores to structs.  When relaxed, it will allow a type mismatch as long as
+// the types are structs with the same layout.  Two structs have the same layout
+// if
+//
+// 1) the members of the structs are either the same type or are structs with
+// same layout, and
+//
+// 2) the decorations that affect the memory layout are identical for both
+// types.  Other decorations are not relevant.
+void spvValidatorOptionsSetRelaxStoreStruct(spv_validator_options options,
+                                            bool val);
+
 // Encodes the given SPIR-V assembly text to its binary representation. The
 // length parameter specifies the number of bytes for text. Encoded binary will
 // be stored into *binary. Any error will be written into *diagnostic if
@@ -432,9 +445,11 @@ spv_result_t spvTextToBinary(const spv_const_context context, const char* text,
 // Encodes the given SPIR-V assembly text to its binary representation. Same as
 // spvTextToBinary but with options. The options parameter is a bit field of
 // spv_text_to_binary_options_t.
-spv_result_t spvTextToBinaryWithOptions(
-    const spv_const_context context, const char* text, const size_t length,
-    const uint32_t options, spv_binary* binary, spv_diagnostic* diagnostic);
+spv_result_t spvTextToBinaryWithOptions(const spv_const_context context,
+                                        const char* text, const size_t length,
+                                        const uint32_t options,
+                                        spv_binary* binary,
+                                        spv_diagnostic* diagnostic);
 
 // Frees an allocated text stream. This is a no-op if the text parameter
 // is a null pointer.

@@ -56,7 +56,7 @@ bool InsertExtractElimPass::ExtInsConflict(const ir::Instruction* extInst,
 }
 
 bool InsertExtractElimPass::IsVectorType(uint32_t typeId) {
-  ir::Instruction* typeInst = def_use_mgr_->GetDef(typeId);
+  ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   return typeInst->opcode() == SpvOpTypeVector;
 }
 
@@ -67,7 +67,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
       switch (ii->opcode()) {
         case SpvOpCompositeExtract: {
           uint32_t cid = ii->GetSingleWordInOperand(kExtractCompositeIdInIdx);
-          ir::Instruction* cinst = def_use_mgr_->GetDef(cid);
+          ir::Instruction* cinst = get_def_use_mgr()->GetDef(cid);
           uint32_t replId = 0;
           while (cinst->opcode() == SpvOpCompositeInsert) {
             if (ExtInsConflict(&*ii, cinst))
@@ -77,7 +77,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
               break;
             }
             cid = cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
-            cinst = def_use_mgr_->GetDef(cid);
+            cinst = get_def_use_mgr()->GetDef(cid);
           }
           // If search ended with CompositeConstruct or ConstantComposite
           // and the extract has one index, return the appropriate component.
@@ -94,7 +94,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
                 uint32_t i = 0;
                 for (; i <= compIdx; i++) {
                   uint32_t compId = cinst->GetSingleWordInOperand(i);
-                  ir::Instruction* compInst = def_use_mgr_->GetDef(compId);
+                  ir::Instruction* compInst = get_def_use_mgr()->GetDef(compId);
                   if (compInst->type_id() != (*ii).type_id())
                     break;
                 }
@@ -108,8 +108,8 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
           }
           if (replId != 0) {
             const uint32_t extId = ii->result_id();
-            (void)def_use_mgr_->ReplaceAllUsesWith(extId, replId);
-            def_use_mgr_->KillInst(&*ii);
+            (void)get_def_use_mgr()->ReplaceAllUsesWith(extId, replId);
+            get_def_use_mgr()->KillInst(&*ii);
             modified = true;
           }
         } break;
@@ -122,11 +122,7 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
 }
 
 void InsertExtractElimPass::Initialize(ir::Module* module) {
-
-  module_ = module;
-
-  // Do def/use on whole module
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+  InitializeProcessing(module);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -134,7 +130,7 @@ void InsertExtractElimPass::Initialize(ir::Module* module) {
 
 bool InsertExtractElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -151,12 +147,11 @@ Pass::Status InsertExtractElimPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateInsertExtract(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-InsertExtractElimPass::InsertExtractElimPass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+InsertExtractElimPass::InsertExtractElimPass() {}
 
 Pass::Status InsertExtractElimPass::Process(ir::Module* module) {
   Initialize(module);

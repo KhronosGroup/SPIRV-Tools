@@ -96,7 +96,6 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
-  visitedTypes.reserve(module->types_values().size());
 
   for (auto i = module->types_values_begin();
        i != module->types_values_end();) {
@@ -142,7 +141,6 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
 
   std::vector<const Instruction*> visitedDecorations;
-  visitedDecorations.reserve(module->annotations().size());
 
   opt::analysis::DecorationManager decorationManager(module);
   for (auto i = module->annotation_begin(); i != module->annotation_end();) {

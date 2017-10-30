@@ -42,7 +42,10 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
 
  private:
   // Return true if all uses of |varId| are only through supported reference
-  // operations ie. loads and store. Also cache in supported_ref_ptrs_;
+  // operations ie. loads and store. Also cache in supported_ref_ptrs_.
+  // TODO(dnovillo): This function is replicated in other passes and it's
+  // slightly different in every pass. Is it possible to make one common
+  // implementation?
   bool HasOnlySupportedRefs(uint32_t varId);
 
   // On all entry point functions, within each basic block, eliminate

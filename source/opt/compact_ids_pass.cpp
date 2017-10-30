@@ -24,6 +24,8 @@ using ir::Instruction;
 using ir::Operand;
 
 Pass::Status CompactIdsPass::Process(ir::Module* module) {
+  InitializeProcessing(module);
+
   bool modified = false;
   std::unordered_map<uint32_t, uint32_t> result_id_mapping;
 

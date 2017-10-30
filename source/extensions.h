@@ -23,7 +23,7 @@
 namespace libspirv {
 
 // The known SPIR-V extensions.
-enum class Extension {
+enum Extension {
 #include "extension_enum.inc"
 };
 

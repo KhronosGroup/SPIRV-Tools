@@ -242,11 +242,7 @@ std::vector<uint32_t> OperateVectors(
 }  // anonymous namespace
 
 FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass()
-    : max_id_(0),
-      module_(nullptr),
-      def_use_mgr_(nullptr),
-      type_mgr_(nullptr),
-      id_to_const_val_() {}
+    : max_id_(0), type_mgr_(nullptr), id_to_const_val_() {}
 
 Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::Module* module) {
   Initialize(module);
@@ -254,12 +250,11 @@ Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::Module* module) {
 }
 
 void FoldSpecConstantOpAndCompositePass::Initialize(ir::Module* module) {
+  InitializeProcessing(module);
   type_mgr_.reset(new analysis::TypeManager(consumer(), *module));
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
-  for (const auto& id_def : def_use_mgr_->id_to_defs()) {
+  for (const auto& id_def : get_def_use_mgr()->id_to_defs()) {
     max_id_ = std::max(max_id_, id_def.first);
   }
-  module_ = module;
 };
 
 Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
@@ -376,8 +371,8 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
   // original constant.
   uint32_t new_id = folded_inst->result_id();
   uint32_t old_id = inst->result_id();
-  def_use_mgr_->ReplaceAllUsesWith(old_id, new_id);
-  def_use_mgr_->KillDef(old_id);
+  get_def_use_mgr()->ReplaceAllUsesWith(old_id, new_id);
+  get_def_use_mgr()->KillDef(old_id);
   return true;
 }
 
@@ -585,15 +580,15 @@ FoldSpecConstantOpAndCompositePass::BuildInstructionAndAddToModule(
     std::unique_ptr<analysis::Constant> c, ir::Module::inst_iterator* pos) {
   analysis::Constant* new_const = c.get();
   uint32_t new_id = ++max_id_;
-  module_->SetIdBound(new_id + 1);
+  get_module()->SetIdBound(new_id + 1);
   const_val_to_id_[new_const] = new_id;
   id_to_const_val_[new_id] = std::move(c);
   auto new_inst = CreateInstruction(new_id, new_const);
   if (!new_inst) return nullptr;
   auto* new_inst_ptr = new_inst.get();
   *pos = pos->InsertBefore(std::move(new_inst));
-  (*pos)++;
-  def_use_mgr_->AnalyzeInstDefUse(new_inst_ptr);
+  ++(*pos);
+  get_def_use_mgr()->AnalyzeInstDefUse(new_inst_ptr);
   return new_inst_ptr;
 }
 

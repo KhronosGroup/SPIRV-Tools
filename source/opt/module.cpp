@@ -24,45 +24,40 @@ namespace spvtools {
 namespace ir {
 
 std::vector<Instruction*> Module::GetTypes() {
-  std::vector<Instruction*> insts;
-  for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsTypeInst(types_values_[i]->opcode()))
-      insts.push_back(types_values_[i].get());
+  std::vector<Instruction*> type_insts;
+  for (auto& inst : types_values_) {
+    if (IsTypeInst(inst.opcode())) type_insts.push_back(&inst);
   }
-  return insts;
+  return type_insts;
 };
 
 std::vector<const Instruction*> Module::GetTypes() const {
-  std::vector<const Instruction*> insts;
-  for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsTypeInst(types_values_[i]->opcode()))
-      insts.push_back(types_values_[i].get());
+  std::vector<const Instruction*> type_insts;
+  for (auto& inst : types_values_) {
+    if (IsTypeInst(inst.opcode())) type_insts.push_back(&inst);
   }
-  return insts;
+  return type_insts;
 };
 
 std::vector<Instruction*> Module::GetConstants() {
-  std::vector<Instruction*> insts;
-  for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsConstantInst(types_values_[i]->opcode()))
-      insts.push_back(types_values_[i].get());
+  std::vector<Instruction*> const_insts;
+  for (auto& inst : types_values_) {
+    if (IsConstantInst(inst.opcode())) const_insts.push_back(&inst);
   }
-  return insts;
+  return const_insts;
 };
 
 std::vector<const Instruction*> Module::GetConstants() const {
-  std::vector<const Instruction*> insts;
-  for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (IsConstantInst(types_values_[i]->opcode()))
-      insts.push_back(types_values_[i].get());
+  std::vector<const Instruction*> const_insts;
+  for (auto& inst : types_values_) {
+    if (IsConstantInst(inst.opcode())) const_insts.push_back(&inst);
   }
-  return insts;
+  return const_insts;
 };
 
 uint32_t Module::GetGlobalValue(SpvOp opcode) const {
-  for (uint32_t i = 0; i < types_values_.size(); ++i) {
-    if (types_values_[i]->opcode() == opcode)
-      return types_values_[i]->result_id();
+  for (auto& inst : types_values_) {
+    if (inst.opcode() == opcode) return inst.result_id();
   }
   return 0;
 }
@@ -76,11 +71,11 @@ void Module::AddGlobalValue(SpvOp opcode, uint32_t result_id,
 
 void Module::ForEachInst(const std::function<void(Instruction*)>& f,
                          bool run_on_debug_line_insts) {
-#define DELEGATE(i) i->ForEachInst(f, run_on_debug_line_insts)
+#define DELEGATE(i) i.ForEachInst(f, run_on_debug_line_insts)
   for (auto& i : capabilities_) DELEGATE(i);
   for (auto& i : extensions_) DELEGATE(i);
   for (auto& i : ext_inst_imports_) DELEGATE(i);
-  if (memory_model_) DELEGATE(memory_model_);
+  if (memory_model_) memory_model_->ForEachInst(f, run_on_debug_line_insts);
   for (auto& i : entry_points_) DELEGATE(i);
   for (auto& i : execution_modes_) DELEGATE(i);
   for (auto& i : debugs1_) DELEGATE(i);
@@ -88,19 +83,19 @@ void Module::ForEachInst(const std::function<void(Instruction*)>& f,
   for (auto& i : debugs3_) DELEGATE(i);
   for (auto& i : annotations_) DELEGATE(i);
   for (auto& i : types_values_) DELEGATE(i);
-  for (auto& i : functions_) DELEGATE(i);
+  for (auto& i : functions_) i->ForEachInst(f, run_on_debug_line_insts);
 #undef DELEGATE
 }
 
 void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
                          bool run_on_debug_line_insts) const {
-#define DELEGATE(i)                                      \
-  static_cast<const Instruction*>(i.get())->ForEachInst( \
-      f, run_on_debug_line_insts)
+#define DELEGATE(i) i.ForEachInst(f, run_on_debug_line_insts)
   for (auto& i : capabilities_) DELEGATE(i);
   for (auto& i : extensions_) DELEGATE(i);
   for (auto& i : ext_inst_imports_) DELEGATE(i);
-  if (memory_model_) DELEGATE(memory_model_);
+  if (memory_model_)
+    static_cast<const Instruction*>(memory_model_.get())
+        ->ForEachInst(f, run_on_debug_line_insts);
   for (auto& i : entry_points_) DELEGATE(i);
   for (auto& i : execution_modes_) DELEGATE(i);
   for (auto& i : debugs1_) DELEGATE(i);
@@ -147,7 +142,7 @@ uint32_t Module::ComputeIdBound() const {
 
 bool Module::HasCapability(uint32_t cap) {
   for (auto& ci : capabilities_) {
-    uint32_t tcap = ci->GetSingleWordOperand(0);
+    uint32_t tcap = ci.GetSingleWordOperand(0);
     if (tcap == cap) {
       return true;
     }
@@ -157,9 +152,9 @@ bool Module::HasCapability(uint32_t cap) {
 
 uint32_t Module::GetExtInstImportId(const char* extstr) {
   for (auto& ei : ext_inst_imports_)
-    if (!strcmp(extstr, reinterpret_cast<const char*>(
-        &ei->GetInOperand(0).words[0])))
-      return ei->result_id();
+    if (!strcmp(extstr,
+                reinterpret_cast<const char*>(&(ei.GetInOperand(0).words[0]))))
+      return ei.result_id();
   return 0;
 }
 

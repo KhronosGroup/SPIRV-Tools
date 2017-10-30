@@ -103,6 +103,7 @@ class ResultIdTrie {
 }  // anonymous namespace
 
 Pass::Status UnifyConstantPass::Process(ir::Module* module) {
+  InitializeProcessing(module);
   bool modified = false;
   ResultIdTrie defined_constants;
   analysis::DefUseManager def_use_mgr(consumer(), module);

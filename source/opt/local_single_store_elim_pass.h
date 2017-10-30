@@ -44,7 +44,9 @@ class LocalSingleStoreElimPass : public MemPass {
 
  private:
   // Return true if all refs through |ptrId| are only loads or stores and
-  // cache ptrId in supported_ref_ptrs_.
+  // cache ptrId in supported_ref_ptrs_. TODO(dnovillo): This function is
+  // replicated in other passes and it's slightly different in every pass. Is it
+  // possible to make one common implementation?
   bool HasOnlySupportedRefs(uint32_t ptrId);
 
   // Find all function scope variables in |func| that are stored to
@@ -117,12 +119,6 @@ class LocalSingleStoreElimPass : public MemPass {
   // Variables with only supported references, ie. loads and stores using
   // variable directly or through non-ptr access chains.
   std::unordered_set<uint32_t> supported_ref_ptrs_;
-
-  // Augmented CFG Entry Block
-  ir::BasicBlock pseudo_entry_block_;
-
-  // Augmented CFG Exit Block
-  ir::BasicBlock pseudo_exit_block_;
 
   // CFG Predecessors
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>

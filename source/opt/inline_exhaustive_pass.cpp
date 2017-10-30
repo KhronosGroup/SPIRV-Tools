@@ -58,8 +58,7 @@ Pass::Status InlineExhaustivePass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return InlineExhaustive(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
-  FinalizeNextId(module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 

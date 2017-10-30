@@ -47,22 +47,6 @@ class CFGCleanupPass : public MemPass {
   void RemovePhiOperands(ir::Instruction* phi,
                          std::unordered_set<ir::BasicBlock*> reachable_blocks);
 
-  // Return the next available Id and increment it. TODO(dnovillo): Refactor
-  // into a new type pool manager to be used for all passes.
-  inline uint32_t TakeNextId() { return next_id_++; }
-
-  // Save next available id into |module|. TODO(dnovillo): Refactor
-  // into a new type pool manager to be used for all passes.
-  inline void FinalizeNextId(ir::Module* module) {
-    module->SetIdBound(next_id_);
-  }
-
-  // Return undef in function for type. Create and insert an undef after the
-  // first non-variable in the function if it doesn't already exist. Add
-  // undef to function undef map. TODO(dnovillo): Refactor into a new
-  // type pool manager to be used for all passes.
-  uint32_t TypeToUndef(uint32_t type_id);
-
   // Map from block's label id to block. TODO(dnovillo): Basic blocks ought to
   // have basic blocks in their pred/succ list.
   std::unordered_map<uint32_t, ir::BasicBlock*> label2block_;
@@ -71,15 +55,6 @@ class CFGCleanupPass : public MemPass {
   // TODO(dnovillo): This would be unnecessary if ir::Instruction instances
   // knew what basic block they belong to.
   std::unordered_map<uint32_t, ir::BasicBlock*> def_block_;
-
-  // Map from type to undef values. TODO(dnovillo): This is replicated from
-  // class LocalMultiStoreElimPass. It should be refactored into a type
-  // pool manager.
-  std::unordered_map<uint32_t, uint32_t> type2undefs_;
-
-  // Next unused ID. TODO(dnovillo): Refactor this to some common utility class.
-  // Seems to be implemented in very many passes.
-  uint32_t next_id_;
 };
 
 }  // namespace opt

@@ -40,9 +40,6 @@ class BlockMergePass : public Pass {
   Status Process(ir::Module*) override;
 
  private:
-  // Return true if |block_ptr| is loop header block
-  bool IsLoopHeader(ir::BasicBlock* block_ptr);
-
   // Return true if |labId| has multiple refs. Do not count OpName.
   bool HasMultipleRefs(uint32_t labId);
 
@@ -61,12 +58,6 @@ class BlockMergePass : public Pass {
 
   void Initialize(ir::Module* module);
   Pass::Status ProcessImpl();
-
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;

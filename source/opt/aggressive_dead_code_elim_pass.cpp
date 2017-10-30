@@ -39,12 +39,12 @@ const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, 
       uint32_t storageClass) {
-  const ir::Instruction* varInst = def_use_mgr_->GetDef(varId);
+  const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
   const SpvOp op = varInst->opcode();
   if (op != SpvOpVariable) 
     return false;
   const uint32_t varTypeId = varInst->type_id();
-  const ir::Instruction* varTypeInst = def_use_mgr_->GetDef(varTypeId);
+  const ir::Instruction* varTypeInst = get_def_use_mgr()->GetDef(varTypeId);
   if (varTypeInst->opcode() != SpvOpTypePointer)
     return false;
   return varTypeInst->GetSingleWordInOperand(kTypePointerStorageClassInIdx) ==
@@ -57,7 +57,7 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
-  const analysis::UseList* uses = def_use_mgr_->GetUses(ptrId);
+  const analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
   if (uses == nullptr)
     return;
   for (const auto u : *uses) {
@@ -97,7 +97,7 @@ bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
 
 bool AggressiveDCEPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -108,9 +108,9 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
 
 bool AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
-  const ir::Instruction* tInst = def_use_mgr_->GetDef(tId);
+  const ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
   if (dead_insts_.find(tInst) != dead_insts_.end()) {
-    def_use_mgr_->KillInst(inst);
+    get_def_use_mgr()->KillInst(inst);
     return true;
   }
   return false;
@@ -332,7 +332,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     }
   }
   // See if current function is an entry point
-  for (auto& ei : module_->entry_points()) {
+  for (auto& ei : get_module()->entry_points()) {
     if (ei.GetSingleWordInOperand(kEntryPointFunctionIdInIdx) ==
         func->result_id()) {
       func_is_entry_point_ = true;
@@ -349,7 +349,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Add OpGroupDecorates to worklist because they are a pain to remove
   // ids from.
   // TODO(greg-lunarg): Handle dead ids in OpGroupDecorate
-  for (auto& ai : module_->annotations()) {
+  for (auto& ai : get_module()->annotations()) {
     if (ai.opcode() == SpvOpGroupDecorate)
       AddToWorklist(&ai);
   }
@@ -358,7 +358,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
     ir::Instruction* liveInst = worklist_.front();
     // Add all operand instructions if not already live
     liveInst->ForEachInId([this](const uint32_t* iid) {
-      ir::Instruction* inInst = def_use_mgr_->GetDef(*iid);
+      ir::Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
       if (!IsLive(inInst))
         AddToWorklist(inInst);
     });
@@ -408,13 +408,13 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Remove debug and annotation statements referencing dead instructions.
   // This must be done before killing the instructions, otherwise there are
   // dead objects in the def/use database.
-  for (auto& di : module_->debugs2()) {
+  for (auto& di : get_module()->debugs2()) {
     if (di.opcode() != SpvOpName)
       continue;
     if (KillInstIfTargetDead(&di))
       modified = true;
   }
-  for (auto& ai : module_->annotations()) {
+  for (auto& ai : get_module()->annotations()) {
     if (ai.opcode() != SpvOpDecorate && ai.opcode() != SpvOpDecorateId)
       continue;
     if (KillInstIfTargetDead(&ai))
@@ -432,7 +432,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       if (ii->opcode() == SpvOpSelectionMerge)
         mergeBlockId = 
             ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-      def_use_mgr_->KillInst(&*ii);
+      get_def_use_mgr()->KillInst(&*ii);
       modified = true;
     }
     // If a structured if was deleted, add a branch to its merge block,
@@ -461,7 +461,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
 }
 
 void AggressiveDCEPass::Initialize(ir::Module* module) {
-  module_ = module;
+  InitializeProcessing(module);
 
   // Clear collections
   worklist_ = std::queue<ir::Instruction*>{};
@@ -478,9 +478,6 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
     for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
 
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
-
   // Initialize extensions whitelist
   InitExtensions();
 }
@@ -488,11 +485,11 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
 Pass::Status AggressiveDCEPass::ProcessImpl() {
   // Current functionality assumes shader capability 
   // TODO(greg-lunarg): Handle additional capabilities
-  if (!module_->HasCapability(SpvCapabilityShader))
+  if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
   // Current functionality assumes logical addressing only
   // TODO(greg-lunarg): Handle non-logical addressing
-  if (module_->HasCapability(SpvCapabilityAddresses))
+  if (get_module()->HasCapability(SpvCapabilityAddresses))
     return Status::SuccessWithoutChange;
   // If any extensions in the module are not explicitly supported,
   // return unmodified. 
@@ -504,7 +501,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return AggressiveDCE(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
@@ -655,7 +652,7 @@ void AggressiveDCEPass::InitCombinatorSets() {
   };
 
   // Find supported extension instruction set ids
-  glsl_std_450_id_ = module_->GetExtInstImportId("GLSL.std.450");
+  glsl_std_450_id_ = get_module()->GetExtInstImportId("GLSL.std.450");
 
   combinator_ops_glsl_std_450_ = {
     GLSLstd450Round,

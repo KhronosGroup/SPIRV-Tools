@@ -26,11 +26,7 @@ Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
   // Anything with a reference count of 0 will then be deleted.  For variables
   // that might have references that are not explicit in this module, we use the
   // value kMustKeep as the reference count.
-
-  bool modified = false;
-  module_ = module;
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module));
-  FindNamedOrDecoratedIds();
+  InitializeProcessing(module);
 
   //  Decoration manager to help organize decorations.
   analysis::DecorationManager decoration_manager(module);
@@ -61,7 +57,7 @@ Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
     if (count != kMustKeep) {
       // If we don't have to keep the instruction for other reasons, then look
       // at the uses and count the number of real references.
-      if (analysis::UseList* uses = def_use_mgr_->GetUses(result_id)) {
+      if (analysis::UseList* uses = get_def_use_mgr()->GetUses(result_id)) {
         count = std::count_if(
             uses->begin(), uses->end(), [](const analysis::Use& u) {
               return (!ir::IsAnnotationInst(u.inst->opcode()) &&
@@ -76,6 +72,7 @@ Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
   }
 
   // Remove all of the variables that have a reference count of 0.
+  bool modified = false;
   if (!ids_to_remove.empty()) {
     modified = true;
     for (auto result_id : ids_to_remove) {
@@ -86,7 +83,7 @@ Pass::Status DeadVariableElimination::Process(spvtools::ir::Module* module) {
 }
 
 void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
-  ir::Instruction* inst = def_use_mgr_->GetDef(result_id);
+  ir::Instruction* inst = get_def_use_mgr()->GetDef(result_id);
   assert(inst->opcode() == SpvOpVariable &&
       "Should not be trying to delete anything other than an OpVariable.");
 
@@ -94,7 +91,7 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
   // if that variable can be deleted after the reference is removed.
   if (inst->NumOperands() == 4) {
     ir::Instruction* initializer =
-        def_use_mgr_->GetDef(inst->GetSingleWordOperand(3));
+        get_def_use_mgr()->GetDef(inst->GetSingleWordOperand(3));
 
     // TODO: Handle OpSpecConstantOP which might be defined in terms of other
     // variables.  Will probably require a unified dead code pass that does all
@@ -112,7 +109,7 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
     }
   }
   this->KillNamesAndDecorates(result_id);
-  def_use_mgr_->KillDef(result_id);
+  get_def_use_mgr()->KillDef(result_id);
 }
 }  // namespace opt
 }  // namespace spvtools

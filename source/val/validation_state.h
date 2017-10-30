@@ -260,6 +260,9 @@ class ValidationState_t {
   std::vector<Decoration>& id_decorations(uint32_t id) {
     return id_decorations_[id];
   }
+  const std::vector<Decoration>& id_decorations(uint32_t id) const {
+    return id_decorations_.at(id);
+  }
 
   /// Finds id's def, if it exists.  If found, returns the definition otherwise
   /// nullptr

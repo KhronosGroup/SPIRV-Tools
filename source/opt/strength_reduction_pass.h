@@ -50,9 +50,6 @@ class StrengthReductionPass : public Pass {
   // This functions assumes one does not already exist.
   uint32_t CreateUint32Type();
 
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
-
   // Type ids for the types of interest, or 0 if they do not exist.
   uint32_t int32_type_id_;
   uint32_t uint32_type_id_;
@@ -61,12 +58,6 @@ class StrengthReductionPass : public Pass {
   // We set the limit at 32 because a bit shift of a 32-bit integer does not
   // need a value larger than 32.
   uint32_t constant_ids_[33];
-
-  // Next unused ID
-  uint32_t next_id_;
-
-  // The module that the pass is being applied to.
-  ir::Module* module_;
 };
 
 }  // namespace opt

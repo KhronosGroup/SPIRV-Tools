@@ -21,16 +21,8 @@
 namespace spvtools {
 namespace opt {
 
-bool BlockMergePass::IsLoopHeader(ir::BasicBlock* block_ptr) {
-  auto iItr = block_ptr->tail();
-  if (iItr == block_ptr->begin())
-    return false;
-  --iItr;
-  return iItr->opcode() == SpvOpLoopMerge;
-}
-
 bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
-  const analysis::UseList* uses = def_use_mgr_->GetUses(labId);
+  const analysis::UseList* uses = get_def_use_mgr()->GetUses(labId);
   int rcnt = 0;
   for (const auto u : *uses) {
     // Don't count OpName
@@ -46,15 +38,15 @@ bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   const uint32_t id = inst->result_id();
   if (id != 0) {
-    analysis::UseList* uses = def_use_mgr_->GetUses(id);
+    analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
     if (uses != nullptr)
       for (auto u : *uses)
         if (u.inst->opcode() == SpvOpName) {
-          def_use_mgr_->KillInst(u.inst);
+          get_def_use_mgr()->KillInst(u.inst);
           break;
         }
   }
-  def_use_mgr_->KillInst(inst);
+  get_def_use_mgr()->KillInst(inst);
 }
 
 bool BlockMergePass::MergeBlocks(ir::Function* func) {
@@ -85,7 +77,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       continue;
     }
     // Merge blocks
-    def_use_mgr_->KillInst(br);
+    get_def_use_mgr()->KillInst(br);
     auto sbi = bi;
     for (; sbi != func->end(); ++sbi)
       if (sbi->id() == labId)
@@ -103,11 +95,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
 }
 
 void BlockMergePass::Initialize(ir::Module* module) {
-
-  module_ = module;
-
-  // TODO(greg-lunarg): Reuse def/use from previous passes
-  def_use_mgr_.reset(new analysis::DefUseManager(consumer(), module_));
+  InitializeProcessing(module);
 
   // Initialize extension whitelist
   InitExtensions();
@@ -115,7 +103,7 @@ void BlockMergePass::Initialize(ir::Module* module) {
 
 bool BlockMergePass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
-  for (auto& ei : module_->extensions()) {
+  for (auto& ei : get_module()->extensions()) {
     const char* extName = reinterpret_cast<const char*>(
         &ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
@@ -132,12 +120,11 @@ Pass::Status BlockMergePass::ProcessImpl() {
   ProcessFunction pfn = [this](ir::Function* fp) {
     return MergeBlocks(fp);
   };
-  bool modified = ProcessEntryPointCallTree(pfn, module_);
+  bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-BlockMergePass::BlockMergePass()
-    : module_(nullptr), def_use_mgr_(nullptr) {}
+BlockMergePass::BlockMergePass() {}
 
 Pass::Status BlockMergePass::Process(ir::Module* module) {
   Initialize(module);

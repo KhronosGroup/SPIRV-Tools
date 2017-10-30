@@ -17,8 +17,8 @@
 #ifndef LIBSPIRV_OPT_OPT_PASS_H_
 #define LIBSPIRV_OPT_OPT_PASS_H_
 
-
 #include <algorithm>
+#include <list>
 #include <map>
 #include <queue>
 #include <unordered_map>
@@ -41,6 +41,12 @@ class MemPass : public Pass {
   virtual ~MemPass() = default;
 
  protected:
+  // Initialize basic data structures for the pass.
+  void InitializeProcessing(ir::Module* module) {
+    Pass::InitializeProcessing(module);
+    FindNamedOrDecoratedIds();
+  }
+
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsBaseTargetType(const ir::Instruction* typeInst) const;
@@ -64,14 +70,6 @@ class MemPass : public Pass {
   // Given a load or store |ip|, return the pointer instruction.
   // Also return the base variable's id in |varId|.
   ir::Instruction* GetPtr(ir::Instruction* ip, uint32_t* varId);
-
-  // Return true if |varId| is a previously identified target variable.
-  // Return false if |varId| is a previously identified non-target variable.
-  // See FindTargetVars() for definition of target variable. If variable is
-  // not cached, return true if variable is a function scope variable of
-  // target type, false otherwise. Updates caches of target and non-target
-  // variables.
-  bool IsTargetVar(uint32_t varId);
 
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
@@ -116,26 +114,31 @@ class MemPass : public Pass {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
   }
 
-  // Initialize next available id from |module|.
-  void InitNextId() {
-    next_id_ = module_->IdBound();
-  }
+  // Return true if |varId| is a previously identified target variable.
+  // Return false if |varId| is a previously identified non-target variable.
+  //
+  // Non-target variables are variable of function scope of a target type that
+  // are accessed with constant-index access chains. not accessed with
+  // non-constant-index access chains. Also cache non-target variables.
+  //
+  // If variable is not cached, return true if variable is a function scope
+  // variable of target type, false otherwise. Updates caches of target and
+  // non-target variables.
+  bool IsTargetVar(uint32_t varId);
 
-  // Save next available id into |module|.
-  void FinalizeNextId() {
-    module_->SetIdBound(next_id_);
-  }
+  // Initialize data structures used by EliminateLocalMultiStore for
+  // function |func|, specifically block predecessors and target variables.
+  void InitSSARewrite(ir::Function* func);
 
-  // Return next available id and calculate next.
-  inline uint32_t TakeNextId() {
-    return next_id_++;
-  }
+  // Return undef in function for type. Create and insert an undef after the
+  // first non-variable in the function if it doesn't already exist. Add
+  // undef to function undef map.
+  uint32_t Type2Undef(uint32_t type_id);
 
-  // Module this pass is processing
-  ir::Module* module_;
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
+  // Insert Phi instructions in the CFG of |func|.  This removes extra
+  // load/store operations to local storage while preserving the SSA form of the
+  // code.
+  Pass::Status InsertPhiInstructions(ir::Function* func);
 
   // Cache of verified target vars
   std::unordered_set<uint32_t> seen_target_vars_;
@@ -143,11 +146,78 @@ class MemPass : public Pass {
   // Cache of verified non-target vars
   std::unordered_set<uint32_t> seen_non_target_vars_;
 
+ private:
+  // Return true if all uses of |varId| are only through supported reference
+  // operations ie. loads and store. Also cache in supported_ref_vars_.
+  // TODO(dnovillo): This function is replicated in other passes and it's
+  // slightly different in every pass. Is it possible to make one common
+  // implementation?
+  bool HasOnlySupportedRefs(uint32_t varId);
+
+  // Patch phis in loop header block |header_id| now that the map is complete
+  // for the backedge predecessor |back_id|. Specifically, for each phi, find
+  // the value corresponding to the backedge predecessor. That was temporarily
+  // set with the variable id that this phi corresponds to. Change this phi
+  // operand to the the value which corresponds to that variable in the
+  // predecessor map.
+  void PatchPhis(uint32_t header_id, uint32_t back_id);
+
+  // Initialize label2ssa_map_ entry for block |block_ptr| with single
+  // predecessor.
+  void SSABlockInitSinglePred(ir::BasicBlock* block_ptr);
+
+  // Initialize label2ssa_map_ entry for loop header block pointed to
+  // |block_itr| by merging entries from all predecessors. If any value
+  // ids differ for any variable across predecessors, create a phi function
+  // in the block and use that value id for the variable in the new map.
+  // Assumes all predecessors have been visited by EliminateLocalMultiStore
+  // except the back edge. Use a dummy value in the phi for the back edge
+  // until the back edge block is visited and patch the phi value then.
+  void SSABlockInitLoopHeader(std::list<ir::BasicBlock*>::iterator block_itr);
+
+  // Initialize label2ssa_map_ entry for multiple predecessor block
+  // |block_ptr| by merging label2ssa_map_ entries for all predecessors.
+  // If any value ids differ for any variable across predecessors, create
+  // a phi function in the block and use that value id for the variable in
+  // the new map. Assumes all predecessors have been visited by
+  // EliminateLocalMultiStore.
+  void SSABlockInitMultiPred(ir::BasicBlock* block_ptr);
+
+  // Initialize the label2ssa_map entry for a block pointed to by |block_itr|.
+  // Insert phi instructions into block when necessary. All predecessor
+  // blocks must have been visited by EliminateLocalMultiStore except for
+  // backedges.
+  void SSABlockInit(std::list<ir::BasicBlock*>::iterator block_itr);
+
+  // Return true if variable is loaded in block with |label| or in any
+  // succeeding block in structured order.
+  bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
+
+  // Collect all named or decorated ids in module.
+  void FindNamedOrDecoratedIds();
+
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;
 
-  // Next unused ID
-  uint32_t next_id_;
+  // Map from block's label id to a map of a variable to its value at the
+  // end of the block.
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>
+      label2ssa_map_;
+
+  // Set of label ids of visited blocks
+  std::unordered_set<uint32_t> visitedBlocks_;
+
+  // Variables that are only referenced by supported operations for this
+  // pass ie. loads and stores.
+  std::unordered_set<uint32_t> supported_ref_vars_;
+
+  // Map from type to undef
+  std::unordered_map<uint32_t, uint32_t> type2undefs_;
+
+  // The Ids of OpPhi instructions that are in a loop header and which require
+  // patching of the value for the loop back-edge.
+  std::unordered_set<uint32_t> phis_to_patch_;
+
 };
 
 }  // namespace opt
