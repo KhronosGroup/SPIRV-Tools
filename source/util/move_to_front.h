@@ -52,7 +52,7 @@ namespace spvutils {
 template <typename Val>
 class MoveToFront {
  public:
-  explicit MoveToFront(size_t reserve_capacity = 128) {
+  explicit MoveToFront(size_t reserve_capacity = 4) {
     nodes_.reserve(reserve_capacity);
 
     // Create NIL node.
@@ -73,7 +73,7 @@ class MoveToFront {
   // Computes 1-indexed rank of value in the move-to-front sequence and moves
   // the value to the front. Example:
   // Before the call: 4 8 2 1 7
-  // RankFromValue(8) returns 1
+  // RankFromValue(8) returns 2
   // After the call: 8 4 2 1 7
   // Returns true iff the value was found in the sequence.
   bool RankFromValue(const Val& value, uint32_t* rank);
@@ -81,7 +81,7 @@ class MoveToFront {
   // Returns value corresponding to a 1-indexed rank in the move-to-front
   // sequence and moves the value to the front. Example:
   // Before the call: 4 8 2 1 7
-  // ValueFromRank(1) returns 8
+  // ValueFromRank(2) returns 8
   // After the call: 8 4 2 1 7
   // Returns true iff the rank is within bounds [1, GetSize()].
   bool ValueFromRank(uint32_t rank, Val* value);
