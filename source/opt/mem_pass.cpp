@@ -160,7 +160,7 @@ void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
 void MemPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
     KillNamesAndDecorates(ip);
-    def_use_mgr_->KillInst(ip);
+    get_def_use_mgr()->KillInst(ip);
   });
 }
 

@@ -247,7 +247,7 @@ void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranch(
     new ir::Instruction(SpvOpBranch, 0, 0,
         {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
-  def_use_mgr_->AnalyzeInstDefUse(&*newBranch);
+  get_def_use_mgr()->AnalyzeInstDefUse(&*newBranch);
   bp->AddInstruction(std::move(newBranch));
 }
 
@@ -474,7 +474,7 @@ void AggressiveDCEPass::Initialize(ir::Module* module) {
 
   // Initialize block map
   id2block_.clear();
-  for (auto& fn : *module_)
+  for (auto& fn : *get_module())
     for (auto& blk : fn)
       id2block_[blk.id()] = &blk;
 

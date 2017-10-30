@@ -193,9 +193,6 @@ class MemPass : public Pass {
   // succeeding block in structured order.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
-  // Collect all named or decorated ids in module.
-  void FindNamedOrDecoratedIds();
-
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;
 
