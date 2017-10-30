@@ -76,7 +76,7 @@ def find(top, filename_glob, skip_glob_list):
 def filtered_descendants(glob):
     """Returns glob-matching filenames under the current directory, but skips
     some irrelevant paths."""
-    return find('.', glob, ['third_party', 'external', 'build*', 'out*'])
+    return find('.', glob, ['third_party', 'external', 'CompilerIdCXX', 'build*', 'out*'])
 
 
 def skip(line):
