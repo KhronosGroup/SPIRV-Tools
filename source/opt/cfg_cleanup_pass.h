@@ -42,6 +42,9 @@ class CFGCleanupPass : public MemPass {
   // Initialize the pass.
   void Initialize(ir::Module* module);
 
+  // Initialize CFG Cleanup variables
+  void InitializeCFGCleanup(ir::Module* module);
+
   // Remove Phi operands in |phi| that are coming from blocks not in
   // |reachable_blocks|.
   void RemovePhiOperands(ir::Instruction* phi,

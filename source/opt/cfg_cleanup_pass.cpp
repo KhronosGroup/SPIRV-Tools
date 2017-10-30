@@ -223,9 +223,7 @@ bool CFGCleanupPass::CFGCleanup(ir::Function* func) {
   return modified;
 }
 
-void CFGCleanupPass::Initialize(ir::Module* module) {
-  InitializeProcessing(module);
-
+void CFGCleanupPass::InitializeCFGCleanup(ir::Module* module) {
   // Initialize block lookup map.
   label2block_.clear();
   for (auto& fn : *module) {
@@ -244,6 +242,11 @@ void CFGCleanupPass::Initialize(ir::Module* module) {
       });
     }
   }
+}
+
+void CFGCleanupPass::Initialize(ir::Module* module) {
+  InitializeProcessing(module);
+  InitializeCFGCleanup(module);
 }
 
 Pass::Status CFGCleanupPass::Process(ir::Module* module) {
