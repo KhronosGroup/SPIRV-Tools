@@ -175,7 +175,7 @@ void DeadBranchElimPass::ComputeBackEdges(
 bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   // Traverse blocks in structured order
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &structuredOrder);
+  ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   ComputeBackEdges(structuredOrder);
   std::unordered_set<ir::BasicBlock*> elimBlocks;
   bool modified = false;

@@ -129,62 +129,6 @@ void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
   live_local_vars_.insert(varId);
 }
 
-uint32_t AggressiveDCEPass::MergeBlockIdIfAny(
-    const ir::BasicBlock& blk, uint32_t* cbid) const {
-  auto merge_ii = blk.cend();
-  --merge_ii;
-  uint32_t mbid = 0;
-  *cbid = 0;
-  if (merge_ii != blk.cbegin()) {
-    --merge_ii;
-    if (merge_ii->opcode() == SpvOpLoopMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-      *cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
-    }
-    else if (merge_ii->opcode() == SpvOpSelectionMerge) {
-      mbid = merge_ii->GetSingleWordInOperand(
-          kSelectionMergeMergeBlockIdInIdx);
-    }
-  }
-  return mbid;
-}
-
-void AggressiveDCEPass::ComputeStructuredSuccessors(ir::Function* func) {
-  // If header, make merge block first successor. If a loop header, make
-  // the second successor the continue target.
-  for (auto& blk : *func) {
-    uint32_t cbid;
-    uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
-    if (mbid != 0) {
-      block2structured_succs_[&blk].push_back(id2block_[mbid]);
-      if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
-    }
-    // add true successors
-    blk.ForEachSuccessorLabel([&blk, this](uint32_t sbid) {
-      block2structured_succs_[&blk].push_back(id2block_[sbid]);
-    });
-  }
-}
-
-void AggressiveDCEPass::ComputeStructuredOrder(
-    ir::Function* func, std::list<ir::BasicBlock*>* order) {
-  // Compute structured successors and do DFS
-  ComputeStructuredSuccessors(func);
-  auto ignore_block = [](cbb_ptr) {};
-  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
-      return &(block2structured_succs_[block]); };
-  // TODO(greg-lunarg): Get rid of const_cast by making moving const
-  // out of the cfa.h prototypes and into the invoking code.
-  auto post_order = [&](cbb_ptr b) {
-      order->push_front(const_cast<ir::BasicBlock*>(b)); };
-
-  spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      &*func->begin(), get_structured_successors, ignore_block, post_order,
-      ignore_edge);
-}
-
 bool AggressiveDCEPass::IsStructuredIfHeader(ir::BasicBlock* bp,
       ir::Instruction** mergeInst, ir::Instruction** branchInst,
       uint32_t* mergeBlockId) {
@@ -256,7 +200,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   ComputeInst2BlockMap(func);
   // Compute map from block to controlling conditional branch
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &structuredOrder);
+  ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   ComputeBlock2HeaderMaps(structuredOrder);
   bool modified = false;
   // Add instructions with external side effects to worklist. Also add branches

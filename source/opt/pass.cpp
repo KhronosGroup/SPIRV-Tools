@@ -131,7 +131,7 @@ uint32_t Pass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
   return ptrTypeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx);
 }
 
-void Pass::ComputeStructuredOrder(ir::Function* func,
+void Pass::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                                   std::list<ir::BasicBlock*>* order) {
   // Compute structured successors and do DFS
   ComputeStructuredSuccessors(func);
@@ -147,7 +147,7 @@ void Pass::ComputeStructuredOrder(ir::Function* func,
     order->push_front(const_cast<ir::BasicBlock*>(b));
   };
   spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      &pseudo_entry_block_, get_structured_successors, ignore_block, post_order,
+      root, get_structured_successors, ignore_block, post_order,
       ignore_edge);
 }
 
@@ -157,7 +157,8 @@ void Pass::ComputeStructuredSuccessors(ir::Function *func) {
     // If no predecessors in function, make successor to pseudo entry
     if (label2preds_[blk.id()].size() == 0)
       block2structured_succs_[&pseudo_entry_block_].push_back(&blk);
-    // If header, make merge block first successor.
+    // If header, make merge block first successor and continue block second
+    // successor if there is one.
     uint32_t cbid;
     const uint32_t mbid = MergeBlockIdIfAny(blk, &cbid);
     if (mbid != 0) {

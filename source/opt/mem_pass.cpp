@@ -609,7 +609,7 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
   // simplest?) to make sure all predecessors blocks are processed before
   // a block itself.
   std::list<ir::BasicBlock*> structuredOrder;
-  ComputeStructuredOrder(func, &structuredOrder);
+  ComputeStructuredOrder(func, &pseudo_entry_block_, &structuredOrder);
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     // Skip pseudo entry block
     if (*bi == &pseudo_entry_block_) continue;

@@ -100,28 +100,6 @@ class AggressiveDCEPass : public MemPass {
   // If |varId| is local, mark all stores of varId as live.
   void ProcessLoad(uint32_t varId);
 
-  // Returns the id of the merge block declared by a merge instruction in 
-  // this block |blk|, if any. If none, returns zero. If loop merge, returns
-  // the continue target id in |cbid|. Otherwise sets to zero.
-  uint32_t MergeBlockIdIfAny(const ir::BasicBlock& blk, uint32_t* cbid) const;
-
-  // Compute structured successors for function |func|.
-  // A block's structured successors are the blocks it branches to
-  // together with its declared merge block if it has one.
-  // When order matters, the merge block always appears first and if
-  // a loop merge block, the continue target always appears second.
-  // This assures correct depth first search in the presence of early 
-  // returns and kills. If the successor vector contain duplicates
-  // of the merge and continue blocks, they are safely ignored by DFS.
-  void ComputeStructuredSuccessors(ir::Function* func);
-
-  // Compute structured block order |order| for function |func|. This order
-  // has the property that dominators are before all blocks they dominate and
-  // merge blocks are after all blocks that are in the control constructs of
-  // their header.
-  void ComputeStructuredOrder(
-      ir::Function* func, std::list<ir::BasicBlock*>* order);
-
   // If |bp| is structured if header block, return true and set |branchInst|
   // to the conditional branch and |mergeBlockId| to the merge block.
   bool IsStructuredIfHeader(ir::BasicBlock* bp,
