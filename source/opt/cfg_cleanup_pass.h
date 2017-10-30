@@ -29,35 +29,8 @@ class CFGCleanupPass : public MemPass {
   Status Process(ir::Module*) override;
 
  private:
-  // Call all the cleanup helper functions on |func|.
-  bool CFGCleanup(ir::Function* func);
-
-  // Remove all the unreachable basic blocks in |func|.
-  bool RemoveUnreachableBlocks(ir::Function* func);
-
-  // Remove the block pointed by the iterator |*bi|. This also removes
-  // all the instructions in the pointed-to block.
-  void RemoveBlock(ir::Function::iterator* bi);
-
   // Initialize the pass.
   void Initialize(ir::Module* module);
-
-  // Initialize CFG Cleanup variables
-  void InitializeCFGCleanup(ir::Module* module);
-
-  // Remove Phi operands in |phi| that are coming from blocks not in
-  // |reachable_blocks|.
-  void RemovePhiOperands(ir::Instruction* phi,
-                         std::unordered_set<ir::BasicBlock*> reachable_blocks);
-
-  // Map from block's label id to block. TODO(dnovillo): Basic blocks ought to
-  // have basic blocks in their pred/succ list.
-  std::unordered_map<uint32_t, ir::BasicBlock*> label2block_;
-
-  // Map from an instruction result ID to the block that holds it.
-  // TODO(dnovillo): This would be unnecessary if ir::Instruction instances
-  // knew what basic block they belong to.
-  std::unordered_map<uint32_t, ir::BasicBlock*> def_block_;
 };
 
 }  // namespace opt

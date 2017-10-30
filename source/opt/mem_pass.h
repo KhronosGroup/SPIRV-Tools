@@ -109,6 +109,12 @@ class MemPass : public Pass {
   // |loadInst|.
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
+  // Initialize CFG Cleanup variables
+  void InitializeCFGCleanup(ir::Module* module);
+
+  // Call all the cleanup helper functions on |func|.
+  bool CFGCleanup(ir::Function* func);
+
   // Return true if |op| is supported decorate.
   inline bool IsNonTypeDecorate(uint32_t op) const {
     return (op == SpvOpDecorate || op == SpvOpDecorateId);
@@ -193,6 +199,17 @@ class MemPass : public Pass {
   // succeeding block in structured order.
   bool IsLiveAfter(uint32_t var_id, uint32_t label) const;
 
+  // Remove all the unreachable basic blocks in |func|.
+  bool RemoveUnreachableBlocks(ir::Function* func);
+
+  // Remove the block pointed by the iterator |*bi|. This also removes
+  // all the instructions in the pointed-to block.
+  void RemoveBlock(ir::Function::iterator* bi);
+
+  // Remove Phi operands in |phi| that are coming from blocks not in
+  // |reachable_blocks|.
+  void RemovePhiOperands(ir::Instruction* phi,
+                         std::unordered_set<ir::BasicBlock*> reachable_blocks);
   // named or decorated ids
   std::unordered_set<uint32_t> named_or_decorated_ids_;
 
@@ -215,6 +232,14 @@ class MemPass : public Pass {
   // patching of the value for the loop back-edge.
   std::unordered_set<uint32_t> phis_to_patch_;
 
+  // Map from block's label id to block. TODO(dnovillo): Basic blocks ought to
+  // have basic blocks in their pred/succ list.
+  std::unordered_map<uint32_t, ir::BasicBlock*> label2block_;
+
+  // Map from an instruction result ID to the block that holds it.
+  // TODO(dnovillo): This would be unnecessary if ir::Instruction instances
+  // knew what basic block they belong to.
+  std::unordered_map<uint32_t, ir::BasicBlock*> def_block_;
 };
 
 }  // namespace opt

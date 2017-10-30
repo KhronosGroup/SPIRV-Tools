@@ -33,7 +33,6 @@ const uint32_t kExtInstInstructionInIndx = 1;
 const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 }  // namespace anonymous
 
@@ -365,7 +364,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       modified = true;
   }
   // Kill dead instructions and remember dead blocks
-  std::unordered_set<ir::BasicBlock*> dead_blocks;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
     uint32_t mergeBlockId = 0;
     for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
@@ -380,32 +378,26 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       modified = true;
     }
     // If a structured if was deleted, add a branch to its merge block,
-    // and traverse to the merge block killing all instructions on the way
-    // and remembering dead blocks for later deletion from function.
+    // and traverse to the merge block, continuing processing there.
     // The block still exists as the OpLabel at least is still intact.
     if (mergeBlockId != 0) {
       AddBranch(mergeBlockId, *bi);
       for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
-        KillAllInsts(*bi);
-        dead_blocks.insert(*bi);
       }
     }
     else {
       ++bi;
     }
   }
-  // Erase dead blocks from function
-  for (auto ebi = func->begin(); ebi != func->end(); )
-    if (dead_blocks.find(&*ebi) != dead_blocks.end())
-      ebi = ebi.Erase();
-    else
-      ++ebi;
+  // Cleanup all CFG including all unreachable blocks
+  CFGCleanup(func);
 
   return modified;
 }
 
 void AggressiveDCEPass::Initialize(ir::Module* module) {
   InitializeProcessing(module);
+  InitializeCFGCleanup(module);
 
   // Clear collections
   worklist_ = std::queue<ir::Instruction*>{};
