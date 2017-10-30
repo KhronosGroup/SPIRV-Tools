@@ -266,12 +266,6 @@ bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
 }
 
 void MemPass::InitSSARewrite(ir::Function* func) {
-  // Initialize function and block maps.
-  id2block_.clear();
-  block2structured_succs_.clear();
-  for (auto& fn : *get_module())
-    for (auto& blk : fn) id2block_[blk.id()] = &blk;
-
   // Clear collections.
   seen_target_vars_.clear();
   seen_non_target_vars_.clear();
@@ -598,9 +592,6 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
   // (https://github.com/KhronosGroup/SPIRV-Tools/issues/893).
   if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
-
-  // Collect all named and decorated ids.
-  FindNamedOrDecoratedIds();
 
   // Initialize the data structures used to insert Phi instructions.
   InitSSARewrite(func);
