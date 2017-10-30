@@ -17,6 +17,7 @@ add_library(SPIRV-Tools-opt
   block_merge_pass.h
   build_module.h
   cfg_cleanup_pass.h
+  cfg.h
   common_uniform_elim_pass.h
   compact_ids_pass.h
   constants.h
@@ -63,6 +64,7 @@ add_library(SPIRV-Tools-opt
   block_merge_pass.cpp
   build_module.cpp
   cfg_cleanup_pass.cpp
+  cfg.cpp
   common_uniform_elim_pass.cpp
   compact_ids_pass.cpp
   decoration_manager.cpp

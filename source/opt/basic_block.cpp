@@ -19,6 +19,14 @@
 namespace spvtools {
 namespace ir {
 
+namespace {
+
+const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
+
+}  // namespace
+
 BasicBlock::BasicBlock(const BasicBlock& bb)
     : function_(nullptr),
       label_(MakeUnique<Instruction>(bb.GetLabelInst())),
@@ -35,7 +43,7 @@ const Instruction* BasicBlock::GetMergeInst() const {
   if (iter != cbegin()) {
     --iter;
     const auto opcode = iter->opcode();
-    if (opcode == SpvOpLoopMerge || opcode  == SpvOpSelectionMerge) {
+    if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge) {
       result = &*iter;
     }
   }
@@ -50,7 +58,7 @@ Instruction* BasicBlock::GetMergeInst() {
   if (iter != begin()) {
     --iter;
     const auto opcode = iter->opcode();
-    if (opcode == SpvOpLoopMerge || opcode  == SpvOpSelectionMerge) {
+    if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge) {
       result = &*iter;
     }
   }
@@ -101,13 +109,39 @@ void BasicBlock::ForMergeAndContinueLabel(
   --ii;
   if (ii == insts_.begin()) return;
   --ii;
-  if (ii->opcode() == SpvOpSelectionMerge || 
-      ii->opcode() == SpvOpLoopMerge)
-    ii->ForEachInId([&f](const uint32_t* idp) {
-      f(*idp);
-    });
+  if (ii->opcode() == SpvOpSelectionMerge || ii->opcode() == SpvOpLoopMerge) {
+    ii->ForEachInId([&f](const uint32_t* idp) { f(*idp); });
+  }
+}
+
+uint32_t BasicBlock::MergeBlockIdIfAny() const {
+  auto merge_ii = cend();
+  --merge_ii;
+  uint32_t mbid = 0;
+  if (merge_ii != cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
+      mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
+    } else if (merge_ii->opcode() == SpvOpSelectionMerge) {
+      mbid = merge_ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+    }
+  }
+
+  return mbid;
+}
+
+uint32_t BasicBlock::ContinueBlockIdIfAny() const {
+  auto merge_ii = cend();
+  --merge_ii;
+  uint32_t cbid = 0;
+  if (merge_ii != cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
+      cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+    }
+  }
+  return cbid;
 }
 
 }  // namespace ir
 }  // namespace spvtools
-

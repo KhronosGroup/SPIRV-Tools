@@ -190,6 +190,11 @@ class CommonUniformElimPass : public Pass {
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
+
+  // Map from block to its structured successor blocks. See
+  // ComputeStructuredSuccessors() for definition.
+  std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
+      block2structured_succs_;
 };
 
 }  // namespace opt
