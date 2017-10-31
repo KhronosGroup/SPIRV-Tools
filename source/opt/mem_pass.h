@@ -132,10 +132,6 @@ class MemPass : public Pass {
   // non-target variables.
   bool IsTargetVar(uint32_t varId);
 
-  // Initialize data structures used by EliminateLocalMultiStore for
-  // function |func|, specifically block predecessors and target variables.
-  void InitSSARewrite(ir::Function* func);
-
   // Return undef in function for type. Create and insert an undef after the
   // first non-variable in the function if it doesn't already exist. Add
   // undef to function undef map.
@@ -167,6 +163,10 @@ class MemPass : public Pass {
   // operand to the the value which corresponds to that variable in the
   // predecessor map.
   void PatchPhis(uint32_t header_id, uint32_t back_id);
+
+  // Initialize data structures used by EliminateLocalMultiStore for
+  // function |func|, specifically block predecessors and target variables.
+  void InitSSARewrite(ir::Function* func);
 
   // Initialize label2ssa_map_ entry for block |block_ptr| with single
   // predecessor.

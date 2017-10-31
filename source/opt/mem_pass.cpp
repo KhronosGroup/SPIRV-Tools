@@ -581,8 +581,8 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
   // TODO(dnovillo) the current Phi placement mechanism assumes structured
   // control-flow. This should be generalized
   // (https://github.com/KhronosGroup/SPIRV-Tools/issues/893).
-  if (!get_module()->HasCapability(SpvCapabilityShader))
-    return Status::SuccessWithoutChange;
+  assert(module_->HasCapability(SpvCapabilityShader) &&
+         "This only works on structured control flow");
 
   // Initialize the data structures used to insert Phi instructions.
   InitSSARewrite(func);

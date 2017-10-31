@@ -109,30 +109,38 @@ void BasicBlock::ForMergeAndContinueLabel(
   --ii;
   if (ii == insts_.begin()) return;
   --ii;
-  if (ii->opcode() == SpvOpSelectionMerge || ii->opcode() == SpvOpLoopMerge)
+  if (ii->opcode() == SpvOpSelectionMerge || ii->opcode() == SpvOpLoopMerge) {
     ii->ForEachInId([&f](const uint32_t* idp) { f(*idp); });
+  }
 }
 
-uint32_t BasicBlock::MergeBlockIdIfAny(uint32_t* cbid) {
+uint32_t BasicBlock::MergeBlockIdIfAny() const {
   auto merge_ii = cend();
   --merge_ii;
-  if (cbid != nullptr) {
-    *cbid = 0;
-  }
   uint32_t mbid = 0;
   if (merge_ii != cbegin()) {
     --merge_ii;
     if (merge_ii->opcode() == SpvOpLoopMerge) {
       mbid = merge_ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx);
-      if (cbid != nullptr) {
-        *cbid =
-            merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
-      }
     } else if (merge_ii->opcode() == SpvOpSelectionMerge) {
       mbid = merge_ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
     }
   }
+
   return mbid;
+}
+
+uint32_t BasicBlock::ContinueBlockIdIfAny() const {
+  auto merge_ii = cend();
+  --merge_ii;
+  uint32_t cbid = 0;
+  if (merge_ii != cbegin()) {
+    --merge_ii;
+    if (merge_ii->opcode() == SpvOpLoopMerge) {
+      cbid = merge_ii->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx);
+    }
+  }
+  return cbid;
 }
 
 }  // namespace ir

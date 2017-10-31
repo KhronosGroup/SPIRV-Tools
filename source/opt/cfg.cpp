@@ -47,12 +47,15 @@ CFG::CFG(ir::Module* module)
 
 void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                                   std::list<ir::BasicBlock*>* order) {
+  assert(module_->HasCapability(SpvCapabilityShader) &&
+         "This only works on structured control flow");
+
   // Compute structured successors and do DFS.
   ComputeStructuredSuccessors(func);
   auto ignore_block = [](cbb_ptr) {};
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
-  auto get_structured_successors = [this](const ir::BasicBlock* block) {
-    return &(block2structured_succs_[block]);
+  auto get_structured_successors = [this](const ir::BasicBlock* b) {
+    return &(block2structured_succs_[b]);
   };
 
   // TODO(greg-lunarg): Get rid of const_cast by making moving const
@@ -74,10 +77,10 @@ void CFG::ComputeStructuredSuccessors(ir::Function *func) {
 
     // If header, make merge block first successor and continue block second
     // successor if there is one.
-    uint32_t cbid;
-    const uint32_t mbid = blk.MergeBlockIdIfAny(&cbid);
+    uint32_t mbid = blk.MergeBlockIdIfAny();
     if (mbid != 0) {
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
+      uint32_t cbid = blk.ContinueBlockIdIfAny();
       if (cbid != 0)
         block2structured_succs_[&blk].push_back(id2block_[cbid]);
     }

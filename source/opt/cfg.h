@@ -67,6 +67,9 @@ class CFG {
   void ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                               std::list<ir::BasicBlock*>* order);
 
+ private:
+  using cbb_ptr = const ir::BasicBlock*;
+
   // Compute structured successors for function |func|. A block's structured
   // successors are the blocks it branches to together with its declared merge
   // block and continue block if it has them. When order matters, the merge
@@ -75,9 +78,6 @@ class CFG {
   // vector contain duplicates of the merge or continue blocks, they are safely
   // ignored by DFS.
   void ComputeStructuredSuccessors(ir::Function* func);
-
- private:
-  using cbb_ptr = const ir::BasicBlock*;
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
