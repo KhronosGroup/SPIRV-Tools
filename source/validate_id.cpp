@@ -1223,6 +1223,23 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
     return false;
   }
 
+  // validate storage class
+  {
+    uint32_t dataType;
+    uint32_t storageClass;
+    if (!module_.GetPointerTypeInfo(pointerType->id(), &dataType, &storageClass)) {
+      DIAG(pointerIndex) << "OpStore Pointer <id> '"<< inst->words[pointerIndex] << "' is not pointer type";
+      return false;
+    }
+
+    if (storageClass == SpvStorageClassUniformConstant ||
+        storageClass == SpvStorageClassInput ||
+        storageClass == SpvStorageClassPushConstant) {
+      DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex] << "' storage class is read-only";
+      return false;
+    }
+  }
+
   auto objectIndex = 2;
   auto object = module_.FindDef(inst->words[objectIndex]);
   if (!object || !object->type_id()) {

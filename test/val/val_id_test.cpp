@@ -2092,7 +2092,7 @@ TEST_F(ValidateIdWithMessage, OpStoreGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer UniformConstant %2
+%3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
 %6 = OpVariable %3 UniformConstant
@@ -2187,7 +2187,7 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer UniformConstant %2
+%3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %2 42
 %6 = OpVariable %3 UniformConstant
@@ -2206,7 +2206,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBad) {
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
 %9 = OpTypeFloat 32
-%3 = OpTypePointer UniformConstant %2
+%3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %5 = OpConstant %9 3.14
 %6 = OpVariable %3 UniformConstant
@@ -2430,7 +2430,7 @@ TEST_F(ValidateIdWithMessage, OpStoreVoid) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer UniformConstant %2
+%3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %6 = OpVariable %3 UniformConstant
 %7 = OpFunction %1 None %4
@@ -2449,7 +2449,7 @@ TEST_F(ValidateIdWithMessage, OpStoreLabel) {
   string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeVoid
 %2 = OpTypeInt 32 0
-%3 = OpTypePointer UniformConstant %2
+%3 = OpTypePointer Uniform %2
 %4 = OpTypeFunction %1
 %6 = OpVariable %3 UniformConstant
 %7 = OpFunction %1 None %4
@@ -2479,6 +2479,45 @@ TEST_F(ValidateIdWithMessage, DISABLED_OpStoreFunction) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpStoreBuiltin) {
+  string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationID
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %main "main"
+
+               OpName %gl_GlobalInvocationID "gl_GlobalInvocationID"
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+
+       %zero = OpConstant %uint 0
+ %v3uint_000 = OpConstantComposite %v3uint %zero %zero %zero
+
+       %void = OpTypeVoid
+   %voidfunc = OpTypeFunction %void
+       %main = OpFunction %void None %voidfunc
+      %lmain = OpLabel
+
+               OpStore %gl_GlobalInvocationID %v3uint_000
+
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("storage class is read-only"));
 }
 
 TEST_F(ValidateIdWithMessage, OpCopyMemoryGood) {
