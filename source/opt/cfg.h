@@ -27,6 +27,9 @@ class CFG {
  public:
   CFG(ir::Module *module);
 
+  // Return the module described by this CFG.
+  ir::Module* get_module() const { return module_; }
+
   // Return the list of predecesors for basic block with label |blkid|.
   // TODO(dnovillo): Move this to ir::BasicBlock.
   const std::vector<uint32_t>& preds(uint32_t blk_id) const {
@@ -78,6 +81,9 @@ class CFG {
   // vector contain duplicates of the merge or continue blocks, they are safely
   // ignored by DFS.
   void ComputeStructuredSuccessors(ir::Function* func);
+
+  // Module for this CFG.
+  ir::Module *module_;
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.

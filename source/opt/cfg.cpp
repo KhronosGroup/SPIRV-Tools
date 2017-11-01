@@ -27,13 +27,11 @@ const int kInvalidId = 0x400000;
 }  // namespace
 
 CFG::CFG(ir::Module* module)
-    : pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
+    : module_(module),
+      pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, 0, {}))),
       pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))) {
-  block2structured_succs_.clear();
-  label2preds_.clear();
-  id2block_.clear();
   for (auto& fn : *module) {
     for (auto& blk : fn) {
       uint32_t blkId = blk.id();
