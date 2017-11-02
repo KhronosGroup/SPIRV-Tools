@@ -87,7 +87,7 @@ class Pass {
 
   // Returns a pointer to the CFG for current module. TODO(dnovillo): This
   // should belong in IRContext.
-  CFG *cfg() const { return cfg_.get(); }
+  ir::CFG *cfg() const { return cfg_.get(); }
 
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
@@ -125,7 +125,7 @@ class Pass {
     context_ = c;
     next_id_ = context_->IdBound();
     def_use_mgr_.reset(new analysis::DefUseManager(consumer(), get_module()));
-    cfg_.reset(new CFG(get_module()));
+    cfg_.reset(new ir::CFG(get_module()));
   }
 
   // Return type id for |ptrInst|'s pointee
@@ -152,7 +152,7 @@ class Pass {
   ir::IRContext* context_;
 
   // The CFG for all the functions in this module.
-  std::unique_ptr<CFG> cfg_;
+  std::unique_ptr<ir::CFG> cfg_;
 };
 
 }  // namespace opt

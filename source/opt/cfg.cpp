@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cfa.h"
 #include "cfg.h"
+#include "cfa.h"
 #include "module.h"
 
 namespace spvtools {
-namespace opt {
+namespace ir {
 
 namespace {
 
@@ -44,7 +44,7 @@ CFG::CFG(ir::Module* module)
 }
 
 void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
-                                  std::list<ir::BasicBlock*>* order) {
+                                 std::list<ir::BasicBlock*>* order) {
   assert(module_->HasCapability(SpvCapabilityShader) &&
          "This only works on structured control flow");
 
@@ -62,11 +62,10 @@ void CFG::ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
     order->push_front(const_cast<ir::BasicBlock*>(b));
   };
   spvtools::CFA<ir::BasicBlock>::DepthFirstTraversal(
-      root, get_structured_successors, ignore_block, post_order,
-      ignore_edge);
+      root, get_structured_successors, ignore_block, post_order, ignore_edge);
 }
 
-void CFG::ComputeStructuredSuccessors(ir::Function *func) {
+void CFG::ComputeStructuredSuccessors(ir::Function* func) {
   block2structured_succs_.clear();
   for (auto& blk : *func) {
     // If no predecessors in function, make successor to pseudo entry.
@@ -79,8 +78,7 @@ void CFG::ComputeStructuredSuccessors(ir::Function *func) {
     if (mbid != 0) {
       block2structured_succs_[&blk].push_back(id2block_[mbid]);
       uint32_t cbid = blk.ContinueBlockIdIfAny();
-      if (cbid != 0)
-        block2structured_succs_[&blk].push_back(id2block_[cbid]);
+      if (cbid != 0) block2structured_succs_[&blk].push_back(id2block_[cbid]);
     }
 
     // Add true successors.

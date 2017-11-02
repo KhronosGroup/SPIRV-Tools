@@ -21,11 +21,11 @@
 #include <unordered_map>
 
 namespace spvtools {
-namespace opt {
+namespace ir {
 
 class CFG {
  public:
-  CFG(ir::Module *module);
+  CFG(ir::Module* module);
 
   // Return the module described by this CFG.
   ir::Module* get_module() const { return module_; }
@@ -83,7 +83,7 @@ class CFG {
   void ComputeStructuredSuccessors(ir::Function* func);
 
   // Module for this CFG.
-  ir::Module *module_;
+  ir::Module* module_;
 
   // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
