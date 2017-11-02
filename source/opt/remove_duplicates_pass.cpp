@@ -36,12 +36,11 @@ using opt::analysis::DefUseManager;
 using opt::analysis::DecorationManager;
 
 Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* irContext) {
-  DefUseManager defUseManager(consumer(), irContext->module());
   DecorationManager decManager(irContext->module());
 
   bool modified = RemoveDuplicateCapabilities(irContext);
-  modified |= RemoveDuplicatesExtInstImports(irContext, defUseManager);
-  modified |= RemoveDuplicateTypes(irContext, defUseManager, decManager);
+  modified |= RemoveDuplicatesExtInstImports(irContext);
+  modified |= RemoveDuplicateTypes(irContext, decManager);
   modified |= RemoveDuplicateDecorations(irContext);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
@@ -67,8 +66,8 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(ir::IRContext* irContext)
   return modified;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
-    ir::IRContext* irContext, analysis::DefUseManager& defUseManager) const {
+bool
+RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(ir::IRContext* irContext) const {
   bool modified = false;
 
   std::unordered_map<std::string, SpvId> extInstImports;
@@ -82,7 +81,7 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
       ++i;
     } else {
       // It's a duplicate, remove it.
-      defUseManager.ReplaceAllUsesWith(i->result_id(), res.first->second);
+      irContext->ReplaceAllUsesWith(i->result_id(), res.first->second);
       i = i.Erase();
       modified = true;
     }
@@ -91,9 +90,8 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
   return modified;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    ir::IRContext* irContext, DefUseManager& defUseManager,
-    DecorationManager& decManager) const {
+bool RemoveDuplicatesPass::RemoveDuplicateTypes(ir::IRContext* irContext,
+                                                DecorationManager& decManager) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
@@ -110,7 +108,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
     for (auto j : visitedTypes) {
-      if (AreTypesEqual(*i, j, defUseManager, decManager)) {
+      if (AreTypesEqual(*i, j, *irContext->get_def_use_mgr(), decManager)) {
         idToKeep = j.result_id();
         break;
       }
@@ -122,7 +120,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
       ++i;
     } else {
       // The same type has already been seen before, remove this one.
-      defUseManager.ReplaceAllUsesWith(i->result_id(), idToKeep);
+      irContext->ReplaceAllUsesWith(i->result_id(), idToKeep);
       modified = true;
       i = i.Erase();
     }

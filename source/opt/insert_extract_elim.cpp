@@ -109,8 +109,8 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
           }
           if (replId != 0) {
             const uint32_t extId = ii->result_id();
-            (void)get_def_use_mgr()->ReplaceAllUsesWith(extId, replId);
-            get_def_use_mgr()->KillInst(&*ii);
+            (void)context()->ReplaceAllUsesWith(extId, replId);
+            context()->KillInst(&*ii);
             modified = true;
           }
         } break;

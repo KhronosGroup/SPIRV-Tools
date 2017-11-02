@@ -42,11 +42,9 @@ class RemoveDuplicatesPass : public Pass {
 
  private:
   bool RemoveDuplicateCapabilities(ir::IRContext* irContext) const;
-  bool RemoveDuplicatesExtInstImports(
-      ir::IRContext* irContext, analysis::DefUseManager& defUseManager) const;
+  bool RemoveDuplicatesExtInstImports(ir::IRContext* irContext) const;
   bool RemoveDuplicateTypes(ir::IRContext* irContext,
-                            analysis::DefUseManager& defUseManager,
-                            analysis::DecorationManager& decManager) const;
+                              analysis::DecorationManager& decManager) const;
   bool RemoveDuplicateDecorations(ir::IRContext* irContext) const;
 };
 

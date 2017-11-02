@@ -20,12 +20,14 @@
 
 #include "opt/build_module.h"
 #include "opt/def_use_manager.h"
+#include "opt/ir_context.h"
 #include "pass_utils.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace {
 
-using ::testing::ElementsAre;
+using ::testing::UnorderedElementsAre;
+using ::testing::UnorderedElementsAreArray;
 
 using namespace spvtools;
 using spvtools::opt::analysis::DefUseManager;
@@ -49,8 +51,8 @@ std::string DisassembleInst(ir::Instruction* inst) {
 
 // A struct for holding expected id defs and uses.
 struct InstDefUse {
-  using IdInstPair = std::pair<uint32_t, const char*>;
-  using IdInstsPair = std::pair<uint32_t, std::vector<const char*>>;
+  using IdInstPair = std::pair<uint32_t, std::string>;
+  using IdInstsPair = std::pair<uint32_t, std::vector<std::string>>;
 
   // Ids and their corresponding def instructions.
   std::vector<IdInstPair> defs;
@@ -86,12 +88,13 @@ void CheckUse(const InstDefUse& expected_defs_uses,
     ASSERT_EQ(expected_uses.size(), uses.size())
         << "id [" << id << "] # uses: expected: " << expected_uses.size()
         << " actual: " << uses.size();
-    auto it = uses.cbegin();
-    for (const auto expected_use : expected_uses) {
-      EXPECT_EQ(expected_use, DisassembleInst(it->inst))
-          << "id [" << id << "] use instruction mismatch";
-      ++it;
+
+    std::vector<std::string> actual_uses_disassembled;
+    for (const auto actual_use : uses) {
+      actual_uses_disassembled.emplace_back(DisassembleInst(actual_use.inst));
     }
+    EXPECT_THAT(actual_uses_disassembled,
+                UnorderedElementsAreArray(expected_uses));
   }
 }
 
@@ -133,7 +136,7 @@ TEST_P(ParseDefUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   CheckDef(tc.du, manager.id_to_defs());
   CheckUse(tc.du, manager.id_to_uses());
@@ -512,18 +515,19 @@ TEST_P(ReplaceUseTest, Case) {
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
   ASSERT_NE(nullptr, module);
+  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  context.BuildDefUseManager();
 
   // Do the substitution.
   for (const auto& candiate : tc.candidates) {
-    manager.ReplaceAllUsesWith(candiate.first, candiate.second);
+    context.ReplaceAllUsesWith(candiate.first, candiate.second);
   }
 
-  EXPECT_EQ(tc.after, DisassembleModule(module.get()));
-  CheckDef(tc.du, manager.id_to_defs());
-  CheckUse(tc.du, manager.id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
+  CheckDef(tc.du, context.get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.du, context.get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -814,16 +818,17 @@ TEST_P(KillDefTest, Case) {
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
   ASSERT_NE(nullptr, module);
+  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  opt::analysis::DefUseManager manager(module.get());
 
   // Do the substitution.
-  for (const auto id : tc.ids_to_kill) manager.KillDef(id);
+  for (const auto id : tc.ids_to_kill) context.KillDef(id);
 
-  EXPECT_EQ(tc.after, DisassembleModule(module.get()));
-  CheckDef(tc.du, manager.id_to_defs());
-  CheckUse(tc.du, manager.id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
+  CheckDef(tc.du, context.get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.du, context.get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -1064,14 +1069,15 @@ TEST(DefUseTest, OpSwitch) {
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original_text);
   ASSERT_NE(nullptr, module);
+  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  context.BuildDefUseManager();
 
   // Do a bunch replacements.
-  manager.ReplaceAllUsesWith(9, 900);    // to unused id
-  manager.ReplaceAllUsesWith(10, 1000);  // to unused id
-  manager.ReplaceAllUsesWith(11, 7);     // to existing id
+  context.ReplaceAllUsesWith(9, 900);    // to unused id
+  context.ReplaceAllUsesWith(10, 1000);  // to unused id
+  context.ReplaceAllUsesWith(11, 7);     // to existing id
 
   // clang-format off
   const char modified_text[] =
@@ -1095,7 +1101,7 @@ TEST(DefUseTest, OpSwitch) {
             "OpFunctionEnd";
   // clang-format on
 
-  EXPECT_EQ(modified_text, DisassembleModule(module.get()));
+  EXPECT_EQ(modified_text, DisassembleModule(context.module()));
 
   InstDefUse def_uses = {};
   def_uses.defs = {
@@ -1110,17 +1116,18 @@ TEST(DefUseTest, OpSwitch) {
       {10, "%10 = OpLabel"},
       {11, "%11 = OpLabel"},
   };
-  CheckDef(def_uses, manager.id_to_defs());
+  CheckDef(def_uses, context.get_def_use_mgr()->id_to_defs());
 
   {
-    auto* use_list = manager.GetUses(6);
+    auto* use_list = context.get_def_use_mgr()->GetUses(6);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(2u, use_list->size());
-    EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
-    EXPECT_EQ(SpvOpReturnValue, use_list->back().inst->opcode());
+    std::vector<SpvOp> opcodes = {use_list->front().inst->opcode(),
+                                  use_list->back().inst->opcode()};
+    EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSwitch, SpvOpReturnValue));
   }
   {
-    auto* use_list = manager.GetUses(7);
+    auto* use_list = context.get_def_use_mgr()->GetUses(7);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(6u, use_list->size());
     std::vector<SpvOp> opcodes;
@@ -1128,13 +1135,13 @@ TEST(DefUseTest, OpSwitch) {
       opcodes.push_back(use.inst->opcode());
     }
     // OpSwitch is now a user of %7.
-    EXPECT_THAT(opcodes,
-                ElementsAre(SpvOpSelectionMerge, SpvOpBranch, SpvOpBranch,
-                            SpvOpBranch, SpvOpBranch, SpvOpSwitch));
+    EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSelectionMerge, SpvOpBranch,
+                                              SpvOpBranch, SpvOpBranch,
+                                              SpvOpBranch, SpvOpSwitch));
   }
   // Check all ids only used by OpSwitch after replacement.
   for (const auto id : {8, 900, 1000}) {
-    auto* use_list = manager.GetUses(id);
+    auto* use_list = context.get_def_use_mgr()->GetUses(id);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(1u, use_list->size());
     EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
@@ -1189,7 +1196,7 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Analyze the instructions.
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  opt::analysis::DefUseManager manager(module.get());
   for (ir::Instruction& inst : tc.insts) {
     manager.AnalyzeInstDefUse(&inst);
   }
@@ -1310,20 +1317,21 @@ TEST_P(KillInstTest, Case) {
   std::unique_ptr<ir::Module> module =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.before);
   ASSERT_NE(nullptr, module);
+  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+  context.BuildDefUseManager();
 
   // KillInst
   uint32_t index = 0;
-  opt::analysis::DefUseManager manager(nullptr, module.get());
-  module->ForEachInst([&index, &tc, &manager](ir::Instruction* inst) {
+  context.module()->ForEachInst([&index, &tc, &context](ir::Instruction* inst) {
     if (tc.indices_for_inst_to_kill.count(index) != 0) {
-      manager.KillInst(inst);
+      context.KillInst(inst);
     }
     index++;
   });
 
-  EXPECT_EQ(tc.after, DisassembleModule(module.get()));
-  CheckDef(tc.expected_define_use, manager.id_to_defs());
-  CheckUse(tc.expected_define_use, manager.id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
+  CheckDef(tc.expected_define_use, context.get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.expected_define_use, context.get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -1420,7 +1428,7 @@ TEST_P(GetAnnotationsTest, Case) {
   ASSERT_NE(nullptr, module);
 
   // Get annotations
-  opt::analysis::DefUseManager manager(nullptr, module.get());
+  opt::analysis::DefUseManager manager(module.get());
   auto insts = manager.GetAnnotations(tc.id);
 
   // Check

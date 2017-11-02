@@ -72,6 +72,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/insert_extract_elim.cpp \
 		source/opt/instruction.cpp \
 		source/opt/instruction_list.cpp \
+		source/opt/ir_context.cpp \
 		source/opt/ir_loader.cpp \
 		source/opt/local_access_chain_convert_pass.cpp \
 		source/opt/local_single_block_elim_pass.cpp \

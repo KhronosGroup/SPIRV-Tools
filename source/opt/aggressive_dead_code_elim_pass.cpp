@@ -109,7 +109,7 @@ bool AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
   const ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
   if (dead_insts_.find(tInst) != dead_insts_.end()) {
-    get_def_use_mgr()->KillInst(inst);
+    context()->KillInst(inst);
     return true;
   }
   return false;
@@ -374,7 +374,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
       if (ii->opcode() == SpvOpSelectionMerge)
         mergeBlockId = 
             ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-      get_def_use_mgr()->KillInst(&*ii);
+      context()->KillInst(&*ii);
       modified = true;
     }
     // If a structured if was deleted, add a branch to its merge block,

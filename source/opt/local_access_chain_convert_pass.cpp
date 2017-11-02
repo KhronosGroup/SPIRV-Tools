@@ -35,7 +35,7 @@ void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
     KillNamesAndDecorates(resId);
-    get_def_use_mgr()->KillInst(inst);
+    context()->KillInst(inst);
   }
 }
 
@@ -233,7 +233,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
         std::vector<std::unique_ptr<ir::Instruction>> newInsts;
         uint32_t valId = ii->GetSingleWordInOperand(kStoreValIdInIdx);
         GenAccessChainStoreReplacement(ptrInst, valId, &newInsts);
-        get_def_use_mgr()->KillInst(&*ii);
+        context()->KillInst(&*ii);
         DeleteIfUseless(ptrInst);
         ++ii;
         ii = ii.InsertBefore(std::move(newInsts));

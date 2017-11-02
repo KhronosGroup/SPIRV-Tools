@@ -198,3 +198,9 @@ add_spvtools_unittest(TARGET cfg_cleanup
   SRCS cfg_cleanup_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET ir_context
+  SRCS ir_context_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+

@@ -149,7 +149,7 @@ void MemPass::KillNamesAndDecorates(uint32_t id) {
     const SpvOp op = u.inst->opcode();
     if (op == SpvOpName || IsNonTypeDecorate(op)) killList.push_back(u.inst);
   }
-  for (auto kip : killList) get_def_use_mgr()->KillInst(kip);
+  for (auto kip : killList) context()->KillInst(kip);
 }
 
 void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
@@ -161,7 +161,7 @@ void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
 void MemPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
     KillNamesAndDecorates(ip);
-    get_def_use_mgr()->KillInst(ip);
+    context()->KillInst(ip);
   });
 }
 
@@ -230,7 +230,7 @@ void MemPass::DCEInst(ir::Instruction* inst) {
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad) (void)GetPtr(di, &varId);
     KillNamesAndDecorates(di);
-    get_def_use_mgr()->KillInst(di);
+    context()->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
     for (auto id : ids)
@@ -246,7 +246,7 @@ void MemPass::DCEInst(ir::Instruction* inst) {
 void MemPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
   KillNamesAndDecorates(loadId);
-  (void)get_def_use_mgr()->ReplaceAllUsesWith(loadId, replId);
+  (void)context()->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
 }
 
@@ -633,8 +633,8 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           // replacing to prevent incorrect replacement in those instructions.
           const uint32_t loadId = ii->result_id();
           KillNamesAndDecorates(loadId);
-          (void)get_def_use_mgr()->ReplaceAllUsesWith(loadId, replId);
-          get_def_use_mgr()->KillInst(&*ii);
+          (void)context()->ReplaceAllUsesWith(loadId, replId);
+          context()->KillInst(&*ii);
         } break;
         default: { } break; }
     }
@@ -767,14 +767,14 @@ void MemPass::RemoveBlock(ir::Function::iterator* bi) {
     // removal of phi operands.
     if (inst != rm_block.GetLabelInst()) {
       KillNamesAndDecorates(inst);
-      get_def_use_mgr()->KillInst(inst);
+      context()->KillInst(inst);
     }
   });
 
   // Remove the label instruction last.
   auto label = rm_block.GetLabelInst();
   KillNamesAndDecorates(label);
-  get_def_use_mgr()->KillInst(label);
+  context()->KillInst(label);
 
   *bi = bi->Erase();
 }

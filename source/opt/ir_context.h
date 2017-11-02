@@ -15,6 +15,7 @@
 #ifndef SPIRV_TOOLS_IR_CONTEXT_H
 #define SPIRV_TOOLS_IR_CONTEXT_H
 
+#include "def_use_manager.h"
 #include "module.h"
 
 #include <iostream>
@@ -24,7 +25,23 @@ namespace ir {
 
 class IRContext {
  public:
-  IRContext(std::unique_ptr<Module>&& m) : module_(std::move(m)) {}
+  enum Analysis {
+    kAnalysisNone = 0x0,
+    kAnalysisBegin = 0x1,
+    kAnalysisDefUse = kAnalysisBegin,
+    kAnalysisEnd = 0x2
+  };
+
+  friend inline Analysis operator|(Analysis lhs, Analysis rhs);
+  friend inline Analysis& operator|=(Analysis& lhs, Analysis rhs);
+  friend inline Analysis operator<<(Analysis a, int shift);
+  friend inline Analysis& operator<<=(Analysis& a, int shift);
+
+  IRContext(std::unique_ptr<Module>&& m, spvtools::MessageConsumer c)
+      : module_(std::move(m)),
+        consumer_(std::move(c)),
+        def_use_mgr_(nullptr),
+        valid_analyses_(kAnalysisNone) {}
   Module* module() const { return module_.get(); }
 
   inline void SetIdBound(uint32_t i);
@@ -121,9 +138,88 @@ class IRContext {
   // Appends a function to this module.
   inline void AddFunction(std::unique_ptr<Function>&& f);
 
+  // Returns a pointer to a def-use manager.  If the def-use manager is
+  // invalid, it is rebuilt first.
+  opt::analysis::DefUseManager* get_def_use_mgr() {
+    if (!AreAnalysesValid(kAnalysisDefUse)) {
+      BuildDefUseManager();
+    }
+    return def_use_mgr_.get();
+  }
+
+  // Builds the def-use manager from scratch, even if it was already valid.
+  void BuildDefUseManager() {
+    def_use_mgr_.reset(new opt::analysis::DefUseManager(module()));
+    valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
+  }
+
+  // Sets the message consumer to the given |consumer|. |consumer| which will be
+  // invoked every time there is a message to be communicated to the outside.
+  void SetMessageConsumer(spvtools::MessageConsumer c) {
+    consumer_ = std::move(c);
+  }
+
+  // Returns the reference to the message consumer for this pass.
+  const spvtools::MessageConsumer& consumer() const { return consumer_; }
+
+  // Rebuilds the analyses in |set| that are invalid.
+  void BuildInvalidAnalyses(Analysis set);
+
+  // Invalidates all of the analyses except for those in |preserved_analyses|.
+  void InvalidateAnalysesExceptFor(Analysis preserved_analyses);
+
+  // Turns the instruction defining the given |id| into a Nop. Returns true on
+  // success, false if the given |id| is not defined at all. This method also
+  // erases both the uses of |id| and the information of this |id|-generating
+  // instruction's uses of its operands.
+  bool KillDef(uint32_t id);
+
+  // Turns the given instruction |inst| to a Nop. This method erases the
+  // information of the given instruction's uses of its operands. If |inst|
+  // defines an result id, the uses of the result id will also be erased.
+  void KillInst(ir::Instruction* inst);
+
+  // Returns true if all of the given analyses are valid.
+  bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
+
+  // Replaces all uses of |before| id with |after| id. Returns true if any
+  // replacement happens. This method does not kill the definition of the
+  // |before| id. If |after| is the same as |before|, does nothing and returns
+  // false.
+  bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
+
  private:
   std::unique_ptr<Module> module_;
+  spvtools::MessageConsumer consumer_;
+  std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
+
+  // A bitset indicating which analyes are currently valid.
+  Analysis valid_analyses_;
 };
+
+inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
+                                         ir::IRContext::Analysis rhs) {
+  return static_cast<ir::IRContext::Analysis>(static_cast<int>(lhs) |
+                                              static_cast<int>(rhs));
+}
+
+inline ir::IRContext::Analysis& operator|=(ir::IRContext::Analysis& lhs,
+                                           ir::IRContext::Analysis rhs) {
+  lhs = static_cast<ir::IRContext::Analysis>(static_cast<int>(lhs) |
+                                             static_cast<int>(rhs));
+  return lhs;
+}
+
+inline ir::IRContext::Analysis operator<<(ir::IRContext::Analysis a,
+                                          int shift) {
+  return static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
+}
+
+inline ir::IRContext::Analysis& operator<<=(ir::IRContext::Analysis& a,
+                                            int shift) {
+  a = static_cast<ir::IRContext::Analysis>(static_cast<int>(a) << shift);
+  return a;
+}
 
 void IRContext::SetIdBound(uint32_t i) { module_->SetIdBound(i); }
 

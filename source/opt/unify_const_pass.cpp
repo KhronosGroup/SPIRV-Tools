@@ -107,12 +107,11 @@ Pass::Status UnifyConstantPass::Process(ir::IRContext* c) {
   InitializeProcessing(c);
   bool modified = false;
   ResultIdTrie defined_constants;
-  analysis::DefUseManager def_use_mgr(consumer(), get_module());
 
   for (ir::Instruction& inst : context()->types_values()) {
     // Do not handle the instruction when there are decorations upon the result
     // id.
-    if (def_use_mgr.GetAnnotations(inst.result_id()).size() != 0) {
+    if (get_def_use_mgr()->GetAnnotations(inst.result_id()).size() != 0) {
       continue;
     }
 
@@ -156,8 +155,8 @@ Pass::Status UnifyConstantPass::Process(ir::IRContext* c) {
         if (id != inst.result_id()) {
           // The constant is a duplicated one, use the cached constant to
           // replace the uses of this duplicated one, then turn it to nop.
-          def_use_mgr.ReplaceAllUsesWith(inst.result_id(), id);
-          def_use_mgr.KillInst(&inst);
+          context()->ReplaceAllUsesWith(inst.result_id(), id);
+          context()->KillInst(&inst);
           modified = true;
         }
         break;

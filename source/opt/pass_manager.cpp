@@ -21,7 +21,7 @@ namespace opt {
 Pass::Status PassManager::Run(ir::IRContext* context) {
   auto status = Pass::Status::SuccessWithoutChange;
   for (const auto& pass : passes_) {
-    const auto one_status = pass->Process(context);
+    const auto one_status = pass->Run(context);
     if (one_status == Pass::Status::Failure) return one_status;
     if (one_status == Pass::Status::SuccessWithChange) status = one_status;
   }

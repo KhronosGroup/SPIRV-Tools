@@ -109,7 +109,7 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
     }
   }
   this->KillNamesAndDecorates(result_id);
-  get_def_use_mgr()->KillDef(result_id);
+  context()->KillDef(result_id);
 }
 }  // namespace opt
 }  // namespace spvtools

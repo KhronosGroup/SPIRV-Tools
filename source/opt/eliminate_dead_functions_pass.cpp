@@ -52,7 +52,7 @@ void EliminateDeadFunctionsPass::EliminateFunction(ir::Function* func) {
   func->ForEachInst(
       [this](ir::Instruction* inst) {
         KillNamesAndDecorates(inst);
-        get_def_use_mgr()->KillInst(inst);
+        context()->KillInst(inst);
       },
       true);
 }

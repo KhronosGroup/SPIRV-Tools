@@ -151,12 +151,12 @@ class AppendTypeVoidInstPass : public opt::Pass {
 };
 
 TEST(PassManager, RecomputeIdBoundAutomatically) {
+  opt::PassManager manager;
   std::unique_ptr<ir::Module> module(new ir::Module());
-  ir::IRContext context(std::move(module));
+  ir::IRContext context(std::move(module), manager.consumer());
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
 
 
-  opt::PassManager manager;
   manager.Run(&context);
   manager.AddPass<AppendOpNopPass>();
   // With no ID changes, the ID bound does not change.

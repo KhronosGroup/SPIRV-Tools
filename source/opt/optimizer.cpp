@@ -105,7 +105,7 @@ bool Optimizer::Run(const uint32_t* original_binary,
       BuildModule(impl_->target_env, impl_->pass_manager.consumer(),
                   original_binary, original_binary_size);
   if (module == nullptr) return false;
-  ir::IRContext context(std::move(module));
+  ir::IRContext context(std::move(module), impl_->pass_manager.consumer());
 
   auto status = impl_->pass_manager.Run(&context);
   if (status == opt::Pass::Status::SuccessWithChange ||

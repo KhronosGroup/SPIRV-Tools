@@ -104,11 +104,10 @@ static spv_result_t MergeModules(
 //                     applied to a single ID.)
 // TODO(pierremoreau): What should be the proper behaviour with built-in
 //                     symbols?
-static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
-                                         const ir::IRContext& linked_context,
-                                         const DefUseManager& def_use_manager,
-                                         const DecorationManager& decoration_manager,
-                                         LinkageTable* linkings_to_do);
+static spv_result_t GetImportExportPairs(
+    const MessageConsumer& consumer, const ir::IRContext& linked_context,
+    const DefUseManager& def_use_manager,
+    const DecorationManager& decoration_manager, LinkageTable* linkings_to_do);
 
 // Checks that for each pair of import and export, the import and export have
 // the same type as well as the same decorations.
@@ -224,20 +223,20 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   libspirv::AssemblyGrammar grammar(impl_->context);
   res = MergeModules(consumer, modules, grammar, linked_module.get());
   if (res != SPV_SUCCESS) return res;
-  ir::IRContext linked_context(std::move(linked_module));
-
-  DefUseManager def_use_manager(consumer, linked_context.module());
+  ir::IRContext linked_context(std::move(linked_module), consumer);
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
   DecorationManager decoration_manager(linked_context.module());
-  res = GetImportExportPairs(consumer, linked_context, def_use_manager,
+  res = GetImportExportPairs(consumer, linked_context,
+                             *linked_context.get_def_use_mgr(),
                              decoration_manager, &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
   res = CheckImportExportCompatibility(consumer, linkings_to_do,
-                                       def_use_manager, decoration_manager);
+                                       *linked_context.get_def_use_mgr(),
+                                       decoration_manager);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 6: Remove duplicates
@@ -255,11 +254,9 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 8: Rematch import variables/functions to export variables/functions
-  // TODO(pierremoreau): Keep the previous DefUseManager up-to-date
-  DefUseManager def_use_manager2(consumer, linked_context.module());
   for (const auto& linking_entry : linkings_to_do)
-    def_use_manager2.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
-                                        linking_entry.exported_symbol.id);
+    linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
+                                      linking_entry.exported_symbol.id);
 
   // Phase 9: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
@@ -476,11 +473,10 @@ static spv_result_t MergeModules(
   return SPV_SUCCESS;
 }
 
-static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
-                                         const ir::IRContext& linked_context,
-                                         const DefUseManager& def_use_manager,
-                                         const DecorationManager& decoration_manager,
-                                         LinkageTable* linkings_to_do) {
+static spv_result_t GetImportExportPairs(
+    const MessageConsumer& consumer, const ir::IRContext& linked_context,
+    const DefUseManager& def_use_manager,
+    const DecorationManager& decoration_manager, LinkageTable* linkings_to_do) {
   spv_position_t position = {};
 
   if (linkings_to_do == nullptr)
@@ -500,14 +496,16 @@ static spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
     const SpvId id = decoration.GetSingleWordInOperand(0u);
     // Ignore if the targeted symbol is a built-in
     bool is_built_in = false;
-    for (const auto& id_decoration : decoration_manager.GetDecorationsFor(id, false)) {
+    for (const auto& id_decoration :
+        decoration_manager.GetDecorationsFor(id, false)) {
       if (id_decoration->GetSingleWordInOperand(1u) == SpvDecorationBuiltIn) {
         is_built_in = true;
         break;
       }
     }
-    if (is_built_in)
+    if (is_built_in) {
       continue;
+    }
 
     const uint32_t type = decoration.GetSingleWordInOperand(3u);
 

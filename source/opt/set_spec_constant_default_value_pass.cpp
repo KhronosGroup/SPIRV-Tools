@@ -202,7 +202,7 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::IRContext* irContext) 
   const uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
 
   bool modified = false;
-  analysis::DefUseManager def_use_mgr(consumer(), irContext->module());
+  analysis::DefUseManager def_use_mgr(irContext->module());
   analysis::TypeManager type_mgr(consumer(), *irContext->module());
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'
   // instructions. Then extract the decoration target of those instructions.

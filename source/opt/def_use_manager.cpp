@@ -51,7 +51,6 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
     case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
     case SPV_OPERAND_TYPE_SCOPE_ID: {
       uint32_t use_id = inst->GetSingleWordOperand(i);
-      // use_id is used by the instruction generating def_id.
       id_to_uses_[use_id].push_back({ inst, i });
       inst_to_used_ids_[inst].push_back(use_id);
     } break;
@@ -102,60 +101,6 @@ std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   return annos;
 }
 
-bool DefUseManager::KillDef(uint32_t id) {
-  auto iter = id_to_def_.find(id);
-  if (iter == id_to_def_.end()) return false;
-  KillInst(iter->second);
-  return true;
-}
-
-void DefUseManager::KillInst(ir::Instruction* inst) {
-  if (!inst) return;
-  ClearInst(inst);
-  inst->ToNop();
-}
-
-bool DefUseManager::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
-  if (before == after) return false;
-  if (id_to_uses_.count(before) == 0) return false;
-
-  for (auto it = id_to_uses_[before].cbegin(); it != id_to_uses_[before].cend();
-       ++it) {
-    const uint32_t type_result_id_count =
-        (it->inst->result_id() != 0) + (it->inst->type_id() != 0);
-
-    if (it->operand_index < type_result_id_count) {
-      // Update the type_id. Note that result id is immutable so it should
-      // never be updated.
-      if (it->inst->type_id() != 0 && it->operand_index == 0) {
-        it->inst->SetResultType(after);
-      } else if (it->inst->type_id() == 0) {
-        SPIRV_ASSERT(consumer_, false,
-                     "Result type id considered as use while the instruction "
-                     "doesn't have a result type id.");
-        (void)consumer_;  // Makes the compiler happy for release build.
-      } else {
-        SPIRV_ASSERT(consumer_, false,
-                     "Trying setting the immutable result id.");
-      }
-    } else {
-      // Update an in-operand.
-      uint32_t in_operand_pos = it->operand_index - type_result_id_count;
-      // Make the modification in the instruction.
-      it->inst->SetInOperand(in_operand_pos, {after});
-    }
-    // Update inst to used ids map
-    auto iter = inst_to_used_ids_.find(it->inst);
-    if (iter != inst_to_used_ids_.end())
-      for (auto uit = iter->second.begin(); uit != iter->second.end(); uit++)
-        if (*uit == before) *uit = after;
-    // Register the use of |after| id into id_to_uses_.
-    // TODO(antiagainst): de-duplication.
-    id_to_uses_[after].push_back({it->inst, it->operand_index});
-  }
-  id_to_uses_.erase(before);
-  return true;
-}
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   if (!module) return;

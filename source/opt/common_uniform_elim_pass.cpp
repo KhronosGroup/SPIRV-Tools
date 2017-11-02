@@ -206,7 +206,7 @@ void CommonUniformElimPass::KillNamesAndDecorates(uint32_t id) {
     if (op != SpvOpName && !IsNonTypeDecorate(op)) continue;
     killList.push_back(u.inst);
   }
-  for (auto kip : killList) get_def_use_mgr()->KillInst(kip);
+  for (auto kip : killList) context()->KillInst(kip);
 }
 
 void CommonUniformElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
@@ -222,7 +222,7 @@ void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
     KillNamesAndDecorates(resId);
-    get_def_use_mgr()->KillInst(inst);
+    context()->KillInst(inst);
   }
 }
 
@@ -231,9 +231,9 @@ void CommonUniformElimPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst,
                                                  ir::Instruction* ptrInst) {
   const uint32_t loadId = loadInst->result_id();
   KillNamesAndDecorates(loadId);
-  (void)get_def_use_mgr()->ReplaceAllUsesWith(loadId, replId);
+  (void)context()->ReplaceAllUsesWith(loadId, replId);
   // remove load instruction
-  get_def_use_mgr()->KillInst(loadInst);
+  context()->KillInst(loadInst);
   // if access chain, see if it can be removed as well
   if (IsNonPtrAccessChain(ptrInst->opcode())) DeleteIfUseless(ptrInst);
 }
@@ -491,8 +491,8 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
         for (auto instItr : idxItr.second) {
           uint32_t resId = instItr->result_id();
           KillNamesAndDecorates(resId);
-          (void)get_def_use_mgr()->ReplaceAllUsesWith(resId, replId);
-          get_def_use_mgr()->KillInst(instItr);
+          (void)context()->ReplaceAllUsesWith(resId, replId);
+          context()->KillInst(instItr);
         }
         modified = true;
       }

@@ -372,8 +372,8 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
   // original constant.
   uint32_t new_id = folded_inst->result_id();
   uint32_t old_id = inst->result_id();
-  get_def_use_mgr()->ReplaceAllUsesWith(old_id, new_id);
-  get_def_use_mgr()->KillDef(old_id);
+  context()->ReplaceAllUsesWith(old_id, new_id);
+  context()->KillDef(old_id);
   return true;
 }
 

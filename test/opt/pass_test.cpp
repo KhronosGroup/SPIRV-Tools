@@ -137,7 +137,7 @@ TEST_F(PassClassTest, BasicVisitReachable) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::IRContext context(std::move(module));
+  ir::IRContext context(std::move(module), consumer());
 
   DummyPass testPass;
   std::vector<uint32_t> processed;
@@ -190,7 +190,7 @@ TEST_F(PassClassTest, BasicVisitOnlyOnce) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::IRContext context(std::move(module));
+  ir::IRContext context(std::move(module), consumer());
 
   DummyPass testPass;
   std::vector<uint32_t> processed;
@@ -233,7 +233,7 @@ TEST_F(PassClassTest, BasicDontVisitExportedVariable) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  ir::IRContext context(std::move(module));
+  ir::IRContext context(std::move(module), consumer());
 
   DummyPass testPass;
   std::vector<uint32_t> processed;

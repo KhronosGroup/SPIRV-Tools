@@ -107,10 +107,10 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
         get_def_use_mgr()->AnalyzeInstDefUse(&*newInstruction);
         inst = inst.InsertBefore(std::move(newInstruction));
         ++inst;
-        get_def_use_mgr()->ReplaceAllUsesWith(inst->result_id(), newResultId);
+        context()->ReplaceAllUsesWith(inst->result_id(), newResultId);
 
         // Remove the old instruction.
-        get_def_use_mgr()->KillInst(&*inst);
+        context()->KillInst(&*inst);
 
         // We do not want to replace the instruction twice if both operands
         // are constants that are a power of 2.  So we break here.

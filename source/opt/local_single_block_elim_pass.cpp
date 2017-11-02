@@ -68,7 +68,7 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
           if (pinned_vars_.find(varId) == pinned_vars_.end()) {
             auto si = var2store_.find(varId);
             if (si != var2store_.end()) {
-              get_def_use_mgr()->KillInst(si->second);
+              context()->KillInst(si->second);
             }
           }
           var2store_[varId] = &*ii;

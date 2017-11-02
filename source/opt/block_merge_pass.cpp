@@ -43,11 +43,11 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
     if (uses != nullptr)
       for (auto u : *uses)
         if (u.inst->opcode() == SpvOpName) {
-          get_def_use_mgr()->KillInst(u.inst);
+          context()->KillInst(u.inst);
           break;
         }
   }
-  get_def_use_mgr()->KillInst(inst);
+  context()->KillInst(inst);
 }
 
 bool BlockMergePass::MergeBlocks(ir::Function* func) {
@@ -78,7 +78,7 @@ bool BlockMergePass::MergeBlocks(ir::Function* func) {
       continue;
     }
     // Merge blocks
-    get_def_use_mgr()->KillInst(br);
+    context()->KillInst(br);
     auto sbi = bi;
     for (; sbi != func->end(); ++sbi)
       if (sbi->id() == labId)

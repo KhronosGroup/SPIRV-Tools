@@ -76,7 +76,7 @@ class Pass {
   // Returns the def-use manager used for this pass. TODO(dnovillo): This should
   // be handled by the pass manager.
   analysis::DefUseManager* get_def_use_mgr() const {
-    return def_use_mgr_.get();
+    return context()->get_def_use_mgr();
   }
 
   // Returns a pointer to the current module for this pass.
@@ -111,10 +111,18 @@ class Pass {
       const std::unordered_map<uint32_t, ir::Function*>& id2function,
       std::queue<uint32_t>* roots);
 
-  // Processes the given |module|. Returns Status::Failure if errors occur when
+
+  // Run the pass on the given |module|. Returns Status::Failure if errors occur when
   // processing. Returns the corresponding Status::Success if processing is
-  // succesful to indicate whether changes are made to the module.
-  virtual Status Process(ir::IRContext* context) = 0;
+  // successful to indicate whether changes are made to the module.  If there
+  // were any changes it will also invalidate the analyses in the IRContext
+  // that are not preserved.
+  virtual Status Run(ir::IRContext* ctx) final;
+
+  // Returns the set of analyses that the pass is guaranteed to preserve.
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() {
+    return ir::IRContext::kAnalysisNone;
+  }
 
  protected:
   // Initialize basic data structures for the pass. This sets up the def-use
@@ -124,9 +132,13 @@ class Pass {
   virtual void InitializeProcessing(ir::IRContext* c) {
     context_ = c;
     next_id_ = context_->IdBound();
-    def_use_mgr_.reset(new analysis::DefUseManager(consumer(), get_module()));
     cfg_.reset(new ir::CFG(get_module()));
   }
+
+  // Processes the given |module|. Returns Status::Failure if errors occur when
+  // processing. Returns the corresponding Status::Success if processing is
+  // succesful to indicate whether changes are made to the module.
+  virtual Status Process(ir::IRContext* context) = 0;
 
   // Return type id for |ptrInst|'s pointee
   uint32_t GetPointeeTypeId(const ir::Instruction* ptrInst) const;
@@ -141,9 +153,6 @@ class Pass {
 
  private:
   MessageConsumer consumer_;  // Message consumer.
-
-  // Def-Uses for the module we are processing
-  std::unique_ptr<analysis::DefUseManager> def_use_mgr_;
 
   // Next unused ID
   uint32_t next_id_;

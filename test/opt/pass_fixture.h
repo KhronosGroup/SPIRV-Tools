@@ -61,9 +61,9 @@ class PassTest : public TestT {
           opt::Pass::Status::Failure);
     }
 
-    ir::IRContext context(std::move(module));
+    ir::IRContext context(std::move(module), consumer());
 
-    const auto status = pass->Process(&context);
+    const auto status = pass->Run(&context);
 
     std::vector<uint32_t> binary;
     context.module()->ToBinary(&binary, skip_nop);
@@ -171,7 +171,7 @@ class PassTest : public TestT {
     std::unique_ptr<ir::Module> module = BuildModule(
         SPV_ENV_UNIVERSAL_1_1, nullptr, original, assemble_options_);
     ASSERT_NE(nullptr, module);
-    ir::IRContext context(std::move(module));
+    ir::IRContext context(std::move(module), consumer());
 
     manager_->Run(&context);
 
@@ -192,6 +192,7 @@ class PassTest : public TestT {
     disassemble_options_ = disassemble_options;
   }
 
+  MessageConsumer consumer() { return consumer_;}
  private:
   MessageConsumer consumer_;  // Message consumer.
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.

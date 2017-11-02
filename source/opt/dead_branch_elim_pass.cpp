@@ -233,8 +233,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     const uint32_t mergeLabId =
         mergeInst->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
     AddBranch(liveLabId, *bi);
-    get_def_use_mgr()->KillInst(br);
-    get_def_use_mgr()->KillInst(mergeInst);
+    context()->KillInst(br);
+    context()->KillInst(mergeInst);
 
     modified = true;
 
@@ -331,8 +331,8 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       }
       const uint32_t phiId = pii->result_id();
       KillNamesAndDecorates(phiId);
-      (void)get_def_use_mgr()->ReplaceAllUsesWith(phiId, replId);
-      get_def_use_mgr()->KillInst(&*pii);
+      (void)context()->ReplaceAllUsesWith(phiId, replId);
+      context()->KillInst(&*pii);
     }
   }
 

@@ -28,11 +28,7 @@ const uint32_t kTypePointerTypeIdInIdx = 1;
 
 }  // namespace
 
-Pass::Pass()
-    : consumer_(nullptr),
-      def_use_mgr_(nullptr),
-      next_id_(0),
-      context_(nullptr) {}
+Pass::Pass() : consumer_(nullptr), next_id_(0), context_(nullptr) {}
 
 void Pass::AddCalls(ir::Function* func, std::queue<uint32_t>* todo) {
   for (auto bi = func->begin(); bi != func->end(); ++bi)
@@ -106,6 +102,14 @@ bool Pass::ProcessCallTreeFromRoots(
   return modified;
 }
 
+Pass::Status Pass::Run(ir::IRContext* ctx) {
+  Pass::Status status = Process(ctx);
+  if (status == Status::SuccessWithChange) {
+    ctx->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
+  }
+  return status;
+}
+
 uint32_t Pass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
   const uint32_t ptrTypeId = ptrInst->type_id();
   const ir::Instruction* ptrTypeInst = get_def_use_mgr()->GetDef(ptrTypeId);
@@ -114,4 +118,3 @@ uint32_t Pass::GetPointeeTypeId(const ir::Instruction* ptrInst) const {
 
 }  // namespace opt
 }  // namespace spvtools
-
