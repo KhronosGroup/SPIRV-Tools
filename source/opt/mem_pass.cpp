@@ -174,7 +174,7 @@ bool MemPass::HasLoads(uint32_t varId) const {
     // better handling of non-store/name.
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
       if (HasLoads(u.inst->result_id())) return true;
-    } else if (op != SpvOpStore && op != SpvOpName)
+    } else if (op != SpvOpStore && op != SpvOpName && !IsNonTypeDecorate(op))
       return true;
   }
   return false;
