@@ -77,7 +77,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
-      // Currently causing driver crashes
+      // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
       .RegisterPass(CreateDeadVariableEliminationPass());
 }
@@ -93,7 +93,7 @@ Optimizer& Optimizer::RegisterSizePasses() {
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateLocalMultiStoreElimPass())
       .RegisterPass(CreateInsertExtractElimPass())
-      // Currently causing driver crashes
+      // Currently exposing driver bugs resulting in crashes (#946)
       // .RegisterPass(CreateCommonUniformElimPass())
       .RegisterPass(CreateDeadVariableEliminationPass());
 }
