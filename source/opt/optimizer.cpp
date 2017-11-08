@@ -240,6 +240,11 @@ Optimizer::PassToken CreateCompactIdsPass() {
       MakeUnique<opt::CompactIdsPass>());
 }
 
+Optimizer::PassToken CreateMergeReturnPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::MergeReturnPass>());
+}
+
 std::vector<const char*> Optimizer::GetPassNames() const {
   std::vector<const char*> v;
   for (uint32_t i = 0; i < impl_->pass_manager.NumPasses(); i++) {

@@ -406,6 +406,15 @@ Optimizer::PassToken CreateCFGCleanupPass();
 // that are not referenced.
 Optimizer::PassToken CreateDeadVariableEliminationPass();
 
+// Create merge return pass.
+// This pass replaces all returns with unconditional branches to a new block
+// containing a return. If necessary, this new block will contain a PHI node to
+// select the correct return value.
+//
+// This pass does not consider unreachable code, nor does it perform any other
+// optimizations.
+Optimizer::PassToken CreateMergeReturnPass();
+
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
