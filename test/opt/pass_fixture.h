@@ -22,6 +22,10 @@
 
 #include <gtest/gtest.h>
 
+#ifdef SPIRV_EFFCEE
+#include "effcee/effcee.h"
+#endif
+
 #include "opt/build_module.h"
 #include "opt/make_unique.h"
 #include "opt/pass_manager.h"
@@ -148,6 +152,26 @@ class PassTest : public TestT {
     SinglePassRunAndCheck<PassT>(original, expected, skip_nop, false,
       std::forward<Args>(args)...);
   }
+
+#ifdef SPIRV_EFFCEE
+  // Runs a single pass of class |PassT| on the binary assembled from the
+  // |original| assembly, then runs an Effcee matcher over the disassembled
+  // result, using checks parsed from |original|.  Always skips OpNop.
+  // This does *not* involve pass manager.  Callers are suggested to use
+  // SCOPED_TRACE() for better messages.
+  template <typename PassT, typename... Args>
+  void SinglePassRunAndMatch(const std::string& original, Args&&... args) {
+    const bool skip_nop = true;
+    auto pass_result = SinglePassRunAndDisassemble<PassT>(
+        original, skip_nop, std::forward<Args>(args)...);
+    auto disassembly = std::get<0>(pass_result);
+    auto status = std::get<1>(pass_result);
+    auto match_result = effcee::Match(disassembly, original);
+    EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
+        << match_result.message() << "\nChecking result:\n"
+        << disassembly;
+  }
+#endif
 
   // Adds a pass to be run.
   template <typename PassT, typename... Args>

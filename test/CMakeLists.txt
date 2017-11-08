@@ -56,7 +56,14 @@ function(add_spvtools_unittest)
       ${gtest_SOURCE_DIR}/include
       ${gmock_SOURCE_DIR}/include
     )
+    if (TARGET effcee)
+      # If using Effcee for testing, then add its include directory.
+      target_include_directories(${target} PRIVATE ${effcee_SOURCE_DIR})
+    endif()
     target_link_libraries(${target} PRIVATE ${ARG_LIBS})
+    if (TARGET effcee)
+      target_link_libraries(${target} PRIVATE effcee)
+    endif()
     target_link_libraries(${target} PRIVATE gmock_main)
     add_test(NAME spirv-tools-${target} COMMAND ${target})
     set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools tests")

@@ -54,4 +54,26 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       set_property(TARGET ${target} PROPERTY FOLDER GoogleTest)
     endforeach()
   endif()
+
+  # Find effcee, for testing.
+  # Optional for now, but eventually we'll make this required when testing is enabled.
+  if (NOT TARGET effcee)
+    # Expect to find effcee in this directory.
+    # TODO(dneto): I intend to require this eventually.
+    if (EXISTS effcee)
+      # If we're configuring re2 (via effcee), then turn off re2 testing.
+      if (NOT TARGET re2)
+        set(RE2_BUILD_TESTING OFF)
+      endif()
+      add_subdirectory(effcee EXCLUDE_FROM_ALL)
+      set_property(TARGET effcee PROPERTY FOLDER Effcee)
+      set_property(TARGET re2 PROPERTY FOLDER Effcee)
+    endif()
+  endif()
+  if (TARGET effcee)
+    message(STATUS "SPIRV-Tools: effcee is configured")
+  else()
+    message(STATUS "SPIRV-Tools: effcee is not configured.  Skipping effcee-based tests.")
+  endif()
+
 endif()
