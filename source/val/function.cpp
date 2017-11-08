@@ -17,14 +17,14 @@
 #include <cassert>
 
 #include <algorithm>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
+#include "cfa.h"
 #include "val/basic_block.h"
 #include "val/construct.h"
 #include "validate.h"
-#include "cfa.h"
 
 using std::ignore;
 using std::list;
@@ -275,13 +275,9 @@ void Function::ComputeAugmentedCFG() {
   auto succ_func = [](const BasicBlock* b) { return b->successors(); };
   auto pred_func = [](const BasicBlock* b) { return b->predecessors(); };
   spvtools::CFA<BasicBlock>::ComputeAugmentedCFG(
-    ordered_blocks_,
-    &pseudo_entry_block_,
-    &pseudo_exit_block_,
-    &augmented_successors_map_,
-    &augmented_predecessors_map_,
-    succ_func,
-    pred_func);
+      ordered_blocks_, &pseudo_entry_block_, &pseudo_exit_block_,
+      &augmented_successors_map_, &augmented_predecessors_map_, succ_func,
+      pred_func);
 };
 
 Construct& Function::AddConstruct(const Construct& new_construct) {

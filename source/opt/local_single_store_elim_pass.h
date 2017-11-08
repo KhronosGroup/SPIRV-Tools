@@ -17,7 +17,6 @@
 #ifndef LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
 #define LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
 
-
 #include <algorithm>
 #include <map>
 #include <queue>
@@ -27,8 +26,8 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
@@ -58,7 +57,7 @@ class LocalSingleStoreElimPass : public MemPass {
   void SingleStoreAnalyze(ir::Function* func);
 
   using GetBlocksFunction =
-    std::function<const std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+      std::function<const std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   /// Returns the block successors function for the augmented CFG.
   GetBlocksFunction AugmentedCFGSuccessorsFunction() const;
@@ -70,11 +69,11 @@ class LocalSingleStoreElimPass : public MemPass {
   // in idom_. Entries for augmented CFG (pseudo blocks) are not created.
   // TODO(dnovillo): Move to new CFG class.
   void CalculateImmediateDominators(ir::Function* func);
-  
+
   // Return true if instruction in |blk0| at ordinal position |idx0|
   // dominates instruction in |blk1| at position |idx1|.
-  bool Dominates(ir::BasicBlock* blk0, uint32_t idx0,
-    ir::BasicBlock* blk1, uint32_t idx1);
+  bool Dominates(ir::BasicBlock* blk0, uint32_t idx0, ir::BasicBlock* blk1,
+                 uint32_t idx1);
 
   // For each load of an SSA variable in |func|, replace all uses of
   // the load with the value stored if the store dominates the load.
@@ -123,19 +122,19 @@ class LocalSingleStoreElimPass : public MemPass {
 
   // CFG Predecessors
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-    predecessors_map_;
+      predecessors_map_;
 
   // CFG Successors
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-    successors_map_;
+      successors_map_;
 
   // CFG Augmented Predecessors
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-    augmented_predecessors_map_;
+      augmented_predecessors_map_;
 
   // CFG Augmented Successors
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
-    augmented_successors_map_;
+      augmented_successors_map_;
 
   // Immediate Dominator Map
   // If block has no idom it points to itself.
@@ -149,4 +148,3 @@ class LocalSingleStoreElimPass : public MemPass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_LOCAL_SINGLE_STORE_ELIM_PASS_H_
-

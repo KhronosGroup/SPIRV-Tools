@@ -171,7 +171,7 @@ bool ParseNumber(const char* text, T* value_pointer) {
   static_assert(sizeof(T) > 1,
                 "Single-byte types are not supported in this parse method");
 
-  if (!text)  return false;
+  if (!text) return false;
   std::istringstream text_stream(text);
   // Allow both decimal and hex input for integers.
   // It also allows octal input, but we don't care about that case.

@@ -21,9 +21,9 @@
 #include <unordered_set>
 
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "log.h"
 #include "reflect.h"
-#include "ir_context.h"
 
 namespace {
 // Count the number of trailing zeros in the binary representation of

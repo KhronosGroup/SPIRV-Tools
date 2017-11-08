@@ -49,7 +49,7 @@ static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_2;
 
 int main(int argc, char** argv) {
   const char* inFile = nullptr;
-  const char* outFile = nullptr; // Stays nullptr if printing to stdout.
+  const char* outFile = nullptr;  // Stays nullptr if printing to stdout.
 
   for (int argi = 1; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
@@ -110,7 +110,8 @@ int main(int argc, char** argv) {
   spv_diagnostic diagnostic = nullptr;
 
   std::stringstream ss;
-  auto error = BinaryToDot(context, contents.data(), contents.size(), &ss, &diagnostic);
+  auto error =
+      BinaryToDot(context, contents.data(), contents.size(), &ss, &diagnostic);
   if (error) {
     spvDiagnosticPrint(diagnostic);
     spvDiagnosticDestroy(diagnostic);

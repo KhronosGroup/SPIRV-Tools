@@ -81,7 +81,7 @@ class DotConverter {
 
 spv_result_t DotConverter::HandleInstruction(
     const spv_parsed_instruction_t& inst) {
-  switch(inst.opcode) {
+  switch (inst.opcode) {
     case SpvOpFunction:
       current_function_id_ = inst.result_id;
       seen_function_entry_block_ = false;

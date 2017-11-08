@@ -18,10 +18,10 @@
 #define LIBSPIRV_OPT_INLINE_PASS_H_
 
 #include <algorithm>
+#include <list>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <list>
 
 #include "def_use_manager.h"
 #include "module.h"
@@ -32,12 +32,11 @@ namespace opt {
 
 // See optimizer.hpp for documentation.
 class InlinePass : public Pass {
-
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-   using GetBlocksFunction =
-     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+  using GetBlocksFunction =
+      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   InlinePass();
   virtual ~InlinePass() = default;
@@ -54,8 +53,8 @@ class InlinePass : public Pass {
   void AddBranch(uint32_t labelId, std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add conditional branch to end of block |block_ptr|.
-  void AddBranchCond(uint32_t cond_id, uint32_t true_id,
-    uint32_t false_id, std::unique_ptr<ir::BasicBlock>* block_ptr);
+  void AddBranchCond(uint32_t cond_id, uint32_t true_id, uint32_t false_id,
+                     std::unique_ptr<ir::BasicBlock>* block_ptr);
 
   // Add unconditional branch to labelId to end of block block_ptr.
   void AddLoopMerge(uint32_t merge_id, uint32_t continue_id,
@@ -77,8 +76,7 @@ class InlinePass : public Pass {
   uint32_t GetFalseId();
 
   // Map callee params to caller args
-  void MapParams(ir::Function* calleeFn,
-                 ir::BasicBlock::iterator call_inst_itr,
+  void MapParams(ir::Function* calleeFn, ir::BasicBlock::iterator call_inst_itr,
                  std::unordered_map<uint32_t, uint32_t>* callee2caller);
 
   // Clone and map callee locals
@@ -133,11 +131,11 @@ class InlinePass : public Pass {
   // A block's structured successors are the blocks it branches to
   // together with its declared merge block if it has one.
   // When order matters, the merge block always appears first.
-  // This assures correct depth first search in the presence of early 
+  // This assures correct depth first search in the presence of early
   // returns and kills. If the successor vector contain duplicates
   // if the merge block, they are safely ignored by DFS.
   void ComputeStructuredSuccessors(ir::Function* func);
-  
+
   // Return function to return ordered structure successors for a given block
   // Assumes ComputeStructuredSuccessors() has been called.
   GetBlocksFunction StructuredSuccessorsFunction();

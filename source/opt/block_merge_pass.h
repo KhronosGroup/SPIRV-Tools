@@ -26,9 +26,9 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "module.h"
 #include "pass.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -68,4 +68,3 @@ class BlockMergePass : public Pass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_BLOCK_MERGE_PASS_H_
-

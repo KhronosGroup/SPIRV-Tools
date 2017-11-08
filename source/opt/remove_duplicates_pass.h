@@ -19,9 +19,9 @@
 
 #include "decoration_manager.h"
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "module.h"
 #include "pass.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -44,7 +44,7 @@ class RemoveDuplicatesPass : public Pass {
   bool RemoveDuplicateCapabilities(ir::IRContext* irContext) const;
   bool RemoveDuplicatesExtInstImports(ir::IRContext* irContext) const;
   bool RemoveDuplicateTypes(ir::IRContext* irContext,
-                              analysis::DecorationManager& decManager) const;
+                            analysis::DecorationManager& decManager) const;
   bool RemoveDuplicateDecorations(ir::IRContext* irContext) const;
 };
 

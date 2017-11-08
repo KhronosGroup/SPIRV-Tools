@@ -17,9 +17,9 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 using spvutils::HuffmanCodec;
 

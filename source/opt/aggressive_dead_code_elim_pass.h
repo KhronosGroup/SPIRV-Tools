@@ -26,20 +26,19 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
 class AggressiveDCEPass : public MemPass {
-
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-   using GetBlocksFunction =
-     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+  using GetBlocksFunction =
+      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   AggressiveDCEPass();
   const char* name() const override { return "eliminate-dead-code-aggressive"; }
@@ -102,9 +101,9 @@ class AggressiveDCEPass : public MemPass {
 
   // If |bp| is structured if header block, return true and set |branchInst|
   // to the conditional branch and |mergeBlockId| to the merge block.
-  bool IsStructuredIfHeader(ir::BasicBlock* bp,
-    ir::Instruction** mergeInst, ir::Instruction** branchInst,
-    uint32_t* mergeBlockId);
+  bool IsStructuredIfHeader(ir::BasicBlock* bp, ir::Instruction** mergeInst,
+                            ir::Instruction** branchInst,
+                            uint32_t* mergeBlockId);
 
   // Initialize block2branch_ and block2merge_ using |structuredOrder| to
   // order blocks.
@@ -120,7 +119,7 @@ class AggressiveDCEPass : public MemPass {
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true
   // if the function has been modified.
-  // 
+  //
   // Note: This function does not delete useless control structures. All
   // existing control structures will remain. This can leave not-insignificant
   // sequences of ultimately useless code.
@@ -160,7 +159,7 @@ class AggressiveDCEPass : public MemPass {
   // Map from block's label id to block.
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 
-  // Map from block to its structured successor blocks. See 
+  // Map from block to its structured successor blocks. See
   // ComputeStructuredSuccessors() for definition.
   std::unordered_map<const ir::BasicBlock*, std::vector<ir::BasicBlock*>>
       block2structured_succs_;
@@ -200,4 +199,3 @@ class AggressiveDCEPass : public MemPass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_AGGRESSIVE_DCE_PASS_H_
-

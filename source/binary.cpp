@@ -179,12 +179,11 @@ class Parser {
           word_index(0),
           endian(),
           requires_endian_conversion(false) {
-
-        // Temporary storage for parser state within a single instruction.
-        // Most instructions require fewer than 25 words or operands.
-        operands.reserve(25);
-        endian_converted_words.reserve(25);
-        expected_operands.reserve(25);
+      // Temporary storage for parser state within a single instruction.
+      // Most instructions require fewer than 25 words or operands.
+      operands.reserve(25);
+      endian_converted_words.reserve(25);
+      expected_operands.reserve(25);
     }
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
@@ -310,7 +309,8 @@ spv_result_t Parser::parseInstruction() {
   // own operands depending on the selected extended instruction.
   _.expected_operands.clear();
   for (auto i = 0; i < opcode_desc->numTypes; i++)
-      _.expected_operands.push_back(opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
+    _.expected_operands.push_back(
+        opcode_desc->operandTypes[opcode_desc->numTypes - i - 1]);
 
   while (_.word_index < inst_offset + inst_word_count) {
     const uint16_t inst_word_index = uint16_t(_.word_index - inst_offset);
@@ -323,7 +323,8 @@ spv_result_t Parser::parseInstruction() {
                           << inst_word_count << ".";
     }
 
-    spv_operand_type_t type = spvTakeFirstMatchableOperand(&_.expected_operands);
+    spv_operand_type_t type =
+        spvTakeFirstMatchableOperand(&_.expected_operands);
 
     if (auto error =
             parseOperand(inst_offset, &inst, type, &_.endian_converted_words,
@@ -355,7 +356,8 @@ spv_result_t Parser::parseInstruction() {
   // word.
   assert(!_.requires_endian_conversion ||
          (inst_word_count == _.endian_converted_words.size()));
-  assert(_.requires_endian_conversion || (_.endian_converted_words.size() == 1));
+  assert(_.requires_endian_conversion ||
+         (_.endian_converted_words.size() == 1));
 
   recordNumberType(inst_offset, &inst);
 
@@ -430,8 +432,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       // Save the result ID to type ID mapping.
       // In the grammar, type ID always appears before result ID.
       if (_.id_to_type_id.find(inst->result_id) != _.id_to_type_id.end())
-        return diagnostic(SPV_ERROR_INVALID_ID) << "Id " << inst->result_id
-                                                << " is defined more than once";
+        return diagnostic(SPV_ERROR_INVALID_ID)
+               << "Id " << inst->result_id << " is defined more than once";
       // Record it.
       // A regular value maps to its type.  Some instructions (e.g. OpLabel)
       // have no type Id, and will map to 0.  The result Id for a
@@ -477,8 +479,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
       assert(SpvOpSpecConstantOp == opcode);
       if (grammar_.lookupSpecConstantOpcode(SpvOp(word))) {
-        return diagnostic() << "Invalid " << spvOperandTypeStr(type) << ": "
-                            << word;
+        return diagnostic()
+               << "Invalid " << spvOperandTypeStr(type) << ": " << word;
       }
       spv_opcode_desc opcode_entry = nullptr;
       if (grammar_.lookupOpcode(SpvOp(word), &opcode_entry)) {
@@ -581,8 +583,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         const spv_ext_inst_type_t ext_inst_type =
             spvExtInstImportTypeGet(string);
         if (SPV_EXT_INST_TYPE_NONE == ext_inst_type) {
-          return diagnostic() << "Invalid extended instruction import '"
-                              << string << "'";
+          return diagnostic()
+                 << "Invalid extended instruction import '" << string << "'";
         }
         // We must have parsed a valid result ID.  It's a condition
         // of the grammar, and we only accept non-zero result Ids.
@@ -620,9 +622,9 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
       spv_operand_desc entry;
       if (grammar_.lookupOperand(type, word, &entry)) {
-        return diagnostic() << "Invalid "
-                            << spvOperandTypeStr(parsed_operand.type)
-                            << " operand: " << word;
+        return diagnostic()
+               << "Invalid " << spvOperandTypeStr(parsed_operand.type)
+               << " operand: " << word;
       }
       // Prepare to accept operands to this operand, if needed.
       spvPushOperandTypes(entry->operandTypes, expected_operands);

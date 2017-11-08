@@ -323,7 +323,7 @@ inline IteratorRange<Module::inst_iterator> Module::ext_inst_imports() {
 }
 
 inline IteratorRange<Module::const_inst_iterator> Module::ext_inst_imports()
-const {
+    const {
   return make_range(ext_inst_imports_.begin(), ext_inst_imports_.end());
 }
 
@@ -380,7 +380,7 @@ inline IteratorRange<Module::inst_iterator> Module::execution_modes() {
 }
 
 inline IteratorRange<Module::const_inst_iterator> Module::execution_modes()
-const {
+    const {
   return make_range(execution_modes_.begin(), execution_modes_.end());
 }
 

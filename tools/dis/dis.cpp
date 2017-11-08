@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <stdio.h> // Need fileno
+#include <stdio.h>  // Need fileno
 #include <unistd.h>
 #endif
 

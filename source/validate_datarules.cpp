@@ -122,8 +122,8 @@ spv_result_t ValidateIntSize(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA)
            << "Using a 64-bit integer type requires the Int64 capability.";
   }
-  return _.diag(SPV_ERROR_INVALID_DATA) << "Invalid number of bits ("
-                                        << num_bits << ") used for OpTypeInt.";
+  return _.diag(SPV_ERROR_INVALID_DATA)
+         << "Invalid number of bits (" << num_bits << ") used for OpTypeInt.";
 }
 
 // Validates that the matrix is parameterized with floating-point types.

@@ -19,8 +19,8 @@
 #include <tuple>
 
 #include "constants.h"
-#include "make_unique.h"
 #include "ir_context.h"
+#include "make_unique.h"
 
 namespace spvtools {
 namespace opt {
@@ -245,7 +245,8 @@ std::vector<uint32_t> OperateVectors(
 FoldSpecConstantOpAndCompositePass::FoldSpecConstantOpAndCompositePass()
     : max_id_(0), type_mgr_(nullptr), id_to_const_val_() {}
 
-Pass::Status FoldSpecConstantOpAndCompositePass::Process(ir::IRContext* irContext) {
+Pass::Status FoldSpecConstantOpAndCompositePass::Process(
+    ir::IRContext* irContext) {
   Initialize(irContext);
   return ProcessImpl(irContext);
 }

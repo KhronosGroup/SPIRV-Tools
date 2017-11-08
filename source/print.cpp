@@ -14,7 +14,8 @@
 
 #include "print.h"
 
-#if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) || defined(SPIRV_MAC) || defined(SPIRV_FREEBSD)
+#if defined(SPIRV_ANDROID) || defined(SPIRV_LINUX) || defined(SPIRV_MAC) || \
+    defined(SPIRV_FREEBSD)
 namespace libspirv {
 
 clr::reset::operator const char*() { return "\x1b[0m"; }
@@ -35,8 +36,7 @@ clr::blue::operator const char*() { return "\x1b[34m"; }
 
 namespace libspirv {
 
-static void SetConsoleForegroundColorPrimary(HANDLE hConsole, WORD color)
-{
+static void SetConsoleForegroundColorPrimary(HANDLE hConsole, WORD color) {
   // Get screen buffer information from console handle
   CONSOLE_SCREEN_BUFFER_INFO bufInfo;
   GetConsoleScreenBufferInfo(hConsole, &bufInfo);
@@ -48,8 +48,7 @@ static void SetConsoleForegroundColorPrimary(HANDLE hConsole, WORD color)
   SetConsoleTextAttribute(hConsole, color);
 }
 
-static void SetConsoleForegroundColor(WORD color)
-{
+static void SetConsoleForegroundColor(WORD color) {
   SetConsoleForegroundColorPrimary(GetStdHandle(STD_OUTPUT_HANDLE), color);
   SetConsoleForegroundColorPrimary(GetStdHandle(STD_ERROR_HANDLE), color);
 }

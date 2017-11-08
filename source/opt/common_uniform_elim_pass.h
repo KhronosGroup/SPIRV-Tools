@@ -24,23 +24,23 @@
 #include <unordered_set>
 #include <utility>
 
-#include "def_use_manager.h"
-#include "decoration_manager.h"
-#include "module.h"
 #include "basic_block.h"
-#include "pass.h"
+#include "decoration_manager.h"
+#include "def_use_manager.h"
 #include "ir_context.h"
+#include "module.h"
+#include "pass.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
 class CommonUniformElimPass : public Pass {
- using cbb_ptr = const ir::BasicBlock*;
+  using cbb_ptr = const ir::BasicBlock*;
 
  public:
-   using GetBlocksFunction =
-     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+  using GetBlocksFunction =
+      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   CommonUniformElimPass();
   const char* name() const override { return "eliminate-common-uniform"; }
@@ -72,7 +72,8 @@ class CommonUniformElimPass : public Pass {
   // Given an OpAccessChain instruction, return true
   // if the accessed variable belongs to a volatile
   // decorated object or member of a struct type
-  bool IsAccessChainToVolatileStructType(const ir::Instruction &AccessChainInst);
+  bool IsAccessChainToVolatileStructType(
+      const ir::Instruction& AccessChainInst);
 
   // Given an OpLoad instruction, return true if
   // OpLoad has a Volatile Memory Access flag or if
@@ -96,15 +97,14 @@ class CommonUniformElimPass : public Pass {
 
   // Replace all instances of load's id with replId and delete load
   // and its access chain, if any
-  void ReplaceAndDeleteLoad(ir::Instruction* loadInst,
-    uint32_t replId,
-    ir::Instruction* ptrInst);
+  void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId,
+                            ir::Instruction* ptrInst);
 
   // For the (constant index) access chain ptrInst, create an
   // equivalent load and extract
   void GenACLoadRepl(const ir::Instruction* ptrInst,
-      std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
-      uint32_t* resultId);
+                     std::vector<std::unique_ptr<ir::Instruction>>* newInsts,
+                     uint32_t* resultId);
 
   // Return true if all indices are constant
   bool IsConstantIndexAccessChain(ir::Instruction* acp);
@@ -132,14 +132,15 @@ class CommonUniformElimPass : public Pass {
   // TODO(dnovillo): This pass computes structured order slightly different
   // than the implementation in class Pass. Can this be re-factored?
   void ComputeStructuredOrder(ir::Function* func,
-      std::list<ir::BasicBlock*>* order);
+                              std::list<ir::BasicBlock*>* order);
 
   // Eliminate loads of uniform variables which have previously been loaded.
   // If first load is in control flow, move it to first block of function.
   // Most effective if preceded by UniformAccessChainRemoval().
   bool CommonUniformLoadElimination(ir::Function* func);
 
-  // Eliminate loads of uniform sampler and image variables which have previously
+  // Eliminate loads of uniform sampler and image variables which have
+  // previously
   // been loaded in the same block for types whose loads cannot cross blocks.
   bool CommonUniformLoadElimBlock(ir::Function* func);
 
@@ -150,11 +151,11 @@ class CommonUniformElimPass : public Pass {
   bool CommonExtractElimination(ir::Function* func);
 
   // For function |func|, first change all uniform constant index
-  // access chain loads into equivalent composite extracts. Then consolidate 
+  // access chain loads into equivalent composite extracts. Then consolidate
   // identical uniform loads into one uniform load. Finally, consolidate
   // identical uniform extracts into one uniform extract. This may require
   // moving a load or extract to a point which dominates all uses.
-  // Return true if func is modified. 
+  // Return true if func is modified.
   //
   // This pass requires the function to have structured control flow ie shader
   // capability. It also requires logical addressing ie Addresses capability
@@ -185,8 +186,9 @@ class CommonUniformElimPass : public Pass {
 
   // Map of extract composite ids to map of indices to insts
   // TODO(greg-lunarg): Consider std::vector.
-  std::unordered_map<uint32_t, std::unordered_map<uint32_t,
-      std::list<ir::Instruction*>>> comp2idx2inst_;
+  std::unordered_map<uint32_t,
+                     std::unordered_map<uint32_t, std::list<ir::Instruction*>>>
+      comp2idx2inst_;
 
   // Extensions supported by this pass.
   std::unordered_set<std::string> extensions_whitelist_;
@@ -201,4 +203,3 @@ class CommonUniformElimPass : public Pass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_SSAMEM_PASS_H_
-

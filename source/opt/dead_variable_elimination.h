@@ -15,8 +15,8 @@
 #ifndef SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
 #define SPIRV_TOOLS_DEAD_VARIABLE_ELIMINATION_H
 
-#include <unordered_map>
 #include <climits>
+#include <unordered_map>
 
 #include "decoration_manager.h"
 #include "mem_pass.h"

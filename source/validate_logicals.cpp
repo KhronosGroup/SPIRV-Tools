@@ -38,11 +38,10 @@ inline uint32_t GetOperandWord(const spv_parsed_instruction_t* inst,
 // Returns the type id of instruction operand at |operand_index|.
 // The operand is expected to be an id.
 inline uint32_t GetOperandTypeId(ValidationState_t& _,
-                               const spv_parsed_instruction_t* inst,
-                               size_t operand_index) {
+                                 const spv_parsed_instruction_t* inst,
+                                 size_t operand_index) {
   return _.GetTypeId(GetOperandWord(inst, operand_index));
 }
-
 }
 
 // Validates correctness of logical instructions.
@@ -56,14 +55,14 @@ spv_result_t LogicalsPass(ValidationState_t& _,
     case SpvOpAll: {
       if (!_.IsBoolScalarType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t vector_type = GetOperandTypeId(_, inst, 2);
       if (!vector_type || !_.IsBoolVectorType(vector_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operand to be vector bool: "
-            << spvOpcodeString(opcode);
+               << "Expected operand to be vector bool: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -73,27 +72,26 @@ spv_result_t LogicalsPass(ValidationState_t& _,
     case SpvOpIsFinite:
     case SpvOpIsNormal:
     case SpvOpSignBitSet: {
-      if (!_.IsBoolScalarType(result_type) &&
-          !_.IsBoolVectorType(result_type))
+      if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t operand_type = GetOperandTypeId(_, inst, 2);
       if (!operand_type || (!_.IsFloatScalarType(operand_type) &&
-                           !_.IsFloatVectorType(operand_type)))
+                            !_.IsFloatVectorType(operand_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operand to be scalar or vector float: "
-            << spvOpcodeString(opcode);
+               << "Expected operand to be scalar or vector float: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(operand_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected vector sizes of Result Type and the operand to be equal: "
-            << spvOpcodeString(opcode);
+               << "Expected vector sizes of Result Type and the operand to be "
+                  "equal: "
+               << spvOpcodeString(opcode);
 
       break;
     }
-
 
     case SpvOpFOrdEqual:
     case SpvOpFUnordEqual:
@@ -110,28 +108,28 @@ spv_result_t LogicalsPass(ValidationState_t& _,
     case SpvOpLessOrGreater:
     case SpvOpOrdered:
     case SpvOpUnordered: {
-      if (!_.IsBoolScalarType(result_type) &&
-          !_.IsBoolVectorType(result_type))
+      if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t left_operand_type = GetOperandTypeId(_, inst, 2);
       if (!left_operand_type || (!_.IsFloatScalarType(left_operand_type) &&
                                  !_.IsFloatVectorType(left_operand_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operands to be scalar or vector float: "
-            << spvOpcodeString(opcode);
+               << "Expected operands to be scalar or vector float: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(left_operand_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected vector sizes of Result Type and the operands to be equal: "
-            << spvOpcodeString(opcode);
+               << "Expected vector sizes of Result Type and the operands to be "
+                  "equal: "
+               << spvOpcodeString(opcode);
 
       if (left_operand_type != GetOperandTypeId(_, inst, 3))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected left and right operands to have the same type: "
-            << spvOpcodeString(opcode);
+               << "Expected left and right operands to have the same type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -140,32 +138,30 @@ spv_result_t LogicalsPass(ValidationState_t& _,
     case SpvOpLogicalNotEqual:
     case SpvOpLogicalOr:
     case SpvOpLogicalAnd: {
-      if (!_.IsBoolScalarType(result_type) &&
-          !_.IsBoolVectorType(result_type))
+      if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       if (result_type != GetOperandTypeId(_, inst, 2) ||
           result_type != GetOperandTypeId(_, inst, 3))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected both operands to be of Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected both operands to be of Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
 
     case SpvOpLogicalNot: {
-      if (!_.IsBoolScalarType(result_type) &&
-          !_.IsBoolVectorType(result_type))
+      if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       if (result_type != GetOperandTypeId(_, inst, 2))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operand to be of Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected operand to be of Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -182,8 +178,8 @@ spv_result_t LogicalsPass(ValidationState_t& _,
             if (!_.features().variable_pointers &&
                 !_.features().variable_pointers_storage_buffer)
               return _.diag(SPV_ERROR_INVALID_DATA)
-                  << "Using pointers with OpSelect requires capability "
-                  << "VariablePointers or VariablePointersStorageBuffer";
+                     << "Using pointers with OpSelect requires capability "
+                     << "VariablePointers or VariablePointersStorageBuffer";
             break;
           }
 
@@ -200,8 +196,8 @@ spv_result_t LogicalsPass(ValidationState_t& _,
 
           default: {
             return _.diag(SPV_ERROR_INVALID_DATA)
-                << "Expected scalar or vector type as Result Type: "
-                << spvOpcodeString(opcode);
+                   << "Expected scalar or vector type as Result Type: "
+                   << spvOpcodeString(opcode);
           }
         }
       }
@@ -213,18 +209,18 @@ spv_result_t LogicalsPass(ValidationState_t& _,
       if (!condition_type || (!_.IsBoolScalarType(condition_type) &&
                               !_.IsBoolVectorType(condition_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as condition: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as condition: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(condition_type) != dimension)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected vector sizes of Result Type and the condition to be"
-            << " equal: " << spvOpcodeString(opcode);
+               << "Expected vector sizes of Result Type and the condition to be"
+               << " equal: " << spvOpcodeString(opcode);
 
       if (result_type != left_type || result_type != right_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected both objects to be of Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected both objects to be of Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -239,41 +235,41 @@ spv_result_t LogicalsPass(ValidationState_t& _,
     case SpvOpSGreaterThanEqual:
     case SpvOpSLessThan:
     case SpvOpSLessThanEqual: {
-      if (!_.IsBoolScalarType(result_type) &&
-          !_.IsBoolVectorType(result_type))
+      if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected bool scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected bool scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t left_type = GetOperandTypeId(_, inst, 2);
       const uint32_t right_type = GetOperandTypeId(_, inst, 3);
 
-      if (!left_type || (!_.IsIntScalarType(left_type) &&
-                         !_.IsIntVectorType(left_type)))
+      if (!left_type ||
+          (!_.IsIntScalarType(left_type) && !_.IsIntVectorType(left_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operands to be scalar or vector int: "
-            << spvOpcodeString(opcode);
+               << "Expected operands to be scalar or vector int: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(left_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected vector sizes of Result Type and the operands to be"
-            << " equal: " << spvOpcodeString(opcode);
+               << "Expected vector sizes of Result Type and the operands to be"
+               << " equal: " << spvOpcodeString(opcode);
 
-      if (!right_type || (!_.IsIntScalarType(right_type) &&
-                         !_.IsIntVectorType(right_type)))
+      if (!right_type ||
+          (!_.IsIntScalarType(right_type) && !_.IsIntVectorType(right_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operands to be scalar or vector int: "
-            << spvOpcodeString(opcode);
+               << "Expected operands to be scalar or vector int: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(right_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected vector sizes of Result Type and the operands to be"
-            << " equal: " << spvOpcodeString(opcode);
+               << "Expected vector sizes of Result Type and the operands to be"
+               << " equal: " << spvOpcodeString(opcode);
 
       if (_.GetBitWidth(left_type) != _.GetBitWidth(right_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected both operands to have the same component bit width: "
-            << spvOpcodeString(opcode);
+               << "Expected both operands to have the same component bit "
+                  "width: "
+               << spvOpcodeString(opcode);
 
       break;
     }

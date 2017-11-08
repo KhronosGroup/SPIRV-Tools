@@ -118,7 +118,7 @@ const BasicBlock::DominatorIterator BasicBlock::pdom_begin() const {
 
 BasicBlock::DominatorIterator BasicBlock::pdom_begin() {
   return DominatorIterator(
-    this, [](const BasicBlock* b) { return b->immediate_post_dominator(); });
+      this, [](const BasicBlock* b) { return b->immediate_post_dominator(); });
 }
 
 const BasicBlock::DominatorIterator BasicBlock::pdom_end() const {

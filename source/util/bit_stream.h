@@ -21,8 +21,8 @@
 #include <bitset>
 #include <cstdint>
 #include <functional>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace spvutils {
@@ -60,9 +60,7 @@ inline T GetLowerBits(T in, size_t num_bits) {
 //  2 -> 4
 // Motivation: -1 is 0xFF...FF what doesn't work very well with
 // WriteVariableWidth which prefers to have as many 0 bits as possible.
-inline uint64_t EncodeZigZag(int64_t val) {
-  return (val << 1) ^ (val >> 63);
-}
+inline uint64_t EncodeZigZag(int64_t val) { return (val << 1) ^ (val >> 63); }
 
 // Decodes signed integer encoded with EncodeZigZag.
 inline int64_t DecodeZigZag(uint64_t val) {
@@ -92,7 +90,8 @@ inline int64_t DecodeZigZag(uint64_t val) {
 inline uint64_t EncodeZigZag(int64_t val, size_t block_exponent) {
   assert(block_exponent < 64);
   const uint64_t uval = static_cast<uint64_t>(val >= 0 ? val : -val - 1);
-  const uint64_t block_num = ((uval >> block_exponent) << 1) + (val >= 0 ? 0 : 1);
+  const uint64_t block_num =
+      ((uval >> block_exponent) << 1) + (val >= 0 ? 0 : 1);
   const uint64_t pos = GetLowerBits(uval, block_exponent);
   return (block_num << block_exponent) + pos;
 }
@@ -139,13 +138,13 @@ std::vector<T> StreamToBuffer(std::string str) {
   std::vector<T> buffer;
   buffer.reserve(NumBitsToNumWords<sizeof(T)>(str.length()));
   for (int index = str_length - word_size; index >= 0; index -= word_size) {
-    buffer.push_back(static_cast<T>(std::bitset<sizeof(T) * 8>(
-        str, index, word_size).to_ullong()));
+    buffer.push_back(static_cast<T>(
+        std::bitset<sizeof(T) * 8>(str, index, word_size).to_ullong()));
   }
   const size_t suffix_length = str.length() % word_size;
   if (suffix_length != 0) {
-    buffer.push_back(static_cast<T>(std::bitset<sizeof(T) * 8>(
-        str, 0, suffix_length).to_ullong()));
+    buffer.push_back(static_cast<T>(
+        std::bitset<sizeof(T) * 8>(str, 0, suffix_length).to_ullong()));
   }
   return buffer;
 }
@@ -154,8 +153,7 @@ std::vector<T> StreamToBuffer(std::string str) {
 template <size_t N>
 inline std::string PadToWord(std::string&& str) {
   const size_t tail_length = str.size() % N;
-  if (tail_length != 0)
-    str += std::string(N - tail_length, '0');
+  if (tail_length != 0) str += std::string(N - tail_length, '0');
   return str;
 }
 
@@ -174,7 +172,8 @@ inline std::bitset<N> StreamToBitset(std::string str) {
 
 // Converts first |num_bits| of std::bitset to a left-to-right stream of bits.
 template <size_t N>
-inline std::string BitsetToStream(const std::bitset<N>& bits, size_t num_bits = N) {
+inline std::string BitsetToStream(const std::bitset<N>& bits,
+                                  size_t num_bits = N) {
   std::string str = bits.to_string().substr(N - num_bits);
   std::reverse(str.begin(), str.end());
   return str;
@@ -237,14 +236,14 @@ class BitWriterInterface {
   void WriteVariableWidthU32(uint32_t val, size_t chunk_length);
   void WriteVariableWidthU16(uint16_t val, size_t chunk_length);
   void WriteVariableWidthU8(uint8_t val, size_t chunk_length);
-  void WriteVariableWidthS64(
-      int64_t val, size_t chunk_length, size_t zigzag_exponent);
-  void WriteVariableWidthS32(
-      int32_t val, size_t chunk_length, size_t zigzag_exponent);
-  void WriteVariableWidthS16(
-      int16_t val, size_t chunk_length, size_t zigzag_exponent);
-  void WriteVariableWidthS8(
-      int8_t val, size_t chunk_length, size_t zigzag_exponent);
+  void WriteVariableWidthS64(int64_t val, size_t chunk_length,
+                             size_t zigzag_exponent);
+  void WriteVariableWidthS32(int32_t val, size_t chunk_length,
+                             size_t zigzag_exponent);
+  void WriteVariableWidthS16(int16_t val, size_t chunk_length,
+                             size_t zigzag_exponent);
+  void WriteVariableWidthS8(int8_t val, size_t chunk_length,
+                            size_t zigzag_exponent);
 
   // Writes |val| using fixed bit width. Bit width is determined by |max_val|:
   // max_val 0 -> bit width 1
@@ -262,14 +261,10 @@ class BitWriterInterface {
   virtual size_t GetNumBits() const = 0;
 
   // Provides direct access to the buffer data if implemented.
-  virtual const uint8_t* GetData() const {
-    return nullptr;
-  }
+  virtual const uint8_t* GetData() const { return nullptr; }
 
   // Returns buffer size in bytes.
-  size_t GetDataSizeBytes() const {
-    return NumBitsToNumWords<8>(GetNumBits());
-  }
+  size_t GetDataSizeBytes() const { return NumBitsToNumWords<8>(GetNumBits()); }
 
   // Generates and returns byte array containing written bits.
   virtual std::vector<uint8_t> GetDataCopy() const = 0;
@@ -286,9 +281,7 @@ class BitWriterWord64 : public BitWriterInterface {
 
   void WriteBits(uint64_t bits, size_t num_bits) override;
 
-  size_t GetNumBits() const override {
-    return end_;
-  }
+  size_t GetNumBits() const override { return end_; }
 
   const uint8_t* GetData() const override {
     return reinterpret_cast<const uint8_t*>(buffer_.data());
@@ -300,9 +293,7 @@ class BitWriterWord64 : public BitWriterInterface {
 
   // Returns written stream as std::string, padded with zeroes so that the
   // length is a multiple of 64.
-  std::string GetStreamPadded64() const {
-    return BufferToStream(buffer_);
-  }
+  std::string GetStreamPadded64() const { return BufferToStream(buffer_); }
 
   // Sets callback to emit bit sequences after every write.
   void SetCallback(std::function<void(const std::string&)> callback) {
@@ -312,8 +303,7 @@ class BitWriterWord64 : public BitWriterInterface {
  protected:
   // Sends string generated from arguments to callback_ if defined.
   void EmitSequence(uint64_t bits, size_t num_bits) const {
-    if (callback_)
-      callback_(BitsToStream(bits, num_bits));
+    if (callback_) callback_(BitsToStream(bits, num_bits));
   }
 
  private:
@@ -363,8 +353,7 @@ class BitReaderInterface {
     static_assert(sizeof(T) <= 64, "Type size too large");
     uint64_t bits = 0;
     const size_t num_read = ReadBits(&bits, sizeof(T) * 8);
-    if (num_read != sizeof(T) * 8)
-      return false;
+    if (num_read != sizeof(T) * 8) return false;
     memcpy(val, &bits, sizeof(T));
     return true;
   }
@@ -384,9 +373,7 @@ class BitReaderInterface {
   // the buffer stream ends with padding zeroes, and would accept this as a
   // 'soft' EOF. Implementations of this class do not necessarily need to
   // implement this, default behavior can simply delegate to ReachedEnd().
-  virtual bool OnlyZeroesLeft() const {
-    return ReachedEnd();
-  }
+  virtual bool OnlyZeroesLeft() const { return ReachedEnd(); }
 
   // Reads value encoded with WriteVariableWidthXXX (see BitWriterInterface).
   // Reader and writer must use the same |chunk_length| and variable type.
@@ -395,14 +382,14 @@ class BitReaderInterface {
   bool ReadVariableWidthU32(uint32_t* val, size_t chunk_length);
   bool ReadVariableWidthU16(uint16_t* val, size_t chunk_length);
   bool ReadVariableWidthU8(uint8_t* val, size_t chunk_length);
-  bool ReadVariableWidthS64(
-      int64_t* val, size_t chunk_length, size_t zigzag_exponent);
-  bool ReadVariableWidthS32(
-      int32_t* val, size_t chunk_length, size_t zigzag_exponent);
-  bool ReadVariableWidthS16(
-      int16_t* val, size_t chunk_length, size_t zigzag_exponent);
-  bool ReadVariableWidthS8(
-      int8_t* val, size_t chunk_length, size_t zigzag_exponent);
+  bool ReadVariableWidthS64(int64_t* val, size_t chunk_length,
+                            size_t zigzag_exponent);
+  bool ReadVariableWidthS32(int32_t* val, size_t chunk_length,
+                            size_t zigzag_exponent);
+  bool ReadVariableWidthS16(int16_t* val, size_t chunk_length,
+                            size_t zigzag_exponent);
+  bool ReadVariableWidthS8(int8_t* val, size_t chunk_length,
+                           size_t zigzag_exponent);
 
   // Reads value written by WriteFixedWidth (|max_val| needs to be the same).
   // Returns true on success, false if the bit stream ends prematurely.
@@ -428,9 +415,7 @@ class BitReaderWord64 : public BitReaderInterface {
 
   size_t ReadBits(uint64_t* bits, size_t num_bits) override;
 
-  size_t GetNumReadBits() const override {
-    return pos_;
-  }
+  size_t GetNumReadBits() const override { return pos_; }
 
   bool ReachedEnd() const override;
   bool OnlyZeroesLeft() const override;
@@ -445,8 +430,7 @@ class BitReaderWord64 : public BitReaderInterface {
  protected:
   // Sends string generated from arguments to callback_ if defined.
   void EmitSequence(uint64_t bits, size_t num_bits) const {
-    if (callback_)
-      callback_(BitsToStream(bits, num_bits));
+    if (callback_) callback_(BitsToStream(bits, num_bits));
   }
 
  private:

@@ -242,4 +242,3 @@ class MemPass : public Pass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_OPT_PASS_H_
-

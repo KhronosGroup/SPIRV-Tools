@@ -20,8 +20,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "spirv-tools/libspirv.h"
 #include "assembly_grammar.h"
+#include "spirv-tools/libspirv.h"
 
 namespace libspirv {
 
@@ -41,7 +41,8 @@ NameMapper GetTrivialNameMapper();
 //  - If an Id has a debug name (via OpName), then that will be used when
 //    possible.
 //  - Well known scalar types map to friendly names.  For example,
-//    OpTypeVoid should be %void.  Scalar types map to their names in OpenCL when
+//    OpTypeVoid should be %void.  Scalar types map to their names in OpenCL
+//    when
 //    there is a correspondence, and otherwise as follows:
 //    - unsigned integer type of n bits map to "u" followed by n
 //    - signed integer type of n bits map to "i" followed by n

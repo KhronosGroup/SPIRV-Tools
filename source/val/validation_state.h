@@ -358,15 +358,14 @@ class ValidationState_t {
 
   // Provides detailed information on matrix type.
   // Returns false iff |id| is not matrix type.
-  bool GetMatrixTypeInfo(
-      uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
-      uint32_t* column_type, uint32_t* component_type) const;
+  bool GetMatrixTypeInfo(uint32_t id, uint32_t* num_rows, uint32_t* num_cols,
+                         uint32_t* column_type, uint32_t* component_type) const;
 
   // Collects struct member types into |member_types|.
   // Returns false iff not struct type or has no members.
   // Deletes prior contents of |member_types|.
-  bool GetStructMemberTypes(
-      uint32_t struct_type_id, std::vector<uint32_t>* member_types) const;
+  bool GetStructMemberTypes(uint32_t struct_type_id,
+                            std::vector<uint32_t>* member_types) const;
 
   // Returns true iff |id| is a type corresponding to the name of the function.
   // Only works for types not for objects.
@@ -393,8 +392,8 @@ class ValidationState_t {
                             size_t operand_index) const;
 
   // Provides information on pointer type. Returns false iff not pointer type.
-  bool GetPointerTypeInfo(
-      uint32_t id, uint32_t* data_type, uint32_t* storage_class) const;
+  bool GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
+                          uint32_t* storage_class) const;
 
  private:
   ValidationState_t(const ValidationState_t&);

@@ -17,7 +17,6 @@
 #ifndef LIBSPIRV_OPT_DEAD_BRANCH_ELIM_PASS_H_
 #define LIBSPIRV_OPT_DEAD_BRANCH_ELIM_PASS_H_
 
-
 #include <algorithm>
 #include <map>
 #include <queue>
@@ -27,20 +26,19 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
 class DeadBranchElimPass : public MemPass {
-
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-   using GetBlocksFunction =
-     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+  using GetBlocksFunction =
+      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   DeadBranchElimPass();
   const char* name() const override { return "eliminate-dead-branches"; }
@@ -64,13 +62,13 @@ class DeadBranchElimPass : public MemPass {
   // Add conditional branch of |condId|, |trueLabId| and |falseLabId| to end
   // of block |bp|.
   void AddBranchConditional(uint32_t condId, uint32_t trueLabId,
-      uint32_t falseLabId, ir::BasicBlock* bp);
+                            uint32_t falseLabId, ir::BasicBlock* bp);
 
   // If block |bp| contains conditional branch or switch preceeded by an
   // OpSelctionMerge, return true and return branch and merge instructions
-  // in |branchInst| and |mergeInst| and the conditional id in |condId|. 
+  // in |branchInst| and |mergeInst| and the conditional id in |condId|.
   bool GetSelectionBranch(ir::BasicBlock* bp, ir::Instruction** branchInst,
-    ir::Instruction** mergeInst, uint32_t *condId);
+                          ir::Instruction** mergeInst, uint32_t* condId);
 
   // Return true if |labelId| has any non-phi, non-backedge references
   bool HasNonPhiNonBackedgeRef(uint32_t labelId);
@@ -106,4 +104,3 @@ class DeadBranchElimPass : public MemPass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_DEAD_BRANCH_ELIM_PASS_H_
-

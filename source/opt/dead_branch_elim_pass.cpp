@@ -29,7 +29,7 @@ const uint32_t kBranchCondTrueLabIdInIdx = 1;
 const uint32_t kBranchCondFalseLabIdInIdx = 2;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
   bool condIsConst;
@@ -45,14 +45,11 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
     } break;
     case SpvOpLogicalNot: {
       bool negVal;
-      condIsConst = GetConstCondition(cInst->GetSingleWordInOperand(0),
-          &negVal);
-      if (condIsConst)
-        *condVal = !negVal;
+      condIsConst =
+          GetConstCondition(cInst->GetSingleWordInOperand(0), &negVal);
+      if (condIsConst) *condVal = !negVal;
     } break;
-    default: {
-      condIsConst = false;
-    } break;
+    default: { condIsConst = false; } break;
   }
   return condIsConst;
 }
@@ -63,13 +60,11 @@ bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
   ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
   if (!typeInst || (typeInst->opcode() != SpvOpTypeInt)) return false;
   // TODO(greg-lunarg): Support non-32 bit ints
-  if (typeInst->GetSingleWordInOperand(0) != 32)
-    return false;
+  if (typeInst->GetSingleWordInOperand(0) != 32) return false;
   if (sInst->opcode() == SpvOpConstant) {
     *selVal = sInst->GetSingleWordInOperand(0);
     return true;
-  }
-  else if (sInst->opcode() == SpvOpConstantNull) {
+  } else if (sInst->opcode() == SpvOpConstantNull) {
     *selVal = 0;
     return true;
   }
@@ -77,46 +72,47 @@ bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
 }
 
 void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
-  std::unique_ptr<ir::Instruction> newBranch(
-    new ir::Instruction(SpvOpBranch, 0, 0,
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
+  std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
+      SpvOpBranch, 0, 0,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newBranch);
   bp->AddInstruction(std::move(newBranch));
 }
 
 void DeadBranchElimPass::AddSelectionMerge(uint32_t labelId,
-    ir::BasicBlock* bp) {
-  std::unique_ptr<ir::Instruction> newMerge(
-    new ir::Instruction(SpvOpSelectionMerge, 0, 0,
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}},
-         {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
+                                           ir::BasicBlock* bp) {
+  std::unique_ptr<ir::Instruction> newMerge(new ir::Instruction(
+      SpvOpSelectionMerge, 0, 0,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newMerge);
   bp->AddInstruction(std::move(newMerge));
 }
 
 void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
-    uint32_t trueLabId, uint32_t falseLabId, ir::BasicBlock* bp) {
-  std::unique_ptr<ir::Instruction> newBranchCond(
-    new ir::Instruction(SpvOpBranchConditional, 0, 0,
-        {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condId}},
-         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {trueLabId}},
-         {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {falseLabId}}}));
+                                              uint32_t trueLabId,
+                                              uint32_t falseLabId,
+                                              ir::BasicBlock* bp) {
+  std::unique_ptr<ir::Instruction> newBranchCond(new ir::Instruction(
+      SpvOpBranchConditional, 0, 0,
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condId}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {trueLabId}},
+       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {falseLabId}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newBranchCond);
   bp->AddInstruction(std::move(newBranchCond));
 }
 
 bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
-    ir::Instruction** branchInst, ir::Instruction** mergeInst,
-    uint32_t *condId) {
+                                            ir::Instruction** branchInst,
+                                            ir::Instruction** mergeInst,
+                                            uint32_t* condId) {
   auto ii = bp->end();
   --ii;
   *branchInst = &*ii;
-  if (ii == bp->begin())
-    return false;
+  if (ii == bp->begin()) return false;
   --ii;
   *mergeInst = &*ii;
-  if ((*mergeInst)->opcode() != SpvOpSelectionMerge)
-    return false;
+  if ((*mergeInst)->opcode() != SpvOpSelectionMerge) return false;
   // SPIR-V says the terminator for an OpSelectionMerge must be
   // either a conditional branch or a switch.
   assert((*branchInst)->opcode() == SpvOpBranchConditional ||
@@ -128,8 +124,7 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
 
 bool DeadBranchElimPass::HasNonPhiNonBackedgeRef(uint32_t labelId) {
   analysis::UseList* uses = get_def_use_mgr()->GetUses(labelId);
-  if (uses == nullptr)
-    return false;
+  if (uses == nullptr) return false;
   for (auto u : *uses) {
     if (u.inst->opcode() != SpvOpPhi &&
         backedges_.find(u.inst) == backedges_.end())
@@ -147,24 +142,22 @@ void DeadBranchElimPass::ComputeBackEdges(
     visited.insert((*bi)->id());
     auto ii = (*bi)->end();
     --ii;
-    switch(ii->opcode()) {
+    switch (ii->opcode()) {
       case SpvOpBranch: {
-        const uint32_t labId = ii->GetSingleWordInOperand(
-            kBranchTargetLabIdInIdx);
-        if (visited.find(labId) != visited.end())
-          backedges_.insert(&*ii);
+        const uint32_t labId =
+            ii->GetSingleWordInOperand(kBranchTargetLabIdInIdx);
+        if (visited.find(labId) != visited.end()) backedges_.insert(&*ii);
       } break;
       case SpvOpBranchConditional: {
-        const uint32_t tLabId = ii->GetSingleWordInOperand(
-            kBranchCondTrueLabIdInIdx);
+        const uint32_t tLabId =
+            ii->GetSingleWordInOperand(kBranchCondTrueLabIdInIdx);
         if (visited.find(tLabId) != visited.end()) {
           backedges_.insert(&*ii);
           break;
         }
-        const uint32_t fLabId = ii->GetSingleWordInOperand(
-            kBranchCondFalseLabIdInIdx);
-        if (visited.find(fLabId) != visited.end())
-          backedges_.insert(&*ii);
+        const uint32_t fLabId =
+            ii->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
+        if (visited.find(fLabId) != visited.end()) backedges_.insert(&*ii);
       } break;
       default:
         break;
@@ -181,53 +174,45 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   bool modified = false;
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     // Skip blocks that are already in the elimination set
-    if (elimBlocks.find(*bi) != elimBlocks.end())
-      continue;
+    if (elimBlocks.find(*bi) != elimBlocks.end()) continue;
     // Skip blocks that don't have conditional branch preceded
     // by OpSelectionMerge
     ir::Instruction* br;
     ir::Instruction* mergeInst;
     uint32_t condId;
-    if (!GetSelectionBranch(*bi, &br, &mergeInst, &condId))
-      continue;
+    if (!GetSelectionBranch(*bi, &br, &mergeInst, &condId)) continue;
 
     // If constant condition/selector, replace conditional branch/switch
     // with unconditional branch and delete merge
     uint32_t liveLabId;
     if (br->opcode() == SpvOpBranchConditional) {
       bool condVal;
-      if (!GetConstCondition(condId, &condVal))
-        continue;
-      liveLabId = (condVal == true) ? 
-          br->GetSingleWordInOperand(kBranchCondTrueLabIdInIdx) :
-          br->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
-    }
-    else {
+      if (!GetConstCondition(condId, &condVal)) continue;
+      liveLabId = (condVal == true)
+                      ? br->GetSingleWordInOperand(kBranchCondTrueLabIdInIdx)
+                      : br->GetSingleWordInOperand(kBranchCondFalseLabIdInIdx);
+    } else {
       assert(br->opcode() == SpvOpSwitch);
       // Search switch operands for selector value, set liveLabId to
       // corresponding label, use default if not found
       uint32_t selVal;
-      if (!GetConstInteger(condId, &selVal))
-        continue;
+      if (!GetConstInteger(condId, &selVal)) continue;
       uint32_t icnt = 0;
       uint32_t caseVal;
       br->ForEachInOperand(
-            [&icnt,&caseVal,&selVal,&liveLabId](const uint32_t* idp) {
-        if (icnt == 1) {
-          // Start with default label
-          liveLabId = *idp;
-        }
-        else if (icnt > 1) {
-          if (icnt % 2 == 0) {
-            caseVal = *idp;
-          }
-          else {
-            if (caseVal == selVal)
+          [&icnt, &caseVal, &selVal, &liveLabId](const uint32_t* idp) {
+            if (icnt == 1) {
+              // Start with default label
               liveLabId = *idp;
-          }
-        }
-        ++icnt;
-      });
+            } else if (icnt > 1) {
+              if (icnt % 2 == 0) {
+                caseVal = *idp;
+              } else {
+                if (caseVal == selVal) liveLabId = *idp;
+              }
+            }
+            ++icnt;
+          });
     }
 
     const uint32_t mergeLabId =
@@ -258,36 +243,30 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       KillAllInsts(*dbi);
       elimBlocks.insert(*dbi);
       ++dbi;
-      if (dbi == structuredOrder.end())
-        break;
+      if (dbi == structuredOrder.end()) break;
       dLabId = (*dbi)->id();
     }
 
     // If last block reached, look for next dead branch
-    if (dbi == structuredOrder.end())
-      continue;
+    if (dbi == structuredOrder.end()) continue;
 
     // Create set of dead predecessors in preparation for phi update.
     // Add the header block if the live branch is not the merge block.
     std::unordered_set<ir::BasicBlock*> deadPreds(elimBlocks);
-    if (liveLabId != dLabId)
-      deadPreds.insert(*bi);
+    if (liveLabId != dLabId) deadPreds.insert(*bi);
 
     // Update phi instructions in terminating block.
-    for (auto pii = (*dbi)->begin(); ; ++pii) {
+    for (auto pii = (*dbi)->begin();; ++pii) {
       // Skip NoOps, break at end of phis
       SpvOp op = pii->opcode();
-      if (op == SpvOpNop)
-        continue;
-      if (op != SpvOpPhi)
-        break;
+      if (op == SpvOpNop) continue;
+      if (op != SpvOpPhi) break;
       // Count phi's live predecessors with lcnt and remember last one
       // with lidx.
       uint32_t lcnt = 0;
       uint32_t lidx = 0;
       uint32_t icnt = 0;
-      pii->ForEachInId(
-          [&deadPreds,&icnt,&lcnt,&lidx,this](uint32_t* idp) {
+      pii->ForEachInId([&deadPreds, &icnt, &lcnt, &lidx, this](uint32_t* idp) {
         if (icnt % 2 == 1) {
           if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
             ++lcnt;
@@ -300,8 +279,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       uint32_t replId;
       if (lcnt == 1) {
         replId = pii->GetSingleWordInOperand(lidx);
-      }
-      else {
+      } else {
         // Otherwise create new phi eliminating dead predecessor entries
         assert(lcnt > 1);
         replId = TakeNextId();
@@ -309,20 +287,19 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         icnt = 0;
         uint32_t lastId;
         pii->ForEachInId(
-            [&deadPreds,&icnt,&phi_in_opnds,&lastId,this](uint32_t* idp) {
-          if (icnt % 2 == 1) {
-            if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
-              phi_in_opnds.push_back(
-                  {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {lastId}});
-              phi_in_opnds.push_back(
-                  {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*idp}});
-            }
-          }
-          else {
-            lastId = *idp;
-          }
-          ++icnt;
-        });
+            [&deadPreds, &icnt, &phi_in_opnds, &lastId, this](uint32_t* idp) {
+              if (icnt % 2 == 1) {
+                if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
+                  phi_in_opnds.push_back(
+                      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {lastId}});
+                  phi_in_opnds.push_back(
+                      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {*idp}});
+                }
+              } else {
+                lastId = *idp;
+              }
+              ++icnt;
+            });
         std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
             SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
         get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
@@ -337,7 +314,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
   }
 
   // Erase dead blocks
-  for (auto ebi = func->begin(); ebi != func->end(); )
+  for (auto ebi = func->begin(); ebi != func->end();)
     if (elimBlocks.find(&*ebi) != elimBlocks.end())
       ebi = ebi.Erase();
     else
@@ -355,8 +332,8 @@ void DeadBranchElimPass::Initialize(ir::IRContext* c) {
 bool DeadBranchElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : get_module()->extensions()) {
-    const char* extName = reinterpret_cast<const char*>(
-        &ei.GetInOperand(0).words[0]);
+    const char* extName =
+        reinterpret_cast<const char*>(&ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
       return false;
   }
@@ -364,7 +341,7 @@ bool DeadBranchElimPass::AllExtensionsSupported() const {
 }
 
 Pass::Status DeadBranchElimPass::ProcessImpl() {
-  // Current functionality assumes structured control flow. 
+  // Current functionality assumes structured control flow.
   // TODO(greg-lunarg): Handle non-structured control-flow.
   if (!get_module()->HasCapability(SpvCapabilityShader))
     return Status::SuccessWithoutChange;
@@ -372,11 +349,9 @@ Pass::Status DeadBranchElimPass::ProcessImpl() {
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
   for (auto& ai : get_module()->annotations())
-    if (ai.opcode() == SpvOpGroupDecorate)
-      return Status::SuccessWithoutChange;
+    if (ai.opcode() == SpvOpGroupDecorate) return Status::SuccessWithoutChange;
   // Do not process if any disallowed extensions are enabled
-  if (!AllExtensionsSupported())
-    return Status::SuccessWithoutChange;
+  if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process all entry point functions
   ProcessFunction pfn = [this](ir::Function* fp) {
     return EliminateDeadBranches(fp);
@@ -395,31 +370,30 @@ Pass::Status DeadBranchElimPass::Process(ir::IRContext* module) {
 void DeadBranchElimPass::InitExtensions() {
   extensions_whitelist_.clear();
   extensions_whitelist_.insert({
-    "SPV_AMD_shader_explicit_vertex_parameter",
-    "SPV_AMD_shader_trinary_minmax",
-    "SPV_AMD_gcn_shader",
-    "SPV_KHR_shader_ballot",
-    "SPV_AMD_shader_ballot",
-    "SPV_AMD_gpu_shader_half_float",
-    "SPV_KHR_shader_draw_parameters",
-    "SPV_KHR_subgroup_vote",
-    "SPV_KHR_16bit_storage",
-    "SPV_KHR_device_group",
-    "SPV_KHR_multiview",
-    "SPV_NVX_multiview_per_view_attributes",
-    "SPV_NV_viewport_array2",
-    "SPV_NV_stereo_view_rendering",
-    "SPV_NV_sample_mask_override_coverage",
-    "SPV_NV_geometry_shader_passthrough",
-    "SPV_AMD_texture_gather_bias_lod",
-    "SPV_KHR_storage_buffer_storage_class",
-    "SPV_KHR_variable_pointers",
-    "SPV_AMD_gpu_shader_int16",
-    "SPV_KHR_post_depth_coverage",
-    "SPV_KHR_shader_atomic_counter_ops",
+      "SPV_AMD_shader_explicit_vertex_parameter",
+      "SPV_AMD_shader_trinary_minmax",
+      "SPV_AMD_gcn_shader",
+      "SPV_KHR_shader_ballot",
+      "SPV_AMD_shader_ballot",
+      "SPV_AMD_gpu_shader_half_float",
+      "SPV_KHR_shader_draw_parameters",
+      "SPV_KHR_subgroup_vote",
+      "SPV_KHR_16bit_storage",
+      "SPV_KHR_device_group",
+      "SPV_KHR_multiview",
+      "SPV_NVX_multiview_per_view_attributes",
+      "SPV_NV_viewport_array2",
+      "SPV_NV_stereo_view_rendering",
+      "SPV_NV_sample_mask_override_coverage",
+      "SPV_NV_geometry_shader_passthrough",
+      "SPV_AMD_texture_gather_bias_lod",
+      "SPV_KHR_storage_buffer_storage_class",
+      "SPV_KHR_variable_pointers",
+      "SPV_AMD_gpu_shader_int16",
+      "SPV_KHR_post_depth_coverage",
+      "SPV_KHR_shader_atomic_counter_ops",
   });
 }
 
 }  // namespace opt
 }  // namespace spvtools
-

@@ -31,8 +31,7 @@ void DefUseManager::AnalyzeInstDef(ir::Instruction* inst) {
       ClearInst(iter->second);
     }
     id_to_def_[def_id] = inst;
-  }
-  else {
+  } else {
     ClearInst(inst);
   }
 }
@@ -46,16 +45,16 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
       // For any id type but result id type
-    case SPV_OPERAND_TYPE_ID:
-    case SPV_OPERAND_TYPE_TYPE_ID:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-    case SPV_OPERAND_TYPE_SCOPE_ID: {
-      uint32_t use_id = inst->GetSingleWordOperand(i);
-      id_to_uses_[use_id].push_back({ inst, i });
-      inst_to_used_ids_[inst].push_back(use_id);
-    } break;
-    default:
-      break;
+      case SPV_OPERAND_TYPE_ID:
+      case SPV_OPERAND_TYPE_TYPE_ID:
+      case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+      case SPV_OPERAND_TYPE_SCOPE_ID: {
+        uint32_t use_id = inst->GetSingleWordOperand(i);
+        id_to_uses_[use_id].push_back({inst, i});
+        inst_to_used_ids_[inst].push_back(use_id);
+      } break;
+      default:
+        break;
     }
   }
 }
@@ -100,7 +99,6 @@ std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   }
   return annos;
 }
-
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   if (!module) return;

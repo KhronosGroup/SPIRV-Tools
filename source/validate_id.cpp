@@ -202,22 +202,21 @@ bool idUsage::isValid<SpvOpMemberDecorate>(const spv_instruction_t* inst,
 
 template <>
 bool idUsage::isValid<SpvOpDecorationGroup>(const spv_instruction_t* inst,
-                                     const spv_opcode_desc) {
+                                            const spv_opcode_desc) {
   auto decorationGroupIndex = 1;
   auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
 
   for (auto pair : decorationGroup->uses()) {
     auto use = pair.first;
-    if (use->opcode() != SpvOpDecorate &&
-        use->opcode() != SpvOpGroupDecorate &&
+    if (use->opcode() != SpvOpDecorate && use->opcode() != SpvOpGroupDecorate &&
         use->opcode() != SpvOpGroupMemberDecorate &&
-        use->opcode() != SpvOpName ) {
+        use->opcode() != SpvOpName) {
       DIAG(decorationGroupIndex) << "Result id of OpDecorationGroup can only "
                                  << "be targeted by OpName, OpGroupDecorate, "
                                  << "OpDecorate, and OpGroupMemberDecorate";
       return false;
     }
-  }                                        
+  }
   return true;
 }
 
@@ -228,8 +227,8 @@ bool idUsage::isValid<SpvOpGroupDecorate>(const spv_instruction_t* inst,
   auto decorationGroup = module_.FindDef(inst->words[decorationGroupIndex]);
   if (!decorationGroup || SpvOpDecorationGroup != decorationGroup->opcode()) {
     DIAG(decorationGroupIndex)
-    << "OpGroupDecorate Decoration group <id> '"
-    << inst->words[decorationGroupIndex] << "' is not a decoration group.";
+        << "OpGroupDecorate Decoration group <id> '"
+        << inst->words[decorationGroupIndex] << "' is not a decoration group.";
     return false;
   }
   return true;
@@ -296,8 +295,8 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
     auto entryPointType = module_.FindDef(entryPoint->words()[4]);
     if (!entryPointType || 3 != entryPointType->words().size()) {
       DIAG(entryPointIndex)
-      << "OpEntryPoint Entry Point <id> '" << inst->words[entryPointIndex]
-      << "'s function parameter count is not zero.";
+          << "OpEntryPoint Entry Point <id> '" << inst->words[entryPointIndex]
+          << "'s function parameter count is not zero.";
       return false;
     }
   }
@@ -457,8 +456,8 @@ bool idUsage::isValid<SpvOpTypeStruct>(const spv_instruction_t* inst,
     auto memberType = module_.FindDef(memberTypeId);
     if (!memberType || !spvOpcodeGeneratesType(memberType->opcode())) {
       DIAG(memberTypeIndex)
-      << "OpTypeStruct Member Type <id> '" << inst->words[memberTypeIndex]
-      << "' is not a type.";
+          << "OpTypeStruct Member Type <id> '" << inst->words[memberTypeIndex]
+          << "' is not a type.";
       return false;
     }
     if (SpvOpTypeStruct == memberType->opcode() &&
@@ -638,10 +637,10 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
         if (!constituentResultType ||
             componentType->opcode() != constituentResultType->opcode()) {
           DIAG(constituentIndex)
-          << "OpConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "'s type does not match Result Type <id> '" << resultType->id()
-          << "'s vector element type.";
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "'s type does not match Result Type <id> '" << resultType->id()
+              << "'s vector element type.";
           return false;
         }
       }
@@ -666,8 +665,9 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
       for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
-        if (!constituent || !(SpvOpConstantComposite == constituent->opcode() ||
-            SpvOpUndef == constituent->opcode())) {
+        if (!constituent ||
+            !(SpvOpConstantComposite == constituent->opcode() ||
+              SpvOpUndef == constituent->opcode())) {
           // The message says "... or undef" because the spec does not say
           // undef is a constant.
           DIAG(constituentIndex) << "OpConstantComposite Constituent <id> '"
@@ -679,10 +679,10 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
         assert(vector);
         if (columnType->opcode() != vector->opcode()) {
           DIAG(constituentIndex)
-          << "OpConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "' type does not match Result Type <id> '" << resultType->id()
-          << "'s matrix column type.";
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "' type does not match Result Type <id> '" << resultType->id()
+              << "'s matrix column type.";
           return false;
         }
         auto vectorComponentType = module_.FindDef(vector->words()[2]);
@@ -731,10 +731,10 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
         assert(constituentType);
         if (elementType->id() != constituentType->id()) {
           DIAG(constituentIndex)
-          << "OpConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "'s type does not match Result Type <id> '" << resultType->id()
-          << "'s array element type.";
+              << "OpConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "'s type does not match Result Type <id> '" << resultType->id()
+              << "'s array element type.";
           return false;
         }
       }
@@ -892,13 +892,12 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
       auto consumer_opcode = consumer_instr->opcode();
       if (consumer_instr->block() != sampledImageInstr->block()) {
         DIAG(resultTypeIndex)
-        << "All OpSampledImage instructions must be in the same block in "
+            << "All OpSampledImage instructions must be in the same block in "
                "which their Result <id> are consumed. OpSampledImage Result "
                "Type <id> '"
-        << resultID
-        << "' has a consumer in a different basic "
-            "block. The consumer instruction <id> is '"
-        << consumer_id << "'.";
+            << resultID << "' has a consumer in a different basic "
+                           "block. The consumer instruction <id> is '"
+            << consumer_id << "'.";
         return false;
       }
       // TODO: The following check is incomplete. We should also check that the
@@ -966,10 +965,10 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
         if (!constituentResultType ||
             componentType->opcode() != constituentResultType->opcode()) {
           DIAG(constituentIndex)
-          << "OpSpecConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "'s type does not match Result Type <id> '" << resultType->id()
-          << "'s vector element type.";
+              << "OpSpecConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "'s type does not match Result Type <id> '" << resultType->id()
+              << "'s vector element type.";
           return false;
         }
       }
@@ -995,9 +994,10 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
            constituentIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
         auto constituentOpCode = constituent->opcode();
-        if (!constituent || !(SpvOpSpecConstantComposite == constituentOpCode ||
-            SpvOpConstantComposite == constituentOpCode ||
-            SpvOpUndef == constituentOpCode)) {
+        if (!constituent ||
+            !(SpvOpSpecConstantComposite == constituentOpCode ||
+              SpvOpConstantComposite == constituentOpCode ||
+              SpvOpUndef == constituentOpCode)) {
           // The message says "... or undef" because the spec does not say
           // undef is a constant.
           DIAG(constituentIndex) << "OpSpecConstantComposite Constituent <id> '"
@@ -1009,10 +1009,10 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
         assert(vector);
         if (columnType->opcode() != vector->opcode()) {
           DIAG(constituentIndex)
-          << "OpSpecConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "' type does not match Result Type <id> '" << resultType->id()
-          << "'s matrix column type.";
+              << "OpSpecConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "' type does not match Result Type <id> '" << resultType->id()
+              << "'s matrix column type.";
           return false;
         }
         auto vectorComponentType = module_.FindDef(vector->words()[2]);
@@ -1062,10 +1062,10 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
         assert(constituentType);
         if (elementType->id() != constituentType->id()) {
           DIAG(constituentIndex)
-          << "OpSpecConstantComposite Constituent <id> '"
-          << inst->words[constituentIndex]
-          << "'s type does not match Result Type <id> '" << resultType->id()
-          << "'s array element type.";
+              << "OpSpecConstantComposite Constituent <id> '"
+              << inst->words[constituentIndex]
+              << "'s type does not match Result Type <id> '" << resultType->id()
+              << "'s array element type.";
           return false;
         }
       }
@@ -1139,8 +1139,8 @@ bool idUsage::isValid<SpvOpVariable>(const spv_instruction_t* inst,
         initialiser && spvOpcodeIsConstant(initialiser->opcode());
     if (!initialiser || !(is_constant || is_module_scope_var)) {
       DIAG(initialiserIndex)
-      << "OpVariable Initializer <id> '" << inst->words[initialiserIndex]
-      << "' is not a constant or module-scope variable.";
+          << "OpVariable Initializer <id> '" << inst->words[initialiserIndex]
+          << "' is not a constant or module-scope variable.";
       return false;
     }
   }
@@ -1227,15 +1227,20 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   {
     uint32_t dataType;
     uint32_t storageClass;
-    if (!module_.GetPointerTypeInfo(pointerType->id(), &dataType, &storageClass)) {
-      DIAG(pointerIndex) << "OpStore Pointer <id> '"<< inst->words[pointerIndex] << "' is not pointer type";
+    if (!module_.GetPointerTypeInfo(pointerType->id(), &dataType,
+                                    &storageClass)) {
+      DIAG(pointerIndex) << "OpStore Pointer <id> '"
+                         << inst->words[pointerIndex]
+                         << "' is not pointer type";
       return false;
     }
 
     if (storageClass == SpvStorageClassUniformConstant ||
         storageClass == SpvStorageClassInput ||
         storageClass == SpvStorageClassPushConstant) {
-      DIAG(pointerIndex) << "OpStore Pointer <id> '" << inst->words[pointerIndex] << "' storage class is read-only";
+      DIAG(pointerIndex) << "OpStore Pointer <id> '"
+                         << inst->words[pointerIndex]
+                         << "' storage class is read-only";
       return false;
     }
   }
@@ -1256,9 +1261,9 @@ bool idUsage::isValid<SpvOpStore>(const spv_instruction_t* inst,
   }
 
   if (type->id() != objectType->id()) {
-    if (!module_.options()->relax_struct_store
-        || type->opcode() != SpvOpTypeStruct
-        || objectType->opcode() != SpvOpTypeStruct) {
+    if (!module_.options()->relax_struct_store ||
+        type->opcode() != SpvOpTypeStruct ||
+        objectType->opcode() != SpvOpTypeStruct) {
       DIAG(pointerIndex) << "OpStore Pointer <id> '"
                          << inst->words[pointerIndex]
                          << "'s type does not match Object <id> '"
@@ -1490,9 +1495,8 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        DIAG(i) << instr_name
-                << " reached non-composite type while indexes "
-                    "still remain to be traversed.";
+        DIAG(i) << instr_name << " reached non-composite type while indexes "
+                                 "still remain to be traversed.";
         return false;
       }
     }
@@ -1568,8 +1572,8 @@ bool idUsage::isValid<SpvOpFunction>(const spv_instruction_t* inst,
   auto functionType = module_.FindDef(inst->words[functionTypeIndex]);
   if (!functionType || SpvOpTypeFunction != functionType->opcode()) {
     DIAG(functionTypeIndex)
-    << "OpFunction Function Type <id> '" << inst->words[functionTypeIndex]
-    << "' is not a function type.";
+        << "OpFunction Function Type <id> '" << inst->words[functionTypeIndex]
+        << "' is not a function type.";
     return false;
   }
   auto returnType = module_.FindDef(functionType->words()[2]);
@@ -1825,9 +1829,8 @@ bool walkCompositeTypeHierarchy(
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        *error << instr_name()
-               << " reached non-composite type while indexes "
-                   "still remain to be traversed.";
+        *error << instr_name() << " reached non-composite type while indexes "
+                                  "still remain to be traversed.";
         return false;
       }
     }
@@ -1952,13 +1955,12 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
   auto objectTypeInstr = module_.FindDef(objectInstr->type_id());
   if (indexedTypeInstr->id() != objectTypeInstr->id()) {
     DIAG(objectIdIndex)
-    << "The Object type (Op"
-    << spvOpcodeString(static_cast<SpvOp>(objectTypeInstr->opcode()))
-    << ") in " << instr_name()
-    << " does not match the type that results "
-        "from indexing into the Composite (Op"
-    << spvOpcodeString(static_cast<SpvOp>(indexedTypeInstr->opcode()))
-    << ").";
+        << "The Object type (Op"
+        << spvOpcodeString(static_cast<SpvOp>(objectTypeInstr->opcode()))
+        << ") in " << instr_name() << " does not match the type that results "
+                                      "from indexing into the Composite (Op"
+        << spvOpcodeString(static_cast<SpvOp>(indexedTypeInstr->opcode()))
+        << ").";
     return false;
   }
 
@@ -2056,16 +2058,16 @@ bool idUsage::isValid<OpBranch>(const spv_instruction_t *inst,
 #endif
 
 template <>
-bool idUsage::isValid<SpvOpBranchConditional>(
-    const spv_instruction_t *inst, const spv_opcode_desc) {
+bool idUsage::isValid<SpvOpBranchConditional>(const spv_instruction_t* inst,
+                                              const spv_opcode_desc) {
   const size_t numOperands = inst->words.size() - 1;
   const size_t condOperandIndex = 1;
   const size_t targetTrueIndex = 2;
   const size_t targetFalseIndex = 3;
 
-  // num_operands is either 3 or 5 --- if 5, the last two need to be literal integers
-  if (numOperands != 3 &&
-      numOperands != 5) {
+  // num_operands is either 3 or 5 --- if 5, the last two need to be literal
+  // integers
+  if (numOperands != 3 && numOperands != 5) {
     DIAG(0) << "OpBranchConditional requires either 3 or 5 parameters";
     return false;
   }
@@ -2075,22 +2077,26 @@ bool idUsage::isValid<SpvOpBranchConditional>(
   // grab the condition operand and check that it is a bool
   const auto condOp = module_.FindDef(inst->words[condOperandIndex]);
   if (!condOp || !module_.IsBoolScalarType(condOp->type_id())) {
-    DIAG(0) << "Condition operand for OpBranchConditional must be of boolean type";
+    DIAG(0)
+        << "Condition operand for OpBranchConditional must be of boolean type";
     ret = false;
   }
 
   // target operands must be OpLabel
-  // note that we don't need to check that the target labels are in the same function,
+  // note that we don't need to check that the target labels are in the same
+  // function,
   // PerformCfgChecks already checks for that
   const auto targetOpTrue = module_.FindDef(inst->words[targetTrueIndex]);
   if (!targetOpTrue || SpvOpLabel != targetOpTrue->opcode()) {
-    DIAG(0) << "The 'True Label' operand for OpBranchConditional must be the ID of an OpLabel instruction";
+    DIAG(0) << "The 'True Label' operand for OpBranchConditional must be the "
+               "ID of an OpLabel instruction";
     ret = false;
   }
 
   const auto targetOpFalse = module_.FindDef(inst->words[targetFalseIndex]);
   if (!targetOpFalse || SpvOpLabel != targetOpFalse->opcode()) {
-    DIAG(0) << "The 'False Label' operand for OpBranchConditional must be the ID of an OpLabel instruction";
+    DIAG(0) << "The 'False Label' operand for OpBranchConditional must be the "
+               "ID of an OpLabel instruction";
     ret = false;
   }
 
@@ -2723,9 +2729,9 @@ bool idUsage::HaveLayoutCompatibleMembers(const libspirv::Instruction* type1,
 bool idUsage::HaveSameLayoutDecorations(const libspirv::Instruction* type1,
                                         const libspirv::Instruction* type2) {
   assert(type1->opcode() == SpvOpTypeStruct &&
-      "type1 must be and OpTypeStruct instruction.");
+         "type1 must be and OpTypeStruct instruction.");
   assert(type2->opcode() == SpvOpTypeStruct &&
-      "type2 must be and OpTypeStruct instruction.");
+         "type2 must be and OpTypeStruct instruction.");
   const std::vector<Decoration>& type1_decorations =
       module_.id_decorations(type1->id());
   const std::vector<Decoration>& type2_decorations =
@@ -2915,8 +2921,8 @@ spv_result_t IdPass(ValidationState_t& _,
           ret = _.ForwardDeclareId(operand_word);
         } else {
           ret = _.diag(SPV_ERROR_INVALID_ID)
-              << "ID " << _.getIdName(operand_word)
-              << " has not been defined";
+                << "ID " << _.getIdName(operand_word)
+                << " has not been defined";
         }
         break;
       default:

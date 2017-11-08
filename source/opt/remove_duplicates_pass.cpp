@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "decoration_manager.h"
-#include "opcode.h"
 #include "ir_context.h"
+#include "opcode.h"
 
 namespace spvtools {
 namespace opt {
@@ -46,11 +46,13 @@ Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* irContext) {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(ir::IRContext* irContext) const {
+bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
+    ir::IRContext* irContext) const {
   bool modified = false;
 
   std::unordered_set<uint32_t> capabilities;
-  for (auto i = irContext->capability_begin(); i != irContext->capability_end();) {
+  for (auto i = irContext->capability_begin();
+       i != irContext->capability_end();) {
     auto res = capabilities.insert(i->GetSingleWordOperand(0u));
 
     if (res.second) {
@@ -66,8 +68,8 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(ir::IRContext* irContext)
   return modified;
 }
 
-bool
-RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(ir::IRContext* irContext) const {
+bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
+    ir::IRContext* irContext) const {
   bool modified = false;
 
   std::unordered_map<std::string, SpvId> extInstImports;
@@ -90,8 +92,8 @@ RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(ir::IRContext* irContext) c
   return modified;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateTypes(ir::IRContext* irContext,
-                                                DecorationManager& decManager) const {
+bool RemoveDuplicatesPass::RemoveDuplicateTypes(
+    ir::IRContext* irContext, DecorationManager& decManager) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
@@ -142,7 +144,8 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
   std::vector<const Instruction*> visitedDecorations;
 
   opt::analysis::DecorationManager decorationManager(irContext->module());
-  for (auto i = irContext->annotation_begin(); i != irContext->annotation_end();) {
+  for (auto i = irContext->annotation_begin();
+       i != irContext->annotation_end();) {
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
     bool alreadyVisited = false;

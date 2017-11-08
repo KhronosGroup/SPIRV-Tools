@@ -15,9 +15,9 @@
 #ifndef LIBSPIRV_OPT_ELIMINATE_DEAD_CONSTANT_PASS_H_
 #define LIBSPIRV_OPT_ELIMINATE_DEAD_CONSTANT_PASS_H_
 
+#include "ir_context.h"
 #include "module.h"
 #include "pass.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {

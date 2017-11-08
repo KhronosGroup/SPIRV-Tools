@@ -20,19 +20,18 @@
 #include <algorithm>
 #include <list>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "def_use_manager.h"
-#include "module.h"
 #include "inline_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
 class InlineExhaustivePass : public InlinePass {
-
  public:
   InlineExhaustivePass();
   Status Process(ir::IRContext* c) override;

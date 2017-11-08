@@ -16,9 +16,9 @@
 #include "ir_context.h"
 
 #include <cassert>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace spvtools {
 namespace opt {

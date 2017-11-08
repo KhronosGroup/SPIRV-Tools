@@ -17,7 +17,6 @@
 namespace spvtools {
 namespace ir {
 
-
 InstructionList::iterator InstructionList::iterator::InsertBefore(
     std::vector<std::unique_ptr<Instruction>>&& list) {
   Instruction* first_node = list.front().get();

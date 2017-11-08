@@ -19,9 +19,8 @@
 
 namespace libspirv {
 
-Construct::Construct(ConstructType construct_type,
-                     BasicBlock* entry, BasicBlock* exit,
-                     std::vector<Construct*> constructs)
+Construct::Construct(ConstructType construct_type, BasicBlock* entry,
+                     BasicBlock* exit, std::vector<Construct*> constructs)
     : type_(construct_type),
       corresponding_constructs_(constructs),
       entry_block_(entry),
@@ -38,11 +37,16 @@ std::vector<Construct*>& Construct::corresponding_constructs() {
 
 bool ValidateConstructSize(ConstructType type, size_t size) {
   switch (type) {
-    case ConstructType::kSelection: return size == 0;
-    case ConstructType::kContinue:  return size == 1;
-    case ConstructType::kLoop:      return size == 1;
-    case ConstructType::kCase:      return size >= 1;
-    default: assert(1 == 0 && "Type not defined");
+    case ConstructType::kSelection:
+      return size == 0;
+    case ConstructType::kContinue:
+      return size == 1;
+    case ConstructType::kLoop:
+      return size == 1;
+    case ConstructType::kCase:
+      return size >= 1;
+    default:
+      assert(1 == 0 && "Type not defined");
   }
   return false;
 }

@@ -31,13 +31,13 @@ bool InlineExhaustivePass::InlineExhaustive(ir::Function* func) {
         GenInlineCode(&newBlocks, &newVars, ii, bi);
         // If call block is replaced with more than one block, point
         // succeeding phis at new last block.
-        if (newBlocks.size() > 1)
-          UpdateSucceedingPhis(newBlocks);
+        if (newBlocks.size() > 1) UpdateSucceedingPhis(newBlocks);
         // Replace old calling block with new block(s).
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // Insert new function variables.
-        if (newVars.size() > 0) func->begin()->begin().InsertBefore(std::move(newVars));
+        if (newVars.size() > 0)
+          func->begin()->begin().InsertBefore(std::move(newVars));
         // Restart inlining at beginning of calling block.
         ii = bi->begin();
         modified = true;

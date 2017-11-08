@@ -24,7 +24,8 @@ namespace opt {
 Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
   // The algorithm will compute the reference count for every global variable.
   // Anything with a reference count of 0 will then be deleted.  For variables
-  // that might have references that are not explicit in this context, we use the
+  // that might have references that are not explicit in this context, we use
+  // the
   // value kMustKeep as the reference count.
   InitializeProcessing(c);
 
@@ -61,7 +62,7 @@ Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
         count = std::count_if(
             uses->begin(), uses->end(), [](const analysis::Use& u) {
               return (!ir::IsAnnotationInst(u.inst->opcode()) &&
-                  u.inst->opcode() != SpvOpName);
+                      u.inst->opcode() != SpvOpName);
             });
       }
     }
@@ -85,7 +86,7 @@ Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
 void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
   ir::Instruction* inst = get_def_use_mgr()->GetDef(result_id);
   assert(inst->opcode() == SpvOpVariable &&
-      "Should not be trying to delete anything other than an OpVariable.");
+         "Should not be trying to delete anything other than an OpVariable.");
 
   // Look for an initializer that references another variable.  We need to know
   // if that variable can be deleted after the reference is removed.

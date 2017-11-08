@@ -77,5 +77,4 @@ class StatsAnalyzer {
   std::unordered_map<uint32_t, double> opcode_freq_;
 };
 
-
 #endif  // LIBSPIRV_TOOLS_STATS_STATS_ANALYZER_H_

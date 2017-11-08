@@ -219,8 +219,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   // Runs the given function |f| on all "in" operands
   inline void ForEachInOperand(const std::function<void(uint32_t*)>& f);
-  inline void ForEachInOperand(const std::function<void(const uint32_t*)>& f)
-      const;
+  inline void ForEachInOperand(
+      const std::function<void(const uint32_t*)>& f) const;
 
   // Returns true if any operands can be labels
   inline bool HasLabels() const;
@@ -308,9 +308,9 @@ inline void Instruction::ForEachInst(
 inline void Instruction::ForEachId(const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_)
     if (spvIsIdType(opnd.type)) f(&opnd.words[0]);
-  if (type_id_ != 0u)
-    type_id_ = GetSingleWordOperand(0u);
-  if (result_id_ != 0u) result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
+  if (type_id_ != 0u) type_id_ = GetSingleWordOperand(0u);
+  if (result_id_ != 0u)
+    result_id_ = GetSingleWordOperand(type_id_ == 0u ? 0u : 1u);
 }
 
 inline void Instruction::ForEachId(
@@ -347,7 +347,7 @@ inline void Instruction::ForEachInId(
 }
 
 inline void Instruction::ForEachInOperand(
-      const std::function<void(uint32_t*)>& f) {
+    const std::function<void(uint32_t*)>& f) {
   for (auto& opnd : operands_) {
     switch (opnd.type) {
       case SPV_OPERAND_TYPE_RESULT_ID:

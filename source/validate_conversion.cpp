@@ -34,20 +34,20 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.IsUnsignedIntScalarType(result_type) &&
           !_.IsUnsignedIntVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected unsigned int scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected unsigned int scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!input_type || (!_.IsFloatScalarType(input_type) &&
                           !_.IsFloatVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be float scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be float scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -55,20 +55,20 @@ spv_result_t ConversionPass(ValidationState_t& _,
     case SpvOpConvertFToS: {
       if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected int scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected int scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!input_type || (!_.IsFloatScalarType(input_type) &&
                           !_.IsFloatVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be float scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be float scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -78,20 +78,20 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.IsFloatScalarType(result_type) &&
           !_.IsFloatVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected float scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected float scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
-      if (!input_type || (!_.IsIntScalarType(input_type) &&
-                          !_.IsIntVectorType(input_type)))
+      if (!input_type ||
+          (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be int scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       break;
     }
@@ -128,25 +128,26 @@ spv_result_t ConversionPass(ValidationState_t& _,
     case SpvOpSConvert: {
       if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected int scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected int scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
-      if (!input_type || (!_.IsIntScalarType(input_type) &&
-                          !_.IsIntVectorType(input_type)))
+      if (!input_type ||
+          (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be int scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       if (_.GetBitWidth(result_type) == _.GetBitWidth(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have different bit width from Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have different bit width from Result "
+                  "Type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
@@ -154,54 +155,55 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.IsFloatScalarType(result_type) &&
           !_.IsFloatVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected float scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected float scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!input_type || (!_.IsFloatScalarType(input_type) &&
                           !_.IsFloatVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be float scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be float scalar or vector: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
 
       if (_.GetBitWidth(result_type) == _.GetBitWidth(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have different bit width from Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have different bit width from Result "
+                  "Type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
     case SpvOpQuantizeToF16: {
       if ((!_.IsFloatScalarType(result_type) &&
-          !_.IsFloatVectorType(result_type)) ||
+           !_.IsFloatVectorType(result_type)) ||
           _.GetBitWidth(result_type) != 32)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected 32-bit float scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected 32-bit float scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (input_type != result_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input type to be equal to Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input type to be equal to Result Type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
     case SpvOpConvertPtrToU: {
       if (!_.IsUnsignedIntScalarType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected unsigned int scalar type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected unsigned int scalar type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!_.IsPointerType(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer: " << spvOpcodeString(opcode);
+               << "Expected input to be a pointer: " << spvOpcodeString(opcode);
       break;
     }
 
@@ -209,33 +211,33 @@ spv_result_t ConversionPass(ValidationState_t& _,
     case SpvOpSatConvertUToS: {
       if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected int scalar or vector type as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected int scalar or vector type as Result Type: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
-      if (!input_type || (!_.IsIntScalarType(input_type) &&
-                          !_.IsIntVectorType(input_type)))
+      if (!input_type ||
+          (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type)))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected int scalar or vector as input: "
-            << spvOpcodeString(opcode);
+               << "Expected int scalar or vector as input: "
+               << spvOpcodeString(opcode);
 
       if (_.GetDimension(result_type) != _.GetDimension(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have the same dimension as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have the same dimension as Result Type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
     case SpvOpConvertUToPtr: {
       if (!_.IsPointerType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be a pointer: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!_.IsIntScalarType(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected int scalar as input: " << spvOpcodeString(opcode);
+               << "Expected int scalar as input: " << spvOpcodeString(opcode);
       break;
     }
 
@@ -245,13 +247,13 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(result_type, &result_data_type,
                                 &result_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be a pointer: "
+               << spvOpcodeString(opcode);
 
       if (result_storage_class != SpvStorageClassGeneric)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have storage class Generic: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have storage class Generic: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       uint32_t input_storage_class = 0;
@@ -259,21 +261,19 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(input_type, &input_data_type,
                                 &input_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be a pointer: " << spvOpcodeString(opcode);
 
       if (input_storage_class != SpvStorageClassWorkgroup &&
           input_storage_class != SpvStorageClassCrossWorkgroup &&
           input_storage_class != SpvStorageClassFunction)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have storage class Workgroup, "
-            << "CrossWorkgroup or Function: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have storage class Workgroup, "
+               << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
 
       if (result_data_type != input_data_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input and Result Type to point to the same type: "
-            << spvOpcodeString(opcode);
+               << "Expected input and Result Type to point to the same type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
@@ -283,16 +283,15 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(result_type, &result_data_type,
                                 &result_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be a pointer: "
+               << spvOpcodeString(opcode);
 
       if (result_storage_class != SpvStorageClassWorkgroup &&
           result_storage_class != SpvStorageClassCrossWorkgroup &&
           result_storage_class != SpvStorageClassFunction)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have storage class Workgroup, "
-            << "CrossWorkgroup or Function: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have storage class Workgroup, "
+               << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       uint32_t input_storage_class = 0;
@@ -300,18 +299,17 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(input_type, &input_data_type,
                                 &input_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be a pointer: " << spvOpcodeString(opcode);
 
       if (input_storage_class != SpvStorageClassGeneric)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have storage class Generic: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have storage class Generic: "
+               << spvOpcodeString(opcode);
 
       if (result_data_type != input_data_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input and Result Type to point to the same type: "
-            << spvOpcodeString(opcode);
+               << "Expected input and Result Type to point to the same type: "
+               << spvOpcodeString(opcode);
       break;
     }
 
@@ -321,14 +319,14 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(result_type, &result_data_type,
                                 &result_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be a pointer: "
+               << spvOpcodeString(opcode);
 
       const uint32_t target_storage_class = inst->words[4];
       if (result_storage_class != target_storage_class)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be of target storage class: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be of target storage class: "
+               << spvOpcodeString(opcode);
 
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       uint32_t input_storage_class = 0;
@@ -336,26 +334,24 @@ spv_result_t ConversionPass(ValidationState_t& _,
       if (!_.GetPointerTypeInfo(input_type, &input_data_type,
                                 &input_storage_class))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer: "
-            << spvOpcodeString(opcode);
+               << "Expected input to be a pointer: " << spvOpcodeString(opcode);
 
       if (input_storage_class != SpvStorageClassGeneric)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have storage class Generic: "
-            << spvOpcodeString(opcode);
+               << "Expected input to have storage class Generic: "
+               << spvOpcodeString(opcode);
 
       if (result_data_type != input_data_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input and Result Type to point to the same type: "
-            << spvOpcodeString(opcode);
+               << "Expected input and Result Type to point to the same type: "
+               << spvOpcodeString(opcode);
 
       if (target_storage_class != SpvStorageClassWorkgroup &&
           target_storage_class != SpvStorageClassCrossWorkgroup &&
           target_storage_class != SpvStorageClassFunction)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected target storage class to be Workgroup, "
-            << "CrossWorkgroup or Function: "
-            << spvOpcodeString(opcode);
+               << "Expected target storage class to be Workgroup, "
+               << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
       break;
     }
 
@@ -363,7 +359,7 @@ spv_result_t ConversionPass(ValidationState_t& _,
       const uint32_t input_type = _.GetOperandTypeId(inst, 2);
       if (!input_type)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to have a type: " << spvOpcodeString(opcode);
+               << "Expected input to have a type: " << spvOpcodeString(opcode);
 
       const bool result_is_pointer = _.IsPointerType(result_type);
       const bool result_is_int_scalar = _.IsIntScalarType(result_type);
@@ -375,26 +371,25 @@ spv_result_t ConversionPass(ValidationState_t& _,
           !_.IsFloatScalarType(result_type) &&
           !_.IsFloatVectorType(result_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be a pointer or int or float vector "
-            << "or scalar type: " << spvOpcodeString(opcode);
+               << "Expected Result Type to be a pointer or int or float vector "
+               << "or scalar type: " << spvOpcodeString(opcode);
 
       if (!input_is_pointer && !input_is_int_scalar &&
-          !_.IsIntVectorType(input_type) &&
-          !_.IsFloatScalarType(input_type) &&
+          !_.IsIntVectorType(input_type) && !_.IsFloatScalarType(input_type) &&
           !_.IsFloatVectorType(input_type))
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer or int or float vector "
-            << "or scalar: " << spvOpcodeString(opcode);
+               << "Expected input to be a pointer or int or float vector "
+               << "or scalar: " << spvOpcodeString(opcode);
 
       if (result_is_pointer && !input_is_pointer && !input_is_int_scalar)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected input to be a pointer or int scalar if Result Type "
-            << "is pointer: " << spvOpcodeString(opcode);
+               << "Expected input to be a pointer or int scalar if Result Type "
+               << "is pointer: " << spvOpcodeString(opcode);
 
       if (input_is_pointer && !result_is_pointer && !result_is_int_scalar)
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Pointer can only be converted to another pointer or int "
-            << "scalar: " << spvOpcodeString(opcode);
+               << "Pointer can only be converted to another pointer or int "
+               << "scalar: " << spvOpcodeString(opcode);
 
       if (!result_is_pointer && !input_is_pointer) {
         const uint32_t result_size =
@@ -403,8 +398,8 @@ spv_result_t ConversionPass(ValidationState_t& _,
             _.GetBitWidth(input_type) * _.GetDimension(input_type);
         if (result_size != input_size)
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected input to have the same total bit width as "
-              << "Result Type: " << spvOpcodeString(opcode);
+                 << "Expected input to have the same total bit width as "
+                 << "Result Type: " << spvOpcodeString(opcode);
       }
       break;
     }

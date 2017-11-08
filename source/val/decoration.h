@@ -84,4 +84,3 @@ class Decoration {
 }  // namespace libspirv
 
 #endif  /// LIBSPIRV_VAL_DECORATION_H_
-

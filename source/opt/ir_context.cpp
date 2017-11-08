@@ -24,7 +24,8 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   }
 }
 
-void IRContext::InvalidateAnalysesExceptFor(IRContext::Analysis preserved_analyses) {
+void IRContext::InvalidateAnalysesExceptFor(
+    IRContext::Analysis preserved_analyses) {
   uint32_t analyses_to_invalidate = valid_analyses_ & (~preserved_analyses);
   if (analyses_to_invalidate & kAnalysisDefUse) {
     def_use_mgr_.reset(nullptr);
@@ -75,7 +76,7 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       } else if (use.inst->type_id() == 0) {
         SPIRV_ASSERT(consumer_, false,
                      "Result type id considered as use while the instruction "
-                         "doesn't have a result type id.");
+                     "doesn't have a result type id.");
         (void)consumer_;  // Makes the compiler happy for release build.
       } else {
         SPIRV_ASSERT(consumer_, false,

@@ -22,8 +22,8 @@
 #include "module.h"
 #include "pass.h"
 
-#include "spirv-tools/libspirv.hpp"
 #include "ir_context.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace opt {

@@ -147,7 +147,7 @@ spv_result_t spvOpcodeTableValueLookup(const spv_opcode_table table,
     return lhs.opcode < rhs.opcode;
   };
   auto it = std::lower_bound(beg, end, value, comp);
-  if (it!=end && it->opcode == opcode) {
+  if (it != end && it->opcode == opcode) {
     *pEntry = it;
     return SPV_SUCCESS;
   }
@@ -177,13 +177,14 @@ const char* spvOpcodeString(const SpvOp opcode) {
   // previous ones.
 
   const auto beg = kOpcodeTableEntries_1_2;
-  const auto end = kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
+  const auto end =
+      kOpcodeTableEntries_1_2 + ARRAY_SIZE(kOpcodeTableEntries_1_2);
   spv_opcode_desc_t value{"", opcode, 0, nullptr, 0, {}, 0, 0};
   auto comp = [](const spv_opcode_desc_t& lhs, const spv_opcode_desc_t& rhs) {
     return lhs.opcode < rhs.opcode;
   };
   auto it = std::lower_bound(beg, end, value, comp);
-  if (it!=end && it->opcode == opcode) {
+  if (it != end && it->opcode == opcode) {
     return it->name;
   }
 

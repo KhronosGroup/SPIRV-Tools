@@ -17,18 +17,17 @@
 #ifndef LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 #define LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
 
-
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "basic_block.h"
 #include "def_use_manager.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
@@ -98,4 +97,3 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_LOCAL_SINGLE_BLOCK_ELIM_PASS_H_
-

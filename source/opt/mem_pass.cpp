@@ -626,7 +626,8 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           }
           // If variable is not defined, use undef
           if (replId == 0) {
-            replId = Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
+            replId =
+                Type2Undef(GetPointeeTypeId(get_def_use_mgr()->GetDef(varId)));
           }
           // Replace load's id with the last stored value id for variable
           // and delete load. Kill any names or decorates using id before
@@ -720,7 +721,7 @@ void MemPass::RemovePhiOperands(
     assert(i % 2 == 0 && i < phi->NumOperands() - 1 &&
            "malformed Phi arguments");
 
-    ir::BasicBlock *in_block = cfg()->block(phi->GetSingleWordOperand(i + 1));
+    ir::BasicBlock* in_block = cfg()->block(phi->GetSingleWordOperand(i + 1));
     if (reachable_blocks.find(in_block) == reachable_blocks.end()) {
       // If the incoming block is unreachable, remove both operands as this
       // means that the |phi| has lost an incoming edge.
@@ -730,7 +731,7 @@ void MemPass::RemovePhiOperands(
 
     // In all other cases, the operand must be kept but may need to be changed.
     uint32_t arg_id = phi->GetSingleWordOperand(i);
-    ir::BasicBlock *def_block = def_block_[arg_id];
+    ir::BasicBlock* def_block = def_block_[arg_id];
     if (def_block &&
         reachable_blocks.find(def_block_[arg_id]) == reachable_blocks.end()) {
       // If the current |phi| argument was defined in an unreachable block, it
@@ -824,10 +825,8 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
     // If the block is reachable and has Phi instructions, remove all
     // operands from its Phi instructions that reference unreachable blocks.
     // If the block has no Phi instructions, this is a no-op.
-    block.ForEachPhiInst(
-        [&block, &reachable_blocks, this](ir::Instruction* phi) {
-          RemovePhiOperands(phi, reachable_blocks);
-        });
+    block.ForEachPhiInst([&block, &reachable_blocks, this](
+        ir::Instruction* phi) { RemovePhiOperands(phi, reachable_blocks); });
   }
 
   // Erase unreachable blocks.
@@ -869,4 +868,3 @@ void MemPass::InitializeCFGCleanup(ir::IRContext* c) {
 
 }  // namespace opt
 }  // namespace spvtools
-

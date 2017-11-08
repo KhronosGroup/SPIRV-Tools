@@ -18,8 +18,8 @@
 #include <utility>
 
 #include "def_use_manager.h"
-#include "make_unique.h"
 #include "ir_context.h"
+#include "make_unique.h"
 
 namespace spvtools {
 namespace opt {

@@ -21,12 +21,12 @@
 #include <vector>
 
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "make_unique.h"
 #include "spirv-tools/libspirv.h"
 #include "type_manager.h"
 #include "types.h"
 #include "util/parse_number.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -188,7 +188,8 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
 }
 };
 
-Pass::Status SetSpecConstantDefaultValuePass::Process(ir::IRContext* irContext) {
+Pass::Status SetSpecConstantDefaultValuePass::Process(
+    ir::IRContext* irContext) {
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -254,8 +255,8 @@ Pass::Status SetSpecConstantDefaultValuePass::Process(ir::IRContext* irContext) 
       // Gets the string of the default value and parses it to bit pattern
       // with the type of the spec constant.
       const std::string& default_value_str = iter->second;
-      bit_pattern = ParseDefaultValueStr(default_value_str.c_str(),
-                                  type_mgr.GetType(spec_inst->type_id()));
+      bit_pattern = ParseDefaultValueStr(
+          default_value_str.c_str(), type_mgr.GetType(spec_inst->type_id()));
 
     } else {
       // Search for the new bit-pattern-form default value for this spec id.

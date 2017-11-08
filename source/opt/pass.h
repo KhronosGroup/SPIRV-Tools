@@ -87,7 +87,7 @@ class Pass {
 
   // Returns a pointer to the CFG for current module. TODO(dnovillo): This
   // should belong in IRContext.
-  ir::CFG *cfg() const { return cfg_.get(); }
+  ir::CFG* cfg() const { return cfg_.get(); }
 
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
@@ -111,8 +111,8 @@ class Pass {
       const std::unordered_map<uint32_t, ir::Function*>& id2function,
       std::queue<uint32_t>* roots);
 
-
-  // Run the pass on the given |module|. Returns Status::Failure if errors occur when
+  // Run the pass on the given |module|. Returns Status::Failure if errors occur
+  // when
   // processing. Returns the corresponding Status::Success if processing is
   // successful to indicate whether changes are made to the module.  If there
   // were any changes it will also invalidate the analyses in the IRContext

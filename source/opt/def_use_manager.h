@@ -49,9 +49,7 @@ class DefUseManager {
   // will be communicated to the outside via the given message |consumer|. This
   // instance only keeps a reference to the |consumer|, so the |consumer| should
   // outlive this instance.
-  DefUseManager(ir::Module* module) {
-    AnalyzeDefUse(module);
-  }
+  DefUseManager(ir::Module* module) { AnalyzeDefUse(module); }
 
   DefUseManager(const DefUseManager&) = delete;
   DefUseManager(DefUseManager&&) = delete;
@@ -105,8 +103,8 @@ class DefUseManager {
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDefUse(ir::Module* module);
 
-  IdToDefMap id_to_def_;             // Mapping from ids to their definitions
-  IdToUsesMap id_to_uses_;           // Mapping from ids to their uses
+  IdToDefMap id_to_def_;    // Mapping from ids to their definitions
+  IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
 };

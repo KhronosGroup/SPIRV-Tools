@@ -17,7 +17,6 @@
 #ifndef LIBSPIRV_OPT_INSERT_EXTRACT_ELIM_PASS_H_
 #define LIBSPIRV_OPT_INSERT_EXTRACT_ELIM_PASS_H_
 
-
 #include <algorithm>
 #include <map>
 #include <unordered_map>
@@ -26,9 +25,9 @@
 
 #include "basic_block.h"
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "module.h"
 #include "pass.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -42,16 +41,16 @@ class InsertExtractElimPass : public Pass {
 
  private:
   // Return true if indices of extract |extInst| and insert |insInst| match
-  bool ExtInsMatch(
-    const ir::Instruction* extInst, const ir::Instruction* insInst) const;
+  bool ExtInsMatch(const ir::Instruction* extInst,
+                   const ir::Instruction* insInst) const;
 
   // Return true if indices of extract |extInst| and insert |insInst| conflict,
   // specifically, if the insert changes bits specified by the extract, but
   // changes either more bits or less bits than the extract specifies,
   // meaning the exact value being inserted cannot be used to replace
   // the extract.
-  bool ExtInsConflict(
-    const ir::Instruction* extInst, const ir::Instruction* insInst) const;
+  bool ExtInsConflict(const ir::Instruction* extInst,
+                      const ir::Instruction* insInst) const;
 
   // Return true if |typeId| is a vector type
   bool IsVectorType(uint32_t typeId);
@@ -79,4 +78,3 @@ class InsertExtractElimPass : public Pass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_INSERT_EXTRACT_ELIM_PASS_H_
-

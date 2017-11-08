@@ -16,9 +16,9 @@
 #define LIBSPIRV_OPT_STRENGTH_REDUCTION_PASS_H_
 
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "module.h"
 #include "pass.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -34,8 +34,10 @@ class StrengthReductionPass : public Pass {
   // Returns true if something changed.
   bool ReplaceMultiplyByPowerOf2(ir::BasicBlock::iterator*);
 
-  // Scan the types and constants in the module looking for the the integer types that we are
-  // interested in.  The shift operation needs a small unsigned integer.  We need to find
+  // Scan the types and constants in the module looking for the the integer
+  // types that we are
+  // interested in.  The shift operation needs a small unsigned integer.  We
+  // need to find
   // them or create them.  We do not want duplicates.
   void FindIntTypesAndConstants();
 

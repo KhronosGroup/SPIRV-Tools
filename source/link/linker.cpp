@@ -497,7 +497,7 @@ static spv_result_t GetImportExportPairs(
     // Ignore if the targeted symbol is a built-in
     bool is_built_in = false;
     for (const auto& id_decoration :
-        decoration_manager.GetDecorationsFor(id, false)) {
+         decoration_manager.GetDecorationsFor(id, false)) {
       if (id_decoration->GetSingleWordInOperand(1u) == SpvDecorationBuiltIn) {
         is_built_in = true;
         break;

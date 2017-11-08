@@ -15,8 +15,8 @@
 #ifndef LIBSPIRV_UTIL_FOLD_H_
 #define LIBSPIRV_UTIL_FOLD_H_
 
-#include "def_use_manager.h"
 #include "constants.h"
+#include "def_use_manager.h"
 
 #include <cstdint>
 #include <vector>

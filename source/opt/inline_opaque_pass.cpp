@@ -21,9 +21,9 @@ namespace opt {
 
 namespace {
 
-  const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kTypePointerTypeIdInIdx = 1;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
   const ir::Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);
@@ -33,17 +33,16 @@ bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
     case SpvOpTypeSampledImage:
       return true;
     case SpvOpTypePointer:
-      return IsOpaqueType(typeInst->GetSingleWordInOperand(
-          kTypePointerTypeIdInIdx));
+      return IsOpaqueType(
+          typeInst->GetSingleWordInOperand(kTypePointerTypeIdInIdx));
     default:
       break;
   }
   // TODO(greg-lunarg): Handle arrays containing opaque type
-  if (typeInst->opcode() != SpvOpTypeStruct)
-    return false;
+  if (typeInst->opcode() != SpvOpTypeStruct) return false;
   // Return true if any member is opaque
   int ocnt = 0;
-  typeInst->ForEachInId([&ocnt,this](const uint32_t* tid) {
+  typeInst->ForEachInId([&ocnt, this](const uint32_t* tid) {
     if (ocnt == 0 && IsOpaqueType(*tid)) ++ocnt;
   });
   return ocnt > 0;
@@ -51,16 +50,14 @@ bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
 
 bool InlineOpaquePass::HasOpaqueArgsOrReturn(const ir::Instruction* callInst) {
   // Check return type
-  if (IsOpaqueType(callInst->type_id()))
-    return true;
+  if (IsOpaqueType(callInst->type_id())) return true;
   // Check args
   int icnt = 0;
   int ocnt = 0;
-  callInst->ForEachInId([&icnt,&ocnt,this](const uint32_t *iid) {
+  callInst->ForEachInId([&icnt, &ocnt, this](const uint32_t* iid) {
     if (icnt > 0) {
       const ir::Instruction* argInst = get_def_use_mgr()->GetDef(*iid);
-      if (IsOpaqueType(argInst->type_id()))
-        ++ocnt;
+      if (IsOpaqueType(argInst->type_id())) ++ocnt;
     }
     ++icnt;
   });
@@ -79,13 +76,13 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
         GenInlineCode(&newBlocks, &newVars, ii, bi);
         // If call block is replaced with more than one block, point
         // succeeding phis at new last block.
-        if (newBlocks.size() > 1)
-          UpdateSucceedingPhis(newBlocks);
+        if (newBlocks.size() > 1) UpdateSucceedingPhis(newBlocks);
         // Replace old calling block with new block(s).
         bi = bi.Erase();
         bi = bi.InsertBefore(&newBlocks);
         // Insert new function variables.
-        if (newVars.size() > 0) func->begin()->begin().InsertBefore(std::move(newVars));
+        if (newVars.size() > 0)
+          func->begin()->begin().InsertBefore(std::move(newVars));
         // Restart inlining at beginning of calling block.
         ii = bi->begin();
         modified = true;
@@ -97,15 +94,11 @@ bool InlineOpaquePass::InlineOpaque(ir::Function* func) {
   return modified;
 }
 
-void InlineOpaquePass::Initialize(ir::IRContext* c) {
-  InitializeInline(c);
-};
+void InlineOpaquePass::Initialize(ir::IRContext* c) { InitializeInline(c); };
 
 Pass::Status InlineOpaquePass::ProcessImpl() {
   // Do opaque inlining on each function in entry point call tree
-  ProcessFunction pfn = [this](ir::Function* fp) {
-    return InlineOpaque(fp);
-  };
+  ProcessFunction pfn = [this](ir::Function* fp) { return InlineOpaque(fp); };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

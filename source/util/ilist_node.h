@@ -110,7 +110,7 @@ template <class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase()
     : next_node_(nullptr), previous_node_(nullptr), is_sentinel_(false) {}
 
-template<class NodeType>
+template <class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
     const IntrusiveNodeBase&) {
   next_node_ = nullptr;
@@ -118,7 +118,7 @@ inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(
   is_sentinel_ = false;
 }
 
-template<class NodeType>
+template <class NodeType>
 inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
     const IntrusiveNodeBase&) {
   assert(!is_sentinel_);
@@ -128,7 +128,7 @@ inline IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
   return *this;
 }
 
-template<class NodeType>
+template <class NodeType>
 inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(IntrusiveNodeBase&& that)
     : next_node_(nullptr),
       previous_node_(nullptr),
@@ -140,19 +140,19 @@ inline IntrusiveNodeBase<NodeType>::IntrusiveNodeBase(IntrusiveNodeBase&& that)
   that.ReplaceWith(this);
 }
 
-template<class NodeType>
+template <class NodeType>
 IntrusiveNodeBase<NodeType>::~IntrusiveNodeBase() {
   assert(is_sentinel_ || !IsInAList());
 }
 
-template<class NodeType>
+template <class NodeType>
 IntrusiveNodeBase<NodeType>& IntrusiveNodeBase<NodeType>::operator=(
     IntrusiveNodeBase&& that) {
   that.ReplaceWith(this);
   return *this;
 }
 
-template<class NodeType>
+template <class NodeType>
 inline bool IntrusiveNodeBase<NodeType>::IsInAList() const {
   return next_node_ != nullptr;
 }
@@ -199,7 +199,7 @@ template <class NodeType>
 inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   assert(!this->is_sentinel_ && "Sentinel nodes cannot be moved around.");
   assert(this->IsInAList() &&
-      "Cannot remove a node from a list if it is not in a list.");
+         "Cannot remove a node from a list if it is not in a list.");
 
   this->next_node_->previous_node_ = this->previous_node_;
   this->previous_node_->next_node_ = this->next_node_;
@@ -207,16 +207,16 @@ inline void IntrusiveNodeBase<NodeType>::RemoveFromList() {
   this->previous_node_ = nullptr;
 }
 
-template<class NodeType>
+template <class NodeType>
 void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
   if (this->is_sentinel_) {
     assert(target->IsEmptyList() &&
-        "If target is not an empty list, the nodes in that list would not "
-            "be linked to a sentinel.");
+           "If target is not an empty list, the nodes in that list would not "
+           "be linked to a sentinel.");
   } else {
     assert(IsInAList() && "The node being replaced must be in a list.");
     assert(!target->is_sentinel_ &&
-        "Cannot turn a sentinel node into one that is not.");
+           "Cannot turn a sentinel node into one that is not.");
   }
 
   if (!this->IsEmptyList()) {
@@ -245,13 +245,13 @@ void IntrusiveNodeBase<NodeType>::ReplaceWith(NodeType* target) {
   }
 }
 
-template<class NodeType>
+template <class NodeType>
 bool IntrusiveNodeBase<NodeType>::IsEmptyList() {
   if (next_node_ == this) {
     assert(is_sentinel_ &&
-               "None sentinel nodes should never point to themselves.");
+           "None sentinel nodes should never point to themselves.");
     assert(previous_node_ == this &&
-        "Inconsistency with the previous and next nodes.");
+           "Inconsistency with the previous and next nodes.");
     return true;
   }
   return false;

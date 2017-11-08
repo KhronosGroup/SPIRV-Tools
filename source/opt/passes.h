@@ -17,6 +17,7 @@
 
 // A single header to include all passes.
 
+#include "aggressive_dead_code_elim_pass.h"
 #include "block_merge_pass.h"
 #include "cfg_cleanup_pass.h"
 #include "common_uniform_elim_pass.h"
@@ -24,22 +25,21 @@
 #include "dead_branch_elim_pass.h"
 #include "dead_variable_elimination.h"
 #include "eliminate_dead_constant_pass.h"
+#include "eliminate_dead_functions_pass.h"
 #include "flatten_decoration_pass.h"
 #include "fold_spec_constant_op_and_composite_pass.h"
+#include "freeze_spec_constant_value_pass.h"
 #include "inline_exhaustive_pass.h"
 #include "inline_opaque_pass.h"
 #include "insert_extract_elim.h"
+#include "local_access_chain_convert_pass.h"
 #include "local_single_block_elim_pass.h"
 #include "local_single_store_elim_pass.h"
 #include "local_ssa_elim_pass.h"
-#include "freeze_spec_constant_value_pass.h"
-#include "local_access_chain_convert_pass.h"
-#include "aggressive_dead_code_elim_pass.h"
 #include "null_pass.h"
 #include "set_spec_constant_default_value_pass.h"
 #include "strength_reduction_pass.h"
 #include "strip_debug_info_pass.h"
 #include "unify_const_pass.h"
-#include "eliminate_dead_functions_pass.h"
 
 #endif  // LIBSPIRV_OPT_PASSES_H_

@@ -89,8 +89,7 @@ void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
     case SPV_MSG_FATAL:
     case SPV_MSG_INTERNAL_ERROR:
     case SPV_MSG_ERROR:
-      std::cerr << "error: " << position.index << ": " << message
-                << std::endl;
+      std::cerr << "error: " << position.index << ": " << message << std::endl;
       break;
     case SPV_MSG_WARNING:
       std::cout << "warning: " << position.index << ": " << message
@@ -133,25 +132,24 @@ int main(int argc, char** argv) {
       } else if (0 == strcmp(cur_arg, "--codegen_opcode_hist")) {
         codegen_opcode_hist = true;
         export_text = false;
-      } else if (0 == strcmp(cur_arg,
-                             "--codegen_opcode_and_num_operands_hist")) {
+      } else if (0 ==
+                 strcmp(cur_arg, "--codegen_opcode_and_num_operands_hist")) {
         codegen_opcode_and_num_operands_hist = true;
         export_text = false;
       } else if (strcmp(
-          "--codegen_opcode_and_num_operands_markov_huffman_codecs",
-          cur_arg) == 0) {
+                     "--codegen_opcode_and_num_operands_markov_huffman_codecs",
+                     cur_arg) == 0) {
         codegen_opcode_and_num_operands_markov_huffman_codecs = true;
         export_text = false;
-      } else if (0 == strcmp(cur_arg,
-                             "--codegen_literal_string_huffman_codecs")) {
+      } else if (0 ==
+                 strcmp(cur_arg, "--codegen_literal_string_huffman_codecs")) {
         codegen_literal_string_huffman_codecs = true;
         export_text = false;
-      } else if (0 == strcmp(cur_arg,
-                             "--codegen_non_id_word_huffman_codecs")) {
+      } else if (0 == strcmp(cur_arg, "--codegen_non_id_word_huffman_codecs")) {
         codegen_non_id_word_huffman_codecs = true;
         export_text = false;
-      } else if (0 == strcmp(cur_arg,
-                             "--codegen_id_descriptor_huffman_codecs")) {
+      } else if (0 ==
+                 strcmp(cur_arg, "--codegen_id_descriptor_huffman_codecs")) {
         codegen_id_descriptor_huffman_codecs = true;
         export_text = false;
       } else if (0 == strcmp(cur_arg, "--verbose") ||
@@ -199,8 +197,9 @@ int main(int argc, char** argv) {
     std::vector<uint32_t> contents;
     if (!ReadFile<uint32_t>(path, "rb", &contents)) return 1;
 
-    if (SPV_SUCCESS != libspirv::AggregateStats(
-        *ctx.context, contents.data(), contents.size(), nullptr, &stats)) {
+    if (SPV_SUCCESS != libspirv::AggregateStats(*ctx.context, contents.data(),
+                                                contents.size(), nullptr,
+                                                &stats)) {
       std::cerr << "error: Failed to aggregate stats for " << path << std::endl;
       return 1;
     }

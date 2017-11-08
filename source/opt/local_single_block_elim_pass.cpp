@@ -25,11 +25,10 @@ namespace {
 
 const uint32_t kStoreValIdInIdx = 1;
 
-} // anonymous namespace
+}  // anonymous namespace
 
 bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
-  if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end())
-    return true;
+  if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
   analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
   assert(uses != nullptr);
   for (auto u : *uses) {
@@ -54,83 +53,74 @@ bool LocalSingleBlockLoadStoreElimPass::LocalSingleBlockLoadStoreElim(
     pinned_vars_.clear();
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
-      case SpvOpStore: {
-        // Verify store variable is target type
-        uint32_t varId;
-        ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-        if (!IsTargetVar(varId))
-          continue;
-        if (!HasOnlySupportedRefs(varId))
-          continue;
-        // Register the store
-        if (ptrInst->opcode() == SpvOpVariable) {
-          // if not pinned, look for WAW
-          if (pinned_vars_.find(varId) == pinned_vars_.end()) {
+        case SpvOpStore: {
+          // Verify store variable is target type
+          uint32_t varId;
+          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          if (!IsTargetVar(varId)) continue;
+          if (!HasOnlySupportedRefs(varId)) continue;
+          // Register the store
+          if (ptrInst->opcode() == SpvOpVariable) {
+            // if not pinned, look for WAW
+            if (pinned_vars_.find(varId) == pinned_vars_.end()) {
+              auto si = var2store_.find(varId);
+              if (si != var2store_.end()) {
+                context()->KillInst(si->second);
+              }
+            }
+            var2store_[varId] = &*ii;
+          } else {
+            assert(IsNonPtrAccessChain(ptrInst->opcode()));
+            var2store_.erase(varId);
+          }
+          pinned_vars_.erase(varId);
+          var2load_.erase(varId);
+        } break;
+        case SpvOpLoad: {
+          // Verify store variable is target type
+          uint32_t varId;
+          ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+          if (!IsTargetVar(varId)) continue;
+          if (!HasOnlySupportedRefs(varId)) continue;
+          // Look for previous store or load
+          uint32_t replId = 0;
+          if (ptrInst->opcode() == SpvOpVariable) {
             auto si = var2store_.find(varId);
             if (si != var2store_.end()) {
-              context()->KillInst(si->second);
+              replId = si->second->GetSingleWordInOperand(kStoreValIdInIdx);
+            } else {
+              auto li = var2load_.find(varId);
+              if (li != var2load_.end()) {
+                replId = li->second->result_id();
+              }
             }
           }
-          var2store_[varId] = &*ii;
-        }
-        else {
-          assert(IsNonPtrAccessChain(ptrInst->opcode()));
-          var2store_.erase(varId);
-        }
-        pinned_vars_.erase(varId);
-        var2load_.erase(varId);
-      } break;
-      case SpvOpLoad: {
-        // Verify store variable is target type
-        uint32_t varId;
-        ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
-        if (!IsTargetVar(varId))
-          continue;
-        if (!HasOnlySupportedRefs(varId))
-          continue;
-        // Look for previous store or load
-        uint32_t replId = 0;
-        if (ptrInst->opcode() == SpvOpVariable) {
-          auto si = var2store_.find(varId);
-          if (si != var2store_.end()) {
-            replId = si->second->GetSingleWordInOperand(kStoreValIdInIdx);
+          if (replId != 0) {
+            // replace load's result id and delete load
+            ReplaceAndDeleteLoad(&*ii, replId);
+            modified = true;
+          } else {
+            if (ptrInst->opcode() == SpvOpVariable)
+              var2load_[varId] = &*ii;  // register load
+            pinned_vars_.insert(varId);
           }
-          else {
-            auto li = var2load_.find(varId);
-            if (li != var2load_.end()) {
-              replId = li->second->result_id();
-            }
-          }
-        }
-        if (replId != 0) {
-          // replace load's result id and delete load
-          ReplaceAndDeleteLoad(&*ii, replId);
-          modified = true;
-        }
-        else {
-          if (ptrInst->opcode() == SpvOpVariable)
-            var2load_[varId] = &*ii;  // register load
-          pinned_vars_.insert(varId);
-        }
-      } break;
-      case SpvOpFunctionCall: {
-        // Conservatively assume all locals are redefined for now.
-        // TODO(): Handle more optimally
-        var2store_.clear();
-        var2load_.clear();
-        pinned_vars_.clear();
-      } break;
-      default:
-        break;
+        } break;
+        case SpvOpFunctionCall: {
+          // Conservatively assume all locals are redefined for now.
+          // TODO(): Handle more optimally
+          var2store_.clear();
+          var2load_.clear();
+          pinned_vars_.clear();
+        } break;
+        default:
+          break;
       }
     }
     // Go back and delete useless stores in block
     // TODO(greg-lunarg): Consider moving DCE into separate pass
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      if (ii->opcode() != SpvOpStore)
-        continue;
-      if (IsLiveStore(&*ii))
-        continue;
+      if (ii->opcode() != SpvOpStore) continue;
+      if (IsLiveStore(&*ii)) continue;
       DCEInst(&*ii);
     }
   }
@@ -154,8 +144,8 @@ void LocalSingleBlockLoadStoreElimPass::Initialize(ir::IRContext* c) {
 bool LocalSingleBlockLoadStoreElimPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : get_module()->extensions()) {
-    const char* extName = reinterpret_cast<const char*>(
-        &ei.GetInOperand(0).words[0]);
+    const char* extName =
+        reinterpret_cast<const char*>(&ei.GetInOperand(0).words[0]);
     if (extensions_whitelist_.find(extName) == extensions_whitelist_.end())
       return false;
   }
@@ -170,12 +160,10 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::ProcessImpl() {
   // support required in KillNamesAndDecorates().
   // TODO(greg-lunarg): Add support for OpGroupDecorate
   for (auto& ai : get_module()->annotations())
-    if (ai.opcode() == SpvOpGroupDecorate)
-      return Status::SuccessWithoutChange;
+    if (ai.opcode() == SpvOpGroupDecorate) return Status::SuccessWithoutChange;
   // If any extensions in the module are not explicitly supported,
-  // return unmodified. 
-  if (!AllExtensionsSupported())
-    return Status::SuccessWithoutChange;
+  // return unmodified.
+  if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
   // Process all entry point functions
   ProcessFunction pfn = [this](ir::Function* fp) {
     return LocalSingleBlockLoadStoreElim(fp);
@@ -194,29 +182,20 @@ Pass::Status LocalSingleBlockLoadStoreElimPass::Process(ir::IRContext* c) {
 void LocalSingleBlockLoadStoreElimPass::InitExtensions() {
   extensions_whitelist_.clear();
   extensions_whitelist_.insert({
-    "SPV_AMD_shader_explicit_vertex_parameter",
-    "SPV_AMD_shader_trinary_minmax",
-    "SPV_AMD_gcn_shader",
-    "SPV_KHR_shader_ballot",
-    "SPV_AMD_shader_ballot",
-    "SPV_AMD_gpu_shader_half_float",
-    "SPV_KHR_shader_draw_parameters",
-    "SPV_KHR_subgroup_vote",
-    "SPV_KHR_16bit_storage",
-    "SPV_KHR_device_group",
-    "SPV_KHR_multiview",
-    "SPV_NVX_multiview_per_view_attributes",
-    "SPV_NV_viewport_array2",
-    "SPV_NV_stereo_view_rendering",
-    "SPV_NV_sample_mask_override_coverage",
-    "SPV_NV_geometry_shader_passthrough",
-    "SPV_AMD_texture_gather_bias_lod",
-    "SPV_KHR_storage_buffer_storage_class",
-    // SPV_KHR_variable_pointers
-    //   Currently do not support extended pointer expressions
-    "SPV_AMD_gpu_shader_int16",
-    "SPV_KHR_post_depth_coverage",
-    "SPV_KHR_shader_atomic_counter_ops",
+      "SPV_AMD_shader_explicit_vertex_parameter",
+      "SPV_AMD_shader_trinary_minmax", "SPV_AMD_gcn_shader",
+      "SPV_KHR_shader_ballot", "SPV_AMD_shader_ballot",
+      "SPV_AMD_gpu_shader_half_float", "SPV_KHR_shader_draw_parameters",
+      "SPV_KHR_subgroup_vote", "SPV_KHR_16bit_storage", "SPV_KHR_device_group",
+      "SPV_KHR_multiview", "SPV_NVX_multiview_per_view_attributes",
+      "SPV_NV_viewport_array2", "SPV_NV_stereo_view_rendering",
+      "SPV_NV_sample_mask_override_coverage",
+      "SPV_NV_geometry_shader_passthrough", "SPV_AMD_texture_gather_bias_lod",
+      "SPV_KHR_storage_buffer_storage_class",
+      // SPV_KHR_variable_pointers
+      //   Currently do not support extended pointer expressions
+      "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
+      "SPV_KHR_shader_atomic_counter_ops",
   });
 }
 

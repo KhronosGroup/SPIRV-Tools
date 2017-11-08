@@ -25,16 +25,16 @@
 #include "diagnostic.h"
 #include "enum_string_mapping.h"
 #include "extensions.h"
-#include "instruction.h"
 #include "id_descriptor.h"
+#include "instruction.h"
 #include "opcode.h"
 #include "operand.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv_endian.h"
 #include "spirv_validator_options.h"
-#include "validate.h"
 #include "val/instruction.h"
 #include "val/validation_state.h"
+#include "validate.h"
 
 using libspirv::IdDescriptorCollection;
 using libspirv::Instruction;
@@ -54,10 +54,10 @@ class StatsAggregator {
   }
 
   // Collects header statistics and sets correct id_bound.
-  spv_result_t ProcessHeader(
-      spv_endianness_t /* endian */, uint32_t /* magic */,
-      uint32_t version, uint32_t generator, uint32_t id_bound,
-      uint32_t /* schema */) {
+  spv_result_t ProcessHeader(spv_endianness_t /* endian */,
+                             uint32_t /* magic */, uint32_t version,
+                             uint32_t generator, uint32_t id_bound,
+                             uint32_t /* schema */) {
     vstate_->setIdBound(id_bound);
     ++stats_->version_hist[version];
     ++stats_->generator_hist[generator];
@@ -68,9 +68,9 @@ class StatsAggregator {
   // then procession the instruction to collect stats.
   spv_result_t ProcessInstruction(const spv_parsed_instruction_t* inst) {
     const spv_result_t validation_result =
-        spvtools::ValidateInstructionAndUpdateValidationState(vstate_.get(), inst);
-    if (validation_result != SPV_SUCCESS)
-      return validation_result;
+        spvtools::ValidateInstructionAndUpdateValidationState(vstate_.get(),
+                                                              inst);
+    if (validation_result != SPV_SUCCESS) return validation_result;
 
     ProcessOpcode();
     ProcessCapability();
@@ -106,8 +106,9 @@ class StatsAggregator {
             id_descriptors_.GetDescriptor(inst.word(operand.offset));
         if (descriptor) {
           ++stats_->id_descriptor_hist[descriptor];
-          ++stats_->operand_slot_id_descriptor_hist[
-              std::pair<uint32_t, uint32_t>(inst.opcode(), index)][descriptor];
+          ++stats_
+                ->operand_slot_id_descriptor_hist[std::pair<uint32_t, uint32_t>(
+                    inst.opcode(), index)][descriptor];
         }
       }
       ++index;
@@ -168,8 +169,8 @@ class StatsAggregator {
     uint32_t index = 0;
     for (const auto& operand : inst.operands()) {
       if (operand.num_words == 1 && !spvIsIdType(operand.type)) {
-          ++stats_->operand_slot_non_id_words_hist[std::pair<uint32_t, uint32_t>(
-              inst.opcode(), index)][inst.word(operand.offset)];
+        ++stats_->operand_slot_non_id_words_hist[std::pair<uint32_t, uint32_t>(
+            inst.opcode(), index)][inst.word(operand.offset)];
       }
       ++index;
     }
@@ -205,13 +206,14 @@ class StatsAggregator {
 
     if (inst_it != vstate_->ordered_instructions().rend()) {
       const SpvOp prev_opcode = inst_it->opcode();
-      ++stats_->opcode_and_num_operands_markov_hist[prev_opcode][
-          opcode_and_num_operands];
+      ++stats_->opcode_and_num_operands_markov_hist[prev_opcode]
+                                                   [opcode_and_num_operands];
     }
 
     auto step_it = stats_->opcode_markov_hist.begin();
     for (; inst_it != vstate_->ordered_instructions().rend() &&
-         step_it != stats_->opcode_markov_hist.end(); ++inst_it, ++step_it) {
+           step_it != stats_->opcode_markov_hist.end();
+         ++inst_it, ++step_it) {
       auto& hist = (*step_it)[inst_it->opcode()];
       ++hist[opcode];
     }
@@ -260,9 +262,7 @@ class StatsAggregator {
     }
   }
 
-  SpirvStats* stats() {
-    return stats_;
-  }
+  SpirvStats* stats() { return stats_; }
 
  private:
   // Returns the current instruction (the one last processed by the validator).
@@ -276,18 +276,17 @@ class StatsAggregator {
   IdDescriptorCollection id_descriptors_;
 };
 
-spv_result_t ProcessHeader(
-    void* user_data, spv_endianness_t endian, uint32_t magic,
-    uint32_t version, uint32_t generator, uint32_t id_bound,
-    uint32_t schema) {
+spv_result_t ProcessHeader(void* user_data, spv_endianness_t endian,
+                           uint32_t magic, uint32_t version, uint32_t generator,
+                           uint32_t id_bound, uint32_t schema) {
   StatsAggregator* stats_aggregator =
       reinterpret_cast<StatsAggregator*>(user_data);
-  return stats_aggregator->ProcessHeader(
-      endian, magic, version, generator, id_bound, schema);
+  return stats_aggregator->ProcessHeader(endian, magic, version, generator,
+                                         id_bound, schema);
 }
 
-spv_result_t ProcessInstruction(
-    void* user_data, const spv_parsed_instruction_t* inst) {
+spv_result_t ProcessInstruction(void* user_data,
+                                const spv_parsed_instruction_t* inst) {
   StatsAggregator* stats_aggregator =
       reinterpret_cast<StatsAggregator*>(user_data);
   return stats_aggregator->ProcessInstruction(inst);
@@ -297,9 +296,9 @@ spv_result_t ProcessInstruction(
 
 namespace libspirv {
 
-spv_result_t AggregateStats(
-    const spv_context_t& context, const uint32_t* words, const size_t num_words,
-    spv_diagnostic* pDiagnostic, SpirvStats* stats) {
+spv_result_t AggregateStats(const spv_context_t& context, const uint32_t* words,
+                            const size_t num_words, spv_diagnostic* pDiagnostic,
+                            SpirvStats* stats) {
   spv_const_binary_t binary = {words, num_words};
 
   spv_endianness_t endian;
@@ -307,14 +306,14 @@ spv_result_t AggregateStats(
   if (spvBinaryEndianness(&binary, &endian)) {
     return libspirv::DiagnosticStream(position, context.consumer,
                                       SPV_ERROR_INVALID_BINARY)
-        << "Invalid SPIR-V magic number.";
+           << "Invalid SPIR-V magic number.";
   }
 
   spv_header_t header;
   if (spvBinaryHeaderGet(&binary, endian, &header)) {
     return libspirv::DiagnosticStream(position, context.consumer,
                                       SPV_ERROR_INVALID_BINARY)
-        << "Invalid SPIR-V header.";
+           << "Invalid SPIR-V header.";
   }
 
   StatsAggregator stats_aggregator(stats, &context);

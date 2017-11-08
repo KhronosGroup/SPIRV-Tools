@@ -19,9 +19,9 @@
 #include <unordered_set>
 
 #include "def_use_manager.h"
+#include "ir_context.h"
 #include "log.h"
 #include "reflect.h"
-#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -36,7 +36,8 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
-    if (analysis::UseList* uses = irContext->get_def_use_mgr()->GetUses(const_id)) {
+    if (analysis::UseList* uses =
+            irContext->get_def_use_mgr()->GetUses(const_id)) {
       count =
           std::count_if(uses->begin(), uses->end(), [](const analysis::Use& u) {
             return !(ir::IsAnnotationInst(u.inst->opcode()) ||
@@ -68,7 +69,8 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
             continue;
           }
           uint32_t operand_id = inst->GetSingleWordInOperand(i);
-          ir::Instruction* def_inst = irContext->get_def_use_mgr()->GetDef(operand_id);
+          ir::Instruction* def_inst =
+              irContext->get_def_use_mgr()->GetDef(operand_id);
           // If the use_count does not have any count for the def_inst,
           // def_inst must not be a constant, and should be ignored here.
           if (!use_counts.count(def_inst)) {
@@ -94,7 +96,8 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   // constants.
   std::unordered_set<ir::Instruction*> dead_others;
   for (auto* dc : dead_consts) {
-    if (analysis::UseList* uses = irContext->get_def_use_mgr()->GetUses(dc->result_id())) {
+    if (analysis::UseList* uses =
+            irContext->get_def_use_mgr()->GetUses(dc->result_id())) {
       for (const auto& u : *uses) {
         if (ir::IsAnnotationInst(u.inst->opcode()) ||
             ir::IsDebug1Inst(u.inst->opcode()) ||

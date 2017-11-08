@@ -19,7 +19,8 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status StripDebugInfoPass::Process(ir::IRContext* irContext) {
-  bool modified = !irContext->debugs1().empty() || !irContext->debugs2().empty() ||
+  bool modified = !irContext->debugs1().empty() ||
+                  !irContext->debugs2().empty() ||
                   !irContext->debugs3().empty();
   irContext->debug_clear();
 

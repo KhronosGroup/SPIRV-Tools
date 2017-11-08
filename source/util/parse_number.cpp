@@ -68,8 +68,8 @@ EncodeNumberStatus ParseAndEncodeIntegerNumber(
   const uint32_t bit_width = AssumedBitWidth(type);
 
   if (bit_width > 64) {
-    ErrorMsgStream(error_msg) << "Unsupported " << bit_width
-                              << "-bit integer literals";
+    ErrorMsgStream(error_msg)
+        << "Unsupported " << bit_width << "-bit integer literals";
     return EncodeNumberStatus::kUnsupported;
   }
 
@@ -182,8 +182,8 @@ EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
     default:
       break;
   }
-  ErrorMsgStream(error_msg) << "Unsupported " << bit_width
-                            << "-bit float literals";
+  ErrorMsgStream(error_msg)
+      << "Unsupported " << bit_width << "-bit float literals";
   return EncodeNumberStatus::kUnsupported;
 }
 

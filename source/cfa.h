@@ -17,9 +17,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <functional>
 #include <map>
-#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -36,12 +36,12 @@ using std::vector;
 namespace spvtools {
 
 // Control Flow Analysis of control flow graphs of basic block nodes |BB|.
-template<class BB> class CFA {
+template <class BB>
+class CFA {
   using bb_ptr = BB*;
   using cbb_ptr = const BB*;
   using bb_iter = typename std::vector<BB*>::const_iterator;
-  using get_blocks_func =
-    std::function<const std::vector<BB*>*(const BB*)>;
+  using get_blocks_func = std::function<const std::vector<BB*>*(const BB*)>;
 
   struct block_info {
     cbb_ptr block;  ///< pointer to the block
@@ -50,15 +50,16 @@ template<class BB> class CFA {
 
   /// Returns true if a block with @p id is found in the @p work_list vector
   ///
-  /// @param[in] work_list  Set of blocks visited in the the depth first traversal
+  /// @param[in] work_list  Set of blocks visited in the the depth first
+  /// traversal
   ///                       of the CFG
   /// @param[in] id         The ID of the block being checked
   ///
   /// @return true if the edge work_list.back().block->id() => id is a back-edge
-  static bool FindInWorkList(
-      const std::vector<block_info>& work_list, uint32_t id);
+  static bool FindInWorkList(const std::vector<block_info>& work_list,
+                             uint32_t id);
 
-public:
+ public:
   /// @brief Depth first traversal starting from the \p entry BasicBlock
   ///
   /// This function performs a depth first traversal from the \p entry
@@ -75,15 +76,16 @@ public:
   ///                       CFG following postorder traversal semantics
   /// @param[in] backedge   A function that will be called when a backedge is
   ///                       encountered during a traversal
-  /// NOTE: The @p successor_func and predecessor_func each return a pointer to a
+  /// NOTE: The @p successor_func and predecessor_func each return a pointer to
+  /// a
   /// collection such that iterators to that collection remain valid for the
   /// lifetime of the algorithm.
-  static void DepthFirstTraversal(const BB* entry,
-    get_blocks_func successor_func,
-    std::function<void(cbb_ptr)> preorder,
-    std::function<void(cbb_ptr)> postorder,
-    std::function<void(cbb_ptr, cbb_ptr)> backedge);
-  
+  static void DepthFirstTraversal(
+      const BB* entry, get_blocks_func successor_func,
+      std::function<void(cbb_ptr)> preorder,
+      std::function<void(cbb_ptr)> postorder,
+      std::function<void(cbb_ptr, cbb_ptr)> backedge);
+
   /// @brief Calculates dominator edges for a set of blocks
   ///
   /// Computes dominators using the algorithm of Cooper, Harvey, and Kennedy
@@ -92,54 +94,58 @@ public:
   /// The algorithm assumes there is a unique root node (a node without
   /// predecessors), and it is therefore at the end of the postorder vector.
   ///
-  /// This function calculates the dominator edges for a set of blocks in the CFG.
+  /// This function calculates the dominator edges for a set of blocks in the
+  /// CFG.
   /// Uses the dominator algorithm by Cooper et al.
   ///
-  /// @param[in] postorder        A vector of blocks in post order traversal order
+  /// @param[in] postorder        A vector of blocks in post order traversal
+  /// order
   ///                             in a CFG
-  /// @param[in] predecessor_func Function used to get the predecessor nodes of a
+  /// @param[in] predecessor_func Function used to get the predecessor nodes of
+  /// a
   ///                             block
   ///
   /// @return the dominator tree of the graph, as a vector of pairs of nodes.
   /// The first node in the pair is a node in the graph. The second node in the
-  /// pair is its immediate dominator in the sense of Cooper et.al., where a block
-  /// without predecessors (such as the root node) is its own immediate dominator.
+  /// pair is its immediate dominator in the sense of Cooper et.al., where a
+  /// block
+  /// without predecessors (such as the root node) is its own immediate
+  /// dominator.
   static vector<pair<BB*, BB*>> CalculateDominators(
-    const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func);
+      const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func);
 
   // Computes a minimal set of root nodes required to traverse, in the forward
   // direction, the CFG represented by the given vector of blocks, and successor
   // and predecessor functions.  When considering adding two nodes, each having
   // predecessors, favour using the one that appears earlier on the input blocks
   // list.
-  static std::vector<BB*> TraversalRoots(
-    const std::vector<BB*>& blocks,
-    get_blocks_func succ_func,
-    get_blocks_func pred_func);
+  static std::vector<BB*> TraversalRoots(const std::vector<BB*>& blocks,
+                                         get_blocks_func succ_func,
+                                         get_blocks_func pred_func);
 
   static void ComputeAugmentedCFG(
-    std::vector<BB*>& ordered_blocks,
-    BB* pseudo_entry_block,
-    BB* pseudo_exit_block,
-    std::unordered_map<const BB*, std::vector<BB*>>* augmented_successors_map,
-    std::unordered_map<const BB*, std::vector<BB*>>* augmented_predecessors_map,
-    get_blocks_func succ_func,
-    get_blocks_func pred_func);
+      std::vector<BB*>& ordered_blocks, BB* pseudo_entry_block,
+      BB* pseudo_exit_block,
+      std::unordered_map<const BB*, std::vector<BB*>>* augmented_successors_map,
+      std::unordered_map<const BB*, std::vector<BB*>>*
+          augmented_predecessors_map,
+      get_blocks_func succ_func, get_blocks_func pred_func);
 };
 
-template<class BB> bool CFA<BB>::FindInWorkList(const vector<block_info>& work_list,
-                                                uint32_t id) {
+template <class BB>
+bool CFA<BB>::FindInWorkList(const vector<block_info>& work_list, uint32_t id) {
   for (const auto b : work_list) {
     if (b.block->id() == id) return true;
   }
   return false;
 }
 
-template<class BB> void CFA<BB>::DepthFirstTraversal(const BB* entry,
-  get_blocks_func successor_func,
-  function<void(cbb_ptr)> preorder,
-  function<void(cbb_ptr)> postorder,
-  function<void(cbb_ptr, cbb_ptr)> backedge) {
+template <class BB>
+void CFA<BB>::DepthFirstTraversal(const BB* entry,
+                                  get_blocks_func successor_func,
+                                  function<void(cbb_ptr)> preorder,
+                                  function<void(cbb_ptr)> postorder,
+                                  function<void(cbb_ptr, cbb_ptr)> backedge) {
   unordered_set<uint32_t> processed;
 
   /// NOTE: work_list is the sequence of nodes from the root node to the node
@@ -147,7 +153,7 @@ template<class BB> void CFA<BB>::DepthFirstTraversal(const BB* entry,
   vector<block_info> work_list;
   work_list.reserve(10);
 
-  work_list.push_back({ entry, begin(*successor_func(entry)) });
+  work_list.push_back({entry, begin(*successor_func(entry))});
   preorder(entry);
   processed.insert(entry->id());
 
@@ -156,8 +162,7 @@ template<class BB> void CFA<BB>::DepthFirstTraversal(const BB* entry,
     if (top.iter == end(*successor_func(top.block))) {
       postorder(top.block);
       work_list.pop_back();
-    }
-    else {
+    } else {
       BB* child = *top.iter;
       top.iter++;
       if (FindInWorkList(work_list, child->id())) {
@@ -166,16 +171,16 @@ template<class BB> void CFA<BB>::DepthFirstTraversal(const BB* entry,
       if (processed.count(child->id()) == 0) {
         preorder(child);
         work_list.emplace_back(
-          block_info{ child, begin(*successor_func(child)) });
+            block_info{child, begin(*successor_func(child))});
         processed.insert(child->id());
       }
     }
   }
 }
 
-template<class BB>
+template <class BB>
 vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
-  const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
+    const vector<cbb_ptr>& postorder, get_blocks_func predecessor_func) {
   struct block_detail {
     size_t dominator;  ///< The index of blocks's dominator in post order array
     size_t postorder_index;  ///< The index of the block in the post order array
@@ -184,7 +189,7 @@ vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
 
   unordered_map<cbb_ptr, block_detail> idoms;
   for (size_t i = 0; i < postorder.size(); i++) {
-    idoms[postorder[i]] = { undefined_dom, i };
+    idoms[postorder[i]] = {undefined_dom, i};
   }
   idoms[postorder.back()].dominator = idoms[postorder.back()].postorder_index;
 
@@ -196,10 +201,10 @@ vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
       // Find the first processed/reachable predecessor that is reachable
       // in the forward traversal.
       auto res = find_if(begin(predecessors), end(predecessors),
-        [&idoms, undefined_dom](BB* pred) {
-        return idoms.count(pred) &&
-          idoms[pred].dominator != undefined_dom;
-      });
+                         [&idoms, undefined_dom](BB* pred) {
+                           return idoms.count(pred) &&
+                                  idoms[pred].dominator != undefined_dom;
+                         });
       if (res == end(predecessors)) continue;
       const BB* idom = *res;
       size_t idom_idx = idoms[idom].postorder_index;
@@ -236,17 +241,16 @@ vector<pair<BB*, BB*>> CFA<BB>::CalculateDominators(
   for (auto idom : idoms) {
     // NOTE: performing a const cast for convenient usage with
     // UpdateImmediateDominators
-    out.push_back({ const_cast<BB*>(get<0>(idom)),
-      const_cast<BB*>(postorder[get<1>(idom).dominator]) });
+    out.push_back({const_cast<BB*>(get<0>(idom)),
+                   const_cast<BB*>(postorder[get<1>(idom).dominator])});
   }
   return out;
 }
 
-template<class BB>
-std::vector<BB*> CFA<BB>::TraversalRoots(
-    const std::vector<BB*>& blocks,
-    get_blocks_func succ_func,
-    get_blocks_func pred_func) {
+template <class BB>
+std::vector<BB*> CFA<BB>::TraversalRoots(const std::vector<BB*>& blocks,
+                                         get_blocks_func succ_func,
+                                         get_blocks_func pred_func) {
   // The set of nodes which have been visited from any of the roots so far.
   std::unordered_set<const BB*> visited;
 
@@ -254,11 +258,10 @@ std::vector<BB*> CFA<BB>::TraversalRoots(
   auto ignore_block = [](const BB*) {};
   auto ignore_blocks = [](const BB*, const BB*) {};
 
-
   auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
-    &ignore_blocks](const BB* entry) {
-    DepthFirstTraversal(
-      entry, succ_func, mark_visited, ignore_block, ignore_blocks);
+                             &ignore_blocks](const BB* entry) {
+    DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
+                        ignore_blocks);
   };
 
   std::vector<BB*> result;
@@ -283,15 +286,13 @@ std::vector<BB*> CFA<BB>::TraversalRoots(
   return result;
 }
 
-template<class BB>
+template <class BB>
 void CFA<BB>::ComputeAugmentedCFG(
-    std::vector<BB*>& ordered_blocks,
-    BB* pseudo_entry_block, BB* pseudo_exit_block,
+    std::vector<BB*>& ordered_blocks, BB* pseudo_entry_block,
+    BB* pseudo_exit_block,
     std::unordered_map<const BB*, std::vector<BB*>>* augmented_successors_map,
     std::unordered_map<const BB*, std::vector<BB*>>* augmented_predecessors_map,
-    get_blocks_func succ_func,
-    get_blocks_func pred_func) {
-
+    get_blocks_func succ_func, get_blocks_func pred_func) {
   // Compute the successors of the pseudo-entry block, and
   // the predecessors of the pseudo exit block.
   auto sources = TraversalRoots(ordered_blocks, succ_func, pred_func);
@@ -308,7 +309,7 @@ void CFA<BB>::ComputeAugmentedCFG(
   // constraint when A is a loop header that points to itself as its
   // own continue target, and B is the latch block for the loop.
   std::vector<BB*> reversed_blocks(ordered_blocks.rbegin(),
-    ordered_blocks.rend());
+                                   ordered_blocks.rend());
   auto sinks = TraversalRoots(reversed_blocks, pred_func, succ_func);
 
   // Wire up the pseudo entry block.
@@ -332,6 +333,6 @@ void CFA<BB>::ComputeAugmentedCFG(
   }
 };
 
-} // namespace spvtools
+}  // namespace spvtools
 
 #endif  // SPVTOOLS_CFA_H_

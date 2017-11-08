@@ -272,7 +272,7 @@ bool IntrusiveList<NodeType>::empty() const {
   return sentinel_.NextNode() == nullptr;
 }
 
-template<class NodeType>
+template <class NodeType>
 void IntrusiveList<NodeType>::clear() {
   while (!empty()) {
     front().RemoveFromList();

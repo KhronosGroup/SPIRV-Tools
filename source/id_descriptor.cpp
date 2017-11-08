@@ -40,15 +40,14 @@ uint32_t HashU32Array(const std::vector<uint32_t>& words) {
 
 uint32_t IdDescriptorCollection::ProcessInstruction(
     const spv_parsed_instruction_t& inst) {
-  if (!inst.result_id)
-    return 0;
+  if (!inst.result_id) return 0;
 
   assert(words_.empty());
   words_.push_back(inst.words[0]);
 
   for (size_t operand_index = 0; operand_index < inst.num_operands;
        ++operand_index) {
-    const auto &operand = inst.operands[operand_index];
+    const auto& operand = inst.operands[operand_index];
     if (spvIsIdType(operand.type)) {
       const uint32_t id = inst.words[operand.offset];
       const auto it = id_to_descriptor_.find(id);

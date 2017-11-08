@@ -17,18 +17,17 @@
 #ifndef LIBSPIRV_OPT_LOCAL_SSA_ELIM_PASS_H_
 #define LIBSPIRV_OPT_LOCAL_SSA_ELIM_PASS_H_
 
-
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "basic_block.h"
 #include "def_use_manager.h"
-#include "module.h"
 #include "mem_pass.h"
+#include "module.h"
 
 namespace spvtools {
 namespace opt {
@@ -38,8 +37,8 @@ class LocalMultiStoreElimPass : public MemPass {
   using cbb_ptr = const ir::BasicBlock*;
 
  public:
-   using GetBlocksFunction =
-     std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
+  using GetBlocksFunction =
+      std::function<std::vector<ir::BasicBlock*>*(const ir::BasicBlock*)>;
 
   LocalMultiStoreElimPass();
   const char* name() const override { return "eliminate-local-multi-store"; }
@@ -70,4 +69,3 @@ class LocalMultiStoreElimPass : public MemPass {
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_LOCAL_SSA_ELIM_PASS_H_
-

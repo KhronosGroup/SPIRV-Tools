@@ -139,11 +139,10 @@ void RegisterExtension(ValidationState_t& _,
 // once an instruction which is not SpvOpCapability and SpvOpExtension is
 // encountered. According to the SPIR-V spec extensions are declared after
 // capabilities and before everything else.
-spv_result_t ProcessExtensions(
-    void* user_data, const spv_parsed_instruction_t* inst) {
+spv_result_t ProcessExtensions(void* user_data,
+                               const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
-  if (opcode == SpvOpCapability)
-    return SPV_SUCCESS;
+  if (opcode == SpvOpCapability) return SPV_SUCCESS;
 
   if (opcode == SpvOpExtension) {
     ValidationState_t& _ = *(reinterpret_cast<ValidationState_t*>(user_data));
@@ -242,7 +241,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     const spv_context_t& context, const uint32_t* words, const size_t num_words,
     spv_diagnostic* pDiagnostic, ValidationState_t* vstate) {
   auto binary = std::unique_ptr<spv_const_binary_t>(
-    new spv_const_binary_t{words, num_words});
+      new spv_const_binary_t{words, num_words});
 
   spv_endianness_t endian;
   spv_position_t position = {};
@@ -267,8 +266,8 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   // NOTE: Parse the module and perform inline validation checks. These
   // checks do not require the the knowledge of the whole module.
-  if (auto error = spvBinaryParse(&context, vstate, words, num_words,
-                                  setHeader, ProcessInstruction, pDiagnostic))
+  if (auto error = spvBinaryParse(&context, vstate, words, num_words, setHeader,
+                                  ProcessInstruction, pDiagnostic))
     return error;
 
   if (vstate->in_function_body())
@@ -296,7 +295,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = PerformCfgChecks(*vstate)) return error;
   if (auto error = UpdateIdUse(*vstate)) return error;
   if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
-  if (auto error = ValidateDecorations(*vstate))  return error;
+  if (auto error = ValidateDecorations(*vstate)) return error;
 
   // Entry point validation. Based on 2.16.1 (Universal Validation Rules) of the
   // SPIRV spec:
@@ -338,8 +337,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
   position.index = SPV_INDEX_INSTRUCTION;
   return spvValidateIDs(instructions.data(), instructions.size(),
-                        context.opcode_table,
-                        context.operand_table,
+                        context.opcode_table, context.operand_table,
                         context.ext_inst_table, *vstate, &position);
 }
 

@@ -24,4 +24,4 @@ spv_result_t BinaryToDot(const spv_const_context context, const uint32_t* words,
                          size_t num_words, std::iostream* out,
                          spv_diagnostic* diagnostic);
 
-#endif // BIN_TO_DOT_H_
+#endif  // BIN_TO_DOT_H_

@@ -14,8 +14,8 @@
 
 #include "name_mapper.h"
 
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 #include <sstream>
 #include <string>
@@ -234,26 +234,30 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       }
     } break;
     case SpvOpTypeVector:
-      SaveName(result_id, std::string("v") + to_string(inst.words[3]) +
-                              NameForId(inst.words[2]));
+      SaveName(result_id,
+               std::string("v") + to_string(inst.words[3]) +
+                   NameForId(inst.words[2]));
       break;
     case SpvOpTypeMatrix:
-      SaveName(result_id, std::string("mat") + to_string(inst.words[3]) +
-                              NameForId(inst.words[2]));
+      SaveName(result_id,
+               std::string("mat") + to_string(inst.words[3]) +
+                   NameForId(inst.words[2]));
       break;
     case SpvOpTypeArray:
-      SaveName(result_id, std::string("_arr_") + NameForId(inst.words[2]) +
-                              "_" + NameForId(inst.words[3]));
+      SaveName(result_id,
+               std::string("_arr_") + NameForId(inst.words[2]) + "_" +
+                   NameForId(inst.words[3]));
       break;
     case SpvOpTypeRuntimeArray:
       SaveName(result_id,
                std::string("_runtimearr_") + NameForId(inst.words[2]));
       break;
     case SpvOpTypePointer:
-      SaveName(result_id, std::string("_ptr_") +
-                              NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
-                                                 inst.words[2]) +
-                              "_" + NameForId(inst.words[3]));
+      SaveName(result_id,
+               std::string("_ptr_") +
+                   NameForEnumOperand(SPV_OPERAND_TYPE_STORAGE_CLASS,
+                                      inst.words[2]) +
+                   "_" + NameForId(inst.words[3]));
       break;
     case SpvOpTypePipe:
       SaveName(result_id,

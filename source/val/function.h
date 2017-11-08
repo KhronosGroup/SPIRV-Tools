@@ -183,7 +183,8 @@ class Function {
   GetBlocksFunction AugmentedCFGSuccessorsFunction() const;
   /// Like AugmentedCFGSuccessorsFunction, but also includes a forward edge from
   /// a loop header block to its continue target, if they are different blocks.
-  GetBlocksFunction AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge() const;
+  GetBlocksFunction
+  AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge() const;
   /// Returns the block predecessors function for the augmented CFG.
   GetBlocksFunction AugmentedCFGPredecessorsFunction() const;
 

@@ -38,9 +38,9 @@ struct MarkvCodecOptions {
 // |bits| is a textual representation of the MARK-V bit sequence used to encode
 // the instruction (char '0' for 0, char '1' for 1).
 // |comment| contains all logs generated while processing the instruction.
-using MarkvDebugConsumer = std::function<bool(
-    const std::vector<uint32_t>& words, const std::string& bits,
-    const std::string& comment)>;
+using MarkvDebugConsumer =
+    std::function<bool(const std::vector<uint32_t>& words,
+                       const std::string& bits, const std::string& comment)>;
 
 // Logging callback. Called often (if decoder reads a single bit, the log
 // consumer will receive 1 character string with that bit).
@@ -54,26 +54,20 @@ using MarkvLogConsumer = std::function<void(const std::string& snippet)>;
 // Encodes the given SPIR-V binary to MARK-V binary.
 // |log_consumer| is optional (pass MarkvLogConsumer() to disable).
 // |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
-spv_result_t SpirvToMarkv(spv_const_context context,
-                          const std::vector<uint32_t>& spirv,
-                          const MarkvCodecOptions& options,
-                          const MarkvModel& markv_model,
-                          MessageConsumer message_consumer,
-                          MarkvLogConsumer log_consumer,
-                          MarkvDebugConsumer debug_consumer,
-                          std::vector<uint8_t>* markv);
+spv_result_t SpirvToMarkv(
+    spv_const_context context, const std::vector<uint32_t>& spirv,
+    const MarkvCodecOptions& options, const MarkvModel& markv_model,
+    MessageConsumer message_consumer, MarkvLogConsumer log_consumer,
+    MarkvDebugConsumer debug_consumer, std::vector<uint8_t>* markv);
 
 // Decodes a SPIR-V binary from the given MARK-V binary.
 // |log_consumer| is optional (pass MarkvLogConsumer() to disable).
 // |debug_consumer| is optional (pass MarkvDebugConsumer() to disable).
-spv_result_t MarkvToSpirv(spv_const_context context,
-                          const std::vector<uint8_t>& markv,
-                          const MarkvCodecOptions& options,
-                          const MarkvModel& markv_model,
-                          MessageConsumer message_consumer,
-                          MarkvLogConsumer log_consumer,
-                          MarkvDebugConsumer debug_consumer,
-                          std::vector<uint32_t>* spirv);
+spv_result_t MarkvToSpirv(
+    spv_const_context context, const std::vector<uint8_t>& markv,
+    const MarkvCodecOptions& options, const MarkvModel& markv_model,
+    MessageConsumer message_consumer, MarkvLogConsumer log_consumer,
+    MarkvDebugConsumer debug_consumer, std::vector<uint32_t>* spirv);
 
 }  // namespace spvtools
 

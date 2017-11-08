@@ -23,13 +23,13 @@
 #include <unordered_set>
 #include <vector>
 
-#include "spirv/1.2/spirv.h"
-#include "source/enum_string_mapping.h"
 #include "source/comp/markv_model.h"
+#include "source/enum_string_mapping.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
 #include "source/util/huffman_codec.h"
+#include "spirv/1.2/spirv.h"
 
 using libspirv::SpirvStats;
 using spvutils::HuffmanCodec;
@@ -49,325 +49,325 @@ inline uint32_t CombineOpcodeAndNumOperands(uint32_t opcode,
 // Returns all SPIR-V v1.2 opcodes.
 std::vector<uint32_t> GetAllOpcodes() {
   return std::vector<uint32_t>({
-    SpvOpNop,
-    SpvOpUndef,
-    SpvOpSourceContinued,
-    SpvOpSource,
-    SpvOpSourceExtension,
-    SpvOpName,
-    SpvOpMemberName,
-    SpvOpString,
-    SpvOpLine,
-    SpvOpExtension,
-    SpvOpExtInstImport,
-    SpvOpExtInst,
-    SpvOpMemoryModel,
-    SpvOpEntryPoint,
-    SpvOpExecutionMode,
-    SpvOpCapability,
-    SpvOpTypeVoid,
-    SpvOpTypeBool,
-    SpvOpTypeInt,
-    SpvOpTypeFloat,
-    SpvOpTypeVector,
-    SpvOpTypeMatrix,
-    SpvOpTypeImage,
-    SpvOpTypeSampler,
-    SpvOpTypeSampledImage,
-    SpvOpTypeArray,
-    SpvOpTypeRuntimeArray,
-    SpvOpTypeStruct,
-    SpvOpTypeOpaque,
-    SpvOpTypePointer,
-    SpvOpTypeFunction,
-    SpvOpTypeEvent,
-    SpvOpTypeDeviceEvent,
-    SpvOpTypeReserveId,
-    SpvOpTypeQueue,
-    SpvOpTypePipe,
-    SpvOpTypeForwardPointer,
-    SpvOpConstantTrue,
-    SpvOpConstantFalse,
-    SpvOpConstant,
-    SpvOpConstantComposite,
-    SpvOpConstantSampler,
-    SpvOpConstantNull,
-    SpvOpSpecConstantTrue,
-    SpvOpSpecConstantFalse,
-    SpvOpSpecConstant,
-    SpvOpSpecConstantComposite,
-    SpvOpSpecConstantOp,
-    SpvOpFunction,
-    SpvOpFunctionParameter,
-    SpvOpFunctionEnd,
-    SpvOpFunctionCall,
-    SpvOpVariable,
-    SpvOpImageTexelPointer,
-    SpvOpLoad,
-    SpvOpStore,
-    SpvOpCopyMemory,
-    SpvOpCopyMemorySized,
-    SpvOpAccessChain,
-    SpvOpInBoundsAccessChain,
-    SpvOpPtrAccessChain,
-    SpvOpArrayLength,
-    SpvOpGenericPtrMemSemantics,
-    SpvOpInBoundsPtrAccessChain,
-    SpvOpDecorate,
-    SpvOpMemberDecorate,
-    SpvOpDecorationGroup,
-    SpvOpGroupDecorate,
-    SpvOpGroupMemberDecorate,
-    SpvOpVectorExtractDynamic,
-    SpvOpVectorInsertDynamic,
-    SpvOpVectorShuffle,
-    SpvOpCompositeConstruct,
-    SpvOpCompositeExtract,
-    SpvOpCompositeInsert,
-    SpvOpCopyObject,
-    SpvOpTranspose,
-    SpvOpSampledImage,
-    SpvOpImageSampleImplicitLod,
-    SpvOpImageSampleExplicitLod,
-    SpvOpImageSampleDrefImplicitLod,
-    SpvOpImageSampleDrefExplicitLod,
-    SpvOpImageSampleProjImplicitLod,
-    SpvOpImageSampleProjExplicitLod,
-    SpvOpImageSampleProjDrefImplicitLod,
-    SpvOpImageSampleProjDrefExplicitLod,
-    SpvOpImageFetch,
-    SpvOpImageGather,
-    SpvOpImageDrefGather,
-    SpvOpImageRead,
-    SpvOpImageWrite,
-    SpvOpImage,
-    SpvOpImageQueryFormat,
-    SpvOpImageQueryOrder,
-    SpvOpImageQuerySizeLod,
-    SpvOpImageQuerySize,
-    SpvOpImageQueryLod,
-    SpvOpImageQueryLevels,
-    SpvOpImageQuerySamples,
-    SpvOpConvertFToU,
-    SpvOpConvertFToS,
-    SpvOpConvertSToF,
-    SpvOpConvertUToF,
-    SpvOpUConvert,
-    SpvOpSConvert,
-    SpvOpFConvert,
-    SpvOpQuantizeToF16,
-    SpvOpConvertPtrToU,
-    SpvOpSatConvertSToU,
-    SpvOpSatConvertUToS,
-    SpvOpConvertUToPtr,
-    SpvOpPtrCastToGeneric,
-    SpvOpGenericCastToPtr,
-    SpvOpGenericCastToPtrExplicit,
-    SpvOpBitcast,
-    SpvOpSNegate,
-    SpvOpFNegate,
-    SpvOpIAdd,
-    SpvOpFAdd,
-    SpvOpISub,
-    SpvOpFSub,
-    SpvOpIMul,
-    SpvOpFMul,
-    SpvOpUDiv,
-    SpvOpSDiv,
-    SpvOpFDiv,
-    SpvOpUMod,
-    SpvOpSRem,
-    SpvOpSMod,
-    SpvOpFRem,
-    SpvOpFMod,
-    SpvOpVectorTimesScalar,
-    SpvOpMatrixTimesScalar,
-    SpvOpVectorTimesMatrix,
-    SpvOpMatrixTimesVector,
-    SpvOpMatrixTimesMatrix,
-    SpvOpOuterProduct,
-    SpvOpDot,
-    SpvOpIAddCarry,
-    SpvOpISubBorrow,
-    SpvOpUMulExtended,
-    SpvOpSMulExtended,
-    SpvOpAny,
-    SpvOpAll,
-    SpvOpIsNan,
-    SpvOpIsInf,
-    SpvOpIsFinite,
-    SpvOpIsNormal,
-    SpvOpSignBitSet,
-    SpvOpLessOrGreater,
-    SpvOpOrdered,
-    SpvOpUnordered,
-    SpvOpLogicalEqual,
-    SpvOpLogicalNotEqual,
-    SpvOpLogicalOr,
-    SpvOpLogicalAnd,
-    SpvOpLogicalNot,
-    SpvOpSelect,
-    SpvOpIEqual,
-    SpvOpINotEqual,
-    SpvOpUGreaterThan,
-    SpvOpSGreaterThan,
-    SpvOpUGreaterThanEqual,
-    SpvOpSGreaterThanEqual,
-    SpvOpULessThan,
-    SpvOpSLessThan,
-    SpvOpULessThanEqual,
-    SpvOpSLessThanEqual,
-    SpvOpFOrdEqual,
-    SpvOpFUnordEqual,
-    SpvOpFOrdNotEqual,
-    SpvOpFUnordNotEqual,
-    SpvOpFOrdLessThan,
-    SpvOpFUnordLessThan,
-    SpvOpFOrdGreaterThan,
-    SpvOpFUnordGreaterThan,
-    SpvOpFOrdLessThanEqual,
-    SpvOpFUnordLessThanEqual,
-    SpvOpFOrdGreaterThanEqual,
-    SpvOpFUnordGreaterThanEqual,
-    SpvOpShiftRightLogical,
-    SpvOpShiftRightArithmetic,
-    SpvOpShiftLeftLogical,
-    SpvOpBitwiseOr,
-    SpvOpBitwiseXor,
-    SpvOpBitwiseAnd,
-    SpvOpNot,
-    SpvOpBitFieldInsert,
-    SpvOpBitFieldSExtract,
-    SpvOpBitFieldUExtract,
-    SpvOpBitReverse,
-    SpvOpBitCount,
-    SpvOpDPdx,
-    SpvOpDPdy,
-    SpvOpFwidth,
-    SpvOpDPdxFine,
-    SpvOpDPdyFine,
-    SpvOpFwidthFine,
-    SpvOpDPdxCoarse,
-    SpvOpDPdyCoarse,
-    SpvOpFwidthCoarse,
-    SpvOpEmitVertex,
-    SpvOpEndPrimitive,
-    SpvOpEmitStreamVertex,
-    SpvOpEndStreamPrimitive,
-    SpvOpControlBarrier,
-    SpvOpMemoryBarrier,
-    SpvOpAtomicLoad,
-    SpvOpAtomicStore,
-    SpvOpAtomicExchange,
-    SpvOpAtomicCompareExchange,
-    SpvOpAtomicCompareExchangeWeak,
-    SpvOpAtomicIIncrement,
-    SpvOpAtomicIDecrement,
-    SpvOpAtomicIAdd,
-    SpvOpAtomicISub,
-    SpvOpAtomicSMin,
-    SpvOpAtomicUMin,
-    SpvOpAtomicSMax,
-    SpvOpAtomicUMax,
-    SpvOpAtomicAnd,
-    SpvOpAtomicOr,
-    SpvOpAtomicXor,
-    SpvOpPhi,
-    SpvOpLoopMerge,
-    SpvOpSelectionMerge,
-    SpvOpLabel,
-    SpvOpBranch,
-    SpvOpBranchConditional,
-    SpvOpSwitch,
-    SpvOpKill,
-    SpvOpReturn,
-    SpvOpReturnValue,
-    SpvOpUnreachable,
-    SpvOpLifetimeStart,
-    SpvOpLifetimeStop,
-    SpvOpGroupAsyncCopy,
-    SpvOpGroupWaitEvents,
-    SpvOpGroupAll,
-    SpvOpGroupAny,
-    SpvOpGroupBroadcast,
-    SpvOpGroupIAdd,
-    SpvOpGroupFAdd,
-    SpvOpGroupFMin,
-    SpvOpGroupUMin,
-    SpvOpGroupSMin,
-    SpvOpGroupFMax,
-    SpvOpGroupUMax,
-    SpvOpGroupSMax,
-    SpvOpReadPipe,
-    SpvOpWritePipe,
-    SpvOpReservedReadPipe,
-    SpvOpReservedWritePipe,
-    SpvOpReserveReadPipePackets,
-    SpvOpReserveWritePipePackets,
-    SpvOpCommitReadPipe,
-    SpvOpCommitWritePipe,
-    SpvOpIsValidReserveId,
-    SpvOpGetNumPipePackets,
-    SpvOpGetMaxPipePackets,
-    SpvOpGroupReserveReadPipePackets,
-    SpvOpGroupReserveWritePipePackets,
-    SpvOpGroupCommitReadPipe,
-    SpvOpGroupCommitWritePipe,
-    SpvOpEnqueueMarker,
-    SpvOpEnqueueKernel,
-    SpvOpGetKernelNDrangeSubGroupCount,
-    SpvOpGetKernelNDrangeMaxSubGroupSize,
-    SpvOpGetKernelWorkGroupSize,
-    SpvOpGetKernelPreferredWorkGroupSizeMultiple,
-    SpvOpRetainEvent,
-    SpvOpReleaseEvent,
-    SpvOpCreateUserEvent,
-    SpvOpIsValidEvent,
-    SpvOpSetUserEventStatus,
-    SpvOpCaptureEventProfilingInfo,
-    SpvOpGetDefaultQueue,
-    SpvOpBuildNDRange,
-    SpvOpImageSparseSampleImplicitLod,
-    SpvOpImageSparseSampleExplicitLod,
-    SpvOpImageSparseSampleDrefImplicitLod,
-    SpvOpImageSparseSampleDrefExplicitLod,
-    SpvOpImageSparseSampleProjImplicitLod,
-    SpvOpImageSparseSampleProjExplicitLod,
-    SpvOpImageSparseSampleProjDrefImplicitLod,
-    SpvOpImageSparseSampleProjDrefExplicitLod,
-    SpvOpImageSparseFetch,
-    SpvOpImageSparseGather,
-    SpvOpImageSparseDrefGather,
-    SpvOpImageSparseTexelsResident,
-    SpvOpNoLine,
-    SpvOpAtomicFlagTestAndSet,
-    SpvOpAtomicFlagClear,
-    SpvOpImageSparseRead,
-    SpvOpSizeOf,
-    SpvOpTypePipeStorage,
-    SpvOpConstantPipeStorage,
-    SpvOpCreatePipeFromPipeStorage,
-    SpvOpGetKernelLocalSizeForSubgroupCount,
-    SpvOpGetKernelMaxNumSubgroups,
-    SpvOpTypeNamedBarrier,
-    SpvOpNamedBarrierInitialize,
-    SpvOpMemoryNamedBarrier,
-    SpvOpModuleProcessed,
-    SpvOpExecutionModeId,
-    SpvOpDecorateId,
-    SpvOpSubgroupBallotKHR,
-    SpvOpSubgroupFirstInvocationKHR,
-    SpvOpSubgroupAllKHR,
-    SpvOpSubgroupAnyKHR,
-    SpvOpSubgroupAllEqualKHR,
-    SpvOpSubgroupReadInvocationKHR,
+      SpvOpNop,
+      SpvOpUndef,
+      SpvOpSourceContinued,
+      SpvOpSource,
+      SpvOpSourceExtension,
+      SpvOpName,
+      SpvOpMemberName,
+      SpvOpString,
+      SpvOpLine,
+      SpvOpExtension,
+      SpvOpExtInstImport,
+      SpvOpExtInst,
+      SpvOpMemoryModel,
+      SpvOpEntryPoint,
+      SpvOpExecutionMode,
+      SpvOpCapability,
+      SpvOpTypeVoid,
+      SpvOpTypeBool,
+      SpvOpTypeInt,
+      SpvOpTypeFloat,
+      SpvOpTypeVector,
+      SpvOpTypeMatrix,
+      SpvOpTypeImage,
+      SpvOpTypeSampler,
+      SpvOpTypeSampledImage,
+      SpvOpTypeArray,
+      SpvOpTypeRuntimeArray,
+      SpvOpTypeStruct,
+      SpvOpTypeOpaque,
+      SpvOpTypePointer,
+      SpvOpTypeFunction,
+      SpvOpTypeEvent,
+      SpvOpTypeDeviceEvent,
+      SpvOpTypeReserveId,
+      SpvOpTypeQueue,
+      SpvOpTypePipe,
+      SpvOpTypeForwardPointer,
+      SpvOpConstantTrue,
+      SpvOpConstantFalse,
+      SpvOpConstant,
+      SpvOpConstantComposite,
+      SpvOpConstantSampler,
+      SpvOpConstantNull,
+      SpvOpSpecConstantTrue,
+      SpvOpSpecConstantFalse,
+      SpvOpSpecConstant,
+      SpvOpSpecConstantComposite,
+      SpvOpSpecConstantOp,
+      SpvOpFunction,
+      SpvOpFunctionParameter,
+      SpvOpFunctionEnd,
+      SpvOpFunctionCall,
+      SpvOpVariable,
+      SpvOpImageTexelPointer,
+      SpvOpLoad,
+      SpvOpStore,
+      SpvOpCopyMemory,
+      SpvOpCopyMemorySized,
+      SpvOpAccessChain,
+      SpvOpInBoundsAccessChain,
+      SpvOpPtrAccessChain,
+      SpvOpArrayLength,
+      SpvOpGenericPtrMemSemantics,
+      SpvOpInBoundsPtrAccessChain,
+      SpvOpDecorate,
+      SpvOpMemberDecorate,
+      SpvOpDecorationGroup,
+      SpvOpGroupDecorate,
+      SpvOpGroupMemberDecorate,
+      SpvOpVectorExtractDynamic,
+      SpvOpVectorInsertDynamic,
+      SpvOpVectorShuffle,
+      SpvOpCompositeConstruct,
+      SpvOpCompositeExtract,
+      SpvOpCompositeInsert,
+      SpvOpCopyObject,
+      SpvOpTranspose,
+      SpvOpSampledImage,
+      SpvOpImageSampleImplicitLod,
+      SpvOpImageSampleExplicitLod,
+      SpvOpImageSampleDrefImplicitLod,
+      SpvOpImageSampleDrefExplicitLod,
+      SpvOpImageSampleProjImplicitLod,
+      SpvOpImageSampleProjExplicitLod,
+      SpvOpImageSampleProjDrefImplicitLod,
+      SpvOpImageSampleProjDrefExplicitLod,
+      SpvOpImageFetch,
+      SpvOpImageGather,
+      SpvOpImageDrefGather,
+      SpvOpImageRead,
+      SpvOpImageWrite,
+      SpvOpImage,
+      SpvOpImageQueryFormat,
+      SpvOpImageQueryOrder,
+      SpvOpImageQuerySizeLod,
+      SpvOpImageQuerySize,
+      SpvOpImageQueryLod,
+      SpvOpImageQueryLevels,
+      SpvOpImageQuerySamples,
+      SpvOpConvertFToU,
+      SpvOpConvertFToS,
+      SpvOpConvertSToF,
+      SpvOpConvertUToF,
+      SpvOpUConvert,
+      SpvOpSConvert,
+      SpvOpFConvert,
+      SpvOpQuantizeToF16,
+      SpvOpConvertPtrToU,
+      SpvOpSatConvertSToU,
+      SpvOpSatConvertUToS,
+      SpvOpConvertUToPtr,
+      SpvOpPtrCastToGeneric,
+      SpvOpGenericCastToPtr,
+      SpvOpGenericCastToPtrExplicit,
+      SpvOpBitcast,
+      SpvOpSNegate,
+      SpvOpFNegate,
+      SpvOpIAdd,
+      SpvOpFAdd,
+      SpvOpISub,
+      SpvOpFSub,
+      SpvOpIMul,
+      SpvOpFMul,
+      SpvOpUDiv,
+      SpvOpSDiv,
+      SpvOpFDiv,
+      SpvOpUMod,
+      SpvOpSRem,
+      SpvOpSMod,
+      SpvOpFRem,
+      SpvOpFMod,
+      SpvOpVectorTimesScalar,
+      SpvOpMatrixTimesScalar,
+      SpvOpVectorTimesMatrix,
+      SpvOpMatrixTimesVector,
+      SpvOpMatrixTimesMatrix,
+      SpvOpOuterProduct,
+      SpvOpDot,
+      SpvOpIAddCarry,
+      SpvOpISubBorrow,
+      SpvOpUMulExtended,
+      SpvOpSMulExtended,
+      SpvOpAny,
+      SpvOpAll,
+      SpvOpIsNan,
+      SpvOpIsInf,
+      SpvOpIsFinite,
+      SpvOpIsNormal,
+      SpvOpSignBitSet,
+      SpvOpLessOrGreater,
+      SpvOpOrdered,
+      SpvOpUnordered,
+      SpvOpLogicalEqual,
+      SpvOpLogicalNotEqual,
+      SpvOpLogicalOr,
+      SpvOpLogicalAnd,
+      SpvOpLogicalNot,
+      SpvOpSelect,
+      SpvOpIEqual,
+      SpvOpINotEqual,
+      SpvOpUGreaterThan,
+      SpvOpSGreaterThan,
+      SpvOpUGreaterThanEqual,
+      SpvOpSGreaterThanEqual,
+      SpvOpULessThan,
+      SpvOpSLessThan,
+      SpvOpULessThanEqual,
+      SpvOpSLessThanEqual,
+      SpvOpFOrdEqual,
+      SpvOpFUnordEqual,
+      SpvOpFOrdNotEqual,
+      SpvOpFUnordNotEqual,
+      SpvOpFOrdLessThan,
+      SpvOpFUnordLessThan,
+      SpvOpFOrdGreaterThan,
+      SpvOpFUnordGreaterThan,
+      SpvOpFOrdLessThanEqual,
+      SpvOpFUnordLessThanEqual,
+      SpvOpFOrdGreaterThanEqual,
+      SpvOpFUnordGreaterThanEqual,
+      SpvOpShiftRightLogical,
+      SpvOpShiftRightArithmetic,
+      SpvOpShiftLeftLogical,
+      SpvOpBitwiseOr,
+      SpvOpBitwiseXor,
+      SpvOpBitwiseAnd,
+      SpvOpNot,
+      SpvOpBitFieldInsert,
+      SpvOpBitFieldSExtract,
+      SpvOpBitFieldUExtract,
+      SpvOpBitReverse,
+      SpvOpBitCount,
+      SpvOpDPdx,
+      SpvOpDPdy,
+      SpvOpFwidth,
+      SpvOpDPdxFine,
+      SpvOpDPdyFine,
+      SpvOpFwidthFine,
+      SpvOpDPdxCoarse,
+      SpvOpDPdyCoarse,
+      SpvOpFwidthCoarse,
+      SpvOpEmitVertex,
+      SpvOpEndPrimitive,
+      SpvOpEmitStreamVertex,
+      SpvOpEndStreamPrimitive,
+      SpvOpControlBarrier,
+      SpvOpMemoryBarrier,
+      SpvOpAtomicLoad,
+      SpvOpAtomicStore,
+      SpvOpAtomicExchange,
+      SpvOpAtomicCompareExchange,
+      SpvOpAtomicCompareExchangeWeak,
+      SpvOpAtomicIIncrement,
+      SpvOpAtomicIDecrement,
+      SpvOpAtomicIAdd,
+      SpvOpAtomicISub,
+      SpvOpAtomicSMin,
+      SpvOpAtomicUMin,
+      SpvOpAtomicSMax,
+      SpvOpAtomicUMax,
+      SpvOpAtomicAnd,
+      SpvOpAtomicOr,
+      SpvOpAtomicXor,
+      SpvOpPhi,
+      SpvOpLoopMerge,
+      SpvOpSelectionMerge,
+      SpvOpLabel,
+      SpvOpBranch,
+      SpvOpBranchConditional,
+      SpvOpSwitch,
+      SpvOpKill,
+      SpvOpReturn,
+      SpvOpReturnValue,
+      SpvOpUnreachable,
+      SpvOpLifetimeStart,
+      SpvOpLifetimeStop,
+      SpvOpGroupAsyncCopy,
+      SpvOpGroupWaitEvents,
+      SpvOpGroupAll,
+      SpvOpGroupAny,
+      SpvOpGroupBroadcast,
+      SpvOpGroupIAdd,
+      SpvOpGroupFAdd,
+      SpvOpGroupFMin,
+      SpvOpGroupUMin,
+      SpvOpGroupSMin,
+      SpvOpGroupFMax,
+      SpvOpGroupUMax,
+      SpvOpGroupSMax,
+      SpvOpReadPipe,
+      SpvOpWritePipe,
+      SpvOpReservedReadPipe,
+      SpvOpReservedWritePipe,
+      SpvOpReserveReadPipePackets,
+      SpvOpReserveWritePipePackets,
+      SpvOpCommitReadPipe,
+      SpvOpCommitWritePipe,
+      SpvOpIsValidReserveId,
+      SpvOpGetNumPipePackets,
+      SpvOpGetMaxPipePackets,
+      SpvOpGroupReserveReadPipePackets,
+      SpvOpGroupReserveWritePipePackets,
+      SpvOpGroupCommitReadPipe,
+      SpvOpGroupCommitWritePipe,
+      SpvOpEnqueueMarker,
+      SpvOpEnqueueKernel,
+      SpvOpGetKernelNDrangeSubGroupCount,
+      SpvOpGetKernelNDrangeMaxSubGroupSize,
+      SpvOpGetKernelWorkGroupSize,
+      SpvOpGetKernelPreferredWorkGroupSizeMultiple,
+      SpvOpRetainEvent,
+      SpvOpReleaseEvent,
+      SpvOpCreateUserEvent,
+      SpvOpIsValidEvent,
+      SpvOpSetUserEventStatus,
+      SpvOpCaptureEventProfilingInfo,
+      SpvOpGetDefaultQueue,
+      SpvOpBuildNDRange,
+      SpvOpImageSparseSampleImplicitLod,
+      SpvOpImageSparseSampleExplicitLod,
+      SpvOpImageSparseSampleDrefImplicitLod,
+      SpvOpImageSparseSampleDrefExplicitLod,
+      SpvOpImageSparseSampleProjImplicitLod,
+      SpvOpImageSparseSampleProjExplicitLod,
+      SpvOpImageSparseSampleProjDrefImplicitLod,
+      SpvOpImageSparseSampleProjDrefExplicitLod,
+      SpvOpImageSparseFetch,
+      SpvOpImageSparseGather,
+      SpvOpImageSparseDrefGather,
+      SpvOpImageSparseTexelsResident,
+      SpvOpNoLine,
+      SpvOpAtomicFlagTestAndSet,
+      SpvOpAtomicFlagClear,
+      SpvOpImageSparseRead,
+      SpvOpSizeOf,
+      SpvOpTypePipeStorage,
+      SpvOpConstantPipeStorage,
+      SpvOpCreatePipeFromPipeStorage,
+      SpvOpGetKernelLocalSizeForSubgroupCount,
+      SpvOpGetKernelMaxNumSubgroups,
+      SpvOpTypeNamedBarrier,
+      SpvOpNamedBarrierInitialize,
+      SpvOpMemoryNamedBarrier,
+      SpvOpModuleProcessed,
+      SpvOpExecutionModeId,
+      SpvOpDecorateId,
+      SpvOpSubgroupBallotKHR,
+      SpvOpSubgroupFirstInvocationKHR,
+      SpvOpSubgroupAllKHR,
+      SpvOpSubgroupAnyKHR,
+      SpvOpSubgroupAllEqualKHR,
+      SpvOpSubgroupReadInvocationKHR,
   });
 }
 
 std::string GetVersionString(uint32_t word) {
   std::stringstream ss;
-  ss << "Version " << SPV_SPIRV_VERSION_MAJOR_PART(word)
-     << "." << SPV_SPIRV_VERSION_MINOR_PART(word);
+  ss << "Version " << SPV_SPIRV_VERSION_MAJOR_PART(word) << "."
+     << SPV_SPIRV_VERSION_MINOR_PART(word);
   return ss.str();
 }
 
@@ -429,10 +429,9 @@ void WriteFreq(std::ostream& out, const std::unordered_map<Key, double>& freq,
             });
 
   for (const auto& pair : sorted_freq) {
-    if (pair.second < threshold)
-      break;
-    out << label_from_key(pair.first) << " " << pair.second * 100.0
-        << "%" << std::endl;
+    if (pair.second < threshold) break;
+    out << label_from_key(pair.first) << " " << pair.second * 100.0 << "%"
+        << std::endl;
   }
 }
 
@@ -521,8 +520,7 @@ void StatsAnalyzer::WriteConstantLiterals(std::ostream& out) {
 }
 
 void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
-  if (stats_.opcode_markov_hist.empty())
-    return;
+  if (stats_.opcode_markov_hist.empty()) return;
 
   const std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>&
       cue_to_hist = stats_.opcode_markov_hist[0];
@@ -530,18 +528,17 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
   // Sort by prevalence of the opcodes in opcode_freq_ (descending).
   std::vector<std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>>
       sorted_cue_to_hist(cue_to_hist.begin(), cue_to_hist.end());
-  std::sort(sorted_cue_to_hist.begin(), sorted_cue_to_hist.end(),
-            [this](
-                const std::pair<uint32_t,
-                std::unordered_map<uint32_t, uint32_t>>& left,
-                const std::pair<uint32_t,
-                std::unordered_map<uint32_t, uint32_t>>& right) {
-              const double lf = opcode_freq_[left.first];
-              const double rf = opcode_freq_[right.first];
-              if (lf == rf)
-                return right.first > left.first;
-              return lf > rf;
-            });
+  std::sort(
+      sorted_cue_to_hist.begin(), sorted_cue_to_hist.end(),
+      [this](const std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>&
+                 left,
+             const std::pair<uint32_t, std::unordered_map<uint32_t, uint32_t>>&
+                 right) {
+        const double lf = opcode_freq_[left.first];
+        const double rf = opcode_freq_[right.first];
+        if (lf == rf) return right.first > left.first;
+        return lf > rf;
+      });
 
   for (const auto& kv : sorted_cue_to_hist) {
     const uint32_t cue = kv.first;
@@ -555,8 +552,8 @@ void StatsAnalyzer::WriteOpcodeMarkov(std::ostream& out) {
       total += pair.second;
     }
 
-    std::vector<std::pair<uint32_t, uint32_t>>
-        sorted_hist(hist.begin(), hist.end());
+    std::vector<std::pair<uint32_t, uint32_t>> sorted_hist(hist.begin(),
+                                                           hist.end());
     std::sort(sorted_hist.begin(), sorted_hist.end(),
               [](const std::pair<uint32_t, uint32_t>& left,
                  const std::pair<uint32_t, uint32_t>& right) {
@@ -593,10 +590,8 @@ void StatsAnalyzer::WriteCodegenOpcodeHist(std::ostream& out) {
     const uint32_t count = it == stats_.opcode_hist.end() ? 0 : it->second;
     const double kMaxValue = 1000.0;
     uint32_t value = uint32_t(kMaxValue * double(count) / double(total));
-    if (value == 0)
-      value = 1;
-    out << "    { SpvOp" << GetOpcodeString(opcode)
-        << ", " << value << " },\n";
+    if (value == 0) value = 1;
+    out << "    { SpvOp" << GetOpcodeString(opcode) << ", " << value << " },\n";
   }
 
   // Add kMarkvNoneOfTheAbove as a signal for unknown opcode.
@@ -607,7 +602,6 @@ void StatsAnalyzer::WriteCodegenOpcodeHist(std::ostream& out) {
 void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsHist(std::ostream& out) {
   out << "std::map<uint64_t, uint32_t> GetOpcodeAndNumOperandsHist() {\n"
       << "  return std::map<uint64_t, uint32_t>({\n";
-
 
   uint32_t total = 0;
   for (const auto& kv : stats_.opcode_and_num_operands_hist) {
@@ -630,13 +624,12 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsHist(std::ostream& out) {
     }
 
     out << "    { CombineOpcodeAndNumOperands(SpvOp"
-        << spvOpcodeString(SpvOp(opcode))
-        << ", " << num_operands << "), " << count << " },\n";
+        << spvOpcodeString(SpvOp(opcode)) << ", " << num_operands << "), "
+        << count << " },\n";
   }
 
   // Heuristic.
-  const uint32_t none_of_the_above =
-      std::max(1, int(left_out + total * 0.01));
+  const uint32_t none_of_the_above = std::max(1, int(left_out + total * 0.01));
   out << "    { kMarkvNoneOfTheAbove, " << none_of_the_above << " },\n";
   out << "  });\n}\n";
 }
@@ -667,8 +660,7 @@ void StatsAnalyzer::WriteCodegenOpcodeAndNumOperandsMarkovHuffmanCodecs(
       const uint32_t opcode_and_num_operands = pair.first;
       const uint32_t opcode = opcode_and_num_operands & 0xFFFF;
 
-      if (opcode == SpvOpTypeStruct)
-        continue;
+      if (opcode == SpvOpTypeStruct) continue;
 
       const uint32_t num_operands = opcode_and_num_operands >> 16;
       const uint32_t count = pair.second;
@@ -711,8 +703,7 @@ void StatsAnalyzer::WriteCodegenLiteralStringHuffmanCodecs(std::ostream& out) {
   for (const auto& kv : stats_.literal_strings_hist) {
     const uint32_t opcode = kv.first;
 
-    if (opcode == SpvOpName || opcode == SpvOpMemberName)
-      continue;
+    if (opcode == SpvOpName || opcode == SpvOpMemberName) continue;
 
     const double kOpcodeFrequentEnoughToAnalyze = 0.001;
     if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
@@ -806,16 +797,15 @@ void StatsAnalyzer::WriteCodegenNonIdWordHuffmanCodecs(std::ostream& out) {
     out << codec.SerializeToText(4);
     out << ");\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
-        << spvOpcodeString(SpvOp(opcode))
-        << ", " << index << "), std::move(codec));\n";
+        << spvOpcodeString(SpvOp(opcode)) << ", " << index
+        << "), std::move(codec));\n";
     out << "  }\n\n";
   }
 
   out << "  return codecs;\n}\n";
 }
 
-void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
-    std::ostream& out) {
+void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(std::ostream& out) {
   out << "std::map<std::pair<uint32_t, uint32_t>, "
       << "std::unique_ptr<HuffmanCodec<uint64_t>>>\n"
       << "GetIdDescriptorHuffmanCodecs() {\n"
@@ -833,7 +823,6 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     if (opcode_freq_[opcode] < kOpcodeFrequentEnoughToAnalyze) continue;
 
     const std::map<uint32_t, uint32_t>& hist = kv.second;
-
 
     uint32_t total = 0;
     for (const auto& pair : hist) {
@@ -860,7 +849,6 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     processed_hist.emplace(kMarkvNoneOfTheAbove,
                            std::max(1, int(left_out + total * 0.01)));
 
-
     HuffmanCodec<uint64_t> codec(processed_hist);
 
     out << "  {\n";
@@ -869,8 +857,8 @@ void StatsAnalyzer::WriteCodegenIdDescriptorHuffmanCodecs(
     out << codec.SerializeToText(4);
     out << ");\n" << std::endl;
     out << "    codecs.emplace(std::pair<uint32_t, uint32_t>(SpvOp"
-        << spvOpcodeString(SpvOp(opcode))
-        << ", " << index << "), std::move(codec));\n";
+        << spvOpcodeString(SpvOp(opcode)) << ", " << index
+        << "), std::move(codec));\n";
     out << "  }\n\n";
   }
 

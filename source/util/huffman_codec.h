@@ -20,11 +20,11 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
-#include <queue>
 #include <iomanip>
 #include <map>
 #include <memory>
 #include <ostream>
+#include <queue>
 #include <sstream>
 #include <stack>
 #include <tuple>
@@ -74,10 +74,10 @@ class HuffmanCodec {
     std::vector<uint32_t> queue_vector;
     queue_vector.reserve(hist.size());
     std::priority_queue<uint32_t, std::vector<uint32_t>,
-        std::function<bool(uint32_t, uint32_t)>>
-            queue(std::bind(&HuffmanCodec::LeftIsBigger, this,
-                            std::placeholders::_1, std::placeholders::_2),
-                  std::move(queue_vector));
+                        std::function<bool(uint32_t, uint32_t)>>
+        queue(std::bind(&HuffmanCodec::LeftIsBigger, this,
+                        std::placeholders::_1, std::placeholders::_2),
+              std::move(queue_vector));
 
     // Put all leaves in the queue.
     for (const auto& pair : hist) {
@@ -153,11 +153,9 @@ class HuffmanCodec {
 
     for (const Node& node : nodes_) {
       code << indent2 << "{";
-      if (value_is_text)
-        code << "\"";
+      if (value_is_text) code << "\"";
       code << node.value;
-      if (value_is_text)
-        code << "\"";
+      if (value_is_text) code << "\"";
       code << ", " << node.left << ", " << node.right << "},\n";
     }
 
@@ -172,9 +170,7 @@ class HuffmanCodec {
   // Where w stands for the weight of the node.
   // Right tree branches appear above left branches. Taking the right path
   // adds 1 to the code, taking the left adds 0.
-  void PrintTree(std::ostream& out) const {
-    PrintTreeInternal(out, root_, 0);
-  }
+  void PrintTree(std::ostream& out) const { PrintTreeInternal(out, root_, 0); }
 
   // Traverses the tree and prints the Huffman table: value, code
   // and optionally node weight for every leaf.
@@ -188,23 +184,20 @@ class HuffmanCodec {
       queue.pop();
       if (!RightOf(node) && !LeftOf(node)) {
         out << ValueOf(node);
-        if (print_weights)
-            out << " " << WeightOf(node);
+        if (print_weights) out << " " << WeightOf(node);
         out << " " << code << std::endl;
       } else {
-        if (LeftOf(node))
-          queue.emplace(LeftOf(node), code + "0");
+        if (LeftOf(node)) queue.emplace(LeftOf(node), code + "0");
 
-        if (RightOf(node))
-          queue.emplace(RightOf(node), code + "1");
+        if (RightOf(node)) queue.emplace(RightOf(node), code + "1");
       }
     }
   }
 
   // Returns the Huffman table. The table was built at at construction time,
   // this function just returns a const reference.
-  const std::unordered_map<Val, std::pair<uint64_t, size_t>>&
-      GetEncodingTable() const {
+  const std::unordered_map<Val, std::pair<uint64_t, size_t>>& GetEncodingTable()
+      const {
     return encoding_table_;
   }
 
@@ -212,8 +205,7 @@ class HuffmanCodec {
   // |bits|. Returns false of |val| is not in the Huffman table.
   bool Encode(const Val& val, uint64_t* bits, size_t* num_bits) const {
     auto it = encoding_table_.find(val);
-    if (it == encoding_table_.end())
-      return false;
+    if (it == encoding_table_.end()) return false;
     *bits = it->second.first;
     *num_bits = it->second.second;
     return true;
@@ -225,8 +217,8 @@ class HuffmanCodec {
   // |read_bit| has type bool func(bool* bit). When called, the next bit is
   // stored in |bit|. |read_bit| returns false if the stream terminates
   // prematurely.
-  bool DecodeFromStream(
-      const std::function<bool(bool*)>& read_bit, Val* val) const {
+  bool DecodeFromStream(const std::function<bool(bool*)>& read_bit,
+                        Val* val) const {
     uint32_t node = root_;
     while (true) {
       assert(node);
@@ -237,8 +229,7 @@ class HuffmanCodec {
       }
 
       bool go_right;
-      if (!read_bit(&go_right))
-        return false;
+      if (!read_bit(&go_right)) return false;
 
       if (go_right)
         node = RightOf(node);
@@ -246,35 +237,25 @@ class HuffmanCodec {
         node = LeftOf(node);
     }
 
-    assert (0);
+    assert(0);
     return false;
   }
 
  private:
   // Returns value of the node referenced by |handle|.
-  Val ValueOf(uint32_t node) const {
-    return nodes_.at(node).value;
-  }
+  Val ValueOf(uint32_t node) const { return nodes_.at(node).value; }
 
   // Returns left child of |node|.
-  uint32_t LeftOf(uint32_t node) const {
-    return nodes_.at(node).left;
-  }
+  uint32_t LeftOf(uint32_t node) const { return nodes_.at(node).left; }
 
   // Returns right child of |node|.
-  uint32_t RightOf(uint32_t node) const {
-    return nodes_.at(node).right;
-  }
+  uint32_t RightOf(uint32_t node) const { return nodes_.at(node).right; }
 
   // Returns weight of |node|.
-  uint32_t WeightOf(uint32_t node) const {
-    return nodes_.at(node).weight;
-  }
+  uint32_t WeightOf(uint32_t node) const { return nodes_.at(node).weight; }
 
   // Returns id of |node|.
-  uint32_t IdOf(uint32_t node) const {
-    return nodes_.at(node).id;
-  }
+  uint32_t IdOf(uint32_t node) const { return nodes_.at(node).id; }
 
   // Returns mutable reference to value of |node|.
   Val& MutableValueOf(uint32_t node) {
@@ -295,20 +276,16 @@ class HuffmanCodec {
   }
 
   // Returns mutable reference to weight of |node|.
-  uint32_t& MutableWeightOf(uint32_t node) {
-    return nodes_.at(node).weight;
-  }
+  uint32_t& MutableWeightOf(uint32_t node) { return nodes_.at(node).weight; }
 
   // Returns mutable reference to id of |node|.
-  uint32_t& MutableIdOf(uint32_t node) {
-    return nodes_.at(node).id;
-  }
+  uint32_t& MutableIdOf(uint32_t node) { return nodes_.at(node).id; }
 
   // Returns true if |left| has bigger weight than |right|. Node ids are
   // used as tie-breaker.
   bool LeftIsBigger(uint32_t left, uint32_t right) const {
     if (WeightOf(left) == WeightOf(right)) {
-      assert (IdOf(left) != IdOf(right));
+      assert(IdOf(left) != IdOf(right));
       return IdOf(left) > IdOf(right);
     }
     return WeightOf(left) > WeightOf(right);
@@ -316,8 +293,7 @@ class HuffmanCodec {
 
   // Prints subtree (helper function used by PrintTree).
   void PrintTreeInternal(std::ostream& out, uint32_t node, size_t depth) const {
-    if (!node)
-      return;
+    if (!node) return;
 
     const size_t kTextFieldWidth = 7;
 
@@ -348,7 +324,7 @@ class HuffmanCodec {
   void CreateEncodingTable() {
     struct Context {
       Context(uint32_t in_node, uint64_t in_bits, size_t in_depth)
-          :  node(in_node), bits(in_bits), depth(in_depth) {}
+          : node(in_node), bits(in_bits), depth(in_depth) {}
       uint32_t node;
       // Huffman tree depth cannot exceed 64 as histogramm counts are expected
       // to be positive and limited by numeric_limits<uint32_t>::max().
@@ -373,8 +349,7 @@ class HuffmanCodec {
         assert(insertion_result.second);
         (void)insertion_result;
       } else {
-        if (LeftOf(node))
-          queue.emplace(LeftOf(node), bits, depth + 1);
+        if (LeftOf(node)) queue.emplace(LeftOf(node), bits, depth + 1);
 
         if (RightOf(node))
           queue.emplace(RightOf(node), bits | (1ULL << depth), depth + 1);
