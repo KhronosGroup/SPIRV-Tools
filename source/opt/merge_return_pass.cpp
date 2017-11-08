@@ -74,11 +74,16 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
     uint32_t phiTypeId = function->type_id();
     std::unique_ptr<ir::Instruction> phiInst(new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
     returnBlock.AddInstruction(std::move(phiInst));
+    ir::Instruction *phi = &(*returnBlock.tail());
 
     std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(SpvOpReturnValue,
                                                                     0u, 0u,
                                                                     {{SPV_OPERAND_TYPE_RESULT_ID, {phiResultId}}}));
     returnBlock.AddInstruction(std::move(returnInst));
+    ir::Instruction *ret = &(*returnBlock.tail());
+
+    get_def_use_mgr()->AnalyzeInstDefUse(phi);
+    get_def_use_mgr()->AnalyzeInstDef(ret);
   } else {
     std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(SpvOpReturn));
     returnBlock.AddInstruction(std::move(returnInst));
@@ -86,13 +91,14 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
 
   // Replace returns with branchs
   for (auto block : returnBlocks) {
-    std::unique_ptr<ir::Instruction> branchInst(new ir::Instruction(SpvOpBranch,
-                                                                    0u, 0u,
-                                                                    {{SPV_OPERAND_TYPE_RESULT_ID, {returnId}}}));
-    //context()->killInstruction(block.tail());
-    block->tail()->ToNop();
-    block->AddInstruction(std::move(branchInst));
+    get_def_use_mgr()->KillInst(&*block->tail());
+    block->tail()->SetOpcode(SpvOpBranch);
+    block->tail()->ReplaceOperands({{SPV_OPERAND_TYPE_RESULT_ID, {returnId}}});
+    get_def_use_mgr()->AnalyzeInstUse(&*block->tail());
+    get_def_use_mgr()->AnalyzeInstUse(block->GetLabelInst());
   }
+
+  get_def_use_mgr()->AnalyzeInstDefUse(returnBlock.GetLabelInst());
 
   return true;
 }

@@ -86,10 +86,8 @@ OpEntryPoint Kernel %1 "simple_kernel"
 %7 = OpLabel
 OpBranchConditional %4 %8 %9
 %8 = OpLabel
-OpNop
 OpBranch %10
 %9 = OpLabel
-OpNop
 OpBranch %10
 %10 = OpLabel
 OpReturn
@@ -136,10 +134,8 @@ OpMemoryModel Logical GLSL450
 %8 = OpLabel
 OpBranchConditional %3 %9 %10
 %9 = OpLabel
-OpNop
 OpBranch %11
 %10 = OpLabel
-OpNop
 OpBranch %11
 %11 = OpLabel
 %12 = OpPhi %1 %4 %9 %5 %10
