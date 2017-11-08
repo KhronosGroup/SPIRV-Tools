@@ -204,3 +204,7 @@ add_spvtools_unittest(TARGET ir_context
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_merge_return
+  SRCS pass_merge_return_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)

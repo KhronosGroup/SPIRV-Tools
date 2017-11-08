@@ -67,7 +67,8 @@ Optimizer& Optimizer::RegisterPass(PassToken&& p) {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateInlineExhaustivePass())
+  return RegisterPass(CreateMergeReturnPass())
+      .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -83,7 +84,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateInlineExhaustivePass())
+  return RegisterPass(CreateMergeReturnPass())
+      .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -238,6 +240,11 @@ Optimizer::PassToken CreateCommonUniformElimPass() {
 Optimizer::PassToken CreateCompactIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CompactIdsPass>());
+}
+
+Optimizer::PassToken CreateMergeReturnPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::MergeReturnPass>());
 }
 
 std::vector<const char*> Optimizer::GetPassNames() const {
