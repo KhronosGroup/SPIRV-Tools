@@ -171,6 +171,11 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `example`: demo code of using SPIRV-Tools APIs
 * `external/googletest`: Intended location for the
   [googletest][googletest] sources, not provided
+* `external/effcee`: Location of [Effcee][effcee] sources, if the `effcee` library
+  is not already configured by an enclosing project.
+* `external/re2`: Location of [RE2][re2] sources, if the `effcee` library is not already
+  configured by an enclosing project.
+  (The Effcee project already requires RE2.)
 * `include/`: API clients should add this directory to the include search path
 * `external/spirv-headers`: Intended location for
   [SPIR-V headers][spirv-headers], not provided
@@ -178,6 +183,14 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `source/`: API implementation
 * `test/`: Tests, using the [googletest][googletest] framework
 * `tools/`: Command line executables
+
+Example of getting sources, assuming SPIRV-Tools is configured as a standalone project:
+
+    git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
+    git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
+    git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
+    git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
+    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
 
 ### Tests
 
@@ -196,6 +209,18 @@ tests:
 [a fix][googletest-pull-612] for [googletest issue 610][googletest-issue-610].
 The fix is included on the googletest master branch any time after 2015-11-10.
 In particular, googletest must be newer than version 1.7.0.
+
+### Optional dependency on Effcee
+
+Some tests depend on the [Effcee][effcee] library for stateful matching.
+Effcee itself depends on [RE2][re2].
+
+* If SPIRV-Tools is configured as part of a larger project that already uses
+  Effcee, then that project should include Effcee before SPIRV-Tools.
+* Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
+  and RE2 sources to appear in `external/re2`.
+
+Currently Effcee is an optional dependency, but soon it will be required.
 
 ## Build
 
@@ -470,6 +495,8 @@ limitations under the License.
 [googletest]: https://github.com/google/googletest
 [googletest-pull-612]: https://github.com/google/googletest/pull/612
 [googletest-issue-610]: https://github.com/google/googletest/issues/610
+[effcee]: https://github.com/google/effcee
+[re2]: https://github.com/google/re2
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation

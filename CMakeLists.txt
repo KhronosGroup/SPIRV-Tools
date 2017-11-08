@@ -182,6 +182,10 @@ endif()
 
 add_subdirectory(external)
 
+if (TARGET effcee)
+  add_definitions(-DSPIRV_EFFCEE)
+endif()
+
 add_subdirectory(source)
 add_subdirectory(tools)
 

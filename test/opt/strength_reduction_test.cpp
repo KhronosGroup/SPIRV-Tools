@@ -63,36 +63,45 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_3"));
 }
 
-// Test to make sure we replace 16*5.
+// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
+#ifdef SPIRV_EFFCEE
+// Test to make sure we replace 16*5
+// Also demonstrate use of Effcee matching.
 TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy16) {
-  const std::vector<const char*> text = {
-      // clang-format off
-               "OpCapability Shader",
-          "%1 = OpExtInstImport \"GLSL.std.450\"",
-               "OpMemoryModel Logical GLSL450",
-               "OpEntryPoint Vertex %main \"main\"",
-               "OpName %main \"main\"",
-       "%void = OpTypeVoid",
-          "%4 = OpTypeFunction %void",
-        "%int = OpTypeInt 32 1",
-      "%int_16 = OpConstant %int 16",
-      "%int_5 = OpConstant %int 5",
-       "%main = OpFunction %void None %4",
-          "%8 = OpLabel",
-          "%9 = OpIMul %int %int_16 %int_5",
-               "OpReturn",
-               "OpFunctionEnd"
-      // clang-format on
-  };
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpName %main "main"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+; We know disassembly will produce %uint here, but
+;  CHECK: %uint = OpTypeInt 32 0
+;  CHECK-DAG: [[five:%[a-zA-Z_\d]+]] = OpConstant %uint 5
 
-  auto result = SinglePassRunAndDisassemble<opt::StrengthReductionPass>(
-      JoinAllInsts(text), /* skip_nop = */ true);
+; We have RE2 regular expressions, so \w matches [_a-zA-Z0-9].
+; This shows the preferred pattern for matching SPIR-V identifiers.
+; (We could have cheated in this case since we know the disassembler will
+; generate the 'nice' name of "%uint_4".
+;  CHECK-DAG: [[four:%\w+]] = OpConstant %uint 4
+       %uint = OpTypeInt 32 0
+     %uint_5 = OpConstant %uint 5
+    %uint_16 = OpConstant %uint 16
+       %main = OpFunction %void None %4
+; CHECK: OpLabel
+          %8 = OpLabel
+; CHECK-NEXT: OpShiftLeftLogical %uint [[five]] [[four]]
+; The multiplication disappears.
+; CHECK-NOT: OpIMul
+          %9 = OpIMul %uint %uint_16 %uint_5
+               OpReturn
+; CHECK: OpFunctionEnd
+               OpFunctionEnd)";
 
-  EXPECT_EQ(opt::Pass::Status::SuccessWithChange, std::get<1>(result));
-  const std::string& output = std::get<0>(result);
-  EXPECT_THAT(output, Not(HasSubstr("OpIMul")));
-  EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %int %int_5 %uint_4"));
+  SinglePassRunAndMatch<opt::StrengthReductionPass>(text);
 }
+#endif
 
 // Test to make sure we replace a multiple of 32 and 4.
 TEST_F(StrengthReductionBasicTest, BasicTwoPowersOf2) {

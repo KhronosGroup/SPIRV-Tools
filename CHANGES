@@ -3,6 +3,9 @@ Revision history for SPIRV-Tools
 v2017.1-dev 2017-09-01
  - Update README with details on the public_spirv_tools_dev@khronos.org mailing list.
  - General:
+   - Add the 'effcee' library as an optional dependency for use in tests.
+     Eventually it will be a required dependency, once downstream projects have
+     a chance to adjust.
    - Avoid static-duration variables of class type (with constructors).
  - Validator:
    - Type check basic arithmetic operations

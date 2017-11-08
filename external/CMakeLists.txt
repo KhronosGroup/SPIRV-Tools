@@ -27,7 +27,7 @@ else()
     "SPIRV-Headers was not found - please checkout a copy under external/.")
 endif()
 
-if (NOT ${SPIRV_SKIP_EXECUTABLES})
+if (NOT ${SPIRV_SKIP_TESTS})
   # Find gmock if we can. If it's not already configured, then try finding
   # it in external/googletest.
   if (TARGET gmock)
@@ -54,4 +54,48 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       set_property(TARGET ${target} PROPERTY FOLDER GoogleTest)
     endforeach()
   endif()
+
+  # Find Effcee and RE2, for testing.
+  # Optional for now, but eventually we'll make this required.
+
+  # First find RE2, since Effcee depends on it.
+  # If already configured, then use that.  Otherwise, prefer to find it under 're2'
+  # in this directory.
+  if (NOT TARGET re2)
+    # If we are configuring RE2, then turn off its testing.  It takes a long time and
+    # does not add much value for us.  If an enclosing project configured RE2, then it
+    # has already chosen whether to enable RE2 tesitng.
+    set(RE2_BUILD_TESTING OFF CACHE STRING "Run RE2 Tests")
+    if (NOT RE2_SOURCE_DIR)
+      if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/re2)
+        set(RE2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/re2" CACHE STRING "RE2 source dir" )
+      endif()
+    endif()
+  endif()
+
+  if (NOT TARGET effcee)
+    # Expect to find effcee in this directory.
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/effcee)
+      # If we're configuring RE2 (via Effcee), then turn off RE2 testing.
+      if (NOT TARGET re2)
+        set(RE2_BUILD_TESTING OFF)
+      endif()
+      if (MSVC)
+        # SPIRV-Tools uses the shared CRT with MSVC.  Tell Effcee to do the same.
+        set(EFFCEE_ENABLE_SHARED_CRT ON)
+      endif()
+      add_subdirectory(effcee)
+      set_property(TARGET effcee PROPERTY FOLDER Effcee)
+      # Turn off warnings for effcee and re2
+      set_property(TARGET effcee APPEND PROPERTY COMPILE_OPTIONS -w)
+      set_property(TARGET re2 APPEND PROPERTY COMPILE_OPTIONS -w)
+    endif()
+  endif()
+  # TODO(dneto): Eventually, require this.
+  if (TARGET effcee)
+    message(STATUS "SPIRV-Tools: Effcee is configured")
+  else()
+    message(STATUS "SPIRV-Tools: Effcee is not configured.  Skipping Effcee-based tests.")
+  endif()
+
 endif()
