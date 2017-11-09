@@ -70,6 +70,7 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
   }
 
   if (!phiOps.empty()) {
+    // Need a PHI node to select the correct return value.
     uint32_t phiResultId = TakeNextId();
     uint32_t phiTypeId = function->type_id();
     std::unique_ptr<ir::Instruction> phiInst(new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
@@ -89,7 +90,7 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
     returnBlock.AddInstruction(std::move(returnInst));
   }
 
-  // Replace returns with branchs
+  // Replace returns with branches
   for (auto block : returnBlocks) {
     get_def_use_mgr()->KillInst(&*block->tail());
     block->tail()->SetOpcode(SpvOpBranch);

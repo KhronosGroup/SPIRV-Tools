@@ -67,7 +67,8 @@ Optimizer& Optimizer::RegisterPass(PassToken&& p) {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
-  return RegisterPass(CreateInlineExhaustivePass())
+  return RegisterPass(CreateMergeReturnPass())
+      .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -83,7 +84,8 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
 }
 
 Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterPass(CreateInlineExhaustivePass())
+  return RegisterPass(CreateMergeReturnPass())
+      .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
