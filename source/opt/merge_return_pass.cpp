@@ -27,18 +27,20 @@ Pass::Status MergeReturnPass::Process(ir::IRContext *irContext) {
 
   bool modified = false;
   for (auto &function : *get_module()) {
-    std::vector<ir::BasicBlock*> returnBlocks = collectReturnBlocks(&function);
+    std::vector<ir::BasicBlock *> returnBlocks = collectReturnBlocks(&function);
     modified |= mergeReturnBlocks(&function, returnBlocks);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-std::vector<ir::BasicBlock*> MergeReturnPass::collectReturnBlocks(ir::Function *function) {
-  std::vector<ir::BasicBlock*> returnBlocks;
+std::vector<ir::BasicBlock *> MergeReturnPass::collectReturnBlocks(
+    ir::Function *function) {
+  std::vector<ir::BasicBlock *> returnBlocks;
   for (auto &block : *function) {
     ir::Instruction &terminator = *block.tail();
-    if (terminator.opcode() == SpvOpReturn || terminator.opcode() == SpvOpReturnValue) {
+    if (terminator.opcode() == SpvOpReturn ||
+        terminator.opcode() == SpvOpReturnValue) {
       returnBlocks.push_back(&block);
     }
   }
@@ -46,18 +48,21 @@ std::vector<ir::BasicBlock*> MergeReturnPass::collectReturnBlocks(ir::Function *
   return std::move(returnBlocks);
 }
 
-bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vector<ir::BasicBlock*> &returnBlocks) {
+bool MergeReturnPass::mergeReturnBlocks(
+    ir::Function *function, const std::vector<ir::BasicBlock *> &returnBlocks) {
   if (returnBlocks.size() <= 1) {
     // No work to do.
     return false;
   }
 
   // Create a label for the new return block
-  std::unique_ptr<ir::Instruction> returnLabel(new ir::Instruction(SpvOpLabel, 0u, TakeNextId(), {}));
+  std::unique_ptr<ir::Instruction> returnLabel(
+      new ir::Instruction(SpvOpLabel, 0u, TakeNextId(), {}));
   uint32_t returnId = returnLabel->result_id();
 
   // Create the new basic block
-  std::unique_ptr<ir::BasicBlock> returnBlockUPtr(new ir::BasicBlock(std::move(returnLabel)));
+  std::unique_ptr<ir::BasicBlock> returnBlockUPtr(
+      new ir::BasicBlock(std::move(returnLabel)));
   function->AddBasicBlock(std::move(returnBlockUPtr));
   ir::BasicBlock &returnBlock = *(--function->end());
 
@@ -66,7 +71,8 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
   std::vector<ir::Operand> phiOps;
   for (auto block : returnBlocks) {
     if (block->tail()->opcode() == SpvOpReturnValue) {
-      phiOps.push_back({SPV_OPERAND_TYPE_ID, {block->tail()->GetSingleWordInOperand(0u)}});
+      phiOps.push_back(
+          {SPV_OPERAND_TYPE_ID, {block->tail()->GetSingleWordInOperand(0u)}});
       phiOps.push_back({SPV_OPERAND_TYPE_ID, {block->id()}});
     }
   }
@@ -75,20 +81,21 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
     // Need a PHI node to select the correct return value.
     uint32_t phiResultId = TakeNextId();
     uint32_t phiTypeId = function->type_id();
-    std::unique_ptr<ir::Instruction> phiInst(new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
+    std::unique_ptr<ir::Instruction> phiInst(
+        new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
     returnBlock.AddInstruction(std::move(phiInst));
     ir::Instruction *phi = &(*returnBlock.tail());
 
-    std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(SpvOpReturnValue,
-                                                                    0u, 0u,
-                                                                    {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
+    std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(
+        SpvOpReturnValue, 0u, 0u, {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
     returnBlock.AddInstruction(std::move(returnInst));
     ir::Instruction *ret = &(*returnBlock.tail());
 
     get_def_use_mgr()->AnalyzeInstDefUse(phi);
     get_def_use_mgr()->AnalyzeInstDef(ret);
   } else {
-    std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(SpvOpReturn));
+    std::unique_ptr<ir::Instruction> returnInst(
+        new ir::Instruction(SpvOpReturn));
     returnBlock.AddInstruction(std::move(returnInst));
   }
 
@@ -106,5 +113,5 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
   return true;
 }
 
-} // namespace opt
-} // namespace spvtools
+}  // namespace opt
+}  // namespace spvtools

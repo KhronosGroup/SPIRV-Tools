@@ -28,22 +28,23 @@ namespace opt {
 class MergeReturnPass : public Pass {
  public:
   const char *name() const override { return "merge-return-pass"; }
-  Status Process(ir::IRContext*) override;
+  Status Process(ir::IRContext *) override;
 
  private:
   // Returns all BasicBlocks terminated by OpReturn or OpReturnValue in
   // |function|.
-  std::vector<ir::BasicBlock*> collectReturnBlocks(ir::Function *function);
+  std::vector<ir::BasicBlock *> collectReturnBlocks(ir::Function *function);
 
   // Returns |true| if returns were merged, |false| otherwise.
   //
   // Creates a new basic block with a single return. If |function| returns a
   // value, a phi node is created to select the correct value to return.
   // Replaces old returns with an unconditional branch to the new block.
-  bool mergeReturnBlocks(ir::Function *function, const std::vector<ir::BasicBlock*> &returnBlocks);
+  bool mergeReturnBlocks(ir::Function *function,
+                         const std::vector<ir::BasicBlock *> &returnBlocks);
 };
 
-} // namespace opt
-} // namespace spvtools
+}  // namespace opt
+}  // namespace spvtools
 
-#endif // LIBSPIRV_OPT_MERGE_RETURN_PASS_H_
+#endif  // LIBSPIRV_OPT_MERGE_RETURN_PASS_H_
