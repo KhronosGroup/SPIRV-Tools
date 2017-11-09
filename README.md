@@ -216,7 +216,7 @@ Some tests depend on the [Effcee][effcee] library for stateful matching.
 Effcee itself depends on [RE2][re2].
 
 * If SPIRV-Tools is configured as part of a larger project that already uses
-  Effcee, then that project should include Effcee before SPIRV-Toolls.
+  Effcee, then that project should include Effcee before SPIRV-Tools.
 * Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
   and RE2 sources to appear in `external/effcee/third_party/re2`.
 

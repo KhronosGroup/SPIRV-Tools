@@ -63,7 +63,7 @@ TEST_F(StrengthReductionBasicTest, BasicReplaceMulBy8) {
   EXPECT_THAT(output, HasSubstr("OpShiftLeftLogical %uint %uint_5 %uint_3"));
 }
 
-// TODO(dneto): Add Effcee as requried dependency, and make this unconditional.
+// TODO(dneto): Add Effcee as required dependency, and make this unconditional.
 #ifdef SPIRV_EFFCEE
 // Test to make sure we replace 16*5
 // Also demonstrate use of Effcee matching.
