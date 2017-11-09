@@ -37,6 +37,22 @@ struct Use {
                            // the index of result type id.
 };
 
+inline bool operator==(const Use& lhs, const Use& rhs) {
+  return lhs.inst == rhs.inst && lhs.operand_index == rhs.operand_index;
+}
+
+inline bool operator!=(const Use& lhs, const Use& rhs) {
+  return !(lhs == rhs);
+}
+
+inline bool operator<(const Use& lhs, const Use& rhs) {
+  if (lhs.inst < rhs.inst)
+    return true;
+  if (lhs.inst > rhs.inst)
+    return false;
+  return lhs.operand_index < rhs.operand_index;
+}
+
 using UseList = std::list<Use>;
 
 // A class for analyzing and managing defs and uses in an ir::Module.
@@ -95,6 +111,11 @@ class DefUseManager {
   // Erases the records that a given instruction uses its operand ids.
   void EraseUseRecordsOfOperandIds(const ir::Instruction* inst);
 
+  friend  bool operator==(const DefUseManager&, const DefUseManager&);
+  friend  bool operator!=(const DefUseManager& lhs, const DefUseManager& rhs) {
+    return !(lhs == rhs);
+  }
+
  private:
   using InstToUsedIdsMap =
       std::unordered_map<const ir::Instruction*, std::vector<uint32_t>>;
@@ -107,6 +128,7 @@ class DefUseManager {
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
+
 };
 
 }  // namespace analysis

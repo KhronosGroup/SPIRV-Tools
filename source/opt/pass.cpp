@@ -107,6 +107,7 @@ Pass::Status Pass::Run(ir::IRContext* ctx) {
   if (status == Status::SuccessWithChange) {
     ctx->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
   }
+  assert(ctx->IsConsistent());
   return status;
 }
 

@@ -755,7 +755,9 @@ void MemPass::RemovePhiOperands(
     i += 2;
   }
 
+  context()->ForgetUses(phi);
   phi->ReplaceOperands(keep_operands);
+  context()->AnalyzeUses(phi);
 }
 
 void MemPass::RemoveBlock(ir::Function::iterator* bi) {

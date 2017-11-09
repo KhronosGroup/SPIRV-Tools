@@ -39,6 +39,10 @@ class LocalSingleBlockLoadStoreElimPass : public MemPass {
   const char* name() const override { return "eliminate-local-single-block"; }
   Status Process(ir::IRContext* c) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+  
  private:
   // Return true if all uses of |varId| are only through supported reference
   // operations ie. loads and store. Also cache in supported_ref_ptrs_.

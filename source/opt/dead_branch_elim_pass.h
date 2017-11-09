@@ -44,6 +44,10 @@ class DeadBranchElimPass : public MemPass {
   const char* name() const override { return "eliminate-dead-branches"; }
   Status Process(ir::IRContext* context) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+
  private:
   // If |condId| is boolean constant, return conditional value in |condVal| and
   // return true, otherwise return false.

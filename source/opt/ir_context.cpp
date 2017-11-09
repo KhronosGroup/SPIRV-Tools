@@ -64,7 +64,7 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   }
 
   for (opt::analysis::Use& use : uses_to_update) {
-    get_def_use_mgr()->EraseUseRecordsOfOperandIds(use.inst);
+    ForgetUses(use.inst);
     const uint32_t type_result_id_count =
         (use.inst->result_id() != 0) + (use.inst->type_id() != 0);
 
@@ -88,9 +88,35 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       // Make the modification in the instruction.
       use.inst->SetInOperand(in_operand_pos, {after});
     }
-    get_def_use_mgr()->AnalyzeInstUse(use.inst);
+    AnalyzeUses(use.inst);
   }
   return true;
+}
+
+bool IRContext::IsConsistent() {
+#ifndef SPIRV_CHECK_CONTEXT
+  return true;
+#endif
+
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    opt::analysis::DefUseManager new_def_use(module());
+    if (*get_def_use_mgr() != new_def_use) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void spvtools::ir::IRContext::ForgetUses(Instruction* inst) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->EraseUseRecordsOfOperandIds(inst);
+  }
+}
+
+void IRContext::AnalyzeUses(Instruction* inst) {
+  if (AreAnalysesValid(kAnalysisDefUse)) {
+    get_def_use_mgr()->AnalyzeInstUse(inst);
+  }
 }
 }  // namespace ir
 }  // namespace spvtools

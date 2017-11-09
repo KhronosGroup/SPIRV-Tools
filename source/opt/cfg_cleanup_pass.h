@@ -28,6 +28,10 @@ class CFGCleanupPass : public MemPass {
   const char* name() const override { return "cfg-cleanup"; }
   Status Process(ir::IRContext* c) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+
  private:
   // Initialize the pass.
   void Initialize(ir::IRContext* c);

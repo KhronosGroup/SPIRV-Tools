@@ -39,6 +39,10 @@ class LocalAccessChainConvertPass : public MemPass {
   const char* name() const override { return "convert-local-access-chains"; }
   Status Process(ir::IRContext* c) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+
   using ProcessFunction = std::function<bool(ir::Function*)>;
 
  private:

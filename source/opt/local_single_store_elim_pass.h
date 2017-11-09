@@ -40,6 +40,10 @@ class LocalSingleStoreElimPass : public MemPass {
   LocalSingleStoreElimPass();
   const char* name() const override { return "eliminate-local-single-store"; }
   Status Process(ir::IRContext* irContext) override;
+  
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
 
  private:
   // Return true if all refs through |ptrId| are only loads or stores and

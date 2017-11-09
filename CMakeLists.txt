@@ -173,6 +173,13 @@ if ("${SPIRV_SKIP_EXECUTABLES}")
   set(SPIRV_SKIP_TESTS ON)
 endif()
 
+# Defaults to ON.  The checks can be time consuming.
+# Turn off if they take too long.
+option(SPIRV_CHECK_CONTEXT "In a debug build, check if the IR context is in a valid state." ON)
+if (${SPIRV_CHECK_CONTEXT})
+  add_definitions(-DSPIRV_CHECK_CONTEXT)
+endif()
+
 add_subdirectory(external)
 
 add_subdirectory(source)

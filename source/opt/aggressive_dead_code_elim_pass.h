@@ -44,6 +44,10 @@ class AggressiveDCEPass : public MemPass {
   const char* name() const override { return "eliminate-dead-code-aggressive"; }
   Status Process(ir::IRContext* c) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+
  private:
   // Return true if |varId| is variable of |storageClass|.
   bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);

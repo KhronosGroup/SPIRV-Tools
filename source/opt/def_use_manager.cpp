@@ -151,6 +151,30 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const ir::Instruction* inst) {
   }
 }
 
+bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
+  if (lhs.id_to_def_ != rhs.id_to_def_) {
+    return false;
+  }
+
+  for (auto use : lhs.id_to_uses_) {
+    auto rhs_iter = rhs.id_to_uses_.find(use.first);
+    if (rhs_iter == rhs.id_to_uses_.end()) {
+      return false;
+    }
+    use.second.sort();
+    UseList rhs_uselist = rhs_iter->second;
+    rhs_uselist.sort();
+    if (use.second != rhs_uselist) {
+      return false;
+    }
+  }
+
+  if (lhs.inst_to_used_ids_ != lhs.inst_to_used_ids_) {
+    return false;
+  }
+  return true;
+}
+
 }  // namespace analysis
 }  // namespace opt
 }  // namespace spvtools

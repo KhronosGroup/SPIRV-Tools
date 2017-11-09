@@ -188,6 +188,19 @@ class IRContext {
   // false.
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
+  // Returns true if all of the analyses that are suppose to be valid are
+  // actually valid.
+  bool IsConsistent();
+
+  // Informs the IRContext that the uses of |inst| are going to change, and that
+  // is should forget everything it know about the current uses.  Any valid
+  // analyses will be updated accordingly.
+  void ForgetUses(Instruction* inst);
+
+  // The IRContext will look at the uses of |inst| and update any valid analyses
+  // will be updated accordingly.
+  void AnalyzeUses(Instruction* inst);
+
  private:
   std::unique_ptr<Module> module_;
   spvtools::MessageConsumer consumer_;

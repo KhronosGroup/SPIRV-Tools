@@ -29,6 +29,10 @@ class DeadVariableElimination : public MemPass {
   const char* name() const override { return "dead-variable-elimination"; }
   Status Process(ir::IRContext* c) override;
 
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse;
+  }
+
  private:
   // Deletes the OpVariable instruction who result id is |result_id|.
   void DeleteVariable(uint32_t result_id);
