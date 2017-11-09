@@ -10,13 +10,14 @@ os:
 dist: trusty
 sudo: false
 
-# Use the default Xcode environment for Xcode.
-
 env:
-  # Each line is a set of environment variables set before a build.
-  # Thus each line represents a different build configuration.
-  - BUILD_TYPE=Release
-  - BUILD_TYPE=Debug
+  global:
+    - secure: IoR/Xe9E+NnLAeI23WrmUsGQn5rocz+XRYUk+BbaoKiIRYm4q72GKyypRoOGLu7wImOXFSvnN/dpdnqIpx4W0NfsSvNdlXyhDy+wvT1kzTt77dJGnkGZTZ2SBOtC9AECLy4sqM9HG0rYRR6WfXcnP2GlrE5f2aF07aISQbOUsQMvyyhtCmVAzIigK1zIUto5I0pNenvo/Y+ur+mEvTh+FtaoDIGepCbZlCc+OxqRXwXNlI7mDXbzLPmTB1FWTGsrZdRX8czF9tN9Y+T79DQjB4Lcyyeow8yU9NBVlgzZJcp1xI0UIskRT8gVrXmBYL2dMeHnDQuhxjEg9n7jfr3ptA9rgwMaSsgdaLwuBXgtPuqVgUYDpE1cP8WI8q38MXX0I6psTs/WHu+z+5UwfjzpPOHmGdVt48o8ymFTapvD5Cf1+uJyk73QkyStnPIdBF1N9Yx5sD7HN28K6/Ro12sCCePHUZ9Uz1DdZI6XxkgCNKNwao0csAyvODxD6Ee43mkExtviB8BJY5jWLIMTdGhgEGH2sRqils8IDW0p8AOTPM4UC7iA7hdg3pA+XMvBHvP9ixsY7tuB+yR2AfnFaSw2DVbwI5GgFdFMNHXYuL+9V9Wuh3keBKYQT/Hy1YvxjQ/t9UouYHqEsyVFUl3R4lEAM9+qSRsRu+EKmcSO2QtCsWc=
+  matrix:
+    # Each line is a set of environment variables set before a build.
+    # Thus each line represents a different build configuration.
+    - BUILD_TYPE=Release
+    - BUILD_TYPE=Debug
 
 compiler:
   - clang
@@ -78,11 +79,36 @@ script:
             -DSPIRV_SKIP_TESTS=ON ..;
       make -j${NPROC};
     else
-      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON ..;
-      make -j${NPROC};
+      cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..;
+      make -j${NPROC} install;
       ctest -j${NPROC} --output-on-failure --timeout 300;
     fi
 
+after_success:
+  # Create tarball for deployment
+  - if [[ "${CC}" == "clang" && "${BUILD_ANDROID_MK}" != "ON" && "${BUILD_ANDROID_CMAKE}" != "ON" ]]; then
+      cd install;
+      export TARBALL=SPIRV-Tools-master-${TRAVIS_OS_NAME}-${BUILD_TYPE}.zip;
+      find . -print | zip -@ ${TARBALL};
+    fi
+
+before_deploy:
+  # Tag the current master top of the tree as "master-tot".
+  # Travis CI relies on the tag name to push to the correct release.
+  - git config --global user.name "Travis CI"
+  - git config --global user.email "builds@travis-ci.org"
+  - git tag -f master-tot
+  - git push -q -f https://${spirvtoken}@github.com/KhronosGroup/SPIRV-Tools --tags
+
+deploy:
+  provider: releases
+  api_key: ${spirvtoken}
+  on:
+    branch: master
+    condition: ${CC} == clang && ${BUILD_ANDROID_MK} != ON && ${BUILD_ANDROID_CMAKE} != ON
+  file: ${TARBALL}
+  skip_cleanup: true
+  overwrite: true
 
 notifications:
   email:
