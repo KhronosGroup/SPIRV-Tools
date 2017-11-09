@@ -148,4 +148,113 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
 }
 
+TEST_F(MergeReturnPassTest, UnreachableReturnsNoValue) {
+  const std::string before =
+R"(OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %1 "simple_kernel"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %5
+%7 = OpLabel
+OpReturn
+%8 = OpLabel
+OpBranchConditional %4 %9 %10
+%9 = OpLabel
+OpReturn
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+R"(OpCapability Addresses
+OpCapability Kernel
+OpCapability GenericPointer
+OpCapability Linkage
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %1 "simple_kernel"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %5
+%7 = OpLabel
+OpBranch %11
+%8 = OpLabel
+OpBranchConditional %4 %9 %10
+%9 = OpLabel
+OpBranch %11
+%10 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+}
+
+TEST_F(MergeReturnPassTest, UnreachableReturnsWithValues) {
+  const std::string before =
+R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%9 = OpIAdd %1 %4 %5
+OpReturnValue %9
+%10 = OpLabel
+OpBranchConditional %3 %11 %12
+%11 = OpLabel
+OpReturnValue %4
+%12 = OpLabel
+OpReturnValue %5
+OpFunctionEnd
+)";
+
+  const std::string after =
+R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeInt 32 0
+%2 = OpTypeBool
+%3 = OpConstantFalse %2
+%4 = OpConstant %1 0
+%5 = OpConstant %1 1
+%6 = OpTypeFunction %1
+%7 = OpFunction %1 None %6
+%8 = OpLabel
+%9 = OpIAdd %1 %4 %5
+OpBranch %13
+%10 = OpLabel
+OpBranchConditional %3 %11 %12
+%11 = OpLabel
+OpBranch %13
+%12 = OpLabel
+OpBranch %13
+%13 = OpLabel
+%14 = OpPhi %1 %9 %8 %4 %11 %5 %12
+OpReturnValue %14
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+}
+
 } // anonymous namespace
