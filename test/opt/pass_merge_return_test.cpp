@@ -46,7 +46,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, TwoReturnsNoValue) {
@@ -96,7 +96,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, TwoReturnsWithValues) {
@@ -145,7 +145,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsNoValue) {
@@ -199,7 +199,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsWithValues) {
@@ -254,7 +254,7 @@ OpFunctionEnd
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
-  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, false);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
 } // anonymous namespace

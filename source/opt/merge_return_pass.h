@@ -24,7 +24,7 @@
 namespace spvtools {
 namespace opt {
 
-// Documented in optimizer.h
+// Documented in optimizer.hpp
 class MergeReturnPass : public Pass {
  public:
   const char *name() const override { return "merge-return-pass"; }

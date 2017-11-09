@@ -23,6 +23,8 @@ namespace opt {
 Pass::Status MergeReturnPass::Process(ir::IRContext *irContext) {
   InitializeProcessing(irContext);
 
+  context()->InvalidateAnalysesExceptFor(ir::IRContext::kAnalysisDefUse);
+
   bool modified = false;
   for (auto &function : *get_module()) {
     std::vector<ir::BasicBlock*> returnBlocks = collectReturnBlocks(&function);
@@ -64,8 +66,8 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
   std::vector<ir::Operand> phiOps;
   for (auto block : returnBlocks) {
     if (block->tail()->opcode() == SpvOpReturnValue) {
-      phiOps.push_back({SPV_OPERAND_TYPE_RESULT_ID, {block->tail()->GetSingleWordInOperand(0u)}});
-      phiOps.push_back({SPV_OPERAND_TYPE_RESULT_ID, {block->id()}});
+      phiOps.push_back({SPV_OPERAND_TYPE_ID, {block->tail()->GetSingleWordInOperand(0u)}});
+      phiOps.push_back({SPV_OPERAND_TYPE_ID, {block->id()}});
     }
   }
 
@@ -79,7 +81,7 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
 
     std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(SpvOpReturnValue,
                                                                     0u, 0u,
-                                                                    {{SPV_OPERAND_TYPE_RESULT_ID, {phiResultId}}}));
+                                                                    {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
     returnBlock.AddInstruction(std::move(returnInst));
     ir::Instruction *ret = &(*returnBlock.tail());
 
@@ -92,9 +94,9 @@ bool MergeReturnPass::mergeReturnBlocks(ir::Function *function, const std::vecto
 
   // Replace returns with branches
   for (auto block : returnBlocks) {
-    get_def_use_mgr()->KillInst(&*block->tail());
+    context()->KillInst(&*block->tail());
     block->tail()->SetOpcode(SpvOpBranch);
-    block->tail()->ReplaceOperands({{SPV_OPERAND_TYPE_RESULT_ID, {returnId}}});
+    block->tail()->ReplaceOperands({{SPV_OPERAND_TYPE_ID, {returnId}}});
     get_def_use_mgr()->AnalyzeInstUse(&*block->tail());
     get_def_use_mgr()->AnalyzeInstUse(block->GetLabelInst());
   }
