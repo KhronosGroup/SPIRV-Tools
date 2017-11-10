@@ -39,6 +39,8 @@ function(add_spvtools_unittest)
     spvtools_default_compile_options(${target})
     if(${COMPILER_IS_LIKE_GNU})
       target_compile_options(${target} PRIVATE -Wno-undef)
+      # Effcee and RE2 headers exhibit shadowing.
+      target_compile_options(${target} PRIVATE -Wno-shadow)
     endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
       # Disable C4503 "decorated name length exceeded" warning,

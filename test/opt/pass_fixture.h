@@ -165,7 +165,6 @@ class PassTest : public TestT {
     auto pass_result = SinglePassRunAndDisassemble<PassT>(
         original, skip_nop, std::forward<Args>(args)...);
     auto disassembly = std::get<0>(pass_result);
-    auto status = std::get<1>(pass_result);
     auto match_result = effcee::Match(disassembly, original);
     EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
         << match_result.message() << "\nChecking result:\n"

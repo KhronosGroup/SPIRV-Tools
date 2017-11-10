@@ -173,8 +173,8 @@ We intend to maintain a linear history on the GitHub `master` branch.
   [googletest][googletest] sources, not provided
 * `external/effcee`: Location of [Effcee][effcee] sources, if the `effcee` library
   is not already configured by an enclosing project.
-* `external/effcee/third_party/re2`: Location of [RE2][re2] sources, if the
-  `effcee` library is not already configured by an enclosing project.
+* `external/re2`: Location of [RE2][re2] sources, if the `effcee` library is not already
+  configured by an enclosing project.
   (The Effcee project already requires RE2.)
 * `include/`: API clients should add this directory to the include search path
 * `external/spirv-headers`: Intended location for
@@ -190,7 +190,7 @@ Example of getting sources, assuming SPIRV-Tools is configured as a standalone p
     git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
     git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
     git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
-    git clone https://github.com/google/re2.git                 spirv-tools/external/effcee/third_party/re2
+    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
 
 ### Tests
 
@@ -218,7 +218,7 @@ Effcee itself depends on [RE2][re2].
 * If SPIRV-Tools is configured as part of a larger project that already uses
   Effcee, then that project should include Effcee before SPIRV-Tools.
 * Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
-  and RE2 sources to appear in `external/effcee/third_party/re2`.
+  and RE2 sources to appear in `external/re2`.
 
 Currently Effcee is an optional dependency, but soon it will be required.
 
