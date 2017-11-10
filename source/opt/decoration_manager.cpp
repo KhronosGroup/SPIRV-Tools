@@ -262,8 +262,7 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to,
       case SpvOpGroupDecorate:
         f(*inst, false);
         // add |to| to list of decorated id's
-        inst->AddOperand(std::move(
-          ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to})));
+        inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
         id_to_decoration_insts_[to].push_back(inst);
         f(*inst, true);
         break;
@@ -274,8 +273,7 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to,
         for (uint32_t i = 1; i < num_operands; i += 2) {
           ir::Operand op = inst->GetOperand(i);
           if (op.words[0] == from) { // add new pair of operands: (to, literal)
-            inst->AddOperand(std::move(
-            ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to})));
+            inst->AddOperand(ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID, {to}));
             op = inst->GetOperand(i + 1);
             inst->AddOperand(std::move(op));
           }
