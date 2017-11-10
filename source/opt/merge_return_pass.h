@@ -31,7 +31,7 @@ class MergeReturnPass : public Pass {
   const char* name() const override { return "merge-return-pass"; }
   Status Process(ir::IRContext*) override;
 
-  ir::IRContext::Analysis GetPreservedAnalyses() {
+  ir::IRContext::Analysis GetPreservedAnalyses() override {
     return ir::IRContext::kAnalysisDefUse;
   }
 
