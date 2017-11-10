@@ -144,7 +144,7 @@ TEST_F(IRContextTest, AllPreserveFirstOnlyAfterPassWithChange) {
     context.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesAll pass(opt::Pass::Status::SuccessWithChange);
+  DummyPassPreservesFirst pass(opt::Pass::Status::SuccessWithChange);
   opt::Pass::Status s = pass.Run(&context);
   EXPECT_EQ(s, opt::Pass::Status::SuccessWithChange);
   EXPECT_TRUE(context.AreAnalysesValid(IRContext::kAnalysisBegin));

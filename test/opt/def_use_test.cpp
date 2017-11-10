@@ -517,12 +517,13 @@ TEST_P(ReplaceUseTest, Case) {
   ASSERT_NE(nullptr, module);
   ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
-  // Analyze def and use.
-  context.BuildDefUseManager();
+  // Force a re-build of def-use manager.
+  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context.get_def_use_mgr();
 
   // Do the substitution.
-  for (const auto& candiate : tc.candidates) {
-    context.ReplaceAllUsesWith(candiate.first, candiate.second);
+  for (const auto& candidate : tc.candidates) {
+    context.ReplaceAllUsesWith(candidate.first, candidate.second);
   }
 
   EXPECT_EQ(tc.after, DisassembleModule(context.module()));
@@ -1071,8 +1072,9 @@ TEST(DefUseTest, OpSwitch) {
   ASSERT_NE(nullptr, module);
   ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
-  // Analyze def and use.
-  context.BuildDefUseManager();
+  // Force a re-build of def-use manager.
+  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context.get_def_use_mgr();
 
   // Do a bunch replacements.
   context.ReplaceAllUsesWith(9, 900);    // to unused id
@@ -1318,7 +1320,10 @@ TEST_P(KillInstTest, Case) {
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.before);
   ASSERT_NE(nullptr, module);
   ir::IRContext context(std::move(module), spvtools::MessageConsumer());
-  context.BuildDefUseManager();
+
+  // Force a re-build of the def-use manager.
+  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context.get_def_use_mgr();
 
   // KillInst
   uint32_t index = 0;

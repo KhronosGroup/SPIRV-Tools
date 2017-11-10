@@ -22,13 +22,23 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisDefUse) {
     BuildDefUseManager();
   }
+  if (set & kAnalysisInstrToBlockMapping) {
+    BuildInstrToBlockMapping();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
     IRContext::Analysis preserved_analyses) {
   uint32_t analyses_to_invalidate = valid_analyses_ & (~preserved_analyses);
+  InvalidateAnalyses(static_cast<IRContext::Analysis>(analyses_to_invalidate));
+}
+
+void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   if (analyses_to_invalidate & kAnalysisDefUse) {
     def_use_mgr_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisInstrToBlockMapping) {
+    instr_to_block_.clear();
   }
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
@@ -41,6 +51,10 @@ void IRContext::KillInst(ir::Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->ClearInst(inst);
   }
+  if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+    instr_to_block_.erase(inst);
+  }
+
   inst->ToNop();
 }
 
@@ -118,5 +132,6 @@ void IRContext::AnalyzeUses(Instruction* inst) {
     get_def_use_mgr()->AnalyzeInstUse(inst);
   }
 }
+
 }  // namespace ir
 }  // namespace spvtools

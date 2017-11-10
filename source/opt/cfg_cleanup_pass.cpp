@@ -29,7 +29,6 @@ namespace opt {
 
 void CFGCleanupPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-  InitializeCFGCleanup(c);
 }
 
 Pass::Status CFGCleanupPass::Process(ir::IRContext* c) {

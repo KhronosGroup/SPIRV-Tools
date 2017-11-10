@@ -731,14 +731,15 @@ void MemPass::RemovePhiOperands(
 
     // In all other cases, the operand must be kept but may need to be changed.
     uint32_t arg_id = phi->GetSingleWordOperand(i);
-    ir::BasicBlock* def_block = def_block_[arg_id];
+    ir::Instruction *arg_def_instr = get_def_use_mgr()->GetDef(arg_id);
+    ir::BasicBlock* def_block = context()->get_instr_block(arg_def_instr);
     if (def_block &&
-        reachable_blocks.find(def_block_[arg_id]) == reachable_blocks.end()) {
+        reachable_blocks.find(def_block) == reachable_blocks.end()) {
       // If the current |phi| argument was defined in an unreachable block, it
       // means that this |phi| argument is no longer defined. Replace it with
       // |undef_id|.
       if (!undef_id) {
-        type_id = get_def_use_mgr()->GetDef(arg_id)->type_id();
+        type_id = arg_def_instr->type_id();
         undef_id = Type2Undef(type_id);
       }
       keep_operands.push_back(
@@ -848,24 +849,6 @@ bool MemPass::CFGCleanup(ir::Function* func) {
   bool modified = false;
   modified |= RemoveUnreachableBlocks(func);
   return modified;
-}
-
-void MemPass::InitializeCFGCleanup(ir::IRContext* c) {
-  // Build a map between SSA names to the block they are defined in.
-  //
-  // TODO(dnovillo): This is expensive and unnecessary if ir::Instruction
-  // instances could figure out what basic block they belong to. Remove this
-  // once this is possible.
-  for (auto& fn : *c->module()) {
-    for (auto& block : fn) {
-      block.ForEachInst([this, &block](ir::Instruction* inst) {
-        uint32_t result_id = inst->result_id();
-        if (result_id > 0) {
-          def_block_[result_id] = &block;
-        }
-      });
-    }
-  }
 }
 
 }  // namespace opt

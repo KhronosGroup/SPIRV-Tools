@@ -371,7 +371,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
 
 void AggressiveDCEPass::Initialize(ir::IRContext* c) {
   InitializeProcessing(c);
-  InitializeCFGCleanup(c);
 
   // Clear collections
   worklist_ = std::queue<ir::Instruction*>{};
