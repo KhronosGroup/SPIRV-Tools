@@ -25,11 +25,24 @@ namespace ir {
 
 class IRContext {
  public:
+  // Available analyses.
+  //
+  // When adding a new analysis:
+  //
+  // 1. Enum values should be powers of 2. These are cast into uint32_t
+  //    bitmasks, so we can have at most 31 analyses represented.
+  //
+  // 2. Make sure it gets invalidated by IRContext methods that add or remove IR
+  //    elements (e.g., KillDef, KillInst, ReplaceAllUsesWith).
+  //
+  // 4. Add handling code in BuildInvalidAnalyses and
+  //    InvalidateAnalysesExceptFor.
   enum Analysis {
-    kAnalysisNone = 0x0,
-    kAnalysisBegin = 0x1,
+    kAnalysisNone = 0 << 0,
+    kAnalysisBegin = 1 << 0,
     kAnalysisDefUse = kAnalysisBegin,
-    kAnalysisEnd = 0x2
+    kAnalysisInstrToBlockMapping = 1 << 1,
+    kAnalysisEnd = kAnalysisInstrToBlockMapping
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -147,10 +160,14 @@ class IRContext {
     return def_use_mgr_.get();
   }
 
-  // Builds the def-use manager from scratch, even if it was already valid.
-  void BuildDefUseManager() {
-    def_use_mgr_.reset(new opt::analysis::DefUseManager(module()));
-    valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
+  // Returns the basic block for instruction |instr|. Re-builds the instruction
+  // block map, if needed.
+  ir::BasicBlock* get_instr_block(ir::Instruction* instr) {
+    if (!AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+      BuildInstrToBlockMapping();
+    }
+    auto entry = instr_to_block_.find(instr);
+    return (entry != instr_to_block_.end()) ? entry->second : nullptr;
   }
 
   // Sets the message consumer to the given |consumer|. |consumer| which will be
@@ -167,6 +184,9 @@ class IRContext {
 
   // Invalidates all of the analyses except for those in |preserved_analyses|.
   void InvalidateAnalysesExceptFor(Analysis preserved_analyses);
+
+  // Invalidates the analyses marked in |analyses_to_invalidate|.
+  void InvalidateAnalyses(Analysis analyses_to_invalidate);
 
   // Turns the instruction defining the given |id| into a Nop. Returns true on
   // success, false if the given |id| is not defined at all. This method also
@@ -202,9 +222,35 @@ class IRContext {
   void AnalyzeUses(Instruction* inst);
 
  private:
+  // Builds the def-use manager from scratch, even if it was already valid.
+  void BuildDefUseManager() {
+    def_use_mgr_.reset(new opt::analysis::DefUseManager(module()));
+    valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
+  }
+
+  // Builds the instruction-block map for the whole module.
+  void BuildInstrToBlockMapping() {
+    instr_to_block_.clear();
+    for (auto& fn : *module_) {
+      for (auto& block : fn) {
+        block.ForEachInst([this, &block](ir::Instruction* inst) {
+          instr_to_block_[inst] = &block;
+        });
+      }
+    }
+    valid_analyses_ = valid_analyses_ | kAnalysisInstrToBlockMapping;
+  }
+
   std::unique_ptr<Module> module_;
   spvtools::MessageConsumer consumer_;
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
+
+  // A map from instructions the the basic block they belong to. This mapping is
+  // built on-demand when get_instr_block() is called.
+  //
+  // NOTE: Do not traverse this map. Ever. Use the function and basic block
+  // iterators to traverse instructions.
+  std::unordered_map<ir::Instruction*, ir::BasicBlock*> instr_to_block_;
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;

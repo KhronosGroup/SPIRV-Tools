@@ -109,9 +109,6 @@ class MemPass : public Pass {
   // |loadInst|.
   void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
 
-  // Initialize CFG Cleanup variables
-  void InitializeCFGCleanup(ir::IRContext* context);
-
   // Call all the cleanup helper functions on |func|.
   bool CFGCleanup(ir::Function* func);
 
@@ -231,11 +228,6 @@ class MemPass : public Pass {
   // The Ids of OpPhi instructions that are in a loop header and which require
   // patching of the value for the loop back-edge.
   std::unordered_set<uint32_t> phis_to_patch_;
-
-  // Map from an instruction result ID to the block that holds it.
-  // TODO(dnovillo): This would be unnecessary if ir::Instruction instances
-  // knew what basic block they belong to.
-  std::unordered_map<uint32_t, ir::BasicBlock*> def_block_;
 };
 
 }  // namespace opt
