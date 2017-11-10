@@ -55,25 +55,40 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
     endforeach()
   endif()
 
-  # Find effcee, for testing.
-  # Optional for now, but eventually we'll make this required when testing is enabled.
+  # Find Effcee and RE2, for testing.
+  # Optional for now, but eventually we'll make this required.
+
+  # First find RE2, since Effcee depends on it.
+  # TODO(dneto): I intend to require this eventually.
+  if (NOT TARGET re2)
+    # If we're configuring RE2, then turn off RE2 testing.  It takes a
+    # very long time.  If an enclosing project has configured RE2, then
+    # it has already chosen whether to enable testing.
+    set(RE2_BUILD_TESTING OFF)
+    # Expect to find re2 in this directory.  If not, then let Effcee
+    # find it for us, possibly under its own third_party directory.
+    if (EXISTS re2)
+      add_subdirectory(re2)
+      set_property(TARGET re2 PROPERTY FOLDER RE2)
+    endif()
+  endif()
+
+  # TODO(dneto): I intend to require this eventually.
   if (NOT TARGET effcee)
     # Expect to find effcee in this directory.
-    # TODO(dneto): I intend to require this eventually.
     if (EXISTS effcee)
-      # If we're configuring re2 (via effcee), then turn off re2 testing.
+      # If we're configuring RE2 (via Effcee), then turn off RE2 testing.
       if (NOT TARGET re2)
         set(RE2_BUILD_TESTING OFF)
       endif()
-      add_subdirectory(effcee EXCLUDE_FROM_ALL)
+      add_subdirectory(effcee)
       set_property(TARGET effcee PROPERTY FOLDER Effcee)
-      set_property(TARGET re2 PROPERTY FOLDER Effcee)
     endif()
   endif()
   if (TARGET effcee)
-    message(STATUS "SPIRV-Tools: effcee is configured")
+    message(STATUS "SPIRV-Tools: Effcee is configured")
   else()
-    message(STATUS "SPIRV-Tools: effcee is not configured.  Skipping effcee-based tests.")
+    message(STATUS "SPIRV-Tools: Effcee is not configured.  Skipping Effcee-based tests.")
   endif()
 
 endif()
