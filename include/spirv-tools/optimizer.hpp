@@ -413,6 +413,9 @@ Optimizer::PassToken CreateDeadVariableEliminationPass();
 //
 // This pass does not consider unreachable code, nor does it perform any other
 // optimizations.
+//
+// This pass does not currently support structured control flow. It bails out if
+// the shader capability is detected.
 Optimizer::PassToken CreateMergeReturnPass();
 
 }  // namespace spvtools

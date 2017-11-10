@@ -20,36 +20,39 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status MergeReturnPass::Process(ir::IRContext *irContext) {
+Pass::Status MergeReturnPass::Process(ir::IRContext* irContext) {
   InitializeProcessing(irContext);
 
-  context()->InvalidateAnalysesExceptFor(ir::IRContext::kAnalysisDefUse);
+  // TODO (alanbaker): Support structured control flow. Bail out in the
+  // meantime.
+  if (get_module()->HasCapability(SpvCapabilityShader))
+    return Status::SuccessWithoutChange;
 
   bool modified = false;
-  for (auto &function : *get_module()) {
-    std::vector<ir::BasicBlock *> returnBlocks = collectReturnBlocks(&function);
-    modified |= mergeReturnBlocks(&function, returnBlocks);
+  for (auto& function : *get_module()) {
+    std::vector<ir::BasicBlock*> returnBlocks = CollectReturnBlocks(&function);
+    modified |= MergeReturnBlocks(&function, returnBlocks);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-std::vector<ir::BasicBlock *> MergeReturnPass::collectReturnBlocks(
-    ir::Function *function) {
-  std::vector<ir::BasicBlock *> returnBlocks;
-  for (auto &block : *function) {
-    ir::Instruction &terminator = *block.tail();
+std::vector<ir::BasicBlock*> MergeReturnPass::CollectReturnBlocks(
+    ir::Function* function) {
+  std::vector<ir::BasicBlock*> returnBlocks;
+  for (auto& block : *function) {
+    ir::Instruction& terminator = *block.tail();
     if (terminator.opcode() == SpvOpReturn ||
         terminator.opcode() == SpvOpReturnValue) {
       returnBlocks.push_back(&block);
     }
   }
 
-  return std::move(returnBlocks);
+  return returnBlocks;
 }
 
-bool MergeReturnPass::mergeReturnBlocks(
-    ir::Function *function, const std::vector<ir::BasicBlock *> &returnBlocks) {
+bool MergeReturnPass::MergeReturnBlocks(
+    ir::Function* function, const std::vector<ir::BasicBlock*>& returnBlocks) {
   if (returnBlocks.size() <= 1) {
     // No work to do.
     return false;
@@ -61,10 +64,10 @@ bool MergeReturnPass::mergeReturnBlocks(
   uint32_t returnId = returnLabel->result_id();
 
   // Create the new basic block
-  std::unique_ptr<ir::BasicBlock> returnBlockUPtr(
+  std::unique_ptr<ir::BasicBlock> returnBlock(
       new ir::BasicBlock(std::move(returnLabel)));
-  function->AddBasicBlock(std::move(returnBlockUPtr));
-  ir::BasicBlock &returnBlock = *(--function->end());
+  function->AddBasicBlock(std::move(returnBlock));
+  ir::Function::iterator retBlockIter = --function->end();
 
   // Create the PHI for the merged block (if necessary)
   // Create new return
@@ -83,20 +86,20 @@ bool MergeReturnPass::mergeReturnBlocks(
     uint32_t phiTypeId = function->type_id();
     std::unique_ptr<ir::Instruction> phiInst(
         new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
-    returnBlock.AddInstruction(std::move(phiInst));
-    ir::Instruction *phi = &(*returnBlock.tail());
+    retBlockIter->AddInstruction(std::move(phiInst));
+    ir::BasicBlock::iterator phiIter = retBlockIter->tail();
 
     std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(
         SpvOpReturnValue, 0u, 0u, {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
-    returnBlock.AddInstruction(std::move(returnInst));
-    ir::Instruction *ret = &(*returnBlock.tail());
+    retBlockIter->AddInstruction(std::move(returnInst));
+    ir::BasicBlock::iterator ret = retBlockIter->tail();
 
-    get_def_use_mgr()->AnalyzeInstDefUse(phi);
-    get_def_use_mgr()->AnalyzeInstDef(ret);
+    get_def_use_mgr()->AnalyzeInstDefUse(&*phiIter);
+    get_def_use_mgr()->AnalyzeInstDef(&*ret);
   } else {
     std::unique_ptr<ir::Instruction> returnInst(
         new ir::Instruction(SpvOpReturn));
-    returnBlock.AddInstruction(std::move(returnInst));
+    retBlockIter->AddInstruction(std::move(returnInst));
   }
 
   // Replace returns with branches
@@ -108,7 +111,7 @@ bool MergeReturnPass::mergeReturnBlocks(
     get_def_use_mgr()->AnalyzeInstUse(block->GetLabelInst());
   }
 
-  get_def_use_mgr()->AnalyzeInstDefUse(returnBlock.GetLabelInst());
+  get_def_use_mgr()->AnalyzeInstDefUse(retBlockIter->GetLabelInst());
 
   return true;
 }

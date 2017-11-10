@@ -89,7 +89,8 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/strip_debug_info_pass.cpp \
 		source/opt/type_manager.cpp \
 		source/opt/types.cpp \
-		source/opt/unify_const_pass.cpp
+		source/opt/unify_const_pass.cpp \
+		source/opt/merge_return_pass.cpp
 
 # Locations of grammar files.
 SPV_CORE10_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.0/spirv.core.grammar.json

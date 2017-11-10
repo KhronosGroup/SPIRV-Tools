@@ -28,7 +28,7 @@ using MergeReturnPassTest = PassTest<::testing::Test>;
 
 TEST_F(MergeReturnPassTest, OneReturn) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -51,17 +51,17 @@ OpFunctionEnd
 
 TEST_F(MergeReturnPassTest, TwoReturnsNoValue) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-OpEntryPoint Kernel %1 "simple_kernel"
+OpEntryPoint Kernel %6 "simple_kernel"
 %2 = OpTypeVoid
 %3 = OpTypeBool
 %4 = OpConstantFalse %3
 %1 = OpTypeFunction %2
-%6 = OpFunction %2 None %5
+%6 = OpFunction %2 None %1
 %7 = OpLabel
 OpBranchConditional %4 %8 %9
 %8 = OpLabel
@@ -72,17 +72,17 @@ OpFunctionEnd
 )";
 
   const std::string after =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-OpEntryPoint Kernel %1 "simple_kernel"
+OpEntryPoint Kernel %6 "simple_kernel"
 %2 = OpTypeVoid
 %3 = OpTypeBool
 %4 = OpConstantFalse %3
 %1 = OpTypeFunction %2
-%6 = OpFunction %2 None %5
+%6 = OpFunction %2 None %1
 %7 = OpLabel
 OpBranchConditional %4 %8 %9
 %8 = OpLabel
@@ -101,9 +101,9 @@ OpFunctionEnd
 
 TEST_F(MergeReturnPassTest, TwoReturnsWithValues) {
   const std::string before =
-R"(OpCapability Shader
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
+      R"(OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -121,9 +121,9 @@ OpFunctionEnd
 )";
 
   const std::string after =
-R"(OpCapability Shader
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
+      R"(OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -150,17 +150,17 @@ OpFunctionEnd
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsNoValue) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-OpEntryPoint Kernel %1 "simple_kernel"
+OpEntryPoint Kernel %6 "simple_kernel"
 %2 = OpTypeVoid
 %3 = OpTypeBool
 %4 = OpConstantFalse %3
 %1 = OpTypeFunction %2
-%6 = OpFunction %2 None %5
+%6 = OpFunction %2 None %1
 %7 = OpLabel
 OpReturn
 %8 = OpLabel
@@ -173,17 +173,17 @@ OpFunctionEnd
 )";
 
   const std::string after =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
 OpMemoryModel Physical32 OpenCL
-OpEntryPoint Kernel %1 "simple_kernel"
+OpEntryPoint Kernel %6 "simple_kernel"
 %2 = OpTypeVoid
 %3 = OpTypeBool
 %4 = OpConstantFalse %3
 %1 = OpTypeFunction %2
-%6 = OpFunction %2 None %5
+%6 = OpFunction %2 None %1
 %7 = OpLabel
 OpBranch %11
 %8 = OpLabel
@@ -204,9 +204,9 @@ OpFunctionEnd
 
 TEST_F(MergeReturnPassTest, UnreachableReturnsWithValues) {
   const std::string before =
-R"(OpCapability Shader
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
+      R"(OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -227,9 +227,9 @@ OpFunctionEnd
 )";
 
   const std::string after =
-R"(OpCapability Shader
-OpCapability Linkage
-OpMemoryModel Logical GLSL450
+      R"(OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Logical OpenCL
 %1 = OpTypeInt 32 0
 %2 = OpTypeBool
 %3 = OpConstantFalse %2
@@ -257,4 +257,35 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
 }
 
-} // anonymous namespace
+TEST_F(MergeReturnPassTest, StructuredControlFlowNOP) {
+  const std::string before =
+      R"(OpCapability Addresses
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %6 "simple_shader"
+%2 = OpTypeVoid
+%3 = OpTypeBool
+%4 = OpConstantFalse %3
+%1 = OpTypeFunction %2
+%6 = OpFunction %2 None %1
+%7 = OpLabel
+OpSelectionMerge %10 None
+OpBranchConditional %4 %8 %9
+%8 = OpLabel
+OpReturn
+%9 = OpLabel
+OpReturn
+%10 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  const std::string after = before;
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
+  SinglePassRunAndCheck<opt::MergeReturnPass>(before, after, false, true);
+}
+
+}  // anonymous namespace

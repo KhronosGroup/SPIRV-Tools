@@ -27,21 +27,26 @@ namespace opt {
 // Documented in optimizer.hpp
 class MergeReturnPass : public Pass {
  public:
-  const char *name() const override { return "merge-return-pass"; }
-  Status Process(ir::IRContext *) override;
+  MergeReturnPass() = default;
+  const char* name() const override { return "merge-return-pass"; }
+  Status Process(ir::IRContext*) override;
+
+  ir::IRContext::Analysis GetPreservedAnalyses() {
+    return ir::IRContext::kAnalysisDefUse;
+  }
 
  private:
   // Returns all BasicBlocks terminated by OpReturn or OpReturnValue in
   // |function|.
-  std::vector<ir::BasicBlock *> collectReturnBlocks(ir::Function *function);
+  std::vector<ir::BasicBlock*> CollectReturnBlocks(ir::Function* function);
 
   // Returns |true| if returns were merged, |false| otherwise.
   //
   // Creates a new basic block with a single return. If |function| returns a
   // value, a phi node is created to select the correct value to return.
   // Replaces old returns with an unconditional branch to the new block.
-  bool mergeReturnBlocks(ir::Function *function,
-                         const std::vector<ir::BasicBlock *> &returnBlocks);
+  bool MergeReturnBlocks(ir::Function* function,
+                         const std::vector<ir::BasicBlock*>& returnBlocks);
 };
 
 }  // namespace opt
