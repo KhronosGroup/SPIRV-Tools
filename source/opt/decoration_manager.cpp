@@ -15,6 +15,7 @@
 #include "decoration_manager.h"
 
 #include <stack>
+#include <iostream>
 
 namespace spvtools {
 namespace opt {
@@ -289,8 +290,8 @@ void DecorationManager::CloneDecorations(uint32_t from, uint32_t to,
         std::unique_ptr<ir::Instruction> new_inst(inst->Clone());
         new_inst->SetInOperand(0, {to});
         id_to_decoration_insts_[to].push_back(new_inst.get());
-        module_->AddAnnotationInst(std::move(new_inst));
         f(*new_inst, true);
+        module_->AddAnnotationInst(std::move(new_inst));
         break;
       }
       default:
