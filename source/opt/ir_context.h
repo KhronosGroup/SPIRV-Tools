@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
+#include <unordered_set>
 
 namespace spvtools {
 namespace ir {
@@ -46,7 +47,8 @@ class IRContext {
     kAnalysisDefUse = kAnalysisBegin,
     kAnalysisInstrToBlockMapping = 1 << 1,
     kAnalysisDecorations = 1 << 2,
-    kAnalysisEnd = 1 << 3
+    kAnalysisCombinators = 1 << 3,
+    kAnalysisEnd = 1 << 4
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -60,8 +62,7 @@ class IRContext {
         module_(new Module()),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone)
-  {
+        valid_analyses_(kAnalysisNone) {
     module_->SetContext(this);
   }
 
@@ -70,9 +71,9 @@ class IRContext {
         module_(std::move(m)),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone)
-  {
+        valid_analyses_(kAnalysisNone) {
     module_->SetContext(this);
+    InitializeCombinators();
   }
   Module* module() const { return module_.get(); }
 
@@ -263,6 +264,24 @@ class IRContext {
     return ++unique_id_;
   }
 
+  // Returns true if |inst| is a combinator in the current context.
+  // |combinator_ops_| is built if it has not been already.
+  inline bool IsCombinatorInstruction(ir::Instruction* inst) {
+    if (!AreAnalysesValid(kAnalysisCombinators)) {
+      InitializeCombinators();
+    }
+    const uint32_t kExtInstSetIdInIndx = 0;
+    const uint32_t kExtInstInstructionInIndx = 1;
+
+    if (inst->opcode() != SpvOpExtInst) {
+      return combinator_ops_[0].count(inst->opcode()) != 0;
+    } else {
+      uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);
+      uint32_t op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
+      return combinator_ops_[set].count(op) != 0;
+    }
+  }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -288,6 +307,16 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
   }
 
+  // Scans a module looking for it capabilities, and initializes combinator_ops_
+  // accordingly.
+  void InitializeCombinators();
+
+  // Add the combinator opcode for the given capability to combinator_ops_.
+  void AddCombinatorsForCapability(uint32_t capability);
+
+  // Add the combinator opcode for the given extension to combinator_ops_.
+  void AddCombinatorsForExtension(ir::Instruction* extension);
+
   // An unique identifier for this instruction. Can be used to order
   // instructions in a container.
   //
@@ -309,6 +338,10 @@ class IRContext {
 
   // A bitset indicating which analyes are currently valid.
   Analysis valid_analyses_;
+
+  // Opcodes of shader capability core executable instructions
+  // without side-effect.
+  std::unordered_map<uint32_t, std::unordered_set<uint32_t>>  combinator_ops_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,
@@ -447,6 +480,7 @@ IteratorRange<Module::const_inst_iterator> IRContext::debugs3() const {
 void IRContext::debug_clear() { module_->debug_clear(); }
 
 void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
+  AddCombinatorsForCapability(c->GetSingleWordInOperand(0));
   module()->AddCapability(std::move(c));
 }
 
@@ -455,6 +489,7 @@ void IRContext::AddExtension(std::unique_ptr<Instruction>&& e) {
 }
 
 void IRContext::AddExtInstImport(std::unique_ptr<Instruction>&& e) {
+  AddCombinatorsForExtension(e.get());
   module()->AddExtInstImport(std::move(e));
 }
 
@@ -500,6 +535,7 @@ void IRContext::AddGlobalValue(std::unique_ptr<Instruction>&& v) {
 void IRContext::AddFunction(std::unique_ptr<Function>&& f) {
   module()->AddFunction(std::move(f));
 }
+
 }  // namespace ir
 }  // namespace spvtools
 #endif  // SPIRV_TOOLS_IR_CONTEXT_H

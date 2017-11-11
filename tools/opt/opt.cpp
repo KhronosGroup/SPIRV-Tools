@@ -162,6 +162,9 @@ Options:
                Replaces instructions with equivalent and less expensive ones.
   --eliminate-dead-variables
                Deletes module scope variables that are not referenced.
+  --local-redundancy-elimination
+               Looks for instructions in the same basic block that compute the
+               same value, and deletes the redundant ones.
   --relax-store-struct
                Allow store from one struct type to a different type with
                compatible layout and members. This option is forwarded to the
@@ -384,6 +387,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCompactIdsPass());
       } else if (0 == strcmp(cur_arg, "--cfg-cleanup")) {
         optimizer->RegisterPass(CreateCFGCleanupPass());
+      } else if (0 == strcmp(cur_arg, "--local-redundancy-elimination")) {
+        optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--relax-store-struct")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "-O")) {

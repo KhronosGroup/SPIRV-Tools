@@ -39,6 +39,7 @@ add_library(SPIRV-Tools-opt
   ir_loader.h
   ir_context.h
   local_access_chain_convert_pass.h
+  local_redundancy_elimination.h
   local_single_block_elim_pass.h
   local_single_store_elim_pass.h
   local_ssa_elim_pass.h
@@ -59,6 +60,7 @@ add_library(SPIRV-Tools-opt
   types.h
   type_manager.h
   unify_const_pass.h
+  value_number_table.h
 
   aggressive_dead_code_elim_pass.cpp
   basic_block.cpp
@@ -83,9 +85,11 @@ add_library(SPIRV-Tools-opt
   inline_opaque_pass.cpp
   insert_extract_elim.cpp
   instruction.cpp
+  instruction_list.cpp
   ir_loader.cpp
   ir_context.cpp
   local_access_chain_convert_pass.cpp
+  local_redundancy_elimination.cpp
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
   local_ssa_elim_pass.cpp
@@ -103,7 +107,7 @@ add_library(SPIRV-Tools-opt
   types.cpp
   type_manager.cpp
   unify_const_pass.cpp
-  instruction_list.cpp
+  value_number_table.cpp
 )
 
 spvtools_default_compile_options(SPIRV-Tools-opt)

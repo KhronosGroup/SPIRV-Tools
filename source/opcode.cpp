@@ -318,7 +318,7 @@ int32_t spvOpcodeGeneratesType(SpvOp op) {
 }
 
 bool spvOpcodeIsDecoration(const SpvOp opcode) {
-  switch(opcode) {
+  switch (opcode) {
     case SpvOpDecorate:
     case SpvOpDecorateId:
     case SpvOpMemberDecorate:
@@ -329,4 +329,59 @@ bool spvOpcodeIsDecoration(const SpvOp opcode) {
       break;
   }
   return false;
+}
+
+bool spvOpcodeIsLoad(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpLoad:
+    case SpvOpImageSampleExplicitLod:
+    case SpvOpImageSampleImplicitLod:
+    case SpvOpImageSampleDrefImplicitLod:
+    case SpvOpImageSampleDrefExplicitLod:
+    case SpvOpImageSampleProjImplicitLod:
+    case SpvOpImageSampleProjExplicitLod:
+    case SpvOpImageSampleProjDrefImplicitLod:
+    case SpvOpImageSampleProjDrefExplicitLod:
+    case SpvOpImageFetch:
+    case SpvOpImageGather:
+    case SpvOpImageDrefGather:
+    case SpvOpImageRead:
+    case SpvOpImageSparseSampleImplicitLod:
+    case SpvOpImageSparseSampleExplicitLod:
+    case SpvOpImageSparseSampleDrefExplicitLod:
+    case SpvOpImageSparseSampleDrefImplicitLod:
+    case SpvOpImageSparseFetch:
+    case SpvOpImageSparseGather:
+    case SpvOpImageSparseDrefGather:
+    case SpvOpImageSparseRead:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeIsAtomicOp(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
+      return true;
+    default:
+      return false;
+  }
 }

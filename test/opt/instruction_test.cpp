@@ -19,14 +19,18 @@
 
 #include "spirv-tools/libspirv.h"
 #include "unit_spirv.h"
+#include "pass_fixture.h"
+#include "pass_utils.h"
 
 namespace {
 
+using namespace spvtools;
 using spvtest::MakeInstruction;
-using spvtools::ir::Instruction;
-using spvtools::ir::IRContext;
-using spvtools::ir::Operand;
+using ir::Instruction;
+using ir::IRContext;
+using ir::Operand;
 using ::testing::Eq;
+using DescriptorTypeTest = PassTest<::testing::Test>;
 
 TEST(InstructionTest, CreateTrivial) {
   Instruction empty;
@@ -287,4 +291,222 @@ TEST(InstructionTest, LessThanOperator) {
   EXPECT_TRUE(i2 < *clone);
 }
 
+TEST_F(DescriptorTypeTest, StorageImage) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 2 R32f
+          %8 = OpTypePointer UniformConstant %7
+          %3 = OpVariable %8 UniformConstant
+          %2 = OpFunction %4 None %5
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(8);
+  EXPECT_TRUE(type->IsVulkanStorageImage());
+  EXPECT_FALSE(type->IsVulkanSampledImage());
+  EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanUniformBuffer());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_FALSE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(DescriptorTypeTest, SampledImage) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypePointer UniformConstant %7
+          %3 = OpVariable %8 UniformConstant
+          %2 = OpFunction %4 None %5
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(8);
+  EXPECT_FALSE(type->IsVulkanStorageImage());
+  EXPECT_TRUE(type->IsVulkanSampledImage());
+  EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanUniformBuffer());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_TRUE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 Buffer 0 0 0 2 R32f
+          %8 = OpTypePointer UniformConstant %7
+          %3 = OpVariable %8 UniformConstant
+          %2 = OpFunction %4 None %5
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(8);
+  EXPECT_FALSE(type->IsVulkanStorageImage());
+  EXPECT_FALSE(type->IsVulkanSampledImage());
+  EXPECT_TRUE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanUniformBuffer());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_FALSE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(DescriptorTypeTest, StorageBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+               OpDecorate %9 BufferBlock
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeRuntimeArray %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+          %3 = OpVariable %10 Uniform
+          %2 = OpFunction %4 None %5
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_FALSE(type->IsVulkanStorageImage());
+  EXPECT_FALSE(type->IsVulkanSampledImage());
+  EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_TRUE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanUniformBuffer());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_FALSE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(DescriptorTypeTest, UniformBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+               OpDecorate %9 Block
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeRuntimeArray %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+          %3 = OpVariable %10 Uniform
+          %2 = OpFunction %4 None %5
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_FALSE(type->IsVulkanStorageImage());
+  EXPECT_FALSE(type->IsVulkanSampledImage());
+  EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBuffer());
+  EXPECT_TRUE(type->IsVulkanUniformBuffer());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_TRUE(variable->IsReadOnlyVariable());
+}
+
+TEST_F(DescriptorTypeTest, NonWritableIsReadOnly) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "myStorageImage"
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+               OpDecorate %9 BufferBlock
+               OpDecorate %3 NonWritable
+          %4 = OpTypeVoid
+          %5 = OpTypeFunction %4
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 4
+          %8 = OpTypeRuntimeArray %7
+          %9 = OpTypeStruct %8
+         %10 = OpTypePointer Uniform %9
+          %3 = OpVariable %10 Uniform
+          %2 = OpFunction %4 None %5
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_TRUE(variable->IsReadOnlyVariable());
+}
 }  // anonymous namespace

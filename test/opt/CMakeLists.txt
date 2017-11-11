@@ -208,3 +208,13 @@ add_spvtools_unittest(TARGET pass_merge_return
   SRCS pass_merge_return_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET value_table
+  SRCS value_table_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
+add_spvtools_unittest(TARGET local_redundancy_elimination
+  SRCS local_redundancy_elimination_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)

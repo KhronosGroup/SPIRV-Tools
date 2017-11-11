@@ -17,10 +17,19 @@
 
 #include <initializer_list>
 
+#include "ir_context.h"
 #include "reflect.h"
 
 namespace spvtools {
 namespace ir {
+
+namespace {
+// Indices used to get particular operands out of instructions using InOperand.
+const uint32_t kTypeImageDimIndex = 1;
+const uint32_t kLoadBaseIndex = 0;
+const uint32_t kVariableStorageClassIndex = 0;
+const uint32_t kTypeImageSampledIndex = 5;
+}  // namespace
 
 Instruction::Instruction(IRContext* c)
     : utils::IntrusiveNodeBase<Instruction>(),
@@ -57,7 +66,8 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
   }
 }
 
-Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id, uint32_t res_id,
+Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
+                         uint32_t res_id,
                          const std::vector<Operand>& in_operands)
     : utils::IntrusiveNodeBase<Instruction>(),
       context_(c),
@@ -96,7 +106,7 @@ Instruction& Instruction::operator=(Instruction&& that) {
   return *this;
 }
 
-Instruction* Instruction::Clone(IRContext *c) const {
+Instruction* Instruction::Clone(IRContext* c) const {
   Instruction* clone = new Instruction(c);
   clone->opcode_ = opcode_;
   clone->type_id_ = type_id_;
@@ -132,6 +142,217 @@ void Instruction::ReplaceOperands(const std::vector<Operand>& new_operands) {
   operands_.clear();
   operands_.insert(operands_.begin(), new_operands.begin(), new_operands.end());
   operands_.shrink_to_fit();
+}
+
+bool Instruction::IsReadOnlyLoad() const {
+  if (IsLoad()) {
+    ir::Instruction* address_def = GetBaseAddress();
+    if (!address_def || address_def->opcode() != SpvOpVariable) {
+      return false;
+    }
+    return address_def->IsReadOnlyVariable();
+  }
+  return false;
+}
+
+Instruction* Instruction::GetBaseAddress() const {
+  assert(IsLoad() &&
+         "GetBaseAddress should only be called on load instructions.");
+  uint32_t base = GetSingleWordInOperand(kLoadBaseIndex);
+  ir::Instruction* base_inst = context()->get_def_use_mgr()->GetDef(base);
+  bool done = false;
+  while (!done) {
+    switch (base_inst->opcode()) {
+      case SpvOpAccessChain:
+      case SpvOpInBoundsAccessChain:
+      case SpvOpPtrAccessChain:
+      case SpvOpInBoundsPtrAccessChain:
+      case SpvOpImageTexelPointer:
+      case SpvOpCopyObject:
+        // All of these instructions have the base pointer use a base pointer
+        // in in-operand 0.
+        base = base_inst->GetSingleWordInOperand(0);
+        base_inst = context()->get_def_use_mgr()->GetDef(base);
+        break;
+      default:
+        done = true;
+        break;
+    }
+  }
+  return base_inst;
+}
+
+bool Instruction::IsReadOnlyVariable() const {
+  if (context()->module()->HasCapability(SpvCapabilityShader))
+    return IsReadOnlyVariableShaders();
+  else
+    return IsReadOnlyVariableKernel();
+}
+
+bool Instruction::IsVulkanStorageImage() const {
+  if (opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  if (storage_class != SpvStorageClassUniformConstant) {
+    return false;
+  }
+
+  ir::Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+  if (base_type->opcode() != SpvOpTypeImage) {
+    return false;
+  }
+
+  if (base_type->GetSingleWordInOperand(kTypeImageDimIndex) == SpvDimBuffer) {
+    return false;
+  }
+
+  // Check if the image is sampled.  If we do not know for sure that it is,
+  // then assume it is a storage image.
+  auto s = base_type->GetSingleWordInOperand(kTypeImageSampledIndex);
+  return s != 1;
+}
+
+bool Instruction::IsVulkanSampledImage() const {
+  if (opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  if (storage_class != SpvStorageClassUniformConstant) {
+    return false;
+  }
+
+  ir::Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+  if (base_type->opcode() != SpvOpTypeImage) {
+    return false;
+  }
+
+  if (base_type->GetSingleWordInOperand(kTypeImageDimIndex) == SpvDimBuffer) {
+    return false;
+  }
+
+  // Check if the image is sampled.  If we know for sure that it is,
+  // then return true.
+  auto s = base_type->GetSingleWordInOperand(kTypeImageSampledIndex);
+  return s == 1;
+}
+
+bool Instruction::IsVulkanStorageTexelBuffer() const {
+  if (opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  if (storage_class != SpvStorageClassUniformConstant) {
+    return false;
+  }
+
+  ir::Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+  if (base_type->opcode() != SpvOpTypeImage) {
+    return false;
+  }
+
+  if (base_type->GetSingleWordInOperand(kTypeImageDimIndex) != SpvDimBuffer) {
+    return false;
+  }
+
+  // Check if the image is sampled.  If we do not know for sure that it is,
+  // then assume it is a storage texel buffer.
+  return base_type->GetSingleWordInOperand(kTypeImageSampledIndex) != 1;
+}
+
+bool Instruction::IsVulkanStorageBuffer() const {
+  // Is there a difference between a "Storage buffer" and a "dynamic storage
+  // buffer" in SPIR-V and do we care about the difference?
+  if (opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  ir::Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+
+  if (base_type->opcode() != SpvOpTypeStruct) {
+    return false;
+  }
+
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  if (storage_class == SpvStorageClassUniform) {
+    bool is_buffer_block = false;
+    context()->get_decoration_mgr()->ForEachDecoration(
+        base_type->result_id(), SpvDecorationBufferBlock,
+        [&is_buffer_block](const ir::Instruction&) { is_buffer_block = true; });
+    return is_buffer_block;
+  } else if (storage_class == SpvStorageClassStorageBuffer) {
+    bool is_block = false;
+    context()->get_decoration_mgr()->ForEachDecoration(
+        base_type->result_id(), SpvDecorationBlock,
+        [&is_block](const ir::Instruction&) { is_block = true; });
+    return is_block;
+  }
+  return false;
+}
+
+bool Instruction::IsVulkanUniformBuffer() const {
+  if (opcode() != SpvOpTypePointer) {
+    return false;
+  }
+
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  if (storage_class != SpvStorageClassUniform) {
+    return false;
+  }
+
+  ir::Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+  if (base_type->opcode() != SpvOpTypeStruct) {
+    return false;
+  }
+
+  bool is_block = false;
+  context()->get_decoration_mgr()->ForEachDecoration(
+      base_type->result_id(), SpvDecorationBlock,
+      [&is_block](const ir::Instruction&) { is_block = true; });
+  return is_block;
+}
+
+bool Instruction::IsReadOnlyVariableShaders() const {
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  Instruction* type_def = context()->get_def_use_mgr()->GetDef(type_id());
+
+  switch (storage_class) {
+    case SpvStorageClassUniformConstant:
+      if (!type_def->IsVulkanStorageImage() &&
+          !type_def->IsVulkanStorageTexelBuffer()) {
+        return true;
+      }
+      break;
+    case SpvStorageClassUniform:
+      if (!type_def->IsVulkanStorageBuffer()) {
+        return true;
+      }
+      break;
+    case SpvStorageClassPushConstant:
+    case SpvStorageClassInput:
+      return true;
+    default:
+      break;
+  }
+
+  bool is_nonwritable = false;
+  context()->get_decoration_mgr()->ForEachDecoration(
+      result_id(), SpvDecorationNonWritable,
+      [&is_nonwritable](const Instruction&) { is_nonwritable = true; });
+  return is_nonwritable;
+}
+
+bool Instruction::IsReadOnlyVariableKernel() const {
+  uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
+  return storage_class == SpvStorageClassUniformConstant;
 }
 }  // namespace ir
 }  // namespace spvtools

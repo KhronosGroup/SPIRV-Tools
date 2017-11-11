@@ -19,8 +19,8 @@
 #include <functional>
 #include <utility>
 #include <vector>
-#include <opcode.h>
 
+#include "opcode.h"
 #include "operand.h"
 #include "util/ilist_node.h"
 
@@ -126,7 +126,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
-  Instruction* Clone(IRContext *c) const;
+  Instruction* Clone(IRContext* c) const;
 
   IRContext* context() const { return context_; }
 
@@ -138,7 +138,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   void SetOpcode(SpvOp op) { opcode_ = op; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
-  uint32_t unique_id() const { assert(unique_id_ != 0); return unique_id_; }
+  uint32_t unique_id() const {
+    assert(unique_id_ != 0);
+    return unique_id_;
+  }
   // Returns the vector of line-related debug instructions attached to this
   // instruction and the caller can directly modify them.
   std::vector<Instruction>& dbg_line_insts() { return dbg_line_insts_; }
@@ -173,7 +176,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Adds |operand| to the list of operands of this instruction.
   // It is the responsibility of the caller to make sure
   // that the instruction remains valid.
-  inline void AddOperand(Operand &&operand);
+  inline void AddOperand(Operand&& operand);
   // Gets the |index|-th logical operand as a single SPIR-V word. This method is
   // not expected to be used with logical operands consisting of multiple SPIR-V
   // words.
@@ -245,7 +248,52 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   void ReplaceOperands(const std::vector<Operand>& new_operands);
 
   // Returns true if the instruction annotates an id with a decoration.
-  inline bool IsDecoration();
+  inline bool IsDecoration() const;
+
+  // Returns true if the instruction is known to be a load from read-only
+  // memory.
+  bool IsReadOnlyLoad() const;
+
+  // Returns the instruction that gives the base address of an address
+  // calculation.  The instruction must be a load instruction.  In logical
+  // addressing mode, will return an OpVariable or OpFunctionParameter
+  // instruction. For physical addressing mode, could return other types of
+  // instructions.
+  Instruction* GetBaseAddress() const;
+
+  // Returns true if the instruction is a load from memory into a result id. It
+  // considers only core instructions. Memory-to-memory instructions are not
+  // considered loads.
+  inline bool IsLoad() const;
+
+  // Returns true if the instruction declares a variable that is read-only.
+  bool IsReadOnlyVariable() const;
+
+  // The following functions check for the various descriptor types defined in
+  // the Vulkan specification section 13.1.
+
+  // Returns true if the instruction defines a pointer type that points to a
+  // storage image.
+  bool IsVulkanStorageImage() const;
+
+  // Returns true if the instruction defines a pointer type that points to a
+  // sampled image.
+  bool IsVulkanSampledImage() const;
+
+  // Returns true if the instruction defines a pointer type that points to a
+  // storage texel buffer.
+  bool IsVulkanStorageTexelBuffer() const;
+
+  // Returns true if the instruction defines a pointer type that points to a
+  // storage buffer.
+  bool IsVulkanStorageBuffer() const;
+
+  // Returns true if the instruction defines a pointer type that points to a
+  // uniform buffer.
+  bool IsVulkanUniformBuffer() const;
+
+  // Returns true if the instruction is an atom operation.
+  inline bool IsAtomicOp() const;
 
   inline bool operator==(const Instruction&) const;
   inline bool operator!=(const Instruction&) const;
@@ -256,6 +304,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);
   }
+
+  // Returns true if the instruction declares a variable that is read-only.  The
+  // first version assumes the module is a shader module.  The second assumes a
+  // kernel.
+  bool IsReadOnlyVariableShaders() const;
+  bool IsReadOnlyVariableKernel() const;
 
   IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode
@@ -289,7 +343,7 @@ inline const Operand& Instruction::GetOperand(uint32_t index) const {
   return operands_[index];
 };
 
-inline void Instruction::AddOperand(Operand &&operand) {
+inline void Instruction::AddOperand(Operand&& operand) {
   operands_.push_back(operand);
   return;
 }
@@ -427,10 +481,13 @@ inline bool Instruction::HasLabels() const {
   return false;
 }
 
-bool Instruction::IsDecoration() {
+bool Instruction::IsDecoration() const {
   return spvOpcodeIsDecoration(opcode());
 }
 
+bool Instruction::IsLoad() const { return spvOpcodeIsLoad(opcode()); }
+
+bool Instruction::IsAtomicOp() const { return spvOpcodeIsAtomicOp(opcode()); }
 }  // namespace ir
 }  // namespace spvtools
 

@@ -28,13 +28,11 @@ namespace opt {
 namespace {
 
 const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kExtInstSetIdInIndx = 0;
-const uint32_t kExtInstInstructionInIndx = 1;
 const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 
-}  // namespace anonymous
+}  // namespace
 
 bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, uint32_t storageClass) {
   const ir::Instruction* varInst = get_def_use_mgr()->GetDef(varId);
@@ -72,20 +70,6 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       } break;
     }
   }
-}
-
-bool AggressiveDCEPass::IsCombinator(uint32_t op) const {
-  return combinator_ops_shader_.find(op) != combinator_ops_shader_.end();
-}
-
-bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
-  assert(inst->opcode() == SpvOpExtInst);
-  if (inst->GetSingleWordInOperand(kExtInstSetIdInIndx) == glsl_std_450_id_) {
-    uint32_t op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
-    return combinator_ops_glsl_std_450_.find(op) !=
-           combinator_ops_glsl_std_450_.end();
-  } else
-    return false;
 }
 
 bool AggressiveDCEPass::AllExtensionsSupported() const {
@@ -222,10 +206,6 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
           else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
             AddToWorklist(&*ii);
         } break;
-        case SpvOpExtInst: {
-          // eg. GLSL frexp, modf
-          if (!IsCombinatorExt(&*ii)) AddToWorklist(&*ii);
-        } break;
         case SpvOpLoopMerge: {
           // Assume loops live (for now)
           // TODO(greg-lunarg): Add dead loop elimination
@@ -250,7 +230,9 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         default: {
           // Function calls, atomics, function params, function returns, etc.
           // TODO(greg-lunarg): function calls live only if write to non-local
-          if (!IsCombinator(op)) AddToWorklist(&*ii);
+          if (!context()->IsCombinatorInstruction(&*ii)) {
+            AddToWorklist(&*ii);
+          }
           // Remember function calls
           if (op == SpvOpFunctionCall) call_in_func_ = true;
         } break;
@@ -377,8 +359,6 @@ void AggressiveDCEPass::Initialize(ir::IRContext* c) {
   live_insts_.clear();
   live_local_vars_.clear();
   dead_insts_.clear();
-  combinator_ops_shader_.clear();
-  combinator_ops_glsl_std_450_.clear();
 
   // Initialize extensions whitelist
   InitExtensions();
@@ -396,8 +376,6 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // If any extensions in the module are not explicitly supported,
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
-  // Initialize combinator whitelists
-  InitCombinatorSets();
   // Process all entry point functions
   ProcessFunction pfn = [this](ir::Function* fp) { return AggressiveDCE(fp); };
   bool modified = ProcessEntryPointCallTree(pfn, get_module());
@@ -411,245 +389,31 @@ Pass::Status AggressiveDCEPass::Process(ir::IRContext* c) {
   return ProcessImpl();
 }
 
-void AggressiveDCEPass::InitCombinatorSets() {
-  combinator_ops_shader_ = {
-      SpvOpNop,
-      SpvOpUndef,
-      SpvOpVariable,
-      SpvOpImageTexelPointer,
-      SpvOpLoad,
-      SpvOpAccessChain,
-      SpvOpInBoundsAccessChain,
-      SpvOpArrayLength,
-      SpvOpVectorExtractDynamic,
-      SpvOpVectorInsertDynamic,
-      SpvOpVectorShuffle,
-      SpvOpCompositeConstruct,
-      SpvOpCompositeExtract,
-      SpvOpCompositeInsert,
-      SpvOpCopyObject,
-      SpvOpTranspose,
-      SpvOpSampledImage,
-      SpvOpImageSampleImplicitLod,
-      SpvOpImageSampleExplicitLod,
-      SpvOpImageSampleDrefImplicitLod,
-      SpvOpImageSampleDrefExplicitLod,
-      SpvOpImageSampleProjImplicitLod,
-      SpvOpImageSampleProjExplicitLod,
-      SpvOpImageSampleProjDrefImplicitLod,
-      SpvOpImageSampleProjDrefExplicitLod,
-      SpvOpImageFetch,
-      SpvOpImageGather,
-      SpvOpImageDrefGather,
-      SpvOpImageRead,
-      SpvOpImage,
-      SpvOpConvertFToU,
-      SpvOpConvertFToS,
-      SpvOpConvertSToF,
-      SpvOpConvertUToF,
-      SpvOpUConvert,
-      SpvOpSConvert,
-      SpvOpFConvert,
-      SpvOpQuantizeToF16,
-      SpvOpBitcast,
-      SpvOpSNegate,
-      SpvOpFNegate,
-      SpvOpIAdd,
-      SpvOpFAdd,
-      SpvOpISub,
-      SpvOpFSub,
-      SpvOpIMul,
-      SpvOpFMul,
-      SpvOpUDiv,
-      SpvOpSDiv,
-      SpvOpFDiv,
-      SpvOpUMod,
-      SpvOpSRem,
-      SpvOpSMod,
-      SpvOpFRem,
-      SpvOpFMod,
-      SpvOpVectorTimesScalar,
-      SpvOpMatrixTimesScalar,
-      SpvOpVectorTimesMatrix,
-      SpvOpMatrixTimesVector,
-      SpvOpMatrixTimesMatrix,
-      SpvOpOuterProduct,
-      SpvOpDot,
-      SpvOpIAddCarry,
-      SpvOpISubBorrow,
-      SpvOpUMulExtended,
-      SpvOpSMulExtended,
-      SpvOpAny,
-      SpvOpAll,
-      SpvOpIsNan,
-      SpvOpIsInf,
-      SpvOpLogicalEqual,
-      SpvOpLogicalNotEqual,
-      SpvOpLogicalOr,
-      SpvOpLogicalAnd,
-      SpvOpLogicalNot,
-      SpvOpSelect,
-      SpvOpIEqual,
-      SpvOpINotEqual,
-      SpvOpUGreaterThan,
-      SpvOpSGreaterThan,
-      SpvOpUGreaterThanEqual,
-      SpvOpSGreaterThanEqual,
-      SpvOpULessThan,
-      SpvOpSLessThan,
-      SpvOpULessThanEqual,
-      SpvOpSLessThanEqual,
-      SpvOpFOrdEqual,
-      SpvOpFUnordEqual,
-      SpvOpFOrdNotEqual,
-      SpvOpFUnordNotEqual,
-      SpvOpFOrdLessThan,
-      SpvOpFUnordLessThan,
-      SpvOpFOrdGreaterThan,
-      SpvOpFUnordGreaterThan,
-      SpvOpFOrdLessThanEqual,
-      SpvOpFUnordLessThanEqual,
-      SpvOpFOrdGreaterThanEqual,
-      SpvOpFUnordGreaterThanEqual,
-      SpvOpShiftRightLogical,
-      SpvOpShiftRightArithmetic,
-      SpvOpShiftLeftLogical,
-      SpvOpBitwiseOr,
-      SpvOpBitwiseXor,
-      SpvOpBitwiseAnd,
-      SpvOpNot,
-      SpvOpBitFieldInsert,
-      SpvOpBitFieldSExtract,
-      SpvOpBitFieldUExtract,
-      SpvOpBitReverse,
-      SpvOpBitCount,
-      SpvOpDPdx,
-      SpvOpDPdy,
-      SpvOpFwidth,
-      SpvOpDPdxFine,
-      SpvOpDPdyFine,
-      SpvOpFwidthFine,
-      SpvOpDPdxCoarse,
-      SpvOpDPdyCoarse,
-      SpvOpFwidthCoarse,
-      SpvOpPhi,
-      SpvOpImageSparseSampleImplicitLod,
-      SpvOpImageSparseSampleExplicitLod,
-      SpvOpImageSparseSampleDrefImplicitLod,
-      SpvOpImageSparseSampleDrefExplicitLod,
-      SpvOpImageSparseSampleProjImplicitLod,
-      SpvOpImageSparseSampleProjExplicitLod,
-      SpvOpImageSparseSampleProjDrefImplicitLod,
-      SpvOpImageSparseSampleProjDrefExplicitLod,
-      SpvOpImageSparseFetch,
-      SpvOpImageSparseGather,
-      SpvOpImageSparseDrefGather,
-      SpvOpImageSparseTexelsResident,
-      SpvOpImageSparseRead,
-      SpvOpSizeOf
-      // TODO(dneto): Add instructions enabled by ImageQuery
-  };
-
-  // Find supported extension instruction set ids
-  glsl_std_450_id_ = get_module()->GetExtInstImportId("GLSL.std.450");
-
-  combinator_ops_glsl_std_450_ = {GLSLstd450Round,
-                                  GLSLstd450RoundEven,
-                                  GLSLstd450Trunc,
-                                  GLSLstd450FAbs,
-                                  GLSLstd450SAbs,
-                                  GLSLstd450FSign,
-                                  GLSLstd450SSign,
-                                  GLSLstd450Floor,
-                                  GLSLstd450Ceil,
-                                  GLSLstd450Fract,
-                                  GLSLstd450Radians,
-                                  GLSLstd450Degrees,
-                                  GLSLstd450Sin,
-                                  GLSLstd450Cos,
-                                  GLSLstd450Tan,
-                                  GLSLstd450Asin,
-                                  GLSLstd450Acos,
-                                  GLSLstd450Atan,
-                                  GLSLstd450Sinh,
-                                  GLSLstd450Cosh,
-                                  GLSLstd450Tanh,
-                                  GLSLstd450Asinh,
-                                  GLSLstd450Acosh,
-                                  GLSLstd450Atanh,
-                                  GLSLstd450Atan2,
-                                  GLSLstd450Pow,
-                                  GLSLstd450Exp,
-                                  GLSLstd450Log,
-                                  GLSLstd450Exp2,
-                                  GLSLstd450Log2,
-                                  GLSLstd450Sqrt,
-                                  GLSLstd450InverseSqrt,
-                                  GLSLstd450Determinant,
-                                  GLSLstd450MatrixInverse,
-                                  GLSLstd450ModfStruct,
-                                  GLSLstd450FMin,
-                                  GLSLstd450UMin,
-                                  GLSLstd450SMin,
-                                  GLSLstd450FMax,
-                                  GLSLstd450UMax,
-                                  GLSLstd450SMax,
-                                  GLSLstd450FClamp,
-                                  GLSLstd450UClamp,
-                                  GLSLstd450SClamp,
-                                  GLSLstd450FMix,
-                                  GLSLstd450IMix,
-                                  GLSLstd450Step,
-                                  GLSLstd450SmoothStep,
-                                  GLSLstd450Fma,
-                                  GLSLstd450FrexpStruct,
-                                  GLSLstd450Ldexp,
-                                  GLSLstd450PackSnorm4x8,
-                                  GLSLstd450PackUnorm4x8,
-                                  GLSLstd450PackSnorm2x16,
-                                  GLSLstd450PackUnorm2x16,
-                                  GLSLstd450PackHalf2x16,
-                                  GLSLstd450PackDouble2x32,
-                                  GLSLstd450UnpackSnorm2x16,
-                                  GLSLstd450UnpackUnorm2x16,
-                                  GLSLstd450UnpackHalf2x16,
-                                  GLSLstd450UnpackSnorm4x8,
-                                  GLSLstd450UnpackUnorm4x8,
-                                  GLSLstd450UnpackDouble2x32,
-                                  GLSLstd450Length,
-                                  GLSLstd450Distance,
-                                  GLSLstd450Cross,
-                                  GLSLstd450Normalize,
-                                  GLSLstd450FaceForward,
-                                  GLSLstd450Reflect,
-                                  GLSLstd450Refract,
-                                  GLSLstd450FindILsb,
-                                  GLSLstd450FindSMsb,
-                                  GLSLstd450FindUMsb,
-                                  GLSLstd450InterpolateAtCentroid,
-                                  GLSLstd450InterpolateAtSample,
-                                  GLSLstd450InterpolateAtOffset,
-                                  GLSLstd450NMin,
-                                  GLSLstd450NMax,
-                                  GLSLstd450NClamp};
-}
-
 void AggressiveDCEPass::InitExtensions() {
   extensions_whitelist_.clear();
   extensions_whitelist_.insert({
       "SPV_AMD_shader_explicit_vertex_parameter",
-      "SPV_AMD_shader_trinary_minmax", "SPV_AMD_gcn_shader",
-      "SPV_KHR_shader_ballot", "SPV_AMD_shader_ballot",
-      "SPV_AMD_gpu_shader_half_float", "SPV_KHR_shader_draw_parameters",
-      "SPV_KHR_subgroup_vote", "SPV_KHR_16bit_storage", "SPV_KHR_device_group",
-      "SPV_KHR_multiview", "SPV_NVX_multiview_per_view_attributes",
-      "SPV_NV_viewport_array2", "SPV_NV_stereo_view_rendering",
+      "SPV_AMD_shader_trinary_minmax",
+      "SPV_AMD_gcn_shader",
+      "SPV_KHR_shader_ballot",
+      "SPV_AMD_shader_ballot",
+      "SPV_AMD_gpu_shader_half_float",
+      "SPV_KHR_shader_draw_parameters",
+      "SPV_KHR_subgroup_vote",
+      "SPV_KHR_16bit_storage",
+      "SPV_KHR_device_group",
+      "SPV_KHR_multiview",
+      "SPV_NVX_multiview_per_view_attributes",
+      "SPV_NV_viewport_array2",
+      "SPV_NV_stereo_view_rendering",
       "SPV_NV_sample_mask_override_coverage",
-      "SPV_NV_geometry_shader_passthrough", "SPV_AMD_texture_gather_bias_lod",
+      "SPV_NV_geometry_shader_passthrough",
+      "SPV_AMD_texture_gather_bias_lod",
       "SPV_KHR_storage_buffer_storage_class",
       // SPV_KHR_variable_pointers
       //   Currently do not support extended pointer expressions
-      "SPV_AMD_gpu_shader_int16", "SPV_KHR_post_depth_coverage",
+      "SPV_AMD_gpu_shader_int16",
+      "SPV_KHR_post_depth_coverage",
       "SPV_KHR_shader_atomic_counter_ops",
   });
 }

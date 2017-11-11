@@ -418,6 +418,10 @@ Optimizer::PassToken CreateDeadVariableEliminationPass();
 // the shader capability is detected.
 Optimizer::PassToken CreateMergeReturnPass();
 
+// Create value numbering pass.
+// This pass will look for instructions in the same basic block that compute the
+// same value, and remove the redundant ones.
+Optimizer::PassToken CreateLocalRedundancyEliminationPass();
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_
