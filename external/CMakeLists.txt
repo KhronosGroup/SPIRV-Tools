@@ -27,7 +27,7 @@ else()
     "SPIRV-Headers was not found - please checkout a copy under external/.")
 endif()
 
-if (NOT ${SPIRV_SKIP_EXECUTABLES})
+if (NOT ${SPIRV_SKIP_TESTS})
   # Find gmock if we can. If it's not already configured, then try finding
   # it in external/googletest.
   if (TARGET gmock)
