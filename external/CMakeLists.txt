@@ -80,6 +80,10 @@ if (NOT ${SPIRV_SKIP_TESTS})
       if (NOT TARGET re2)
         set(RE2_BUILD_TESTING OFF)
       endif()
+      if (MSVC)
+        # SPIRV-Tools uses the shared CRT with MSVC.  Tell Effcee to do the same.
+        set(EFFCEE_ENABLE_SHARED_CRT ON)
+      endif()
       add_subdirectory(effcee)
       set_property(TARGET effcee PROPERTY FOLDER Effcee)
       # Turn off warnings for effcee and re2
