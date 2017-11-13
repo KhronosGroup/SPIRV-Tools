@@ -19,6 +19,7 @@
 #include "basic_block.h"
 #include "cfa.h"
 #include "iterator.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -116,21 +117,9 @@ ir::Instruction* MemPass::GetPtr(ir::Instruction* ip, uint32_t* varId) {
   return GetPtr(ptrId, varId);
 }
 
-void MemPass::FindNamedOrDecoratedIds() {
-  named_or_decorated_ids_.clear();
-  for (auto& di : get_module()->debugs2())
-    if (di.opcode() == SpvOpName)
-      named_or_decorated_ids_.insert(di.GetSingleWordInOperand(0));
-  for (auto& ai : get_module()->annotations())
-    if (ai.opcode() == SpvOpDecorate || ai.opcode() == SpvOpDecorateId)
-      named_or_decorated_ids_.insert(ai.GetSingleWordInOperand(0));
-}
-
 bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
   if (uses == nullptr) return true;
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end())
-    return false;
   for (auto u : *uses) {
     const SpvOp op = u.inst->opcode();
     if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
@@ -138,29 +127,8 @@ bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   return true;
 }
 
-void MemPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and
-  // kill if no other operands.
-  if (named_or_decorated_ids_.find(id) == named_or_decorated_ids_.end()) return;
-  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  if (uses == nullptr) return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op == SpvOpName || IsNonTypeDecorate(op)) killList.push_back(u.inst);
-  }
-  for (auto kip : killList) context()->KillInst(kip);
-}
-
-void MemPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  const uint32_t rId = inst->result_id();
-  if (rId == 0) return;
-  KillNamesAndDecorates(rId);
-}
-
 void MemPass::KillAllInsts(ir::BasicBlock* bp) {
   bp->ForEachInst([this](ir::Instruction* ip) {
-    KillNamesAndDecorates(ip);
     context()->KillInst(ip);
   });
 }
@@ -229,7 +197,6 @@ void MemPass::DCEInst(ir::Instruction* inst) {
     uint32_t varId = 0;
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad) (void)GetPtr(di, &varId);
-    KillNamesAndDecorates(di);
     context()->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
@@ -245,7 +212,7 @@ void MemPass::DCEInst(ir::Instruction* inst) {
 
 void MemPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId) {
   const uint32_t loadId = loadInst->result_id();
-  KillNamesAndDecorates(loadId);
+  context()->KillNamesAndDecorates(loadId);
   (void)context()->ReplaceAllUsesWith(loadId, replId);
   DCEInst(loadInst);
 }
@@ -633,7 +600,7 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           // and delete load. Kill any names or decorates using id before
           // replacing to prevent incorrect replacement in those instructions.
           const uint32_t loadId = ii->result_id();
-          KillNamesAndDecorates(loadId);
+          context()->KillNamesAndDecorates(loadId);
           (void)context()->ReplaceAllUsesWith(loadId, replId);
           context()->KillInst(&*ii);
         } break;
@@ -770,14 +737,12 @@ void MemPass::RemoveBlock(ir::Function::iterator* bi) {
     // instruction is needed to identify the block, which is needed by the
     // removal of phi operands.
     if (inst != rm_block.GetLabelInst()) {
-      KillNamesAndDecorates(inst);
       context()->KillInst(inst);
     }
   });
 
   // Remove the label instruction last.
   auto label = rm_block.GetLabelInst();
-  KillNamesAndDecorates(label);
   context()->KillInst(label);
 
   *bi = bi->Erase();

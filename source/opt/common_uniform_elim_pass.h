@@ -86,12 +86,6 @@ class CommonUniformElimPass : public Pass {
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
   // Delete inst if it has no uses. Assumes inst has a resultId.
   void DeleteIfUseless(ir::Instruction* inst);
 
@@ -177,9 +171,6 @@ class CommonUniformElimPass : public Pass {
 
   void Initialize(ir::IRContext* c);
   Pass::Status ProcessImpl();
-
-  // Decorations for the module we are processing
-  std::unique_ptr<analysis::DecorationManager> dec_mgr_;
 
   // Map from uniform variable id to its common load id
   std::unordered_map<uint32_t, uint32_t> uniform2load_id_;

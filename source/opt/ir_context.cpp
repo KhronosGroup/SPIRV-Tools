@@ -14,6 +14,7 @@
 
 #include "ir_context.h"
 #include "log.h"
+#include "mem_pass.h"
 
 namespace spvtools {
 namespace ir {
@@ -24,6 +25,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   }
   if (set & kAnalysisInstrToBlockMapping) {
     BuildInstrToBlockMapping();
+  }
+  if (set & kAnalysisDecorations) {
+    BuildDecorationManager();
   }
 }
 
@@ -40,6 +44,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   if (analyses_to_invalidate & kAnalysisInstrToBlockMapping) {
     instr_to_block_.clear();
   }
+  if (analyses_to_invalidate & kAnalysisDecorations) {
+    decoration_mgr_.reset(nullptr);
+  }
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
 
@@ -48,11 +55,21 @@ void IRContext::KillInst(ir::Instruction* inst) {
     return;
   }
 
+  KillNamesAndDecorates(inst);
+
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->ClearInst(inst);
   }
   if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     instr_to_block_.erase(inst);
+  }
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    if (inst->result_id() != 0) {
+      decoration_mgr_->RemoveDecorationsFrom(inst->result_id());
+    }
+    if (inst->IsDecoration()) {
+      decoration_mgr_->RemoveDecoration(inst);
+    }
   }
 
   inst->ToNop();
@@ -125,12 +142,45 @@ void spvtools::ir::IRContext::ForgetUses(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->EraseUseRecordsOfOperandIds(inst);
   }
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    if (inst->IsDecoration()) {
+      get_decoration_mgr()->RemoveDecoration(inst);
+    }
+  }
 }
 
 void IRContext::AnalyzeUses(Instruction* inst) {
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->AnalyzeInstUse(inst);
   }
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    if (inst->IsDecoration()) {
+      get_decoration_mgr()->AddDecoration(inst);
+    }
+  }
+}
+
+void IRContext::KillNamesAndDecorates(uint32_t id) {
+  std::vector<ir::Instruction*> decorations =
+      get_decoration_mgr()->GetDecorationsFor(id, true);
+
+  for (Instruction* inst : decorations) {
+    KillInst(inst);
+  }
+
+  for (auto& di : debugs2()) {
+    if (di.opcode() == SpvOpMemberName || di.opcode() == SpvOpName) {
+      if (di.GetSingleWordInOperand(0) == id) {
+        KillInst(&di);
+      }
+    }
+  }
+}
+
+void IRContext::KillNamesAndDecorates(Instruction* inst) {
+  const uint32_t rId = inst->result_id();
+  if (rId == 0) return;
+  KillNamesAndDecorates(rId);
 }
 
 }  // namespace ir

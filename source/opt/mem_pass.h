@@ -41,12 +41,6 @@ class MemPass : public Pass {
   virtual ~MemPass() = default;
 
  protected:
-  // Initialize basic data structures for the pass.
-  void InitializeProcessing(ir::IRContext* c) {
-    Pass::InitializeProcessing(c);
-    FindNamedOrDecoratedIds();
-  }
-
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
   bool IsBaseTargetType(const ir::Instruction* typeInst) const;
@@ -74,17 +68,8 @@ class MemPass : public Pass {
   // Return true if all uses of |id| are only name or decorate ops.
   bool HasOnlyNamesAndDecorates(uint32_t id) const;
 
-  // Kill all name and decorate ops using |inst|
-  void KillNamesAndDecorates(ir::Instruction* inst);
-
-  // Kill all name and decorate ops using |id|
-  void KillNamesAndDecorates(uint32_t id);
-
   // Kill all instructions in block |bp|.
   void KillAllInsts(ir::BasicBlock* bp);
-
-  // Collect all named or decorated ids in module
-  void FindNamedOrDecoratedIds();
 
   // Return true if any instruction loads from |varId|
   bool HasLoads(uint32_t varId) const;
@@ -207,8 +192,6 @@ class MemPass : public Pass {
   // |reachable_blocks|.
   void RemovePhiOperands(ir::Instruction* phi,
                          std::unordered_set<ir::BasicBlock*> reachable_blocks);
-  // named or decorated ids
-  std::unordered_set<uint32_t> named_or_decorated_ids_;
 
   // Map from block's label id to a map of a variable to its value at the
   // end of the block.

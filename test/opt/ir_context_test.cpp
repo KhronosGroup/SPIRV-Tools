@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <external/googletest/googlemock/include/gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 #include <algorithm>
 
@@ -25,6 +26,7 @@ namespace {
 using namespace spvtools;
 using ir::IRContext;
 using Analysis = IRContext::Analysis;
+using ::testing::Each;
 
 class DummyPassPreservesNothing : public opt::Pass {
  public:
@@ -135,7 +137,7 @@ TEST_F(IRContextTest, AllPreservedAfterPassWithChange) {
   }
 }
 
-TEST_F(IRContextTest, AllPreserveFirstOnlyAfterPassWithChange) {
+TEST_F(IRContextTest, PreserveFirstOnlyAfterPassWithChange) {
   std::unique_ptr<ir::Module> module = MakeUnique<ir::Module>();
   IRContext context(std::move(module), spvtools::MessageConsumer());
 
@@ -151,6 +153,50 @@ TEST_F(IRContextTest, AllPreserveFirstOnlyAfterPassWithChange) {
   for (Analysis i = IRContext::kAnalysisBegin << 1; i < IRContext::kAnalysisEnd;
        i <<= 1) {
     EXPECT_FALSE(context.AreAnalysesValid(i));
+  }
+}
+
+TEST_F(IRContextTest, KillMemberName) {
+  const std::string text = R"(
+              OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpName %3 "stuff"
+               OpMemberName %3 0 "refZ"
+               OpMemberDecorate %3 0 Offset 0
+               OpDecorate %3 Block
+          %4 = OpTypeFloat 32
+          %3 = OpTypeStruct %4
+          %5 = OpTypeVoid
+          %6 = OpTypeFunction %5
+          %2 = OpFunction %5 None %6
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<ir::Module> module =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+
+  // Build the decoration manager.
+  context.get_decoration_mgr();
+
+  // Delete the OpTypeStruct.  Should delete the OpName, OpMemberName, and
+  // OpMemberDecorate associated with it.
+  context.KillDef(3);
+
+  // Make sure all of the name are removed.
+  for (auto& inst : context.debugs2()) {
+    EXPECT_EQ(inst.opcode(), SpvOpNop);
+  }
+
+  // Make sure all of the decorations are removed.
+  for (auto& inst : context.annotations()) {
+    EXPECT_EQ(inst.opcode(), SpvOpNop);
   }
 }
 }  // anonymous namespace

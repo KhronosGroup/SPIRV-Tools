@@ -19,6 +19,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+#include <opcode.h>
 
 #include "operand.h"
 #include "util/ilist_node.h"
@@ -237,6 +238,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // this instruction.
   void ReplaceOperands(const std::vector<Operand>& new_operands);
 
+  // Returns true if the instruction annotates an id with a decoration.
+  inline bool IsDecoration();
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
@@ -397,6 +401,10 @@ inline bool Instruction::HasLabels() const {
       break;
   }
   return false;
+}
+
+bool Instruction::IsDecoration() {
+  return spvOpcodeIsDecoration(opcode());
 }
 
 }  // namespace ir

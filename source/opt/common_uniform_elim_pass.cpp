@@ -99,7 +99,7 @@ ir::Instruction* CommonUniformElimPass::GetPtr(ir::Instruction* ip,
 bool CommonUniformElimPass::IsVolatileStruct(uint32_t type_id) {
   assert(get_def_use_mgr()->GetDef(type_id)->opcode() == SpvOpTypeStruct);
   bool has_volatile_deco = false;
-  dec_mgr_->ForEachDecoration(type_id, SpvDecorationVolatile,
+  get_decoration_mgr()->ForEachDecoration(type_id, SpvDecorationVolatile,
                               [&has_volatile_deco](const ir::Instruction&) {
                                 has_volatile_deco = true;
                               });
@@ -195,33 +195,10 @@ bool CommonUniformElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   return true;
 }
 
-void CommonUniformElimPass::KillNamesAndDecorates(uint32_t id) {
-  // TODO(greg-lunarg): Remove id from any OpGroupDecorate and
-  // kill if no other operands.
-  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  if (uses == nullptr) return;
-  std::list<ir::Instruction*> killList;
-  for (auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    if (op != SpvOpName && !IsNonTypeDecorate(op)) continue;
-    killList.push_back(u.inst);
-  }
-  for (auto kip : killList) context()->KillInst(kip);
-}
-
-void CommonUniformElimPass::KillNamesAndDecorates(ir::Instruction* inst) {
-  // TODO(greg-lunarg): Remove inst from any OpGroupDecorate and
-  // kill if not other operands.
-  const uint32_t rId = inst->result_id();
-  if (rId == 0) return;
-  KillNamesAndDecorates(rId);
-}
-
 void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
   const uint32_t resId = inst->result_id();
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
-    KillNamesAndDecorates(resId);
     context()->KillInst(inst);
   }
 }
@@ -230,7 +207,7 @@ void CommonUniformElimPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst,
                                                  uint32_t replId,
                                                  ir::Instruction* ptrInst) {
   const uint32_t loadId = loadInst->result_id();
-  KillNamesAndDecorates(loadId);
+  context()->KillNamesAndDecorates(loadId);
   (void)context()->ReplaceAllUsesWith(loadId, replId);
   // remove load instruction
   context()->KillInst(loadInst);
@@ -490,7 +467,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
         ii = ii.InsertBefore(std::move(newExtract));
         for (auto instItr : idxItr.second) {
           uint32_t resId = instItr->result_id();
-          KillNamesAndDecorates(resId);
+          context()->KillNamesAndDecorates(resId);
           (void)context()->ReplaceAllUsesWith(resId, replId);
           context()->KillInst(instItr);
         }
@@ -516,7 +493,6 @@ void CommonUniformElimPass::Initialize(ir::IRContext* c) {
 
   // Clear collections.
   comp2idx2inst_.clear();
-  dec_mgr_.reset(new analysis::DecorationManager(get_module()));
 
   // Initialize extension whitelist
   InitExtensions();

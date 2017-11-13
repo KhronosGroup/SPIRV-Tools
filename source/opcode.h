@@ -87,4 +87,7 @@ bool spvOpcodeReturnsLogicalVariablePointer(const SpvOp opcode);
 // non-zero otherwise.
 int32_t spvOpcodeGeneratesType(SpvOp opcode);
 
+// Returns true if the opcode add a decoration to an id.
+bool spvOpcodeIsDecoration(const SpvOp opcode);
+
 #endif  // LIBSPIRV_OPCODE_H_

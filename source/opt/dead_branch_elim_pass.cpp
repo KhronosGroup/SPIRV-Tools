@@ -18,6 +18,7 @@
 
 #include "cfa.h"
 #include "iterator.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -307,7 +308,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         ++pii;
       }
       const uint32_t phiId = pii->result_id();
-      KillNamesAndDecorates(phiId);
+      context()->KillNamesAndDecorates(phiId);
       (void)context()->ReplaceAllUsesWith(phiId, replId);
       context()->KillInst(&*pii);
     }

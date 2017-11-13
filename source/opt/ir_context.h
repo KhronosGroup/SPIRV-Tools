@@ -15,9 +15,11 @@
 #ifndef SPIRV_TOOLS_IR_CONTEXT_H
 #define SPIRV_TOOLS_IR_CONTEXT_H
 
+#include "decoration_manager.h"
 #include "def_use_manager.h"
 #include "module.h"
 
+#include <algorithm>
 #include <iostream>
 
 namespace spvtools {
@@ -42,7 +44,8 @@ class IRContext {
     kAnalysisBegin = 1 << 0,
     kAnalysisDefUse = kAnalysisBegin,
     kAnalysisInstrToBlockMapping = 1 << 1,
-    kAnalysisEnd = 1 << 2
+    kAnalysisDecorations = 1 << 2,
+    kAnalysisEnd = 1 << 3
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -170,6 +173,15 @@ class IRContext {
     return (entry != instr_to_block_.end()) ? entry->second : nullptr;
   }
 
+  // Returns a pointer the decoration manager.  If the decoration manger is
+  // invalid, it is rebuilt first.
+  opt::analysis::DecorationManager* get_decoration_mgr() {
+    if (!AreAnalysesValid(kAnalysisDecorations)) {
+      BuildDecorationManager();
+    }
+    return decoration_mgr_.get();
+  };
+
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
   void SetMessageConsumer(spvtools::MessageConsumer c) {
@@ -221,6 +233,12 @@ class IRContext {
   // will be updated accordingly.
   void AnalyzeUses(Instruction* inst);
 
+  // Kill all name and decorate ops targeting |id|.
+  void KillNamesAndDecorates(uint32_t id);
+
+  // Kill all name and decorate ops targeting the result id of |inst|.
+  void KillNamesAndDecorates(ir::Instruction* inst);
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -241,9 +259,15 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisInstrToBlockMapping;
   }
 
+  void BuildDecorationManager() {
+    decoration_mgr_.reset(new opt::analysis::DecorationManager(module()));
+    valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
+  }
+
   std::unique_ptr<Module> module_;
   spvtools::MessageConsumer consumer_;
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;
+  std::unique_ptr<opt::analysis::DecorationManager> decoration_mgr_;
 
   // A map from instructions the the basic block they belong to. This mapping is
   // built on-demand when get_instr_block() is called.
@@ -428,6 +452,9 @@ void IRContext::AddDebug3Inst(std::unique_ptr<Instruction>&& d) {
 }
 
 void IRContext::AddAnnotationInst(std::unique_ptr<Instruction>&& a) {
+  if (AreAnalysesValid(kAnalysisDecorations)) {
+    get_decoration_mgr()->AddDecoration(a.get());
+  }
   module()->AddAnnotationInst(std::move(a));
 }
 
