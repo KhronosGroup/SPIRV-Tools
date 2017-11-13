@@ -24,6 +24,11 @@ clone_depth: 5
 
 matrix:
   fast_finish: true # Show final status immediately if a test fails.
+  exclude:
+    - os: Visual Studio 2013
+      configuration: Debug
+    - os: Visual Studio 2015
+      configuration: Debug
 
 # scripts that run after cloning repository
 install:
