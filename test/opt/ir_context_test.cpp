@@ -41,7 +41,7 @@ class DummyPassPreservesAll : public opt::Pass {
   Status Process(IRContext*) override { return status_to_return_; }
   Status status_to_return_;
   virtual Analysis GetPreservedAnalyses() override {
-    return Analysis(static_cast<uint32_t>(IRContext::kAnalysisEnd) - 1);
+    return Analysis(IRContext::kAnalysisEnd - 1);
   }
 };
 
@@ -144,7 +144,7 @@ TEST_F(IRContextTest, AllPreserveFirstOnlyAfterPassWithChange) {
     context.BuildInvalidAnalyses(i);
   }
 
-  DummyPassPreservesAll pass(opt::Pass::Status::SuccessWithChange);
+  DummyPassPreservesFirst pass(opt::Pass::Status::SuccessWithChange);
   opt::Pass::Status s = pass.Run(&context);
   EXPECT_EQ(s, opt::Pass::Status::SuccessWithChange);
   EXPECT_TRUE(context.AreAnalysesValid(IRContext::kAnalysisBegin));

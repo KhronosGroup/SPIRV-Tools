@@ -32,17 +32,17 @@ class IRContext {
   // 1. Enum values should be powers of 2. These are cast into uint32_t
   //    bitmasks, so we can have at most 31 analyses represented.
   //
-  // 2. Make sure it gets invalidated by IRContext methods that add or remove IR
-  //    elements (e.g., KillDef, KillInst, ReplaceAllUsesWith).
+  // 2. Make sure it gets invalidated or preserved by IRContext methods that add
+  //    or remove IR elements (e.g., KillDef, KillInst, ReplaceAllUsesWith).
   //
-  // 4. Add handling code in BuildInvalidAnalyses and
+  // 3. Add handling code in BuildInvalidAnalyses and
   //    InvalidateAnalysesExceptFor.
   enum Analysis {
     kAnalysisNone = 0 << 0,
     kAnalysisBegin = 1 << 0,
     kAnalysisDefUse = kAnalysisBegin,
     kAnalysisInstrToBlockMapping = 1 << 1,
-    kAnalysisEnd = kAnalysisInstrToBlockMapping
+    kAnalysisEnd = 1 << 2
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);

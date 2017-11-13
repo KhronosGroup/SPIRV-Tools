@@ -50,7 +50,8 @@ void IRContext::KillInst(ir::Instruction* inst) {
 
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->ClearInst(inst);
-  } else if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+  }
+  if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     instr_to_block_.erase(inst);
   }
 
