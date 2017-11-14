@@ -36,16 +36,15 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
-    if (analysis::UseList* uses =
-            irContext->get_def_use_mgr()->GetUses(const_id)) {
-      count =
-          std::count_if(uses->begin(), uses->end(), [](const analysis::Use& u) {
-            return !(ir::IsAnnotationInst(u.inst->opcode()) ||
-                     ir::IsDebug1Inst(u.inst->opcode()) ||
-                     ir::IsDebug2Inst(u.inst->opcode()) ||
-                     ir::IsDebug3Inst(u.inst->opcode()));
-          });
-    }
+    irContext->get_def_use_mgr()->ForEachUse(
+        const_id, [&count](ir::Instruction* user, uint32_t index) {
+          (void)index;
+          SpvOp op = user->opcode();
+          if (!(ir::IsAnnotationInst(op) || ir::IsDebug1Inst(op) ||
+                ir::IsDebug2Inst(op) || ir::IsDebug3Inst(op))) {
+            ++count;
+          }
+        });
     use_counts[c] = count;
     if (!count) {
       working_list.insert(c);
@@ -96,17 +95,15 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   // constants.
   std::unordered_set<ir::Instruction*> dead_others;
   for (auto* dc : dead_consts) {
-    if (analysis::UseList* uses =
-            irContext->get_def_use_mgr()->GetUses(dc->result_id())) {
-      for (const auto& u : *uses) {
-        if (ir::IsAnnotationInst(u.inst->opcode()) ||
-            ir::IsDebug1Inst(u.inst->opcode()) ||
-            ir::IsDebug2Inst(u.inst->opcode()) ||
-            ir::IsDebug3Inst(u.inst->opcode())) {
-          dead_others.insert(u.inst);
-        }
+    irContext->get_def_use_mgr()->ForEachUser(dc, [&dead_others](ir::Instruction* user) {
+      SpvOp op = user->opcode();
+      if (ir::IsAnnotationInst(op) ||
+          ir::IsDebug1Inst(op) ||
+          ir::IsDebug2Inst(op) ||
+          ir::IsDebug3Inst(op)) {
+        dead_others.insert(user);
       }
-    }
+    });
   }
 
   // Turn all dead instructions and uses of them to nop
@@ -114,7 +111,7 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
     irContext->KillDef(dc->result_id());
   }
   for (auto* da : dead_others) {
-    da->ToNop();
+    irContext->KillInst(da);
   }
   return dead_consts.empty() ? Status::SuccessWithoutChange
                              : Status::SuccessWithChange;

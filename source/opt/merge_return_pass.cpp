@@ -58,19 +58,25 @@ bool MergeReturnPass::MergeReturnBlocks(
     return false;
   }
 
+  std::vector<ir::Instruction*> uses_to_update;
+
   // Create a label for the new return block
   std::unique_ptr<ir::Instruction> returnLabel(
       new ir::Instruction(context(), SpvOpLabel, 0u, TakeNextId(), {}));
   uint32_t returnId = returnLabel->result_id();
 
-  // Create the new basic block
+  // Create the new basic block.
   std::unique_ptr<ir::BasicBlock> returnBlock(
       new ir::BasicBlock(std::move(returnLabel)));
   function->AddBasicBlock(std::move(returnBlock));
   ir::Function::iterator retBlockIter = --function->end();
 
-  // Create the PHI for the merged block (if necessary)
-  // Create new return
+  // Register the definition of the return and mark it to update its uses.
+  get_def_use_mgr()->AnalyzeInstDef(retBlockIter->GetLabelInst());
+  uses_to_update.push_back(retBlockIter->GetLabelInst());
+
+  // Create the PHI for the merged block (if necessary).
+  // Create new return.
   std::vector<ir::Operand> phiOps;
   for (auto block : returnBlocks) {
     if (block->tail()->opcode() == SpvOpReturnValue) {
@@ -95,8 +101,10 @@ bool MergeReturnPass::MergeReturnBlocks(
     retBlockIter->AddInstruction(std::move(returnInst));
     ir::BasicBlock::iterator ret = retBlockIter->tail();
 
-    get_def_use_mgr()->AnalyzeInstDefUse(&*phiIter);
-    get_def_use_mgr()->AnalyzeInstDef(&*ret);
+    // Register the phi def and mark instructions for use updates.
+    get_def_use_mgr()->AnalyzeInstDef(&*phiIter);
+    uses_to_update.push_back(&*ret);
+    uses_to_update.push_back(&*phiIter);
   } else {
     std::unique_ptr<ir::Instruction> returnInst(
         new ir::Instruction(context(), SpvOpReturn));
@@ -108,11 +116,13 @@ bool MergeReturnPass::MergeReturnBlocks(
     context()->KillInst(&*block->tail());
     block->tail()->SetOpcode(SpvOpBranch);
     block->tail()->ReplaceOperands({{SPV_OPERAND_TYPE_ID, {returnId}}});
-    get_def_use_mgr()->AnalyzeInstUse(&*block->tail());
-    get_def_use_mgr()->AnalyzeInstUse(block->GetLabelInst());
+    uses_to_update.push_back(&*block->tail());
+    uses_to_update.push_back(block->GetLabelInst());
   }
 
-  get_def_use_mgr()->AnalyzeInstDefUse(retBlockIter->GetLabelInst());
+  for (auto& inst : uses_to_update) {
+    context()->AnalyzeUses(inst);
+  }
 
   return true;
 }

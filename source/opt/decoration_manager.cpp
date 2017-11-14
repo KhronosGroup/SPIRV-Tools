@@ -264,8 +264,9 @@ void DecorationManager::CloneDecorations(
         std::unique_ptr<ir::Instruction> new_inst(inst->Clone(module_->context()));
         new_inst->SetInOperand(0, {to});
         id_to_decoration_insts_[to].push_back(new_inst.get());
-        f(*new_inst, true);
         module_->AddAnnotationInst(std::move(new_inst));
+        auto decoration_iter = --module_->annotation_end();
+        f(*decoration_iter, true);
         break;
       }
       default:

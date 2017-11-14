@@ -23,27 +23,25 @@ namespace spvtools {
 namespace opt {
 
 bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
-  const analysis::UseList* uses = get_def_use_mgr()->GetUses(labId);
   int rcnt = 0;
-  for (const auto u : *uses) {
-    // Don't count OpName
-    if (u.inst->opcode() == SpvOpName) continue;
-    if (rcnt == 1) return true;
-    ++rcnt;
-  }
-  return false;
+  get_def_use_mgr()->ForEachUser(
+      labId, [&rcnt](ir::Instruction* user) {
+        if (user->opcode() != SpvOpName) {
+          ++rcnt;
+        }
+      });
+  return rcnt > 1;
 }
 
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
-  const uint32_t id = inst->result_id();
-  if (id != 0) {
-    analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-    if (uses != nullptr)
-      for (auto u : *uses)
-        if (u.inst->opcode() == SpvOpName) {
-          context()->KillInst(u.inst);
-          break;
-        }
+  std::vector<ir::Instruction*> to_kill;
+  get_def_use_mgr()->ForEachUser(inst, [&to_kill](ir::Instruction* user) {
+    if (user->opcode() == SpvOpName) {
+      to_kill.push_back(user);
+    }
+  });
+  for (auto i: to_kill) {
+    context()->KillInst(i);
   }
   context()->KillInst(inst);
 }

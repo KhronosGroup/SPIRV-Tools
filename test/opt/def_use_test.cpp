@@ -33,6 +33,27 @@ using ::testing::UnorderedElementsAreArray;
 using namespace spvtools;
 using spvtools::opt::analysis::DefUseManager;
 
+// Returns the number of uses of |id|.
+uint32_t NumUses(const std::unique_ptr<ir::IRContext> &context, uint32_t id) {
+  uint32_t count = 0;
+  context->get_def_use_mgr()->ForEachUse(id, [&count](ir::Instruction*, uint32_t) {
+    ++count;
+  });
+  return count;
+}
+
+// Returns the opcode of each use of |id|.
+//
+// If |id| is used multiple times in a single instruction, that instruction's
+// opcode will appear a corresponding number of times.
+std::vector<SpvOp> GetUseOpcodes(const std::unique_ptr<ir::IRContext> &context, uint32_t id) {
+  std::vector<SpvOp> opcodes;
+  context->get_def_use_mgr()->ForEachUse(id, [&opcodes](ir::Instruction* user, uint32_t) {
+    opcodes.push_back(user->opcode());
+  });
+  return opcodes;
+}
+
 // Disassembles the given |inst| and returns the disassembly.
 std::string DisassembleInst(ir::Instruction* inst) {
   SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
@@ -71,12 +92,39 @@ void CheckDef(const InstDefUse& expected_defs_uses,
     const auto id = expected_defs_uses.defs[i].first;
     const auto expected_def = expected_defs_uses.defs[i].second;
     ASSERT_EQ(1u, actual_defs.count(id)) << "expected to def id [" << id << "]";
-    EXPECT_EQ(expected_def, DisassembleInst(actual_defs.at(id)));
+    auto def = actual_defs.at(id);
+    if (def->opcode() != SpvOpConstant) {
+      // Constants don't disassemble properly without a full context.
+      EXPECT_EQ(expected_def, DisassembleInst(actual_defs.at(id)));
+    }
   }
 }
 
+using UserMap = std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
+
+// Creates a mapping of all definitions to their users (except OpConstant).
+//
+// OpConstants are skipped because they cannot be disassembled in isolation.
+UserMap BuildAllUsers(const DefUseManager* mgr, uint32_t idBound) {
+  UserMap userMap;
+  for (uint32_t id = 0; id != idBound; ++id) {
+    if (mgr->GetDef(id)) {
+      mgr->ForEachUser(id, [id,&userMap](ir::Instruction* user) {
+        if (user->opcode() != SpvOpConstant) {
+          userMap[id].push_back(user);
+        }
+      });
+    }
+  }
+  return userMap;
+}
+
+// Constants don't disassemble properly without a full context, so skip them as
+// checks.
 void CheckUse(const InstDefUse& expected_defs_uses,
-              const DefUseManager::IdToUsesMap& actual_uses) {
+              const DefUseManager* mgr,
+              uint32_t idBound) {
+  UserMap actual_uses = BuildAllUsers(mgr, idBound);
   // Check uses.
   ASSERT_EQ(expected_defs_uses.uses.size(), actual_uses.size());
   for (uint32_t i = 0; i < expected_defs_uses.uses.size(); ++i) {
@@ -92,7 +140,7 @@ void CheckUse(const InstDefUse& expected_defs_uses,
 
     std::vector<std::string> actual_uses_disassembled;
     for (const auto actual_use : uses) {
-      actual_uses_disassembled.emplace_back(DisassembleInst(actual_use.inst));
+      actual_uses_disassembled.emplace_back(DisassembleInst(actual_use));
     }
     EXPECT_THAT(actual_uses_disassembled,
                 UnorderedElementsAreArray(expected_uses));
@@ -103,6 +151,14 @@ void CheckUse(const InstDefUse& expected_defs_uses,
 // But, yeah, it's not very readable. However, we only care about the id
 // defs and uses. So, no need to make sure this is valid OpPhi construct.
 const char kOpPhiTestFunction[] =
+    " %1 = OpTypeVoid "
+    " %6 = OpTypeInt 32 0 "
+    "%10 = OpTypeFloat 32 "
+    "%16 = OpTypeBool "
+    " %3 = OpTypeFunction %1 "
+    " %8 = OpConstant %6 0 "
+    "%18 = OpConstant %6 1 "
+    "%12 = OpConstant %10 1.0 "
     " %2 = OpFunction %1 None %3 "
     " %4 = OpLabel "
     "      OpBranch %5 "
@@ -110,8 +166,8 @@ const char kOpPhiTestFunction[] =
     " %5 = OpLabel "
     " %7 = OpPhi %6 %8 %4 %9 %5 "
     "%11 = OpPhi %10 %12 %4 %13 %5 "
-    " %9 = OpIAdd %6 %7 %14 "
-    "%13 = OpFAdd %10 %11 %15 "
+    " %9 = OpIAdd %6 %7 %8 "
+    "%13 = OpFAdd %10 %11 %12 "
     "%17 = OpSLessThan %16 %7 %18 "
     "      OpLoopMerge %19 %5 None "
     "      OpBranchConditional %17 %5 %19 "
@@ -133,14 +189,15 @@ TEST_P(ParseDefUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.text};
   std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text),
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Analyze def and use.
   opt::analysis::DefUseManager manager(context->module());
 
   CheckDef(tc.du, manager.id_to_defs());
-  CheckUse(tc.du, manager.id_to_uses());
+  CheckUse(tc.du, &manager, context->module()->IdBound());
 }
 
 // clang-format off
@@ -167,28 +224,6 @@ INSTANTIATE_TEST_CASE_P(
               {3, "%3 = OpTypeVoid"},
             },
             {} // uses
-          }
-        },
-        { // single use, no def
-          "OpTypeForwardPointer %1 Input",
-          {
-            {}, // defs
-            {   // uses
-              {1, {"OpTypeForwardPointer %1 Input"}},
-            }
-          }
-        },
-        { // multiple use, no def
-          "OpEntryPoint Fragment %1 \"main\" "
-          "OpTypeForwardPointer %2 Input "
-          "OpTypeForwardPointer %3 Output",
-          {
-            {}, // defs
-            {   // uses
-              {1, {"OpEntryPoint Fragment %1 \"main\""}},
-              {2, {"OpTypeForwardPointer %2 Input"}},
-              {3, {"OpTypeForwardPointer %3 Output"}},
-            }
           }
         },
         { // multiple def, multiple use
@@ -231,42 +266,55 @@ INSTANTIATE_TEST_CASE_P(
           }
         },
         { // labels
-          "%2 = OpFunction %1 None %3 "
-
-          "%4 = OpLabel "
-          "OpBranchConditional %5 %6 %7 "
+          "%1 = OpTypeVoid "
+          "%2 = OpTypeBool "
+          "%3 = OpTypeFunction %1 "
+          "%4 = OpConstantTrue %2 "
+          "%5 = OpFunction %1 None %3 "
 
           "%6 = OpLabel "
-          "OpBranch %7 "
+          "OpBranchConditional %4 %7 %8 "
 
           "%7 = OpLabel "
+          "OpBranch %7 "
+
+          "%8 = OpLabel "
           "OpReturn "
 
           "OpFunctionEnd",
           {
             { // defs
-              {2, "%2 = OpFunction %1 None %3"},
-              {4, "%4 = OpLabel"},
+              {1, "%1 = OpTypeVoid"},
+              {2, "%2 = OpTypeBool"},
+              {3, "%3 = OpTypeFunction %1"},
+              {4, "%4 = OpConstantTrue %2"},
+              {5, "%5 = OpFunction %1 None %3"},
               {6, "%6 = OpLabel"},
               {7, "%7 = OpLabel"},
+              {8, "%8 = OpLabel"},
             },
             { // uses
-              {1, {"%2 = OpFunction %1 None %3"}},
-              {3, {"%2 = OpFunction %1 None %3"}},
-              {5, {"OpBranchConditional %5 %6 %7"}},
-              {6, {"OpBranchConditional %5 %6 %7"}},
+              {1, {
+                    "%3 = OpTypeFunction %1",
+                    "%5 = OpFunction %1 None %3",
+                  }
+              },
+              {2, {"%4 = OpConstantTrue %2"}},
+              {3, {"%5 = OpFunction %1 None %3"}},
+              {4, {"OpBranchConditional %4 %7 %8"}},
               {7,
                 {
-                  "OpBranchConditional %5 %6 %7",
+                  "OpBranchConditional %4 %7 %8",
                   "OpBranch %7",
                 }
               },
+              {8, {"OpBranchConditional %4 %7 %8"}},
             }
           }
         },
         { // cross function
           "%1 = OpTypeBool "
-
+          "%3 = OpTypeFunction %1 "
           "%2 = OpFunction %1 None %3 "
 
           "%4 = OpLabel "
@@ -279,6 +327,7 @@ INSTANTIATE_TEST_CASE_P(
             { // defs
               {1, "%1 = OpTypeBool"},
               {2, "%2 = OpFunction %1 None %3"},
+              {3, "%3 = OpTypeFunction %1"},
               {4, "%4 = OpLabel"},
               {5, "%5 = OpVariable %1 Function"},
               {6, "%6 = OpFunctionCall %1 %2 %5"},
@@ -287,18 +336,23 @@ INSTANTIATE_TEST_CASE_P(
               {1,
                 {
                   "%2 = OpFunction %1 None %3",
+                  "%3 = OpTypeFunction %1",
                   "%5 = OpVariable %1 Function",
                   "%6 = OpFunctionCall %1 %2 %5",
                 }
               },
               {2, {"%6 = OpFunctionCall %1 %2 %5"}},
-              {5, {"%6 = OpFunctionCall %1 %2 %5"}},
               {3, {"%2 = OpFunction %1 None %3"}},
+              {5, {"%6 = OpFunctionCall %1 %2 %5"}},
               {6, {"OpReturnValue %6"}},
             }
           }
         },
         { // selection merge and loop merge
+          "%1 = OpTypeVoid "
+          "%3 = OpTypeFunction %1 "
+          "%10 = OpTypeBool "
+          "%8 = OpConstantTrue %10 "
           "%2 = OpFunction %1 None %3 "
 
           "%4 = OpLabel "
@@ -321,15 +375,24 @@ INSTANTIATE_TEST_CASE_P(
           "OpFunctionEnd",
           {
             { // defs
+              {1, "%1 = OpTypeVoid"},
               {2, "%2 = OpFunction %1 None %3"},
+              {3, "%3 = OpTypeFunction %1"},
               {4, "%4 = OpLabel"},
               {5, "%5 = OpLabel"},
               {6, "%6 = OpLabel"},
               {7, "%7 = OpLabel"},
+              {8, "%8 = OpConstantTrue %10"},
               {9, "%9 = OpLabel"},
+              {10, "%10 = OpTypeBool"},
             },
             { // uses
-              {1, {"%2 = OpFunction %1 None %3"}},
+              {1,
+                {
+                  "%2 = OpFunction %1 None %3",
+                  "%3 = OpTypeFunction %1",
+                }
+              },
               {3, {"%2 = OpFunction %1 None %3"}},
               {4, {"OpLoopMerge %5 %4 None"}},
               {5, {"OpLoopMerge %5 %4 None"}},
@@ -342,6 +405,7 @@ INSTANTIATE_TEST_CASE_P(
               },
               {8, {"OpBranchConditional %8 %9 %7"}},
               {9, {"OpBranchConditional %8 %9 %7"}},
+              {10, {"%8 = OpConstantTrue %10"}},
             }
           }
         },
@@ -373,18 +437,31 @@ INSTANTIATE_TEST_CASE_P(
           kOpPhiTestFunction,
           {
             { // defs
+              {1, "%1 = OpTypeVoid"},
               {2, "%2 = OpFunction %1 None %3"},
+              {3, "%3 = OpTypeFunction %1"},
               {4, "%4 = OpLabel"},
               {5, "%5 = OpLabel"},
+              {6, "%6 = OpTypeInt 32 0"},
               {7, "%7 = OpPhi %6 %8 %4 %9 %5"},
-              {9, "%9 = OpIAdd %6 %7 %14"},
+              {8, "%8 = OpConstant %6 0"},
+              {9, "%9 = OpIAdd %6 %7 %8"},
+              {10, "%10 = OpTypeFloat 32"},
               {11, "%11 = OpPhi %10 %12 %4 %13 %5"},
-              {13, "%13 = OpFAdd %10 %11 %15"},
+              {12, "%12 = OpConstant %10 1.0"},
+              {13, "%13 = OpFAdd %10 %11 %12"},
+              {16, "%16 = OpTypeBool"},
               {17, "%17 = OpSLessThan %16 %7 %18"},
+              {18, "%18 = OpConstant %6 1"},
               {19, "%19 = OpLabel"},
             },
             { // uses
-              {1, {"%2 = OpFunction %1 None %3"}},
+              {1,
+                {
+                  "%2 = OpFunction %1 None %3",
+                  "%3 = OpTypeFunction %1",
+                }
+              },
               {3, {"%2 = OpFunction %1 None %3"}},
               {4,
                 {
@@ -403,29 +480,41 @@ INSTANTIATE_TEST_CASE_P(
               },
               {6,
                 {
+                  // Can't check constants properly
+                  //"%8 = OpConstant %6 0",
+                  //"%18 = OpConstant %6 1",
                   "%7 = OpPhi %6 %8 %4 %9 %5",
-                  "%9 = OpIAdd %6 %7 %14",
+                  "%9 = OpIAdd %6 %7 %8",
                 }
               },
               {7,
                 {
-                  "%9 = OpIAdd %6 %7 %14",
+                  "%9 = OpIAdd %6 %7 %8",
                   "%17 = OpSLessThan %16 %7 %18",
                 }
               },
-              {8, {"%7 = OpPhi %6 %8 %4 %9 %5"}},
+              {8,
+                {
+                  "%7 = OpPhi %6 %8 %4 %9 %5",
+                  "%9 = OpIAdd %6 %7 %8",
+                }
+              },
               {9, {"%7 = OpPhi %6 %8 %4 %9 %5"}},
               {10,
                 {
+                  //"%12 = OpConstant %10 1.0",
                   "%11 = OpPhi %10 %12 %4 %13 %5",
-                  "%13 = OpFAdd %10 %11 %15",
+                  "%13 = OpFAdd %10 %11 %12",
                 }
               },
-              {11, {"%13 = OpFAdd %10 %11 %15"}},
-              {12, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
+              {11, {"%13 = OpFAdd %10 %11 %12"}},
+              {12,
+                {
+                  "%11 = OpPhi %10 %12 %4 %13 %5",
+                  "%13 = OpFAdd %10 %11 %12",
+                }
+              },
               {13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
-              {14, {"%9 = OpIAdd %6 %7 %14"}},
-              {15, {"%13 = OpFAdd %10 %11 %15"}},
               {16, {"%17 = OpSLessThan %16 %7 %18"}},
               {17, {"OpBranchConditional %17 %5 %19"}},
               {18, {"%17 = OpSLessThan %16 %7 %18"}},
@@ -440,9 +529,9 @@ INSTANTIATE_TEST_CASE_P(
         },
         { // OpPhi defining and referencing the same id.
           "%1 = OpTypeBool "
+          "%3 = OpTypeFunction %1 "
           "%2 = OpConstantTrue %1 "
-
-          "%4 = OpFunction %3 None %5 "
+          "%4 = OpFunction %1 None %3 "
           "%6 = OpLabel "
           "     OpBranch %7 "
           "%7 = OpLabel "
@@ -453,7 +542,8 @@ INSTANTIATE_TEST_CASE_P(
             { // defs
               {1, "%1 = OpTypeBool"},
               {2, "%2 = OpConstantTrue %1"},
-              {4, "%4 = OpFunction %3 None %5"},
+              {3, "%3 = OpTypeFunction %1"},
+              {4, "%4 = OpFunction %1 None %3"},
               {6, "%6 = OpLabel"},
               {7, "%7 = OpLabel"},
               {8, "%8 = OpPhi %1 %8 %7 %2 %6"},
@@ -462,12 +552,13 @@ INSTANTIATE_TEST_CASE_P(
               {1,
                 {
                   "%2 = OpConstantTrue %1",
+                  "%3 = OpTypeFunction %1",
+                  "%4 = OpFunction %1 None %3",
                   "%8 = OpPhi %1 %8 %7 %2 %6",
                 }
               },
               {2, {"%8 = OpPhi %1 %8 %7 %2 %6"}},
-              {3, {"%4 = OpFunction %3 None %5"}},
-              {5, {"%4 = OpFunction %3 None %5"}},
+              {3, {"%4 = OpFunction %1 None %3"}},
               {6, {"%8 = OpPhi %1 %8 %7 %2 %6"}},
               {7,
                 {
@@ -514,7 +605,8 @@ TEST_P(ReplaceUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text),
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.
@@ -528,7 +620,7 @@ TEST_P(ReplaceUseTest, Case) {
 
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
+  CheckUse(tc.du, context->get_def_use_mgr(), context->module()->IdBound());
 }
 
 // clang-format off
@@ -538,22 +630,19 @@ INSTANTIATE_TEST_CASE_P(
       { // no use, no replace request
         "", {}, "", {},
       },
-      { // no use, some replace requests
-        "OpMemoryModel Logical GLSL450",
-        {{1, 2}, {3, 4}, {7, 8}, {7, 9}, {7, 10}, {2, 10}, {3, 10}},
-        "OpMemoryModel Logical GLSL450",
-        {},
-      },
       { // replace one use
         "%1 = OpTypeBool "
-        "%2 = OpTypeVector %1 3",
+        "%2 = OpTypeVector %1 3 "
+        "%3 = OpTypeInt 32 0 ",
         {{1, 3}},
         "%1 = OpTypeBool\n"
-        "%2 = OpTypeVector %3 3",
+        "%2 = OpTypeVector %3 3\n"
+        "%3 = OpTypeInt 32 0",
         {
           { // defs
             {1, "%1 = OpTypeBool"},
             {2, "%2 = OpTypeVector %3 3"},
+            {3, "%3 = OpTypeInt 32 0"},
           },
           { // uses
             {3, {"%2 = OpTypeVector %3 3"}},
@@ -562,14 +651,17 @@ INSTANTIATE_TEST_CASE_P(
       },
       { // replace and then replace back
         "%1 = OpTypeBool "
-        "%2 = OpTypeVector %1 3",
+        "%2 = OpTypeVector %1 3 "
+        "%3 = OpTypeInt 32 0",
         {{1, 3}, {3, 1}},
         "%1 = OpTypeBool\n"
-        "%2 = OpTypeVector %1 3",
+        "%2 = OpTypeVector %1 3\n"
+        "%3 = OpTypeInt 32 0",
         {
           { // defs
             {1, "%1 = OpTypeBool"},
             {2, "%2 = OpTypeVector %1 3"},
+            {3, "%3 = OpTypeInt 32 0"},
           },
           { // uses
             {1, {"%2 = OpTypeVector %1 3"}},
@@ -594,17 +686,23 @@ INSTANTIATE_TEST_CASE_P(
       },
       { // replace in sequence
         "%1 = OpTypeBool "
-        "%2 = OpTypeVector %1 3",
-        {{1, 3}, {3, 4}, {4, 5}, {5, 100}},
+        "%2 = OpTypeVector %1 3 "
+        "%3 = OpTypeInt 32 0 "
+        "%4 = OpTypeInt 32 1 ",
+        {{1, 3}, {3, 4}},
         "%1 = OpTypeBool\n"
-        "%2 = OpTypeVector %100 3",
+        "%2 = OpTypeVector %4 3\n"
+        "%3 = OpTypeInt 32 0\n"
+        "%4 = OpTypeInt 32 1",
         {
           { // defs
             {1, "%1 = OpTypeBool"},
-            {2, "%2 = OpTypeVector %100 3"},
+            {2, "%2 = OpTypeVector %4 3"},
+            {3, "%3 = OpTypeInt 32 0"},
+            {4, "%4 = OpTypeInt 32 1"},
           },
           { // uses
-            {100, {"%2 = OpTypeVector %100 3"}},
+            {4, {"%2 = OpTypeVector %4 3"}},
           },
         },
       },
@@ -615,52 +713,69 @@ INSTANTIATE_TEST_CASE_P(
         "%4 = OpTypeVector %1 4 "
         "%5 = OpTypeMatrix %2 2 "
         "%6 = OpTypeMatrix %3 3 "
-        "%7 = OpTypeMatrix %4 4",
-        {{1, 10}, {2, 20}, {4, 40}},
+        "%7 = OpTypeMatrix %4 4 "
+        "%8 = OpTypeInt 32 0 "
+        "%9 = OpTypeInt 32 1 "
+        "%10 = OpTypeInt 64 0",
+        {{1, 8}, {2, 9}, {4, 10}},
         "%1 = OpTypeBool\n"
-        "%2 = OpTypeVector %10 2\n"
-        "%3 = OpTypeVector %10 3\n"
-        "%4 = OpTypeVector %10 4\n"
-        "%5 = OpTypeMatrix %20 2\n"
+        "%2 = OpTypeVector %8 2\n"
+        "%3 = OpTypeVector %8 3\n"
+        "%4 = OpTypeVector %8 4\n"
+        "%5 = OpTypeMatrix %9 2\n"
         "%6 = OpTypeMatrix %3 3\n"
-        "%7 = OpTypeMatrix %40 4",
+        "%7 = OpTypeMatrix %10 4\n"
+        "%8 = OpTypeInt 32 0\n"
+        "%9 = OpTypeInt 32 1\n"
+        "%10 = OpTypeInt 64 0",
         {
           { // defs
             {1, "%1 = OpTypeBool"},
-            {2, "%2 = OpTypeVector %10 2"},
-            {3, "%3 = OpTypeVector %10 3"},
-            {4, "%4 = OpTypeVector %10 4"},
-            {5, "%5 = OpTypeMatrix %20 2"},
+            {2, "%2 = OpTypeVector %8 2"},
+            {3, "%3 = OpTypeVector %8 3"},
+            {4, "%4 = OpTypeVector %8 4"},
+            {5, "%5 = OpTypeMatrix %9 2"},
             {6, "%6 = OpTypeMatrix %3 3"},
-            {7, "%7 = OpTypeMatrix %40 4"},
+            {7, "%7 = OpTypeMatrix %10 4"},
+            {8, "%8 = OpTypeInt 32 0"},
+            {9, "%9 = OpTypeInt 32 1"},
+            {10, "%10 = OpTypeInt 64 0"},
           },
           { // uses
-            {10,
+            {8,
               {
-                "%2 = OpTypeVector %10 2",
-                "%3 = OpTypeVector %10 3",
-                "%4 = OpTypeVector %10 4",
+                "%2 = OpTypeVector %8 2",
+                "%3 = OpTypeVector %8 3",
+                "%4 = OpTypeVector %8 4",
               }
             },
-            {20, {"%5 = OpTypeMatrix %20 2"}},
+            {9, {"%5 = OpTypeMatrix %9 2"}},
             {3, {"%6 = OpTypeMatrix %3 3"}},
-            {40, {"%7 = OpTypeMatrix %40 4"}},
+            {10, {"%7 = OpTypeMatrix %10 4"}},
           },
         },
       },
       { // OpPhi.
         kOpPhiTestFunction,
         // replace one id used by OpPhi, replace one id generated by OpPhi
-        {{9, 9000}, {11, 9}},
+        {{9, 13}, {11, 9}},
+         "%1 = OpTypeVoid\n"
+         "%6 = OpTypeInt 32 0\n"
+         "%10 = OpTypeFloat 32\n"
+         "%16 = OpTypeBool\n"
+         "%3 = OpTypeFunction %1\n"
+         "%8 = OpConstant %6 0\n"
+         "%18 = OpConstant %6 1\n"
+         "%12 = OpConstant %10 1\n"
          "%2 = OpFunction %1 None %3\n"
          "%4 = OpLabel\n"
                "OpBranch %5\n"
 
          "%5 = OpLabel\n"
-         "%7 = OpPhi %6 %8 %4 %9000 %5\n" // %9 -> %9000
+         "%7 = OpPhi %6 %8 %4 %13 %5\n" // %9 -> %13
         "%11 = OpPhi %10 %12 %4 %13 %5\n"
-         "%9 = OpIAdd %6 %7 %14\n"
-        "%13 = OpFAdd %10 %9 %15\n"       // %11 -> %9
+         "%9 = OpIAdd %6 %7 %8\n"
+        "%13 = OpFAdd %10 %9 %12\n"       // %11 -> %9
         "%17 = OpSLessThan %16 %7 %18\n"
               "OpLoopMerge %19 %5 None\n"
               "OpBranchConditional %17 %5 %19\n"
@@ -670,29 +785,42 @@ INSTANTIATE_TEST_CASE_P(
               "OpFunctionEnd",
         {
           { // defs.
+            {1, "%1 = OpTypeVoid"},
             {2, "%2 = OpFunction %1 None %3"},
+            {3, "%3 = OpTypeFunction %1"},
             {4, "%4 = OpLabel"},
             {5, "%5 = OpLabel"},
-            {7, "%7 = OpPhi %6 %8 %4 %9000 %5"},
-            {9, "%9 = OpIAdd %6 %7 %14"},
+            {6, "%6 = OpTypeInt 32 0"},
+            {7, "%7 = OpPhi %6 %8 %4 %13 %5"},
+            {8, "%8 = OpConstant %6 0"},
+            {9, "%9 = OpIAdd %6 %7 %8"},
+            {10, "%10 = OpTypeFloat 32"},
             {11, "%11 = OpPhi %10 %12 %4 %13 %5"},
-            {13, "%13 = OpFAdd %10 %9 %15"},
+            {12, "%12 = OpConstant %10 1.0"},
+            {13, "%13 = OpFAdd %10 %9 %12"},
+            {16, "%16 = OpTypeBool"},
             {17, "%17 = OpSLessThan %16 %7 %18"},
+            {18, "%18 = OpConstant %6 1"},
             {19, "%19 = OpLabel"},
           },
           { // uses
-            {1, {"%2 = OpFunction %1 None %3"}},
+            {1,
+              {
+                "%2 = OpFunction %1 None %3",
+                "%3 = OpTypeFunction %1",
+              }
+            },
             {3, {"%2 = OpFunction %1 None %3"}},
             {4,
               {
-                "%7 = OpPhi %6 %8 %4 %9000 %5",
+                "%7 = OpPhi %6 %8 %4 %13 %5",
                 "%11 = OpPhi %10 %12 %4 %13 %5",
               }
             },
             {5,
               {
                 "OpBranch %5",
-                "%7 = OpPhi %6 %8 %4 %9000 %5",
+                "%7 = OpPhi %6 %8 %4 %13 %5",
                 "%11 = OpPhi %10 %12 %4 %13 %5",
                 "OpLoopMerge %19 %5 None",
                 "OpBranchConditional %17 %5 %19",
@@ -700,29 +828,45 @@ INSTANTIATE_TEST_CASE_P(
             },
             {6,
               {
-                "%7 = OpPhi %6 %8 %4 %9000 %5",
-                "%9 = OpIAdd %6 %7 %14",
+                // Can't properly check constants
+                //"%8 = OpConstant %6 0",
+                //"%18 = OpConstant %6 1",
+                "%7 = OpPhi %6 %8 %4 %13 %5",
+                "%9 = OpIAdd %6 %7 %8"
               }
             },
             {7,
               {
-                "%9 = OpIAdd %6 %7 %14",
+                "%9 = OpIAdd %6 %7 %8",
                 "%17 = OpSLessThan %16 %7 %18",
               }
             },
-            {8, {"%7 = OpPhi %6 %8 %4 %9000 %5"}},
-            {9, {"%13 = OpFAdd %10 %9 %15"}}, // uses of %9 changed from %7 to %13
+            {8,
+              {
+                "%7 = OpPhi %6 %8 %4 %13 %5",
+                "%9 = OpIAdd %6 %7 %8",
+              }
+            },
+            {9, {"%13 = OpFAdd %10 %9 %12"}}, // uses of %9 changed from %7 to %13
             {10,
               {
                 "%11 = OpPhi %10 %12 %4 %13 %5",
-                "%13 = OpFAdd %10 %9 %15",
+                //"%12 = OpConstant %10 1",
+                "%13 = OpFAdd %10 %9 %12"
               }
             },
             // no more uses of %11
-            {12, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
-            {13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
-            {14, {"%9 = OpIAdd %6 %7 %14"}},
-            {15, {"%13 = OpFAdd %10 %9 %15"}},
+            {12,
+              {
+                "%11 = OpPhi %10 %12 %4 %13 %5",
+                "%13 = OpFAdd %10 %9 %12"
+              }
+            },
+            {13, {
+                   "%7 = OpPhi %6 %8 %4 %13 %5",
+                   "%11 = OpPhi %10 %12 %4 %13 %5",
+                 }
+            },
             {16, {"%17 = OpSLessThan %16 %7 %18"}},
             {17, {"OpBranchConditional %17 %5 %19"}},
             {18, {"%17 = OpSLessThan %16 %7 %18"}},
@@ -732,16 +876,15 @@ INSTANTIATE_TEST_CASE_P(
                 "OpBranchConditional %17 %5 %19",
               }
             },
-            // new uses of %9000
-            {9000, {"%7 = OpPhi %6 %8 %4 %9000 %5"}},
           },
         },
       },
       { // OpPhi defining and referencing the same id.
         "%1 = OpTypeBool "
+        "%3 = OpTypeFunction %1 "
         "%2 = OpConstantTrue %1 "
 
-        "%4 = OpFunction %3 None %5 "
+        "%4 = OpFunction %3 None %1 "
         "%6 = OpLabel "
         "     OpBranch %7 "
         "%7 = OpLabel "
@@ -750,9 +893,10 @@ INSTANTIATE_TEST_CASE_P(
         "     OpFunctionEnd",
         {{8, 2}},
         "%1 = OpTypeBool\n"
+        "%3 = OpTypeFunction %1\n"
         "%2 = OpConstantTrue %1\n"
 
-        "%4 = OpFunction %3 None %5\n"
+        "%4 = OpFunction %3 None %1\n"
         "%6 = OpLabel\n"
              "OpBranch %7\n"
         "%7 = OpLabel\n"
@@ -763,7 +907,8 @@ INSTANTIATE_TEST_CASE_P(
           { // defs
             {1, "%1 = OpTypeBool"},
             {2, "%2 = OpConstantTrue %1"},
-            {4, "%4 = OpFunction %3 None %5"},
+            {3, "%3 = OpTypeFunction %1"},
+            {4, "%4 = OpFunction %3 None %1"},
             {6, "%6 = OpLabel"},
             {7, "%7 = OpLabel"},
             {8, "%8 = OpPhi %1 %2 %7 %2 %6"},
@@ -772,20 +917,18 @@ INSTANTIATE_TEST_CASE_P(
             {1,
               {
                 "%2 = OpConstantTrue %1",
+                "%3 = OpTypeFunction %1",
+                "%4 = OpFunction %3 None %1",
                 "%8 = OpPhi %1 %2 %7 %2 %6",
               }
             },
             {2,
               {
-                // TODO(antiagainst): address this.
-                // We have duplication here because we didn't check existence
-                // before inserting uses.
-                "%8 = OpPhi %1 %2 %7 %2 %6",
+                // Only checking users
                 "%8 = OpPhi %1 %2 %7 %2 %6",
               }
             },
-            {3, {"%4 = OpFunction %3 None %5"}},
-            {5, {"%4 = OpFunction %3 None %5"}},
+            {3, {"%4 = OpFunction %3 None %1"}},
             {6, {"%8 = OpPhi %1 %2 %7 %2 %6"}},
             {7,
               {
@@ -817,7 +960,8 @@ TEST_P(KillDefTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text),
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Analyze def and use.
@@ -828,7 +972,7 @@ TEST_P(KillDefTest, Case) {
 
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
+  CheckUse(tc.du, context->get_def_use_mgr(), context->module()->IdBound());
 }
 
 // clang-format off
@@ -891,6 +1035,14 @@ INSTANTIATE_TEST_CASE_P(
       { // OpPhi.
         kOpPhiTestFunction,
         {9, 11}, // kill one id used by OpPhi, kill one id generated by OpPhi
+         "%1 = OpTypeVoid\n"
+         "%6 = OpTypeInt 32 0\n"
+         "%10 = OpTypeFloat 32\n"
+         "%16 = OpTypeBool\n"
+         "%3 = OpTypeFunction %1\n"
+         "%8 = OpConstant %6 0\n"
+         "%18 = OpConstant %6 1\n"
+         "%12 = OpConstant %10 1\n"
          "%2 = OpFunction %1 None %3\n"
          "%4 = OpLabel\n"
                "OpBranch %5\n"
@@ -899,7 +1051,7 @@ INSTANTIATE_TEST_CASE_P(
          "%7 = OpPhi %6 %8 %4 %9 %5\n"
               "OpNop\n"
               "OpNop\n"
-        "%13 = OpFAdd %10 %11 %15\n"
+        "%13 = OpFAdd %10 %11 %12\n"
         "%17 = OpSLessThan %16 %7 %18\n"
               "OpLoopMerge %19 %5 None\n"
               "OpBranchConditional %17 %5 %19\n"
@@ -909,57 +1061,77 @@ INSTANTIATE_TEST_CASE_P(
               "OpFunctionEnd",
         {
           { // defs. %9 & %11 are killed.
+            {1, "%1 = OpTypeVoid"},
             {2, "%2 = OpFunction %1 None %3"},
+            {3, "%3 = OpTypeFunction %1"},
             {4, "%4 = OpLabel"},
             {5, "%5 = OpLabel"},
+            {6, "%6 = OpTypeInt 32 0"},
             {7, "%7 = OpPhi %6 %8 %4 %9 %5"},
-            {13, "%13 = OpFAdd %10 %11 %15"},
+            {8, "%8 = OpConstant %6 0"},
+            {10, "%10 = OpTypeFloat 32"},
+            {12, "%12 = OpConstant %10 1.0"},
+            {13, "%13 = OpFAdd %10 %11 %12"},
+            {16, "%16 = OpTypeBool"},
             {17, "%17 = OpSLessThan %16 %7 %18"},
+            {18, "%18 = OpConstant %6 1"},
             {19, "%19 = OpLabel"},
           },
           { // uses
-            {1, {"%2 = OpFunction %1 None %3"}},
+            {1,
+              {
+                "%2 = OpFunction %1 None %3",
+                "%3 = OpTypeFunction %1",
+              }
+            },
             {3, {"%2 = OpFunction %1 None %3"}},
             {4,
               {
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                // "%11 = OpPhi %10 %12 %4 %13 %5",
+                //"%11 = OpPhi %10 %12 %4 %13 %5",
               }
             },
             {5,
               {
                 "OpBranch %5",
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                // "%11 = OpPhi %10 %12 %4 %13 %5",
+                //"%11 = OpPhi %10 %12 %4 %13 %5",
                 "OpLoopMerge %19 %5 None",
                 "OpBranchConditional %17 %5 %19",
               }
             },
             {6,
               {
+                // Can't properly check constants
+                //"%8 = OpConstant %6 0",
+                //"%18 = OpConstant %6 1",
                 "%7 = OpPhi %6 %8 %4 %9 %5",
-                // "%9 = OpIAdd %6 %7 %14",
+                //"%9 = OpIAdd %6 %7 %8"
               }
             },
-            {7,
+            {7, {"%17 = OpSLessThan %16 %7 %18"}},
+            {8,
               {
-                // "%9 = OpIAdd %6 %7 %14",
-                "%17 = OpSLessThan %16 %7 %18",
+                "%7 = OpPhi %6 %8 %4 %9 %5",
+                //"%9 = OpIAdd %6 %7 %8",
               }
             },
-            {8, {"%7 = OpPhi %6 %8 %4 %9 %5"}},
-            // {9, {"%7 = OpPhi %6 %8 %4 %9 %5"}},
+            // {9, {"%7 = OpPhi %6 %8 %4 %13 %5"}},
             {10,
               {
-                // "%11 = OpPhi %10 %12 %4 %13 %5",
-                "%13 = OpFAdd %10 %11 %15",
+                //"%11 = OpPhi %10 %12 %4 %13 %5",
+                //"%12 = OpConstant %10 1",
+                "%13 = OpFAdd %10 %11 %12"
               }
             },
-            // {11, {"%13 = OpFAdd %10 %11 %15"}},
-            // {12, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
-            // {13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
-            // {14, {"%9 = OpIAdd %6 %7 %14"}},
-            {15, {"%13 = OpFAdd %10 %11 %15"}},
+            // {11, {"%13 = OpFAdd %10 %11 %12"}},
+            {12,
+              {
+                //"%11 = OpPhi %10 %12 %4 %13 %5",
+                "%13 = OpFAdd %10 %11 %12"
+              }
+            },
+            //{13, {"%11 = OpPhi %10 %12 %4 %13 %5"}},
             {16, {"%17 = OpSLessThan %16 %7 %18"}},
             {17, {"OpBranchConditional %17 %5 %19"}},
             {18, {"%17 = OpSLessThan %16 %7 %18"}},
@@ -974,9 +1146,9 @@ INSTANTIATE_TEST_CASE_P(
       },
       { // OpPhi defining and referencing the same id.
         "%1 = OpTypeBool "
+        "%3 = OpTypeFunction %1 "
         "%2 = OpConstantTrue %1 "
-
-        "%4 = OpFunction %3 None %5 "
+        "%4 = OpFunction %3 None %1 "
         "%6 = OpLabel "
         "     OpBranch %7 "
         "%7 = OpLabel "
@@ -985,9 +1157,10 @@ INSTANTIATE_TEST_CASE_P(
         "     OpFunctionEnd",
         {8},
         "%1 = OpTypeBool\n"
+        "%3 = OpTypeFunction %1\n"
         "%2 = OpConstantTrue %1\n"
 
-        "%4 = OpFunction %3 None %5\n"
+        "%4 = OpFunction %3 None %1\n"
         "%6 = OpLabel\n"
              "OpBranch %7\n"
         "%7 = OpLabel\n"
@@ -998,7 +1171,8 @@ INSTANTIATE_TEST_CASE_P(
           { // defs
             {1, "%1 = OpTypeBool"},
             {2, "%2 = OpConstantTrue %1"},
-            {4, "%4 = OpFunction %3 None %5"},
+            {3, "%3 = OpTypeFunction %1"},
+            {4, "%4 = OpFunction %3 None %1"},
             {6, "%6 = OpLabel"},
             {7, "%7 = OpLabel"},
             // {8, "%8 = OpPhi %1 %8 %7 %2 %6"},
@@ -1007,12 +1181,13 @@ INSTANTIATE_TEST_CASE_P(
             {1,
               {
                 "%2 = OpConstantTrue %1",
+                "%3 = OpTypeFunction %1",
+                "%4 = OpFunction %3 None %1",
                 // "%8 = OpPhi %1 %8 %7 %2 %6",
               }
             },
             // {2, {"%8 = OpPhi %1 %8 %7 %2 %6"}},
-            {3, {"%4 = OpFunction %3 None %5"}},
-            {5, {"%4 = OpFunction %3 None %5"}},
+            {3, {"%4 = OpFunction %3 None %1"}},
             // {6, {"%8 = OpPhi %1 %8 %7 %2 %6"}},
             {7,
               {
@@ -1028,7 +1203,7 @@ INSTANTIATE_TEST_CASE_P(
     })
 );
 // clang-format on
-//
+
 TEST(DefUseTest, OpSwitch) {
   // Because disassembler has basic type check for OpSwitch's selector, we
   // cannot use the DisassembleInst() in the above. Thus, this special spotcheck
@@ -1045,6 +1220,7 @@ TEST(DefUseTest, OpSwitch) {
       //   return v;
       // }
       " %1 = OpTypeInt 64 1 "
+      " %3 = OpTypePointer Input %1 "
       " %2 = OpFunction %1 None %3 "  // %3 is int64(int64)*
       " %4 = OpFunctionParameter %1 "
       " %5 = OpLabel "
@@ -1067,7 +1243,8 @@ TEST(DefUseTest, OpSwitch) {
       "      OpFunctionEnd";
 
   std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original_text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original_text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.
@@ -1075,19 +1252,20 @@ TEST(DefUseTest, OpSwitch) {
   (void)context->get_def_use_mgr();
 
   // Do a bunch replacements.
-  context->ReplaceAllUsesWith(9, 900);    // to unused id
-  context->ReplaceAllUsesWith(10, 1000);  // to unused id
   context->ReplaceAllUsesWith(11, 7);     // to existing id
+  context->ReplaceAllUsesWith(10, 11);  // to existing id
+  context->ReplaceAllUsesWith(9, 10);    // to existing id
 
   // clang-format off
   const char modified_text[] =
        "%1 = OpTypeInt 64 1\n"
+       "%3 = OpTypePointer Input %1\n"
        "%2 = OpFunction %1 None %3\n" // %3 is int64(int64)*
        "%4 = OpFunctionParameter %1\n"
        "%5 = OpLabel\n"
        "%6 = OpLoad %1 %4\n" // selector value
             "OpSelectionMerge %7 None\n"
-            "OpSwitch %6 %8 1 %900 -4294967296 %1000 9223372036854775807 %7\n" // changed!
+            "OpSwitch %6 %8 1 %10 -4294967296 %11 9223372036854775807 %7\n" // changed!
        "%8 = OpLabel\n"      // default
             "OpBranch %7\n"
        "%9 = OpLabel\n"
@@ -1107,6 +1285,7 @@ TEST(DefUseTest, OpSwitch) {
   def_uses.defs = {
       {1, "%1 = OpTypeInt 64 1"},
       {2, "%2 = OpFunction %1 None %3"},
+      {3, "%3 = OpTypePointer Input %1"},
       {4, "%4 = OpFunctionParameter %1"},
       {5, "%5 = OpLabel"},
       {6, "%6 = OpLoad %1 %4"},
@@ -1119,32 +1298,22 @@ TEST(DefUseTest, OpSwitch) {
   CheckDef(def_uses, context->get_def_use_mgr()->id_to_defs());
 
   {
-    auto* use_list = context->get_def_use_mgr()->GetUses(6);
-    ASSERT_NE(nullptr, use_list);
-    EXPECT_EQ(2u, use_list->size());
-    std::vector<SpvOp> opcodes = {use_list->front().inst->opcode(),
-                                  use_list->back().inst->opcode()};
+    EXPECT_EQ(2u, NumUses(context, 6));
+    std::vector<SpvOp> opcodes = GetUseOpcodes(context, 6u);
     EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSwitch, SpvOpReturnValue));
   }
   {
-    auto* use_list = context->get_def_use_mgr()->GetUses(7);
-    ASSERT_NE(nullptr, use_list);
-    EXPECT_EQ(6u, use_list->size());
-    std::vector<SpvOp> opcodes;
-    for (const auto& use : *use_list) {
-      opcodes.push_back(use.inst->opcode());
-    }
+    EXPECT_EQ(6u, NumUses(context, 7));
+    std::vector<SpvOp> opcodes = GetUseOpcodes(context, 7u);
     // OpSwitch is now a user of %7.
     EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSelectionMerge, SpvOpBranch,
                                               SpvOpBranch, SpvOpBranch,
                                               SpvOpBranch, SpvOpSwitch));
   }
   // Check all ids only used by OpSwitch after replacement.
-  for (const auto id : {8, 900, 1000}) {
-    auto* use_list = context->get_def_use_mgr()->GetUses(id);
-    ASSERT_NE(nullptr, use_list);
-    EXPECT_EQ(1u, use_list->size());
-    EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
+  for (const auto id : {8u, 10u, 11u}) {
+    EXPECT_EQ(1u, NumUses(context, id));
+    EXPECT_EQ(SpvOpSwitch, GetUseOpcodes(context, id).back());
   }
 }
 
@@ -1170,7 +1339,8 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
   opt::analysis::DefUseManager manager(context->module());
 
   CheckDef(tc.expected_define_use, manager.id_to_defs());
-  CheckUse(tc.expected_define_use, manager.id_to_uses());
+  CheckUse(tc.expected_define_use, &manager, context->module()->IdBound());
+  //CheckUse(tc.expected_define_use, manager.id_to_uses());
 }
 
 // clang-format off
@@ -1215,6 +1385,7 @@ TEST(AnalyzeInstDefUse, UseWithNoResultId) {
   ir::Instruction branch(&context, SpvOpBranch, 0, 0,
                          {{SPV_OPERAND_TYPE_ID, {2}}});
   manager.AnalyzeInstDefUse(&branch);
+  context.module()->SetIdBound(3);
 
   InstDefUse expected =
   {
@@ -1227,7 +1398,7 @@ TEST(AnalyzeInstDefUse, UseWithNoResultId) {
   };
 
   CheckDef(expected, manager.id_to_defs());
-  CheckUse(expected, manager.id_to_uses());
+  CheckUse(expected, &manager, context.module()->IdBound());
 }
 
 TEST(AnalyzeInstDefUse, AddNewInstruction) {
@@ -1256,7 +1427,7 @@ TEST(AnalyzeInstDefUse, AddNewInstruction) {
   };
 
   CheckDef(expected, manager.id_to_defs());
-  CheckUse(expected, manager.id_to_uses());
+  CheckUse(expected, &manager, context->module()->IdBound());
 }
 
 struct KillInstTestCase {
@@ -1273,7 +1444,8 @@ TEST_P(KillInstTest, Case) {
 
   // Build module.
   std::unique_ptr<ir::IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.before);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.before,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   // Force a re-build of the def-use manager.
@@ -1281,17 +1453,15 @@ TEST_P(KillInstTest, Case) {
   (void)context->get_def_use_mgr();
 
   // KillInst
-  uint32_t index = 0;
-  context->module()->ForEachInst([&index, &tc, &context](ir::Instruction* inst) {
-    if (tc.indices_for_inst_to_kill.count(index) != 0) {
+  context->module()->ForEachInst([&tc, &context](ir::Instruction* inst) {
+    if (tc.indices_for_inst_to_kill.count(inst->result_id())) {
       context->KillInst(inst);
     }
-    index++;
   });
 
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.expected_define_use, context->get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.expected_define_use, context->get_def_use_mgr()->id_to_uses());
+  CheckUse(tc.expected_define_use, context->get_def_use_mgr(), context->module()->IdBound());
 }
 
 // clang-format off
@@ -1300,6 +1470,8 @@ INSTANTIATE_TEST_CASE_P(
     ::testing::ValuesIn(std::vector<KillInstTestCase>{
       // Kill id defining instructions.
       {
+        "%3 = OpTypeVoid "
+        "%1 = OpTypeFunction %3 "
         "%2 = OpFunction %1 None %3 "
         "%4 = OpLabel "
         "     OpBranch %5 "
@@ -1310,26 +1482,39 @@ INSTANTIATE_TEST_CASE_P(
         "%7 = OpLabel "
         "     OpReturn "
         "     OpFunctionEnd",
-        {0, 3, 5, 7},
+        {3, 5, 7},
         "OpNop\n"
+        "%1 = OpTypeFunction %3\n"
+        "%2 = OpFunction %1 None %3\n"
         "%4 = OpLabel\n"
         "OpBranch %5\n"
         "OpNop\n"
         "OpBranch %6\n"
-        "OpNop\n"
+        "%6 = OpLabel\n"
         "OpBranch %4\n"
         "OpNop\n"
         "OpReturn\n"
         "OpFunctionEnd",
         {
           // defs
-          {{4, "%4 = OpLabel"}},
+          {
+            {1, "%1 = OpTypeFunction %3"},
+            {2, "%2 = OpFunction %1 None %3"},
+            {4, "%4 = OpLabel"},
+            {6, "%6 = OpLabel"},
+          },
           // uses
-          {{4, {"OpBranch %4"}}}
+          {
+            {1, {"%2 = OpFunction %1 None %3"}},
+            {4, {"OpBranch %4"}},
+            {6, {"OpBranch %6"}},
+          }
         }
       },
       // Kill instructions that do not have result ids.
       {
+        "%3 = OpTypeVoid "
+        "%1 = OpTypeFunction %3 "
         "%2 = OpFunction %1 None %3 "
         "%4 = OpLabel "
         "     OpBranch %5 "
@@ -1341,11 +1526,13 @@ INSTANTIATE_TEST_CASE_P(
         "     OpReturn "
         "     OpFunctionEnd",
         {2, 4},
-        "%2 = OpFunction %1 None %3\n"
-        "%4 = OpLabel\n"
+        "%3 = OpTypeVoid\n"
+        "%1 = OpTypeFunction %3\n"
              "OpNop\n"
+             "OpNop\n"
+             "OpBranch %5\n"
         "%5 = OpLabel\n"
-             "OpNop\n"
+             "OpBranch %6\n"
         "%6 = OpLabel\n"
              "OpBranch %4\n"
         "%7 = OpLabel\n"
@@ -1354,17 +1541,17 @@ INSTANTIATE_TEST_CASE_P(
         {
           // defs
           {
-            {2, "%2 = OpFunction %1 None %3"},
-            {4, "%4 = OpLabel"},
+            {1, "%1 = OpTypeFunction %3"},
+            {3, "%3 = OpTypeVoid"},
             {5, "%5 = OpLabel"},
             {6, "%6 = OpLabel"},
             {7, "%7 = OpLabel"},
           },
           // uses
           {
-            {1, {"%2 = OpFunction %1 None %3"}},
-            {3, {"%2 = OpFunction %1 None %3"}},
-            {4, {"OpBranch %4"}},
+            {3, {"%1 = OpTypeFunction %3"}},
+            {5, {"OpBranch %5"}},
+            {6, {"OpBranch %6"}},
           }
         }
       },

@@ -23,10 +23,18 @@ class EntryPoints : public spvtest::LinkerTest {};
 
 TEST_F(EntryPoints, SameModelDifferentName) {
   const std::string body1 = R"(
-OpEntryPoint GLCompute %1 "foo"
+OpEntryPoint GLCompute %3 "foo"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpEntryPoint GLCompute %1 "bar"
+OpEntryPoint GLCompute %3 "bar"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
@@ -36,10 +44,18 @@ OpEntryPoint GLCompute %1 "bar"
 
 TEST_F(EntryPoints, DifferentModelSameName) {
   const std::string body1 = R"(
-OpEntryPoint GLCompute %1 "foo"
+OpEntryPoint GLCompute %3 "foo"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpEntryPoint Vertex %1 "foo"
+OpEntryPoint Vertex %3 "foo"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
@@ -49,10 +65,18 @@ OpEntryPoint Vertex %1 "foo"
 
 TEST_F(EntryPoints, SameModelAndName) {
   const std::string body1 = R"(
-OpEntryPoint GLCompute %1 "foo"
+OpEntryPoint GLCompute %3 "foo"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpEntryPoint GLCompute %1 "foo"
+OpEntryPoint GLCompute %3 "foo"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;

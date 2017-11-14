@@ -260,17 +260,17 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   opt::Pass::Status pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 7: Remove linkage specific instructions, such as import/export
+  // Phase 7: Rematch import variables/functions to export variables/functions
+  for (const auto& linking_entry : linkings_to_do)
+    linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
+                                      linking_entry.exported_symbol.id);
+
+  // Phase 8: Remove linkage specific instructions, such as import/export
   // attributes, linkage capability, etc. if applicable
   res = RemoveLinkageSpecificInstructions(
       consumer, !options.GetCreateLibrary(), linkings_to_do,
       linked_context.get_decoration_mgr(), &linked_context);
   if (res != SPV_SUCCESS) return res;
-
-  // Phase 8: Rematch import variables/functions to export variables/functions
-  for (const auto& linking_entry : linkings_to_do)
-    linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
-                                      linking_entry.exported_symbol.id);
 
   // Phase 9: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
@@ -314,6 +314,9 @@ static spv_result_t ShiftIdsInModules(
                                         SPV_ERROR_INVALID_ID)
              << "The limit of IDs, 4194303, was exceeded:"
              << " " << id_bound << " is the current ID bound.";
+
+    // Invalidate the DefUseManager
+    module->context()->InvalidateAnalyses(ir::IRContext::kAnalysisDefUse);
   }
   ++id_bound;
   if (id_bound > 0x3FFFFF)
@@ -704,7 +707,7 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   // Remove declarations of imported variables
   for (const auto& linking_entry : linkings_to_do) {
     for (auto& inst : linked_context->types_values())
-      if (inst.result_id() == linking_entry.imported_symbol.id) inst.ToNop();
+      if (inst.result_id() == linking_entry.imported_symbol.id) linked_context->KillInst(&inst);
   }
 
   // Remove import linkage attributes

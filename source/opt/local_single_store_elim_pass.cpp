@@ -31,28 +31,22 @@ const uint32_t kStoreValIdInIdx = 1;
 
 bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
-  analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
-
-  if (!uses) {
-    // This is a variable (or access chain to a variable) that has no uses.
-    // We won't encounter loads or stores for this <result-id> per se, but
-    // this <result-id> may be derived from some other variable (or access
-    // chain). Return true here can unblock the access chain conversion of
-    // the root variable. This particular <result-id> won't be touched and
-    // can be handled in dead code elimination.
-    return true;
-  }
-
-  for (auto u : *uses) {
-    SpvOp op = u.inst->opcode();
+  bool hasOnlySupportedRefs = true;
+  get_def_use_mgr()->ForEachUser(ptrId, [this,&hasOnlySupportedRefs](ir::Instruction* user) {
+    SpvOp op = user->opcode();
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-      if (!HasOnlySupportedRefs(u.inst->result_id())) return false;
+      if (!HasOnlySupportedRefs(user->result_id())) {
+        hasOnlySupportedRefs = false;
+      }
     } else if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
-               !IsNonTypeDecorate(op))
-      return false;
+               !IsNonTypeDecorate(op)) {
+      hasOnlySupportedRefs = false;
+    }
+  });
+  if (hasOnlySupportedRefs) {
+    supported_ref_ptrs_.insert(ptrId);
   }
-  supported_ref_ptrs_.insert(ptrId);
-  return true;
+  return hasOnlySupportedRefs;
 }
 
 void LocalSingleStoreElimPass::SingleStoreAnalyze(ir::Function* func) {

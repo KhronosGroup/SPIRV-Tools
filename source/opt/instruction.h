@@ -126,7 +126,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
-  Instruction* Clone(IRContext* c) const;
+  Instruction* Clone(IRContext *c) const;
 
   IRContext* context() const { return context_; }
 

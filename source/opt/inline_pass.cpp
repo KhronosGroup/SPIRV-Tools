@@ -648,10 +648,8 @@ bool InlinePass::IsInlinableFunction(ir::Function* func) {
 void InlinePass::InitializeInline(ir::IRContext* c) {
   InitializeProcessing(c);
 
-  update_def_use_mgr_ = [this] (ir::Instruction& inst, bool has_changed) {
-    if (has_changed)
-      get_def_use_mgr()->AnalyzeInstDefUse(&inst);
-  };
+  // Don't bother updating the DefUseManger
+  update_def_use_mgr_ = [this] (ir::Instruction&, bool) {};
 
   false_id_ = 0;
 

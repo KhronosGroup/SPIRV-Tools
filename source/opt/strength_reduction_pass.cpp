@@ -104,8 +104,8 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
                                 newResultId, newOperands));
 
         // Insert the new instruction and update the data structures.
-        get_def_use_mgr()->AnalyzeInstDefUse(&*newInstruction);
         inst = inst.InsertBefore(std::move(newInstruction));
+        get_def_use_mgr()->AnalyzeInstDefUse(&*inst);
         ++inst;
         context()->ReplaceAllUsesWith(inst->result_id(), newResultId);
 
@@ -163,6 +163,10 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
     std::unique_ptr<ir::Instruction> newConstant(new ir::Instruction(
         context(), SpvOp::SpvOpConstant, uint32_type_id_, resultId, {constant}));
     get_module()->AddGlobalValue(std::move(newConstant));
+
+    // Notify the DefUseManager about this constant.
+    auto constantIter = --get_module()->types_values_end();
+    get_def_use_mgr()->AnalyzeInstDef(&*constantIter);
 
     // Store the result id for next time.
     constant_ids_[val] = resultId;

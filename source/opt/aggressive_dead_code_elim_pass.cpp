@@ -51,25 +51,22 @@ bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
 }
 
 void AggressiveDCEPass::AddStores(uint32_t ptrId) {
-  const analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
-  if (uses == nullptr) return;
-  for (const auto u : *uses) {
-    const SpvOp op = u.inst->opcode();
-    switch (op) {
+  get_def_use_mgr()->ForEachUser(ptrId, [this](ir::Instruction* user) {
+    switch (user->opcode()) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
-      case SpvOpCopyObject: {
-        AddStores(u.inst->result_id());
-      } break;
+      case SpvOpCopyObject:
+        this->AddStores(user->result_id());
+        break;
       case SpvOpLoad:
         break;
-      // If default, assume it stores eg frexp, modf, function call
+      // If default, assume it stores e.g. frexp, modf, function call
       case SpvOpStore:
-      default: {
-        if (!IsLive(u.inst)) AddToWorklist(u.inst);
-      } break;
+      default:
+        if (!IsLive(user)) AddToWorklist(user);
+        break;
     }
-  }
+  });
 }
 
 bool AggressiveDCEPass::AllExtensionsSupported() const {

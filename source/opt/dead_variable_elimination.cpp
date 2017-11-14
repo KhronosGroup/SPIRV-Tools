@@ -56,13 +56,14 @@ Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
     if (count != kMustKeep) {
       // If we don't have to keep the instruction for other reasons, then look
       // at the uses and count the number of real references.
-      if (analysis::UseList* uses = get_def_use_mgr()->GetUses(result_id)) {
-        count = std::count_if(
-            uses->begin(), uses->end(), [](const analysis::Use& u) {
-              return (!ir::IsAnnotationInst(u.inst->opcode()) &&
-                      u.inst->opcode() != SpvOpName);
-            });
-      }
+      count = 0;
+      get_def_use_mgr()->ForEachUser(
+          result_id, [&count](ir::Instruction* user) {
+            if (!ir::IsAnnotationInst(user->opcode()) &&
+                user->opcode() != SpvOpName) {
+              ++count;
+            }
+          });
     }
     reference_count_[result_id] = count;
     if (count == 0) {

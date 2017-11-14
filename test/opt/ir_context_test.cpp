@@ -205,4 +205,5 @@ TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
   for (uint32_t i = 1; i < NUM_TESTS; ++i)
     EXPECT_EQ(i, localContext.TakeNextUniqueId());
 }
+
 }  // anonymous namespace
