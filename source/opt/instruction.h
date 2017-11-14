@@ -126,7 +126,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
-  Instruction* Clone(IRContext* c) const;
+  Instruction* Clone(IRContext *c) const;
 
   IRContext* context() const { return context_; }
 
@@ -299,7 +299,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool operator!=(const Instruction&) const;
   inline bool operator<(const Instruction&) const;
 
+  inline bool operator==(const Instruction&) const;
+  inline bool operator!=(const Instruction&) const;
+  inline bool operator<(const Instruction&) const;
+
  private:
+
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);
