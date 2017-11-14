@@ -101,7 +101,7 @@ Instruction* Instruction::Clone(IRContext *c) const {
   clone->opcode_ = opcode_;
   clone->type_id_ = type_id_;
   clone->result_id_ = result_id_;
-  clone->unique_id_ = context()->TakeNextUniqueId();
+  clone->unique_id_ = c->TakeNextUniqueId();
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
   return clone;

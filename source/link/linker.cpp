@@ -138,6 +138,10 @@ static spv_result_t RemoveLinkageSpecificInstructions(
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
     ir::IRContext* linked_context);
 
+// Verify the Ids within the module are all unique
+static spv_result_t VerifyIds(const MessageConsumer& consumer,
+                              ir::IRContext* linked_context);
+
 // Structs for holding the data members for SpvLinker.
 struct Linker::Impl {
   explicit Impl(spv_target_env env) : context(spvContextCreate(env)) {
@@ -227,6 +231,11 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   libspirv::AssemblyGrammar grammar(impl_->context);
   res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
+
+  if (options.GetVerifyIds()) {
+    res = VerifyIds(consumer, &linked_context);
+    if (res != SPV_SUCCESS) return res;
+  }
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
@@ -718,6 +727,21 @@ static spv_result_t RemoveLinkageSpecificInstructions(
         // now there aren’t more SpvCapabilityLinkage further down.
         break;
       }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t VerifyIds(const MessageConsumer& consumer, ir::IRContext* linked_context) {
+  std::unordered_set<uint32_t> ids;
+  bool ok = true;
+  linked_context->module()->ForEachInst([&ids,&ok](const ir::Instruction* inst) {
+    ok &= ids.insert(inst->unique_id()).second;
+  });
+
+  if (!ok) {
+    consumer(SPV_MSG_INTERNAL_ERROR, "", {}, "Non-unique id in merged module");
+    return SPV_ERROR_INVALID_ID;
   }
 
   return SPV_SUCCESS;

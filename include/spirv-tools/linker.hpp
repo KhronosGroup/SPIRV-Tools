@@ -26,7 +26,9 @@ namespace spvtools {
 
 class LinkerOptions {
  public:
-  LinkerOptions() : createLibrary_(false) {}
+  LinkerOptions()
+      : createLibrary_(false),
+        verifyIds_(false) {}
 
   // Returns whether a library or an executable should be produced by the
   // linking phase.
@@ -41,8 +43,16 @@ class LinkerOptions {
     createLibrary_ = create_library;
   }
 
+  // Returns whether to verify the ids in the merged module
+  bool GetVerifyIds() const { return verifyIds_; }
+  // Sets whether to verify the ids in the merged module
+  void SetVerifyIds(bool verifyIds) {
+    verifyIds_ = verifyIds;
+  }
+
  private:
   bool createLibrary_;
+  bool verifyIds_;
 };
 
 class Linker {
