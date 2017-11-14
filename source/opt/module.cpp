@@ -65,7 +65,7 @@ uint32_t Module::GetGlobalValue(SpvOp opcode) const {
 void Module::AddGlobalValue(SpvOp opcode, uint32_t result_id,
                             uint32_t type_id) {
   std::unique_ptr<ir::Instruction> newGlobal(
-      new ir::Instruction(opcode, type_id, result_id, {}));
+      new ir::Instruction(context(), opcode, type_id, result_id, {}));
   AddGlobalValue(std::move(newGlobal));
 }
 

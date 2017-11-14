@@ -17,6 +17,7 @@
 
 #include "message.h"
 #include "opt/build_module.h"
+#include "opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace {
@@ -25,12 +26,12 @@ using namespace spvtools;
 
 void DoRoundTripCheck(const std::string& text) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  ASSERT_NE(nullptr, module) << "Failed to assemble\n" << text;
+  ASSERT_NE(nullptr, context) << "Failed to assemble\n" << text;
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
+  context->module()->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
   EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
@@ -212,17 +213,17 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   // clang-format on
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, context);
 
   const auto opundef_count = std::count_if(
-      module->types_values_begin(), module->types_values_end(),
+      context->module()->types_values_begin(), context->module()->types_values_end(),
       [](const ir::Instruction& inst) { return inst.opcode() == SpvOpUndef; });
   EXPECT_EQ(3, opundef_count);
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
+  context->module()->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
   EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
@@ -322,9 +323,9 @@ void DoErrorMessageCheck(const std::string& assembly,
   };
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, std::move(consumer), assembly);
-  EXPECT_EQ(nullptr, module);
+  EXPECT_EQ(nullptr, context);
 }
 
 TEST(IrBuilder, FunctionInsideFunction) {

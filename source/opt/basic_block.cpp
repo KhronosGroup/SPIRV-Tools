@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "basic_block.h"
+#include "function.h"
+#include "module.h"
 
 #include "make_unique.h"
 
@@ -27,12 +29,13 @@ const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 
 }  // namespace
 
-BasicBlock::BasicBlock(const BasicBlock& bb)
-    : function_(nullptr),
-      label_(MakeUnique<Instruction>(bb.GetLabelInst())),
-      insts_() {
-  for (auto& inst : bb.insts_)
-    AddInstruction(std::unique_ptr<Instruction>(inst.Clone()));
+BasicBlock* BasicBlock::Clone(IRContext* context) const {
+  BasicBlock* clone =
+      new BasicBlock(std::unique_ptr<Instruction>(GetLabelInst().Clone(context)));
+  for (const auto& inst : insts_)
+    // Use the incoming context
+    clone->AddInstruction(std::unique_ptr<Instruction>(inst.Clone(context)));
+  return clone;
 }
 
 const Instruction* BasicBlock::GetMergeInst() const {

@@ -91,7 +91,7 @@ Pass::Status FlattenDecorationPass::Process(ir::IRContext* c) {
         const auto normal_uses_iter = normal_uses.find(group);
         if (normal_uses_iter != normal_uses.end()) {
           for (auto target : normal_uses[group]) {
-            std::unique_ptr<Instruction> new_inst(new Instruction(*inst_iter));
+            std::unique_ptr<Instruction> new_inst(inst_iter->Clone(inst_iter->context()));
             new_inst->SetInOperand(0, Words{target});
             inst_iter = inst_iter.InsertBefore(std::move(new_inst));
             ++inst_iter;
@@ -117,7 +117,7 @@ Pass::Status FlattenDecorationPass::Process(ir::IRContext* c) {
             operands.insert(operands.end(), decoration_operands_iter,
                             inst_iter->end());
             std::unique_ptr<Instruction> new_inst(
-                new Instruction(SpvOp::SpvOpMemberDecorate, 0, 0, operands));
+                new Instruction(inst_iter->context(), SpvOp::SpvOpMemberDecorate, 0, 0, operands));
             inst_iter = inst_iter.InsertBefore(std::move(new_inst));
             ++inst_iter;
             replace = true;

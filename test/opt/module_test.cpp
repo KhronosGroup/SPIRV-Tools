@@ -26,6 +26,7 @@
 
 namespace {
 
+using spvtools::ir::IRContext;
 using spvtools::ir::Module;
 using spvtest::GetIdBound;
 using ::testing::Eq;
@@ -42,31 +43,31 @@ TEST(ModuleTest, SetIdBound) {
   EXPECT_EQ(102u, GetIdBound(m));
 }
 
-// Returns a module formed by assembling the given text,
+// Returns an IRContext owning the module formed by assembling the given text,
 // then loading the result.
-inline std::unique_ptr<Module> BuildModule(std::string text) {
+inline std::unique_ptr<IRContext> BuildModule(std::string text) {
   return spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
 }
 
 TEST(ModuleTest, ComputeIdBound) {
   // Emtpy module case.
-  EXPECT_EQ(1u, BuildModule("")->ComputeIdBound());
+  EXPECT_EQ(1u, BuildModule("")->module()->ComputeIdBound());
   // Sensitive to result id
-  EXPECT_EQ(2u, BuildModule("%void = OpTypeVoid")->ComputeIdBound());
+  EXPECT_EQ(2u, BuildModule("%void = OpTypeVoid")->module()->ComputeIdBound());
   // Sensitive to type id
-  EXPECT_EQ(1000u, BuildModule("%a = OpTypeArray !999 3")->ComputeIdBound());
+  EXPECT_EQ(1000u, BuildModule("%a = OpTypeArray !999 3")->module()->ComputeIdBound());
   // Sensitive to a regular Id parameter
-  EXPECT_EQ(2000u, BuildModule("OpDecorate !1999 0")->ComputeIdBound());
+  EXPECT_EQ(2000u, BuildModule("OpDecorate !1999 0")->module()->ComputeIdBound());
   // Sensitive to a scope Id parameter.
   EXPECT_EQ(3000u,
             BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
                         "OpMemoryBarrier !2999 %b\n")
-                ->ComputeIdBound());
+                ->module()->ComputeIdBound());
   // Sensitive to a semantics Id parameter
   EXPECT_EQ(4000u,
             BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
                         "OpMemoryBarrier %b !3999\n")
-                ->ComputeIdBound());
+                ->module()->ComputeIdBound());
 }
 
 }  // anonymous namespace

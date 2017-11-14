@@ -21,6 +21,7 @@
 #include "opt/build_module.h"
 #include "opt/def_use_manager.h"
 #include "opt/ir_context.h"
+#include "opt/module.h"
 #include "pass_utils.h"
 #include "spirv-tools/libspirv.hpp"
 
@@ -131,12 +132,12 @@ TEST_P(ParseDefUseTest, Case) {
 
   // Build module.
   const std::vector<const char*> text = {tc.text};
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, context);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(context->module());
 
   CheckDef(tc.du, manager.id_to_defs());
   CheckUse(tc.du, manager.id_to_uses());
@@ -512,23 +513,22 @@ TEST_P(ReplaceUseTest, Case) {
 
   // Build module.
   const std::vector<const char*> text = {tc.before};
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
-  ASSERT_NE(nullptr, module);
-  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+  ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.
-  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
-  (void)context.get_def_use_mgr();
+  context->InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context->get_def_use_mgr();
 
   // Do the substitution.
   for (const auto& candidate : tc.candidates) {
-    context.ReplaceAllUsesWith(candidate.first, candidate.second);
+    context->ReplaceAllUsesWith(candidate.first, candidate.second);
   }
 
-  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
-  CheckDef(tc.du, context.get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.du, context.get_def_use_mgr()->id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context->module()));
+  CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -816,20 +816,19 @@ TEST_P(KillDefTest, Case) {
 
   // Build module.
   const std::vector<const char*> text = {tc.before};
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
-  ASSERT_NE(nullptr, module);
-  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+  ASSERT_NE(nullptr, context);
 
   // Analyze def and use.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(context->module());
 
   // Do the substitution.
-  for (const auto id : tc.ids_to_kill) context.KillDef(id);
+  for (const auto id : tc.ids_to_kill) context->KillDef(id);
 
-  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
-  CheckDef(tc.du, context.get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.du, context.get_def_use_mgr()->id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context->module()));
+  CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -1067,19 +1066,18 @@ TEST(DefUseTest, OpSwitch) {
       "      OpReturnValue %6 "
       "      OpFunctionEnd";
 
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original_text);
-  ASSERT_NE(nullptr, module);
-  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+  ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.
-  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
-  (void)context.get_def_use_mgr();
+  context->InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context->get_def_use_mgr();
 
   // Do a bunch replacements.
-  context.ReplaceAllUsesWith(9, 900);    // to unused id
-  context.ReplaceAllUsesWith(10, 1000);  // to unused id
-  context.ReplaceAllUsesWith(11, 7);     // to existing id
+  context->ReplaceAllUsesWith(9, 900);    // to unused id
+  context->ReplaceAllUsesWith(10, 1000);  // to unused id
+  context->ReplaceAllUsesWith(11, 7);     // to existing id
 
   // clang-format off
   const char modified_text[] =
@@ -1103,7 +1101,7 @@ TEST(DefUseTest, OpSwitch) {
             "OpFunctionEnd";
   // clang-format on
 
-  EXPECT_EQ(modified_text, DisassembleModule(context.module()));
+  EXPECT_EQ(modified_text, DisassembleModule(context->module()));
 
   InstDefUse def_uses = {};
   def_uses.defs = {
@@ -1118,10 +1116,10 @@ TEST(DefUseTest, OpSwitch) {
       {10, "%10 = OpLabel"},
       {11, "%11 = OpLabel"},
   };
-  CheckDef(def_uses, context.get_def_use_mgr()->id_to_defs());
+  CheckDef(def_uses, context->get_def_use_mgr()->id_to_defs());
 
   {
-    auto* use_list = context.get_def_use_mgr()->GetUses(6);
+    auto* use_list = context->get_def_use_mgr()->GetUses(6);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(2u, use_list->size());
     std::vector<SpvOp> opcodes = {use_list->front().inst->opcode(),
@@ -1129,7 +1127,7 @@ TEST(DefUseTest, OpSwitch) {
     EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSwitch, SpvOpReturnValue));
   }
   {
-    auto* use_list = context.get_def_use_mgr()->GetUses(7);
+    auto* use_list = context->get_def_use_mgr()->GetUses(7);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(6u, use_list->size());
     std::vector<SpvOp> opcodes;
@@ -1143,7 +1141,7 @@ TEST(DefUseTest, OpSwitch) {
   }
   // Check all ids only used by OpSwitch after replacement.
   for (const auto id : {8, 900, 1000}) {
-    auto* use_list = context.get_def_use_mgr()->GetUses(id);
+    auto* use_list = context->get_def_use_mgr()->GetUses(id);
     ASSERT_NE(nullptr, use_list);
     EXPECT_EQ(1u, use_list->size());
     EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
@@ -1152,27 +1150,32 @@ TEST(DefUseTest, OpSwitch) {
 
 // Creates an |result_id| = OpTypeInt 32 1 instruction.
 ir::Instruction Int32TypeInstruction(uint32_t result_id) {
-  return ir::Instruction(SpvOp::SpvOpTypeInt, 0, result_id,
+  ir::IRContext context;
+  return ir::Instruction(&context, SpvOp::SpvOpTypeInt, 0, result_id,
                          {ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {32}),
                           ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {1})});
 }
 
 // Creates an |result_id| = OpConstantTrue/Flase |type_id| instruction.
-ir::Instruction ConstantBoolInstruction(bool value, uint32_t type_id,
-                                        uint32_t result_id) {
+ir::Instruction ConstantBoolInstruction(bool value,
+                                        uint32_t type_id, uint32_t result_id) {
+  ir::IRContext context;
   return ir::Instruction(
-      value ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse, type_id,
-      result_id, {});
+      &context,
+      value ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse,
+      type_id, result_id, {});
 }
 
 // Creates an |result_id| = OpLabel instruction.
 ir::Instruction LabelInstruction(uint32_t result_id) {
-  return ir::Instruction(SpvOp::SpvOpLabel, 0, result_id, {});
+  ir::IRContext context;
+  return ir::Instruction(&context, SpvOp::SpvOpLabel, 0, result_id, {});
 }
 
 // Creates an OpBranch |target_id| instruction.
 ir::Instruction BranchInstruction(uint32_t target_id) {
-  return ir::Instruction(SpvOp::SpvOpBranch, 0, 0,
+  ir::IRContext context;
+  return ir::Instruction(&context, SpvOp::SpvOpBranch, 0, 0,
                          {
                              ir::Operand(SPV_OPERAND_TYPE_ID, {target_id}),
                          });
@@ -1193,12 +1196,12 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
   auto tc = GetParam();
 
   // Build module.
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.module_text);
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, context);
 
   // Analyze the instructions.
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(context->module());
   for (ir::Instruction& inst : tc.insts) {
     manager.AnalyzeInstDefUse(&inst);
   }
@@ -1316,27 +1319,26 @@ TEST_P(KillInstTest, Case) {
   auto tc = GetParam();
 
   // Build module.
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.before);
-  ASSERT_NE(nullptr, module);
-  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
+  ASSERT_NE(nullptr, context);
 
   // Force a re-build of the def-use manager.
-  context.InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
-  (void)context.get_def_use_mgr();
+  context->InvalidateAnalyses(ir::IRContext::Analysis::kAnalysisDefUse);
+  (void)context->get_def_use_mgr();
 
   // KillInst
   uint32_t index = 0;
-  context.module()->ForEachInst([&index, &tc, &context](ir::Instruction* inst) {
+  context->module()->ForEachInst([&index, &tc, &context](ir::Instruction* inst) {
     if (tc.indices_for_inst_to_kill.count(index) != 0) {
-      context.KillInst(inst);
+      context->KillInst(inst);
     }
     index++;
   });
 
-  EXPECT_EQ(tc.after, DisassembleModule(context.module()));
-  CheckDef(tc.expected_define_use, context.get_def_use_mgr()->id_to_defs());
-  CheckUse(tc.expected_define_use, context.get_def_use_mgr()->id_to_uses());
+  EXPECT_EQ(tc.after, DisassembleModule(context->module()));
+  CheckDef(tc.expected_define_use, context->get_def_use_mgr()->id_to_defs());
+  CheckUse(tc.expected_define_use, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -1428,12 +1430,12 @@ TEST_P(GetAnnotationsTest, Case) {
   const GetAnnotationsTestCase& tc = GetParam();
 
   // Build module.
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.code);
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, context);
 
   // Get annotations
-  opt::analysis::DefUseManager manager(module.get());
+  opt::analysis::DefUseManager manager(context->module());
   auto insts = manager.GetAnnotations(tc.id);
 
   // Check

@@ -20,9 +20,9 @@
 namespace spvtools {
 namespace ir {
 
-IrLoader::IrLoader(const MessageConsumer& consumer, Module* module)
+IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
     : consumer_(consumer),
-      module_(module),
+      module_(m),
       source_("<instruction>"),
       inst_index_(0) {}
 
@@ -30,12 +30,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
   const auto opcode = static_cast<SpvOp>(inst->opcode);
   if (IsDebugLineInst(opcode)) {
-    dbg_line_info_.push_back(Instruction(*inst));
+    dbg_line_info_.push_back(Instruction(module()->context(), *inst));
     return true;
   }
 
   std::unique_ptr<Instruction> spv_inst(
-      new Instruction(*inst, std::move(dbg_line_info_)));
+      new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
   dbg_line_info_.clear();
 
   const char* src = source_.c_str();

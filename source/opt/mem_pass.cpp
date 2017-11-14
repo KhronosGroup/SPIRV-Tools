@@ -287,7 +287,7 @@ uint32_t MemPass::Type2Undef(uint32_t type_id) {
   if (uitr != type2undefs_.end()) return uitr->second;
   const uint32_t undefId = TakeNextId();
   std::unique_ptr<ir::Instruction> undef_inst(
-      new ir::Instruction(SpvOpUndef, type_id, undefId, {}));
+      new ir::Instruction(context(), SpvOpUndef, type_id, undefId, {}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*undef_inst);
   get_module()->AddGlobalValue(std::move(undef_inst));
   type2undefs_[type_id] = undefId;
@@ -402,7 +402,7 @@ void MemPass::SSABlockInitLoopHeader(
     }
     const uint32_t phiId = TakeNextId();
     std::unique_ptr<ir::Instruction> newPhi(
-        new ir::Instruction(SpvOpPhi, typeId, phiId, phi_in_operands));
+        new ir::Instruction(context(), SpvOpPhi, typeId, phiId, phi_in_operands));
     // The only phis requiring patching are the ones we create.
     phis_to_patch_.insert(phiId);
     // Only analyze the phi define now; analyze the phi uses after the
@@ -470,7 +470,7 @@ void MemPass::SSABlockInitMultiPred(ir::BasicBlock* block_ptr) {
     }
     const uint32_t phiId = TakeNextId();
     std::unique_ptr<ir::Instruction> newPhi(
-        new ir::Instruction(SpvOpPhi, typeId, phiId, phi_in_operands));
+        new ir::Instruction(context(), SpvOpPhi, typeId, phiId, phi_in_operands));
     get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
     insertItr = insertItr.InsertBefore(std::move(newPhi));
     ++insertItr;

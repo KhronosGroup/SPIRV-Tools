@@ -27,6 +27,7 @@
 namespace spvtools {
 namespace ir {
 
+class IRContext;
 class Module;
 
 // A SPIR-V function.
@@ -38,17 +39,22 @@ class Function {
   // Creates a function instance declared by the given OpFunction instruction
   // |def_inst|.
   inline explicit Function(std::unique_ptr<Instruction> def_inst);
-  // Creates a function instance based on the given function |f|.
+
+  explicit Function(const Function& f) = delete;
+
+  // Creates a clone of the instruction in the given |context|
   //
   // The parent module will default to null and needs to be explicitly set by
   // the user.
-  explicit Function(const Function& f);
+  Function* Clone(IRContext*) const;
   // The OpFunction instruction that begins the definition of this function.
   Instruction& DefInst() { return *def_inst_; }
   const Instruction& DefInst() const { return *def_inst_; }
 
   // Sets the enclosing module for this function.
   void SetParent(Module* module) { module_ = module; }
+  // Gets the enclosing module for this function
+  Module* GetParent() const { return module_; }
   // Appends a parameter to this function.
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a basic block to this function.

@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 namespace spvtools {
 namespace ir {
@@ -53,11 +54,34 @@ class IRContext {
   friend inline Analysis operator<<(Analysis a, int shift);
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
-  IRContext(std::unique_ptr<Module>&& m, spvtools::MessageConsumer c)
-      : module_(std::move(m)),
-        consumer_(std::move(c)),
+  // Trivial constructor for testing purposes
+  IRContext()
+      : unique_id_(0),
+        module_(nullptr),
+        consumer_(nullptr),
         def_use_mgr_(nullptr),
         valid_analyses_(kAnalysisNone) {}
+
+  // Create an |IRContext| that contains an owned |Module|
+  IRContext(spvtools::MessageConsumer c)
+      : unique_id_(0),
+        module_(new Module()),
+        consumer_(std::move(c)),
+        def_use_mgr_(nullptr),
+        valid_analyses_(kAnalysisNone)
+  {
+    module_->SetContext(this);
+  }
+
+  IRContext(std::unique_ptr<Module>&& m, spvtools::MessageConsumer c)
+      : unique_id_(0),
+        module_(std::move(m)),
+        consumer_(std::move(c)),
+        def_use_mgr_(nullptr),
+        valid_analyses_(kAnalysisNone)
+  {
+    module_->SetContext(this);
+  }
   Module* module() const { return module_.get(); }
 
   inline void SetIdBound(uint32_t i);
@@ -239,6 +263,13 @@ class IRContext {
   // Kill all name and decorate ops targeting the result id of |inst|.
   void KillNamesAndDecorates(ir::Instruction* inst);
 
+  inline uint32_t TakeNextUniqueId() {
+    assert(unique_id_ != std::numeric_limits<uint32_t>::max());
+
+    // Skip zero
+    return ++unique_id_;
+  }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -264,6 +295,7 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
   }
 
+  uint32_t unique_id_;
   std::unique_ptr<Module> module_;
   spvtools::MessageConsumer consumer_;
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;

@@ -70,11 +70,11 @@ bool DecorationManager::AreDecorationsTheSame(
   //    for (uint32_t i = 2u; i < inst.NumInOperands(); ++i) {
   //      const auto& j = constants.find(inst.GetSingleWordInOperand(i));
   //      if (j == constants.end())
-  //        return Instruction();
+  //        return Instruction(inst.context());
   //      const auto operand = j->second->GetOperand(0u);
   //      operands.emplace_back(operand.type, operand.words);
   //    }
-  //    return Instruction(SpvOpDecorate, 0u, 0u, operands);
+  //    return Instruction(inst.context(), SpvOpDecorate, 0u, 0u, operands);
   //  };
   //  Instruction tmpA = (deco1.opcode() == SpvOpDecorateId) ?
   //  decorateIdToDecorate(deco1) : deco1;

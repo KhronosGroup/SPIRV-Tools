@@ -38,6 +38,7 @@
 namespace spvtools {
 
 using ir::Instruction;
+using ir::IRContext;
 using ir::Module;
 using ir::Operand;
 using opt::PassManager;
@@ -72,7 +73,7 @@ using LinkageTable = std::vector<LinkageEntry>;
 // not be empty either.
 static spv_result_t ShiftIdsInModules(
     const MessageConsumer& consumer,
-    std::vector<std::unique_ptr<ir::Module>>* modules, uint32_t* max_id_bound);
+    std::vector<ir::Module*>* modules, uint32_t* max_id_bound);
 
 // Generates the header for the linked module and returns it in |header|.
 //
@@ -84,7 +85,7 @@ static spv_result_t ShiftIdsInModules(
 //                     the input modules.
 static spv_result_t GenerateHeader(
     const MessageConsumer& consumer,
-    const std::vector<std::unique_ptr<ir::Module>>& modules,
+    const std::vector<ir::Module*>& modules,
     uint32_t max_id_bound, ir::ModuleHeader* header);
 
 // Merge all the modules from |inModules| into |linked_module|.
@@ -92,8 +93,9 @@ static spv_result_t GenerateHeader(
 // |linked_module| should not be null.
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
-    const std::vector<std::unique_ptr<Module>>& inModules,
-    const libspirv::AssemblyGrammar& grammar, Module* linked_module);
+    const std::vector<Module*>& inModules,
+    const libspirv::AssemblyGrammar& grammar,
+    IRContext* linked_context);
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
 //
@@ -186,7 +188,8 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
                                       SPV_ERROR_INVALID_BINARY)
            << "No modules were given.";
 
-  std::vector<std::unique_ptr<Module>> modules;
+  std::vector<std::unique_ptr<IRContext>> contexts;
+  std::vector<Module*> modules;
   modules.reserve(num_binaries);
   for (size_t i = 0u; i < num_binaries; ++i) {
     const uint32_t schema = binaries[i][4u];
@@ -197,13 +200,14 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
              << "Schema is non-zero for module " << i << ".";
     }
 
-    std::unique_ptr<Module> module = BuildModule(
+    std::unique_ptr<IRContext> context = BuildModule(
         impl_->context->target_env, consumer, binaries[i], binary_sizes[i]);
-    if (module == nullptr)
+    if (context == nullptr)
       return libspirv::DiagnosticStream(position, consumer,
                                         SPV_ERROR_INVALID_BINARY)
-             << "Failed to build a module out of " << modules.size() << ".";
-    modules.push_back(std::move(module));
+             << "Failed to build a module out of " << contexts.size() << ".";
+    modules.push_back(context->module());
+    contexts.push_back(std::move(context));
   }
 
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
@@ -216,14 +220,13 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   ir::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
-  auto linked_module = MakeUnique<Module>();
-  linked_module->SetHeader(header);
+  IRContext linked_context(consumer);
+  linked_context.module()->SetHeader(header);
 
   // Phase 3: Merge all the binaries into a single one.
   libspirv::AssemblyGrammar grammar(impl_->context);
-  res = MergeModules(consumer, modules, grammar, linked_module.get());
+  res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
-  ir::IRContext linked_context(std::move(linked_module), consumer);
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
@@ -270,7 +273,7 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
 
 static spv_result_t ShiftIdsInModules(
     const MessageConsumer& consumer,
-    std::vector<std::unique_ptr<ir::Module>>* modules, uint32_t* max_id_bound) {
+    std::vector<ir::Module*>* modules, uint32_t* max_id_bound) {
   spv_position_t position = {};
 
   if (modules == nullptr)
@@ -289,7 +292,7 @@ static spv_result_t ShiftIdsInModules(
   uint32_t id_bound = modules->front()->IdBound() - 1u;
   for (auto module_iter = modules->begin() + 1; module_iter != modules->end();
        ++module_iter) {
-    Module* module = module_iter->get();
+    Module* module = *module_iter;
     module->ForEachInst([&id_bound](Instruction* insn) {
       insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
     });
@@ -313,7 +316,7 @@ static spv_result_t ShiftIdsInModules(
 
 static spv_result_t GenerateHeader(
     const MessageConsumer& consumer,
-    const std::vector<std::unique_ptr<ir::Module>>& modules,
+    const std::vector<ir::Module*>& modules,
     uint32_t max_id_bound, ir::ModuleHeader* header) {
   spv_position_t position = {};
 
@@ -341,28 +344,32 @@ static spv_result_t GenerateHeader(
 
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
-    const std::vector<std::unique_ptr<Module>>& input_modules,
-    const libspirv::AssemblyGrammar& grammar, Module* linked_module) {
+    const std::vector<Module*>& input_modules,
+    const libspirv::AssemblyGrammar& grammar, IRContext* linked_context) {
   spv_position_t position = {};
 
-  if (linked_module == nullptr)
+  if (linked_context == nullptr)
     return libspirv::DiagnosticStream(position, consumer,
                                       SPV_ERROR_INVALID_DATA)
            << "|linked_module| of MergeModules should not be null.";
+  Module* linked_module = linked_context->module();
 
   if (input_modules.empty()) return SPV_SUCCESS;
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->capabilities())
-      linked_module->AddCapability(MakeUnique<Instruction>(inst));
+      linked_module->AddCapability(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->extensions())
-      linked_module->AddExtension(MakeUnique<Instruction>(inst));
+      linked_module->AddExtension(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->ext_inst_imports())
-      linked_module->AddExtInstImport(MakeUnique<Instruction>(inst));
+      linked_module->AddExtInstImport(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   do {
     const Instruction* memory_model_inst = input_modules[0]->GetMemoryModel();
@@ -402,7 +409,7 @@ static spv_result_t MergeModules(
 
     if (memory_model_inst != nullptr)
       linked_module->SetMemoryModel(
-          MakeUnique<Instruction>(*memory_model_inst));
+          std::unique_ptr<Instruction>(memory_model_inst->Clone(linked_context)));
   } while (false);
 
   std::vector<std::pair<uint32_t, const char*>> entry_points;
@@ -424,25 +431,30 @@ static spv_result_t MergeModules(
                << "The entry point \"" << name << "\", with execution model "
                << desc->name << ", was already defined.";
       }
-      linked_module->AddEntryPoint(MakeUnique<Instruction>(inst));
+      linked_module->AddEntryPoint(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
       entry_points.emplace_back(model, name);
     }
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->execution_modes())
-      linked_module->AddExecutionMode(MakeUnique<Instruction>(inst));
+      linked_module->AddExecutionMode(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->debugs1())
-      linked_module->AddDebug1Inst(MakeUnique<Instruction>(inst));
+      linked_module->AddDebug1Inst(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->debugs2())
-      linked_module->AddDebug2Inst(MakeUnique<Instruction>(inst));
+      linked_module->AddDebug2Inst(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->annotations())
-      linked_module->AddAnnotationInst(MakeUnique<Instruction>(inst));
+      linked_module->AddAnnotationInst(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
   // TODO(pierremoreau): Since the modules have not been validate, should we
   //                     expect SpvStorageClassFunction variables outside
@@ -450,7 +462,8 @@ static spv_result_t MergeModules(
   uint32_t num_global_values = 0u;
   for (const auto& module : input_modules) {
     for (const auto& inst : module->types_values()) {
-      linked_module->AddType(MakeUnique<Instruction>(inst));
+      linked_module->AddType(
+          std::unique_ptr<Instruction>(inst.Clone(linked_context)));
       num_global_values += inst.opcode() == SpvOpVariable;
     }
   }
@@ -462,8 +475,7 @@ static spv_result_t MergeModules(
   // Process functions and their basic blocks
   for (const auto& module : input_modules) {
     for (const auto& func : *module) {
-      std::unique_ptr<ir::Function> cloned_func =
-          MakeUnique<ir::Function>(func);
+      std::unique_ptr<ir::Function> cloned_func(func.Clone(linked_context));
       cloned_func->SetParent(linked_module);
       linked_module->AddFunction(std::move(cloned_func));
     }

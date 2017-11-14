@@ -19,27 +19,25 @@
 namespace spvtools {
 namespace ir {
 
-Function::Function(const Function& f)
-    : module_(nullptr),
-      def_inst_(MakeUnique<Instruction>(f.DefInst())),
-      params_(),
-      blocks_(),
-      end_inst_() {
-  params_.reserve(f.params_.size());
-  f.ForEachParam(
-      [this](const Instruction* insn) {
-        AddParameter(MakeUnique<Instruction>(*insn));
+Function* Function::Clone(IRContext* context) const {
+  Function* clone =
+      new Function(std::unique_ptr<Instruction>(DefInst().Clone(context)));
+  clone->params_.reserve(params_.size());
+  ForEachParam(
+      [clone,context](const Instruction* inst) {
+        clone->AddParameter(std::unique_ptr<Instruction>(inst->Clone(context)));
       },
       true);
 
-  blocks_.reserve(f.blocks_.size());
-  for (const auto& b : f.blocks_) {
-    std::unique_ptr<BasicBlock> bb = MakeUnique<BasicBlock>(*b);
-    bb->SetParent(this);
-    AddBasicBlock(std::move(bb));
+  clone->blocks_.reserve(blocks_.size());
+  for (const auto& b : blocks_) {
+    std::unique_ptr<BasicBlock> bb(b->Clone(context));
+    bb->SetParent(clone);
+    clone->AddBasicBlock(std::move(bb));
   }
 
-  SetFunctionEnd(MakeUnique<Instruction>(f.function_end()));
+  clone->SetFunctionEnd(std::unique_ptr<Instruction>(function_end().Clone(context)));
+  return clone;
 }
 
 void Function::ForEachInst(const std::function<void(Instruction*)>& f,

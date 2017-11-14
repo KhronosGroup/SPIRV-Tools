@@ -75,7 +75,7 @@ class AppendOpNopPass : public opt::Pass {
  public:
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::IRContext* irContext) override {
-    irContext->AddDebug1Inst(MakeUnique<ir::Instruction>());
+    irContext->AddDebug1Inst(MakeUnique<ir::Instruction>(irContext));
     return Status::SuccessWithChange;
   }
 };
@@ -89,7 +89,7 @@ class AppendMultipleOpNopPass : public opt::Pass {
   const char* name() const override { return "AppendOpNop"; }
   Status Process(ir::IRContext* irContext) override {
     for (uint32_t i = 0; i < num_nop_; i++) {
-      irContext->AddDebug1Inst(MakeUnique<ir::Instruction>());
+      irContext->AddDebug1Inst(MakeUnique<ir::Instruction>(irContext));
     }
     return Status::SuccessWithChange;
   }
@@ -103,7 +103,8 @@ class DuplicateInstPass : public opt::Pass {
  public:
   const char* name() const override { return "DuplicateInst"; }
   Status Process(ir::IRContext* irContext) override {
-    auto inst = MakeUnique<ir::Instruction>(*(--irContext->debug1_end()));
+    auto inst = MakeUnique<ir::Instruction>(
+        *(--irContext->debug1_end())->Clone(irContext));
     irContext->AddDebug1Inst(std::move(inst));
     return Status::SuccessWithChange;
   }
@@ -140,7 +141,7 @@ class AppendTypeVoidInstPass : public opt::Pass {
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
   Status Process(ir::IRContext* irContext) override {
-    auto inst = MakeUnique<ir::Instruction>(SpvOpTypeVoid, 0, result_id_,
+    auto inst = MakeUnique<ir::Instruction>(irContext, SpvOpTypeVoid, 0, result_id_,
                                             std::vector<ir::Operand>{});
     irContext->AddType(std::move(inst));
     return Status::SuccessWithChange;
