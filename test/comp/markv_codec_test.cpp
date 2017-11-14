@@ -26,7 +26,9 @@
 
 namespace {
 
+using spvtools::MarkvModelType;
 using spvtest::ScopedContext;
+using MarkvTest = ::testing::TestWithParam<MarkvModelType>;
 
 void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
                                const spv_position_t& position,
@@ -85,10 +87,11 @@ void Disassemble(const std::vector<uint32_t>& words,
 
 // Encodes/decodes |original|, assembles/dissasembles |original|, then compares
 // the results of the two operations.
-void TestEncodeDecode(const std::string& original_text) {
+void TestEncodeDecode(MarkvModelType model_type,
+                      const std::string& original_text) {
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_2);
   std::unique_ptr<spvtools::MarkvModel> model =
-      spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
+      spvtools::CreateMarkvModel(model_type);
   spvtools::MarkvCodecOptions options;
 
   std::vector<uint32_t> expected_binary;
@@ -133,7 +136,8 @@ void TestEncodeDecode(const std::string& original_text) {
   EXPECT_EQ(expected_text, decoded_text) << encoder_comments.str();
 }
 
-void TestEncodeDecodeShaderMainBody(const std::string& body) {
+void TestEncodeDecodeShaderMainBody(MarkvModelType model_type,
+                                    const std::string& body) {
   const std::string prefix =
 R"(
 OpCapability Shader
@@ -216,11 +220,11 @@ R"(
 OpReturn
 OpFunctionEnd)";
 
-  TestEncodeDecode(prefix + body + suffix);
+  TestEncodeDecode(model_type, prefix + body + suffix);
 }
 
-TEST(Markv, U32Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, U32Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -231,8 +235,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, S32Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, S32Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -245,8 +249,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, U64Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, U64Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Int64
@@ -258,8 +262,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, S64Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, S64Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Int64
@@ -273,8 +277,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, U16Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, U16Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Int16
@@ -286,8 +290,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, S16Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, S16Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Int16
@@ -301,8 +305,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, F32Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, F32Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -314,8 +318,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, F64Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, F64Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Float64
@@ -328,8 +332,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, F16Literal) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, F16Literal) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability Float16
@@ -342,8 +346,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, StringLiteral) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, StringLiteral) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpExtension "SPV_KHR_16bit_storage"
@@ -354,8 +358,8 @@ OpMemoryModel Logical GLSL450
 )");
 }
 
-TEST(Markv, WithFunction) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithFunction) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -376,8 +380,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, WithMultipleFunctions) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithMultipleFunctions) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -409,8 +413,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, ForwardDeclaredId) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, ForwardDeclaredId) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -430,8 +434,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, WithSwitch) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithSwitch) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -460,8 +464,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, WithLoop) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithLoop) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -485,8 +489,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, WithDecorate) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithDecorate) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -497,8 +501,8 @@ OpDecorate %1 Uniform
 )");
 }
 
-TEST(Markv, WithExtInst) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, WithExtInst) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
@@ -517,8 +521,8 @@ OpFunctionEnd
 )");
 }
 
-TEST(Markv, F32Mul) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32Mul) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpFMul %f32 %f32_0 %f32_1
 %val2 = OpFMul %f32 %f32_2 %f32_0
 %val3 = OpFMul %f32 %f32_pi %f32_2
@@ -526,8 +530,8 @@ TEST(Markv, F32Mul) {
 )");
 }
 
-TEST(Markv, U32Mul) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, U32Mul) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpIMul %u32 %u32_0 %u32_1
 %val2 = OpIMul %u32 %u32_2 %u32_0
 %val3 = OpIMul %u32 %u32_3 %u32_2
@@ -535,8 +539,8 @@ TEST(Markv, U32Mul) {
 )");
 }
 
-TEST(Markv, S32Mul) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, S32Mul) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpIMul %s32 %s32_0 %s32_1
 %val2 = OpIMul %s32 %s32_2 %s32_0
 %val3 = OpIMul %s32 %s32_m1 %s32_2
@@ -544,8 +548,8 @@ TEST(Markv, S32Mul) {
 )");
 }
 
-TEST(Markv, F32Add) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32Add) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpFAdd %f32 %f32_0 %f32_1
 %val2 = OpFAdd %f32 %f32_2 %f32_0
 %val3 = OpFAdd %f32 %f32_pi %f32_2
@@ -553,8 +557,8 @@ TEST(Markv, F32Add) {
 )");
 }
 
-TEST(Markv, U32Add) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, U32Add) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpIAdd %u32 %u32_0 %u32_1
 %val2 = OpIAdd %u32 %u32_2 %u32_0
 %val3 = OpIAdd %u32 %u32_3 %u32_2
@@ -562,8 +566,8 @@ TEST(Markv, U32Add) {
 )");
 }
 
-TEST(Markv, S32Add) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, S32Add) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %val1 = OpIAdd %s32 %s32_0 %s32_1
 %val2 = OpIAdd %s32 %s32_2 %s32_0
 %val3 = OpIAdd %s32 %s32_m1 %s32_2
@@ -571,8 +575,8 @@ TEST(Markv, S32Add) {
 )");
 }
 
-TEST(Markv, F32Dot) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32Dot) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %dot2_1 = OpDot %f32 %f32vec2_01 %f32vec2_12
 %dot2_2 = OpDot %f32 %f32vec2_01 %f32vec2_01
 %dot2_3 = OpDot %f32 %f32vec2_12 %f32vec2_12
@@ -585,8 +589,8 @@ TEST(Markv, F32Dot) {
 )");
 }
 
-TEST(Markv, F32VectorCompositeConstruct) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %cc1 = OpCompositeConstruct %f32vec4 %f32vec2_01 %f32vec2_12
 %cc2 = OpCompositeConstruct %f32vec3 %f32vec2_01 %f32_2
 %cc3 = OpCompositeConstruct %f32vec2 %f32_1 %f32_2
@@ -594,8 +598,8 @@ TEST(Markv, F32VectorCompositeConstruct) {
 )");
 }
 
-TEST(Markv, U32VectorCompositeConstruct) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, U32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %cc1 = OpCompositeConstruct %u32vec4 %u32vec2_01 %u32vec2_12
 %cc2 = OpCompositeConstruct %u32vec3 %u32vec2_01 %u32_2
 %cc3 = OpCompositeConstruct %u32vec2 %u32_1 %u32_2
@@ -603,8 +607,8 @@ TEST(Markv, U32VectorCompositeConstruct) {
 )");
 }
 
-TEST(Markv, S32VectorCompositeConstruct) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, S32VectorCompositeConstruct) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %cc1 = OpCompositeConstruct %u32vec4 %u32vec2_01 %u32vec2_12
 %cc2 = OpCompositeConstruct %u32vec3 %u32vec2_01 %u32_2
 %cc3 = OpCompositeConstruct %u32vec2 %u32_1 %u32_2
@@ -612,15 +616,15 @@ TEST(Markv, S32VectorCompositeConstruct) {
 )");
 }
 
-TEST(Markv, F32VectorCompositeExtract) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32VectorCompositeExtract) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
 %f32vec3_013 = OpCompositeExtract %f32vec3 %f32vec4_0123 0 1 3
 )");
 }
 
-TEST(Markv, F32VectorComparison) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, F32VectorComparison) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
 %c1 = OpFOrdEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
 %c2 = OpFUnordEqual %boolvec4 %f32vec4_0123 %f32vec4_3210
@@ -637,24 +641,24 @@ TEST(Markv, F32VectorComparison) {
 )");
 }
 
-TEST(Markv, VectorShuffle) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, VectorShuffle) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
 %sh1 = OpVectorShuffle %f32vec2 %f32vec4_0123 %f32vec4_3210 3 6
 %sh2 = OpVectorShuffle %f32vec3 %f32vec2_01 %f32vec4_3210 0 3 4
 )");
 }
 
-TEST(Markv, VectorTimesScalar) {
-  TestEncodeDecodeShaderMainBody(R"(
+TEST_P(MarkvTest, VectorTimesScalar) {
+  TestEncodeDecodeShaderMainBody(GetParam(), R"(
 %f32vec4_3210 = OpCompositeConstruct %f32vec4 %f32_3 %f32_2 %f32_1 %f32_0
 %res1 = OpVectorTimesScalar %f32vec4 %f32vec4_0123 %f32_2
 %res2 = OpVectorTimesScalar %f32vec4 %f32vec4_3210 %f32_2
 )");
 }
 
-TEST(Markv, SpirvSpecSample) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, SpirvSpecSample) {
+  TestEncodeDecode(GetParam(), R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -775,8 +779,8 @@ TEST(Markv, SpirvSpecSample) {
 )");
 }
 
-TEST(Markv, SampleFromDeadBranchEliminationTest) {
-  TestEncodeDecode(R"(
+TEST_P(MarkvTest, SampleFromDeadBranchEliminationTest) {
+  TestEncodeDecode(GetParam(), R"(
 OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -814,5 +818,13 @@ OpReturn
 OpFunctionEnd
 )");
 }
+
+INSTANTIATE_TEST_CASE_P(
+    AllMarkvModels, MarkvTest,
+    ::testing::ValuesIn(std::vector<MarkvModelType>{
+        spvtools::kMarkvModelShaderLite,
+        spvtools::kMarkvModelShaderMid,
+        spvtools::kMarkvModelShaderMax,
+    }),);
 
 }  // namespace

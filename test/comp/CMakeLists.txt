@@ -22,7 +22,7 @@ if(SPIRV_BUILD_COMPRESSION)
     SRCS
       markv_codec_test.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/comp/markv_model_factory.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/comp/markv_model_shader_default.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/comp/markv_model_shader.cpp
       ${VAL_TEST_COMMON_SRCS}
     LIBS SPIRV-Tools-comp ${SPIRV_TOOLS}
   )

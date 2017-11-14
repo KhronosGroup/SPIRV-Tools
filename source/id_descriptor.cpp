@@ -63,7 +63,10 @@ uint32_t IdDescriptorCollection::ProcessInstruction(
     }
   }
 
-  const uint32_t descriptor = HashU32Array(words_);
+  uint32_t descriptor = custom_hash_func_ ?
+      custom_hash_func_(words_) : HashU32Array(words_);
+  if (descriptor == 0)
+    descriptor = 1;
   assert(descriptor);
 
   words_.clear();
