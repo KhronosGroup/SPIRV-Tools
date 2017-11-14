@@ -454,7 +454,7 @@ void InlinePass::GenInlineCode(
       } break;
       default: {
         // Copy callee instruction and remap all input Ids.
-        std::unique_ptr<ir::Instruction> cp_inst(cpi->Clone(context()));
+       std::unique_ptr<ir::Instruction> cp_inst(cpi->Clone(context()));
         cp_inst->ForEachInId([&callee2caller, &callee_result_ids,
                               this](uint32_t* iid) {
           const auto mapItr = callee2caller.find(*iid);
