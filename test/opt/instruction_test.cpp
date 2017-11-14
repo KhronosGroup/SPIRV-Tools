@@ -231,4 +231,60 @@ TEST(InstructionTest, ForInIdNonstandardIdTypes) {
   EXPECT_THAT(ids, Eq(std::vector<uint32_t>{100, 101, 102}));
 }
 
+TEST(InstructionTest, UniqueIds) {
+  IRContext context;
+  Instruction inst1(&context);
+  Instruction inst2(&context);
+  EXPECT_NE(inst1.unique_id(), inst2.unique_id());
+}
+
+TEST(InstructionTest, CloneUniqueIdDifferent) {
+  IRContext context;
+  Instruction inst(&context);
+  std::unique_ptr<Instruction> clone(inst.Clone(&context));
+  EXPECT_EQ(inst.context(), clone->context());
+  EXPECT_NE(inst.unique_id(), clone->unique_id());
+}
+
+TEST(InstructionTest, CloneDifferentContext) {
+  IRContext c1;
+  IRContext c2;
+  Instruction inst(&c1);
+  std::unique_ptr<Instruction> clone(inst.Clone(&c2));
+  EXPECT_EQ(&c1, inst.context());
+  EXPECT_EQ(&c2, clone->context());
+  EXPECT_NE(&c1, &c2);
+}
+
+TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
+  IRContext c1;
+  IRContext c2;
+  Instruction inst(&c1);
+  Instruction other(&c2);
+  std::unique_ptr<Instruction> clone(inst.Clone(&c2));
+  EXPECT_EQ(&c2, clone->context());
+  EXPECT_NE(other.unique_id(), clone->unique_id());
+}
+
+TEST(InstructionTest, EqualsEqualsOperator) {
+  IRContext context;
+  Instruction i1(&context);
+  Instruction i2(&context);
+  std::unique_ptr<Instruction> clone(i1.Clone(&context));
+  EXPECT_TRUE(i1 == i1);
+  EXPECT_FALSE(i1 == i2);
+  EXPECT_FALSE(i1 == *clone);
+  EXPECT_FALSE(i2 == *clone);
+}
+
+TEST(InstructionTest, LessThanOperator) {
+  IRContext context;
+  Instruction i1(&context);
+  Instruction i2(&context);
+  std::unique_ptr<Instruction> clone(i1.Clone(&context));
+  EXPECT_TRUE(i1 < i2);
+  EXPECT_TRUE(i1 < *clone);
+  EXPECT_TRUE(i2 < *clone);
+}
+
 }  // anonymous namespace

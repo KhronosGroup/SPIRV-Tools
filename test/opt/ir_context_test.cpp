@@ -178,25 +178,30 @@ TEST_F(IRContextTest, KillMemberName) {
                OpFunctionEnd
 )";
 
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
-  ir::IRContext context(std::move(module), spvtools::MessageConsumer());
 
   // Build the decoration manager.
-  context.get_decoration_mgr();
+  context->get_decoration_mgr();
 
   // Delete the OpTypeStruct.  Should delete the OpName, OpMemberName, and
   // OpMemberDecorate associated with it.
-  context.KillDef(3);
+  context->KillDef(3);
 
   // Make sure all of the name are removed.
-  for (auto& inst : context.debugs2()) {
+  for (auto& inst : context->debugs2()) {
     EXPECT_EQ(inst.opcode(), SpvOpNop);
   }
 
   // Make sure all of the decorations are removed.
-  for (auto& inst : context.annotations()) {
+  for (auto& inst : context->annotations()) {
     EXPECT_EQ(inst.opcode(), SpvOpNop);
   }
+
+TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
+  const uint32_t NUM_TESTS = 1000;
+  IRContext localContext;
+  for (uint32_t i = 1; i < NUM_TESTS; ++i)
+    EXPECT_EQ(i, localContext.TakeNextUniqueId());
 }
 }  // anonymous namespace
