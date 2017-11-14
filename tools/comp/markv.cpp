@@ -72,6 +72,12 @@ Options:
   --comments      Write codec comments to stderr.
   --version       Display MARK-V codec version.
   --validate      Validate SPIR-V while encoding or decoding.
+  --model=<model-name>
+                  Compression model, possible values:
+                  shader_lite - fast, poor compression ratio
+                  shader_mid - balanced
+                  shader_max - best compression ratio
+                  Default: shader_lite
 
   -o <filename>   Set the output filename.
                   Output goes to standard output if this option is
@@ -132,6 +138,8 @@ int main(int argc, char** argv) {
   bool want_comments = false;
   bool validate_spirv_binary = false;
 
+  spvtools::MarkvModelType model_type = spvtools::kMarkvModelUnknown;
+
   for (int argi = 2; argi < argc; ++argi) {
     if ('-' == argv[argi][0]) {
       switch (argv[argi][1]) {
@@ -158,6 +166,18 @@ int main(int argc, char** argv) {
             return 1;
           } else if (0 == strcmp(argv[argi], "--validate")) {
             validate_spirv_binary = true;
+          } else if (0 == strcmp(argv[argi], "--model=shader_lite")) {
+            if (model_type != spvtools::kMarkvModelUnknown)
+              fprintf(stderr, "error: More than one model specified\n");
+            model_type = spvtools::kMarkvModelShaderLite;
+          } else if (0 == strcmp(argv[argi], "--model=shader_mid")) {
+            if (model_type != spvtools::kMarkvModelUnknown)
+              fprintf(stderr, "error: More than one model specified\n");
+            model_type = spvtools::kMarkvModelShaderMid;
+          } else if (0 == strcmp(argv[argi], "--model=shader_max")) {
+            if (model_type != spvtools::kMarkvModelUnknown)
+              fprintf(stderr, "error: More than one model specified\n");
+            model_type = spvtools::kMarkvModelShaderMax;
           } else {
             print_usage(argv[0]);
             return 1;
@@ -186,6 +206,9 @@ int main(int argc, char** argv) {
     }
   }
 
+  if (model_type == spvtools::kMarkvModelUnknown)
+    model_type = spvtools::kMarkvModelShaderLite;
+
   const auto no_comments = spvtools::MarkvLogConsumer();
   const auto output_to_stderr = [](const std::string& str) {
     std::cerr << str;
@@ -194,7 +217,7 @@ int main(int argc, char** argv) {
   ScopedContext ctx(kSpvEnv);
 
   std::unique_ptr<spvtools::MarkvModel> model =
-      spvtools::CreateMarkvModel(spvtools::kMarkvModelShaderDefault);
+      spvtools::CreateMarkvModel(model_type);
 
   std::vector<uint32_t> spirv;
   std::vector<uint8_t> markv;

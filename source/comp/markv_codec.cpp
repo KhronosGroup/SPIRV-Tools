@@ -60,10 +60,10 @@
 #include "val/validation_state.h"
 #include "validate.h"
 
+using libspirv::DiagnosticStream;
 using libspirv::IdDescriptorCollection;
 using libspirv::Instruction;
 using libspirv::ValidationState_t;
-using libspirv::DiagnosticStream;
 using spvutils::BitReaderWord64;
 using spvutils::BitWriterWord64;
 using spvutils::HuffmanCodec;
@@ -131,10 +131,10 @@ enum : uint64_t {
   kMtfFunctionTypeWithReturnTypeBegin = 0x70000,
   // All function objects which return specific type.
   kMtfFunctionWithReturnTypeBegin = 0x80000,
-  // All float vectors of specific size.
-  kMtfFloatVectorOfSizeBegin = 0x90000,
-  // Id descriptor space (32-bit).
-  kMtfIdDescriptorSpaceBegin = 0x100000000,
+  // Short id descriptor space (max 16-bit).
+  kMtfShortIdDescriptorSpaceBegin = 0x90000,
+  // Long id descriptor space (32-bit).
+  kMtfLongIdDescriptorSpaceBegin = 0x100000000,
 };
 
 // Signals that the value is not in the coding scheme and a fallback method
@@ -151,6 +151,20 @@ const uint32_t kMtfRankEncodedByValueSignal =
 const size_t kCommentNumWhitespaces = 2;
 
 const size_t kByteBreakAfterInstIfLessThanUntilNextByte = 8;
+
+const uint32_t kShortDescriptorNumBits = 8;
+
+// Custom hash function used to produce short descriptors.
+uint32_t ShortHashU32Array(const std::vector<uint32_t>& words) {
+  // The hash function is a sum of hashes of each word seeded by word index.
+  // Knuth's multiplicative hash is used to hash the words.
+  const uint32_t kKnuthMulHash = 2654435761;
+  uint32_t val = 0;
+  for (uint32_t i = 0; i < words.size(); ++i) {
+    val += (words[i] + i + 123) * kKnuthMulHash;
+  }
+  return 1 + val % ((1 << kShortDescriptorNumBits) - 1);
+}
 
 // Returns a set of mtf rank codecs based on a plausible hand-coded
 // distribution.
@@ -263,7 +277,7 @@ size_t GetNumBitsToNextByte(size_t bit_pos) { return (8 - (bit_pos % 8)) % 8; }
 // Defines and returns current MARK-V version.
 uint32_t GetMarkvVersion() {
   const uint32_t kVersionMajor = 1;
-  const uint32_t kVersionMinor = 3;
+  const uint32_t kVersionMinor = 4;
   return kVersionMinor | (kVersionMajor << 16);
 }
 
@@ -372,6 +386,7 @@ class MarkvCodecBase {
       : validator_options_(validator_options),
         grammar_(context),
         model_(model),
+        short_id_descriptors_(ShortHashU32Array),
         mtf_huffman_codecs_(GetMtfHuffmanCodecs()),
         context_(context),
         vstate_(validator_options
@@ -425,11 +440,6 @@ class MarkvCodecBase {
     return kMtfVectorOfComponentTypeBegin + type_id;
   }
 
-  // Returns mtf handle for float vectors of specific size.
-  uint64_t GetMtfFloatVectorOfSize(uint32_t size) const {
-    return kMtfFloatVectorOfSizeBegin + size;
-  }
-
   // Returns mtf handle for vector type of specific size.
   uint64_t GetMtfTypeVectorOfSize(uint32_t size) const {
     return kMtfTypeVectorOfSizeBegin + size;
@@ -450,9 +460,14 @@ class MarkvCodecBase {
     return kMtfFunctionWithReturnTypeBegin + type_id;
   }
 
-  // Returns mtf handle for the given id descriptor.
-  uint64_t GetMtfIdDescriptor(uint32_t descriptor) const {
-    return kMtfIdDescriptorSpaceBegin + descriptor;
+  // Returns mtf handle for the given long id descriptor.
+  uint64_t GetMtfLongIdDescriptor(uint32_t descriptor) const {
+    return kMtfLongIdDescriptorSpaceBegin + descriptor;
+  }
+
+  // Returns mtf handle for the given short id descriptor.
+  uint64_t GetMtfShortIdDescriptor(uint32_t descriptor) const {
+    return kMtfShortIdDescriptorSpaceBegin + descriptor;
   }
 
   // Process data from the current instruction. This would update MTFs and
@@ -501,6 +516,18 @@ class MarkvCodecBase {
     return it->second.get();
   }
 
+  // Promotes id in all move-to-front sequences if ids can be shared by multiple
+  // sequences.
+  void PromoteIfNeeded(uint32_t id) {
+    if (!model_->AnyDescriptorHasCodingScheme() &&
+        model_->id_fallback_strategy() ==
+            MarkvModel::IdFallbackStrategy::kShortDescriptor) {
+      // Move-to-front sequences do not share ids. Nothing to do.
+      return;
+    }
+    multi_mtf_.Promote(id);
+  }
+
   spv_validator_options validator_options_ = nullptr;
   const libspirv::AssemblyGrammar grammar_;
   MarkvHeader header_;
@@ -537,8 +564,19 @@ class MarkvCodecBase {
   // List of instructions in the order they are given in the module.
   std::vector<std::unique_ptr<const Instruction>> instructions_;
 
-  // Container/computer for id descriptors.
-  IdDescriptorCollection id_descriptors_;
+  // Container/computer for long (32-bit) id descriptors.
+  IdDescriptorCollection long_id_descriptors_;
+
+  // Container/computer for short id descriptors.
+  // Short descriptors are stored in uint32_t, but their actual bit width is
+  // defined with kShortDescriptorNumBits.
+  // It doesn't seem logical to have a different computer for short id
+  // descriptors, since one could actually map/truncate long descriptors.
+  // But as short descriptors have collisions, the efficiency of
+  // compression depends on the collision pattern, and short descriptors
+  // produced by function ShortHashU32Array have been empirically proven to
+  // produce better results.
+  IdDescriptorCollection short_id_descriptors_;
 
   // Huffman codecs for move-to-front ranks. The map key is mtf handle. Doesn't
   // need to contain a different codec for every handle as most use one and the
@@ -855,8 +893,11 @@ void MarkvCodecBase::ProcessCurInstruction() {
     if (opcode == SpvOpFunction) {
       cur_function_id_ = inst_.result_id;
       cur_function_return_type_ = inst_.type_id;
-      multi_mtf_.Insert(GetMtfFunctionWithReturnType(inst_.type_id),
-                        inst_.result_id);
+      if (model_->id_fallback_strategy() ==
+          MarkvModel::IdFallbackStrategy::kRuleBased) {
+        multi_mtf_.Insert(GetMtfFunctionWithReturnType(inst_.type_id),
+                          inst_.result_id);
+      }
 
       // Store function parameter types in a queue, so that we know which types
       // to expect in the following OpFunctionParameter instructions.
@@ -886,141 +927,155 @@ void MarkvCodecBase::ProcessCurInstruction() {
     // have no type Id, and will map to 0. The result Id for a
     // type-generating instruction (e.g. OpTypeInt) maps to itself.
     auto insertion_result = id_to_type_id_.emplace(
-        inst_.result_id,
-        spvOpcodeGeneratesType(SpvOp(inst_.opcode)) ? inst_.result_id
-                                                    : inst_.type_id);
+        inst_.result_id, spvOpcodeGeneratesType(SpvOp(inst_.opcode))
+                             ? inst_.result_id
+                             : inst_.type_id);
     (void)insertion_result;
     assert(insertion_result.second);
   }
 
   // Add result_id to MTFs.
-
-  switch (opcode) {
-    case SpvOpTypeFloat:
-    case SpvOpTypeInt:
-    case SpvOpTypeBool:
-    case SpvOpTypeVector:
-    case SpvOpTypePointer:
-    case SpvOpExtInstImport:
-    case SpvOpTypeSampledImage:
-    case SpvOpTypeImage:
-    case SpvOpTypeSampler:
-      multi_mtf_.Insert(GetMtfIdGeneratedByOpcode(opcode), inst_.result_id);
-      break;
-    default:
-      break;
-  }
-
-  if (spvOpcodeIsComposite(opcode)) {
-    multi_mtf_.Insert(kMtfTypeComposite, inst_.result_id);
-  }
-
-  if (opcode == SpvOpLabel) {
-    multi_mtf_.InsertOrPromote(kMtfLabel, inst_.result_id);
-  }
-
-  if (opcode == SpvOpTypeInt) {
-    multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
-    multi_mtf_.Insert(kMtfTypeIntScalarOrVector, inst_.result_id);
-  }
-
-  if (opcode == SpvOpTypeFloat) {
-    multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
-    multi_mtf_.Insert(kMtfTypeFloatScalarOrVector, inst_.result_id);
-  }
-
-  if (opcode == SpvOpTypeBool) {
-    multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
-    multi_mtf_.Insert(kMtfTypeBoolScalarOrVector, inst_.result_id);
-  }
-
-  if (opcode == SpvOpTypeVector) {
-    const uint32_t component_type_id = inst_.words[2];
-    const uint32_t size = inst_.words[3];
-    if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeFloat),
-                            component_type_id)) {
-      multi_mtf_.Insert(kMtfTypeFloatScalarOrVector, inst_.result_id);
-    } else if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeInt),
-                                   component_type_id)) {
-      multi_mtf_.Insert(kMtfTypeIntScalarOrVector, inst_.result_id);
-    } else if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeBool),
-                                   component_type_id)) {
-      multi_mtf_.Insert(kMtfTypeBoolScalarOrVector, inst_.result_id);
-    }
-    multi_mtf_.Insert(GetMtfTypeVectorOfSize(size), inst_.result_id);
-  }
-
-  if (inst_.opcode == SpvOpTypeFunction) {
-    const uint32_t return_type = inst_.words[2];
-    multi_mtf_.Insert(kMtfTypeReturnedByFunction, return_type);
-    multi_mtf_.Insert(GetMtfFunctionTypeWithReturnType(return_type),
-                      inst_.result_id);
-  }
-
-  if (inst_.type_id) {
-    const Instruction* type_inst = FindDef(inst_.type_id);
-    assert(type_inst);
-
-    multi_mtf_.Insert(kMtfObject, inst_.result_id);
-
-    multi_mtf_.Insert(GetMtfIdOfType(inst_.type_id), inst_.result_id);
-
-    if (multi_mtf_.HasValue(kMtfTypeFloatScalarOrVector, inst_.type_id)) {
-      multi_mtf_.Insert(kMtfFloatScalarOrVector, inst_.result_id);
-    }
-
-    if (multi_mtf_.HasValue(kMtfTypeIntScalarOrVector, inst_.type_id))
-      multi_mtf_.Insert(kMtfIntScalarOrVector, inst_.result_id);
-
-    if (multi_mtf_.HasValue(kMtfTypeBoolScalarOrVector, inst_.type_id))
-      multi_mtf_.Insert(kMtfBoolScalarOrVector, inst_.result_id);
-
-    if (multi_mtf_.HasValue(kMtfTypeComposite, inst_.type_id))
-      multi_mtf_.Insert(kMtfComposite, inst_.result_id);
-
-    switch (type_inst->opcode()) {
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kRuleBased) {
+    switch (opcode) {
+      case SpvOpTypeFloat:
       case SpvOpTypeInt:
       case SpvOpTypeBool:
-      case SpvOpTypePointer:
       case SpvOpTypeVector:
-      case SpvOpTypeImage:
+      case SpvOpTypePointer:
+      case SpvOpExtInstImport:
       case SpvOpTypeSampledImage:
+      case SpvOpTypeImage:
       case SpvOpTypeSampler:
-        multi_mtf_.Insert(
-            GetMtfIdWithTypeGeneratedByOpcode(type_inst->opcode()),
-            inst_.result_id);
+        multi_mtf_.Insert(GetMtfIdGeneratedByOpcode(opcode), inst_.result_id);
         break;
       default:
         break;
     }
 
-    if (type_inst->opcode() == SpvOpTypeVector) {
-      const uint32_t component_type = type_inst->word(2);
-      multi_mtf_.Insert(GetMtfVectorOfComponentType(component_type),
+    if (spvOpcodeIsComposite(opcode)) {
+      multi_mtf_.Insert(kMtfTypeComposite, inst_.result_id);
+    }
+
+    if (opcode == SpvOpLabel) {
+      multi_mtf_.InsertOrPromote(kMtfLabel, inst_.result_id);
+    }
+
+    if (opcode == SpvOpTypeInt) {
+      multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
+      multi_mtf_.Insert(kMtfTypeIntScalarOrVector, inst_.result_id);
+    }
+
+    if (opcode == SpvOpTypeFloat) {
+      multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
+      multi_mtf_.Insert(kMtfTypeFloatScalarOrVector, inst_.result_id);
+    }
+
+    if (opcode == SpvOpTypeBool) {
+      multi_mtf_.Insert(kMtfTypeScalar, inst_.result_id);
+      multi_mtf_.Insert(kMtfTypeBoolScalarOrVector, inst_.result_id);
+    }
+
+    if (opcode == SpvOpTypeVector) {
+      const uint32_t component_type_id = inst_.words[2];
+      const uint32_t size = inst_.words[3];
+      if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeFloat),
+                              component_type_id)) {
+        multi_mtf_.Insert(kMtfTypeFloatScalarOrVector, inst_.result_id);
+      } else if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeInt),
+                                     component_type_id)) {
+        multi_mtf_.Insert(kMtfTypeIntScalarOrVector, inst_.result_id);
+      } else if (multi_mtf_.HasValue(GetMtfIdGeneratedByOpcode(SpvOpTypeBool),
+                                     component_type_id)) {
+        multi_mtf_.Insert(kMtfTypeBoolScalarOrVector, inst_.result_id);
+      }
+      multi_mtf_.Insert(GetMtfTypeVectorOfSize(size), inst_.result_id);
+    }
+
+    if (inst_.opcode == SpvOpTypeFunction) {
+      const uint32_t return_type = inst_.words[2];
+      multi_mtf_.Insert(kMtfTypeReturnedByFunction, return_type);
+      multi_mtf_.Insert(GetMtfFunctionTypeWithReturnType(return_type),
                         inst_.result_id);
     }
 
-    if (type_inst->opcode() == SpvOpTypePointer) {
-      assert(type_inst->operands().size() > 2);
-      assert(type_inst->words().size() > type_inst->operands()[2].offset);
-      const uint32_t data_type =
-          type_inst->word(type_inst->operands()[2].offset);
-      multi_mtf_.Insert(GetMtfPointerToType(data_type), inst_.result_id);
+    if (inst_.type_id) {
+      const Instruction* type_inst = FindDef(inst_.type_id);
+      assert(type_inst);
 
-      if (multi_mtf_.HasValue(kMtfTypeComposite, data_type))
-        multi_mtf_.Insert(kMtfTypePointerToComposite, inst_.result_id);
+      multi_mtf_.Insert(kMtfObject, inst_.result_id);
+
+      multi_mtf_.Insert(GetMtfIdOfType(inst_.type_id), inst_.result_id);
+
+      if (multi_mtf_.HasValue(kMtfTypeFloatScalarOrVector, inst_.type_id)) {
+        multi_mtf_.Insert(kMtfFloatScalarOrVector, inst_.result_id);
+      }
+
+      if (multi_mtf_.HasValue(kMtfTypeIntScalarOrVector, inst_.type_id))
+        multi_mtf_.Insert(kMtfIntScalarOrVector, inst_.result_id);
+
+      if (multi_mtf_.HasValue(kMtfTypeBoolScalarOrVector, inst_.type_id))
+        multi_mtf_.Insert(kMtfBoolScalarOrVector, inst_.result_id);
+
+      if (multi_mtf_.HasValue(kMtfTypeComposite, inst_.type_id))
+        multi_mtf_.Insert(kMtfComposite, inst_.result_id);
+
+      switch (type_inst->opcode()) {
+        case SpvOpTypeInt:
+        case SpvOpTypeBool:
+        case SpvOpTypePointer:
+        case SpvOpTypeVector:
+        case SpvOpTypeImage:
+        case SpvOpTypeSampledImage:
+        case SpvOpTypeSampler:
+          multi_mtf_.Insert(
+              GetMtfIdWithTypeGeneratedByOpcode(type_inst->opcode()),
+              inst_.result_id);
+          break;
+        default:
+          break;
+      }
+
+      if (type_inst->opcode() == SpvOpTypeVector) {
+        const uint32_t component_type = type_inst->word(2);
+        multi_mtf_.Insert(GetMtfVectorOfComponentType(component_type),
+                          inst_.result_id);
+      }
+
+      if (type_inst->opcode() == SpvOpTypePointer) {
+        assert(type_inst->operands().size() > 2);
+        assert(type_inst->words().size() > type_inst->operands()[2].offset);
+        const uint32_t data_type =
+            type_inst->word(type_inst->operands()[2].offset);
+        multi_mtf_.Insert(GetMtfPointerToType(data_type), inst_.result_id);
+
+        if (multi_mtf_.HasValue(kMtfTypeComposite, data_type))
+          multi_mtf_.Insert(kMtfTypePointerToComposite, inst_.result_id);
+      }
+    }
+
+    if (spvOpcodeGeneratesType(opcode)) {
+      if (opcode != SpvOpTypeFunction) {
+        multi_mtf_.Insert(kMtfTypeNonFunction, inst_.result_id);
+      }
     }
   }
 
-  if (spvOpcodeGeneratesType(opcode)) {
-    if (opcode != SpvOpTypeFunction) {
-      multi_mtf_.Insert(kMtfTypeNonFunction, inst_.result_id);
-    }
+  if (model_->AnyDescriptorHasCodingScheme()) {
+    const uint32_t long_descriptor =
+        long_id_descriptors_.ProcessInstruction(inst_);
+    if (model_->DescriptorHasCodingScheme(long_descriptor))
+      multi_mtf_.Insert(GetMtfLongIdDescriptor(long_descriptor),
+                        inst_.result_id);
   }
 
-  const uint32_t descriptor = id_descriptors_.ProcessInstruction(inst_);
-  if (model_->DescriptorHasCodingScheme(descriptor))
-    multi_mtf_.Insert(GetMtfIdDescriptor(descriptor), inst_.result_id);
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kShortDescriptor) {
+    const uint32_t short_descriptor =
+        short_id_descriptors_.ProcessInstruction(inst_);
+    multi_mtf_.Insert(GetMtfShortIdDescriptor(short_descriptor),
+                      inst_.result_id);
+  }
 }
 
 uint64_t MarkvCodecBase::GetRuleBasedMtf() {
@@ -1052,7 +1107,6 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
     case SpvOpFMod:
     case SpvOpFNegate: {
       if (operand_index_ == 0) return kMtfTypeFloatScalarOrVector;
-
       return GetMtfIdOfType(inst_.type_id);
     }
 
@@ -1070,7 +1124,7 @@ uint64_t MarkvCodecBase::GetRuleBasedMtf() {
       return kMtfIntScalarOrVector;
     }
 
-    // TODO(atgoo@github.com) Add OpConvertFToU and other opcodes.
+      // TODO(atgoo@github.com) Add OpConvertFToU and other opcodes.
 
     case SpvOpFOrdEqual:
     case SpvOpFUnordEqual:
@@ -1637,57 +1691,87 @@ spv_result_t MarkvDecoder::DecodeMtfRankHuffman(uint64_t mtf,
 }
 
 spv_result_t MarkvEncoder::EncodeIdWithDescriptor(uint32_t id) {
+  // Get the descriptor for id.
+  const uint32_t long_descriptor = long_id_descriptors_.GetDescriptor(id);
   auto* codec =
       model_->GetIdDescriptorHuffmanCodec(inst_.opcode, operand_index_);
-  if (!codec) return SPV_UNSUPPORTED;
-
   uint64_t bits = 0;
   size_t num_bits = 0;
-
-  // Get the descriptor for id.
-  const uint32_t descriptor = id_descriptors_.GetDescriptor(id);
-
-  if (descriptor && codec->Encode(descriptor, &bits, &num_bits)) {
+  uint64_t mtf = kMtfNone;
+  if (long_descriptor && codec &&
+      codec->Encode(long_descriptor, &bits, &num_bits)) {
     // If the descriptor exists and is in the table, write the descriptor and
     // proceed to encoding the rank.
     writer_.WriteBits(bits, num_bits);
+    mtf = GetMtfLongIdDescriptor(long_descriptor);
   } else {
-    // The descriptor doesn't exist or we have no coding for it. Write
-    // kMarkvNoneOfTheAbove and go to fallback method.
-    if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
-      return Diag(SPV_ERROR_INTERNAL)
-             << "Descriptor Huffman table for "
-             << spvOpcodeString(SpvOp(inst_.opcode)) << " operand index "
-             << operand_index_ << " is missing kMarkvNoneOfTheAbove";
+    if (codec) {
+      // The descriptor doesn't exist or we have no coding for it. Write
+      // kMarkvNoneOfTheAbove and go to fallback method.
+      if (!codec->Encode(kMarkvNoneOfTheAbove, &bits, &num_bits))
+        return Diag(SPV_ERROR_INTERNAL)
+               << "Descriptor Huffman table for "
+               << spvOpcodeString(SpvOp(inst_.opcode)) << " operand index "
+               << operand_index_ << " is missing kMarkvNoneOfTheAbove";
 
-    writer_.WriteBits(bits, num_bits);
-    return SPV_UNSUPPORTED;
+      writer_.WriteBits(bits, num_bits);
+    }
+
+    if (model_->id_fallback_strategy() !=
+        MarkvModel::IdFallbackStrategy::kShortDescriptor) {
+      return SPV_UNSUPPORTED;
+    }
+
+    const uint32_t short_descriptor = short_id_descriptors_.GetDescriptor(id);
+    writer_.WriteBits(short_descriptor, kShortDescriptorNumBits);
+
+    if (short_descriptor == 0) {
+      // Forward declared id.
+      return SPV_UNSUPPORTED;
+    }
+
+    mtf = GetMtfShortIdDescriptor(short_descriptor);
   }
 
   // Descriptor has been encoded. Now encode the rank of the id in the
   // associated mtf sequence.
-  const uint64_t mtf = GetMtfIdDescriptor(descriptor);
   return EncodeExistingId(mtf, id);
 }
 
 spv_result_t MarkvDecoder::DecodeIdWithDescriptor(uint32_t* id) {
   auto* codec =
       model_->GetIdDescriptorHuffmanCodec(inst_.opcode, operand_index_);
-  if (!codec) return SPV_UNSUPPORTED;
 
-  uint64_t decoded_value = 0;
-  if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
-    return Diag(SPV_ERROR_INTERNAL)
-           << "Failed to decode descriptor with Huffman";
+  uint64_t mtf = kMtfNone;
+  if (codec) {
+    uint64_t decoded_value = 0;
+    if (!codec->DecodeFromStream(GetReadBitCallback(), &decoded_value))
+      return Diag(SPV_ERROR_INTERNAL)
+             << "Failed to decode descriptor with Huffman";
 
-  if (decoded_value == kMarkvNoneOfTheAbove) return SPV_UNSUPPORTED;
+    if (decoded_value != kMarkvNoneOfTheAbove) {
+      const uint32_t long_descriptor = uint32_t(decoded_value);
+      mtf = GetMtfLongIdDescriptor(long_descriptor);
+    }
+  }
 
-  // If descriptor exists then the id was encoded through descriptor mtf.
-  const uint32_t descriptor = uint32_t(decoded_value);
-  assert(descriptor == decoded_value);
-  assert(descriptor);
+  if (mtf == kMtfNone) {
+    if (model_->id_fallback_strategy() !=
+        MarkvModel::IdFallbackStrategy::kShortDescriptor) {
+      return SPV_UNSUPPORTED;
+    }
 
-  const uint64_t mtf = GetMtfIdDescriptor(descriptor);
+    uint64_t decoded_value = 0;
+    if (!reader_.ReadBits(&decoded_value, kShortDescriptorNumBits))
+      return Diag(SPV_ERROR_INTERNAL) << "Failed to read short descriptor";
+    const uint32_t short_descriptor = uint32_t(decoded_value);
+    if (short_descriptor == 0) {
+      // Forward declared id.
+      return SPV_UNSUPPORTED;
+    }
+    mtf = GetMtfShortIdDescriptor(short_descriptor);
+  }
+
   return DecodeExistingId(mtf, id);
 }
 
@@ -1735,29 +1819,43 @@ spv_result_t MarkvEncoder::EncodeRefId(uint32_t id) {
     // If can't be done continue with other methods.
   }
 
-  // Encode using rule-based mtf.
-  uint64_t mtf = GetRuleBasedMtf();
   const bool can_forward_declare = spvOperandCanBeForwardDeclaredFunction(
       SpvOp(inst_.opcode))(operand_index_);
-
-  if (mtf != kMtfNone && !can_forward_declare) {
-    assert(multi_mtf_.HasValue(kMtfAll, id));
-    return EncodeExistingId(mtf, id);
-  }
-
-  if (mtf == kMtfNone) mtf = kMtfAll;
-
   uint32_t rank = 0;
 
-  if (!multi_mtf_.RankFromValue(mtf, id, &rank)) {
-    // This is the first occurrence of a forward declared id.
-    multi_mtf_.Insert(kMtfAll, id);
-    multi_mtf_.Insert(kMtfForwardDeclared, id);
-    if (mtf != kMtfAll) multi_mtf_.Insert(mtf, id);
-    rank = 0;
-  }
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kRuleBased) {
+    // Encode using rule-based mtf.
+    uint64_t mtf = GetRuleBasedMtf();
 
-  return EncodeMtfRankHuffman(rank, mtf, kMtfAll);
+    if (mtf != kMtfNone && !can_forward_declare) {
+      assert(multi_mtf_.HasValue(kMtfAll, id));
+      return EncodeExistingId(mtf, id);
+    }
+
+    if (mtf == kMtfNone) mtf = kMtfAll;
+
+    if (!multi_mtf_.RankFromValue(mtf, id, &rank)) {
+      // This is the first occurrence of a forward declared id.
+      multi_mtf_.Insert(kMtfAll, id);
+      multi_mtf_.Insert(kMtfForwardDeclared, id);
+      if (mtf != kMtfAll) multi_mtf_.Insert(mtf, id);
+      rank = 0;
+    }
+
+    return EncodeMtfRankHuffman(rank, mtf, kMtfAll);
+  } else {
+    assert(can_forward_declare);
+
+    if (!multi_mtf_.RankFromValue(kMtfForwardDeclared, id, &rank)) {
+      // This is the first occurrence of a forward declared id.
+      multi_mtf_.Insert(kMtfForwardDeclared, id);
+      rank = 0;
+    }
+
+    writer_.WriteVariableWidthU32(rank, model_->mtf_rank_chunk_length());
+    return SPV_SUCCESS;
+  }
 }
 
 spv_result_t MarkvDecoder::DecodeRefId(uint32_t* id) {
@@ -1766,37 +1864,52 @@ spv_result_t MarkvDecoder::DecodeRefId(uint32_t* id) {
     if (result != SPV_UNSUPPORTED) return result;
   }
 
-  uint64_t mtf = GetRuleBasedMtf();
   const bool can_forward_declare = spvOperandCanBeForwardDeclaredFunction(
       SpvOp(inst_.opcode))(operand_index_);
-
-  if (mtf != kMtfNone && !can_forward_declare) {
-    return DecodeExistingId(mtf, id);
-  }
-
-  if (mtf == kMtfNone) mtf = kMtfAll;
-
+  uint32_t rank = 0;
   *id = 0;
 
-  uint32_t rank = 0;
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kRuleBased) {
+    uint64_t mtf = GetRuleBasedMtf();
+    if (mtf != kMtfNone && !can_forward_declare) {
+      return DecodeExistingId(mtf, id);
+    }
 
-  {
-    const spv_result_t result = DecodeMtfRankHuffman(mtf, kMtfAll, &rank);
-    if (result != SPV_SUCCESS) return result;
-  }
+    if (mtf == kMtfNone) mtf = kMtfAll;
+    {
+      const spv_result_t result = DecodeMtfRankHuffman(mtf, kMtfAll, &rank);
+      if (result != SPV_SUCCESS) return result;
+    }
 
-  if (rank == 0) {
-    // This is the first occurrence of a forward declared id.
-    *id = GetIdBound();
-    SetIdBound(*id + 1);
-    multi_mtf_.Insert(kMtfAll, *id);
-    multi_mtf_.Insert(kMtfForwardDeclared, *id);
-    if (mtf != kMtfAll) multi_mtf_.Insert(mtf, *id);
+    if (rank == 0) {
+      // This is the first occurrence of a forward declared id.
+      *id = GetIdBound();
+      SetIdBound(*id + 1);
+      multi_mtf_.Insert(kMtfAll, *id);
+      multi_mtf_.Insert(kMtfForwardDeclared, *id);
+      if (mtf != kMtfAll) multi_mtf_.Insert(mtf, *id);
+    } else {
+      if (!multi_mtf_.ValueFromRank(mtf, rank, id))
+        return Diag(SPV_ERROR_INTERNAL) << "MTF rank out of bounds";
+    }
   } else {
-    if (!multi_mtf_.ValueFromRank(mtf, rank, id))
-      return Diag(SPV_ERROR_INTERNAL) << "MTF rank out of bounds";
-  }
+    assert(can_forward_declare);
 
+    if (!reader_.ReadVariableWidthU32(&rank, model_->mtf_rank_chunk_length()))
+      return Diag(SPV_ERROR_INTERNAL)
+             << "Failed to decode MTF rank with varint";
+
+    if (rank == 0) {
+      // This is the first occurrence of a forward declared id.
+      *id = GetIdBound();
+      SetIdBound(*id + 1);
+      multi_mtf_.Insert(kMtfForwardDeclared, *id);
+    } else {
+      if (!multi_mtf_.ValueFromRank(kMtfForwardDeclared, rank, id))
+        return Diag(SPV_ERROR_INTERNAL) << "MTF rank out of bounds";
+    }
+  }
   assert(*id);
   return SPV_SUCCESS;
 }
@@ -1815,6 +1928,9 @@ spv_result_t MarkvEncoder::EncodeTypeId() {
     if (result != SPV_UNSUPPORTED) return result;
     // If can't be done continue with other methods.
   }
+
+  assert(model_->id_fallback_strategy() ==
+         MarkvModel::IdFallbackStrategy::kRuleBased);
 
   uint64_t mtf = GetRuleBasedMtf();
   assert(!spvOperandCanBeForwardDeclaredFunction(SpvOp(inst_.opcode))(
@@ -1841,6 +1957,9 @@ spv_result_t MarkvDecoder::DecodeTypeId() {
     const spv_result_t result = DecodeIdWithDescriptor(&inst_.type_id);
     if (result != SPV_UNSUPPORTED) return result;
   }
+
+  assert(model_->id_fallback_strategy() ==
+         MarkvModel::IdFallbackStrategy::kRuleBased);
 
   uint64_t mtf = GetRuleBasedMtf();
   assert(!spvOperandCanBeForwardDeclaredFunction(SpvOp(inst_.opcode))(
@@ -1878,8 +1997,11 @@ spv_result_t MarkvEncoder::EncodeResultId() {
     }
   }
 
-  if (!rank) {
-    multi_mtf_.Insert(kMtfAll, inst_.result_id);
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kRuleBased) {
+    if (!rank) {
+      multi_mtf_.Insert(kMtfAll, inst_.result_id);
+    }
   }
 
   return SPV_SUCCESS;
@@ -1924,8 +2046,11 @@ spv_result_t MarkvDecoder::DecodeResultId() {
     SetIdBound(inst_.result_id + 1);
   }
 
-  if (!rank) {
-    multi_mtf_.Insert(kMtfAll, inst_.result_id);
+  if (model_->id_fallback_strategy() ==
+      MarkvModel::IdFallbackStrategy::kRuleBased) {
+    if (!rank) {
+      multi_mtf_.Insert(kMtfAll, inst_.result_id);
+    }
   }
 
   return SPV_SUCCESS;
@@ -2078,7 +2203,7 @@ spv_result_t MarkvEncoder::EncodeInstruction(
           if (result != SPV_SUCCESS) return result;
         }
 
-        multi_mtf_.Promote(id);
+        PromoteIfNeeded(id);
         break;
       }
 
@@ -2248,7 +2373,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
       inst_words_.push_back(inst_.result_id);
       SetIdBound(std::max(GetIdBound(), inst_.result_id + 1));
-      multi_mtf_.Promote(inst_.result_id);
+      PromoteIfNeeded(inst_.result_id);
       break;
     }
 
@@ -2258,7 +2383,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
       inst_words_.push_back(inst_.type_id);
       SetIdBound(std::max(GetIdBound(), inst_.type_id + 1));
-      multi_mtf_.Promote(inst_.type_id);
+      PromoteIfNeeded(inst_.type_id);
       break;
     }
 
@@ -2291,7 +2416,7 @@ spv_result_t MarkvDecoder::DecodeOperand(
 
       inst_words_.push_back(id);
       SetIdBound(std::max(GetIdBound(), id + 1));
-      multi_mtf_.Promote(id);
+      PromoteIfNeeded(id);
       break;
     }
 
@@ -2793,4 +2918,4 @@ spv_result_t MarkvToSpirv(
   return SPV_SUCCESS;
 }
 
-}  // namespave spvtools
+}  // namespace spvtools

@@ -22,13 +22,19 @@
 
 namespace libspirv {
 
+using CustomHashFunc = std::function<uint32_t(const std::vector<uint32_t>&)>;
+
 // Computes and stores id descriptors.
 //
 // Descriptors are computed as hash of all words in the instruction where ids
 // were substituted with previously computed descriptors.
 class IdDescriptorCollection {
  public:
-  IdDescriptorCollection() { words_.reserve(16); }
+  explicit IdDescriptorCollection(
+      CustomHashFunc custom_hash_func = CustomHashFunc())
+      : custom_hash_func_(custom_hash_func) {
+    words_.reserve(16);
+  }
 
   // Computes descriptor for the result id of the given instruction and
   // registers it in id_to_descriptor_. Returns the computed descriptor.
@@ -45,6 +51,8 @@ class IdDescriptorCollection {
 
  private:
   std::unordered_map<uint32_t, uint32_t> id_to_descriptor_;
+
+  std::function<uint32_t(const std::vector<uint32_t>&)> custom_hash_func_;
 
   // Scratch buffer used for hashing. Class member to optimize on allocation.
   std::vector<uint32_t> words_;
