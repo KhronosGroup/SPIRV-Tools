@@ -70,11 +70,11 @@ bool DecorationManager::AreDecorationsTheSame(
   //    for (uint32_t i = 2u; i < inst.NumInOperands(); ++i) {
   //      const auto& j = constants.find(inst.GetSingleWordInOperand(i));
   //      if (j == constants.end())
-  //        return Instruction();
+  //        return Instruction(inst.context());
   //      const auto operand = j->second->GetOperand(0u);
   //      operands.emplace_back(operand.type, operand.words);
   //    }
-  //    return Instruction(SpvOpDecorate, 0u, 0u, operands);
+  //    return Instruction(inst.context(), SpvOpDecorate, 0u, 0u, operands);
   //  };
   //  Instruction tmpA = (deco1.opcode() == SpvOpDecorateId) ?
   //  decorateIdToDecorate(deco1) : deco1;
@@ -261,7 +261,7 @@ void DecorationManager::CloneDecorations(
       case SpvOpMemberDecorate:
       case SpvOpDecorateId: {
         // simply clone decoration and change |target-id| to |to|
-        std::unique_ptr<ir::Instruction> new_inst(inst->Clone());
+        std::unique_ptr<ir::Instruction> new_inst(inst->Clone(module_->context()));
         new_inst->SetInOperand(0, {to});
         id_to_decoration_insts_[to].push_back(new_inst.get());
         f(*new_inst, true);

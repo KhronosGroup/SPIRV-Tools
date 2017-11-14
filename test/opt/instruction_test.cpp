@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "opt/instruction.h"
+#include "opt/ir_context.h"
 
 #include "gmock/gmock.h"
 
@@ -23,6 +24,7 @@ namespace {
 
 using spvtest::MakeInstruction;
 using spvtools::ir::Instruction;
+using spvtools::ir::IRContext;
 using spvtools::ir::Operand;
 using ::testing::Eq;
 
@@ -39,7 +41,8 @@ TEST(InstructionTest, CreateTrivial) {
 }
 
 TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
-  Instruction inst(SpvOpReturn);
+  IRContext context(nullptr);
+  Instruction inst(&context, SpvOpReturn);
   EXPECT_EQ(SpvOpReturn, inst.opcode());
   EXPECT_EQ(0u, inst.type_id());
   EXPECT_EQ(0u, inst.result_id());
@@ -119,7 +122,8 @@ spv_parsed_instruction_t kSampleControlBarrierInstruction = {
     3};
 
 TEST(InstructionTest, CreateWithOpcodeAndOperands) {
-  Instruction inst(kSampleParsedInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_EQ(SpvOpTypeInt, inst.opcode());
   EXPECT_EQ(0u, inst.type_id());
   EXPECT_EQ(44u, inst.result_id());
@@ -129,20 +133,23 @@ TEST(InstructionTest, CreateWithOpcodeAndOperands) {
 }
 
 TEST(InstructionTest, GetOperand) {
-  Instruction inst(kSampleParsedInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetOperand(0).words, Eq(std::vector<uint32_t>{44}));
   EXPECT_THAT(inst.GetOperand(1).words, Eq(std::vector<uint32_t>{32}));
   EXPECT_THAT(inst.GetOperand(2).words, Eq(std::vector<uint32_t>{1}));
 }
 
 TEST(InstructionTest, GetInOperand) {
-  Instruction inst(kSampleParsedInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetInOperand(0).words, Eq(std::vector<uint32_t>{32}));
   EXPECT_THAT(inst.GetInOperand(1).words, Eq(std::vector<uint32_t>{1}));
 }
 
 TEST(InstructionTest, OperandConstIterators) {
-  Instruction inst(kSampleParsedInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands.
   auto cbegin = inst.cbegin();
   auto cend = inst.cend();
@@ -168,7 +175,8 @@ TEST(InstructionTest, OperandConstIterators) {
 }
 
 TEST(InstructionTest, OperandIterators) {
-  Instruction inst(kSampleParsedInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands, with mutable iterators.
   auto begin = inst.begin();
   auto end = inst.end();
@@ -198,7 +206,8 @@ TEST(InstructionTest, OperandIterators) {
 }
 
 TEST(InstructionTest, ForInIdStandardIdTypes) {
-  Instruction inst(kSampleAccessChainInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleAccessChainInstruction);
 
   std::vector<uint32_t> ids;
   inst.ForEachInId([&ids](const uint32_t* idptr) { ids.push_back(*idptr); });
@@ -210,7 +219,8 @@ TEST(InstructionTest, ForInIdStandardIdTypes) {
 }
 
 TEST(InstructionTest, ForInIdNonstandardIdTypes) {
-  Instruction inst(kSampleControlBarrierInstruction);
+  IRContext context(nullptr);
+  Instruction inst(&context, kSampleControlBarrierInstruction);
 
   std::vector<uint32_t> ids;
   inst.ForEachInId([&ids](const uint32_t* idptr) { ids.push_back(*idptr); });
@@ -219,6 +229,62 @@ TEST(InstructionTest, ForInIdNonstandardIdTypes) {
   ids.clear();
   inst.ForEachInId([&ids](uint32_t* idptr) { ids.push_back(*idptr); });
   EXPECT_THAT(ids, Eq(std::vector<uint32_t>{100, 101, 102}));
+}
+
+TEST(InstructionTest, UniqueIds) {
+  IRContext context(nullptr);
+  Instruction inst1(&context);
+  Instruction inst2(&context);
+  EXPECT_NE(inst1.unique_id(), inst2.unique_id());
+}
+
+TEST(InstructionTest, CloneUniqueIdDifferent) {
+  IRContext context(nullptr);
+  Instruction inst(&context);
+  std::unique_ptr<Instruction> clone(inst.Clone(&context));
+  EXPECT_EQ(inst.context(), clone->context());
+  EXPECT_NE(inst.unique_id(), clone->unique_id());
+}
+
+TEST(InstructionTest, CloneDifferentContext) {
+  IRContext c1(nullptr);
+  IRContext c2(nullptr);
+  Instruction inst(&c1);
+  std::unique_ptr<Instruction> clone(inst.Clone(&c2));
+  EXPECT_EQ(&c1, inst.context());
+  EXPECT_EQ(&c2, clone->context());
+  EXPECT_NE(&c1, &c2);
+}
+
+TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
+  IRContext c1(nullptr);
+  IRContext c2(nullptr);
+  Instruction inst(&c1);
+  Instruction other(&c2);
+  std::unique_ptr<Instruction> clone(inst.Clone(&c2));
+  EXPECT_EQ(&c2, clone->context());
+  EXPECT_NE(other.unique_id(), clone->unique_id());
+}
+
+TEST(InstructionTest, EqualsEqualsOperator) {
+  IRContext context(nullptr);
+  Instruction i1(&context);
+  Instruction i2(&context);
+  std::unique_ptr<Instruction> clone(i1.Clone(&context));
+  EXPECT_TRUE(i1 == i1);
+  EXPECT_FALSE(i1 == i2);
+  EXPECT_FALSE(i1 == *clone);
+  EXPECT_FALSE(i2 == *clone);
+}
+
+TEST(InstructionTest, LessThanOperator) {
+  IRContext context(nullptr);
+  Instruction i1(&context);
+  Instruction i2(&context);
+  std::unique_ptr<Instruction> clone(i1.Clone(&context));
+  EXPECT_TRUE(i1 < i2);
+  EXPECT_TRUE(i1 < *clone);
+  EXPECT_TRUE(i2 < *clone);
 }
 
 }  // anonymous namespace

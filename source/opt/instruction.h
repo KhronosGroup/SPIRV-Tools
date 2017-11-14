@@ -31,6 +31,7 @@ namespace spvtools {
 namespace ir {
 
 class Function;
+class IRContext;
 class Module;
 class InstructionList;
 
@@ -84,28 +85,30 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   using const_iterator = std::vector<Operand>::const_iterator;
 
   // Creates a default OpNop instruction.
+  // This exists solely for containers that can't do without. Should be removed.
   Instruction()
       : utils::IntrusiveNodeBase<Instruction>(),
+        context_(nullptr),
         opcode_(SpvOpNop),
         type_id_(0),
-        result_id_(0) {}
+        result_id_(0),
+        unique_id_(0) {}
+
+  // Creates a default OpNop instruction.
+  Instruction(IRContext*);
   // Creates an instruction with the given opcode |op| and no additional logical
   // operands.
-  Instruction(SpvOp op)
-      : utils::IntrusiveNodeBase<Instruction>(),
-        opcode_(op),
-        type_id_(0),
-        result_id_(0) {}
+  Instruction(IRContext*, SpvOp);
   // Creates an instruction using the given spv_parsed_instruction_t |inst|. All
   // the data inside |inst| will be copied and owned in this instance. And keep
   // record of line-related debug instructions |dbg_line| ahead of this
   // instruction, if any.
-  Instruction(const spv_parsed_instruction_t& inst,
+  Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
               std::vector<Instruction>&& dbg_line = {});
 
   // Creates an instruction with the given opcode |op|, type id: |ty_id|,
   // result id: |res_id| and input operands: |in_operands|.
-  Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
+  Instruction(IRContext* c, SpvOp op, uint32_t ty_id, uint32_t res_id,
               const std::vector<Operand>& in_operands);
 
   // TODO: I will want to remove these, but will first have to remove the use of
@@ -123,7 +126,9 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // It is the responsibility of the caller to make sure that the storage is
   // removed. It is the caller's responsibility to make sure that there is only
   // one instruction for each result id.
-  Instruction* Clone() const;
+  Instruction* Clone(IRContext *c) const;
+
+  IRContext* context() const { return context_; }
 
   SpvOp opcode() const { return opcode_; }
   // Sets the opcode of this instruction to a specific opcode. Note this may
@@ -133,6 +138,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   void SetOpcode(SpvOp op) { opcode_ = op; }
   uint32_t type_id() const { return type_id_; }
   uint32_t result_id() const { return result_id_; }
+  uint32_t unique_id() const { assert(unique_id_ != 0); return unique_id_; }
   // Returns the vector of line-related debug instructions attached to this
   // instruction and the caller can directly modify them.
   std::vector<Instruction>& dbg_line_insts() { return dbg_line_insts_; }
@@ -241,15 +247,21 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Returns true if the instruction annotates an id with a decoration.
   inline bool IsDecoration();
 
+  inline bool operator==(const Instruction&) const;
+  inline bool operator!=(const Instruction&) const;
+  inline bool operator<(const Instruction&) const;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);
   }
 
+  IRContext* context_;  // IR Context
   SpvOp opcode_;        // Opcode
   uint32_t type_id_;    // Result type id. A value of 0 means no result type id.
   uint32_t result_id_;  // Result id. A value of 0 means no result id.
+  uint32_t unique_id_;  // Unique instruction id
   // All logical operands, including result type id and result id.
   std::vector<Operand> operands_;
   // Opline and OpNoLine instructions preceding this instruction. Note that for
@@ -259,6 +271,18 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   friend InstructionList;
 };
+
+inline bool Instruction::operator==(const Instruction& other) const {
+  return unique_id() == other.unique_id();
+}
+
+inline bool Instruction::operator!=(const Instruction& other) const {
+  return !(*this == other);
+}
+
+inline bool Instruction::operator<(const Instruction& other) const {
+  return unique_id() < other.unique_id();
+}
 
 inline const Operand& Instruction::GetOperand(uint32_t index) const {
   assert(index < operands_.size() && "operand index out of bound");

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "instruction.h"
+#include "ir_context.h"
 
 #include <initializer_list>
 
@@ -21,11 +22,29 @@
 namespace spvtools {
 namespace ir {
 
-Instruction::Instruction(const spv_parsed_instruction_t& inst,
+Instruction::Instruction(IRContext* c)
+    : utils::IntrusiveNodeBase<Instruction>(),
+      context_(c),
+      opcode_(SpvOpNop),
+      type_id_(0),
+      result_id_(0),
+      unique_id_(c->TakeNextUniqueId()) {}
+
+Instruction::Instruction(IRContext* c, SpvOp op)
+    : utils::IntrusiveNodeBase<Instruction>(),
+      context_(c),
+      opcode_(op),
+      type_id_(0),
+      result_id_(0),
+      unique_id_(c->TakeNextUniqueId()) {}
+
+Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
-    : opcode_(static_cast<SpvOp>(inst.opcode)),
+    : context_(c),
+      opcode_(static_cast<SpvOp>(inst.opcode)),
       type_id_(inst.type_id),
       result_id_(inst.result_id),
+      unique_id_(c->TakeNextUniqueId()),
       dbg_line_insts_(std::move(dbg_line)) {
   assert((!IsDebugLineInst(opcode_) || dbg_line.empty()) &&
          "Op(No)Line attaching to Op(No)Line found");
@@ -38,12 +57,14 @@ Instruction::Instruction(const spv_parsed_instruction_t& inst,
   }
 }
 
-Instruction::Instruction(SpvOp op, uint32_t ty_id, uint32_t res_id,
+Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id, uint32_t res_id,
                          const std::vector<Operand>& in_operands)
     : utils::IntrusiveNodeBase<Instruction>(),
+      context_(c),
       opcode_(op),
       type_id_(ty_id),
       result_id_(res_id),
+      unique_id_(c->TakeNextUniqueId()),
       operands_() {
   if (type_id_ != 0) {
     operands_.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_TYPE_ID,
@@ -61,6 +82,7 @@ Instruction::Instruction(Instruction&& that)
       opcode_(that.opcode_),
       type_id_(that.type_id_),
       result_id_(that.result_id_),
+      unique_id_(that.unique_id_),
       operands_(std::move(that.operands_)),
       dbg_line_insts_(std::move(that.dbg_line_insts_)) {}
 
@@ -68,16 +90,18 @@ Instruction& Instruction::operator=(Instruction&& that) {
   opcode_ = that.opcode_;
   type_id_ = that.type_id_;
   result_id_ = that.result_id_;
+  unique_id_ = that.unique_id_;
   operands_ = std::move(that.operands_);
   dbg_line_insts_ = std::move(that.dbg_line_insts_);
   return *this;
 }
 
-Instruction* Instruction::Clone() const {
-  Instruction* clone = new Instruction();
+Instruction* Instruction::Clone(IRContext *c) const {
+  Instruction* clone = new Instruction(c);
   clone->opcode_ = opcode_;
   clone->type_id_ = type_id_;
   clone->result_id_ = result_id_;
+  clone->unique_id_ = c->TakeNextUniqueId();
   clone->operands_ = operands_;
   clone->dbg_line_insts_ = dbg_line_insts_;
   return clone;

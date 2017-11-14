@@ -27,6 +27,8 @@
 namespace spvtools {
 namespace ir {
 
+class IRContext;
+
 // A struct for containing the module header information.
 struct ModuleHeader {
   uint32_t magic_number;
@@ -223,11 +225,18 @@ class Module {
   // Returns 0 if not found.
   uint32_t GetExtInstImportId(const char* extstr);
 
+  // Sets the associated context for this module
+  void SetContext(IRContext* c) { context_ = c; }
+
+  // Gets the associated context for this module
+  IRContext* context() const { return context_; }
+
  private:
   ModuleHeader header_;  // Module header
 
   // The following fields respect the "Logical Layout of a Module" in
   // Section 2.4 of the SPIR-V specification.
+  IRContext* context_;
   InstructionList capabilities_;
   InstructionList extensions_;
   InstructionList ext_inst_imports_;

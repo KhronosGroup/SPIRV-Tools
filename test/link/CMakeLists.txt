@@ -41,3 +41,8 @@ add_spvtools_unittest(TARGET link_matching_imports_to_exports
   SRCS matching_imports_to_exports_test.cpp
   LIBS SPIRV-Tools-opt SPIRV-Tools-link
 )
+
+add_spvtools_unittest(TARGET link_unique_ids
+  SRCS unique_ids_test.cpp
+  LIBS SPIRV-Tools-opt SPIRV-Tools-link
+)

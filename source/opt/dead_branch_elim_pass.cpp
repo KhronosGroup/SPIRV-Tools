@@ -74,7 +74,7 @@ bool DeadBranchElimPass::GetConstInteger(uint32_t selId, uint32_t* selVal) {
 
 void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranch(new ir::Instruction(
-      SpvOpBranch, 0, 0,
+      context(), SpvOpBranch, 0, 0,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newBranch);
   bp->AddInstruction(std::move(newBranch));
@@ -83,7 +83,7 @@ void DeadBranchElimPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
 void DeadBranchElimPass::AddSelectionMerge(uint32_t labelId,
                                            ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newMerge(new ir::Instruction(
-      SpvOpSelectionMerge, 0, 0,
+      context(), SpvOpSelectionMerge, 0, 0,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {labelId}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER, {0}}}));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newMerge);
@@ -95,7 +95,7 @@ void DeadBranchElimPass::AddBranchConditional(uint32_t condId,
                                               uint32_t falseLabId,
                                               ir::BasicBlock* bp) {
   std::unique_ptr<ir::Instruction> newBranchCond(new ir::Instruction(
-      SpvOpBranchConditional, 0, 0,
+      context(), SpvOpBranchConditional, 0, 0,
       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {condId}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {trueLabId}},
        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {falseLabId}}}));
@@ -302,7 +302,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
               ++icnt;
             });
         std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
-            SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
+            context(), SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
         get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
         pii = pii.InsertBefore(std::move(newPhi));
         ++pii;

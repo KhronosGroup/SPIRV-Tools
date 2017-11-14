@@ -44,7 +44,7 @@ void LocalAccessChainConvertPass::BuildAndAppendInst(
     const std::vector<ir::Operand>& in_opnds,
     std::vector<std::unique_ptr<ir::Instruction>>* newInsts) {
   std::unique_ptr<ir::Instruction> newInst(
-      new ir::Instruction(opcode, typeId, resultId, in_opnds));
+      new ir::Instruction(context(), opcode, typeId, resultId, in_opnds));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newInst);
   newInsts->emplace_back(std::move(newInst));
 }

@@ -105,19 +105,18 @@ Optimizer& Optimizer::RegisterSizePasses() {
 bool Optimizer::Run(const uint32_t* original_binary,
                     const size_t original_binary_size,
                     std::vector<uint32_t>* optimized_binary) const {
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(impl_->target_env, impl_->pass_manager.consumer(),
                   original_binary, original_binary_size);
-  if (module == nullptr) return false;
-  ir::IRContext context(std::move(module), impl_->pass_manager.consumer());
+  if (context == nullptr) return false;
 
-  auto status = impl_->pass_manager.Run(&context);
+  auto status = impl_->pass_manager.Run(context.get());
   if (status == opt::Pass::Status::SuccessWithChange ||
       (status == opt::Pass::Status::SuccessWithoutChange &&
        (optimized_binary->data() != original_binary ||
         optimized_binary->size() != original_binary_size))) {
     optimized_binary->clear();
-    context.module()->ToBinary(optimized_binary, /* skip_nop = */ true);
+    context->module()->ToBinary(optimized_binary, /* skip_nop = */ true);
   }
 
   return status != opt::Pass::Status::Failure;

@@ -88,9 +88,9 @@ TEST(TypeManager, TypeStrings) {
       {28, "named_barrier"},
   };
 
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
 
   EXPECT_EQ(type_id_strs.size(), manager.NumTypes());
   EXPECT_EQ(2u, manager.NumForwardPointers());
@@ -118,9 +118,9 @@ TEST(TypeManager, DecorationOnStruct) {
     %struct4 = OpTypeStruct %u32 %f32 ; the same
     %struct7 = OpTypeStruct %f32      ; no decoration
   )";
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
 
   ASSERT_EQ(7u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -168,9 +168,9 @@ TEST(TypeManager, DecorationOnMember) {
     %struct7  = OpTypeStruct %u32 %f32 ; extra decoration on the struct
     %struct10 = OpTypeStruct %u32 %f32 ; no member decoration
   )";
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
 
   ASSERT_EQ(10u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -206,9 +206,9 @@ TEST(TypeManager, DecorationEmpty) {
     %struct2  = OpTypeStruct %f32 %u32
     %struct5  = OpTypeStruct %f32
   )";
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
 
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
@@ -228,9 +228,9 @@ TEST(TypeManager, DecorationEmpty) {
 
 TEST(TypeManager, BeginEndForEmptyModule) {
   const std::string text = "";
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
   ASSERT_EQ(0u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 
@@ -245,9 +245,9 @@ TEST(TypeManager, BeginEnd) {
     %u32     = OpTypeInt 32 0
     %f64     = OpTypeFloat 64
   )";
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  opt::analysis::TypeManager manager(nullptr, *module);
+  opt::analysis::TypeManager manager(nullptr, *context->module());
   ASSERT_EQ(5u, manager.NumTypes());
   ASSERT_EQ(0u, manager.NumForwardPointers());
 

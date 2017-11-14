@@ -46,36 +46,35 @@ class PassTest : public TestT {
  public:
   PassTest()
       : consumer_(nullptr),
+        context_(nullptr),
         tools_(SPV_ENV_UNIVERSAL_1_1),
         manager_(new opt::PassManager()),
         assemble_options_(SpirvTools::kDefaultAssembleOption),
         disassemble_options_(SpirvTools::kDefaultDisassembleOption) {}
 
   // Runs the given |pass| on the binary assembled from the |original|.
-  // Returns a tuple of the optimized binary and the boolean value returned 
+  // Returns a tuple of the optimized binary and the boolean value returned
   // from pass Process() function.
   std::tuple<std::vector<uint32_t>, opt::Pass::Status> OptimizeToBinary(
       opt::Pass* pass, const std::string& original, bool skip_nop) {
-    std::unique_ptr<ir::Module> module = BuildModule(
-        SPV_ENV_UNIVERSAL_1_1, consumer_, original, assemble_options_);
-    EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
-                               << original << std::endl;
-    if (!module) {
-      return std::make_tuple(std::vector<uint32_t>(), 
+    context_ = std::move(BuildModule(SPV_ENV_UNIVERSAL_1_1, consumer_, original,
+                                     assemble_options_));
+    EXPECT_NE(nullptr, context()) << "Assembling failed for shader:\n"
+                                  << original << std::endl;
+    if (!context()) {
+      return std::make_tuple(std::vector<uint32_t>(),
           opt::Pass::Status::Failure);
     }
 
-    ir::IRContext context(std::move(module), consumer());
-
-    const auto status = pass->Run(&context);
+    const auto status = pass->Run(context());
 
     std::vector<uint32_t> binary;
-    context.module()->ToBinary(&binary, skip_nop);
+    context()->module()->ToBinary(&binary, skip_nop);
     return std::make_tuple(binary, status);
   }
 
   // Runs a single pass of class |PassT| on the binary assembled from the
-  // |assembly|. Returns a tuple of the optimized binary and the boolean value 
+  // |assembly|. Returns a tuple of the optimized binary and the boolean value
   // from the pass Process() function.
   template <typename PassT, typename... Args>
   std::tuple<std::vector<uint32_t>, opt::Pass::Status> SinglePassRunToBinary(
@@ -106,7 +105,7 @@ class PassTest : public TestT {
   // Runs a single pass of class |PassT| on the binary assembled from the
   // |original| assembly, and checks whether the optimized binary can be
   // disassembled to the |expected| assembly. Optionally will also validate
-  // the optimized binary. This does *not* involve pass manager. Callers 
+  // the optimized binary. This does *not* involve pass manager. Callers
   // are suggested to use SCOPED_TRACE() for better messages.
   template <typename PassT, typename... Args>
   void SinglePassRunAndCheck(const std::string& original,
@@ -122,16 +121,16 @@ class PassTest : public TestT {
               status == opt::Pass::Status::SuccessWithoutChange);
     if (do_validation) {
       spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
-      spv_context context = spvContextCreate(target_env);
+      spv_context spvContext = spvContextCreate(target_env);
       spv_diagnostic diagnostic = nullptr;
       spv_const_binary_t binary = {optimized_bin.data(),
           optimized_bin.size()};
-      spv_result_t error = spvValidate(context, &binary, &diagnostic);
+      spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
       EXPECT_EQ(error, 0);
       if (error != 0)
         spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
-      spvContextDestroy(context);
+      spvContextDestroy(spvContext);
     }
     std::string optimized_asm;
     EXPECT_TRUE(tools_.Disassemble(optimized_bin, &optimized_asm,
@@ -191,15 +190,14 @@ class PassTest : public TestT {
   void RunAndCheck(const std::string& original, const std::string& expected) {
     assert(manager_->NumPasses());
 
-    std::unique_ptr<ir::Module> module = BuildModule(
-        SPV_ENV_UNIVERSAL_1_1, nullptr, original, assemble_options_);
-    ASSERT_NE(nullptr, module);
-    ir::IRContext context(std::move(module), consumer());
+    context_ = std::move(BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, original,
+                                     assemble_options_));
+    ASSERT_NE(nullptr, context());
 
-    manager_->Run(&context);
+    manager_->Run(context());
 
     std::vector<uint32_t> binary;
-    context.module()->ToBinary(&binary, /* skip_nop = */ false);
+    context()->module()->ToBinary(&binary, /* skip_nop = */ false);
 
     std::string optimized;
     EXPECT_TRUE(tools_.Disassemble(binary, &optimized,
@@ -216,8 +214,10 @@ class PassTest : public TestT {
   }
 
   MessageConsumer consumer() { return consumer_;}
+  ir::IRContext* context() { return context_.get(); }
  private:
   MessageConsumer consumer_;  // Message consumer.
+  std::unique_ptr<ir::IRContext> context_; // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<opt::PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;

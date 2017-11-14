@@ -29,9 +29,9 @@ const int kInvalidId = 0x400000;
 CFG::CFG(ir::Module* module)
     : module_(module),
       pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, 0, {}))),
+          new ir::Instruction(module->context(), SpvOpLabel, 0, 0, {}))),
       pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(SpvOpLabel, 0, kInvalidId, {}))) {
+          new ir::Instruction(module->context(), SpvOpLabel, 0, kInvalidId, {}))) {
   for (auto& fn : *module) {
     for (auto& blk : fn) {
       uint32_t blkId = blk.id();

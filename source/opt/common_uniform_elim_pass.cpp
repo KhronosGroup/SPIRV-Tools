@@ -231,7 +231,7 @@ void CommonUniformElimPass::GenACLoadRepl(
       ir::Operand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                   std::initializer_list<uint32_t>{varId}));
   std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
-      SpvOpLoad, varPteTypeId, ldResultId, load_in_operands));
+      context(), SpvOpLoad, varPteTypeId, ldResultId, load_in_operands));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newLoad);
   newInsts->emplace_back(std::move(newLoad));
 
@@ -254,7 +254,7 @@ void CommonUniformElimPass::GenACLoadRepl(
     ++iidIdx;
   });
   std::unique_ptr<ir::Instruction> newExt(new ir::Instruction(
-      SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
+      context(), SpvOpCompositeExtract, ptrPteTypeId, extResultId, ext_in_opnds));
   get_def_use_mgr()->AnalyzeInstDefUse(&*newExt);
   newInsts->emplace_back(std::move(newExt));
   *resultId = extResultId;
@@ -388,7 +388,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
           // Copy load into most recent dominating block and remember it
           replId = TakeNextId();
           std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
-              SpvOpLoad, ii->type_id(), replId,
+              context(), SpvOpLoad, ii->type_id(), replId,
               {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}}));
           get_def_use_mgr()->AnalyzeInstDefUse(&*newLoad);
           insertItr = insertItr.InsertBefore(std::move(newLoad));
@@ -460,7 +460,7 @@ bool CommonUniformElimPass::CommonExtractElimination(ir::Function* func) {
         if (idxItr.second.size() < 2) continue;
         uint32_t replId = TakeNextId();
         std::unique_ptr<ir::Instruction> newExtract(
-            new ir::Instruction(*idxItr.second.front()));
+            idxItr.second.front()->Clone(context()));
         newExtract->SetResultId(replId);
         get_def_use_mgr()->AnalyzeInstDefUse(&*newExtract);
         ++ii;

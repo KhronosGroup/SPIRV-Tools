@@ -31,6 +31,7 @@ namespace spvtools {
 namespace ir {
 
 class Function;
+class IRContext;
 
 // A SPIR-V basic block.
 class BasicBlock {
@@ -41,14 +42,19 @@ class BasicBlock {
   // Creates a basic block with the given starting |label|.
   inline explicit BasicBlock(std::unique_ptr<Instruction> label);
 
-  // Creates a basic block from the given basic block |bb|.
+  explicit BasicBlock(const BasicBlock& bb) = delete;
+
+  // Creates a clone of the basic block in the given |context|
   //
   // The parent function will default to null and needs to be explicitly set by
   // the user.
-  explicit BasicBlock(const BasicBlock& bb);
+  BasicBlock* Clone(IRContext*) const;
 
   // Sets the enclosing function for this basic block.
   void SetParent(Function* function) { function_ = function; }
+
+  // Return the enclosing function
+  inline Function* GetParent() const { return function_; }
 
   // Appends an instruction to this basic block.
   inline void AddInstruction(std::unique_ptr<Instruction> i);

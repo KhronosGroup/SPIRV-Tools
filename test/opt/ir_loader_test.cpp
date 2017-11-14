@@ -14,9 +14,11 @@
 
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <unordered_set>
 
 #include "message.h"
 #include "opt/build_module.h"
+#include "opt/ir_context.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace {
@@ -25,12 +27,12 @@ using namespace spvtools;
 
 void DoRoundTripCheck(const std::string& text) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  ASSERT_NE(nullptr, module) << "Failed to assemble\n" << text;
+  ASSERT_NE(nullptr, context) << "Failed to assemble\n" << text;
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
+  context->module()->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
   EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
@@ -212,17 +214,17 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   // clang-format on
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
-  ASSERT_NE(nullptr, module);
+  ASSERT_NE(nullptr, context);
 
   const auto opundef_count = std::count_if(
-      module->types_values_begin(), module->types_values_end(),
+      context->module()->types_values_begin(), context->module()->types_values_end(),
       [](const ir::Instruction& inst) { return inst.opcode() == SpvOpUndef; });
   EXPECT_EQ(3, opundef_count);
 
   std::vector<uint32_t> binary;
-  module->ToBinary(&binary, /* skip_nop = */ false);
+  context->module()->ToBinary(&binary, /* skip_nop = */ false);
 
   std::string disassembled_text;
   EXPECT_TRUE(t.Disassemble(binary, &disassembled_text));
@@ -322,9 +324,9 @@ void DoErrorMessageCheck(const std::string& assembly,
   };
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
-  std::unique_ptr<ir::Module> module =
+  std::unique_ptr<ir::IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_1, std::move(consumer), assembly);
-  EXPECT_EQ(nullptr, module);
+  EXPECT_EQ(nullptr, context);
 }
 
 TEST(IrBuilder, FunctionInsideFunction) {
@@ -376,6 +378,71 @@ TEST(IrBuilder, NotAllowedInstAppearingInFunction) {
                       "error: <instruction>:2:0:0: Non-OpFunctionParameter "
                       "(opcode: 59) found inside function but outside basic "
                       "block");
+}
+
+TEST(IrBuilder, UniqueIds) {
+  const std::string text =
+      // clang-format off
+               "OpCapability Shader\n"
+          "%1 = OpExtInstImport \"GLSL.std.450\"\n"
+               "OpMemoryModel Logical GLSL450\n"
+               "OpEntryPoint Vertex %main \"main\"\n"
+               "OpSource ESSL 310\n"
+               "OpName %main \"main\"\n"
+               "OpName %f_ \"f(\"\n"
+               "OpName %gv1 \"gv1\"\n"
+               "OpName %gv2 \"gv2\"\n"
+               "OpName %lv1 \"lv1\"\n"
+               "OpName %lv2 \"lv2\"\n"
+               "OpName %lv1_0 \"lv1\"\n"
+       "%void = OpTypeVoid\n"
+         "%10 = OpTypeFunction %void\n"
+      "%float = OpTypeFloat 32\n"
+         "%12 = OpTypeFunction %float\n"
+ "%_ptr_Private_float = OpTypePointer Private %float\n"
+        "%gv1 = OpVariable %_ptr_Private_float Private\n"
+   "%float_10 = OpConstant %float 10\n"
+        "%gv2 = OpVariable %_ptr_Private_float Private\n"
+  "%float_100 = OpConstant %float 100\n"
+ "%_ptr_Function_float = OpTypePointer Function %float\n"
+       "%main = OpFunction %void None %10\n"
+         "%17 = OpLabel\n"
+      "%lv1_0 = OpVariable %_ptr_Function_float Function\n"
+               "OpStore %gv1 %float_10\n"
+               "OpStore %gv2 %float_100\n"
+         "%18 = OpLoad %float %gv1\n"
+         "%19 = OpLoad %float %gv2\n"
+         "%20 = OpFSub %float %18 %19\n"
+               "OpStore %lv1_0 %20\n"
+               "OpReturn\n"
+               "OpFunctionEnd\n"
+         "%f_ = OpFunction %float None %12\n"
+         "%21 = OpLabel\n"
+        "%lv1 = OpVariable %_ptr_Function_float Function\n"
+        "%lv2 = OpVariable %_ptr_Function_float Function\n"
+         "%22 = OpLoad %float %gv1\n"
+         "%23 = OpLoad %float %gv2\n"
+         "%24 = OpFAdd %float %22 %23\n"
+               "OpStore %lv1 %24\n"
+         "%25 = OpLoad %float %gv1\n"
+         "%26 = OpLoad %float %gv2\n"
+         "%27 = OpFMul %float %25 %26\n"
+               "OpStore %lv2 %27\n"
+         "%28 = OpLoad %float %lv1\n"
+         "%29 = OpLoad %float %lv2\n"
+         "%30 = OpFDiv %float %28 %29\n"
+               "OpReturnValue %30\n"
+               "OpFunctionEnd\n";
+  // clang-format on
+
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+  ASSERT_NE(nullptr, context);
+
+  std::unordered_set<uint32_t> ids;
+  context->module()->ForEachInst([&ids](const ir::Instruction* inst) {
+    EXPECT_TRUE(ids.insert(inst->unique_id()).second);
+  });
 }
 
 }  // anonymous namespace

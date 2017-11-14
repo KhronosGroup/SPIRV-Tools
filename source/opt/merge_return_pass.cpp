@@ -60,7 +60,7 @@ bool MergeReturnPass::MergeReturnBlocks(
 
   // Create a label for the new return block
   std::unique_ptr<ir::Instruction> returnLabel(
-      new ir::Instruction(SpvOpLabel, 0u, TakeNextId(), {}));
+      new ir::Instruction(context(), SpvOpLabel, 0u, TakeNextId(), {}));
   uint32_t returnId = returnLabel->result_id();
 
   // Create the new basic block
@@ -84,13 +84,14 @@ bool MergeReturnPass::MergeReturnBlocks(
     // Need a PHI node to select the correct return value.
     uint32_t phiResultId = TakeNextId();
     uint32_t phiTypeId = function->type_id();
-    std::unique_ptr<ir::Instruction> phiInst(
-        new ir::Instruction(SpvOpPhi, phiTypeId, phiResultId, phiOps));
+    std::unique_ptr<ir::Instruction> phiInst(new ir::Instruction(
+        context(), SpvOpPhi, phiTypeId, phiResultId, phiOps));
     retBlockIter->AddInstruction(std::move(phiInst));
     ir::BasicBlock::iterator phiIter = retBlockIter->tail();
 
-    std::unique_ptr<ir::Instruction> returnInst(new ir::Instruction(
-        SpvOpReturnValue, 0u, 0u, {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
+    std::unique_ptr<ir::Instruction> returnInst(
+        new ir::Instruction(context(), SpvOpReturnValue, 0u, 0u,
+                            {{SPV_OPERAND_TYPE_ID, {phiResultId}}}));
     retBlockIter->AddInstruction(std::move(returnInst));
     ir::BasicBlock::iterator ret = retBlockIter->tail();
 
@@ -98,7 +99,7 @@ bool MergeReturnPass::MergeReturnBlocks(
     get_def_use_mgr()->AnalyzeInstDef(&*ret);
   } else {
     std::unique_ptr<ir::Instruction> returnInst(
-        new ir::Instruction(SpvOpReturn));
+        new ir::Instruction(context(), SpvOpReturn));
     retBlockIter->AddInstruction(std::move(returnInst));
   }
 

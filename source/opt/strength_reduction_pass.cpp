@@ -100,7 +100,7 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
                                  {shiftConstResultId});
         newOperands.push_back(shiftOperand);
         std::unique_ptr<ir::Instruction> newInstruction(
-            new ir::Instruction(SpvOp::SpvOpShiftLeftLogical, inst->type_id(),
+            new ir::Instruction(context(), SpvOp::SpvOpShiftLeftLogical, inst->type_id(),
                                 newResultId, newOperands));
 
         // Insert the new instruction and update the data structures.
@@ -161,7 +161,7 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
     ir::Operand constant(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
                          {val});
     std::unique_ptr<ir::Instruction> newConstant(new ir::Instruction(
-        SpvOp::SpvOpConstant, uint32_type_id_, resultId, {constant}));
+        context(), SpvOp::SpvOpConstant, uint32_type_id_, resultId, {constant}));
     get_module()->AddGlobalValue(std::move(newConstant));
 
     // Store the result id for next time.
@@ -199,7 +199,7 @@ uint32_t StrengthReductionPass::CreateUint32Type() {
   ir::Operand signOperand(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
                           {0});
   std::unique_ptr<ir::Instruction> newType(new ir::Instruction(
-      SpvOp::SpvOpTypeInt, type_id, 0, {widthOperand, signOperand}));
+      context(), SpvOp::SpvOpTypeInt, type_id, 0, {widthOperand, signOperand}));
   context()->AddType(std::move(newType));
   return type_id;
 }

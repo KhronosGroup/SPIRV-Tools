@@ -724,22 +724,23 @@ std::unique_ptr<ir::Instruction>
 FoldSpecConstantOpAndCompositePass::CreateInstruction(uint32_t id,
                                                       analysis::Constant* c) {
   if (c->AsNullConstant()) {
-    return MakeUnique<ir::Instruction>(SpvOp::SpvOpConstantNull,
+    return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantNull,
                                        type_mgr_->GetId(c->type()), id,
                                        std::initializer_list<ir::Operand>{});
   } else if (analysis::BoolConstant* bc = c->AsBoolConstant()) {
     return MakeUnique<ir::Instruction>(
+        context(),
         bc->value() ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse,
         type_mgr_->GetId(c->type()), id, std::initializer_list<ir::Operand>{});
   } else if (analysis::IntConstant* ic = c->AsIntConstant()) {
     return MakeUnique<ir::Instruction>(
-        SpvOp::SpvOpConstant, type_mgr_->GetId(c->type()), id,
+        context(), SpvOp::SpvOpConstant, type_mgr_->GetId(c->type()), id,
         std::initializer_list<ir::Operand>{ir::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             ic->words())});
   } else if (analysis::FloatConstant* fc = c->AsFloatConstant()) {
     return MakeUnique<ir::Instruction>(
-        SpvOp::SpvOpConstant, type_mgr_->GetId(c->type()), id,
+        context(), SpvOp::SpvOpConstant, type_mgr_->GetId(c->type()), id,
         std::initializer_list<ir::Operand>{ir::Operand(
             spv_operand_type_t::SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
             fc->words())});
@@ -765,7 +766,8 @@ FoldSpecConstantOpAndCompositePass::CreateCompositeInstruction(
     operands.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                           std::initializer_list<uint32_t>{id});
   }
-  return MakeUnique<ir::Instruction>(SpvOp::SpvOpConstantComposite,
+  return MakeUnique<ir::Instruction>(context(),
+                                     SpvOp::SpvOpConstantComposite,
                                      type_mgr_->GetId(cc->type()), result_id,
                                      std::move(operands));
 }
