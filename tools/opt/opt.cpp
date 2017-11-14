@@ -157,7 +157,7 @@ Options:
                a new basic block containing an unified return.
 
                This pass does not currently support structured control flow. It
-               bails out if the shader capability is detected.
+               makes no changes if the shader capability is detected.
   --strength-reduction
                Replaces instructions with equivalent and less expensive ones.
   --eliminate-dead-variables
