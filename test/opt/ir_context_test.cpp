@@ -197,6 +197,7 @@ TEST_F(IRContextTest, KillMemberName) {
   for (auto& inst : context->annotations()) {
     EXPECT_EQ(inst.opcode(), SpvOpNop);
   }
+}
 
 TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
   const uint32_t NUM_TESTS = 1000;
