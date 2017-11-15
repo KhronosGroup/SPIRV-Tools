@@ -261,7 +261,7 @@ void DecorationManager::CloneDecorations(
       case SpvOpMemberDecorate:
       case SpvOpDecorateId: {
         // simply clone decoration and change |target-id| to |to|
-        std::unique_ptr<ir::Instruction> new_inst(inst->Clone());
+        std::unique_ptr<ir::Instruction> new_inst(inst->Clone(module_->context()));
         new_inst->SetInOperand(0, {to});
         id_to_decoration_insts_[to].push_back(new_inst.get());
         f(*new_inst, true);

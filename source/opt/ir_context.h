@@ -263,6 +263,7 @@ class IRContext {
   // Kill all name and decorate ops targeting the result id of |inst|.
   void KillNamesAndDecorates(ir::Instruction* inst);
 
+  // Return the next unique id for use by an instruction
   inline uint32_t TakeNextUniqueId() {
     assert(unique_id_ != std::numeric_limits<uint32_t>::max());
 
