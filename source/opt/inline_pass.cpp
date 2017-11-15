@@ -327,8 +327,7 @@ void InlinePass::GenInlineCode(
           // Copy contents of original caller block up to call instruction.
           for (auto cii = call_block_itr->begin(); cii != call_inst_itr;
                ++cii) {
-            std::unique_ptr<ir::Instruction> cp_inst(
-                cii->Clone(cii->context()));
+            std::unique_ptr<ir::Instruction> cp_inst(cii->Clone(context()));
             // Remember same-block ops for possible regeneration.
             if (IsSameBlockOp(&*cp_inst)) {
               auto* sb_inst_ptr = cp_inst.get();
@@ -437,7 +436,7 @@ void InlinePass::GenInlineCode(
         // Copy remaining instructions from caller block.
         auto cii = call_inst_itr;
         for (++cii; cii != call_block_itr->end(); ++cii) {
-          std::unique_ptr<ir::Instruction> cp_inst(cii->Clone(cii->context()));
+          std::unique_ptr<ir::Instruction> cp_inst(cii->Clone(context()));
           // If multiple blocks generated, regenerate any same-block
           // instruction that has not been seen in this last block.
           if (multiBlocks) {
@@ -455,7 +454,7 @@ void InlinePass::GenInlineCode(
       } break;
       default: {
         // Copy callee instruction and remap all input Ids.
-        std::unique_ptr<ir::Instruction> cp_inst(cpi->Clone(cpi->context()));
+        std::unique_ptr<ir::Instruction> cp_inst(cpi->Clone(context()));
         cp_inst->ForEachInId([&callee2caller, &callee_result_ids,
                               this](uint32_t* iid) {
           const auto mapItr = callee2caller.find(*iid);
@@ -500,8 +499,7 @@ void InlinePass::GenInlineCode(
     auto loop_merge_itr = last->tail();
     --loop_merge_itr;
     assert(loop_merge_itr->opcode() == SpvOpLoopMerge);
-    std::unique_ptr<ir::Instruction> cp_inst(
-        loop_merge_itr->Clone(loop_merge_itr->context()));
+    std::unique_ptr<ir::Instruction> cp_inst(loop_merge_itr->Clone(context()));
     if (caller_is_single_block_loop) {
       // Also, update its continue target to point to the last block.
       cp_inst->SetInOperand(kSpvLoopMergeContinueTargetIdInIdx, {last->id()});
