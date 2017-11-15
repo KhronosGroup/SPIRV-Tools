@@ -43,6 +43,7 @@ add_library(SPIRV-Tools-opt
   local_single_store_elim_pass.h
   local_ssa_elim_pass.h
   log.h
+  merge_return_pass.h
   module.h
   null_pass.h
   reflect.h
@@ -58,6 +59,8 @@ add_library(SPIRV-Tools-opt
   types.h
   type_manager.h
   unify_const_pass.h
+  dominator_analysis_pass.h
+  dominator_tree.h
 
   aggressive_dead_code_elim_pass.cpp
   basic_block.cpp
@@ -88,6 +91,7 @@ add_library(SPIRV-Tools-opt
   local_single_block_elim_pass.cpp
   local_single_store_elim_pass.cpp
   local_ssa_elim_pass.cpp
+  merge_return_pass.cpp
   module.cpp
   eliminate_dead_functions_pass.cpp
   remove_duplicates_pass.cpp
@@ -102,6 +106,8 @@ add_library(SPIRV-Tools-opt
   type_manager.cpp
   unify_const_pass.cpp
   instruction_list.cpp
+  dominator_analysis_pass.cpp
+  dominator_tree.cpp
 )
 
 spvtools_default_compile_options(SPIRV-Tools-opt)

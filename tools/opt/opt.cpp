@@ -152,6 +152,12 @@ Options:
                Join two blocks into a single block if the second has the
                first as its only predecessor. Performed only on entry point
                call tree functions.
+  --merge-return
+               Replace all return instructions with unconditional branches to
+               a new basic block containing an unified return.
+
+               This pass does not currently support structured control flow. It
+               makes no changes if the shader capability is detected.
   --strength-reduction
                Replaces instructions with equivalent and less expensive ones.
   --eliminate-dead-variables
@@ -352,6 +358,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateLocalSingleStoreElimPass());
       } else if (0 == strcmp(cur_arg, "--merge-blocks")) {
         optimizer->RegisterPass(CreateBlockMergePass());
+      } else if (0 == strcmp(cur_arg, "--merge-return")) {
+        optimizer->RegisterPass(CreateMergeReturnPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-branches")) {
         optimizer->RegisterPass(CreateDeadBranchElimPass());
       } else if (0 == strcmp(cur_arg, "--eliminate-dead-functions")) {
