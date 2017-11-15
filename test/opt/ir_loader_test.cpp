@@ -436,7 +436,7 @@ TEST(IrBuilder, UniqueIds) {
   // clang-format on
 
   std::unique_ptr<ir::IRContext> context =
-      BuildModule({SPV_ENV_UNIVERSAL_1_1}, nullptr, text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
   ASSERT_NE(nullptr, context);
 
   std::unordered_set<uint32_t> ids;
