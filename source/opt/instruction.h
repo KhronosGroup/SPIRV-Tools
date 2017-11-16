@@ -300,7 +300,6 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool operator<(const Instruction&) const;
 
  private:
-
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);
