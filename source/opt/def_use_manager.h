@@ -16,6 +16,7 @@
 #define LIBSPIRV_OPT_DEF_USE_MANAGER_H_
 
 #include <list>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -54,12 +55,14 @@ inline bool operator<(const Use& lhs, const Use& rhs) {
 }
 
 using UseList = std::list<Use>;
+using UseEntry = std::pair<ir::Instruction*, ir::Instruction*>;
 
 // A class for analyzing and managing defs and uses in an ir::Module.
 class DefUseManager {
  public:
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
   using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
+  using IdToUsersMap = std::set<UseEntry>;
 
   // Constructs a def-use manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|. This
@@ -89,6 +92,16 @@ class DefUseManager {
   // |id|, returns nullptr.
   UseList* GetUses(uint32_t id);
   const UseList* GetUses(uint32_t id) const;
+
+  void ForEachUser(Insruction* def,
+                   const std::function<void(ir::Instruction*)>& f);
+  void ForEachUser(const Insruction* def,
+                   const std::function<void(const ir::Instruction*)>& f) const;
+  void ForEachUser(uint32_t id,
+                   const std::function<void(ir::Instruction*)>& f);
+  void ForEachUser(uint32_t id,
+                   const std::function<void(const ir::Instruction*)>& f) const;
+
   // Returns the annotation instrunctions which are a direct use of the given
   // |id|. This means when the decorations are applied through decoration
   // group(s), this function will just return the OpGroupDecorate
@@ -126,6 +139,7 @@ class DefUseManager {
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
   IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
+  IdToUsersMap id_to_users_; // Mapping from ids to their users
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
 
