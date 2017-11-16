@@ -172,6 +172,7 @@ class DefUseManager {
   void AnalyzeDefUse(ir::Module* module);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
+  IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
   IdToUsersMap id_to_users_; // Mapping from ids to their users
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
