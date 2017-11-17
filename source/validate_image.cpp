@@ -78,7 +78,9 @@ struct ImageTypeInfo {
   SpvAccessQualifier access_qualifier = SpvAccessQualifierMax;
 };
 
-// Provides information on image type.
+// Provides information on image type. |id| should be object of either
+// OpTypeImage or OpTypeSampledImage type. Returns false in case of failure
+// (not a valid id, failed to parse the instruction, etc).
 bool GetImageTypeInfo(const ValidationState_t& _, uint32_t id,
                       ImageTypeInfo* info) {
   if (!id || !info)
@@ -145,7 +147,7 @@ bool IsExplicitLod(SpvOp opcode) {
   return false;
 }
 
-bool IsProjLod(SpvOp opcode) {
+bool IdProj(SpvOp opcode) {
   switch (opcode) {
     case SpvOpImageSampleProjImplicitLod:
     case SpvOpImageSampleProjDrefImplicitLod:
@@ -162,8 +164,9 @@ bool IsProjLod(SpvOp opcode) {
   return false;
 }
 
-// Returns actual dimensionality of |info.dim|.
-uint32_t GetPlaneSize(const ImageTypeInfo& info) {
+// Returns the number of components in a coordinate used to access a texel in
+// a single plane of an image with the given parameters.
+uint32_t GetPlaneCoordSize(const ImageTypeInfo& info) {
   uint32_t plane_size = 0;
   // If this switch breaks your build, please add new values below.
   switch (info.dim) {
@@ -198,7 +201,7 @@ uint32_t GetMinCoordSize(SpvOp opcode, const ImageTypeInfo& info) {
     return 3;
   }
 
-  return GetPlaneSize(info) + info.arrayed + (IsProjLod(opcode) ? 1 : 0);
+  return GetPlaneCoordSize(info) + info.arrayed + (IdProj(opcode) ? 1 : 0);
 }
 
 // Checks ImageOperand bitfield and respective operands.
@@ -232,11 +235,13 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
         << "together: " << spvOpcodeString(opcode);
   };
 
-  const bool is_implcit_lod = IsImplicitLod(opcode);
-  const bool is_explcit_lod = IsExplicitLod(opcode);
+  const bool is_implicit_lod = IsImplicitLod(opcode);
+  const bool is_explicit_lod = IsExplicitLod(opcode);
+
+  // The checks should be done in the order of definition of OperandImage.
 
   if (mask & SpvImageOperandsBiasMask) {
-    if (!is_implcit_lod) {
+    if (!is_implicit_lod) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Image Operand Bias can only be used with ImplicitLod opcodes: "
             << spvOpcodeString(opcode);
@@ -264,7 +269,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsLodMask) {
-    if (is_implcit_lod) {
+    // TODO(atgoo@github.com) Check which opcodes are allowed to use this
+    // ImageOperand.
+    if (is_implicit_lod) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Image Operand Lod cannot be used with ImplicitLod opcodes: "
             << spvOpcodeString(opcode);
@@ -300,7 +307,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsGradMask) {
-    if (!is_explcit_lod) {
+    if (!is_explicit_lod) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Image Operand Grad can only be used with ExplicitLod opcodes: "
             << spvOpcodeString(opcode);
@@ -315,7 +322,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
           << "vectors: " << spvOpcodeString(opcode);
     }
 
-    const uint32_t plane_size = GetPlaneSize(info);
+    const uint32_t plane_size = GetPlaneCoordSize(info);
     const uint32_t dx_size = _.GetDimension(dx_type_id);
     const uint32_t dy_size = _.GetDimension(dy_type_id);
     if (plane_size != dx_size) {
@@ -340,6 +347,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsConstOffsetMask) {
+    if (info.dim == SpvDimCube) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+          << "Image Operand ConstOffset cannot be used with Cube Image 'Dim': "
+          << spvOpcodeString(opcode);
+    }
+
     const uint32_t id = inst.words[word_index++];
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
@@ -354,7 +367,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
           << spvOpcodeString(opcode);
     }
 
-    const uint32_t plane_size = GetPlaneSize(info);
+    const uint32_t plane_size = GetPlaneCoordSize(info);
     const uint32_t offset_size = _.GetDimension(type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -365,6 +378,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsOffsetMask) {
+    if (info.dim == SpvDimCube) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+          << "Image Operand Offset cannot be used with Cube Image 'Dim': "
+          << spvOpcodeString(opcode);
+    }
+
     const uint32_t id = inst.words[word_index++];
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
@@ -373,7 +392,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
           << "vector: " << spvOpcodeString(opcode);
     }
 
-    const uint32_t plane_size = GetPlaneSize(info);
+    const uint32_t plane_size = GetPlaneCoordSize(info);
     const uint32_t offset_size = _.GetDimension(type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -388,6 +407,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_DATA)
           << "Image Operand ConstOffsets can only be used with OpImageGather "
           << "and OpImageDrefGather: " << spvOpcodeString(opcode);
+    }
+
+    if (info.dim == SpvDimCube) {
+      return _.diag(SPV_ERROR_INVALID_DATA)
+          << "Image Operand ConstOffsets cannot be used with Cube Image 'Dim': "
+          << spvOpcodeString(opcode);
     }
 
     const uint32_t id = inst.words[word_index++];
@@ -450,7 +475,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsMinLodMask) {
-    if (!is_implcit_lod && !(mask & SpvImageOperandsGradMask)) {
+    if (!is_implicit_lod && !(mask & SpvImageOperandsGradMask)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Image Operand MinLod can only be used with ImplicitLod "
             << "opcodes or together with Image Operand Grad: "
@@ -486,7 +511,7 @@ spv_result_t ValidateImageCommon(ValidationState_t& _,
                                  const spv_parsed_instruction_t& inst,
                                  const ImageTypeInfo& info) {
   const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
-  if (IsProjLod(opcode)) {
+  if (IdProj(opcode)) {
     if (info.dim != SpvDim1D && info.dim != SpvDim2D &&
         info.dim != SpvDim3D && info.dim != SpvDimRect) {
       return _.diag(SPV_ERROR_INVALID_DATA)
@@ -568,11 +593,17 @@ spv_result_t ImagePass(ValidationState_t& _,
             << spvOpcodeString(opcode);
       }
 
-      ImageTypeInfo info;
-      if (!GetImageTypeInfo(_, _.GetOperandTypeId(inst, 2), &info)) {
+      const uint32_t image_type = _.GetOperandTypeId(inst, 2);
+      if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Image to be of type OpTypeImage: "
             << spvOpcodeString(opcode);
+      }
+
+      ImageTypeInfo info;
+      if (!GetImageTypeInfo(_, image_type, &info)) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Corrupt image type definition";
       }
 
       // TODO(atgoo@github.com) Check compatibility of result type and received
@@ -1291,7 +1322,7 @@ spv_result_t ImagePass(ValidationState_t& _,
         }
       }
 
-      const uint32_t min_coord_size = GetPlaneSize(info);
+      const uint32_t min_coord_size = GetPlaneCoordSize(info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)

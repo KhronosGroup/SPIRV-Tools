@@ -332,7 +332,8 @@ TEST_F(ValidateImage, SampledImageNotImage) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %sampler %sampler
+%simg1 = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%simg2 = OpSampledImage %type_sampled_image_f32_2d_0001 %simg1 %sampler
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -778,10 +779,8 @@ TEST_F(ValidateImage, SampleImplicitLodCubeArrayedSuccess) {
 %simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
 %res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000
 %res2 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias %f32_0_25
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %s32vec3_012
-%res5 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec3_012
-%res6 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 MinLod %f32_0_5
-%res7 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias|Offset|MinLod %f32_0_25 %s32vec3_012 %f32_0_5
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 MinLod %f32_0_5
+%res5 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias|MinLod %f32_0_25 %f32_0_5
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -908,11 +907,26 @@ TEST_F(ValidateImage, SampleExplicitLodGradMultisampled) {
       "ImageSampleExplicitLod"));
 }
 
-TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
+TEST_F(ValidateImage, SampleImplicitLodConstOffsetCubeDim) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %s32vec3_012
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Image Operand ConstOffset cannot be used with Cube Image 'Dim': "
+      "ImageSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %f32vec3_000
 )";
 
@@ -925,9 +939,9 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %s32vec2_01
 )";
 
@@ -940,9 +954,9 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetNotConst) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %offset = OpSNegate %s32vec3 %s32vec3_012
 %res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %offset
 )";
@@ -954,11 +968,26 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetNotConst) {
       "ImageSampleImplicitLod"));
 }
 
-TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
+TEST_F(ValidateImage, SampleImplicitLodOffsetCubeDim) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec3_012
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Image Operand Offset cannot be used with Cube Image 'Dim': "
+      "ImageSampleImplicitLod"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %f32vec3_000
 )";
 
@@ -971,9 +1000,9 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
 
 TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec2_01
 )";
 
@@ -986,10 +1015,10 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
 
 TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Offset %s32vec2_01 %s32vec2_01
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Offset %s32vec3_012 %s32vec3_012
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1879,9 +1908,9 @@ TEST_F(ValidateImage, FetchCoordinateSizeTooSmall) {
 
 TEST_F(ValidateImage, GatherSuccess) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1
 %res2 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets
 )";
@@ -2004,11 +2033,26 @@ TEST_F(ValidateImage, GatherWrongComponentType) {
       "Expected Component to be int scalar: ImageGather"));
 }
 
-TEST_F(ValidateImage, GatherConstOffsetsNotArray) {
+TEST_F(ValidateImage, GatherDimCube) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Image Operand ConstOffsets cannot be used with Cube Image 'Dim': "
+      "ImageGather"));
+}
+
+TEST_F(ValidateImage, GatherConstOffsetsNotArray) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %u32vec4_0123
 )";
 
@@ -2021,9 +2065,9 @@ TEST_F(ValidateImage, GatherConstOffsetsNotArray) {
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayWrongSize) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets3x2
 )";
 
@@ -2036,9 +2080,9 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayWrongSize) {
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets4xu
 )";
 
@@ -2051,9 +2095,9 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets4x3
 )";
 
@@ -2066,9 +2110,9 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotConst) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %offsets = OpUndef %u32vec2arr4
 %res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %offsets
 )";
@@ -2097,9 +2141,9 @@ TEST_F(ValidateImage, NotGatherWithConstOffsets) {
 
 TEST_F(ValidateImage, DrefGatherSuccess) {
   const std::string body = R"(
-%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5
 %res2 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5 ConstOffsets %const_offsets
 )";
