@@ -40,25 +40,28 @@ class InsertExtractElimPass : public Pass {
   Status Process(ir::IRContext*) override;
 
  private:
-  // Return true if indices of extract |extInst| and insert |insInst| match
+  // Return true if indices of extract |extInst| starting at |extOffset|
+  // match indices of insert |insInst|. 
   bool ExtInsMatch(const ir::Instruction* extInst,
-                   const ir::Instruction* insInst) const;
+                   const ir::Instruction* insInst,
+                   const uint32_t extOffset) const;
 
-  // Return true if indices of extract |extInst| and insert |insInst| conflict,
-  // specifically, if the insert changes bits specified by the extract, but
-  // changes either more bits or less bits than the extract specifies,
-  // meaning the exact value being inserted cannot be used to replace
-  // the extract.
+  // Return true if indices of extract |extInst| starting at |extOffset| and
+  // indices of insert |insInst| conflict, specifically, if the insert
+  // changes bits specified by the extract, but changes either more bits
+  // or less bits than the extract specifies, meaning the exact value being
+  // inserted cannot be used to replace the extract.
   bool ExtInsConflict(const ir::Instruction* extInst,
-                      const ir::Instruction* insInst) const;
+                      const ir::Instruction* insInst,
+                      const uint32_t extOffset) const;
 
   // Return true if |typeId| is a vector type
   bool IsVectorType(uint32_t typeId);
 
-  // Look for OpExtract on sequence of OpInserts in |func|. If there is an
-  // insert with identical indices, replace the extract with the value
-  // that is inserted if possible. Specifically, replace if there is no
-  // intervening insert which conflicts.
+  // Look for OpExtract on sequence of OpInserts in |func|. If there is a
+  // reaching insert which corresponds to the indices of the extract, replace
+  // the extract with the value that is inserted. Also resolve extracts from
+  // CompositeConstruct or ConstantComposite.
   bool EliminateInsertExtract(ir::Function* func);
 
   // Initialize extensions whitelist

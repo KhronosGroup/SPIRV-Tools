@@ -64,7 +64,7 @@ bool MemPass::IsTargetType(const ir::Instruction* typeInst) const {
   int nonMathComp = 0;
   typeInst->ForEachInId([&nonMathComp, this](const uint32_t* tid) {
     ir::Instruction* compTypeInst = get_def_use_mgr()->GetDef(*tid);
-    if (!IsBaseTargetType(compTypeInst)) ++nonMathComp;
+    if (!IsTargetType(compTypeInst)) ++nonMathComp;
   });
   return nonMathComp == 0;
 }
