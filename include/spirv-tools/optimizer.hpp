@@ -87,6 +87,16 @@ class Optimizer {
   // from time to time.
   Optimizer& RegisterSizePasses();
 
+  // Registers passes that attempt to legalize the generated code.
+  //
+  // Note: this recipe is specially for legalizing SPIR-V. It should be used
+  // by compilers after translating HLSL source code literally. It should
+  // *not* be used by general workloads for performance or size improvement.
+  //
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterLegalizationPasses();
+
   // Optimizes the given SPIR-V module |original_binary| and writes the
   // optimized binary into |optimized_binary|.
   // Returns true on successful optimization, whether or not the module is
