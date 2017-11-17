@@ -77,6 +77,11 @@ class Optimizer {
   // method.
   Optimizer& RegisterPass(PassToken&& pass);
 
+  // Registers passes that attempt to legalize the generated code.
+  // This sequence of passes is subject to constant review and will change
+  // from time to time.
+  Optimizer& RegisterLegalizationPasses();
+
   // Registers passes that attempt to improve performance of generated code.
   // This sequence of passes is subject to constant review and will change
   // from time to time.

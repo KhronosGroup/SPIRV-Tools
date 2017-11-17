@@ -66,6 +66,21 @@ Optimizer& Optimizer::RegisterPass(PassToken&& p) {
   return *this;
 }
 
+Optimizer& Optimizer::RegisterLegalizationPasses() {
+  return RegisterPass(CreateInlineExhaustivePass())
+      .RegisterPass(CreateLocalAccessChainConvertPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateAggressiveDCEPass())
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateCFGCleanupPass())
+      .RegisterPass(CreateBlockMergePass())
+      .RegisterPass(CreateLocalMultiStoreElimPass())
+      .RegisterPass(CreateInsertExtractElimPass())
+      .RegisterPass(CreateAggressiveDCEPass());
+}
+
 Optimizer& Optimizer::RegisterPerformancePasses() {
   return RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
