@@ -459,7 +459,7 @@ OpFunctionEnd
 }
 
 TEST_F(LocalAccessChainConvertTest, 
-       UntargetedTypeNotConverted) {
+       NestedStructsConverted) {
 
   //  #version 140
   //  
@@ -481,7 +481,7 @@ TEST_F(LocalAccessChainConvertTest,
   //      gl_FragColor = s2.s1.v1;
   //  }
 
-  const std::string assembly =
+  const std::string predefs_before =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -512,7 +512,41 @@ OpName %gl_FragColor "gl_FragColor"
 %_ptr_Function_v4float = OpTypePointer Function %v4float
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %gl_FragColor = OpVariable %_ptr_Output_v4float Output
-%main = OpFunction %void None %9
+)";
+
+  const std::string predefs_after =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %BaseColor %gl_FragColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 140
+OpName %main "main"
+OpName %S1_t "S1_t"
+OpMemberName %S1_t 0 "v1"
+OpName %S2_t "S2_t"
+OpMemberName %S2_t 0 "v2"
+OpMemberName %S2_t 1 "s1"
+OpName %s2 "s2"
+OpName %BaseColor "BaseColor"
+OpName %gl_FragColor "gl_FragColor"
+%void = OpTypeVoid
+%9 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%S1_t = OpTypeStruct %v4float
+%S2_t = OpTypeStruct %v4float %S1_t
+%_ptr_Function_S2_t = OpTypePointer Function %S2_t
+%int = OpTypeInt 32 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%BaseColor = OpVariable %_ptr_Input_v4float Input
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%gl_FragColor = OpVariable %_ptr_Output_v4float Output
+)";
+
+  const std::string before =
+      R"(%main = OpFunction %void None %9
 %19 = OpLabel
 %s2 = OpVariable %_ptr_Function_S2_t Function
 %20 = OpLoad %v4float %BaseColor
@@ -525,8 +559,23 @@ OpReturn
 OpFunctionEnd
 )";
 
+  const std::string after =
+      R"(%main = OpFunction %void None %9
+%19 = OpLabel
+%s2 = OpVariable %_ptr_Function_S2_t Function
+%20 = OpLoad %v4float %BaseColor
+%24 = OpLoad %S2_t %s2
+%25 = OpCompositeInsert %S2_t %20 %24 1 0
+OpStore %s2 %25
+%26 = OpLoad %S2_t %s2
+%27 = OpCompositeExtract %v4float %26 1 0
+OpStore %gl_FragColor %27
+OpReturn
+OpFunctionEnd
+)";
+
   SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
-      assembly, assembly, false, true);
+      predefs_before + before , predefs_after + after, true, true);
 }
 
 TEST_F(LocalAccessChainConvertTest, 
