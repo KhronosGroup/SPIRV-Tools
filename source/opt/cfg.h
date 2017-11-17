@@ -63,10 +63,10 @@ class CFG {
     return block_ptr == &pseudo_exit_block_;
   }
 
-  // Compute structured block order into |structuredOrder| for |func| starting
-  // at |root|. This order has the property that dominators come before all
-  // blocks they dominate and merge blocks come after all blocks that are in
-  // the control constructs of their header.
+  // Compute structured block order into |order| for |func| starting at |root|.
+  // This order has the property that dominators come before all blocks they
+  // dominate and merge blocks come after all blocks that are in the control
+  // constructs of their header.
   void ComputeStructuredOrder(ir::Function* func, ir::BasicBlock* root,
                               std::list<ir::BasicBlock*>* order);
 

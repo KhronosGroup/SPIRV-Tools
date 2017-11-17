@@ -97,4 +97,13 @@ bool spvOpcodeIsLoad(const SpvOp opcode);
 // Returns true if the opcode is an atomic operation.
 bool spvOpcodeIsAtomicOp(const SpvOp opcode);
 
+// Returns true if the given opcode is a branch instruction.
+bool spvOpcodeIsBranch(SpvOp opcode);
+
+// Returns true if the given opcode is a return instruction.
+bool spvOpcodeIsReturn(SpvOp opcode);
+
+// Returns true if the given opcode is a basic block terminator.
+bool spvOpcodeIsBlockTerminator(SpvOp opcode);
+
 #endif  // LIBSPIRV_OPCODE_H_

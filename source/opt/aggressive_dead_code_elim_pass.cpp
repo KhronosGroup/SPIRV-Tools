@@ -300,7 +300,7 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
     for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
       if (IsLive(&*ii)) continue;
-      if (IsBranch(ii->opcode()) &&
+      if (ii->IsBranch() &&
           !IsStructuredIfHeader(*bi, nullptr, nullptr, nullptr))
         continue;
       dead_insts_.insert(&*ii);

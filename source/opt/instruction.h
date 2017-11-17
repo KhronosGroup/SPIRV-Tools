@@ -295,6 +295,19 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // Returns true if the instruction is an atom operation.
   inline bool IsAtomicOp() const;
 
+  // Returns true if this instruction is a branch or switch instruction (either
+  // conditional or not).
+  bool IsBranch() const { return spvOpcodeIsBranch(opcode()); }
+
+  // Returns true if this instruction causes the function to finish execution
+  // and return to its caller
+  bool IsReturn() const { return spvOpcodeIsReturn(opcode()); }
+
+  // Returns true if this instruction is a basic block terminator.
+  bool IsBlockTerminator() const {
+    return spvOpcodeIsBlockTerminator(opcode());
+  }
+
   inline bool operator==(const Instruction&) const;
   inline bool operator!=(const Instruction&) const;
   inline bool operator<(const Instruction&) const;
@@ -344,8 +357,7 @@ inline const Operand& Instruction::GetOperand(uint32_t index) const {
 };
 
 inline void Instruction::AddOperand(Operand&& operand) {
-  operands_.push_back(operand);
-  return;
+  operands_.push_back(std::move(operand));
 }
 
 inline void Instruction::SetInOperand(uint32_t index,

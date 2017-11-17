@@ -87,6 +87,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/optimizer.cpp \
 		source/opt/pass.cpp \
 		source/opt/pass_manager.cpp \
+		source/opt/propagator.cpp \
 		source/opt/remove_duplicates_pass.cpp \
 		source/opt/set_spec_constant_default_value_pass.cpp \
 		source/opt/strength_reduction_pass.cpp \

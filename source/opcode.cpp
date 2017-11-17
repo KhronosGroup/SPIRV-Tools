@@ -360,6 +360,17 @@ bool spvOpcodeIsLoad(const SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsBranch(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpBranch:
+    case SpvOpBranchConditional:
+    case SpvOpSwitch:
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool spvOpcodeIsAtomicOp(const SpvOp opcode) {
   switch (opcode) {
     case SpvOpAtomicLoad:
@@ -384,4 +395,19 @@ bool spvOpcodeIsAtomicOp(const SpvOp opcode) {
     default:
       return false;
   }
+}
+
+bool spvOpcodeIsReturn(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpReturn:
+    case SpvOpReturnValue:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
+  return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturn(opcode) ||
+         opcode == SpvOpKill || opcode == SpvOpUnreachable;
 }

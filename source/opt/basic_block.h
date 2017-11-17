@@ -138,6 +138,10 @@ class BasicBlock {
   // this block, if any.  If none, returns zero.
   uint32_t ContinueBlockIdIfAny() const;
 
+  // Returns true if this basic block exits this function and returns to its
+  // caller.
+  bool IsReturn() const { return ctail()->IsReturn(); }
+
  private:
   // The enclosing function.
   Function* function_;
