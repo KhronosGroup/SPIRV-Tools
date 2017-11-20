@@ -44,17 +44,7 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   for (auto i: to_kill) {
     context()->KillInst(i);
   }
-  //const uint32_t id = inst->result_id();
-  //if (id != 0) {
-  //  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  //  if (uses != nullptr)
-  //    for (auto u : *uses)
-  //      if (u.inst->opcode() == SpvOpName) {
-  //        context()->KillInst(u.inst);
-  //        break;
-  //      }
-  //}
-  //context()->KillInst(inst);
+  context()->KillInst(inst);
 }
 
 bool BlockMergePass::MergeBlocks(ir::Function* func) {
