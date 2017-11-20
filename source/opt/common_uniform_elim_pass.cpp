@@ -177,37 +177,25 @@ bool CommonUniformElimPass::IsUniformVar(uint32_t varId) {
 
 bool CommonUniformElimPass::HasUnsupportedDecorates(uint32_t id) const {
   bool nonTypeDecorate = false;
-  get_def_use_mgr()->ForEachUser(id, [this,&nonTypeDecorate](ir::Instruction* user) {
-    if (this->IsNonTypeDecorate(user->opcode())) {
-      nonTypeDecorate = true;
-    }
-  });
+  get_def_use_mgr()->ForEachUser(
+      id, [this, &nonTypeDecorate](ir::Instruction* user) {
+        if (this->IsNonTypeDecorate(user->opcode())) {
+          nonTypeDecorate = true;
+        }
+      });
   return nonTypeDecorate;
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  //if (uses == nullptr) return false;
-  //for (auto u : *uses) {
-  //  const SpvOp op = u.inst->opcode();
-  //  if (IsNonTypeDecorate(op)) return true;
-  //}
-  //return false;
 }
 
 bool CommonUniformElimPass::HasOnlyNamesAndDecorates(uint32_t id) const {
   bool onlyNameAndDecorates = true;
-  get_def_use_mgr()->ForEachUser(id, [this,&onlyNameAndDecorates](ir::Instruction* user) {
-    SpvOp op = user->opcode();
-    if (op != SpvOpName && !this->IsNonTypeDecorate(op)) {
-      onlyNameAndDecorates = false;
-    }
-  });
+  get_def_use_mgr()->ForEachUser(
+      id, [this, &onlyNameAndDecorates](ir::Instruction* user) {
+        SpvOp op = user->opcode();
+        if (op != SpvOpName && !this->IsNonTypeDecorate(op)) {
+          onlyNameAndDecorates = false;
+        }
+      });
   return onlyNameAndDecorates;
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  //if (uses == nullptr) return true;
-  //for (auto u : *uses) {
-  //  const SpvOp op = u.inst->opcode();
-  //  if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
-  //}
-  //return true;
 }
 
 void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {

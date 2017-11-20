@@ -126,13 +126,6 @@ bool MemPass::HasOnlyNamesAndDecorates(uint32_t id) const {
     }
   });
   return hasOnlyNamesAndDecorates;
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  //if (uses == nullptr) return true;
-  //for (auto u : *uses) {
-  //  const SpvOp op = u.inst->opcode();
-  //  if (op != SpvOpName && !IsNonTypeDecorate(op)) return false;
-  //}
-  //return true;
 }
 
 void MemPass::KillAllInsts(ir::BasicBlock* bp) {
@@ -156,18 +149,6 @@ bool MemPass::HasLoads(uint32_t varId) const {
     }
   });
   return hasLoads;
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(varId);
-  //if (uses == nullptr) return false;
-  //for (auto u : *uses) {
-  //  SpvOp op = u.inst->opcode();
-  //  // TODO(): The following is slightly conservative. Could be
-  //  // better handling of non-store/name.
-  //  if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
-  //    if (HasLoads(u.inst->result_id())) return true;
-  //  } else if (op != SpvOpStore && op != SpvOpName && !IsNonTypeDecorate(op))
-  //    return true;
-  //}
-  //return false;
 }
 
 bool MemPass::IsLiveVar(uint32_t varId) const {
@@ -200,15 +181,6 @@ void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
       insts->push(user);
     }
   });
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(ptr_id);
-  //if (uses != nullptr) {
-  //  for (auto u : *uses) {
-  //    if (IsNonPtrAccessChain(u.inst->opcode()))
-  //      AddStores(u.inst->result_id(), insts);
-  //    else if (u.inst->opcode() == SpvOpStore)
-  //      insts->push(u.inst);
-  //  }
-  //}
 }
 
 void MemPass::DCEInst(ir::Instruction* inst) {
@@ -260,16 +232,6 @@ bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
     }
   });
   return hasOnlySupportedRefs;
-  //analysis::UseList* uses = get_def_use_mgr()->GetUses(varId);
-  //if (uses == nullptr) return true;
-  //for (auto u : *uses) {
-  //  const SpvOp op = u.inst->opcode();
-  //  if (op != SpvOpStore && op != SpvOpLoad && op != SpvOpName &&
-  //      !IsNonTypeDecorate(op))
-  //    return false;
-  //}
-  //supported_ref_vars_.insert(varId);
-  //return true;
 }
 
 void MemPass::InitSSARewrite(ir::Function* func) {

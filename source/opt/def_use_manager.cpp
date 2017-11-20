@@ -50,7 +50,6 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID: {
         uint32_t use_id = inst->GetSingleWordOperand(i);
-        //id_to_uses_[use_id].push_back({inst, i});
         id_to_users_.insert(UserEntry(GetDef(use_id), inst));
         inst_to_used_ids_[inst].push_back(use_id);
       } break;
@@ -76,18 +75,6 @@ const ir::Instruction* DefUseManager::GetDef(uint32_t id) const {
   if (iter == id_to_def_.end()) return nullptr;
   return iter->second;
 }
-
-//UseList* DefUseManager::GetUses(uint32_t id) {
-//  auto iter = id_to_uses_.find(id);
-//  if (iter == id_to_uses_.end()) return nullptr;
-//  return &iter->second;
-//}
-//
-//const UseList* DefUseManager::GetUses(uint32_t id) const {
-//  const auto iter = id_to_uses_.find(id);
-//  if (iter == id_to_uses_.end()) return nullptr;
-//  return &iter->second;
-//}
 
 void DefUseManager::ForEachUser(const ir::Instruction* def,
                                 const std::function<void(ir::Instruction*)>& f) const {
@@ -127,13 +114,6 @@ void DefUseManager::ForEachUse(const ir::Instruction* def,
           break;
       }
     }
-    //uint32_t numInOps = user->NumInOperands();
-    //for (uint32_t idx = user->NumOperands() - numInOps; idx != numInOps; ++idx) {
-    //  const ir::Operand &op = user->GetInOperand(idx);
-    //  if (op.type == SPV_OPERAND_TYPE_ID && op.words[0] == def->result_id()) {
-    //    f(user, idx);
-    //  }
-    //}
     ++iter;
   }
 }
@@ -152,20 +132,12 @@ std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
       annos.push_back(user);
     }
   });
-  //const auto* uses = GetUses(id);
-  //if (!uses) return annos;
-  //for (const auto& c : *uses) {
-  //  if (ir::IsAnnotationInst(c.inst->opcode())) {
-  //    annos.push_back(c.inst);
-  //  }
-  //}
   return annos;
 }
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   if (!module) return;
-  //module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDefUse, this,
-  //                              std::placeholders::_1));
+  // Analyze all the defs before any uses to catch forward references.
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDef, this,
                                 std::placeholders::_1));
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstUse, this,
@@ -177,7 +149,6 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
   if (iter != inst_to_used_ids_.end()) {
     EraseUseRecordsOfOperandIds(inst);
     if (inst->result_id() != 0) {
-      //id_to_uses_.erase(inst->result_id());  // Remove all uses of this id.
       // Remove all uses of this inst.
       auto user_end = id_to_users_.end();
       auto user_iter = id_to_users_.lower_bound(UserEntry(inst, nullptr));
@@ -194,34 +165,10 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
 void DefUseManager::EraseUseRecordsOfOperandIds(const ir::Instruction* inst) {
   // Go through all ids used by this instruction, remove this instruction's
   // uses of them.
-  //
-  // We cache end iterators to avoid the cost of repeatedly constructing
-  // and destructing their value.  This cuts runtime on some examples by
-  // a factor of about 3 (e.g. on Windows debug builds, with many thousands
-  // of instructions).
   auto iter = inst_to_used_ids_.find(inst);
   if (iter != inst_to_used_ids_.end()) {
-    // Cache the end iterator on the map.  The end iterator on
-    // an unordered map does not get invalidated when erasing an
-    // element.
-    //const auto& id_to_uses_end = id_to_uses_.end();
-    //const auto& id_to_users_end = id_to_users_.end();
     for (auto use_id : iter->second) {
       id_to_users_.erase(UserEntry(GetDef(use_id), const_cast<ir::Instruction*>(inst)));
-      //auto uses_iter = id_to_uses_.find(use_id);
-      //if (uses_iter == id_to_uses_end) continue;
-      //auto& uses = uses_iter->second;
-      //// Similarly, cache this end iterator.  It is not invalidated
-      //// by erasure of an element from the list.
-      //const auto& uses_end = uses.end();
-      //for (auto it = uses.begin(); it != uses_end;) {
-      //  if (it->inst == inst) {
-      //    it = uses.erase(it);
-      //  } else {
-      //    ++it;
-      //  }
-      //}
-      //if (uses.empty()) id_to_uses_.erase(use_id);
     }
     inst_to_used_ids_.erase(inst);
   }
@@ -235,18 +182,6 @@ bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
   if (lhs.id_to_users_ != rhs.id_to_users_) {
     return false;
   }
-  //for (auto use : lhs.id_to_uses_) {
-  //  auto rhs_iter = rhs.id_to_uses_.find(use.first);
-  //  if (rhs_iter == rhs.id_to_uses_.end()) {
-  //    return false;
-  //  }
-  //  use.second.sort();
-  //  UseList rhs_uselist = rhs_iter->second;
-  //  rhs_uselist.sort();
-  //  if (use.second != rhs_uselist) {
-  //    return false;
-  //  }
-  //}
 
   if (lhs.inst_to_used_ids_ != lhs.inst_to_used_ids_) {
     return false;

@@ -142,13 +142,6 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
       group_decorate_inst = user;
     }
   });
-  //for (const auto& u :
-  //     *def_use_mgr->GetUses(decoration_group_defining_inst.result_id())) {
-  //  if (u.inst->opcode() == SpvOp::SpvOpGroupDecorate) {
-  //    group_decorate_inst = u.inst;
-  //    break;
-  //  }
-  //}
   if (!group_decorate_inst) return nullptr;
 
   // Scan through the target ids of the OpGroupDecorate instruction. There

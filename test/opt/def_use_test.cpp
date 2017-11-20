@@ -93,18 +93,11 @@ void CheckDef(const InstDefUse& expected_defs_uses,
 
 using UserMap = std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
 
-#include <iostream>
-void dumpError(spv_message_level_t, const char*, const spv_position_t&, const char* message) {
-  std::cerr << message << std::endl;
-}
-
 UserMap BuildAllUsers(const DefUseManager* mgr, uint32_t idBound) {
   UserMap userMap;
   for (uint32_t id = 0; id != idBound; ++id) {
     if (mgr->GetDef(id)) {
-      //std::cerr << "Def " << id << " ->\n";
       mgr->ForEachUser(id, [id,&userMap](ir::Instruction* user) {
-        //std::cerr << " " << DisassembleInst(user) << std::endl;
         userMap[id].push_back(user);
       });
     }
@@ -115,7 +108,6 @@ UserMap BuildAllUsers(const DefUseManager* mgr, uint32_t idBound) {
 void CheckUse(const InstDefUse& expected_defs_uses,
               const DefUseManager* mgr,
               uint32_t idBound) {
-              //const DefUseManager::IdToUsesMap& actual_uses) {
   UserMap actual_uses = BuildAllUsers(mgr, idBound);
   // Check uses.
   ASSERT_EQ(expected_defs_uses.uses.size(), actual_uses.size());
@@ -132,7 +124,6 @@ void CheckUse(const InstDefUse& expected_defs_uses,
 
     std::vector<std::string> actual_uses_disassembled;
     for (const auto actual_use : uses) {
-      //actual_uses_disassembled.emplace_back(DisassembleInst(actual_use.inst));
       actual_uses_disassembled.emplace_back(DisassembleInst(actual_use));
     }
     EXPECT_THAT(actual_uses_disassembled,
@@ -182,7 +173,6 @@ TEST_P(ParseDefUseTest, Case) {
 
   CheckDef(tc.du, manager.id_to_defs());
   CheckUse(tc.du, &manager, context->module()->IdBound());
-  //CheckUse(tc.du, manager.id_to_uses());
 }
 
 // clang-format off
@@ -521,8 +511,7 @@ TEST_P(ReplaceUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::IRContext> context =
-      //BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, dumpError, JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
   ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.
@@ -537,7 +526,6 @@ TEST_P(ReplaceUseTest, Case) {
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
   CheckUse(tc.du, context->get_def_use_mgr(), context->module()->IdBound());
-  //CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -830,7 +818,6 @@ TEST_P(KillDefTest, Case) {
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.du, context->get_def_use_mgr()->id_to_defs());
   CheckUse(tc.du, context->get_def_use_mgr(), context->module()->IdBound());
-  //CheckUse(tc.du, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off
@@ -1103,23 +1090,11 @@ TEST(DefUseTest, OpSwitch) {
   {
     EXPECT_EQ(2u, NumUses(context, 6));
     std::vector<SpvOp> opcodes = GetUseOpcodes(context, 6u);
-    //auto* use_list = context->get_def_use_mgr()->GetUses(6);
-    //ASSERT_NE(nullptr, use_list);
-    //EXPECT_EQ(2u, use_list->size());
-    //std::vector<SpvOp> opcodes = {use_list->front().inst->opcode(),
-    //                              use_list->back().inst->opcode()};
     EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSwitch, SpvOpReturnValue));
   }
   {
     EXPECT_EQ(6u, NumUses(context, 7));
     std::vector<SpvOp> opcodes = GetUseOpcodes(context, 7u);
-    //auto* use_list = context->get_def_use_mgr()->GetUses(7);
-    //ASSERT_NE(nullptr, use_list);
-    //EXPECT_EQ(6u, use_list->size());
-    //std::vector<SpvOp> opcodes;
-    //for (const auto& use : *use_list) {
-    //  opcodes.push_back(use.inst->opcode());
-    //}
     // OpSwitch is now a user of %7.
     EXPECT_THAT(opcodes, UnorderedElementsAre(SpvOpSelectionMerge, SpvOpBranch,
                                               SpvOpBranch, SpvOpBranch,
@@ -1129,10 +1104,6 @@ TEST(DefUseTest, OpSwitch) {
   for (const auto id : {8u, 10u, 11u}) {
     EXPECT_EQ(1u, NumUses(context, id));
     EXPECT_EQ(SpvOpSwitch, GetUseOpcodes(context, id).back());
-    //auto* use_list = context->get_def_use_mgr()->GetUses(id);
-    //ASSERT_NE(nullptr, use_list);
-    //EXPECT_EQ(1u, use_list->size());
-    //EXPECT_EQ(SpvOpSwitch, use_list->front().inst->opcode());
   }
 }
 
@@ -1282,7 +1253,6 @@ TEST_P(KillInstTest, Case) {
   EXPECT_EQ(tc.after, DisassembleModule(context->module()));
   CheckDef(tc.expected_define_use, context->get_def_use_mgr()->id_to_defs());
   CheckUse(tc.expected_define_use, context->get_def_use_mgr(), context->module()->IdBound());
-  //CheckUse(tc.expected_define_use, context->get_def_use_mgr()->id_to_uses());
 }
 
 // clang-format off

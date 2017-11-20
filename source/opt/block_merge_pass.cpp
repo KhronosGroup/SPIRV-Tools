@@ -32,15 +32,6 @@ bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
                                   }
                                 });
   return rcnt > 1;
-  //const analysis::UseList* uses = get_def_use_mgr()->GetUses(labId);
-  //int rcnt = 0;
-  //for (const auto u : *uses) {
-  //  // Don't count OpName
-  //  if (u.inst->opcode() == SpvOpName) continue;
-  //  if (rcnt == 1) return true;
-  //  ++rcnt;
-  //}
-  //return false;
 }
 
 void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
@@ -54,17 +45,6 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
     context()->KillInst(i);
   }
   context()->KillInst(inst);
-  //const uint32_t id = inst->result_id();
-  //if (id != 0) {
-  //  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);
-  //  if (uses != nullptr)
-  //    for (auto u : *uses)
-  //      if (u.inst->opcode() == SpvOpName) {
-  //        context()->KillInst(u.inst);
-  //        break;
-  //      }
-  //}
-  //context()->KillInst(inst);
 }
 
 bool BlockMergePass::MergeBlocks(ir::Function* func) {

@@ -235,6 +235,8 @@ class IRContext {
   // replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and returns
   // false.
+  //
+  // |before| and |after| must be registered definitions in the DefUseManager.
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
   // Returns true if all of the analyses that are suppose to be valid are

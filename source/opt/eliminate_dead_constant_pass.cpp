@@ -45,16 +45,6 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
             ++count;
           }
         });
-    //if (analysis::UseList* uses =
-    //        irContext->get_def_use_mgr()->GetUses(const_id)) {
-    //  count =
-    //      std::count_if(uses->begin(), uses->end(), [](const analysis::Use& u) {
-    //        return !(ir::IsAnnotationInst(u.inst->opcode()) ||
-    //                 ir::IsDebug1Inst(u.inst->opcode()) ||
-    //                 ir::IsDebug2Inst(u.inst->opcode()) ||
-    //                 ir::IsDebug3Inst(u.inst->opcode()));
-    //      });
-    //}
     use_counts[c] = count;
     if (!count) {
       working_list.insert(c);
@@ -114,17 +104,6 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
         dead_others.insert(user);
       }
     });
-    //if (analysis::UseList* uses =
-    //        irContext->get_def_use_mgr()->GetUses(dc->result_id())) {
-    //  for (const auto& u : *uses) {
-    //    if (ir::IsAnnotationInst(u.inst->opcode()) ||
-    //        ir::IsDebug1Inst(u.inst->opcode()) ||
-    //        ir::IsDebug2Inst(u.inst->opcode()) ||
-    //        ir::IsDebug3Inst(u.inst->opcode())) {
-    //      dead_others.insert(u.inst);
-    //    }
-    //  }
-    //}
   }
 
   // Turn all dead instructions and uses of them to nop

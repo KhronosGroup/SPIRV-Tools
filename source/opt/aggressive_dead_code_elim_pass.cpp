@@ -67,25 +67,6 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
         break;
     }
   });
-  //const analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
-  //if (uses == nullptr) return;
-  //for (const auto u : *uses) {
-  //  const SpvOp op = u.inst->opcode();
-  //  switch (op) {
-  //    case SpvOpAccessChain:
-  //    case SpvOpInBoundsAccessChain:
-  //    case SpvOpCopyObject: {
-  //      AddStores(u.inst->result_id());
-  //    } break;
-  //    case SpvOpLoad:
-  //      break;
-  //    // If default, assume it stores eg frexp, modf, function call
-  //    case SpvOpStore:
-  //    default: {
-  //      if (!IsLive(u.inst)) AddToWorklist(u.inst);
-  //    } break;
-  //  }
-  //}
 }
 
 bool AggressiveDCEPass::AllExtensionsSupported() const {
