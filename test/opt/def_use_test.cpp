@@ -511,8 +511,7 @@ TEST_P(ReplaceUseTest, Case) {
   // Build module.
   const std::vector<const char*> text = {tc.before};
   std::unique_ptr<ir::IRContext> context =
-      //BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, dumpError, JoinAllInsts(text));
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, JoinAllInsts(text));
   ASSERT_NE(nullptr, context);
 
   // Force a re-build of def-use manager.

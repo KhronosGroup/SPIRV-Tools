@@ -137,6 +137,7 @@ std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
 
 void DefUseManager::AnalyzeDefUse(ir::Module* module) {
   if (!module) return;
+  // Analyze all the defs before any uses to catch forward references.
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstDef, this,
                                 std::placeholders::_1));
   module->ForEachInst(std::bind(&DefUseManager::AnalyzeInstUse, this,
@@ -181,18 +182,6 @@ bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
   if (lhs.id_to_users_ != rhs.id_to_users_) {
     return false;
   }
-  //for (auto use : lhs.id_to_uses_) {
-  //  auto rhs_iter = rhs.id_to_uses_.find(use.first);
-  //  if (rhs_iter == rhs.id_to_uses_.end()) {
-  //    return false;
-  //  }
-  //  use.second.sort();
-  //  UseList rhs_uselist = rhs_iter->second;
-  //  rhs_uselist.sort();
-  //  if (use.second != rhs_uselist) {
-  //    return false;
-  //  }
-  //}
 
   if (lhs.inst_to_used_ids_ != lhs.inst_to_used_ids_) {
     return false;
