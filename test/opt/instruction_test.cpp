@@ -41,7 +41,7 @@ TEST(InstructionTest, CreateTrivial) {
 }
 
 TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, SpvOpReturn);
   EXPECT_EQ(SpvOpReturn, inst.opcode());
   EXPECT_EQ(0u, inst.type_id());
@@ -122,7 +122,7 @@ spv_parsed_instruction_t kSampleControlBarrierInstruction = {
     3};
 
 TEST(InstructionTest, CreateWithOpcodeAndOperands) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_EQ(SpvOpTypeInt, inst.opcode());
   EXPECT_EQ(0u, inst.type_id());
@@ -133,7 +133,7 @@ TEST(InstructionTest, CreateWithOpcodeAndOperands) {
 }
 
 TEST(InstructionTest, GetOperand) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetOperand(0).words, Eq(std::vector<uint32_t>{44}));
   EXPECT_THAT(inst.GetOperand(1).words, Eq(std::vector<uint32_t>{32}));
@@ -141,14 +141,14 @@ TEST(InstructionTest, GetOperand) {
 }
 
 TEST(InstructionTest, GetInOperand) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   EXPECT_THAT(inst.GetInOperand(0).words, Eq(std::vector<uint32_t>{32}));
   EXPECT_THAT(inst.GetInOperand(1).words, Eq(std::vector<uint32_t>{1}));
 }
 
 TEST(InstructionTest, OperandConstIterators) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands.
   auto cbegin = inst.cbegin();
@@ -175,7 +175,7 @@ TEST(InstructionTest, OperandConstIterators) {
 }
 
 TEST(InstructionTest, OperandIterators) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleParsedInstruction);
   // Spot check iteration across operands, with mutable iterators.
   auto begin = inst.begin();
@@ -206,7 +206,7 @@ TEST(InstructionTest, OperandIterators) {
 }
 
 TEST(InstructionTest, ForInIdStandardIdTypes) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleAccessChainInstruction);
 
   std::vector<uint32_t> ids;
@@ -219,7 +219,7 @@ TEST(InstructionTest, ForInIdStandardIdTypes) {
 }
 
 TEST(InstructionTest, ForInIdNonstandardIdTypes) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context, kSampleControlBarrierInstruction);
 
   std::vector<uint32_t> ids;
@@ -232,14 +232,14 @@ TEST(InstructionTest, ForInIdNonstandardIdTypes) {
 }
 
 TEST(InstructionTest, UniqueIds) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst1(&context);
   Instruction inst2(&context);
   EXPECT_NE(inst1.unique_id(), inst2.unique_id());
 }
 
 TEST(InstructionTest, CloneUniqueIdDifferent) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction inst(&context);
   std::unique_ptr<Instruction> clone(inst.Clone(&context));
   EXPECT_EQ(inst.context(), clone->context());
@@ -247,8 +247,8 @@ TEST(InstructionTest, CloneUniqueIdDifferent) {
 }
 
 TEST(InstructionTest, CloneDifferentContext) {
-  IRContext c1;
-  IRContext c2;
+  IRContext c1(nullptr);
+  IRContext c2(nullptr);
   Instruction inst(&c1);
   std::unique_ptr<Instruction> clone(inst.Clone(&c2));
   EXPECT_EQ(&c1, inst.context());
@@ -257,8 +257,8 @@ TEST(InstructionTest, CloneDifferentContext) {
 }
 
 TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
-  IRContext c1;
-  IRContext c2;
+  IRContext c1(nullptr);
+  IRContext c2(nullptr);
   Instruction inst(&c1);
   Instruction other(&c2);
   std::unique_ptr<Instruction> clone(inst.Clone(&c2));
@@ -267,7 +267,7 @@ TEST(InstructionTest, CloneDifferentContextDifferentUniqueId) {
 }
 
 TEST(InstructionTest, EqualsEqualsOperator) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction i1(&context);
   Instruction i2(&context);
   std::unique_ptr<Instruction> clone(i1.Clone(&context));
@@ -278,7 +278,7 @@ TEST(InstructionTest, EqualsEqualsOperator) {
 }
 
 TEST(InstructionTest, LessThanOperator) {
-  IRContext context;
+  IRContext context(nullptr);
   Instruction i1(&context);
   Instruction i2(&context);
   std::unique_ptr<Instruction> clone(i1.Clone(&context));

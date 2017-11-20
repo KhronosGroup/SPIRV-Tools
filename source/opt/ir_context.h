@@ -54,14 +54,6 @@ class IRContext {
   friend inline Analysis operator<<(Analysis a, int shift);
   friend inline Analysis& operator<<=(Analysis& a, int shift);
 
-  // Trivial constructor for testing purposes
-  IRContext()
-      : unique_id_(0),
-        module_(nullptr),
-        consumer_(nullptr),
-        def_use_mgr_(nullptr),
-        valid_analyses_(kAnalysisNone) {}
-
   // Create an |IRContext| that contains an owned |Module|
   IRContext(spvtools::MessageConsumer c)
       : unique_id_(0),
@@ -263,11 +255,11 @@ class IRContext {
   // Kill all name and decorate ops targeting the result id of |inst|.
   void KillNamesAndDecorates(ir::Instruction* inst);
 
-  // Return the next unique id for use by an instruction
+  // Returns the next unique id for use by an instruction.
   inline uint32_t TakeNextUniqueId() {
     assert(unique_id_ != std::numeric_limits<uint32_t>::max());
 
-    // Skip zero
+    // Skip zero.
     return ++unique_id_;
   }
 
@@ -296,7 +288,13 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisDecorations;
   }
 
+  // An unique identifier for this instruction. Can be used to order
+  // instructions in a container.
+  //
+  // This member is initialized to 0, but always issues this value plus one.
+  // Therefore, 0 is not a valid unique id for an instruction.
   uint32_t unique_id_;
+
   std::unique_ptr<Module> module_;
   spvtools::MessageConsumer consumer_;
   std::unique_ptr<opt::analysis::DefUseManager> def_use_mgr_;

@@ -84,6 +84,7 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   using iterator = std::vector<Operand>::iterator;
   using const_iterator = std::vector<Operand>::const_iterator;
 
+  // Creates a default OpNop instruction.
   // This exists solely for containers that can't do without. Should be removed.
   Instruction()
       : utils::IntrusiveNodeBase<Instruction>(),
@@ -251,7 +252,6 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool operator<(const Instruction&) const;
 
  private:
-
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
     return (type_id_ != 0) + (result_id_ != 0);

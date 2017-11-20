@@ -1148,42 +1148,8 @@ TEST(DefUseTest, OpSwitch) {
   }
 }
 
-// Creates an |result_id| = OpTypeInt 32 1 instruction.
-ir::Instruction Int32TypeInstruction(uint32_t result_id) {
-  ir::IRContext context;
-  return ir::Instruction(&context, SpvOp::SpvOpTypeInt, 0, result_id,
-                         {ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {32}),
-                          ir::Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {1})});
-}
-
-// Creates an |result_id| = OpConstantTrue/Flase |type_id| instruction.
-ir::Instruction ConstantBoolInstruction(bool value,
-                                        uint32_t type_id, uint32_t result_id) {
-  ir::IRContext context;
-  return ir::Instruction(
-      &context,
-      value ? SpvOp::SpvOpConstantTrue : SpvOp::SpvOpConstantFalse,
-      type_id, result_id, {});
-}
-
-// Creates an |result_id| = OpLabel instruction.
-ir::Instruction LabelInstruction(uint32_t result_id) {
-  ir::IRContext context;
-  return ir::Instruction(&context, SpvOp::SpvOpLabel, 0, result_id, {});
-}
-
-// Creates an OpBranch |target_id| instruction.
-ir::Instruction BranchInstruction(uint32_t target_id) {
-  ir::IRContext context;
-  return ir::Instruction(&context, SpvOp::SpvOpBranch, 0, 0,
-                         {
-                             ir::Operand(SPV_OPERAND_TYPE_ID, {target_id}),
-                         });
-}
-
 // Test case for analyzing individual instructions.
 struct AnalyzeInstDefUseTestCase {
-  std::vector<ir::Instruction> insts;  // instrutions to be analyzed in order.
   const char* module_text;
   InstDefUse expected_define_use;
 };
@@ -1202,9 +1168,6 @@ TEST_P(AnalyzeInstDefUseTest, Case) {
 
   // Analyze the instructions.
   opt::analysis::DefUseManager manager(context->module());
-  for (ir::Instruction& inst : tc.insts) {
-    manager.AnalyzeInstDefUse(&inst);
-  }
 
   CheckDef(tc.expected_define_use, manager.id_to_defs());
   CheckUse(tc.expected_define_use, manager.id_to_uses());
@@ -1215,8 +1178,7 @@ INSTANTIATE_TEST_CASE_P(
     TestCase, AnalyzeInstDefUseTest,
     ::testing::ValuesIn(std::vector<AnalyzeInstDefUseTestCase>{
       { // A type declaring instruction.
-        {Int32TypeInstruction(1)},
-        "",
+        "%1 = OpTypeInt 32 1",
         {
           // defs
           {{1, "%1 = OpTypeInt 32 1"}},
@@ -1224,87 +1186,78 @@ INSTANTIATE_TEST_CASE_P(
         },
       },
       { // A type declaring instruction and a constant value.
-        {
-          Int32TypeInstruction(1),
-          ConstantBoolInstruction(true, 1, 2),
-        },
-        "",
+        "%1 = OpTypeBool "
+        "%2 = OpConstantTrue %1",
         {
           { // defs
-            {1, "%1 = OpTypeInt 32 1"},
-            {2, "%2 = OpConstantTrue %1"}, // It is fine the SPIR-V code here is invalid.
-          },
-          { // uses
-            {1, {"%2 = OpConstantTrue %1"}},
-          },
-        },
-      },
-      { // Analyze two instrutions that have same result id. The def use info
-        // of the result id from the first instruction should be overwritten by
-        // the second instruction.
-        {
-          ConstantBoolInstruction(true, 1, 2),
-          // The def-use info of the following instruction should overwrite the
-          // records of the above one.
-          ConstantBoolInstruction(false, 3, 2),
-        },
-        "",
-        {
-          // defs
-          {{2, "%2 = OpConstantFalse %3"}},
-          // uses
-          {{3, {"%2 = OpConstantFalse %3"}}}
-        }
-      },
-      { // Analyze forward reference instruction, also instruction that does
-        // not have result id.
-        {
-          BranchInstruction(2),
-          LabelInstruction(2),
-        },
-        "",
-        {
-          // defs
-          {{2, "%2 = OpLabel"}},
-          // uses
-          {{2, {"OpBranch %2"}}},
-        }
-      },
-      { // Analyzing an additional instruction with new result id to an
-        // existing module.
-        {
-          ConstantBoolInstruction(true, 1, 2),
-        },
-        "%1 = OpTypeInt 32 1 ",
-        {
-          { // defs
-            {1, "%1 = OpTypeInt 32 1"},
+            {1, "%1 = OpTypeBool"},
             {2, "%2 = OpConstantTrue %1"},
           },
           { // uses
             {1, {"%2 = OpConstantTrue %1"}},
           },
-        }
-      },
-      { // Analyzing an additional instruction with existing result id to an
-        // existing module.
-        {
-          ConstantBoolInstruction(true, 1, 2),
         },
-        "%1 = OpTypeInt 32 1 "
-        "%2 = OpTypeBool ",
-        {
-          { // defs
-            {1, "%1 = OpTypeInt 32 1"},
-            {2, "%2 = OpConstantTrue %1"},
-          },
-          { // uses
-            {1, {"%2 = OpConstantTrue %1"}},
-          },
-        }
       },
       }));
 // clang-format on
+
+using AnalyzeInstDefUse = ::testing::Test;
+
+TEST(AnalyzeInstDefUse, UseWithNoResultId) {
+  ir::IRContext context(nullptr);
+
+  // Analyze the instructions.
+  opt::analysis::DefUseManager manager(context.module());
+
+  ir::Instruction label(&context, SpvOpLabel, 0, 2, {});
+  manager.AnalyzeInstDefUse(&label);
+
+  ir::Instruction branch(&context, SpvOpBranch, 0, 0,
+                         {{SPV_OPERAND_TYPE_ID, {2}}});
+  manager.AnalyzeInstDefUse(&branch);
+
+  InstDefUse expected =
+  {
+    // defs
+    {
+      {2, "%2 = OpLabel"},
+    },
+    // uses
+    {{2, {"OpBranch %2"}}},
+  };
+
+  CheckDef(expected, manager.id_to_defs());
+  CheckUse(expected, manager.id_to_uses());
+}
+
+TEST(AnalyzeInstDefUse, AddNewInstruction) {
+  const std::string input = "%1 = OpTypeBool";
+
+  // Build module.
+  std::unique_ptr<ir::IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, input);
+  ASSERT_NE(nullptr, context);
+
+  // Analyze the instructions.
+  opt::analysis::DefUseManager manager(context->module());
+
+  ir::Instruction newInst(context.get(), SpvOpConstantTrue, 1, 2, {});
+  manager.AnalyzeInstDefUse(&newInst);
+
+  InstDefUse expected =
+  {
+    { // defs
+      {1, "%1 = OpTypeBool"},
+      {2, "%2 = OpConstantTrue %1"},
+    },
+    { // uses
+      {1, {"%2 = OpConstantTrue %1"}},
+    },
+  };
+
+  CheckDef(expected, manager.id_to_defs());
+  CheckUse(expected, manager.id_to_uses());
+}
 
 struct KillInstTestCase {
   const char* before;

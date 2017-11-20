@@ -38,14 +38,18 @@ class LinkerOptions {
   // The returned value will be true if creating a library, and false if
   // creating an executable.
   bool GetCreateLibrary() const { return createLibrary_; }
+
   // Sets whether a library or an executable should be produced.
   void SetCreateLibrary(bool create_library) {
     createLibrary_ = create_library;
   }
 
-  // Returns whether to verify the ids in the merged module
+  // Returns whether to verify the uniqueness of the unique ids in the merged
+  // context.
   bool GetVerifyIds() const { return verifyIds_; }
-  // Sets whether to verify the ids in the merged module
+
+  // Sets whether to verify the uniqueness of the unique ids in the merged
+  // context.
   void SetVerifyIds(bool verifyIds) {
     verifyIds_ = verifyIds;
   }

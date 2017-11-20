@@ -70,15 +70,16 @@ using LinkageTable = std::vector<LinkageEntry>;
 // is returned in |max_id_bound|.
 //
 // Both |modules| and |max_id_bound| should not be null, and |modules| should
-// not be empty either.
+// not be empty either. Furthermore |modules| should not contain any null
+// pointers.
 static spv_result_t ShiftIdsInModules(
     const MessageConsumer& consumer,
     std::vector<ir::Module*>* modules, uint32_t* max_id_bound);
 
 // Generates the header for the linked module and returns it in |header|.
 //
-// |header| should not be null, |modules| should not be empty and
-// |max_id_bound| should be strictly greater than 0.
+// |header| should not be null, |modules| should not be empty and pointers
+// should be non-null. |max_id_bound| should be strictly greater than 0.
 //
 // TODO(pierremoreau): What to do when binaries use different versions of
 //                     SPIR-V? For now, use the max of all versions found in
@@ -88,9 +89,10 @@ static spv_result_t GenerateHeader(
     const std::vector<ir::Module*>& modules,
     uint32_t max_id_bound, ir::ModuleHeader* header);
 
-// Merge all the modules from |inModules| into |linked_module|.
+// Merge all the modules from |inModules| into a single module owned by
+// |linked_context|.
 //
-// |linked_module| should not be null.
+// |linked_context| should not be null.
 static spv_result_t MergeModules(
     const MessageConsumer& consumer,
     const std::vector<Module*>& inModules,
@@ -125,7 +127,7 @@ static spv_result_t CheckImportExportCompatibility(
 // functions, declarations of imported variables, import (and export if
 // necessary) linkage attribtes.
 //
-// |linked_module| and |decoration_manager| should not be null, and the
+// |linked_context| and |decoration_manager| should not be null, and the
 // 'RemoveDuplicatePass' should be run first.
 //
 // TODO(pierremoreau): Linkage attributes applied by a group decoration are
@@ -138,7 +140,8 @@ static spv_result_t RemoveLinkageSpecificInstructions(
     const LinkageTable& linkings_to_do, DecorationManager* decoration_manager,
     ir::IRContext* linked_context);
 
-// Verify the Ids within the module are all unique
+// Verify that the unique ids of each instruction in |linked_context| (i.e. the
+// merged module) are truly unique. Does not check the validity of other ids
 static spv_result_t VerifyIds(const MessageConsumer& consumer,
                               ir::IRContext* linked_context);
 
