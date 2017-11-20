@@ -84,7 +84,7 @@ Instruction* BasicBlock::GetLoopMergeInst() {
 }
 
 void BasicBlock::ForEachSuccessorLabel(
-    const std::function<void(const uint32_t)>& f) {
+    const std::function<void(const uint32_t)>& f) const{
   const auto br = &insts_.back();
   switch (br->opcode()) {
     case SpvOpBranch: {

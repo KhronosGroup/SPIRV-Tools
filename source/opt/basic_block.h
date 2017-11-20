@@ -105,7 +105,7 @@ class BasicBlock {
                              bool run_on_debug_line_insts = false);
 
   // Runs the given function |f| on each label id of each successor block
-  void ForEachSuccessorLabel(const std::function<void(const uint32_t)>& f);
+  void ForEachSuccessorLabel(const std::function<void(const uint32_t)>& f) const ;
 
   // Runs the given function |f| on the merge and continue label, if any
   void ForMergeAndContinueLabel(const std::function<void(const uint32_t)>& f);
