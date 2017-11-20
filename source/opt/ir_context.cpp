@@ -91,25 +91,40 @@ bool IRContext::KillDef(uint32_t id) {
 
 bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   if (before == after) return false;
-  opt::analysis::UseList* uses = get_def_use_mgr()->GetUses(before);
-  if (uses == nullptr) return false;
 
-  std::vector<opt::analysis::Use> uses_to_update;
-  for (auto it = uses->cbegin(); it != uses->cend(); ++it) {
-    uses_to_update.push_back(*it);
-  }
+  // Ensure that |after| has been registered as def.
+  assert(get_def_use_mgr()->GetDef(after) && "'after' is not a registered def.");
 
-  for (opt::analysis::Use& use : uses_to_update) {
-    ForgetUses(use.inst);
+  //opt::analysis::UseList* uses = get_def_use_mgr()->GetUses(before);
+  //if (uses == nullptr) return false;
+  //for (auto it = uses->cbegin(); it != uses->cend(); ++it) {
+  //  uses_to_update.push_back(*it);
+  //}
+
+  std::vector<std::pair<ir::Instruction*,uint32_t>> uses_to_update;
+  get_def_use_mgr()->ForEachUse(before, [&uses_to_update](ir::Instruction* user, uint32_t index) {
+    uses_to_update.emplace_back(user, index);
+  });
+
+  //ir::Instruction* prev = nullptr;
+  //std::vector<opt::analysis::Use> uses_to_update;
+  //get_def_use_mgr()->ForEachUse(before, [this,&prev,before,after](ir::Instruction* user, uint32_t index) {
+  for (auto p : uses_to_update) {
+    ir::Instruction* user = p.first;
+    uint32_t index = p.second;
+    //if (prev == nullptr || prev != user) {
+      ForgetUses(user);
+    //  prev = user;
+    //}
     const uint32_t type_result_id_count =
-        (use.inst->result_id() != 0) + (use.inst->type_id() != 0);
+        (user->result_id() != 0) + (user->type_id() != 0);
 
-    if (use.operand_index < type_result_id_count) {
+    if (index < type_result_id_count) {
       // Update the type_id. Note that result id is immutable so it should
       // never be updated.
-      if (use.inst->type_id() != 0 && use.operand_index == 0) {
-        use.inst->SetResultType(after);
-      } else if (use.inst->type_id() == 0) {
+      if (user->type_id() != 0 && index == 0) {
+        user->SetResultType(after);
+      } else if (user->type_id() == 0) {
         SPIRV_ASSERT(consumer_, false,
                      "Result type id considered as use while the instruction "
                      "doesn't have a result type id.");
@@ -120,12 +135,41 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
       }
     } else {
       // Update an in-operand.
-      uint32_t in_operand_pos = use.operand_index - type_result_id_count;
+      uint32_t in_operand_pos = index - type_result_id_count;
       // Make the modification in the instruction.
-      use.inst->SetInOperand(in_operand_pos, {after});
+      user->SetInOperand(in_operand_pos, {after});
     }
-    AnalyzeUses(use.inst);
-  }
+    AnalyzeUses(user);
+  };
+  //});
+
+  //for (opt::analysis::Use& use : uses_to_update) {
+  //  ForgetUses(use.inst);
+  //  const uint32_t type_result_id_count =
+  //      (use.inst->result_id() != 0) + (use.inst->type_id() != 0);
+
+  //  if (use.operand_index < type_result_id_count) {
+  //    // Update the type_id. Note that result id is immutable so it should
+  //    // never be updated.
+  //    if (use.inst->type_id() != 0 && use.operand_index == 0) {
+  //      use.inst->SetResultType(after);
+  //    } else if (use.inst->type_id() == 0) {
+  //      SPIRV_ASSERT(consumer_, false,
+  //                   "Result type id considered as use while the instruction "
+  //                   "doesn't have a result type id.");
+  //      (void)consumer_;  // Makes the compiler happy for release build.
+  //    } else {
+  //      SPIRV_ASSERT(consumer_, false,
+  //                   "Trying setting the immutable result id.");
+  //    }
+  //  } else {
+  //    // Update an in-operand.
+  //    uint32_t in_operand_pos = use.operand_index - type_result_id_count;
+  //    // Make the modification in the instruction.
+  //    use.inst->SetInOperand(in_operand_pos, {after});
+  //  }
+  //  AnalyzeUses(use.inst);
+  //}
   return true;
 }
 

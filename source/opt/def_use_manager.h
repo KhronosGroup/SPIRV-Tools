@@ -55,14 +55,35 @@ inline bool operator<(const Use& lhs, const Use& rhs) {
 }
 
 using UseList = std::list<Use>;
-using UseEntry = std::pair<ir::Instruction*, ir::Instruction*>;
+using UserEntry = std::pair<ir::Instruction*, ir::Instruction*>;
+
+struct less_than_id_ptr {
+  bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
+    if (!lhs.first)
+      return true;
+    if (!rhs.first)
+      return false;
+
+    if (lhs.first->unique_id() < rhs.first->unique_id())
+      return true;
+    if (rhs.first->unique_id() < lhs.first->unique_id())
+      return false;
+
+    if (!lhs.second)
+      return true;
+    if (!rhs.second)
+      return false;
+
+    return lhs.second->unique_id() < rhs.second->unique_id();
+  }
+};
 
 // A class for analyzing and managing defs and uses in an ir::Module.
 class DefUseManager {
  public:
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
-  using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
-  using IdToUsersMap = std::set<UseEntry>;
+  //using IdToUsesMap = std::unordered_map<uint32_t, UseList>;
+  using IdToUsersMap = std::set<UserEntry, less_than_id_ptr>;
 
   // Constructs a def-use manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|. This
@@ -90,17 +111,30 @@ class DefUseManager {
   const ir::Instruction* GetDef(uint32_t id) const;
   // Returns the use instructions for the given |id|. If there is no uses of
   // |id|, returns nullptr.
-  UseList* GetUses(uint32_t id);
-  const UseList* GetUses(uint32_t id) const;
+  //UseList* GetUses(uint32_t id);
+  //const UseList* GetUses(uint32_t id) const;
 
-  void ForEachUser(Insruction* def,
-                   const std::function<void(ir::Instruction*)>& f);
-  void ForEachUser(const Insruction* def,
-                   const std::function<void(const ir::Instruction*)>& f) const;
+  // Runs the given function |f| on each unique user instruction of |def| (or
+  // |id|).
+  //
+  // If one instruction uses |def| in multiple operands, that instruction will
+  // only be visited once.
+  void ForEachUser(const ir::Instruction* def,
+                   const std::function<void(ir::Instruction*)>& f) const;
   void ForEachUser(uint32_t id,
-                   const std::function<void(ir::Instruction*)>& f);
-  void ForEachUser(uint32_t id,
-                   const std::function<void(const ir::Instruction*)>& f) const;
+                   const std::function<void(ir::Instruction*)>& f) const;
+
+  // Runs the given function |f| on each unique use of |def| (or
+  // |id|).
+  //
+  // If one instruction uses |def| in multiple operands, each operand will be
+  // visited separately.
+  void ForEachUse(
+      const ir::Instruction* def,
+      const std::function<void(ir::Instruction*, uint32_t operand_index)>& f) const;
+  void ForEachUse(
+      uint32_t id,
+      const std::function<void(ir::Instruction*, uint32_t operand_index)>& f) const;
 
   // Returns the annotation instrunctions which are a direct use of the given
   // |id|. This means when the decorations are applied through decoration
@@ -112,7 +146,9 @@ class DefUseManager {
   // Returns the map from ids to their def instructions.
   const IdToDefMap& id_to_defs() const { return id_to_def_; }
   // Returns the map from ids to their uses in instructions.
-  const IdToUsesMap& id_to_uses() const { return id_to_uses_; }
+  //const IdToUsesMap& id_to_uses() const { return id_to_uses_; }
+  // Returns the map from instructions to their users.
+  const IdToUsersMap& id_to_users() const { return id_to_users_; }
 
   // Clear the internal def-use record of the given instruction |inst|. This
   // method will update the use information of the operand ids of |inst|. The
@@ -138,7 +174,7 @@ class DefUseManager {
   void AnalyzeDefUse(ir::Module* module);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
-  IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
+  //IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
   IdToUsersMap id_to_users_; // Mapping from ids to their users
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;

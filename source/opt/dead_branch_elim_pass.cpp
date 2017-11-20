@@ -124,14 +124,22 @@ bool DeadBranchElimPass::GetSelectionBranch(ir::BasicBlock* bp,
 }
 
 bool DeadBranchElimPass::HasNonPhiNonBackedgeRef(uint32_t labelId) {
-  analysis::UseList* uses = get_def_use_mgr()->GetUses(labelId);
-  if (uses == nullptr) return false;
-  for (auto u : *uses) {
-    if (u.inst->opcode() != SpvOpPhi &&
-        backedges_.find(u.inst) == backedges_.end())
-      return true;
-  }
-  return false;
+  bool nonPhiNonBackedgeRef = false;
+  get_def_use_mgr()->ForEachUser(labelId, [this, &nonPhiNonBackedgeRef](ir::Instruction* user) {
+    if (user->opcode() != SpvOpPhi &&
+        backedges_.find(user) == backedges_.end()) {
+      nonPhiNonBackedgeRef = true;
+    }
+  });
+  return nonPhiNonBackedgeRef;
+  //analysis::UseList* uses = get_def_use_mgr()->GetUses(labelId);
+  //if (uses == nullptr) return false;
+  //for (auto u : *uses) {
+  //  if (u.inst->opcode() != SpvOpPhi &&
+  //      backedges_.find(u.inst) == backedges_.end())
+  //    return true;
+  //}
+  //return false;
 }
 
 void DeadBranchElimPass::ComputeBackEdges(
