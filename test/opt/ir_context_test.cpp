@@ -201,7 +201,7 @@ TEST_F(IRContextTest, KillMemberName) {
 
 TEST_F(IRContextTest, TakeNextUniqueIdIncrementing) {
   const uint32_t NUM_TESTS = 1000;
-  IRContext localContext;
+  IRContext localContext(nullptr);
   for (uint32_t i = 1; i < NUM_TESTS; ++i)
     EXPECT_EQ(i, localContext.TakeNextUniqueId());
 }
