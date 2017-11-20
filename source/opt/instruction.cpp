@@ -109,6 +109,5 @@ void Instruction::ReplaceOperands(const std::vector<Operand>& new_operands) {
   operands_.insert(operands_.begin(), new_operands.begin(), new_operands.end());
   operands_.shrink_to_fit();
 }
-
 }  // namespace ir
 }  // namespace spvtools

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "eliminate_dead_functions_pass.h"
+#include "ir_context.h"
 
 #include <unordered_set>
 
@@ -51,7 +52,6 @@ void EliminateDeadFunctionsPass::EliminateFunction(ir::Function* func) {
   // Remove all of the instruction in the function body
   func->ForEachInst(
       [this](ir::Instruction* inst) {
-        KillNamesAndDecorates(inst);
         context()->KillInst(inst);
       },
       true);

@@ -36,11 +36,9 @@ using opt::analysis::DefUseManager;
 using opt::analysis::DecorationManager;
 
 Pass::Status RemoveDuplicatesPass::Process(ir::IRContext* irContext) {
-  DecorationManager decManager(irContext->module());
-
   bool modified = RemoveDuplicateCapabilities(irContext);
   modified |= RemoveDuplicatesExtInstImports(irContext);
-  modified |= RemoveDuplicateTypes(irContext, decManager);
+  modified |= RemoveDuplicateTypes(irContext);
   modified |= RemoveDuplicateDecorations(irContext);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
@@ -92,8 +90,7 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
   return modified;
 }
 
-bool RemoveDuplicatesPass::RemoveDuplicateTypes(
-    ir::IRContext* irContext, DecorationManager& decManager) const {
+bool RemoveDuplicatesPass::RemoveDuplicateTypes(ir::IRContext* irContext) const {
   bool modified = false;
 
   std::vector<Instruction> visitedTypes;
@@ -110,7 +107,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     // Is the current type equal to one of the types we have aready visited?
     SpvId idToKeep = 0u;
     for (auto j : visitedTypes) {
-      if (AreTypesEqual(*i, j, *irContext->get_def_use_mgr(), decManager)) {
+      if (AreTypesEqual(*i, j, *irContext->get_def_use_mgr(), *irContext->get_decoration_mgr())) {
         idToKeep = j.result_id();
         break;
       }

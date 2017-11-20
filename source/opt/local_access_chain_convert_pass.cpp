@@ -17,6 +17,7 @@
 #include "local_access_chain_convert_pass.h"
 
 #include "iterator.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -34,7 +35,6 @@ void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
   const uint32_t resId = inst->result_id();
   assert(resId != 0);
   if (HasOnlyNamesAndDecorates(resId)) {
-    KillNamesAndDecorates(resId);
     context()->KillInst(inst);
   }
 }

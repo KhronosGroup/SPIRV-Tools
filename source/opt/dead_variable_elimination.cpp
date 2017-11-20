@@ -15,6 +15,7 @@
 #include "dead_variable_elimination.h"
 
 #include "reflect.h"
+#include "ir_context.h"
 
 namespace spvtools {
 namespace opt {
@@ -29,9 +30,6 @@ Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
   // value kMustKeep as the reference count.
   InitializeProcessing(c);
 
-  //  Decoration manager to help organize decorations.
-  analysis::DecorationManager decoration_manager(context()->module());
-
   std::vector<uint32_t> ids_to_remove;
 
   // Get the reference count for all of the global OpVariable instructions.
@@ -45,7 +43,7 @@ Pass::Status DeadVariableElimination::Process(ir::IRContext* c) {
 
     // Check the linkage.  If it is exported, it could be reference somewhere
     // else, so we must keep the variable around.
-    decoration_manager.ForEachDecoration(
+    get_decoration_mgr()->ForEachDecoration(
         result_id, SpvDecorationLinkageAttributes,
         [&count](const ir::Instruction& linkage_instruction) {
           uint32_t last_operand = linkage_instruction.NumOperands() - 1;
@@ -109,7 +107,6 @@ void DeadVariableElimination::DeleteVariable(uint32_t result_id) {
       }
     }
   }
-  this->KillNamesAndDecorates(result_id);
   context()->KillDef(result_id);
 }
 }  // namespace opt

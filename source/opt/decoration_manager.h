@@ -35,9 +35,12 @@ class DecorationManager {
   }
   DecorationManager() = delete;
 
-  // Removes all decorations from |id|, which should not be a group ID, except
-  // for linkage decorations if |keep_linkage| is set.
-  void RemoveDecorationsFrom(uint32_t id, bool keep_linkage);
+  // Removes all decorations from |id|, which should not be a group ID.
+  void RemoveDecorationsFrom(uint32_t id);
+
+  // Removes all decorations from the result id of |inst|.
+  void RemoveDecoration(ir::Instruction* inst);
+
   // Returns a vector of all decorations affecting |id|. If a group is applied
   // to |id|, the decorations of that group are returned rather than the group
   // decoration instruction. If |include_linkage| is not set, linkage
@@ -70,7 +73,14 @@ class DecorationManager {
   // with |true| afterwards.
   void CloneDecorations(uint32_t from, uint32_t to, std::function<void(ir::Instruction&, bool)> f);
 
+  // Informs the decoration manager of a new decoration that it needs to track.
+  void AddDecoration(ir::Instruction* inst);
+
  private:
+  // Removes the instruction from the set of decorations targeting |target_id|.
+  void RemoveInstructionFromTarget(ir::Instruction* inst,
+                                   const uint32_t target_id);
+
   using IdToDecorationInstsMap =
       std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
   // Analyzes the defs and uses in the given |module| and populates data

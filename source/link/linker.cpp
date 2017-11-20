@@ -227,16 +227,15 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
 
   // Phase 4: Find the import/export pairs
   LinkageTable linkings_to_do;
-  DecorationManager decoration_manager(linked_context.module());
-  res = GetImportExportPairs(consumer, linked_context,
-                             *linked_context.get_def_use_mgr(),
-                             decoration_manager, &linkings_to_do);
+  res = GetImportExportPairs(
+      consumer, linked_context, *linked_context.get_def_use_mgr(),
+      *linked_context.get_decoration_mgr(), &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
   res = CheckImportExportCompatibility(consumer, linkings_to_do,
                                        *linked_context.get_def_use_mgr(),
-                                       decoration_manager);
+                                       *linked_context.get_decoration_mgr());
   if (res != SPV_SUCCESS) return res;
 
   // Phase 6: Remove duplicates
@@ -248,9 +247,9 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
 
   // Phase 7: Remove linkage specific instructions, such as import/export
   // attributes, linkage capability, etc. if applicable
-  res = RemoveLinkageSpecificInstructions(consumer, !options.GetCreateLibrary(),
-                                          linkings_to_do, &decoration_manager,
-                                          &linked_context);
+  res = RemoveLinkageSpecificInstructions(
+      consumer, !options.GetCreateLibrary(), linkings_to_do,
+      linked_context.get_decoration_mgr(), &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 8: Rematch import variables/functions to export variables/functions

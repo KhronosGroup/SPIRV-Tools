@@ -316,3 +316,17 @@ int32_t spvOpcodeGeneratesType(SpvOp op) {
   }
   return 0;
 }
+
+bool spvOpcodeIsDecoration(const SpvOp opcode) {
+  switch(opcode) {
+    case SpvOpDecorate:
+    case SpvOpDecorateId:
+    case SpvOpMemberDecorate:
+    case SpvOpGroupDecorate:
+    case SpvOpGroupMemberDecorate:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
