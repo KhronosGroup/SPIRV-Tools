@@ -108,7 +108,10 @@ class UptrVectorIterator
 template <typename IteratorType>
 class IteratorRange {
  public:
-  IteratorRange(IteratorType b, IteratorType e) : begin_(b), end_(e) {}
+  IteratorRange(const IteratorType& b, const IteratorType& e)
+      : begin_(b), end_(e) {}
+  IteratorRange(IteratorType&& b, IteratorType&& e)
+      : begin_(std::move(b)), end_(std::move(e)) {}
 
   IteratorType begin() const { return begin_; }
   IteratorType end() const { return end_; }
@@ -124,8 +127,8 @@ class IteratorRange {
 // Returns a (begin, end) iterator pair for the given iterators.
 // The iterators must belong to the same container.
 template <typename IteratorType>
-inline IteratorRange<IteratorType> make_range(IteratorType& begin,
-                                              IteratorType& end) {
+inline IteratorRange<IteratorType> make_range(const IteratorType& begin,
+                                              const IteratorType& end) {
   return {begin, end};
 }
 
@@ -134,7 +137,7 @@ inline IteratorRange<IteratorType> make_range(IteratorType& begin,
 template <typename IteratorType>
 inline IteratorRange<IteratorType> make_range(IteratorType&& begin,
                                               IteratorType&& end) {
-  return {begin, end};
+  return {std::move(begin), std::move(end)};
 }
 
 // Returns a (begin, end) iterator pair for the given container.
