@@ -113,8 +113,6 @@ class DefUseManager {
   //
   // If one instruction uses |def| in multiple operands, that instruction will
   // only be visited once.
-  //
-  // |def| (or |id|) must be registered as a definition.
   void ForEachUser(const ir::Instruction* def,
                    const std::function<void(ir::Instruction*)>& f) const;
   void ForEachUser(uint32_t id,
@@ -125,8 +123,6 @@ class DefUseManager {
   //
   // If one instruction uses |def| in multiple operands, each operand will be
   // visited separately.
-  //
-  // |def| (or |id|) must be registered as a definition.
   void ForEachUse(
       const ir::Instruction* def,
       const std::function<void(ir::Instruction*, uint32_t operand_index)>& f) const;
@@ -172,7 +168,7 @@ class DefUseManager {
   void AnalyzeDefUse(ir::Module* module);
 
   IdToDefMap id_to_def_;    // Mapping from ids to their definitions
-  IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
+  //IdToUsesMap id_to_uses_;  // Mapping from ids to their uses
   IdToUsersMap id_to_users_; // Mapping from ids to their users
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
