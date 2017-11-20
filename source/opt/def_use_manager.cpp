@@ -145,6 +145,8 @@ void DefUseManager::ForEachUse(uint32_t id,
 
 std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   std::vector<ir::Instruction*> annos;
+  if (!GetDef(id)) return annos;
+
   ForEachUser(id, [&annos](ir::Instruction* user) {
     if (ir::IsAnnotationInst(user->opcode())) {
       annos.push_back(user);

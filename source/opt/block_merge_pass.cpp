@@ -31,7 +31,7 @@ bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
                                     ++rcnt;
                                   }
                                 });
-  return rcnt > 0;
+  return rcnt > 1;
   //const analysis::UseList* uses = get_def_use_mgr()->GetUses(labId);
   //int rcnt = 0;
   //for (const auto u : *uses) {
@@ -53,6 +53,7 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
   for (auto i: to_kill) {
     context()->KillInst(i);
   }
+  context()->KillInst(inst);
   //const uint32_t id = inst->result_id();
   //if (id != 0) {
   //  analysis::UseList* uses = get_def_use_mgr()->GetUses(id);

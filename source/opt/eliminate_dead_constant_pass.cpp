@@ -36,15 +36,15 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   for (auto* c : constants) {
     uint32_t const_id = c->result_id();
     size_t count = 0;
-    irContext->get_def_use_mgr()->ForEachUser(const_id, [&count](ir::Instruction* user) {
-      SpvOp op = user->opcode();
-      if (!(ir::IsAnnotationInst(op) ||
-            ir::IsDebug1Inst(op) ||
-            ir::IsDebug2Inst(op) ||
-            ir::IsDebug3Inst(op))) {
-        ++count;
-      }
-    });
+    irContext->get_def_use_mgr()->ForEachUse(
+        const_id, [&count](ir::Instruction* user, uint32_t index) {
+          (void)index;
+          SpvOp op = user->opcode();
+          if (!(ir::IsAnnotationInst(op) || ir::IsDebug1Inst(op) ||
+                ir::IsDebug2Inst(op) || ir::IsDebug3Inst(op))) {
+            ++count;
+          }
+        });
     //if (analysis::UseList* uses =
     //        irContext->get_def_use_mgr()->GetUses(const_id)) {
     //  count =
@@ -132,7 +132,7 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
     irContext->KillDef(dc->result_id());
   }
   for (auto* da : dead_others) {
-    da->ToNop();
+    irContext->KillInst(da);
   }
   return dead_consts.empty() ? Status::SuccessWithoutChange
                              : Status::SuccessWithChange;

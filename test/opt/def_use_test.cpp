@@ -1204,6 +1204,7 @@ TEST(AnalyzeInstDefUse, UseWithNoResultId) {
   ir::Instruction branch(&context, SpvOpBranch, 0, 0,
                          {{SPV_OPERAND_TYPE_ID, {2}}});
   manager.AnalyzeInstDefUse(&branch);
+  context.module()->SetIdBound(3);
 
   InstDefUse expected =
   {
@@ -1216,7 +1217,7 @@ TEST(AnalyzeInstDefUse, UseWithNoResultId) {
   };
 
   CheckDef(expected, manager.id_to_defs());
-  CheckUse(expected, manager.id_to_uses());
+  CheckUse(expected, &manager, context.module()->IdBound());
 }
 
 TEST(AnalyzeInstDefUse, AddNewInstruction) {
@@ -1245,7 +1246,7 @@ TEST(AnalyzeInstDefUse, AddNewInstruction) {
   };
 
   CheckDef(expected, manager.id_to_defs());
-  CheckUse(expected, manager.id_to_uses());
+  CheckUse(expected, &manager, context->module()->IdBound());
 }
 
 struct KillInstTestCase {
@@ -1352,8 +1353,6 @@ INSTANTIATE_TEST_CASE_P(
           },
           // uses
           {
-            {1, {"%2 = OpFunction %1 None %3"}},
-            {3, {"%2 = OpFunction %1 None %3"}},
             {4, {"OpBranch %4"}},
           }
         }
