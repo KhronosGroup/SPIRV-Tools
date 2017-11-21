@@ -61,9 +61,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
 
-void IRContext::KillInst(ir::Instruction* inst) {
+Instruction* IRContext::KillInst(ir::Instruction* inst) {
   if (!inst) {
-    return;
+    return nullptr;
   }
 
   KillNamesAndDecorates(inst);
@@ -83,7 +83,17 @@ void IRContext::KillInst(ir::Instruction* inst) {
     }
   }
 
-  inst->ToNop();
+  Instruction* next_instruction = nullptr;
+  if (inst->IsInAList()) {
+    next_instruction = inst->NextNode();
+    inst->RemoveFromList();
+    delete inst;
+  } else {
+    // Needed for instructions that are not part of a list like OpLabels,
+    // OpFunction, OpFunctionEnd, etc..
+    inst->ToNop();
+  }
+  return next_instruction;
 }
 
 bool IRContext::KillDef(uint32_t id) {
@@ -189,11 +199,18 @@ void IRContext::KillNamesAndDecorates(uint32_t id) {
     KillInst(inst);
   }
 
-  for (auto& di : debugs2()) {
-    if (di.opcode() == SpvOpMemberName || di.opcode() == SpvOpName) {
-      if (di.GetSingleWordInOperand(0) == id) {
-        KillInst(&di);
+  Instruction* debug_inst = &*debug2_begin();
+  while (debug_inst) {
+    bool killed_inst = false;
+    if (debug_inst->opcode() == SpvOpMemberName ||
+        debug_inst->opcode() == SpvOpName) {
+      if (debug_inst->GetSingleWordInOperand(0) == id) {
+        debug_inst = KillInst(debug_inst);
+        killed_inst = true;
       }
+    }
+    if (!killed_inst) {
+      debug_inst = debug_inst->NextNode();
     }
   }
 }

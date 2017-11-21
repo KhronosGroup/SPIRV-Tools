@@ -88,11 +88,8 @@ class MemPass : public Pass {
   // Delete |inst| and iterate DCE on all its operands if they are now
   // useless. If a load is deleted and its variable has no other loads,
   // delete all its variable's stores.
-  void DCEInst(ir::Instruction* inst);
-
-  // Replace all instances of |loadInst|'s id with |replId| and delete
-  // |loadInst|.
-  void ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId);
+  void DCEInst(ir::Instruction* inst,
+               const std::function<void(ir::Instruction * )>&);
 
   // Call all the cleanup helper functions on |func|.
   bool CFGCleanup(ir::Function* func);

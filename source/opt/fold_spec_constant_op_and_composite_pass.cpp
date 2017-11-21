@@ -282,10 +282,12 @@ Pass::Status FoldSpecConstantOpAndCompositePass::ProcessImpl(
   // the dependee Spec Constants, all its dependent constants must have been
   // processed and all its dependent Spec Constants should have been folded if
   // possible.
-  for (ir::Module::inst_iterator inst_iter = irContext->types_values_begin();
+  ir::Module::inst_iterator next_inst = irContext->types_values_begin();
+  for (ir::Module::inst_iterator inst_iter = next_inst;
        // Need to re-evaluate the end iterator since we may modify the list of
        // instructions in this section of the module as the process goes.
-       inst_iter != irContext->types_values_end(); ++inst_iter) {
+       inst_iter != irContext->types_values_end(); inst_iter = next_inst) {
+    ++next_inst;
     ir::Instruction* inst = &*inst_iter;
     // Collect constant values of normal constants and process the
     // OpSpecConstantOp and OpSpecConstantComposite instructions if possible.

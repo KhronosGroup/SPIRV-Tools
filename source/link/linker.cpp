@@ -705,9 +705,14 @@ static spv_result_t RemoveLinkageSpecificInstructions(
 
   // Remove declarations of imported variables
   for (const auto& linking_entry : linkings_to_do) {
-    for (auto& inst : linked_context->types_values())
-      if (inst.result_id() == linking_entry.imported_symbol.id)
-        linked_context->KillInst(&inst);
+    auto next = linked_context->types_values_begin();
+    for (auto inst = next; inst != linked_context->types_values_end();
+         inst = next) {
+      ++next;
+      if (inst->result_id() == linking_entry.imported_symbol.id) {
+        linked_context->KillInst(&*inst);
+      }
+    }
   }
 
   // Remove import linkage attributes

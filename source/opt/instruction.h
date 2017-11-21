@@ -312,6 +312,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline bool operator!=(const Instruction&) const;
   inline bool operator<(const Instruction&) const;
 
+  Instruction* InsertBefore(std::vector<std::unique_ptr<Instruction>>&& list);
+  Instruction* InsertBefore(std::unique_ptr<Instruction>&& i);
+  using utils::IntrusiveNodeBase<Instruction>::InsertBefore;
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {

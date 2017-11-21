@@ -57,9 +57,6 @@ class LocalAccessChainConvertPass : public MemPass {
   // variables.
   void FindTargetVars(ir::Function* func);
 
-  // Delete |inst| if it has no uses. Assumes |inst| has a non-zero resultId.
-  void DeleteIfUseless(ir::Instruction* inst);
-
   // Build instruction from |opcode|, |typeId|, |resultId|, and |in_opnds|.
   // Append to |newInsts|.
   void BuildAndAppendInst(

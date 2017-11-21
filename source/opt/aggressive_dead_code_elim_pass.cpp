@@ -81,11 +81,10 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
   return true;
 }
 
-bool AggressiveDCEPass::KillInstIfTargetDead(ir::Instruction* inst) {
+bool AggressiveDCEPass::IsTargetDead(ir::Instruction* inst) {
   const uint32_t tId = inst->GetSingleWordInOperand(0);
   const ir::Instruction* tInst = get_def_use_mgr()->GetDef(tId);
   if (dead_insts_.find(tInst) != dead_insts_.end()) {
-    context()->KillInst(inst);
     return true;
   }
   return false;
@@ -326,28 +325,50 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Remove debug and annotation statements referencing dead instructions.
   // This must be done before killing the instructions, otherwise there are
   // dead objects in the def/use database.
-  for (auto& di : get_module()->debugs2()) {
-    if (di.opcode() != SpvOpName) continue;
-    if (KillInstIfTargetDead(&di)) modified = true;
-  }
-  for (auto& ai : get_module()->annotations()) {
-    if (ai.opcode() != SpvOpDecorate && ai.opcode() != SpvOpDecorateId)
+  ir::Instruction* instruction = &*get_module()->debug2_begin();
+  while (instruction) {
+    if (instruction->opcode() != SpvOpName) {
+      instruction = instruction->NextNode();
       continue;
-    if (KillInstIfTargetDead(&ai)) modified = true;
+    }
+
+    if (IsTargetDead(instruction)) {
+      instruction = context()->KillInst(instruction);
+      modified = true;
+    } else {
+      instruction = instruction->NextNode();
+    }
   }
+
+  instruction = &*get_module()->annotation_begin();
+  while (instruction) {
+    if (instruction->opcode() != SpvOpDecorate &&
+        instruction->opcode() != SpvOpDecorateId) {
+      instruction = instruction->NextNode();
+      continue;
+    }
+
+    if (IsTargetDead(instruction)) {
+      instruction = context()->KillInst(instruction);
+      modified = true;
+    } else {
+      instruction = instruction->NextNode();
+    }
+  }
+
   // Kill dead instructions and remember dead blocks
   for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
     uint32_t mergeBlockId = 0;
-    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
-      if (dead_insts_.find(&*ii) == dead_insts_.end()) continue;
+    (*bi)->ForEachInst([this, &modified, &mergeBlockId](ir::Instruction* inst) {
+      if (dead_insts_.find(inst) == dead_insts_.end()) return;
       // If dead instruction is selection merge, remember merge block
       // for new branch at end of block
-      if (ii->opcode() == SpvOpSelectionMerge)
+      if (inst->opcode() == SpvOpSelectionMerge)
         mergeBlockId =
-            ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
-      context()->KillInst(&*ii);
+            inst->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
+      context()->KillInst(inst);
       modified = true;
-    }
+    });
     // If a structured if was deleted, add a branch to its merge block,
     // and traverse to the merge block, continuing processing there.
     // The block still exists as the OpLabel at least is still intact.

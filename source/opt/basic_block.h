@@ -166,7 +166,16 @@ inline void BasicBlock::AddInstructions(BasicBlock* bp) {
 inline void BasicBlock::ForEachInst(const std::function<void(Instruction*)>& f,
                                     bool run_on_debug_line_insts) {
   if (label_) label_->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& inst : insts_) inst.ForEachInst(f, run_on_debug_line_insts);
+  if (insts_.empty()) {
+    return;
+  }
+
+  Instruction* inst = &insts_.front();
+  while (inst != nullptr) {
+    Instruction* next_instruction = inst->NextNode();
+    inst->ForEachInst(f, run_on_debug_line_insts);
+    inst = next_instruction;
+  }
 }
 
 inline void BasicBlock::ForEachInst(

@@ -68,20 +68,20 @@ Pass::Status StrengthReductionPass::Process(ir::IRContext* c) {
 }
 
 bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
-    ir::BasicBlock::iterator* instPtr) {
-  ir::BasicBlock::iterator& inst = *instPtr;
-  assert(inst->opcode() == SpvOp::SpvOpIMul &&
+    ir::BasicBlock::iterator* inst) {
+  assert((*inst)->opcode() == SpvOp::SpvOpIMul &&
          "Only works for multiplication of integers.");
   bool modified = false;
 
   // Currently only works on 32-bit integers.
-  if (inst->type_id() != int32_type_id_ && inst->type_id() != uint32_type_id_) {
+  if ((*inst)->type_id() != int32_type_id_ &&
+      (*inst)->type_id() != uint32_type_id_) {
     return modified;
   }
 
   // Check the operands for a constant that is a power of 2.
   for (int i = 0; i < 2; i++) {
-    uint32_t opId = inst->GetSingleWordInOperand(i);
+    uint32_t opId = (*inst)->GetSingleWordInOperand(i);
     ir::Instruction* opInst = get_def_use_mgr()->GetDef(opId);
     if (opInst->opcode() == SpvOp::SpvOpConstant) {
       // We found a constant operand.
@@ -95,22 +95,24 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
         // Create the new instruction.
         uint32_t newResultId = TakeNextId();
         std::vector<ir::Operand> newOperands;
-        newOperands.push_back(inst->GetInOperand(1 - i));
+        newOperands.push_back((*inst)->GetInOperand(1 - i));
         ir::Operand shiftOperand(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                                  {shiftConstResultId});
         newOperands.push_back(shiftOperand);
         std::unique_ptr<ir::Instruction> newInstruction(
             new ir::Instruction(context(), SpvOp::SpvOpShiftLeftLogical,
-                                inst->type_id(), newResultId, newOperands));
+                                (*inst)->type_id(), newResultId, newOperands));
 
         // Insert the new instruction and update the data structures.
-        inst = inst.InsertBefore(std::move(newInstruction));
-        get_def_use_mgr()->AnalyzeInstDefUse(&*inst);
-        ++inst;
-        context()->ReplaceAllUsesWith(inst->result_id(), newResultId);
+        (*inst) = (*inst).InsertBefore(std::move(newInstruction));
+        get_def_use_mgr()->AnalyzeInstDefUse(&*(*inst));
+        ++(*inst);
+        context()->ReplaceAllUsesWith((*inst)->result_id(), newResultId);
 
         // Remove the old instruction.
-        context()->KillInst(&*inst);
+        ir::Instruction* inst_to_delete = &*(*inst);
+        --(*inst);
+        context()->KillInst(inst_to_delete);
 
         // We do not want to replace the instruction twice if both operands
         // are constants that are a power of 2.  So we break here.

@@ -107,6 +107,8 @@ class IRContext {
   // Iterators for extension instructions contained in this module.
   inline Module::inst_iterator ext_inst_import_begin();
   inline Module::inst_iterator ext_inst_import_end();
+  inline IteratorRange<Module::inst_iterator> ext_inst_imports();
+  inline IteratorRange<Module::const_inst_iterator> ext_inst_imports() const;
 
   // There are several kinds of debug instructions, according to where they can
   // appear in the logical layout of a module:
@@ -218,16 +220,28 @@ class IRContext {
   // Invalidates the analyses marked in |analyses_to_invalidate|.
   void InvalidateAnalyses(Analysis analyses_to_invalidate);
 
-  // Turns the instruction defining the given |id| into a Nop. Returns true on
+  // Deletes the instruction defining the given |id|. Returns true on
   // success, false if the given |id| is not defined at all. This method also
-  // erases both the uses of |id| and the information of this |id|-generating
-  // instruction's uses of its operands.
+  // erases the name, decorations, and defintion of |id|.
+  //
+  // Pointers and iterators pointing to the deleted instructions become invalid.
+  // However other pointers and iterators are still valid.
   bool KillDef(uint32_t id);
 
-  // Turns the given instruction |inst| to a Nop. This method erases the
+  // Deletes the given instruction |inst|. This method erases the
   // information of the given instruction's uses of its operands. If |inst|
-  // defines an result id, the uses of the result id will also be erased.
-  void KillInst(ir::Instruction* inst);
+  // defines a result id, its name and decorations will also be deleted.
+  //
+  // Pointer and iterator pointing to the deleted instructions become invalid.
+  // However other pointers and iterators are still valid.
+  //
+  // Note that if an instruction is not in an instruction list, the memory may
+  // not be safe to delete, so the instruction is turned into a OpNop instead.
+  // This can happen with OpLabel.
+  //
+  // Returns a pointer to the instruction after |inst| or |nullptr| if no such
+  // instruction exists.
+  Instruction* KillInst(ir::Instruction* inst);
 
   // Returns true if all of the given analyses are valid.
   bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
@@ -453,6 +467,14 @@ Module::inst_iterator IRContext::ext_inst_import_begin() {
 
 Module::inst_iterator IRContext::ext_inst_import_end() {
   return module()->ext_inst_import_end();
+}
+
+IteratorRange<Module::inst_iterator> IRContext::ext_inst_imports() {
+  return module()->ext_inst_imports();
+}
+
+IteratorRange<Module::const_inst_iterator> IRContext::ext_inst_imports() const {
+  return ((const Module*)module_.get())->ext_inst_imports();
 }
 
 Module::inst_iterator IRContext::debug1_begin() {

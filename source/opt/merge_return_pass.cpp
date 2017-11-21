@@ -114,8 +114,10 @@ bool MergeReturnPass::MergeReturnBlocks(
   // Replace returns with branches
   for (auto block : returnBlocks) {
     context()->KillInst(&*block->tail());
-    block->tail()->SetOpcode(SpvOpBranch);
-    block->tail()->ReplaceOperands({{SPV_OPERAND_TYPE_ID, {returnId}}});
+    std::unique_ptr<ir::Instruction> new_instruction(
+        new ir::Instruction(context(), SpvOpBranch, 0,
+                            0, {{SPV_OPERAND_TYPE_ID, {returnId}}}));
+    block->AddInstruction(std::move(new_instruction));
     uses_to_update.push_back(&*block->tail());
     uses_to_update.push_back(block->GetLabelInst());
   }

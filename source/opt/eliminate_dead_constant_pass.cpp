@@ -91,26 +91,9 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
     working_list.erase(inst);
   }
 
-  // Find all annotation and debug instructions that are referencing dead
-  // constants.
-  std::unordered_set<ir::Instruction*> dead_others;
-  for (auto* dc : dead_consts) {
-    irContext->get_def_use_mgr()->ForEachUser(
-        dc, [&dead_others](ir::Instruction* user) {
-          SpvOp op = user->opcode();
-          if (ir::IsAnnotationInst(op) || ir::IsDebug1Inst(op) ||
-              ir::IsDebug2Inst(op) || ir::IsDebug3Inst(op)) {
-            dead_others.insert(user);
-          }
-        });
-  }
-
   // Turn all dead instructions and uses of them to nop
   for (auto* dc : dead_consts) {
     irContext->KillDef(dc->result_id());
-  }
-  for (auto* da : dead_others) {
-    irContext->KillInst(da);
   }
   return dead_consts.empty() ? Status::SuccessWithoutChange
                              : Status::SuccessWithChange;

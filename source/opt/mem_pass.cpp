@@ -183,7 +183,8 @@ void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
   });
 }
 
-void MemPass::DCEInst(ir::Instruction* inst) {
+void MemPass::DCEInst(ir::Instruction* inst,
+                      const function<void(ir::Instruction * )>& call_back) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
@@ -199,6 +200,9 @@ void MemPass::DCEInst(ir::Instruction* inst) {
     uint32_t varId = 0;
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad) (void)GetPtr(di, &varId);
+    if (call_back) {
+      call_back(di);
+    }
     context()->KillInst(di);
     // For all operands with no remaining uses, add their instruction
     // to the dead instruction queue.
@@ -210,13 +214,6 @@ void MemPass::DCEInst(ir::Instruction* inst) {
     if (varId != 0 && !IsLiveVar(varId)) AddStores(varId, &deadInsts);
     deadInsts.pop();
   }
-}
-
-void MemPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst, uint32_t replId) {
-  const uint32_t loadId = loadInst->result_id();
-  context()->KillNamesAndDecorates(loadId);
-  (void)context()->ReplaceAllUsesWith(loadId, replId);
-  DCEInst(loadInst);
 }
 
 MemPass::MemPass() {}
@@ -573,19 +570,21 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
     SSABlockInit(bi);
     ir::BasicBlock* bp = *bi;
     const uint32_t label = bp->id();
-    for (auto ii = bp->begin(); ii != bp->end(); ++ii) {
-      switch (ii->opcode()) {
+    ir::Instruction* inst = &*bp->begin();
+    while (inst) {
+      ir::Instruction* next_instruction = inst->NextNode();
+      switch (inst->opcode()) {
         case SpvOpStore: {
           uint32_t varId;
-          (void)GetPtr(&*ii, &varId);
+          (void)GetPtr(inst, &varId);
           if (!IsTargetVar(varId)) break;
           // Register new stored value for the variable
           label2ssa_map_[label][varId] =
-              ii->GetSingleWordInOperand(kStoreValIdInIdx);
+              inst->GetSingleWordInOperand(kStoreValIdInIdx);
         } break;
         case SpvOpLoad: {
           uint32_t varId;
-          (void)GetPtr(&*ii, &varId);
+          (void)GetPtr(inst, &varId);
           if (!IsTargetVar(varId)) break;
           uint32_t replId = 0;
           const auto ssaItr = label2ssa_map_.find(label);
@@ -601,12 +600,15 @@ Pass::Status MemPass::InsertPhiInstructions(ir::Function* func) {
           // Replace load's id with the last stored value id for variable
           // and delete load. Kill any names or decorates using id before
           // replacing to prevent incorrect replacement in those instructions.
-          const uint32_t loadId = ii->result_id();
+          const uint32_t loadId = inst->result_id();
           context()->KillNamesAndDecorates(loadId);
           (void)context()->ReplaceAllUsesWith(loadId, replId);
-          context()->KillInst(&*ii);
+          context()->KillInst(inst);
         } break;
-        default: { } break; }
+        default:
+          break;
+      }
+      inst = next_instruction;
     }
     visitedBlocks_.insert(label);
     // Look for successor backedge and patch phis in loop header

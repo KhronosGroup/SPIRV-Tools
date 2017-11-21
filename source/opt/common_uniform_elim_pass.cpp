@@ -207,16 +207,16 @@ void CommonUniformElimPass::DeleteIfUseless(ir::Instruction* inst) {
   }
 }
 
-void CommonUniformElimPass::ReplaceAndDeleteLoad(ir::Instruction* loadInst,
-                                                 uint32_t replId,
-                                                 ir::Instruction* ptrInst) {
+ir::Instruction* CommonUniformElimPass::ReplaceAndDeleteLoad(
+    ir::Instruction* loadInst, uint32_t replId, ir::Instruction* ptrInst) {
   const uint32_t loadId = loadInst->result_id();
   context()->KillNamesAndDecorates(loadId);
   (void)context()->ReplaceAllUsesWith(loadId, replId);
   // remove load instruction
-  context()->KillInst(loadInst);
+  ir::Instruction* next_instruction = context()->KillInst(loadInst);
   // if access chain, see if it can be removed as well
   if (IsNonPtrAccessChain(ptrInst->opcode())) DeleteIfUseless(ptrInst);
+  return next_instruction;
 }
 
 void CommonUniformElimPass::GenACLoadRepl(
@@ -281,29 +281,27 @@ bool CommonUniformElimPass::IsConstantIndexAccessChain(ir::Instruction* acp) {
 bool CommonUniformElimPass::UniformAccessChainConvert(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
-    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      if (ii->opcode() != SpvOpLoad) continue;
+    for (ir::Instruction* inst = &*bi->begin(); inst; inst = inst->NextNode()) {
+      if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+      ir::Instruction* ptrInst = GetPtr(inst, &varId);
       if (!IsNonPtrAccessChain(ptrInst->opcode())) continue;
       // Do not convert nested access chains
       if (ptrInst->GetSingleWordInOperand(kAccessChainPtrIdInIdx) != varId)
         continue;
       if (!IsUniformVar(varId)) continue;
       if (!IsConstantIndexAccessChain(ptrInst)) continue;
-      if (HasUnsupportedDecorates(ii->result_id())) continue;
+      if (HasUnsupportedDecorates(inst->result_id())) continue;
       if (HasUnsupportedDecorates(ptrInst->result_id())) continue;
-      if (IsVolatileLoad(*ii)) continue;
+      if (IsVolatileLoad(*inst)) continue;
       if (IsAccessChainToVolatileStructType(*ptrInst)) continue;
       std::vector<std::unique_ptr<ir::Instruction>> newInsts;
       uint32_t replId;
       GenACLoadRepl(ptrInst, &newInsts, &replId);
-      ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
-      ++ii;
-      ii = ii.InsertBefore(std::move(newInsts));
-      ++ii;
+      inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
+      inst = inst->InsertBefore(std::move(newInsts));
       modified = true;
-    }
+    };
   }
   return modified;
 }
@@ -371,15 +369,15 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
       mergeBlockId = 0;
       insertItr = bp->begin();
     }
-    for (auto ii = bp->begin(); ii != bp->end(); ++ii) {
-      if (ii->opcode() != SpvOpLoad) continue;
+    for (ir::Instruction* inst = &*bp->begin(); inst; inst = inst->NextNode()) {
+      if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+      ir::Instruction* ptrInst = GetPtr(inst, &varId);
       if (ptrInst->opcode() != SpvOpVariable) continue;
       if (!IsUniformVar(varId)) continue;
       if (IsSamplerOrImageVar(varId)) continue;
-      if (HasUnsupportedDecorates(ii->result_id())) continue;
-      if (IsVolatileLoad(*ii)) continue;
+      if (HasUnsupportedDecorates(inst->result_id())) continue;
+      if (IsVolatileLoad(*inst)) continue;
       uint32_t replId;
       const auto uItr = uniform2load_id_.find(varId);
       if (uItr != uniform2load_id_.end()) {
@@ -387,13 +385,13 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
       } else {
         if (mergeBlockId == 0) {
           // Load is in dominating block; just remember it
-          uniform2load_id_[varId] = ii->result_id();
+          uniform2load_id_[varId] = inst->result_id();
           continue;
         } else {
           // Copy load into most recent dominating block and remember it
           replId = TakeNextId();
           std::unique_ptr<ir::Instruction> newLoad(new ir::Instruction(
-              context(), SpvOpLoad, ii->type_id(), replId,
+              context(), SpvOpLoad, inst->type_id(), replId,
               {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {varId}}}));
           get_def_use_mgr()->AnalyzeInstDefUse(&*newLoad);
           insertItr = insertItr.InsertBefore(std::move(newLoad));
@@ -401,7 +399,7 @@ bool CommonUniformElimPass::CommonUniformLoadElimination(ir::Function* func) {
           uniform2load_id_[varId] = replId;
         }
       }
-      ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
+      inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
       modified = true;
     }
     // If we are outside of any control construct and entering one, remember
@@ -417,24 +415,24 @@ bool CommonUniformElimPass::CommonUniformLoadElimBlock(ir::Function* func) {
   bool modified = false;
   for (auto& blk : *func) {
     uniform2load_id_.clear();
-    for (auto ii = blk.begin(); ii != blk.end(); ++ii) {
-      if (ii->opcode() != SpvOpLoad) continue;
+    for (ir::Instruction* inst = &*blk.begin(); inst; inst = inst->NextNode()) {
+      if (inst->opcode() != SpvOpLoad) continue;
       uint32_t varId;
-      ir::Instruction* ptrInst = GetPtr(&*ii, &varId);
+      ir::Instruction* ptrInst = GetPtr(inst, &varId);
       if (ptrInst->opcode() != SpvOpVariable) continue;
       if (!IsUniformVar(varId)) continue;
       if (!IsSamplerOrImageVar(varId)) continue;
-      if (HasUnsupportedDecorates(ii->result_id())) continue;
-      if (IsVolatileLoad(*ii)) continue;
+      if (HasUnsupportedDecorates(inst->result_id())) continue;
+      if (IsVolatileLoad(*inst)) continue;
       uint32_t replId;
       const auto uItr = uniform2load_id_.find(varId);
       if (uItr != uniform2load_id_.end()) {
         replId = uItr->second;
       } else {
-        uniform2load_id_[varId] = ii->result_id();
+        uniform2load_id_[varId] = inst->result_id();
         continue;
       }
-      ReplaceAndDeleteLoad(&*ii, replId, ptrInst);
+      inst = ReplaceAndDeleteLoad(inst, replId, ptrInst);
       modified = true;
     }
   }

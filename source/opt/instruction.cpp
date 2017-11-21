@@ -354,5 +354,20 @@ bool Instruction::IsReadOnlyVariableKernel() const {
   uint32_t storage_class = GetSingleWordInOperand(kVariableStorageClassIndex);
   return storage_class == SpvStorageClassUniformConstant;
 }
+
+Instruction* Instruction::InsertBefore(
+    std::vector<std::unique_ptr<Instruction>>&& list) {
+  Instruction* first_node = list.front().get();
+  for (auto& i : list) {
+    i.release()->InsertBefore(this);
+  }
+  list.clear();
+  return first_node;
+}
+
+Instruction* Instruction::InsertBefore(std::unique_ptr<Instruction>&& i) {
+  i.get()->InsertBefore(this);
+  return i.release();
+}
 }  // namespace ir
 }  // namespace spvtools

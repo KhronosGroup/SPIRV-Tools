@@ -71,18 +71,18 @@ void Module::AddGlobalValue(SpvOp opcode, uint32_t result_id,
 
 void Module::ForEachInst(const std::function<void(Instruction*)>& f,
                          bool run_on_debug_line_insts) {
-#define DELEGATE(i) i.ForEachInst(f, run_on_debug_line_insts)
-  for (auto& i : capabilities_) DELEGATE(i);
-  for (auto& i : extensions_) DELEGATE(i);
-  for (auto& i : ext_inst_imports_) DELEGATE(i);
+#define DELEGATE(list) list.ForEachInst(f, run_on_debug_line_insts)
+  DELEGATE(capabilities_);
+  DELEGATE(extensions_);
+  DELEGATE(ext_inst_imports_);
   if (memory_model_) memory_model_->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& i : entry_points_) DELEGATE(i);
-  for (auto& i : execution_modes_) DELEGATE(i);
-  for (auto& i : debugs1_) DELEGATE(i);
-  for (auto& i : debugs2_) DELEGATE(i);
-  for (auto& i : debugs3_) DELEGATE(i);
-  for (auto& i : annotations_) DELEGATE(i);
-  for (auto& i : types_values_) DELEGATE(i);
+  DELEGATE(entry_points_);
+  DELEGATE(execution_modes_);
+  DELEGATE(debugs1_);
+  DELEGATE(debugs2_);
+  DELEGATE(debugs3_);
+  DELEGATE(annotations_);
+  DELEGATE(types_values_);
   for (auto& i : functions_) i->ForEachInst(f, run_on_debug_line_insts);
 #undef DELEGATE
 }

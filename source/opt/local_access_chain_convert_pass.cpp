@@ -31,14 +31,6 @@ const uint32_t kTypeIntWidthInIdx = 0;
 
 }  // anonymous namespace
 
-void LocalAccessChainConvertPass::DeleteIfUseless(ir::Instruction* inst) {
-  const uint32_t resId = inst->result_id();
-  assert(resId != 0);
-  if (HasOnlyNamesAndDecorates(resId)) {
-    context()->KillInst(inst);
-  }
-}
-
 void LocalAccessChainConvertPass::BuildAndAppendInst(
     SpvOp opcode, uint32_t typeId, uint32_t resultId,
     const std::vector<ir::Operand>& in_opnds,
@@ -201,6 +193,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
   // extract and insert sequences
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
+    std::vector<ir::Instruction*> dead_instructions;
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       switch (ii->opcode()) {
         case SpvOpLoad: {
@@ -210,7 +203,9 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
           if (!IsTargetVar(varId)) break;
           std::vector<std::unique_ptr<ir::Instruction>> newInsts;
           uint32_t replId = GenAccessChainLoadReplacement(ptrInst, &newInsts);
-          ReplaceAndDeleteLoad(&*ii, replId);
+          context()->KillNamesAndDecorates(&*ii);
+          context()->ReplaceAllUsesWith(ii->result_id(), replId);
+          dead_instructions.push_back(&*ii);
           ++ii;
           ii = ii.InsertBefore(std::move(newInsts));
           ++ii;
@@ -224,8 +219,7 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
           std::vector<std::unique_ptr<ir::Instruction>> newInsts;
           uint32_t valId = ii->GetSingleWordInOperand(kStoreValIdInIdx);
           GenAccessChainStoreReplacement(ptrInst, valId, &newInsts);
-          context()->KillInst(&*ii);
-          DeleteIfUseless(ptrInst);
+          dead_instructions.push_back(&*ii);
           ++ii;
           ii = ii.InsertBefore(std::move(newInsts));
           ++ii;
@@ -235,6 +229,18 @@ bool LocalAccessChainConvertPass::ConvertLocalAccessChains(ir::Function* func) {
         default:
           break;
       }
+    }
+
+    while (!dead_instructions.empty()) {
+      ir::Instruction* inst = dead_instructions.back();
+      dead_instructions.pop_back();
+      DCEInst(inst, [&dead_instructions](ir::Instruction* other_inst) {
+        auto i = std::find(dead_instructions.begin(), dead_instructions.end(),
+                           other_inst);
+        if (i != dead_instructions.end()) {
+          dead_instructions.erase(i);
+        }
+      });
     }
   }
   return modified;

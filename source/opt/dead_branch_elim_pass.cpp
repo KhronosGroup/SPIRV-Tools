@@ -258,17 +258,21 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
     if (liveLabId != dLabId) deadPreds.insert(*bi);
 
     // Update phi instructions in terminating block.
-    for (auto pii = (*dbi)->begin();; ++pii) {
+    ir::Instruction* inst = &*(*dbi)->begin();
+    while (inst) {
       // Skip NoOps, break at end of phis
-      SpvOp op = pii->opcode();
-      if (op == SpvOpNop) continue;
+      SpvOp op = inst->opcode();
+      if (op == SpvOpNop) {
+        inst = inst->NextNode();
+        continue;
+      }
       if (op != SpvOpPhi) break;
       // Count phi's live predecessors with lcnt and remember last one
       // with lidx.
       uint32_t lcnt = 0;
       uint32_t lidx = 0;
       uint32_t icnt = 0;
-      pii->ForEachInId([&deadPreds, &icnt, &lcnt, &lidx, this](uint32_t* idp) {
+      inst->ForEachInId([&deadPreds, &icnt, &lcnt, &lidx, this](uint32_t* idp) {
         if (icnt % 2 == 1) {
           if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
             ++lcnt;
@@ -280,7 +284,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
       // If just one live predecessor, replace resultid with live value id.
       uint32_t replId;
       if (lcnt == 1) {
-        replId = pii->GetSingleWordInOperand(lidx);
+        replId = inst->GetSingleWordInOperand(lidx);
       } else {
         // Otherwise create new phi eliminating dead predecessor entries
         assert(lcnt > 1);
@@ -288,7 +292,7 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
         std::vector<ir::Operand> phi_in_opnds;
         icnt = 0;
         uint32_t lastId;
-        pii->ForEachInId(
+        inst->ForEachInId(
             [&deadPreds, &icnt, &phi_in_opnds, &lastId, this](uint32_t* idp) {
               if (icnt % 2 == 1) {
                 if (deadPreds.find(cfg()->block(*idp)) == deadPreds.end()) {
@@ -303,15 +307,14 @@ bool DeadBranchElimPass::EliminateDeadBranches(ir::Function* func) {
               ++icnt;
             });
         std::unique_ptr<ir::Instruction> newPhi(new ir::Instruction(
-            context(), SpvOpPhi, pii->type_id(), replId, phi_in_opnds));
+            context(), SpvOpPhi, inst->type_id(), replId, phi_in_opnds));
         get_def_use_mgr()->AnalyzeInstDefUse(&*newPhi);
-        pii = pii.InsertBefore(std::move(newPhi));
-        ++pii;
+        inst->InsertBefore(std::move(newPhi));
       }
-      const uint32_t phiId = pii->result_id();
+      const uint32_t phiId = inst->result_id();
       context()->KillNamesAndDecorates(phiId);
       (void)context()->ReplaceAllUsesWith(phiId, replId);
-      context()->KillInst(&*pii);
+      inst = context()->KillInst(inst);
     }
   }
 

@@ -1014,11 +1014,8 @@ INSTANTIATE_TEST_CASE_P(
         "%5 = OpTypeMatrix %3 3 "
         "%6 = OpTypeMatrix %2 3",
         {1, 3, 5, 10}, // ids to kill
-        "OpNop\n"
         "%2 = OpTypeVector %1 2\n"
-        "OpNop\n"
         "%4 = OpTypeVector %1 4\n"
-        "OpNop\n"
         "%6 = OpTypeMatrix %2 3",
         {
           { // defs
@@ -1049,8 +1046,6 @@ INSTANTIATE_TEST_CASE_P(
 
          "%5 = OpLabel\n"
          "%7 = OpPhi %6 %8 %4 %9 %5\n"
-              "OpNop\n"
-              "OpNop\n"
         "%13 = OpFAdd %10 %11 %12\n"
         "%17 = OpSLessThan %16 %7 %18\n"
               "OpLoopMerge %19 %5 None\n"
@@ -1164,7 +1159,6 @@ INSTANTIATE_TEST_CASE_P(
         "%6 = OpLabel\n"
              "OpBranch %7\n"
         "%7 = OpLabel\n"
-             "OpNop\n"
              "OpBranch %7\n"
              "OpFunctionEnd",
         {
@@ -1484,7 +1478,6 @@ INSTANTIATE_TEST_CASE_P(
         "     OpReturn "
         "     OpFunctionEnd",
         {3, 5, 7},
-        "OpNop\n"
         "%1 = OpTypeFunction %3\n"
         "%2 = OpFunction %1 None %3\n"
         "%4 = OpLabel\n"

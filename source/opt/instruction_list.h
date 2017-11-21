@@ -101,6 +101,18 @@ class InstructionList : public utils::IntrusiveList<Instruction> {
 
   // Same as in the base class, except it will delete the data as well.
   inline void clear();
+
+  // Runs the given function |f| on the instructions in the list and optionally
+  // on the preceding debug line instructions.
+  inline void ForEachInst(
+      const std::function<void(Instruction*)>& f,
+      bool run_on_debug_line_insts) {
+    auto next = begin();
+    for( auto i = next; i != end(); i = next ) {
+      ++next;
+      i->ForEachInst(f, run_on_debug_line_insts);
+    }
+  }
 };
 
 InstructionList::~InstructionList() { clear(); }

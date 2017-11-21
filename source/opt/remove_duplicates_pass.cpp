@@ -48,18 +48,20 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
     ir::IRContext* irContext) const {
   bool modified = false;
 
+  if (irContext->capabilities().empty()) {
+    return modified;
+  }
+
   std::unordered_set<uint32_t> capabilities;
-  for (auto i = irContext->capability_begin();
-       i != irContext->capability_end();) {
+  for (auto* i = &*irContext->capability_begin(); i;) {
     auto res = capabilities.insert(i->GetSingleWordOperand(0u));
 
     if (res.second) {
       // Never seen before, keep it.
-      ++i;
+      i = i->NextNode();
     } else {
       // It's a duplicate, remove it.
-      irContext->KillInst(&*i);
-      i = i.Erase();
+      i = irContext->KillInst(i);
       modified = true;
     }
   }
@@ -71,20 +73,22 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
     ir::IRContext* irContext) const {
   bool modified = false;
 
+  if (irContext->ext_inst_imports().empty()) {
+    return modified;
+  }
+
   std::unordered_map<std::string, SpvId> extInstImports;
-  for (auto i = irContext->ext_inst_import_begin();
-       i != irContext->ext_inst_import_end();) {
+  for (auto* i = &*irContext->ext_inst_import_begin(); i;) {
     auto res = extInstImports.emplace(
         reinterpret_cast<const char*>(i->GetInOperand(0u).words.data()),
         i->result_id());
     if (res.second) {
       // Never seen before, keep it.
-      ++i;
+      i = i->NextNode();
     } else {
       // It's a duplicate, remove it.
       irContext->ReplaceAllUsesWith(i->result_id(), res.first->second);
-      irContext->KillInst(&*i);
-      i = i.Erase();
+      i = irContext->KillInst(i);
       modified = true;
     }
   }
@@ -96,14 +100,16 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     ir::IRContext* irContext) const {
   bool modified = false;
 
-  std::vector<Instruction> visitedTypes;
+  if (irContext->types_values().empty()) {
+    return modified;
+  }
 
-  for (auto i = irContext->types_values_begin();
-       i != irContext->types_values_end();) {
+  std::vector<Instruction> visitedTypes;
+  for (auto* i = &*irContext->types_values_begin(); i;) {
     // We only care about types.
     if (!spvOpcodeGeneratesType((i->opcode())) &&
         i->opcode() != SpvOpTypeForwardPointer) {
-      ++i;
+      i = i->NextNode();
       continue;
     }
 
@@ -120,13 +126,12 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
     if (idToKeep == 0u) {
       // This is a never seen before type, keep it around.
       visitedTypes.emplace_back(*i);
-      ++i;
+      i = i->NextNode();
     } else {
       // The same type has already been seen before, remove this one.
       irContext->ReplaceAllUsesWith(i->result_id(), idToKeep);
       modified = true;
-      irContext->KillInst(&*i);
-      i = i.Erase();
+      i = irContext->KillInst(i);
     }
   }
 
@@ -146,8 +151,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
   std::vector<const Instruction*> visitedDecorations;
 
   opt::analysis::DecorationManager decorationManager(irContext->module());
-  for (auto i = irContext->annotation_begin();
-       i != irContext->annotation_end();) {
+  for (auto* i = &*irContext->annotation_begin(); i;) {
     // Is the current decoration equal to one of the decorations we have aready
     // visited?
     bool alreadyVisited = false;
@@ -161,11 +165,11 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     if (!alreadyVisited) {
       // This is a never seen before decoration, keep it around.
       visitedDecorations.emplace_back(&*i);
-      ++i;
+      i = i->NextNode();
     } else {
       // The same decoration has already been seen before, remove this one.
       modified = true;
-      i = i.Erase();
+      i = irContext->KillInst(i);
     }
   }
 

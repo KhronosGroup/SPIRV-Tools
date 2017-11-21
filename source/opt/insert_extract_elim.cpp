@@ -66,25 +66,26 @@ bool InsertExtractElimPass::IsVectorType(uint32_t typeId) {
 bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end(); ++bi) {
-    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
-      switch (ii->opcode()) {
+    ir::Instruction* inst = &*bi->begin();
+    while (inst) {
+      switch (inst->opcode()) {
         case SpvOpCompositeExtract: {
-          uint32_t cid = ii->GetSingleWordInOperand(kExtractCompositeIdInIdx);
+          uint32_t cid = inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
           ir::Instruction* cinst = get_def_use_mgr()->GetDef(cid);
           uint32_t replId = 0;
           // Offset of extract indices being compared to insert indices.
           // Offset increases as indices are matched.
           uint32_t extOffset = 0;
           while (cinst->opcode() == SpvOpCompositeInsert) {
-            if (ExtInsMatch(&*ii, cinst, extOffset)) {
+            if (ExtInsMatch(inst, cinst, extOffset)) {
               // Match! Use inserted value as replacement
               replId = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
               break;
-            } else if (ExtInsConflict(&*ii, cinst, extOffset)) {
+            } else if (ExtInsConflict(inst, cinst, extOffset)) {
               // If extract has fewer indices than the insert, stop searching.
               // Otherwise increment offset of extract indices considered and
               // continue searching through the inserted value
-              if (ii->NumInOperands() - extOffset <
+              if (inst->NumInOperands() - extOffset <
                   cinst->NumInOperands() - 1) {
                 break;
               } else {
@@ -105,15 +106,15 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
           // vector composition, and additional CompositeInsert.
           if ((cinst->opcode() == SpvOpCompositeConstruct ||
                cinst->opcode() == SpvOpConstantComposite) &&
-              (*ii).NumInOperands() - extOffset == 2) {
-            uint32_t compIdx = (*ii).GetSingleWordInOperand(extOffset + 1);
+              inst->NumInOperands() - extOffset == 2) {
+            uint32_t compIdx = inst->GetSingleWordInOperand(extOffset + 1);
             if (IsVectorType(cinst->type_id())) {
               if (compIdx < cinst->NumInOperands()) {
                 uint32_t i = 0;
                 for (; i <= compIdx; i++) {
                   uint32_t compId = cinst->GetSingleWordInOperand(i);
                   ir::Instruction* compInst = get_def_use_mgr()->GetDef(compId);
-                  if (compInst->type_id() != (*ii).type_id()) break;
+                  if (compInst->type_id() != inst->type_id()) break;
                 }
                 if (i > compIdx)
                   replId = cinst->GetSingleWordInOperand(compIdx);
@@ -123,13 +124,16 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
             }
           }
           if (replId != 0) {
-            const uint32_t extId = ii->result_id();
+            const uint32_t extId = inst->result_id();
             (void)context()->ReplaceAllUsesWith(extId, replId);
-            context()->KillInst(&*ii);
+            inst = context()->KillInst(inst);
             modified = true;
+          } else {
+            inst = inst->NextNode();
           }
         } break;
         default:
+          inst = inst->NextNode();
           break;
       }
     }
