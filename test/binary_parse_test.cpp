@@ -35,6 +35,7 @@ static bool operator==(const spv_parsed_operand_t& a,
 
 namespace {
 
+using ::libspirv::SetContextMessageConsumer;
 using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;

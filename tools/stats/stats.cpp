@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
   std::cerr << "Processing " << paths.size() << " files..." << std::endl;
 
   ScopedContext ctx(SPV_ENV_UNIVERSAL_1_1);
-  SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
+  libspirv::SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   libspirv::SpirvStats stats;
   stats.opcode_markov_hist.resize(1);

@@ -2846,7 +2846,7 @@ spv_result_t SpirvToMarkv(
     MessageConsumer message_consumer, MarkvLogConsumer log_consumer,
     MarkvDebugConsumer debug_consumer, std::vector<uint8_t>* markv) {
   spv_context_t hijack_context = *context;
-  SetContextMessageConsumer(&hijack_context, message_consumer);
+  libspirv::SetContextMessageConsumer(&hijack_context, message_consumer);
 
   spv_const_binary_t spirv_binary = {spirv.data(), spirv.size()};
 
@@ -2901,7 +2901,7 @@ spv_result_t MarkvToSpirv(
     MarkvDebugConsumer debug_consumer, std::vector<uint32_t>* spirv) {
   spv_position_t position = {};
   spv_context_t hijack_context = *context;
-  SetContextMessageConsumer(&hijack_context, message_consumer);
+  libspirv::SetContextMessageConsumer(&hijack_context, message_consumer);
 
   MarkvDecoder decoder(&hijack_context, markv, options, &markv_model);
 

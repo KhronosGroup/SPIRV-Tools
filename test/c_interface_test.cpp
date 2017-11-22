@@ -22,6 +22,8 @@ namespace {
 
 using namespace spvtools;
 
+using libspirv::SetContextMessageConsumer;
+
 // The default consumer is a null std::function.
 TEST(CInterface, DefaultConsumerNullDiagnosticForValidInput) {
   auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);

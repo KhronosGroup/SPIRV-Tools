@@ -100,10 +100,12 @@ struct spv_context_t {
   spvtools::MessageConsumer consumer;
 };
 
+namespace libspirv {
 // Sets the message consumer to |consumer| in the given |context|. The original
 // message consumer will be overwritten.
 void SetContextMessageConsumer(spv_context context,
                                spvtools::MessageConsumer consumer);
+}  // namespace libspirv
 
 // Populates *table with entries for env.
 spv_result_t spvOpcodeTableGet(spv_opcode_table* table, spv_target_env env);
