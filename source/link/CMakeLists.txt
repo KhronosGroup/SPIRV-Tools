@@ -26,6 +26,7 @@ target_link_libraries(SPIRV-Tools-link
   PUBLIC SPIRV-Tools-opt)
 
 set_property(TARGET SPIRV-Tools-link PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(SPIRV-Tools-link)
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS SPIRV-Tools-link

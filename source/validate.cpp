@@ -230,14 +230,6 @@ UNUSED(void PrintDotGraph(ValidationState_t& _, libspirv::Function func)) {
     printf("}\n");
   }
 }
-}  // anonymous namespace
-
-spv_result_t spvValidate(const spv_const_context context,
-                         const spv_const_binary binary,
-                         spv_diagnostic* pDiagnostic) {
-  return spvValidateBinary(context, binary->code, binary->wordCount,
-                           pDiagnostic);
-}
 
 spv_result_t ValidateBinaryUsingContextAndValidationState(
     const spv_context_t& context, const uint32_t* words, const size_t num_words,
@@ -341,6 +333,14 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   return spvValidateIDs(instructions.data(), instructions.size(),
                         context.opcode_table, context.operand_table,
                         context.ext_inst_table, *vstate, &position);
+}
+}  // anonymous namespace
+
+spv_result_t spvValidate(const spv_const_context context,
+                         const spv_const_binary binary,
+                         spv_diagnostic* pDiagnostic) {
+  return spvValidateBinary(context, binary->code, binary->wordCount,
+                           pDiagnostic);
 }
 
 spv_result_t spvValidateBinary(const spv_const_context context,

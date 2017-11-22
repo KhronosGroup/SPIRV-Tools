@@ -26,6 +26,7 @@ if(SPIRV_BUILD_COMPRESSION)
     PUBLIC ${SPIRV_TOOLS})
 
   set_property(TARGET SPIRV-Tools-comp PROPERTY FOLDER "SPIRV-Tools libraries")
+  spvtools_check_symbol_exports(SPIRV-Tools-comp)
 
   if(ENABLE_SPIRV_TOOLS_INSTALL)
     install(TARGETS SPIRV-Tools-comp
