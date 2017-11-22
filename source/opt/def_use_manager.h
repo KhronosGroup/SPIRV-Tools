@@ -150,8 +150,6 @@ class DefUseManager {
 
   // Returns the map from ids to their def instructions.
   const IdToDefMap& id_to_defs() const { return id_to_def_; }
-  // Returns the map from ids to their uses in instructions.
-  //const IdToUsesMap& id_to_uses() const { return id_to_uses_; }
   // Returns the map from instructions to their users.
   const IdToUsersMap& id_to_users() const { return id_to_users_; }
 
@@ -173,6 +171,17 @@ class DefUseManager {
  private:
   using InstToUsedIdsMap =
       std::unordered_map<const ir::Instruction*, std::vector<uint32_t>>;
+
+  // Returns the first location that {|def|, nullptr} could be inserted into the
+  // users map with violating ordering.
+  IdToUsersMap::const_iterator UsersBegin(const ir::Instruction* def) const;
+
+  // Returns true if |iter| has not reached the end of |def|'s users.
+  bool UsersNotEnd(const IdToUsersMap::const_iterator& iter,
+                   const ir::Instruction* def) const;
+  bool UsersNotEnd(const IdToUsersMap::const_iterator& iter,
+                   const IdToUsersMap::const_iterator& cached_end,
+                   const ir::Instruction* def) const;
 
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.

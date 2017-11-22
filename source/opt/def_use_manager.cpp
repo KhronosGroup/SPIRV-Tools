@@ -78,14 +78,30 @@ const ir::Instruction* DefUseManager::GetDef(uint32_t id) const {
   return iter->second;
 }
 
+DefUseManager::IdToUsersMap::const_iterator DefUseManager::UsersBegin(
+    const ir::Instruction* def) const {
+  return id_to_users_.lower_bound(
+      UserEntry(const_cast<ir::Instruction*>(def), nullptr));
+}
+
+bool DefUseManager::UsersNotEnd(const IdToUsersMap::const_iterator& iter,
+                                const IdToUsersMap::const_iterator& cached_end,
+                                const ir::Instruction* inst) const {
+  return (iter != cached_end && iter->first == inst);
+}
+
+bool DefUseManager::UsersNotEnd(const IdToUsersMap::const_iterator& iter,
+                                const ir::Instruction* inst) const {
+  return UsersNotEnd(iter, id_to_users_.end(), inst);
+}
+
 void DefUseManager::ForEachUser(const ir::Instruction* def,
                                 const std::function<void(ir::Instruction*)>& f) const {
   // Ensure that |def| has been registered.
   assert(def && def == GetDef(def->result_id()) && "Definition is not registered.");
-  auto iter = id_to_users_.lower_bound(UserEntry(const_cast<ir::Instruction*>(def), nullptr));
-  while (iter != id_to_users_.end() && iter->first == def) {
+  auto end = id_to_users_.end();
+  for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     f(iter->second);
-    ++iter;
   }
 }
 
@@ -98,8 +114,8 @@ void DefUseManager::ForEachUse(const ir::Instruction* def,
                                const std::function<void(ir::Instruction*, uint32_t)>& f) const {
   // Ensure that |def| has been registered.
   assert(def && def == GetDef(def->result_id()) && "Definition is not registered.");
-  auto iter = id_to_users_.lower_bound(UserEntry(const_cast<ir::Instruction*>(def), nullptr));
-  while (iter != id_to_users_.end() && iter->first == def) {
+  auto end = id_to_users_.end();
+  for (auto iter = UsersBegin(def); UsersNotEnd(iter, end, def); ++iter) {
     ir::Instruction* user = iter->second;
     for (uint32_t idx = 0; idx != user->NumOperands(); ++idx) {
       const ir::Operand& op = user->GetOperand(idx);
@@ -116,7 +132,6 @@ void DefUseManager::ForEachUse(const ir::Instruction* def,
           break;
       }
     }
-    ++iter;
   }
 }
 
@@ -127,9 +142,10 @@ void DefUseManager::ForEachUse(uint32_t id,
 
 std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   std::vector<ir::Instruction*> annos;
-  if (!GetDef(id)) return annos;
+  const ir::Instruction* def = GetDef(id);
+  if (!def) return annos;
 
-  ForEachUser(id, [&annos](ir::Instruction* user) {
+  ForEachUser(def, [&annos](ir::Instruction* user) {
     if (ir::IsAnnotationInst(user->opcode())) {
       annos.push_back(user);
     }
@@ -152,13 +168,11 @@ void DefUseManager::ClearInst(ir::Instruction* inst) {
     EraseUseRecordsOfOperandIds(inst);
     if (inst->result_id() != 0) {
       // Remove all uses of this inst.
-      auto user_end = id_to_users_.end();
-      auto user_iter = id_to_users_.lower_bound(UserEntry(inst, nullptr));
-      while (user_iter != user_end && user_iter->first == inst) {
-        // Increment to next element before invalidating iterator.
-        auto use = user_iter++;
-        id_to_users_.erase(use);
-      }
+      auto users_begin = UsersBegin(inst);
+      auto end = id_to_users_.end();
+      auto new_end = users_begin;
+      for (; UsersNotEnd(new_end, end, inst); ++new_end) {}
+      id_to_users_.erase(users_begin, new_end);
       id_to_def_.erase(inst->result_id());
     }
   }
