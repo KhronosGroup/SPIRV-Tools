@@ -50,7 +50,9 @@ void DefUseManager::AnalyzeInstUse(ir::Instruction* inst) {
       case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
       case SPV_OPERAND_TYPE_SCOPE_ID: {
         uint32_t use_id = inst->GetSingleWordOperand(i);
-        id_to_users_.insert(UserEntry(GetDef(use_id), inst));
+        ir::Instruction* def = GetDef(use_id);
+        assert(def && "Definition is not registered.");
+        id_to_users_.insert(UserEntry(def, inst));
         inst_to_used_ids_[inst].push_back(use_id);
       } break;
       default:

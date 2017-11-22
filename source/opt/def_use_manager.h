@@ -58,16 +58,23 @@ using UserEntry = std::pair<ir::Instruction*, ir::Instruction*>;
 
 struct less_than_id_ptr {
   bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
-    if (!lhs.first)
+    if (!lhs.first && rhs.first)
       return true;
-    if (!rhs.first)
+    if (lhs.first && !rhs.first)
       return false;
 
-    if (lhs.first->unique_id() < rhs.first->unique_id())
-      return true;
-    if (rhs.first->unique_id() < lhs.first->unique_id())
-      return false;
+    // If lhs.first and rhs.first are both null, fall through to checking the
+    // second entries.
+    if (lhs.first && rhs.first) {
+      if (lhs.first->unique_id() < rhs.first->unique_id())
+        return true;
+      if (rhs.first->unique_id() < lhs.first->unique_id())
+        return false;
+    }
 
+    // Return false on equality
+    if (!lhs.second && !rhs.second)
+      return false;
     if (!lhs.second)
       return true;
     if (!rhs.second)
