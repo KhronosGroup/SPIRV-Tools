@@ -162,7 +162,7 @@ Linker::Linker(spv_target_env env) : impl_(new Impl(env)) {}
 Linker::~Linker() {}
 
 void Linker::SetMessageConsumer(MessageConsumer consumer) {
-  SetContextMessageConsumer(impl_->context, std::move(consumer));
+  libspirv::SetContextMessageConsumer(impl_->context, std::move(consumer));
 }
 
 spv_result_t Linker::Link(const std::vector<std::vector<uint32_t>>& binaries,

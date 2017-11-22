@@ -117,7 +117,7 @@ void UseDiagnosticAsMessageConsumer(spv_context context,
     spvDiagnosticDestroy(*diagnostic);  // Avoid memory leak.
     *diagnostic = spvDiagnosticCreate(&p, message);
   };
-  SetContextMessageConsumer(context, std::move(create_diagnostic));
+  libspirv::SetContextMessageConsumer(context, std::move(create_diagnostic));
 }
 
 std::string spvResultToString(spv_result_t res) {

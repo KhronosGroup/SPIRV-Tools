@@ -49,7 +49,7 @@ std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
                                         const uint32_t* binary,
                                         const size_t size) {
   auto context = spvContextCreate(env);
-  SetContextMessageConsumer(context, consumer);
+  libspirv::SetContextMessageConsumer(context, consumer);
 
   auto irContext = MakeUnique<ir::IRContext>(consumer);
   ir::IrLoader loader(consumer, irContext->module());

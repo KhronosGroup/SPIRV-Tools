@@ -35,7 +35,7 @@ SpirvTools::SpirvTools(spv_target_env env) : impl_(new Impl(env)) {}
 SpirvTools::~SpirvTools() {}
 
 void SpirvTools::SetMessageConsumer(MessageConsumer consumer) {
-  SetContextMessageConsumer(impl_->context, std::move(consumer));
+  libspirv::SetContextMessageConsumer(impl_->context, std::move(consumer));
 }
 
 bool SpirvTools::Assemble(const std::string& text,

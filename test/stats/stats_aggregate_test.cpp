@@ -22,6 +22,7 @@
 
 namespace {
 
+using libspirv::SetContextMessageConsumer;
 using libspirv::SpirvStats;
 using spvtest::ScopedContext;
 

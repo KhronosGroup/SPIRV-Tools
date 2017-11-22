@@ -48,7 +48,7 @@ spv_context spvContextCreate(spv_target_env env) {
 
 void spvContextDestroy(spv_context context) { delete context; }
 
-void SetContextMessageConsumer(spv_context context,
-                               spvtools::MessageConsumer consumer) {
+void libspirv::SetContextMessageConsumer(spv_context context,
+                                         spvtools::MessageConsumer consumer) {
   context->consumer = std::move(consumer);
 }
