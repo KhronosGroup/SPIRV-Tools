@@ -1981,60 +1981,6 @@ bool idUsage::isValid<OpTranspose>(const spv_instruction_t *inst,
 
 #if 0
 template <>
-bool idUsage::isValid<OpDPdx>(const spv_instruction_t *inst,
-                              const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpDPdy>(const spv_instruction_t *inst,
-                              const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpFWidth>(const spv_instruction_t *inst,
-                                const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpDPdxFine>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpDPdyFine>(const spv_instruction_t *inst,
-                                  const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpFwidthFine>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpDPdxCoarse>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpDPdyCoarse>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpFwidthCoarse>(const spv_instruction_t *inst,
-                                      const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
 bool idUsage::isValid<OpPhi>(const spv_instruction_t *inst,
                              const spv_opcode_desc opcodeEntry) {}
 #endif
@@ -2604,15 +2550,7 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     // Arithmetic opcodes are validated in validate_arithmetics.cpp.
     // Bitwise opcodes are validated in validate_bitwise.cpp.
     // Logical opcodes are validated in validate_logicals.cpp.
-    TODO(OpDPdx)
-    TODO(OpDPdy)
-    TODO(OpFwidth)
-    TODO(OpDPdxFine)
-    TODO(OpDPdyFine)
-    TODO(OpFwidthFine)
-    TODO(OpDPdxCoarse)
-    TODO(OpDPdyCoarse)
-    TODO(OpFwidthCoarse)
+    // Derivative opcodes are validated in validate_derivatives.cpp.
     TODO(OpPhi)
     TODO(OpLoopMerge)
     TODO(OpSelectionMerge)
