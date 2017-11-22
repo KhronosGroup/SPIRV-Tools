@@ -39,8 +39,7 @@ spv_result_t DerivativesPass(ValidationState_t& _,
     case SpvOpDPdxCoarse:
     case SpvOpDPdyCoarse:
     case SpvOpFwidthCoarse: {
-      if (!_.IsFloatScalarType(result_type) &&
-          !_.IsFloatVectorType(result_type)) {
+      if (!_.IsFloatScalarOrVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Expected Result Type to be float scalar or vector type: "
                << spvOpcodeString(opcode);
@@ -53,6 +52,8 @@ spv_result_t DerivativesPass(ValidationState_t& _,
                << spvOpcodeString(opcode);
       }
 
+      // All derivative opcodes require Fragment execution model.
+      // This needs to be checked elsewhere.
       break;
     }
 
