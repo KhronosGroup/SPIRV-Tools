@@ -600,6 +600,80 @@ spv_result_t ImagePass(ValidationState_t& _,
   }
 
   switch (opcode) {
+    case SpvOpTypeImage: {
+      assert(result_type == 0);
+
+      ImageTypeInfo info;
+      if (!GetImageTypeInfo(_, inst->words[1], &info)) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "OpTypeImage: corrupt definition";
+      }
+
+      const SpvOp sampled_type_opcode = _.GetIdOpcode(info.sampled_type);
+      if (sampled_type_opcode != SpvOpTypeVoid &&
+          sampled_type_opcode != SpvOpTypeInt &&
+          sampled_type_opcode != SpvOpTypeFloat) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Sampled Type to be either void or numerical scalar "
+            << "type: " << spvOpcodeString(opcode);
+      }
+
+      // Dim is checked elsewhere.
+
+      if (info.depth > 2) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Invalid Depth " << info.depth << " (must be 0, 1 or 2): "
+            << spvOpcodeString(opcode);
+      }
+
+      if (info.arrayed > 1) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Invalid Arrayed " << info.arrayed << " (must be 0 or 1): "
+            << spvOpcodeString(opcode);
+      }
+
+      if (info.multisampled > 1) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Invalid MS " << info.multisampled << " (must be 0 or 1): "
+            << spvOpcodeString(opcode);
+      }
+
+      if (info.sampled > 2) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Invalid Sampled " << info.sampled << " (must be 0, 1 or 2): "
+            << spvOpcodeString(opcode);
+      }
+
+      if (info.dim == SpvDimSubpassData) {
+        if (info.sampled != 2) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+              << "Dim SubpassData requires Sampled to be 2: "
+              << spvOpcodeString(opcode);
+        }
+
+        if (info.format != SpvImageFormatUnknown) {
+          return _.diag(SPV_ERROR_INVALID_DATA)
+              << "Dim SubpassData requires format Unknown: "
+              << spvOpcodeString(opcode);
+        }
+      }
+
+      // Format and Access Qualifier are checked elsewhere.
+
+      break;
+    }
+
+    case SpvOpTypeSampledImage: {
+      const uint32_t image_type = inst->words[2];
+      if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Image to be of type OpTypeImage: "
+            << spvOpcodeString(opcode);
+      }
+
+      break;
+    }
+
     case SpvOpSampledImage: {
       if (_.GetIdOpcode(result_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
@@ -988,6 +1062,13 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << "Corrupt image type definition";
+      }
+
+      if (info.dim == SpvDimSubpassData) {
+        _.current_function().RegisterExecutionModelLimitation(
+            SpvExecutionModelFragment,
+            std::string("Dim SubpassData requires Fragment execution model: ") +
+            spvOpcodeString(opcode));
       }
 
       if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
