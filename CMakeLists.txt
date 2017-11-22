@@ -48,6 +48,7 @@ else()
   message(FATAL_ERROR "Your platform '${CMAKE_SYSTEM_NAME}' is not supported!")
 endif()
 
+
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "No build type selected, default to Debug")
   set(CMAKE_BUILD_TYPE "Debug")
@@ -162,6 +163,17 @@ endif()
 
 find_host_package(PythonInterp)
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  macro(spvtools_check_symbol_exports TARGET)
+    add_test(NAME spirv-tools-symbol-exports-${TARGET}
+             COMMAND ${PYTHON_EXECUTABLE}
+             ${spirv-tools_SOURCE_DIR}/utils/check_symbol_exports.py "$<TARGET_FILE:${TARGET}>")
+  endmacro()
+else()
+  macro(spvtools_check_symbol_exports TARGET)
+    message("Skipping symbol exports test for ${TARGET}")
+  endmacro()
+endif()
 
 # Defaults to OFF if the user didn't set it.
 option(SPIRV_SKIP_EXECUTABLES
@@ -207,4 +219,4 @@ if (NOT "${SPIRV_SKIP_TESTS}")
   add_test(NAME spirv-tools-copyrights
            COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
- endif()
+endif()

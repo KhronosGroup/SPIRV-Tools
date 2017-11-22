@@ -296,6 +296,7 @@ target_include_directories(${SPIRV_TOOLS}
   PRIVATE ${SPIRV_HEADER_INCLUDE_DIR}
   )
 set_property(TARGET ${SPIRV_TOOLS} PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(${SPIRV_TOOLS})
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS ${SPIRV_TOOLS}
