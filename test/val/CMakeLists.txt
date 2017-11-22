@@ -98,6 +98,12 @@ add_spvtools_unittest(TARGET val_bitwise
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_image
+	SRCS val_image_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_limits
 	SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}
