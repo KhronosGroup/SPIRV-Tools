@@ -70,9 +70,9 @@ using UserEntry = std::pair<ir::Instruction*, ir::Instruction*>;
 // the minor key so that all the users of a particular definition are
 // consecutive in a container.
 //
-// A null user always compares less than a real user. This is done provide easy
-// values to search for the beginning of the users of a particular definition
-// (i.e. using {def, nullptr}).
+// A null user always compares less than a real user. This is done to provide
+// easy values to search for the beginning of the users of a particular
+// definition (i.e. using {def, nullptr}).
 struct UserEntryLess {
   bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
     // If lhs.first and rhs.first are both null, fall through to checking the
@@ -98,7 +98,7 @@ struct UserEntryLess {
     if (!rhs.second)
       return false;
 
-    // If neither user is null then compare unqiue ids.
+    // If neither user is null then compare unique ids.
     return lhs.second->unique_id() < rhs.second->unique_id();
   }
 };

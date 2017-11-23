@@ -69,20 +69,6 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
   });
 }
 
-bool AggressiveDCEPass::IsCombinator(uint32_t op) const {
-  return combinator_ops_shader_.find(op) != combinator_ops_shader_.end();
-}
-
-bool AggressiveDCEPass::IsCombinatorExt(ir::Instruction* inst) const {
-  assert(inst->opcode() == SpvOpExtInst);
-  if (inst->GetSingleWordInOperand(kExtInstSetIdInIndx) == glsl_std_450_id_) {
-    uint32_t op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
-    return combinator_ops_glsl_std_450_.find(op) !=
-           combinator_ops_glsl_std_450_.end();
-  } else
-    return false;
-}
-
 bool AggressiveDCEPass::AllExtensionsSupported() const {
   // If any extension not in whitelist, return false
   for (auto& ei : get_module()->extensions()) {
