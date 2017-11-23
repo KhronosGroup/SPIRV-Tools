@@ -119,17 +119,9 @@ void DefUseManager::ForEachUse(const ir::Instruction* def,
     ir::Instruction* user = iter->second;
     for (uint32_t idx = 0; idx != user->NumOperands(); ++idx) {
       const ir::Operand& op = user->GetOperand(idx);
-      switch (op.type) {
-        case SPV_OPERAND_TYPE_ID:
-        case SPV_OPERAND_TYPE_TYPE_ID:
-        case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
-        case SPV_OPERAND_TYPE_SCOPE_ID: {
-          if (def->result_id() == op.words[0])
-            f(user, idx);
-          break;
-        }
-        default:
-          break;
+      if (op.type != SPV_OPERAND_TYPE_RESULT_ID && spvIsIdType(op.type)) {
+        if (def->result_id() == op.words[0])
+          f(user, idx);
       }
     }
   }

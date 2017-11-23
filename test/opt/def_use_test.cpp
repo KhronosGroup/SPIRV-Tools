@@ -33,6 +33,7 @@ using ::testing::UnorderedElementsAreArray;
 using namespace spvtools;
 using spvtools::opt::analysis::DefUseManager;
 
+// Returns the number of uses of |id|.
 uint32_t NumUses(const std::unique_ptr<ir::IRContext> &context, uint32_t id) {
   uint32_t count = 0;
   context->get_def_use_mgr()->ForEachUse(id, [&count](ir::Instruction*, uint32_t) {
@@ -41,6 +42,10 @@ uint32_t NumUses(const std::unique_ptr<ir::IRContext> &context, uint32_t id) {
   return count;
 }
 
+// Returns the opcode of each use of |id|.
+//
+// If |id| is used multiple times in a single instruction, that instruction's
+// opcode will appear a corresponding number of times.
 std::vector<SpvOp> GetUseOpcodes(const std::unique_ptr<ir::IRContext> &context, uint32_t id) {
   std::vector<SpvOp> opcodes;
   context->get_def_use_mgr()->ForEachUse(id, [&opcodes](ir::Instruction* user, uint32_t) {
@@ -97,6 +102,9 @@ void CheckDef(const InstDefUse& expected_defs_uses,
 
 using UserMap = std::unordered_map<uint32_t, std::vector<ir::Instruction*>>;
 
+// Creates a mapping of all definitions to their users (except OpConstant).
+//
+// OpConstants are skipped because they cannot be disassembled in isolation.
 UserMap BuildAllUsers(const DefUseManager* mgr, uint32_t idBound) {
   UserMap userMap;
   for (uint32_t id = 0; id != idBound; ++id) {

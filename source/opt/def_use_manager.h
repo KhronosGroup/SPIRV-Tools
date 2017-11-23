@@ -54,17 +54,35 @@ inline bool operator<(const Use& lhs, const Use& rhs) {
   return lhs.operand_index < rhs.operand_index;
 }
 
+// Definition and user pair.
+//
+// The first element of the pair is the definition.
+// The second element of the pair is the user.
+//
+// Definition should never be null. User can be null, however, such an entry
+// should be used only for searching (e.g. all users of a particular definition)
+// and never stored in a container.
 using UserEntry = std::pair<ir::Instruction*, ir::Instruction*>;
 
-struct less_than_id_ptr {
+// Orders UserEntry for use in associative containers (i.e. less than ordering).
+//
+// The definition of an UserEntry is treated as the major key and the users as
+// the minor key so that all the users of a particular definition are
+// consecutive in a container.
+//
+// A null user always compares less than a real user. This is done provide easy
+// values to search for the beginning of the users of a particular definition
+// (i.e. using {def, nullptr}).
+struct UserEntryLess {
   bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
+    // If lhs.first and rhs.first are both null, fall through to checking the
+    // second entries.
     if (!lhs.first && rhs.first)
       return true;
     if (lhs.first && !rhs.first)
       return false;
 
-    // If lhs.first and rhs.first are both null, fall through to checking the
-    // second entries.
+    // If neither defintion is null, then compare unique ids.
     if (lhs.first && rhs.first) {
       if (lhs.first->unique_id() < rhs.first->unique_id())
         return true;
@@ -80,6 +98,7 @@ struct less_than_id_ptr {
     if (!rhs.second)
       return false;
 
+    // If neither user is null then compare unqiue ids.
     return lhs.second->unique_id() < rhs.second->unique_id();
   }
 };
@@ -88,7 +107,7 @@ struct less_than_id_ptr {
 class DefUseManager {
  public:
   using IdToDefMap = std::unordered_map<uint32_t, ir::Instruction*>;
-  using IdToUsersMap = std::set<UserEntry, less_than_id_ptr>;
+  using IdToUsersMap = std::set<UserEntry, UserEntryLess>;
 
   // Constructs a def-use manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|. This
@@ -105,6 +124,8 @@ class DefUseManager {
   void AnalyzeInstDef(ir::Instruction* inst);
 
   // Analyzes the uses in the given |inst|.
+  //
+  // All operands of |inst| must be analyzed as defs.
   void AnalyzeInstUse(ir::Instruction* inst);
 
   // Analyzes the defs and uses in the given |inst|.
@@ -173,10 +194,15 @@ class DefUseManager {
       std::unordered_map<const ir::Instruction*, std::vector<uint32_t>>;
 
   // Returns the first location that {|def|, nullptr} could be inserted into the
-  // users map with violating ordering.
+  // users map without violating ordering.
   IdToUsersMap::const_iterator UsersBegin(const ir::Instruction* def) const;
 
   // Returns true if |iter| has not reached the end of |def|'s users.
+  //
+  // In the first version |iter| is compared against the end of the map for
+  // validity before other checks. In the second version, |iter| is compared
+  // against |cached_end| for validity before other checks. This allows caching
+  // the map's end which is a performance improvement on some platforms.
   bool UsersNotEnd(const IdToUsersMap::const_iterator& iter,
                    const ir::Instruction* def) const;
   bool UsersNotEnd(const IdToUsersMap::const_iterator& iter,
