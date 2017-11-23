@@ -264,6 +264,13 @@ const Function& ValidationState_t::current_function() const {
   return module_functions_.back();
 }
 
+const Function* ValidationState_t::function(uint32_t id) const {
+  const auto it = id_to_function_.find(id);
+  if (it == id_to_function_.end())
+    return nullptr;
+  return it->second;
+}
+
 bool ValidationState_t::in_function_body() const { return in_function_; }
 
 bool ValidationState_t::in_block() const {
@@ -352,6 +359,7 @@ spv_result_t ValidationState_t::RegisterFunction(
   in_function_ = true;
   module_functions_.emplace_back(id, ret_type_id, function_control,
                                  function_type_id);
+  id_to_function_.emplace(id, &current_function());
 
   // TODO(umar): validate function type and type_id
 

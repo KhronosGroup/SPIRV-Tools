@@ -14,6 +14,7 @@
 
 // Tests for unique type declaration rules validator.
 
+#include <sstream>
 #include <string>
 
 #include "gmock/gmock.h"
@@ -29,21 +30,24 @@ using ValidateImage = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "") {
-  const std::string capabilities =
-R"(
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "Fragment") {
+  std::stringstream ss;
+  ss << R"(
 OpCapability Shader
 OpCapability InputAttachment
 OpCapability ImageGatherExtended
 OpCapability MinLod
 OpCapability Sampled1D
 OpCapability SampledRect
-OpCapability ImageQuery)";
+OpCapability ImageQuery
+)";
 
-  const std::string after_extension_before_body =
-R"(
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main"
+  ss << capabilities_and_extensions;
+  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+
+  ss << R"(
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -199,32 +203,34 @@ OpEntryPoint Fragment %main "main"
 %uniform_sampler = OpVariable %ptr_sampler UniformConstant
 
 %main = OpFunction %void None %func
-%main_entry = OpLabel)";
+%main_entry = OpLabel
+)";
 
-  const std::string after_body =
-R"(
+  ss << body;
+
+  ss << R"(
 OpReturn
 OpFunctionEnd)";
 
-  return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+  return ss.str();
 }
 
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
-  const std::string capabilities =
-R"(
+  std::stringstream ss;
+  ss << R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability Linkage
 OpCapability ImageQuery
 OpCapability ImageGatherExtended
 OpCapability InputAttachment
-OpCapability SampledRect)";
+OpCapability SampledRect
+)";
 
-  const std::string after_extension_before_body =
-R"(
+  ss << capabilities_and_extensions;
+  ss << R"(
 OpMemoryModel Physical32 OpenCL
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -293,15 +299,15 @@ OpMemoryModel Physical32 OpenCL
 %uniform_sampler = OpVariable %ptr_sampler UniformConstant
 
 %main = OpFunction %void None %func
-%main_entry = OpLabel)";
+%main_entry = OpLabel
+)";
 
-  const std::string after_body =
-R"(
+  ss << body;
+  ss << R"(
 OpReturn
 OpFunctionEnd)";
 
-  return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+  return ss.str();
 }
 
 TEST_F(ValidateImage, SampledImageSuccess) {
@@ -3035,6 +3041,53 @@ TEST_F(ValidateImage, QuerySamplesNotMultisampled) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Image 'MS' must be 1: ImageQuerySamples"));
+}
+
+TEST_F(ValidateImage, QueryLodWrongExecutionModel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageQueryLod %f32vec2 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "OpImageQueryLod requires Fragment execution model"));
+}
+
+TEST_F(ValidateImage, QueryLodWrongExecutionModelWithFunc) {
+  const std::string body = R"(
+%call_ret = OpFunctionCall %void %my_func
+OpReturn
+OpFunctionEnd
+%my_func = OpFunction %void None %func
+%my_func_entry = OpLabel
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageQueryLod %f32vec2 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "OpImageQueryLod requires Fragment execution model"));
+}
+
+TEST_F(ValidateImage, ImplicitLodWrongExecutionModel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "ImplicitLod instructions require Fragment execution model"));
 }
 
 }  // anonymous namespace

@@ -587,6 +587,12 @@ spv_result_t ImagePass(ValidationState_t& _,
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   const uint32_t result_type = inst->type_id;
 
+  if (IsImplicitLod(opcode)) {
+    _.current_function().RegisterExecutionModelLimitation(
+        SpvExecutionModelFragment,
+        "ImplicitLod instructions require Fragment execution model");
+  }
+
   switch (opcode) {
     case SpvOpSampledImage: {
       if (_.GetIdOpcode(result_type) != SpvOpTypeSampledImage) {
@@ -1276,6 +1282,10 @@ spv_result_t ImagePass(ValidationState_t& _,
     }
 
     case SpvOpImageQueryLod: {
+      _.current_function().RegisterExecutionModelLimitation(
+          SpvExecutionModelFragment,
+          "OpImageQueryLod requires Fragment execution model");
+
       if (!_.IsFloatVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Result Type to be float vector type: "

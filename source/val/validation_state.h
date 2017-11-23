@@ -140,6 +140,9 @@ class ValidationState_t {
   Function& current_function();
   const Function& current_function() const;
 
+  /// Returns function state with the given id, or nullptr if no such function.
+  const Function* function(uint32_t id) const;
+
   /// Returns true if the called after a function instruction but before the
   /// function end instruction
   bool in_function_body() const;
@@ -173,6 +176,7 @@ class ValidationState_t {
   /// Inserts an <id> to the set of functions that are target of OpFunctionCall.
   void AddFunctionCallTarget(const uint32_t id) {
     function_call_targets_.insert(id);
+    current_function().AddFunctionCallTarget(id);
   }
 
   /// Returns whether or not a function<id> is the target of OpFunctionCall.
@@ -433,7 +437,9 @@ class ValidationState_t {
   /// The section of the code being processed
   ModuleLayoutSection current_layout_section_;
 
-  /// A list of functions in the module
+  /// A list of functions in the module.
+  /// Pointers to objects in this container are guaranteed to be stable and
+  /// valid until the end of lifetime of the validation state.
   std::deque<Function> module_functions_;
 
   /// Capabilities declared in the module
@@ -443,6 +449,8 @@ class ValidationState_t {
   libspirv::ExtensionSet module_extensions_;
 
   /// List of all instructions in the order they appear in the binary
+  /// Pointers to objects in this container are guaranteed to be stable and
+  /// valid until the end of lifetime of the validation state.
   std::deque<Instruction> ordered_instructions_;
 
   /// Instructions that can be referenced by Ids
@@ -489,9 +497,12 @@ class ValidationState_t {
   /// NOTE: See correspoding getter functions
   bool in_function_;
 
-  // The state of optional features.  These are determined by capabilities
-  // declared by the module.
+  /// The state of optional features.  These are determined by capabilities
+  /// declared by the module.
   Feature features_;
+
+  /// Maps function ids to function stat objects.
+  std::unordered_map<uint32_t, Function*> id_to_function_;
 };
 
 }  /// namespace libspirv

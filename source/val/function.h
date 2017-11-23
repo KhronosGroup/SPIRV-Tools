@@ -17,6 +17,8 @@
 
 #include <functional>
 #include <list>
+#include <map>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -200,6 +202,30 @@ class Function {
   /// Prints a directed graph of the CFG of the current funciton
   void PrintBlocks() const;
 
+  /// Registers execution model limitation such as "Feature X is only available
+  /// with Execution Model Y". Only the first message per model type is
+  /// registered.
+  void RegisterExecutionModelLimitation(SpvExecutionModel model,
+                                        const std::string& message) {
+    execution_model_limitations_.emplace(model, message);
+  }
+
+  /// Returns true if the given execution model passes the limitations stored in
+  /// execution_model_limitations_. Returns false otherwise and fills optional
+  /// |reason| parameter.
+  bool IsCompatibleWithExecutionModel(SpvExecutionModel model,
+                                      std::string* reason = nullptr) const;
+
+  // Inserts id to the set of functions called from this function.
+  void AddFunctionCallTarget(uint32_t call_target_id) {
+    function_call_targets_.insert(call_target_id);
+  }
+
+  // Returns a set with ids of all functions called from this function.
+  const std::set<uint32_t> function_call_targets() const {
+    return function_call_targets_;
+  }
+
  private:
   // Computes the representation of the augmented CFG.
   // Populates augmented_successors_map_ and augmented_predecessors_map_.
@@ -310,6 +336,14 @@ class Function {
 
   /// Stores the control flow nesting depth of a given basic block
   std::unordered_map<BasicBlock*, int> block_depth_;
+
+  /// Stores execution model limitations imposed by instructions used within the
+  /// function. The string contains message explaining why the limitation was
+  /// imposed.
+  std::map<SpvExecutionModel, std::string> execution_model_limitations_;
+
+  /// Stores ids of all functions called from this function.
+  std::set<uint32_t> function_call_targets_;
 };
 
 }  /// namespace libspirv

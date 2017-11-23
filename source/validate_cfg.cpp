@@ -416,6 +416,11 @@ spv_result_t CfgPass(ValidationState_t& _,
     case SpvOpReturnValue:
     case SpvOpUnreachable:
       _.current_function().RegisterBlockEnd(vector<uint32_t>(), opcode);
+      if (opcode == SpvOpKill) {
+        _.current_function().RegisterExecutionModelLimitation(
+            SpvExecutionModelFragment,
+            "OpKill requires Fragment execution model");
+      }
       break;
     default:
       break;
