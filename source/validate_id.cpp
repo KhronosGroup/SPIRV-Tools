@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <stack>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -33,6 +34,7 @@
 #include "val/validation_state.h"
 
 using libspirv::Decoration;
+using libspirv::Function;
 using libspirv::ValidationState_t;
 using std::function;
 using std::ignore;
@@ -288,7 +290,7 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
     return false;
   }
   // don't check kernel function signatures
-  auto executionModel = inst->words[1];
+  const SpvExecutionModel executionModel = SpvExecutionModel(inst->words[1]);
   if (executionModel != SpvExecutionModelKernel) {
     // TODO: Check the entry point signature is void main(void), may be subject
     // to change
@@ -300,6 +302,31 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
       return false;
     }
   }
+
+  std::stack<uint32_t> call_stack;
+  call_stack.push(entryPoint->id());
+  while (!call_stack.empty()) {
+    const uint32_t called_func_id = call_stack.top();
+    call_stack.pop();
+
+    const Function* called_func = module_.function(called_func_id);
+    assert(called_func);
+
+    std::string reason;
+    if (!called_func->IsCompatibleWithExecutionModel(executionModel, &reason)) {
+      DIAG(entryPointIndex)
+          << "OpEntryPoint Entry Point <id> '" << inst->words[entryPointIndex]
+          << "'s callgraph contains function <id> " << called_func_id
+          << ", which cannot be used with the current execution model:\n"
+          << reason;
+      return false;
+    }
+
+    for (uint32_t new_call : called_func->function_call_targets()) {
+      call_stack.push(new_call);
+    }
+  }
+
   auto returnType = module_.FindDef(entryPoint->type_id());
   if (!returnType || SpvOpTypeVoid != returnType->opcode()) {
     DIAG(entryPointIndex) << "OpEntryPoint Entry Point <id> '"

@@ -17,6 +17,7 @@
 #include <cassert>
 
 #include <algorithm>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -346,6 +347,27 @@ int Function::GetBlockDepth(BasicBlock* bb) {
     block_depth_[bb] = GetBlockDepth(bb_dom);
   }
   return block_depth_[bb];
+}
+
+bool Function::IsCompatibleWithExecutionModel(SpvExecutionModel model,
+                                              std::string* reason) const {
+  bool is_compatible = true;
+  std::stringstream ss_reason;
+
+  for (const auto& kv : execution_model_limitations_) {
+    if (kv.first != model) {
+      if (!reason)
+        return false;
+      is_compatible = false;
+      ss_reason << kv.second << "\n";
+    }
+  }
+
+  if (!is_compatible && reason) {
+    *reason = ss_reason.str();
+  }
+
+  return is_compatible;
 }
 
 }  /// namespace libspirv
