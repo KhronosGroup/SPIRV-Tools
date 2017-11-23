@@ -304,10 +304,12 @@ bool idUsage::isValid<SpvOpEntryPoint>(const spv_instruction_t* inst,
   }
 
   std::stack<uint32_t> call_stack;
+  std::set<uint32_t> visited;
   call_stack.push(entryPoint->id());
   while (!call_stack.empty()) {
     const uint32_t called_func_id = call_stack.top();
     call_stack.pop();
+    if (!visited.insert(called_func_id).second) continue;
 
     const Function* called_func = module_.function(called_func_id);
     assert(called_func);

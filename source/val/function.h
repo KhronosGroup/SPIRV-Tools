@@ -217,8 +217,8 @@ class Function {
                                       std::string* reason = nullptr) const;
 
   // Inserts id to the set of functions called from this function.
-  void AddFunctionCallTarget(const uint32_t id) {
-    function_call_targets_.insert(id);
+  void AddFunctionCallTarget(uint32_t call_target_id) {
+    function_call_targets_.insert(call_target_id);
   }
 
   // Returns a set with ids of all functions called from this function.
