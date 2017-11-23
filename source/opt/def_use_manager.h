@@ -72,7 +72,7 @@ struct less_than_id_ptr {
         return false;
     }
 
-    // Return false on equality
+    // Return false on equality.
     if (!lhs.second && !rhs.second)
       return false;
     if (!lhs.second)
