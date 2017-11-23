@@ -656,6 +656,67 @@ OpFunctionEnd
       assembly, assembly, false, true);
 }
 
+TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {
+  // Based on HLSL source code:
+  // struct S {
+  //   float f;
+  // };
+
+  // float main(float input : A) : B {
+  //   S local = { input };
+  //   return local.f;
+  // }
+
+  const std::string predefs = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %in_var_A %out_var_B
+OpName %main "main"
+OpName %in_var_A "in.var.A"
+OpName %out_var_B "out.var.B"
+OpName %S "S"
+OpName %local "local"
+%int = OpTypeInt 32 1
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Output_float = OpTypePointer Output %float
+%S = OpTypeStruct %float
+%_ptr_Function_S = OpTypePointer Function %S
+%int_0 = OpConstant %int 0
+%in_var_A = OpVariable %_ptr_Input_float Input
+%out_var_B = OpVariable %_ptr_Output_float Output
+%main = OpFunction %void None %8
+%15 = OpLabel
+%local = OpVariable %_ptr_Function_S Function
+%16 = OpLoad %float %in_var_A
+%17 = OpCompositeConstruct %S %16
+OpStore %local %17
+)";
+
+  const std::string before =
+      R"(%18 = OpAccessChain %_ptr_Function_float %local %int_0
+%19 = OpAccessChain %_ptr_Function_float %local %int_0
+%20 = OpLoad %float %18
+OpStore %out_var_B %20
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(%19 = OpAccessChain %_ptr_Function_float %local %int_0
+%21 = OpLoad %S %local
+%22 = OpCompositeExtract %float %21 0
+OpStore %out_var_B %22
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
+      predefs + before, predefs + after, true, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Assorted vector and matrix types
