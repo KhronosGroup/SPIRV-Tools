@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2017.2-dev 2017-11-23
+ - Start v2017.2-dev
+
 v2017.1 2017-11-23
  - Update README with details on the public_spirv_tools_dev@khronos.org mailing list.
  - General:
