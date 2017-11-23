@@ -26,6 +26,7 @@
 
 namespace {
 
+using libspirv::SetContextMessageConsumer;
 using spvtools::MarkvModelType;
 using spvtest::ScopedContext;
 using MarkvTest = ::testing::TestWithParam<MarkvModelType>;
