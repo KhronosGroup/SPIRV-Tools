@@ -32,7 +32,17 @@ const uint32_t kStoreValIdInIdx = 1;
 bool LocalSingleStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
   analysis::UseList* uses = get_def_use_mgr()->GetUses(ptrId);
-  assert(uses != nullptr);
+
+  if (!uses) {
+    // This is a variable (or access chain to a variable) that has no uses.
+    // We won't encounter loads or stores for this <result-id> per se, but
+    // this <result-id> may be derived from some other variable (or access
+    // chain). Return true here can unblock the access chain conversion of
+    // the root variable. This particular <result-id> won't be touched and
+    // can be handled in dead code elimination.
+    return true;
+  }
+
   for (auto u : *uses) {
     SpvOp op = u.inst->opcode();
     if (IsNonPtrAccessChain(op) || op == SpvOpCopyObject) {
