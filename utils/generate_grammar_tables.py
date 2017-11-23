@@ -15,6 +15,7 @@
 """Generates various info tables from SPIR-V JSON grammar."""
 
 from __future__ import print_function
+from collections import OrderedDict
 
 import errno
 import json
@@ -682,7 +683,7 @@ def main():
 
     if args.spirv_core_grammar is not None:
         with open(args.spirv_core_grammar) as json_file:
-            grammar = json.loads(json_file.read())
+            grammar = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
             if args.core_insts_output is not None:
                 make_path_to_file(args.core_insts_output)
                 make_path_to_file(args.operand_kinds_output)
