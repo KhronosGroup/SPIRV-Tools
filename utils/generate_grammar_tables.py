@@ -502,12 +502,12 @@ def get_extension_list(operands):
     return sorted(set(extensions))
 
 
-def get_capabilities(operands):
-    """Returns capabilities as a list of JSON objects, in order of
-    appearance.
+def get_enumerants(operands, kind):
+    """Returns enums of given kind as a list of JSON objects, in
+    alphabetical order. Example: get_enumerants(operand, 'Capability').
     """
     enumerants = sum([item.get('enumerants', []) for item in operands
-                      if item.get('kind') in ['Capability']], [])
+                      if item.get('kind') in [kind]], [])
     return enumerants
 
 
@@ -574,23 +574,23 @@ def generate_string_to_extension_mapping(operands):
     return function
 
 
-def generate_capability_to_string_mapping(operands):
-    """Returns mapping function from capabilities to corresponding strings.
+def generate_enumerant_to_string_mapping(operands, kind):
+    """Returns mapping function from given kind of enumerant to corresponding strings.
     We take care to avoid emitting duplicate values.
     """
-    function = 'std::string CapabilityToString(SpvCapability capability) {\n'
-    function += '  switch (capability) {\n'
-    template = '    case SpvCapability{capability}:\n' \
-        '      return "{capability}";\n'
-    emitted = set()  # The values of capabilities we already have emitted
-    for capability in get_capabilities(operands):
-        value = capability.get('value')
+    function = 'std::string {kind}ToString(Spv{kind} value) {{\n'.format(kind=kind)
+    function += '  switch (value) {\n'
+    template = '    case Spv{kind}{name}:\n' \
+        '      return "{name}";\n'
+    emitted = set()  # The values we already have emitted
+    for enumerant in get_enumerants(operands, kind):
+        value = enumerant.get('value')
         if value not in emitted:
             emitted.add(value)
-            function += template.format(capability=capability.get('enumerant'))
-    function += '    case SpvCapabilityMax:\n' \
-        '      assert(0 && "Attempting to convert SpvCapabilityMax to string");\n' \
-        '      return "";\n'
+            function += template.format(kind=kind, name=enumerant.get('enumerant'))
+    function += '    case Spv{kind}Max:\n' \
+        '      assert(0 && "Attempting to convert Spv{kind}Max to string");\n' \
+        '      return "";\n'.format(kind=kind)
     function += '  };\n\n  return "";\n}'
     return function
 
@@ -600,7 +600,10 @@ def generate_all_string_enum_mappings(operands):
     tables = []
     tables.append(generate_extension_to_string_mapping(operands))
     tables.append(generate_string_to_extension_mapping(operands))
-    tables.append(generate_capability_to_string_mapping(operands))
+    kinds = [item.get('kind') for item in operands
+             if item.get('category') in ['ValueEnum']]
+    for kind in kinds:
+      tables.append(generate_enumerant_to_string_mapping(operands, kind))
     return '\n\n'.join(tables)
 
 

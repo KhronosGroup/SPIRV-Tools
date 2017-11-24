@@ -17,7 +17,9 @@
 
 #include <string>
 
-#include "spirv/1.1/spirv.h"
+// clang-format off
+#include "latest_spirv.h"
+// clang-format on
 
 #include "extensions.h"
 
@@ -29,8 +31,29 @@ bool GetExtensionFromString(const std::string& str, Extension* extension);
 // Returns text string corresponding to |extension|.
 std::string ExtensionToString(Extension extension);
 
-// Returns text string corresponding to |capability|.
-std::string CapabilityToString(SpvCapability capability);
+// Returns text string corresponding to the given enumerant.
+std::string SourceLanguageToString(SpvSourceLanguage);
+std::string ExecutionModelToString(SpvExecutionModel);
+std::string AddressingModelToString(SpvAddressingModel);
+std::string MemoryModelToString(SpvMemoryModel);
+std::string ExecutionModeToString(SpvExecutionMode);
+std::string StorageClassToString(SpvStorageClass);
+std::string DimToString(SpvDim);
+std::string SamplerAddressingModeToString(SpvSamplerAddressingMode);
+std::string SamplerFilterModeToString(SpvSamplerFilterMode);
+std::string ImageFormatToString(SpvImageFormat);
+std::string ImageChannelOrderToString(SpvImageChannelOrder);
+std::string ImageChannelDataTypeToString(SpvImageChannelDataType);
+std::string FPRoundingModeToString(SpvFPRoundingMode);
+std::string LinkageTypeToString(SpvLinkageType);
+std::string AccessQualifierToString(SpvAccessQualifier);
+std::string FunctionParameterAttributeToString(SpvFunctionParameterAttribute);
+std::string DecorationToString(SpvDecoration);
+std::string BuiltInToString(SpvBuiltIn);
+std::string ScopeToString(SpvScope);
+std::string GroupOperationToString(SpvGroupOperation);
+std::string KernelEnqueueFlagsToString(SpvKernelEnqueueFlags);
+std::string CapabilityToString(SpvCapability);
 
 }  // namespace libspirv
 
