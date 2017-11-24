@@ -52,8 +52,10 @@ spv_result_t DerivativesPass(ValidationState_t& _,
                << spvOpcodeString(opcode);
       }
 
-      // All derivative opcodes require Fragment execution model.
-      // This needs to be checked elsewhere.
+      _.current_function().RegisterExecutionModelLimitation(
+          SpvExecutionModelFragment, std::string(
+              "Derivative instructions require Fragment execution model: ") +
+          spvOpcodeString(opcode));
       break;
     }
 
