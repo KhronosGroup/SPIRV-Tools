@@ -15,7 +15,6 @@
 """Generates various info tables from SPIR-V JSON grammar."""
 
 from __future__ import print_function
-from collections import OrderedDict
 
 import errno
 import json
@@ -504,8 +503,8 @@ def get_extension_list(operands):
 
 
 def get_enumerants(operands, kind):
-    """Returns enums of given kind as a list of JSON objects, in order of
-    appearance. Example: get_enumerants(operand, 'Capability').
+    """Returns enums of given kind as a list of JSON objects, in
+    alphabetical order. Example: get_enumerants(operand, 'Capability').
     """
     enumerants = sum([item.get('enumerants', []) for item in operands
                       if item.get('kind') in [kind]], [])
@@ -683,7 +682,7 @@ def main():
 
     if args.spirv_core_grammar is not None:
         with open(args.spirv_core_grammar) as json_file:
-            grammar = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
+            grammar = json.loads(json_file.read())
             if args.core_insts_output is not None:
                 make_path_to_file(args.core_insts_output)
                 make_path_to_file(args.operand_kinds_output)
