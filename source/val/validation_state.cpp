@@ -292,6 +292,9 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
   }
 
   switch (cap) {
+    case SpvCapabilityKernel:
+      features_.group_ops_reduce_and_scans = true;
+      break;
     case SpvCapabilityInt16:
       features_.declare_int16_type = true;
       break;
@@ -323,6 +326,18 @@ void ValidationState_t::RegisterExtension(Extension ext) {
   if (module_extensions_.Contains(ext)) return;
 
   module_extensions_.Add(ext);
+
+  switch (ext) {
+    case kSPV_AMD_shader_ballot:
+      // The grammar doesn't encode the fact that SPV_AMD_shader_ballot
+      // enables the use of group operations Reduce, InclusiveScan,
+      // and ExclusiveScan.  Enable it manually.
+      // https://github.com/KhronosGroup/SPIRV-Tools/issues/991
+      features_.group_ops_reduce_and_scans = true;
+      break;
+    default:
+      break;
+  }
 }
 
 bool ValidationState_t::HasAnyOfCapabilities(
