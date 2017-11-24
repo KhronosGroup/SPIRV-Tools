@@ -2268,7 +2268,8 @@ TEST_F(ValidateImage, ReadNeedCapabilityImageCubeArray) {
       "ImageRead"));
 }
 
-TEST_F(ValidateImage, ReadWrongResultType) {
+// TODO(atgoo@github.com) Disabled until the spec is clarified.
+TEST_F(ValidateImage, DISABLED_ReadWrongResultType) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
 %res1 = OpImageRead %f32 %img %u32vec2_01
@@ -2281,7 +2282,8 @@ TEST_F(ValidateImage, ReadWrongResultType) {
       "Expected Result Type to be int or float vector type: ImageRead"));
 }
 
-TEST_F(ValidateImage, ReadWrongNumComponentsResultType) {
+// TODO(atgoo@github.com) Disabled until the spec is clarified.
+TEST_F(ValidateImage, DISABLED_ReadWrongNumComponentsResultType) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
 %res1 = OpImageRead %f32vec3 %img %u32vec2_01
