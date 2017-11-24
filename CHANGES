@@ -6,6 +6,7 @@ v2017.2-dev 2017-11-23
    #1004: Use after free of an instruction, in remove-duplicates transform
    #1007: OpImageRead not required to return 4-component vector
    #1009: OpImageRead can return scalar int/float types
+   #1011: OpImageRead should allow scalar int/float texel types
 
 v2017.1 2017-11-23
  - Update README with details on the public_spirv_tools_dev@khronos.org mailing list.
