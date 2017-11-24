@@ -58,6 +58,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateCapabilities(
       ++i;
     } else {
       // It's a duplicate, remove it.
+      irContext->KillInst(&*i);
       i = i.Erase();
       modified = true;
     }
@@ -82,6 +83,7 @@ bool RemoveDuplicatesPass::RemoveDuplicatesExtInstImports(
     } else {
       // It's a duplicate, remove it.
       irContext->ReplaceAllUsesWith(i->result_id(), res.first->second);
+      irContext->KillInst(&*i);
       i = i.Erase();
       modified = true;
     }
@@ -121,6 +123,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(ir::IRContext* irContext) const 
       // The same type has already been seen before, remove this one.
       irContext->ReplaceAllUsesWith(i->result_id(), idToKeep);
       modified = true;
+      irContext->KillInst(&*i);
       i = i.Erase();
     }
   }
