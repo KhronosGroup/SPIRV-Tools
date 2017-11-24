@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <sstream>
 #include <string>
 
 #include "gmock/gmock.h"
@@ -27,17 +28,19 @@ using ValidateDerivatives = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "") {
-  const std::string capabilities =
-R"(
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "Fragment") {
+  std::stringstream ss;
+  ss << R"(
 OpCapability Shader
-OpCapability DerivativeControl)";
+OpCapability DerivativeControl
+)";
 
-  const std::string after_extension_before_body =
-R"(
-%ext_inst = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main"
+  ss << capabilities_and_extensions;
+  ss << "OpMemoryModel Logical GLSL450\n";
+  ss << "OpEntryPoint " << execution_model << " %main \"main\"\n";
+
+  ss << R"(
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -53,15 +56,16 @@ OpEntryPoint Fragment %main "main"
 %f32vec4_var_input = OpVariable %f32vec4_ptr_input Input
 
 %main = OpFunction %void None %func
-%main_entry = OpLabel)";
+%main_entry = OpLabel
+)";
 
-  const std::string after_body =
-R"(
+  ss << body;
+
+  ss << R"(
 OpReturn
 OpFunctionEnd)";
 
-  return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+  return ss.str();
 }
 
 TEST_F(ValidateDerivatives, ScalarSuccess) {
@@ -124,6 +128,18 @@ TEST_F(ValidateDerivatives, OpDPdxWrongPType) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected P type and Result Type to be the same: "
       "DPdx"));
+}
+
+TEST_F(ValidateDerivatives, OpDPdxWrongExecutionModel) {
+  const std::string body = R"(
+%f32vec4_var = OpLoad %f32vec4 %f32vec4_var_input
+%val1 = OpDPdx %f32vec4 %f32vec4_var
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Derivative instructions require Fragment execution model: DPdx"));
 }
 
 }  // anonymous namespace
