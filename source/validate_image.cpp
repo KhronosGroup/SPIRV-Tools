@@ -948,18 +948,21 @@ spv_result_t ImagePass(ValidationState_t& _,
     }
 
     case SpvOpImageRead: {
-      if (!_.IsIntVectorType(result_type) &&
-          !_.IsFloatVectorType(result_type)) {
+      if (!_.IsIntScalarOrVectorType(result_type) &&
+          !_.IsFloatScalarOrVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float vector type: "
+            << "Expected Result Type to be int or float scalar or vector type: "
             << spvOpcodeString(opcode);
       }
 
+#if 0
+      // TODO(atgoo@github.com) Disabled until the spec is clarified.
       if (_.GetDimension(result_type) != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Result Type to have 4 components: "
             << spvOpcodeString(opcode);
       }
+#endif
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {

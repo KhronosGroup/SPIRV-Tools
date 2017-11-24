@@ -2262,6 +2262,8 @@ TEST_F(ValidateImage, ReadNeedCapabilityImageCubeArray) {
       "ImageRead"));
 }
 
+#if 0
+// TODO(atgoo@github.com) Disabled until the spec is clarified.
 TEST_F(ValidateImage, ReadWrongResultType) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0000 %uniform_image_u32_2d_0000
@@ -2287,6 +2289,7 @@ TEST_F(ValidateImage, ReadWrongNumComponentsResultType) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
       "Expected Result Type to have 4 components: ImageRead"));
 }
+#endif
 
 TEST_F(ValidateImage, ReadNotImage) {
   const std::string body = R"(
