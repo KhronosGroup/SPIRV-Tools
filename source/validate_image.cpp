@@ -1065,19 +1065,24 @@ spv_result_t ImagePass(ValidationState_t& _,
             << spvOpcodeString(opcode);
       }
 
+      // TODO(atgoo@github.com) The spec doesn't explicitely say what the type
+      // of texel should be.
       const uint32_t texel_type = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntVectorType(texel_type) &&
-          !_.IsFloatVectorType(texel_type)) {
+      if (!_.IsIntScalarOrVectorType(texel_type) &&
+          !_.IsFloatScalarOrVectorType(texel_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Texel to be int or float vector or scalar: "
             << spvOpcodeString(opcode);
       }
 
+#if 0
+      // TODO: See above.
       if (_.GetDimension(texel_type) != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA)
             << "Expected Texel to have 4 components: "
             << spvOpcodeString(opcode);
       }
+#endif
 
       if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
         const uint32_t texel_component_type = _.GetComponentType(texel_type);
