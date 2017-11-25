@@ -24,7 +24,11 @@ if (POLICY CMP0054)
 endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(spirv-tools)
+project(spirv-tools
+  VERSION
+    2017.2
+  DESCRIPTION
+    "Tools for SPIR-V")
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
@@ -219,4 +223,22 @@ if (NOT "${SPIRV_SKIP_TESTS}")
   add_test(NAME spirv-tools-copyrights
            COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+set(SPIRV_LIBRARIES "-lSPIRV-Tools -lSPIRV-Tools-link -lSPIRV-Tools-opt")
+if(SPIRV_BUILD_COMPRESSION)
+  set(SPIRV_LIBRARIES "${SPIRV_LIBRARIES} -lSPIRV-Tools-comp")
+endif(SPIRV_BUILD_COMPRESSION)
+
+
+# Build pkg-config file
+configure_file("./cmake/SPIRV-Tools.pc.in" "SPIRV-Tools.pc" @ONLY)
+
+# Install pkg-config file
+if (ENABLE_SPIRV_TOOLS_INSTALL)
+  install(
+    FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
+    DESTINATION
+      ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
