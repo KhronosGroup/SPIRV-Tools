@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "basic_block.h"
-#include "cfg.h"
 #include "def_use_manager.h"
 #include "ir_context.h"
 #include "module.h"
@@ -89,9 +88,8 @@ class Pass {
   // Returns a pointer to the current context for this pass.
   ir::IRContext* context() const { return context_; }
 
-  // Returns a pointer to the CFG for current module. TODO(dnovillo): This
-  // should belong in IRContext.
-  ir::CFG* cfg() const { return cfg_.get(); }
+  // Returns a pointer to the CFG for current module.
+  ir::CFG* cfg() const { return context()->cfg(); }
 
   // Add to |todo| all ids of functions called in |func|.
   void AddCalls(ir::Function* func, std::queue<uint32_t>* todo);
@@ -136,7 +134,6 @@ class Pass {
   virtual void InitializeProcessing(ir::IRContext* c) {
     context_ = c;
     next_id_ = context_->IdBound();
-    cfg_.reset(new ir::CFG(get_module()));
   }
 
   // Processes the given |module|. Returns Status::Failure if errors occur when
@@ -163,9 +160,6 @@ class Pass {
 
   // The context that this pass belongs to.
   ir::IRContext* context_;
-
-  // The CFG for all the functions in this module.
-  std::unique_ptr<ir::CFG> cfg_;
 };
 
 }  // namespace opt

@@ -31,6 +31,9 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisDecorations) {
     BuildDecorationManager();
   }
+  if (set & kAnalysisCFG) {
+    BuildCFG();
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -51,6 +54,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisCombinators) {
     combinator_ops_.clear();
+  }
+  if (analyses_to_invalidate & kAnalysisCFG) {
+    cfg_.reset(nullptr);
   }
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }

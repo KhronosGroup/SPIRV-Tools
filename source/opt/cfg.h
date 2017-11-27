@@ -40,9 +40,7 @@ class CFG {
   // |blk_id|.
   ir::BasicBlock* block(uint32_t blk_id) const { return id2block_.at(blk_id); }
 
-  // Return the pseudo entry and exit blocks. TODO(dnovillo): Remove when
-  // LocalSingleStoreElimPass::CalculateImmediateDominators() is moved into this
-  // class.
+  // Return the pseudo entry and exit blocks.
   const ir::BasicBlock* pseudo_entry_block() const {
     return &pseudo_entry_block_;
   }
@@ -91,10 +89,10 @@ class CFG {
       block2structured_succs_;
 
   // Extra block whose successors are all blocks with no predecessors
-  // in function. TODO(dnovillo): Needed?
+  // in function.
   ir::BasicBlock pseudo_entry_block_;
 
-  // Augmented CFG Exit Block. TODO(dnovillo): Needed?
+  // Augmented CFG Exit Block.
   ir::BasicBlock pseudo_exit_block_;
 
   // Map from block's label id to its predecessor blocks ids
