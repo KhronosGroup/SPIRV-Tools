@@ -614,47 +614,48 @@ spv_result_t ImagePass(ValidationState_t& _,
           sampled_type_opcode != SpvOpTypeInt &&
           sampled_type_opcode != SpvOpTypeFloat) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sampled Type to be either void or numerical scalar "
-            << "type: " << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": expected Sampled Type to be either void or numerical scalar "
+            << "type";
       }
 
       // Dim is checked elsewhere.
 
       if (info.depth > 2) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Invalid Depth " << info.depth << " (must be 0, 1 or 2): "
-            << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": invalid Depth " << info.depth << " (must be 0, 1 or 2)";
       }
 
       if (info.arrayed > 1) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Invalid Arrayed " << info.arrayed << " (must be 0 or 1): "
-            << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": invalid Arrayed " << info.arrayed << " (must be 0 or 1)";
       }
 
       if (info.multisampled > 1) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Invalid MS " << info.multisampled << " (must be 0 or 1): "
-            << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": invalid MS " << info.multisampled << " (must be 0 or 1)";
       }
 
       if (info.sampled > 2) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Invalid Sampled " << info.sampled << " (must be 0, 1 or 2): "
-            << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": invalid Sampled " << info.sampled << " (must be 0, 1 or 2)";
       }
 
       if (info.dim == SpvDimSubpassData) {
         if (info.sampled != 2) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Dim SubpassData requires Sampled to be 2: "
-              << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": Dim SubpassData requires Sampled to be 2";
         }
 
         if (info.format != SpvImageFormatUnknown) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Dim SubpassData requires format Unknown: "
-              << spvOpcodeString(opcode);
+              << spvOpcodeString(opcode)
+              << ": Dim SubpassData requires format Unknown";
         }
       }
 
@@ -667,8 +668,8 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t image_type = inst->words[2];
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+            << spvOpcodeString(opcode)
+            << ": expected Image to be of type OpTypeImage";
       }
 
       break;

@@ -32,7 +32,7 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "Fragment") {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << R"(
 OpCapability Shader
 OpCapability InputAttachment
@@ -213,7 +213,7 @@ OpFunctionEnd)";
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << R"(
 OpCapability Addresses
 OpCapability Kernel
@@ -307,7 +307,7 @@ OpFunctionEnd)";
 
 std::string GetShaderHeader(
     const std::string& capabilities_and_extensions = "") {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << R"(
 OpCapability Shader
 )";
@@ -336,8 +336,8 @@ TEST_F(ValidateImage, TypeImageWrongSampledType) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Sampled Type to be either void or numerical scalar type: "
-      "TypeImage"));
+      "TypeImage: expected Sampled Type to be either void or numerical scalar "
+      "type"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongDepth) {
@@ -348,7 +348,7 @@ TEST_F(ValidateImage, TypeImageWrongDepth) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Invalid Depth 3 (must be 0, 1 or 2): TypeImage"));
+      "TypeImage: invalid Depth 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongArrayed) {
@@ -359,7 +359,7 @@ TEST_F(ValidateImage, TypeImageWrongArrayed) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Invalid Arrayed 2 (must be 0 or 1): TypeImage"));
+      "TypeImage: invalid Arrayed 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongMS) {
@@ -370,7 +370,7 @@ TEST_F(ValidateImage, TypeImageWrongMS) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Invalid MS 2 (must be 0 or 1): TypeImage"));
+      "TypeImage: invalid MS 2 (must be 0 or 1)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampled) {
@@ -381,7 +381,7 @@ TEST_F(ValidateImage, TypeImageWrongSampled) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Invalid Sampled 3 (must be 0, 1 or 2): TypeImage"));
+      "TypeImage: invalid Sampled 3 (must be 0, 1 or 2)"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
@@ -393,7 +393,7 @@ TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Dim SubpassData requires Sampled to be 2: TypeImage"));
+      "TypeImage: Dim SubpassData requires Sampled to be 2"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
@@ -405,7 +405,7 @@ TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Dim SubpassData requires format Unknown: TypeImage"));
+      "TypeImage: Dim SubpassData requires format Unknown"));
 }
 
 TEST_F(ValidateImage, TypeSampledImageNotImage) {
@@ -416,7 +416,7 @@ TEST_F(ValidateImage, TypeSampledImageNotImage) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Image to be of type OpTypeImage: TypeSampledImage"));
+      "TypeSampledImage: expected Image to be of type OpTypeImage"));
 }
 
 TEST_F(ValidateImage, SampledImageSuccess) {
