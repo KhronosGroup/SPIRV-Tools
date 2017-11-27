@@ -35,6 +35,7 @@ See [README.md](https://github.com/KhronosGroup/SPIRV-Tools/blob/master/README.m
 
 
 
+*   Ensure the code follows the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).  Running `clang-format -style=file -i [modified-files]` can help.
 *   Create a pull request (PR) with your patch.
 *   Make sure the PR description clearly identified the problem, explains the solution, and references the issue if applicable.
 *   Watch the continuous builds to make sure they pass.
