@@ -15,7 +15,7 @@ When opening a new issue for a bug, make sure you provide the following:
 
 
 *   A clear and descriptive title.
-    *   We want a title that will make it easy for people to remember what the issue is about.  Simply using "Segfault in spir-opt" is not helpful because there could be (but hopefully aren't) multiple bugs with segmentation faults with different causes.
+    *   We want a title that will make it easy for people to remember what the issue is about.  Simply using "Segfault in spirv-opt" is not helpful because there could be (but hopefully aren't) multiple bugs with segmentation faults with different causes.
 *   A test case that exposes the bug, with the steps and commands to reproduce it.
     *   The easier it is for a developer to reproduce the problem, the quicker a fix can be found and verified.  It will also make it easier for someone to possibly realize the bug is related to another issue.
 
@@ -31,7 +31,7 @@ For feature requests, we use [issues](https://github.com/KhronosGroup/SPIRV-Tool
 
 Before we can use your code, you must sign the [Khronos Open Source Contributor License Agreement](https://cla-assistant.io/KhronosGroup/SPIRV-Tools) (CLA), which you can do online. The CLA is necessary mainly because you own the copyright to your changes, even after your contribution becomes part of our codebase, so we need your permission to use and distribute your code. We also need to be sure of various other things -- for instance that you'll tell us if you know that your code infringes on other people's patents. You don't have to sign the CLA until after you've submitted your code for review and a member has approved it, but you must do it before we can put your code into our codebase.
 
-See README.md for instruction on how to get, build, and test the source.  Once you have made your changes:
+See [README.md](https://github.com/KhronosGroup/SPIRV-Tools/blob/master/README.md) for instruction on how to get, build, and test the source.  Once you have made your changes:
 
 
 
@@ -73,7 +73,7 @@ When looking for functional problems, there are some common problems reviewers s
 
 ## For maintainers: Merging a PR
 
-We intend to maintain a linear history on the GitHub master branch, and the build and its tests should pass at each commit in that history.  A linear always-working history is easier understand and it easier to bisect in case we want to find which commit introduced a bug.
+We intend to maintain a linear history on the GitHub master branch, and the build and its tests should pass at each commit in that history.  A linear always-working history is easier to understand and to bisect in case we want to find which commit introduced a bug.
 
 These are the steps to follow to ensure this happens:
 
@@ -90,7 +90,9 @@ These are the steps to follow to ensure this happens:
 *   \<branch\> is the name of the branch that contains the PR
 *   It is assumed that upstream points to [git@github.com](mailto:git@github.com):KhronosGroup/SPIRV-Tools.git.  You can check this by doing
 
-    	`git remote -v`
+    ```
+    git remote -v
+    ```
 
 *   Make sure your local copy of the master branch is up to date:
 
@@ -101,18 +103,18 @@ These are the steps to follow to ensure this happens:
 *   Get a local copy of the branch containing the PR.
   
     ```
-	git remote add <userid> <url>
-	git fetch <userid> <branch>
-	git checkout <userid>/<branch>
-	git branch -D <branch> # if it already exists
-	git checkout -b <branch>  # assuming it does not collide.
+    git remote add <userid> <url>
+    git fetch <userid> <branch>
+    git checkout <userid>/<branch>
+    git branch -D <branch> # if it already exists
+    git checkout -b <branch>  # assuming it does not collide.
     ```
   
 *   Rebase the branch on top of the master branch.  If there are conflicts, send it back to the author and ask them to rebase.  During the interactive rebase be sure to squash all of the commits down to a single commit.
 
-	  ```
+    ```
     git branch -u master
-	  git rebase -i
+    git rebase -i
     ```
     
 *   **Build and test the branch.**
