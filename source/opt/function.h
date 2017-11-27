@@ -82,6 +82,8 @@ class Function {
 
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
+  const_iterator begin() const { return cbegin(); }
+  const_iterator end() const { return cend(); }
   const_iterator cbegin() const {
     return const_iterator(&blocks_, blocks_.cbegin());
   }

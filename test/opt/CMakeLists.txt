@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+add_subdirectory(DominatorTree)
+
 add_spvtools_unittest(TARGET instruction
   SRCS instruction_test.cpp
   LIBS SPIRV-Tools-opt

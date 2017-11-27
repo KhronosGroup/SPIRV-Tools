@@ -2,6 +2,8 @@ Revision history for SPIRV-Tools
 
 v2017.2-dev 2017-11-23
  - Start v2017.2-dev
+ - Optimizer:
+   - Adding dominance analysis
  - Fixes:
    #1004: Use after free of an instruction, in remove-duplicates transform
    #1007: OpImageRead not required to return 4-component vector

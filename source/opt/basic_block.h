@@ -81,6 +81,8 @@ class BasicBlock {
 
   iterator begin() { return insts_.begin(); }
   iterator end() { return insts_.end(); }
+  const_iterator begin() const { return insts_.cbegin(); }
+  const_iterator end() const { return insts_.cend(); }
   const_iterator cbegin() const { return insts_.cbegin(); }
   const_iterator cend() const { return insts_.cend(); }
 
@@ -96,6 +98,14 @@ class BasicBlock {
   const_iterator ctail() const {
     assert(!insts_.empty());
     return --insts_.cend();
+  }
+
+  // return if the basic block has at least one successor
+  inline bool hasSuccessor() const {
+    const auto br = &insts_.back();
+    return br->opcode() == SpvOpBranch ||
+           br->opcode() == SpvOpBranchConditional ||
+           br->opcode() == SpvOpSwitch;
   }
 
   // Runs the given function |f| on each instruction in this basic block, and
