@@ -224,6 +224,12 @@ Currently Effcee is an optional dependency, but soon it will be required.
 
 ## Build
 
+Instead of building manually, you can also download the binaries for your
+platform directly from the [master-tot release][master-tot-release] on GitHub.
+Those binaries are automatically uploaded by the buildbots after successful
+testing and they always reflect the current top of the tree of the master
+branch.
+
 The project uses [CMake][cmake] to generate platform-specific build
 configurations. Assume that `<spirv-dir>` is the root directory of the checked
 out code:
@@ -500,3 +506,4 @@ limitations under the License.
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
+[master-tot-release]: https://github.com/KhronosGroup/SPIRV-Tools/releases/tag/master-tot
