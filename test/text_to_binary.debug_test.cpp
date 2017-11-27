@@ -19,8 +19,8 @@
 
 #include <string>
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
+#include "test_fixture.h"
 
 namespace {
 

@@ -54,7 +54,7 @@ TEST_F(LocalRedundancyEliminationTest, RemoveRedundantAdd) {
                OpReturn
                OpFunctionEnd
   )";
-SinglePassRunAndMatch<opt::LocalRedundancyEliminationPass>(text);
+  SinglePassRunAndMatch<opt::LocalRedundancyEliminationPass>(text);
 }
 
 // Make sure we keep instruction that are different, but look similar.

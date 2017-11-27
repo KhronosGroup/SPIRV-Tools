@@ -27,8 +27,8 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
-using std::string;
 using std::pair;
+using std::string;
 using std::stringstream;
 
 using ValidateData = spvtest::ValidateBase<pair<string, bool>>;
@@ -231,9 +231,10 @@ TEST_F(ValidateData, int16_good) {
 }
 
 TEST_F(ValidateData, storage_uniform_buffer_block_16_good) {
-  string str = HeaderWith("StorageUniformBufferBlock16 "
-                          "OpExtension \"SPV_KHR_16bit_storage\"") +
-      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith(
+                   "StorageUniformBufferBlock16 "
+                   "OpExtension \"SPV_KHR_16bit_storage\"") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -247,17 +248,19 @@ TEST_F(ValidateData, storage_uniform_16_good) {
 }
 
 TEST_F(ValidateData, storage_push_constant_16_good) {
-  string str = HeaderWith("StoragePushConstant16 "
-                          "OpExtension \"SPV_KHR_16bit_storage\"") +
-      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith(
+                   "StoragePushConstant16 "
+                   "OpExtension \"SPV_KHR_16bit_storage\"") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, storage_input_output_16_good) {
-  string str = HeaderWith("StorageInputOutput16 "
-                          "OpExtension \"SPV_KHR_16bit_storage\"") +
-      "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
+  string str = HeaderWith(
+                   "StorageInputOutput16 "
+                   "OpExtension \"SPV_KHR_16bit_storage\"") +
+               "%2 = OpTypeInt 16 1 %3 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -568,7 +571,7 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
 }
 
 TEST_F(ValidateData, default_disallow_free_fp_rounding_mode) {
-    string str = R"(
+  string str = R"(
         OpCapability Shader
         OpCapability Linkage
         OpMemoryModel Logical GLSL450
@@ -576,11 +579,11 @@ TEST_F(ValidateData, default_disallow_free_fp_rounding_mode) {
         %1 = OpTypeFloat 32
         %2 = OpConstant %1 1.25
     )";
-    CompileSuccessfully(str.c_str());
-    ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("Operand 2 of Decorate requires one of these "
-                          "capabilities: Kernel"));
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 2 of Decorate requires one of these "
+                        "capabilities: Kernel"));
 }
 
 }  // anonymous namespace

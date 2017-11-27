@@ -15,8 +15,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "unit_spirv.h"
 #include "spirv/1.0/GLSL.std.450.h"
+#include "unit_spirv.h"
 
 namespace {
 

@@ -80,7 +80,9 @@ TEST(DiagnosticStream, ConversionToResultType) {
             spv_result_t(DiagnosticStream({}, nullptr, SPV_FAILED_MATCH)));
 }
 
-TEST(DiagnosticStream, MoveConstructorPreservesPreviousMessagesAndPreventsOutputFromExpiringValue) {
+TEST(
+    DiagnosticStream,
+    MoveConstructorPreservesPreviousMessagesAndPreventsOutputFromExpiringValue) {
   std::ostringstream messages;
   int message_count = 0;
   auto consumer = [&messages, &message_count](spv_message_level_t, const char*,

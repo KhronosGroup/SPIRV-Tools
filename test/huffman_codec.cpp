@@ -19,32 +19,20 @@
 #include <string>
 #include <unordered_map>
 
-#include "util/huffman_codec.h"
-#include "util/bit_stream.h"
 #include "gmock/gmock.h"
+#include "util/bit_stream.h"
+#include "util/huffman_codec.h"
 
 namespace {
 
-using spvutils::HuffmanCodec;
 using spvutils::BitsToStream;
+using spvutils::HuffmanCodec;
 
 const std::map<std::string, uint32_t>& GetTestSet() {
   static const std::map<std::string, uint32_t> hist = {
-    {"a", 4},
-    {"e", 7},
-    {"f", 3},
-    {"h", 2},
-    {"i", 3},
-    {"m", 2},
-    {"n", 2},
-    {"s", 2},
-    {"t", 2},
-    {"l", 1},
-    {"o", 2},
-    {"p", 1},
-    {"r", 1},
-    {"u", 1},
-    {"x", 1},
+      {"a", 4}, {"e", 7}, {"f", 3}, {"h", 2}, {"i", 3},
+      {"m", 2}, {"n", 2}, {"s", 2}, {"t", 2}, {"l", 1},
+      {"o", 2}, {"p", 1}, {"r", 1}, {"u", 1}, {"x", 1},
   };
 
   return hist;
@@ -72,6 +60,7 @@ TEST(Huffman, PrintTree) {
   std::stringstream ss;
   huffman.PrintTree(ss);
 
+  // clang-format off
   const std::string expected = std::string(R"(
 15-----7------e
        8------4------a
@@ -89,6 +78,7 @@ TEST(Huffman, PrintTree) {
                      3------1------x
                             2------h
 )").substr(1);
+  // clang-format on
 
   EXPECT_EQ(expected, ss.str());
 }
@@ -114,7 +104,8 @@ u 1 00110
 r 1 00111
 p 1 01000
 l 1 01001
-)").substr(1);
+)")
+                                   .substr(1);
 
   EXPECT_EQ(expected, ss.str());
 }
@@ -162,10 +153,14 @@ TEST(Huffman, TestEncode) {
 
 TEST(Huffman, TestDecode) {
   HuffmanCodec<std::string> huffman(GetTestSet());
-  TestBitReader bit_reader("01001""0001""1000""00110""00001""00");
-  auto read_bit = [&bit_reader](bool* bit) {
-    return bit_reader.ReadBit(bit);
-  };
+  TestBitReader bit_reader(
+      "01001"
+      "0001"
+      "1000"
+      "00110"
+      "00001"
+      "00");
+  auto read_bit = [&bit_reader](bool* bit) { return bit_reader.ReadBit(bit); };
 
   std::string decoded;
 
@@ -188,13 +183,17 @@ TEST(Huffman, TestDecode) {
 }
 
 TEST(Huffman, TestDecodeNumbers) {
-  const std::map<uint32_t, uint32_t> hist = { {1, 10}, {2, 5}, {3, 15} };
+  const std::map<uint32_t, uint32_t> hist = {{1, 10}, {2, 5}, {3, 15}};
   HuffmanCodec<uint32_t> huffman(hist);
 
-  TestBitReader bit_reader("1""1""01""00""01""1");
-  auto read_bit = [&bit_reader](bool* bit) {
-    return bit_reader.ReadBit(bit);
-  };
+  TestBitReader bit_reader(
+      "1"
+      "1"
+      "01"
+      "00"
+      "01"
+      "1");
+  auto read_bit = [&bit_reader](bool* bit) { return bit_reader.ReadBit(bit); };
 
   uint32_t decoded;
 
@@ -218,8 +217,7 @@ TEST(Huffman, TestDecodeNumbers) {
 }
 
 TEST(Huffman, SerializeToTextU64) {
-  const std::map<uint64_t, uint32_t> hist =
-  { {1001, 10}, {1002, 5}, {1003, 15} };
+  const std::map<uint64_t, uint32_t> hist = {{1001, 10}, {1002, 5}, {1003, 15}};
   HuffmanCodec<uint64_t> huffman(hist);
 
   const std::string code = huffman.SerializeToText(2);
@@ -233,13 +231,12 @@ TEST(Huffman, SerializeToTextU64) {
     {0, 4, 3},
   }))";
 
-
   ASSERT_EQ(expected, code);
 }
 
 TEST(Huffman, SerializeToTextString) {
-  const std::map<std::string, uint32_t> hist =
-  { {"aaa", 10}, {"bbb", 20}, {"ccc", 15} };
+  const std::map<std::string, uint32_t> hist = {
+      {"aaa", 10}, {"bbb", 20}, {"ccc", 15}};
   HuffmanCodec<std::string> huffman(hist);
 
   const std::string code = huffman.SerializeToText(4);
@@ -258,10 +255,10 @@ TEST(Huffman, SerializeToTextString) {
 
 TEST(Huffman, CreateFromTextString) {
   std::vector<HuffmanCodec<std::string>::Node> nodes = {
-    {},
-    {"root", 2, 3},
-    {"left", 0, 0},
-    {"right", 0, 0},
+      {},
+      {"root", 2, 3},
+      {"left", 0, 0},
+      {"right", 0, 0},
   };
 
   HuffmanCodec<std::string> huffman(1, std::move(nodes));
@@ -272,20 +269,21 @@ TEST(Huffman, CreateFromTextString) {
   const std::string expected = std::string(R"(
 0------right
 0------left
-)").substr(1);
+)")
+                                   .substr(1);
 
   EXPECT_EQ(expected, ss.str());
 }
 
 TEST(Huffman, CreateFromTextU64) {
   HuffmanCodec<uint64_t> huffman(5, {
-        {0, 0, 0},
-        {1001, 0, 0},
-        {1002, 0, 0},
-        {1003, 0, 0},
-        {0, 1, 2},
-        {0, 4, 3},
-      });
+                                        {0, 0, 0},
+                                        {1001, 0, 0},
+                                        {1002, 0, 0},
+                                        {1003, 0, 0},
+                                        {0, 1, 2},
+                                        {0, 4, 3},
+                                    });
 
   std::stringstream ss;
   huffman.PrintTree(ss);
@@ -294,14 +292,13 @@ TEST(Huffman, CreateFromTextU64) {
 0------1003
 0------0------1002
        0------1001
-)").substr(1);
+)")
+                                   .substr(1);
 
   EXPECT_EQ(expected, ss.str());
 
   TestBitReader bit_reader("01");
-  auto read_bit = [&bit_reader](bool* bit) {
-    return bit_reader.ReadBit(bit);
-  };
+  auto read_bit = [&bit_reader](bool* bit) { return bit_reader.ReadBit(bit); };
 
   uint64_t decoded = 0;
   ASSERT_TRUE(huffman.DecodeFromStream(read_bit, &decoded));

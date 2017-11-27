@@ -79,4 +79,4 @@ INSTANTIATE_TEST_CASE_P(
         CASE(DrefExplicitLod, "%float %img %coord %dref Lod %lod"),
     }), );
 #undef CASE
-}
+}  // namespace

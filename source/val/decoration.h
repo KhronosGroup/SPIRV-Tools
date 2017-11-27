@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "spirv/1.2/spirv.h"
+
 namespace libspirv {
 
 // An object of this class represents a specific decoration including its

@@ -168,5 +168,5 @@ Pass::Status UnifyConstantPass::Process(ir::IRContext* c) {
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-}  // opt
+}  // namespace opt
 }  // namespace spvtools

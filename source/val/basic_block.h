@@ -221,6 +221,6 @@ bool operator==(const BasicBlock::DominatorIterator& lhs,
 bool operator!=(const BasicBlock::DominatorIterator& lhs,
                 const BasicBlock::DominatorIterator& rhs);
 
-}  /// namespace libspirv
+}  // namespace libspirv
 
 #endif  /// LIBSPIRV_VAL_BASICBLOCK_H_

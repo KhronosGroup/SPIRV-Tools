@@ -23,16 +23,15 @@ using namespace spvtools;
 using LocalAccessChainConvertTest = PassTest<::testing::Test>;
 
 TEST_F(LocalAccessChainConvertTest, StructOfVecsOfFloatConverted) {
-
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  struct S_t {
   //      vec4 v0;
   //      vec4 v1;
   //  };
-  //  
+  //
   //  void main()
   //  {
   //      S_t s0;
@@ -131,16 +130,15 @@ OpFunctionEnd
 }
 
 TEST_F(LocalAccessChainConvertTest, InBoundsAccessChainsConverted) {
-
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  struct S_t {
   //      vec4 v0;
   //      vec4 v1;
   //  };
-  //  
+  //
   //  void main()
   //  {
   //      S_t s0;
@@ -239,16 +237,15 @@ OpFunctionEnd
 }
 
 TEST_F(LocalAccessChainConvertTest, TwoUsesofSingleChainConverted) {
-
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  struct S_t {
   //      vec4 v0;
   //      vec4 v1;
   //  };
-  //  
+  //
   //  void main()
   //  {
   //      S_t s0;
@@ -458,22 +455,20 @@ OpFunctionEnd
       predefs + before + remain, predefs + after + remain, true, true);
 }
 
-TEST_F(LocalAccessChainConvertTest, 
-       NestedStructsConverted) {
-
+TEST_F(LocalAccessChainConvertTest, NestedStructsConverted) {
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  struct S1_t {
   //      vec4 v1;
   //  };
-  //  
+  //
   //  struct S2_t {
   //      vec4 v2;
   //      S1_t s1;
   //  };
-  //  
+  //
   //  void main()
   //  {
   //      S2_t s2;
@@ -575,14 +570,12 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
-      predefs_before + before , predefs_after + after, true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
-TEST_F(LocalAccessChainConvertTest, 
-       DynamicallyIndexedVarNotConverted) {
-
+TEST_F(LocalAccessChainConvertTest, DynamicallyIndexedVarNotConverted) {
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
   //  flat in int Idx;
   //  in float Bi;
@@ -591,7 +584,7 @@ TEST_F(LocalAccessChainConvertTest,
   //      vec4 v0;
   //      vec4 v1;
   //  };
-  //  
+  //
   //  void main()
   //  {
   //      S_t s0;
@@ -652,8 +645,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(
-      assembly, assembly, false, true);
+  SinglePassRunAndCheck<opt::LocalAccessChainConvertPass>(assembly, assembly,
+                                                          false, true);
 }
 
 TEST_F(LocalAccessChainConvertTest, SomeAccessChainsHaveNoUse) {

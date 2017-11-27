@@ -147,8 +147,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, 
-      predefs_after + after, true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, MultipleLoads) {
@@ -278,8 +277,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, 
-      predefs_after + after, true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoStoreElimWithInterveningAccessChainLoad) {
@@ -380,8 +378,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalSingleStoreElimPass>(
-      predefs_before + before, 
-      predefs_after + after, true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(LocalSingleStoreElimTest, NoReplaceOfDominatingPartialStore) {

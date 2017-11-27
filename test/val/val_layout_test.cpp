@@ -28,16 +28,16 @@ using std::function;
 using std::ostream;
 using std::ostream_iterator;
 using std::pair;
-using std::stringstream;
 using std::string;
+using std::stringstream;
 using std::tie;
 using std::tuple;
 using std::vector;
 
+using libspirv::spvResultToString;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
-using libspirv::spvResultToString;
 
 using pred_type = function<spv_result_t(int)>;
 using ValidateLayout =
@@ -504,7 +504,8 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidIn10) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
   // In a 1.0 environment the binary parse fails before we even get to
   // validation.  This occurs no matter where the OpModuleProcessed is placed.
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Invalid opcode: 330"));
@@ -537,7 +538,8 @@ TEST_F(ValidateLayout, ModuleProcessedBeforeLastNameIsTooEarly) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   // By the mechanics of the validator, we assume ModuleProcessed is in the
   // right spot, but then that OpName is in the wrong spot.
   EXPECT_THAT(getDiagnosticString(),
@@ -555,9 +557,11 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidAfterFirstAnnotation) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedInvalidInFunctionBeforeLabel) {
@@ -575,9 +579,11 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInFunctionBeforeLabel) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
@@ -595,11 +601,12 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
 )";
 
   CompileSuccessfully(str, SPV_ENV_UNIVERSAL_1_1);
-  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
 }
-
 
 // TODO(umar): Test optional instructions
-}
+}  // namespace

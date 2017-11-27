@@ -20,8 +20,8 @@
 
 namespace {
 
-using libspirv::EnumSet;
 using libspirv::CapabilitySet;
+using libspirv::EnumSet;
 using spvtest::ElementsIn;
 using ::testing::Eq;
 using ::testing::ValuesIn;

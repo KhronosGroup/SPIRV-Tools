@@ -20,6 +20,7 @@ namespace {
 using BinaryVersion = spvtest::LinkerTest;
 
 TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
+  // clang-format off
   spvtest::Binaries binaries = {
       {
           SpvMagicNumber,
@@ -43,6 +44,7 @@ TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
           0u   // NOTE: Schema; reserved
       }
   };
+  // clang-format on
   spvtest::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));

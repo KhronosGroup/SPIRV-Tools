@@ -25,11 +25,11 @@
 #include "val/function.h"
 #include "val/validation_state.h"
 
-using libspirv::ValidationState_t;
-using libspirv::kLayoutMemoryModel;
+using libspirv::FunctionDecl;
 using libspirv::kLayoutFunctionDeclarations;
 using libspirv::kLayoutFunctionDefinitions;
-using libspirv::FunctionDecl;
+using libspirv::kLayoutMemoryModel;
+using libspirv::ValidationState_t;
 
 namespace {
 // Module scoped instructions are processed by determining if the opcode
@@ -170,7 +170,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}  /// namespace
+}  // namespace
 
 namespace libspirv {
 // TODO(umar): Check linkage capabilities for function declarations
@@ -204,4 +204,4 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _,
   }
   return SPV_SUCCESS;
 }
-}  /// namespace libspirv
+}  // namespace libspirv

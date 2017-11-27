@@ -14,8 +14,8 @@
 
 #include "dead_variable_elimination.h"
 
-#include "reflect.h"
 #include "ir_context.h"
+#include "reflect.h"
 
 namespace spvtools {
 namespace opt {

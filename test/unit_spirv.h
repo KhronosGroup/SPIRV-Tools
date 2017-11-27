@@ -22,8 +22,8 @@
 
 #include "source/assembly_grammar.h"
 #include "source/binary.h"
-#include "source/enum_set.h"
 #include "source/diagnostic.h"
+#include "source/enum_set.h"
 #include "source/opcode.h"
 #include "source/spirv_endian.h"
 #include "source/text.h"
@@ -42,7 +42,7 @@ std::string to_string(const T& val) {
   os << val;
   return os.str();
 }
-}
+}  // namespace std
 #endif
 
 // Determine endianness & predicate tests on it

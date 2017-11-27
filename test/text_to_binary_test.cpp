@@ -19,11 +19,11 @@
 
 #include "gmock/gmock.h"
 
-#include "test_fixture.h"
-#include "unit_spirv.h"
 #include "source/spirv_constant.h"
 #include "source/util/bitutils.h"
 #include "source/util/hex_float.h"
+#include "test_fixture.h"
+#include "unit_spirv.h"
 
 namespace {
 

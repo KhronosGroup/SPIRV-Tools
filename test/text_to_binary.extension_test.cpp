@@ -17,10 +17,10 @@
 
 #include "unit_spirv.h"
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
 #include "spirv/1.0/GLSL.std.450.h"
 #include "spirv/1.0/OpenCL.std.h"
+#include "test_fixture.h"
 
 namespace {
 
@@ -88,7 +88,6 @@ TEST_F(TextToBinaryTest, ExtInstFromTwoDifferentImports) {
   // Make sure it disassembles correctly.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(input), Eq(input));
 }
-
 
 // A test case for assembling into words in an instruction.
 struct AssemblyCase {
@@ -185,19 +184,19 @@ INSTANTIATE_TEST_CASE_P(
     SPV_KHR_subgroup_vote, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
-    Combine(
-        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-               SPV_ENV_VULKAN_1_0),
-        ValuesIn(std::vector<AssemblyCase>{
-            {"OpCapability SubgroupVoteKHR\n",
-             MakeInstruction(SpvOpCapability, {SpvCapabilitySubgroupVoteKHR})},
-            {"%2 = OpSubgroupAnyKHR %1 %3\n",
-             MakeInstruction(SpvOpSubgroupAnyKHR, {1, 2, 3})},
-            {"%2 = OpSubgroupAllKHR %1 %3\n",
-             MakeInstruction(SpvOpSubgroupAllKHR, {1, 2, 3})},
-            {"%2 = OpSubgroupAllEqualKHR %1 %3\n",
-             MakeInstruction(SpvOpSubgroupAllEqualKHR, {1, 2, 3})},
-        })), );
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+                   SPV_ENV_VULKAN_1_0),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpCapability SubgroupVoteKHR\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilitySubgroupVoteKHR})},
+                {"%2 = OpSubgroupAnyKHR %1 %3\n",
+                 MakeInstruction(SpvOpSubgroupAnyKHR, {1, 2, 3})},
+                {"%2 = OpSubgroupAllKHR %1 %3\n",
+                 MakeInstruction(SpvOpSubgroupAllKHR, {1, 2, 3})},
+                {"%2 = OpSubgroupAllEqualKHR %1 %3\n",
+                 MakeInstruction(SpvOpSubgroupAllEqualKHR, {1, 2, 3})},
+            })), );
 
 // SPV_KHR_16bit_storage
 
@@ -277,24 +276,26 @@ INSTANTIATE_TEST_CASE_P(
                                                  SpvBuiltInViewIndex})},
             })), );
 
-
 // SPV_AMD_shader_explicit_vertex_parameter
 
-#define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_shader_explicit_vertex_parameter\"\n"
+#define PREAMBLE \
+  "%1 = OpExtInstImport \"SPV_AMD_shader_explicit_vertex_parameter\"\n"
 INSTANTIATE_TEST_CASE_P(
     SPV_AMD_shader_explicit_vertex_parameter, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                   SPV_ENV_VULKAN_1_0),
-            ValuesIn(std::vector<AssemblyCase>{
-                {PREAMBLE "%3 = OpExtInst %2 %1 InterpolateAtVertexAMD %4 %5\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_explicit_vertex_parameter")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5})})},
-            })), );
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+               SPV_ENV_VULKAN_1_0),
+        ValuesIn(std::vector<AssemblyCase>{
+            {PREAMBLE "%3 = OpExtInst %2 %1 InterpolateAtVertexAMD %4 %5\n",
+             Concatenate(
+                 {MakeInstruction(
+                      SpvOpExtInstImport, {1},
+                      MakeVector("SPV_AMD_shader_explicit_vertex_parameter")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5})})},
+        })), );
 #undef PREAMBLE
-
 
 // SPV_AMD_shader_trinary_minmax
 
@@ -303,48 +304,57 @@ INSTANTIATE_TEST_CASE_P(
     SPV_AMD_shader_trinary_minmax, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                   SPV_ENV_VULKAN_1_0),
-            ValuesIn(std::vector<AssemblyCase>{
-                {PREAMBLE "%3 = OpExtInst %2 %1 FMin3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 UMin3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 2, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 SMin3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 3, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 FMax3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 4, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 UMax3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 5, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 SMax3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 6, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 FMid3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 7, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 UMid3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 8, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 SMid3AMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_trinary_minmax")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 9, 4, 5, 6})})},
-            })), );
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+               SPV_ENV_VULKAN_1_0),
+        ValuesIn(std::vector<AssemblyCase>{
+            {PREAMBLE "%3 = OpExtInst %2 %1 FMin3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 UMin3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 2, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 SMin3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 3, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 FMax3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 4, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 UMax3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 5, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 SMax3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 6, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 FMid3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 7, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 UMid3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 8, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 SMid3AMD %4 %5 %6\n",
+             Concatenate(
+                 {MakeInstruction(SpvOpExtInstImport, {1},
+                                  MakeVector("SPV_AMD_shader_trinary_minmax")),
+                  MakeInstruction(SpvOpExtInst, {2, 3, 1, 9, 4, 5, 6})})},
+        })), );
 #undef PREAMBLE
-
 
 // SPV_AMD_gcn_shader
 
@@ -371,7 +381,6 @@ INSTANTIATE_TEST_CASE_P(
             })), );
 #undef PREAMBLE
 
-
 // SPV_AMD_shader_ballot
 
 #define PREAMBLE "%1 = OpExtInstImport \"SPV_AMD_shader_ballot\"\n"
@@ -379,28 +388,30 @@ INSTANTIATE_TEST_CASE_P(
     SPV_AMD_shader_ballot, ExtensionRoundTripTest,
     // We'll get coverage over operand tables by trying the universal
     // environments, and at least one specific environment.
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                   SPV_ENV_VULKAN_1_0),
-            ValuesIn(std::vector<AssemblyCase>{
-                {PREAMBLE "%3 = OpExtInst %2 %1 SwizzleInvocationsAMD %4 %5\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_ballot")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 SwizzleInvocationsMaskedAMD %4 %5\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_ballot")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 2, 4, 5})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 WriteInvocationAMD %4 %5 %6\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_ballot")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 3, 4, 5, 6})})},
-                {PREAMBLE "%3 = OpExtInst %2 %1 MbcntAMD %4\n",
-                 Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
-                                              MakeVector("SPV_AMD_shader_ballot")),
-                              MakeInstruction(SpvOpExtInst, {2, 3, 1, 4, 4})})},
-            })), );
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
+               SPV_ENV_VULKAN_1_0),
+        ValuesIn(std::vector<AssemblyCase>{
+            {PREAMBLE "%3 = OpExtInst %2 %1 SwizzleInvocationsAMD %4 %5\n",
+             Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                          MakeVector("SPV_AMD_shader_ballot")),
+                          MakeInstruction(SpvOpExtInst, {2, 3, 1, 1, 4, 5})})},
+            {PREAMBLE
+             "%3 = OpExtInst %2 %1 SwizzleInvocationsMaskedAMD %4 %5\n",
+             Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                          MakeVector("SPV_AMD_shader_ballot")),
+                          MakeInstruction(SpvOpExtInst, {2, 3, 1, 2, 4, 5})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 WriteInvocationAMD %4 %5 %6\n",
+             Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                          MakeVector("SPV_AMD_shader_ballot")),
+                          MakeInstruction(SpvOpExtInst,
+                                          {2, 3, 1, 3, 4, 5, 6})})},
+            {PREAMBLE "%3 = OpExtInst %2 %1 MbcntAMD %4\n",
+             Concatenate({MakeInstruction(SpvOpExtInstImport, {1},
+                                          MakeVector("SPV_AMD_shader_ballot")),
+                          MakeInstruction(SpvOpExtInst, {2, 3, 1, 4, 4})})},
+        })), );
 #undef PREAMBLE
-
 
 // SPV_KHR_variable_pointers
 
@@ -415,9 +426,8 @@ INSTANTIATE_TEST_CASE_P(
                  MakeInstruction(SpvOpCapability,
                                  {SpvCapabilityVariablePointers})},
                 {"OpCapability VariablePointersStorageBuffer\n",
-                 MakeInstruction(
-                     SpvOpCapability,
-                     {SpvCapabilityVariablePointersStorageBuffer})},
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityVariablePointersStorageBuffer})},
             })), );
 
 }  // anonymous namespace

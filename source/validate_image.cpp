@@ -83,8 +83,7 @@ struct ImageTypeInfo {
 // (not a valid id, failed to parse the instruction, etc).
 bool GetImageTypeInfo(const ValidationState_t& _, uint32_t id,
                       ImageTypeInfo* info) {
-  if (!id || !info)
-    return false;
+  if (!id || !info) return false;
 
   const Instruction* inst = _.FindDef(id);
   assert(inst);
@@ -94,12 +93,10 @@ bool GetImageTypeInfo(const ValidationState_t& _, uint32_t id,
     assert(inst);
   }
 
-  if (inst->opcode() != SpvOpTypeImage)
-    return false;
+  if (inst->opcode() != SpvOpTypeImage) return false;
 
   const size_t num_words = inst->words().size();
-  if (num_words != 9 && num_words != 10)
-    return false;
+  if (num_words != 9 && num_words != 10) return false;
 
   info->sampled_type = inst->word(2);
   info->dim = static_cast<SpvDim>(inst->word(3));
@@ -108,8 +105,9 @@ bool GetImageTypeInfo(const ValidationState_t& _, uint32_t id,
   info->multisampled = inst->word(6);
   info->sampled = inst->word(7);
   info->format = static_cast<SpvImageFormat>(inst->word(8));
-  info->access_qualifier = num_words < 10 ? SpvAccessQualifierMax :
-      static_cast<SpvAccessQualifier>(inst->word(9));
+  info->access_qualifier = num_words < 10
+                               ? SpvAccessQualifierMax
+                               : static_cast<SpvAccessQualifier>(inst->word(9));
   return true;
 }
 
@@ -209,8 +207,8 @@ uint32_t GetMinCoordSize(SpvOp opcode, const ImageTypeInfo& info) {
 // Checks ImageOperand bitfield and respective operands.
 spv_result_t ValidateImageOperands(ValidationState_t& _,
                                    const spv_parsed_instruction_t& inst,
-                                   const ImageTypeInfo& info,
-                                   uint32_t mask, uint32_t word_index) {
+                                   const ImageTypeInfo& info, uint32_t mask,
+                                   uint32_t word_index) {
   static const bool kAllImageOperandsHandled = CheckAllImageOperandsHandled();
   (void)kAllImageOperandsHandled;
 
@@ -225,16 +223,16 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
   if (expected_num_image_operand_words != num_words - word_index) {
     return _.diag(SPV_ERROR_INVALID_DATA)
-        << "Number of image operand ids doesn't correspond to the bit mask: "
-        << spvOpcodeString(opcode);
+           << "Number of image operand ids doesn't correspond to the bit mask: "
+           << spvOpcodeString(opcode);
   }
 
   if (CountSetBits(mask & (SpvImageOperandsOffsetMask |
                            SpvImageOperandsConstOffsetMask |
                            SpvImageOperandsConstOffsetsMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA)
-        << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
-        << "together: " << spvOpcodeString(opcode);
+           << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
+           << "together: " << spvOpcodeString(opcode);
   };
 
   const bool is_implicit_lod = IsImplicitLod(opcode);
@@ -244,29 +242,30 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
   if (mask & SpvImageOperandsBiasMask) {
     if (!is_implicit_lod) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image Operand Bias can only be used with ImplicitLod opcodes: "
-            << spvOpcodeString(opcode);
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Image Operand Bias can only be used with ImplicitLod opcodes: "
+             << spvOpcodeString(opcode);
     };
 
     const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
     if (!_.IsFloatScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Bias to be float scalar: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Bias to be float scalar: "
+             << spvOpcodeString(opcode);
     }
 
     if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
         info.dim != SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Bias requires 'Dim' parameter to be 1D, 2D, 3D or "
-          << "Cube: " << spvOpcodeString(opcode);
+             << "Image Operand Bias requires 'Dim' parameter to be 1D, 2D, 3D "
+                "or "
+             << "Cube: " << spvOpcodeString(opcode);
     }
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Bias requires 'MS' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Operand Bias requires 'MS' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
   }
 
@@ -274,15 +273,16 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     // TODO(atgoo@github.com) Check which opcodes are allowed to use this
     // ImageOperand.
     if (is_implicit_lod) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image Operand Lod cannot be used with ImplicitLod opcodes: "
-            << spvOpcodeString(opcode);
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Image Operand Lod cannot be used with ImplicitLod opcodes: "
+             << spvOpcodeString(opcode);
     };
 
     if (mask & SpvImageOperandsGradMask) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand bits Lod and Grad cannot be set at the same time: "
-          << spvOpcodeString(opcode);
+             << "Image Operand bits Lod and Grad cannot be set at the same "
+                "time: "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
@@ -290,29 +290,30 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     // with ints. The spec is unclear.
     if (!_.IsFloatScalarType(type_id) && !_.IsIntScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Lod to be int or float scalar: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Lod to be int or float scalar: "
+             << spvOpcodeString(opcode);
     }
 
     if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
         info.dim != SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Lod requires 'Dim' parameter to be 1D, 2D, 3D or "
-          << "Cube: " << spvOpcodeString(opcode);
+             << "Image Operand Lod requires 'Dim' parameter to be 1D, 2D, 3D "
+                "or "
+             << "Cube: " << spvOpcodeString(opcode);
     }
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Lod requires 'MS' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Operand Lod requires 'MS' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
   }
 
   if (mask & SpvImageOperandsGradMask) {
     if (!is_explicit_lod) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image Operand Grad can only be used with ExplicitLod opcodes: "
-            << spvOpcodeString(opcode);
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Image Operand Grad can only be used with ExplicitLod opcodes: "
+             << spvOpcodeString(opcode);
     };
 
     const uint32_t dx_type_id = _.GetTypeId(inst.words[word_index++]);
@@ -320,8 +321,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     if (!_.IsFloatScalarOrVectorType(dx_type_id) ||
         !_.IsFloatScalarOrVectorType(dy_type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected both Image Operand Grad ids to be float scalars or "
-          << "vectors: " << spvOpcodeString(opcode);
+             << "Expected both Image Operand Grad ids to be float scalars or "
+             << "vectors: " << spvOpcodeString(opcode);
     }
 
     const uint32_t plane_size = GetPlaneCoordSize(info);
@@ -329,92 +330,95 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     const uint32_t dy_size = _.GetDimension(dy_type_id);
     if (plane_size != dx_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Grad dx to have " << plane_size
-          << " components, but given " << dx_size << ": "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Grad dx to have " << plane_size
+             << " components, but given " << dx_size << ": "
+             << spvOpcodeString(opcode);
     }
 
     if (plane_size != dy_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Grad dy to have " << plane_size
-          << " components, but given " << dy_size << ": "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Grad dy to have " << plane_size
+             << " components, but given " << dy_size << ": "
+             << spvOpcodeString(opcode);
     }
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Grad requires 'MS' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Operand Grad requires 'MS' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
   }
 
   if (mask & SpvImageOperandsConstOffsetMask) {
     if (info.dim == SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand ConstOffset cannot be used with Cube Image 'Dim': "
-          << spvOpcodeString(opcode);
+             << "Image Operand ConstOffset cannot be used with Cube Image "
+                "'Dim': "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t id = inst.words[word_index++];
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffset to be int scalar or "
-          << "vector: " << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffset to be int scalar or "
+             << "vector: " << spvOpcodeString(opcode);
     }
 
     if (!spvOpcodeIsConstant(_.GetIdOpcode(id))) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffset to be a const object: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffset to be a const object: "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t plane_size = GetPlaneCoordSize(info);
     const uint32_t offset_size = _.GetDimension(type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffset to have " << plane_size
-          << " components, but given " << offset_size << ": "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffset to have " << plane_size
+             << " components, but given " << offset_size << ": "
+             << spvOpcodeString(opcode);
     }
   }
 
   if (mask & SpvImageOperandsOffsetMask) {
     if (info.dim == SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Offset cannot be used with Cube Image 'Dim': "
-          << spvOpcodeString(opcode);
+             << "Image Operand Offset cannot be used with Cube Image 'Dim': "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t id = inst.words[word_index++];
     const uint32_t type_id = _.GetTypeId(id);
     if (!_.IsIntScalarOrVectorType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Offset to be int scalar or "
-          << "vector: " << spvOpcodeString(opcode);
+             << "Expected Image Operand Offset to be int scalar or "
+             << "vector: " << spvOpcodeString(opcode);
     }
 
     const uint32_t plane_size = GetPlaneCoordSize(info);
     const uint32_t offset_size = _.GetDimension(type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Offset to have " << plane_size
-          << " components, but given " << offset_size << ": "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Offset to have " << plane_size
+             << " components, but given " << offset_size << ": "
+             << spvOpcodeString(opcode);
     }
   }
 
   if (mask & SpvImageOperandsConstOffsetsMask) {
     if (opcode != SpvOpImageGather && opcode != SpvOpImageDrefGather) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand ConstOffsets can only be used with OpImageGather "
-          << "and OpImageDrefGather: " << spvOpcodeString(opcode);
+             << "Image Operand ConstOffsets can only be used with "
+                "OpImageGather "
+             << "and OpImageDrefGather: " << spvOpcodeString(opcode);
     }
 
     if (info.dim == SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand ConstOffsets cannot be used with Cube Image 'Dim': "
-          << spvOpcodeString(opcode);
+             << "Image Operand ConstOffsets cannot be used with Cube Image "
+                "'Dim': "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t id = inst.words[word_index++];
@@ -424,8 +428,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
     if (type_inst->opcode() != SpvOpTypeArray) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffsets to be an array of size 4: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffsets to be an array of size 4: "
+             << spvOpcodeString(opcode);
     }
 
     uint64_t array_size = 0;
@@ -435,22 +439,23 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
     if (array_size != 4) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffsets to be an array of size 4: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffsets to be an array of size 4: "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t component_type = type_inst->word(2);
     if (!_.IsIntVectorType(component_type) ||
         _.GetDimension(component_type) != 2) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffsets array componenets to be int "
-          << "vectors of size 2: " << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffsets array componenets to be "
+                "int "
+             << "vectors of size 2: " << spvOpcodeString(opcode);
     }
 
     if (!spvOpcodeIsConstant(_.GetIdOpcode(id))) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand ConstOffsets to be a const object: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand ConstOffsets to be a const object: "
+             << spvOpcodeString(opcode);
     }
   }
 
@@ -458,50 +463,51 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     if (opcode != SpvOpImageFetch && opcode != SpvOpImageRead &&
         opcode != SpvOpImageWrite) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Sample can only be used with OpImageFetch, "
-          << "OpImageRead and OpImageWrite: " << spvOpcodeString(opcode);
+             << "Image Operand Sample can only be used with OpImageFetch, "
+             << "OpImageRead and OpImageWrite: " << spvOpcodeString(opcode);
     }
 
     if (info.multisampled == 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand Sample requires non-zero 'MS' parameter: "
-          << spvOpcodeString(opcode);
+             << "Image Operand Sample requires non-zero 'MS' parameter: "
+             << spvOpcodeString(opcode);
     }
 
     const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
     if (!_.IsIntScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand Sample to be int scalar: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand Sample to be int scalar: "
+             << spvOpcodeString(opcode);
     }
   }
 
   if (mask & SpvImageOperandsMinLodMask) {
     if (!is_implicit_lod && !(mask & SpvImageOperandsGradMask)) {
-        return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image Operand MinLod can only be used with ImplicitLod "
-            << "opcodes or together with Image Operand Grad: "
-            << spvOpcodeString(opcode);
+      return _.diag(SPV_ERROR_INVALID_DATA)
+             << "Image Operand MinLod can only be used with ImplicitLod "
+             << "opcodes or together with Image Operand Grad: "
+             << spvOpcodeString(opcode);
     };
 
     const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
     if (!_.IsFloatScalarType(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image Operand MinLod to be float scalar: "
-          << spvOpcodeString(opcode);
+             << "Expected Image Operand MinLod to be float scalar: "
+             << spvOpcodeString(opcode);
     }
 
     if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
         info.dim != SpvDimCube) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand MinLod requires 'Dim' parameter to be 1D, 2D, 3D "
-          << "or Cube: " << spvOpcodeString(opcode);
+             << "Image Operand MinLod requires 'Dim' parameter to be 1D, 2D, "
+                "3D "
+             << "or Cube: " << spvOpcodeString(opcode);
     }
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Operand MinLod requires 'MS' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Operand MinLod requires 'MS' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
   }
 
@@ -514,23 +520,23 @@ spv_result_t ValidateImageCommon(ValidationState_t& _,
                                  const ImageTypeInfo& info) {
   const SpvOp opcode = static_cast<SpvOp>(inst.opcode);
   if (IsProj(opcode)) {
-    if (info.dim != SpvDim1D && info.dim != SpvDim2D &&
-        info.dim != SpvDim3D && info.dim != SpvDimRect) {
+    if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
+        info.dim != SpvDimRect) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image 'Dim' parameter to be 1D, 2D, 3D or Rect: "
-          << spvOpcodeString(opcode);
+             << "Expected Image 'Dim' parameter to be 1D, 2D, 3D or Rect: "
+             << spvOpcodeString(opcode);
     }
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Image 'MS' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Image 'MS' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
 
     if (info.arrayed != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Image Image 'arrayed' parameter to be 0: "
-          << spvOpcodeString(opcode);
+             << "Image Image 'arrayed' parameter to be 0: "
+             << spvOpcodeString(opcode);
     }
   }
 
@@ -539,23 +545,23 @@ spv_result_t ValidateImageCommon(ValidationState_t& _,
     } else if (info.sampled == 2) {
       if (info.dim == SpvDim1D && !_.HasCapability(SpvCapabilityImage1D)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability Image1D is required to access storage image: "
-            << spvOpcodeString(opcode);
+               << "Capability Image1D is required to access storage image: "
+               << spvOpcodeString(opcode);
       } else if (info.dim == SpvDimRect &&
                  !_.HasCapability(SpvCapabilityImageRect)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability ImageRect is required to access storage image: "
-            << spvOpcodeString(opcode);
+               << "Capability ImageRect is required to access storage image: "
+               << spvOpcodeString(opcode);
       } else if (info.dim == SpvDimBuffer &&
                  !_.HasCapability(SpvCapabilityImageBuffer)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability ImageBuffer is required to access storage image: "
-            << spvOpcodeString(opcode);
+               << "Capability ImageBuffer is required to access storage image: "
+               << spvOpcodeString(opcode);
       } else if (info.dim == SpvDimCube && info.arrayed == 1 &&
                  !_.HasCapability(SpvCapabilityImageCubeArray)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability ImageCubeArray is required to access storage "
-            << "image: " << spvOpcodeString(opcode);
+               << "Capability ImageCubeArray is required to access storage "
+               << "image: " << spvOpcodeString(opcode);
       }
 
       if (info.multisampled == 1 &&
@@ -571,8 +577,8 @@ spv_result_t ValidateImageCommon(ValidationState_t& _,
       }
     } else {
       return _.diag(SPV_ERROR_INVALID_DATA)
-          << "Expected Image 'Sampled' parameter to be 0 or 2: "
-          << spvOpcodeString(opcode);
+             << "Expected Image 'Sampled' parameter to be 0 or 2: "
+             << spvOpcodeString(opcode);
     }
   }
 
@@ -597,21 +603,21 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpSampledImage: {
       if (_.GetIdOpcode(result_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be OpTypeSampledImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be OpTypeSampledImage: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       // TODO(atgoo@github.com) Check compatibility of result type and received
@@ -619,20 +625,20 @@ spv_result_t ImagePass(ValidationState_t& _,
 
       if (info.sampled != 0 && info.sampled != 1) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image 'Sampled' parameter to be 0 or 1: "
-            << spvOpcodeString(opcode);
+               << "Expected Image 'Sampled' parameter to be 0 or 1: "
+               << spvOpcodeString(opcode);
       }
 
       if (info.dim == SpvDimSubpassData) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image 'Dim' parameter to be not SubpassData: "
-            << spvOpcodeString(opcode);
+               << "Expected Image 'Dim' parameter to be not SubpassData: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetIdOpcode(_.GetOperandTypeId(inst, 3)) != SpvOpTypeSampler) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sampler to be of type OpTypeSampler: "
-            << spvOpcodeString(opcode);
+               << "Expected Sampler to be of type OpTypeSampler: "
+               << spvOpcodeString(opcode);
       }
 
       break;
@@ -645,27 +651,27 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntVectorType(result_type) &&
           !_.IsFloatVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int or float vector type: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetDimension(result_type) != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have 4 components: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have 4 components: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sampled Image to be of type OpTypeSampledImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Sampled Image to be of type OpTypeSampledImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (spv_result_t result = ValidateImageCommon(_, *inst, info))
@@ -675,8 +681,9 @@ spv_result_t ImagePass(ValidationState_t& _,
         const uint32_t result_component_type = _.GetComponentType(result_type);
         if (result_component_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Image 'Sampled Type' to be the same as Result Type "
-              << "components: " << spvOpcodeString(opcode);
+                 << "Expected Image 'Sampled Type' to be the same as Result "
+                    "Type "
+                 << "components: " << spvOpcodeString(opcode);
         }
       }
 
@@ -686,14 +693,14 @@ spv_result_t ImagePass(ValidationState_t& _,
         if (!_.IsFloatScalarOrVectorType(coord_type) &&
             !_.IsIntScalarOrVectorType(coord_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Coordinate to be int or float scalar or vector: "
-              << spvOpcodeString(opcode);
+                 << "Expected Coordinate to be int or float scalar or vector: "
+                 << spvOpcodeString(opcode);
         }
       } else {
         if (!_.IsFloatScalarOrVectorType(coord_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Coordinate to be float scalar or vector: "
-              << spvOpcodeString(opcode);
+                 << "Expected Coordinate to be float scalar or vector: "
+                 << spvOpcodeString(opcode);
         }
       }
 
@@ -701,9 +708,9 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
       if (inst->num_words <= 5) {
@@ -712,8 +719,8 @@ spv_result_t ImagePass(ValidationState_t& _,
       }
 
       const uint32_t mask = inst->words[5];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 6))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -726,21 +733,21 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntScalarType(result_type) &&
           !_.IsFloatScalarType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float scalar type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int or float scalar type: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sampled Image to be of type OpTypeSampledImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Sampled Image to be of type OpTypeSampledImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (spv_result_t result = ValidateImageCommon(_, *inst, info))
@@ -748,33 +755,33 @@ spv_result_t ImagePass(ValidationState_t& _,
 
       if (result_type != info.sampled_type) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image 'Sampled Type' to be the same as Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected Image 'Sampled Type' to be the same as Result "
+                  "Type: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
       if (!_.IsFloatScalarOrVectorType(coord_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to be float scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to be float scalar or vector: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
       if (dref_type != info.sampled_type) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Dref to be of Image 'Sampled Type': "
-            << spvOpcodeString(opcode);
+               << "Expected Dref to be of Image 'Sampled Type': "
+               << spvOpcodeString(opcode);
       }
-
 
       if (inst->num_words <= 6) {
         assert(IsImplicitLod(opcode));
@@ -782,8 +789,8 @@ spv_result_t ImagePass(ValidationState_t& _,
       }
 
       const uint32_t mask = inst->words[6];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 7))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 7))
         return result;
 
       break;
@@ -793,72 +800,71 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntVectorType(result_type) &&
           !_.IsFloatVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int or float vector type: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetDimension(result_type) != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have 4 components: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have 4 components: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
         const uint32_t result_component_type = _.GetComponentType(result_type);
         if (result_component_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Image 'Sampled Type' to be the same as Result Type "
-              << "components: " << spvOpcodeString(opcode);
+                 << "Expected Image 'Sampled Type' to be the same as Result "
+                    "Type "
+                 << "components: " << spvOpcodeString(opcode);
         }
       }
 
       if (info.dim == SpvDimCube) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image 'Dim' cannot be Cube: "
-            << spvOpcodeString(opcode);
+               << "Image 'Dim' cannot be Cube: " << spvOpcodeString(opcode);
       }
 
       if (info.sampled != 1) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image 'Sampled' parameter to be 1: "
-            << spvOpcodeString(opcode);
+               << "Expected Image 'Sampled' parameter to be 1: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarOrVectorType(coord_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to be int scalar or vector: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 5)
-        break;
+      if (inst->num_words <= 5) break;
 
       const uint32_t mask = inst->words[5];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 6))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -869,27 +875,27 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntVectorType(result_type) &&
           !_.IsFloatVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int or float vector type: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetDimension(result_type) != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have 4 components: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have 4 components: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sampled Image to be of type OpTypeSampledImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Sampled Image to be of type OpTypeSampledImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (opcode == SpvOpImageDrefGather ||
@@ -897,57 +903,57 @@ spv_result_t ImagePass(ValidationState_t& _,
         const uint32_t result_component_type = _.GetComponentType(result_type);
         if (result_component_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Image 'Sampled Type' to be the same as Result Type "
-              << "components: " << spvOpcodeString(opcode);
+                 << "Expected Image 'Sampled Type' to be the same as Result "
+                    "Type "
+                 << "components: " << spvOpcodeString(opcode);
         }
       }
 
       if (info.dim != SpvDim2D && info.dim != SpvDimCube &&
           info.dim != SpvDimRect) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image 'Dim' cannot be Cube: "
-            << spvOpcodeString(opcode);
+               << "Expected Image 'Dim' cannot be Cube: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
       if (!_.IsFloatScalarOrVectorType(coord_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to be float scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to be float scalar or vector: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
       if (opcode == SpvOpImageGather) {
         const uint32_t component_index_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarType(component_index_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Component to be int scalar: "
-              << spvOpcodeString(opcode);
+                 << "Expected Component to be int scalar: "
+                 << spvOpcodeString(opcode);
         }
       } else {
         assert(opcode == SpvOpImageDrefGather);
         const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
         if (dref_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Dref to be of Image 'Sampled Type': "
-              << spvOpcodeString(opcode);
+                 << "Expected Dref to be of Image 'Sampled Type': "
+                 << spvOpcodeString(opcode);
         }
       }
 
-      if (inst->num_words <= 6)
-        break;
+      if (inst->num_words <= 6) break;
 
       const uint32_t mask = inst->words[6];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 7))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 7))
         return result;
 
       break;
@@ -957,8 +963,9 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntScalarOrVectorType(result_type) &&
           !_.IsFloatScalarOrVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int or float scalar or vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int or float scalar or vector "
+                  "type: "
+               << spvOpcodeString(opcode);
       }
 
 #if 0
@@ -973,22 +980,23 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
         const uint32_t result_component_type = _.GetComponentType(result_type);
         if (result_component_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Image 'Sampled Type' to be the same as Result Type "
-              << "components: " << spvOpcodeString(opcode);
+                 << "Expected Image 'Sampled Type' to be the same as Result "
+                    "Type "
+                 << "components: " << spvOpcodeString(opcode);
         }
       }
 
@@ -998,33 +1006,33 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarOrVectorType(coord_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to be int scalar or vector: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
       if (info.format == SpvImageFormatUnknown &&
           info.dim != SpvDimSubpassData &&
           !_.HasCapability(SpvCapabilityStorageImageReadWithoutFormat)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability StorageImageReadWithoutFormat is required to read "
-            << "storage image: " << spvOpcodeString(opcode);
+               << "Capability StorageImageReadWithoutFormat is required to "
+                  "read "
+               << "storage image: " << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 5)
-        break;
+      if (inst->num_words <= 5) break;
 
       const uint32_t mask = inst->words[5];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 6))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 6))
         return result;
 
       break;
@@ -1034,19 +1042,20 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t image_type = _.GetOperandTypeId(inst, 0);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (info.dim == SpvDimSubpassData) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image 'Dim' cannot be SubpassData: " << spvOpcodeString(opcode);
+               << "Image 'Dim' cannot be SubpassData: "
+               << spvOpcodeString(opcode);
       }
 
       if (spv_result_t result = ValidateImageCommon(_, *inst, info))
@@ -1055,17 +1064,17 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t coord_type = _.GetOperandTypeId(inst, 1);
       if (!_.IsIntScalarOrVectorType(coord_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to be int scalar or vector: "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to be int scalar or vector: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t min_coord_size = GetMinCoordSize(opcode, info);
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
 
       // TODO(atgoo@github.com) The spec doesn't explicitely say what the type
@@ -1074,8 +1083,8 @@ spv_result_t ImagePass(ValidationState_t& _,
       if (!_.IsIntScalarOrVectorType(texel_type) &&
           !_.IsFloatScalarOrVectorType(texel_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Texel to be int or float vector or scalar: "
-            << spvOpcodeString(opcode);
+               << "Expected Texel to be int or float vector or scalar: "
+               << spvOpcodeString(opcode);
       }
 
 #if 0
@@ -1091,8 +1100,8 @@ spv_result_t ImagePass(ValidationState_t& _,
         const uint32_t texel_component_type = _.GetComponentType(texel_type);
         if (texel_component_type != info.sampled_type) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Image 'Sampled Type' to be the same as Texel "
-              << "components: " << spvOpcodeString(opcode);
+                 << "Expected Image 'Sampled Type' to be the same as Texel "
+                 << "components: " << spvOpcodeString(opcode);
         }
       }
 
@@ -1100,16 +1109,16 @@ spv_result_t ImagePass(ValidationState_t& _,
           info.dim != SpvDimSubpassData &&
           !_.HasCapability(SpvCapabilityStorageImageWriteWithoutFormat)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Capability StorageImageWriteWithoutFormat is required to write "
-            << "to storage image: " << spvOpcodeString(opcode);
+               << "Capability StorageImageWriteWithoutFormat is required to "
+                  "write "
+               << "to storage image: " << spvOpcodeString(opcode);
       }
 
-      if (inst->num_words <= 4)
-        break;
+      if (inst->num_words <= 4) break;
 
       const uint32_t mask = inst->words[4];
-      if (spv_result_t result = ValidateImageOperands(
-          _, *inst, info, mask, /* word_index = */ 5))
+      if (spv_result_t result =
+              ValidateImageOperands(_, *inst, info, mask, /* word_index = */ 5))
         return result;
 
       break;
@@ -1118,8 +1127,8 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImage: {
       if (_.GetIdOpcode(result_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t sampled_image_type = _.GetOperandTypeId(inst, 2);
@@ -1129,14 +1138,15 @@ spv_result_t ImagePass(ValidationState_t& _,
 
       if (sampled_image_type_inst->opcode() != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sample Image to be of type OpTypeSampleImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Sample Image to be of type OpTypeSampleImage: "
+               << spvOpcodeString(opcode);
       }
 
       if (sampled_image_type_inst->word(2) != result_type) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Sample Image image type to be equal to Result Type: "
-            << spvOpcodeString(opcode);
+               << "Expected Sample Image image type to be equal to Result "
+                  "Type: "
+               << spvOpcodeString(opcode);
       }
 
       break;
@@ -1146,14 +1156,14 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageQueryOrder: {
       if (!_.IsIntScalarType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int scalar type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int scalar type: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetIdOpcode(_.GetOperandTypeId(inst, 2)) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected operand to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected operand to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
       break;
     }
@@ -1161,21 +1171,21 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageQuerySizeLod: {
       if (!_.IsIntScalarOrVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int scalar or vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int scalar or vector type: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       uint32_t expected_num_components = info.arrayed;
@@ -1192,28 +1202,28 @@ spv_result_t ImagePass(ValidationState_t& _,
           break;
         default:
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
-              << spvOpcodeString(opcode);
+                 << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
+                 << spvOpcodeString(opcode);
       };
 
       if (info.multisampled != 0) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image 'MS' must be 0: " << spvOpcodeString(opcode);
+               << "Image 'MS' must be 0: " << spvOpcodeString(opcode);
       }
 
       uint32_t result_num_components = _.GetDimension(result_type);
       if (result_num_components != expected_num_components) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Result Type has " << result_num_components << " components, "
-            << "but " << expected_num_components << " expected: "
-            << spvOpcodeString(opcode);
+               << "Result Type has " << result_num_components << " components, "
+               << "but " << expected_num_components
+               << " expected: " << spvOpcodeString(opcode);
       }
 
       const uint32_t lod_type = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarType(lod_type) && !_.IsFloatScalarType(lod_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Level of Detail to be int or float scalar: "
-            << spvOpcodeString(opcode);
+               << "Expected Level of Detail to be int or float scalar: "
+               << spvOpcodeString(opcode);
       }
 
       break;
@@ -1222,15 +1232,15 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageQuerySize: {
       if (!_.IsIntScalarOrVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int scalar or vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int scalar or vector type: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
 #if 0
@@ -1296,34 +1306,34 @@ spv_result_t ImagePass(ValidationState_t& _,
 
       if (!_.IsFloatVectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be float vector type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be float vector type: "
+               << spvOpcodeString(opcode);
       }
 
       if (_.GetDimension(result_type) != 2) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to have 2 components: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to have 2 components: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeSampledImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image operand to be of type OpTypeSampledImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image operand to be of type OpTypeSampledImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
-      if (info.dim != SpvDim1D && info.dim != SpvDim2D
-          && info.dim != SpvDim3D && info.dim != SpvDimCube) {
+      if (info.dim != SpvDim1D && info.dim != SpvDim2D &&
+          info.dim != SpvDim3D && info.dim != SpvDimCube) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
-            << spvOpcodeString(opcode);
+               << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
@@ -1331,14 +1341,14 @@ spv_result_t ImagePass(ValidationState_t& _,
         if (!_.IsFloatScalarOrVectorType(coord_type) &&
             !_.IsIntScalarOrVectorType(coord_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Coordinate to be int or float scalar or vector: "
-              << spvOpcodeString(opcode);
+                 << "Expected Coordinate to be int or float scalar or vector: "
+                 << spvOpcodeString(opcode);
         }
       } else {
         if (!_.IsFloatScalarOrVectorType(coord_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Expected Coordinate to be float scalar or vector: "
-              << spvOpcodeString(opcode);
+                 << "Expected Coordinate to be float scalar or vector: "
+                 << spvOpcodeString(opcode);
         }
       }
 
@@ -1346,9 +1356,9 @@ spv_result_t ImagePass(ValidationState_t& _,
       const uint32_t actual_coord_size = _.GetDimension(coord_type);
       if (min_coord_size > actual_coord_size) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Coordinate to have at least " << min_coord_size
-            << " components, but given only " << actual_coord_size << ": "
-            << spvOpcodeString(opcode);
+               << "Expected Coordinate to have at least " << min_coord_size
+               << " components, but given only " << actual_coord_size << ": "
+               << spvOpcodeString(opcode);
       }
       break;
     }
@@ -1357,40 +1367,40 @@ spv_result_t ImagePass(ValidationState_t& _,
     case SpvOpImageQuerySamples: {
       if (!_.IsIntScalarType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Result Type to be int scalar type: "
-            << spvOpcodeString(opcode);
+               << "Expected Result Type to be int scalar type: "
+               << spvOpcodeString(opcode);
       }
 
       const uint32_t image_type = _.GetOperandTypeId(inst, 2);
       if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Expected Image to be of type OpTypeImage: "
-            << spvOpcodeString(opcode);
+               << "Expected Image to be of type OpTypeImage: "
+               << spvOpcodeString(opcode);
       }
 
       ImageTypeInfo info;
       if (!GetImageTypeInfo(_, image_type, &info)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-            << "Corrupt image type definition";
+               << "Corrupt image type definition";
       }
 
       if (opcode == SpvOpImageQueryLevels) {
-        if (info.dim != SpvDim1D && info.dim != SpvDim2D
-            && info.dim != SpvDim3D && info.dim != SpvDimCube) {
+        if (info.dim != SpvDim1D && info.dim != SpvDim2D &&
+            info.dim != SpvDim3D && info.dim != SpvDimCube) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
-              << spvOpcodeString(opcode);
+                 << "Image 'Dim' must be 1D, 2D, 3D or Cube: "
+                 << spvOpcodeString(opcode);
         }
       } else {
         assert(opcode == SpvOpImageQuerySamples);
         if (info.dim != SpvDim2D) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Image 'Dim' must be 2D: " << spvOpcodeString(opcode);
+                 << "Image 'Dim' must be 2D: " << spvOpcodeString(opcode);
         }
 
         if (info.multisampled != 1) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-              << "Image 'MS' must be 1: " << spvOpcodeString(opcode);
+                 << "Image 'MS' must be 1: " << spvOpcodeString(opcode);
         }
       }
 

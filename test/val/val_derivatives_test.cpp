@@ -112,9 +112,10 @@ TEST_F(ValidateDerivatives, OpDPdxWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be float scalar or vector type: "
-      "DPdx"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be float scalar or vector type: "
+                "DPdx"));
 }
 
 TEST_F(ValidateDerivatives, OpDPdxWrongPType) {
@@ -125,9 +126,9 @@ TEST_F(ValidateDerivatives, OpDPdxWrongPType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected P type and Result Type to be the same: "
-      "DPdx"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected P type and Result Type to be the same: "
+                        "DPdx"));
 }
 
 TEST_F(ValidateDerivatives, OpDPdxWrongExecutionModel) {
@@ -138,8 +139,10 @@ TEST_F(ValidateDerivatives, OpDPdxWrongExecutionModel) {
 
   CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Derivative instructions require Fragment execution model: DPdx"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Derivative instructions require Fragment execution model: DPdx"));
 }
 
 }  // anonymous namespace

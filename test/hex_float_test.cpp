@@ -25,12 +25,12 @@
 #include "unit_spirv.h"
 
 namespace {
-using ::testing::Eq;
 using spvutils::BitwiseCast;
 using spvutils::Float16;
 using spvutils::FloatProxy;
 using spvutils::HexFloat;
 using spvutils::ParseNormalFloat;
+using ::testing::Eq;
 
 // In this file "encode" means converting a number into a string,
 // and "decode" means converting a string into a number.
@@ -129,7 +129,7 @@ INSTANTIATE_TEST_CASE_P(
         {float(ldexp(1.0, -127) / 2.0 + (ldexp(1.0, -127) / 4.0f)),
          "0x1.8p-128"},
 
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float32NanTests, HexFloatTest,
@@ -147,7 +147,7 @@ INSTANTIATE_TEST_CASE_P(
         {uint32_t(0x7f800c00), "0x1.0018p+128"},     // +nan
         {uint32_t(0x7F80F000), "0x1.01ep+128"},      // +nan
         {uint32_t(0x7FFFFFFF), "0x1.fffffep+128"},   // +nan
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float64Tests, HexDoubleTest,
@@ -220,7 +220,7 @@ INSTANTIATE_TEST_CASE_P(
             {ldexp(1.0, -1023) / 2.0 + (ldexp(1.0, -1023) / 4.0),
              "0x1.8p-1024"},
 
-        })),);
+        })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float64NanTests, HexDoubleTest,
@@ -239,7 +239,7 @@ INSTANTIATE_TEST_CASE_P(
         {uint64_t(0x7FF0000000000001LL), "0x1.0000000000001p+1024"},   // -nan
         {uint64_t(0x7FF0000300000000LL), "0x1.00003p+1024"},           // -nan
         {uint64_t(0x7FFFFFFFFFFFFFFFLL), "0x1.fffffffffffffp+1024"},   // -nan
-    })),);
+    })), );
 
 TEST(HexFloatStreamTest, OperatorLeftShiftPreservesFloatAndFill) {
   std::stringstream s;
@@ -284,7 +284,7 @@ INSTANTIATE_TEST_CASE_P(
         {"0xFFp+0", 255.f},
         {"0x0.8p+0", 0.5f},
         {"0x0.4p+0", 0.25f},
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float32DecodeInfTests, DecodeHexFloatTest,
@@ -294,7 +294,7 @@ INSTANTIATE_TEST_CASE_P(
         {"0x32p+127", uint32_t(0x7F800000)},   // inf
         {"0x32p+500", uint32_t(0x7F800000)},   // inf
         {"-0x32p+127", uint32_t(0xFF800000)},  // -inf
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float64DecodeTests, DecodeHexDoubleTest,
@@ -317,7 +317,7 @@ INSTANTIATE_TEST_CASE_P(
             {"0xFFp+0", 255.},
             {"0x0.8p+0", 0.5},
             {"0x0.4p+0", 0.25},
-        })),);
+        })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float64DecodeInfTests, DecodeHexDoubleTest,
@@ -328,7 +328,7 @@ INSTANTIATE_TEST_CASE_P(
             {"0x32p+1023", uint64_t(0x7FF0000000000000)},   // inf
             {"0x32p+5000", uint64_t(0x7FF0000000000000)},   // inf
             {"-0x32p+1023", uint64_t(0xFFF0000000000000)},  // -inf
-        })),);
+        })), );
 
 TEST(FloatProxy, ValidConversion) {
   EXPECT_THAT(FloatProxy<float>(1.f).getAsFloat(), Eq(1.0f));
@@ -497,7 +497,7 @@ INSTANTIATE_TEST_CASE_P(
 
         {std::numeric_limits<float>::infinity(), "0x1p+128"},
         {-std::numeric_limits<float>::infinity(), "-0x1p+128"},
-    })),);
+    })), );
 
 INSTANTIATE_TEST_CASE_P(
     Float64Tests, FloatProxyDoubleTest,
@@ -534,13 +534,13 @@ INSTANTIATE_TEST_CASE_P(
             {std::numeric_limits<double>::infinity(), "0x1p+1024"},
             {-std::numeric_limits<double>::infinity(), "-0x1p+1024"},
 
-        })),);
+        })), );
 
 // double is used so that unbiased_exponent can be used with the output
 // of ldexp directly.
 int32_t unbiased_exponent(double f) {
-  return spvutils::HexFloat<spvutils::FloatProxy<float>>(
-      static_cast<float>(f)).getUnbiasedNormalizedExponent();
+  return spvutils::HexFloat<spvutils::FloatProxy<float>>(static_cast<float>(f))
+      .getUnbiasedNormalizedExponent();
 }
 
 int16_t unbiased_half_exponent(uint16_t f) {
@@ -558,7 +558,7 @@ TEST(HexFloatOperationTest, UnbiasedExponent) {
   EXPECT_EQ(128, unbiased_exponent(ldexp(1.0f, 256)));
 
   EXPECT_EQ(-100, unbiased_exponent(ldexp(1.0f, -100)));
-  EXPECT_EQ(-127, unbiased_exponent(ldexp(1.0f, -127))); // First denorm
+  EXPECT_EQ(-127, unbiased_exponent(ldexp(1.0f, -127)));  // First denorm
   EXPECT_EQ(-128, unbiased_exponent(ldexp(1.0f, -128)));
   EXPECT_EQ(-129, unbiased_exponent(ldexp(1.0f, -129)));
   EXPECT_EQ(-140, unbiased_exponent(ldexp(1.0f, -140)));
@@ -584,7 +584,7 @@ TEST(HexFloatOperationTest, UnbiasedExponent) {
 // Creates a float that is the sum of 1/(2 ^ fractions[i]) for i in factions
 float float_fractions(const std::vector<uint32_t>& fractions) {
   float f = 0;
-  for(int32_t i: fractions) {
+  for (int32_t i : fractions) {
     f += std::ldexp(1.0f, -i);
   }
   return f;
@@ -593,7 +593,8 @@ float float_fractions(const std::vector<uint32_t>& fractions) {
 // Returns the normalized significand of a HexFloat<FloatProxy<float>>
 // that was created by calling float_fractions with the input fractions,
 // raised to the power of exp.
-uint32_t normalized_significand(const std::vector<uint32_t>& fractions, uint32_t exp) {
+uint32_t normalized_significand(const std::vector<uint32_t>& fractions,
+                                uint32_t exp) {
   return spvutils::HexFloat<spvutils::FloatProxy<float>>(
              static_cast<float>(ldexp(float_fractions(fractions), exp)))
       .getNormalizedSignificand();
@@ -604,8 +605,8 @@ uint32_t normalized_significand(const std::vector<uint32_t>& fractions, uint32_t
 // and 1 would set the 22nd bit.
 uint32_t bits_set(const std::vector<uint32_t>& bits) {
   const uint32_t top_bit = 1u << 22u;
-  uint32_t val= 0;
-  for(uint32_t i: bits) {
+  uint32_t val = 0;
+  for (uint32_t i : bits) {
     val |= top_bit >> i;
   }
   return val;
@@ -615,8 +616,8 @@ uint32_t bits_set(const std::vector<uint32_t>& bits) {
 // point.
 uint16_t half_bits_set(const std::vector<uint32_t>& bits) {
   const uint32_t top_bit = 1u << 9u;
-  uint32_t val= 0;
-  for(uint32_t i: bits) {
+  uint32_t val = 0;
+  for (uint32_t i : bits) {
     val |= top_bit >> i;
   }
   return static_cast<uint16_t>(val);
@@ -646,8 +647,8 @@ TEST(HexFloatOperationTest, NormalizedSignificand) {
 // calling setFromSignUnbiasedExponentAndNormalizedSignificand
 // on a HexFloat<FloatProxy<float>>
 float set_from_sign(bool negative, int32_t unbiased_exponent,
-                   uint32_t significand, bool round_denorm_up) {
-  spvutils::HexFloat<spvutils::FloatProxy<float>>  f(0.f);
+                    uint32_t significand, bool round_denorm_up) {
+  spvutils::HexFloat<spvutils::FloatProxy<float>> f(0.f);
   f.setFromSignUnbiasedExponentAndNormalizedSignificand(
       negative, unbiased_exponent, significand, round_denorm_up);
   return f.value().getAsFloat();
@@ -655,14 +656,16 @@ float set_from_sign(bool negative, int32_t unbiased_exponent,
 
 TEST(HexFloatOperationTests,
      SetFromSignUnbiasedExponentAndNormalizedSignificand) {
-
   EXPECT_EQ(1.f, set_from_sign(false, 0, 0, false));
 
   // Tests insertion of various denormalized numbers with and without round up.
-  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -149, 0, false));
-  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -149, 0, true));
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)),
+            set_from_sign(false, -149, 0, false));
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)),
+            set_from_sign(false, -149, 0, true));
   EXPECT_EQ(0.f, set_from_sign(false, -150, 1, false));
-  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)), set_from_sign(false, -150, 1, true));
+  EXPECT_EQ(static_cast<float>(ldexp(1.f, -149)),
+            set_from_sign(false, -150, 1, true));
 
   EXPECT_EQ(ldexp(1.0f, -127), set_from_sign(false, -127, 0, false));
   EXPECT_EQ(ldexp(1.0f, -128), set_from_sign(false, -128, 0, false));
@@ -699,8 +702,8 @@ TEST(HexFloatOperationTests, NonRounding) {
 
   // Everything fits, so this should be straight-forward
   for (spvutils::round_direction round : rounding) {
-    EXPECT_EQ(bits_set({}), HF(0.f).getRoundedNormalizedSignificand<HF>(
-                                round, &carry_bit));
+    EXPECT_EQ(bits_set({}),
+              HF(0.f).getRoundedNormalizedSignificand<HF>(round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
     EXPECT_EQ(bits_set({0}),
@@ -719,10 +722,9 @@ TEST(HexFloatOperationTests, NonRounding) {
             .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
     EXPECT_FALSE(carry_bit);
 
-    EXPECT_EQ(
-        bits_set({0, 1, 4, 22}),
-        HF(static_cast<float>(float_fractions({0, 1, 2, 5, 23})))
-            .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
+    EXPECT_EQ(bits_set({0, 1, 4, 22}),
+              HF(static_cast<float>(float_fractions({0, 1, 2, 5, 23})))
+                  .getRoundedNormalizedSignificand<HF>(round, &carry_bit));
     EXPECT_FALSE(carry_bit);
   }
 }
@@ -734,8 +736,7 @@ struct RoundSignificandCase {
   spvutils::round_direction round;
 };
 
-using HexFloatRoundTest =
-    ::testing::TestWithParam<RoundSignificandCase>;
+using HexFloatRoundTest = ::testing::TestWithParam<RoundSignificandCase>;
 
 TEST_P(HexFloatRoundTest, RoundDownToFP16) {
   using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
@@ -744,8 +745,8 @@ TEST_P(HexFloatRoundTest, RoundDownToFP16) {
   HF input_value(GetParam().source_float);
   bool carry_bit = false;
   EXPECT_EQ(GetParam().expected_results.first,
-            input_value.getRoundedNormalizedSignificand<HF16>(
-                GetParam().round, &carry_bit));
+            input_value.getRoundedNormalizedSignificand<HF16>(GetParam().round,
+                                                              &carry_bit));
   EXPECT_EQ(carry_bit, GetParam().expected_results.second);
 }
 
@@ -831,16 +832,16 @@ TEST_P(HexFloatRoundUpSignificandTest, Widening) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(F16toF32, HexFloatRoundUpSignificandTest,
-  // 0xFC00 of the source 16-bit hex value cover the sign and the exponent.
-  // They are ignored for this test.
-  ::testing::ValuesIn(std::vector<UpCastSignificandCase>(
-  {
-    {0x3F00, 0x600000},
-    {0x0F00, 0x600000},
-    {0x0F01, 0x602000},
-    {0x0FFF, 0x7FE000},
-  })),);
+INSTANTIATE_TEST_CASE_P(
+    F16toF32, HexFloatRoundUpSignificandTest,
+    // 0xFC00 of the source 16-bit hex value cover the sign and the exponent.
+    // They are ignored for this test.
+    ::testing::ValuesIn(std::vector<UpCastSignificandCase>({
+        {0x3F00, 0x600000},
+        {0x0F00, 0x600000},
+        {0x0F01, 0x602000},
+        {0x0FFF, 0x7FE000},
+    })), );
 
 struct DownCastTest {
   float source_float;
@@ -850,7 +851,7 @@ struct DownCastTest {
 
 std::string get_round_text(spvutils::round_direction direction) {
 #define CASE(round_direction) \
-  case round_direction:      \
+  case round_direction:       \
     return #round_direction
 
   switch (direction) {
@@ -882,44 +883,100 @@ TEST_P(HexFloatFP32To16Tests, NarrowingCasts) {
 const uint16_t positive_infinity = 0x7C00;
 const uint16_t negative_infinity = 0xFC00;
 
-INSTANTIATE_TEST_CASE_P(F32ToF16, HexFloatFP32To16Tests,
-  ::testing::ValuesIn(std::vector<DownCastTest>(
-  {
-    // Exactly representable as half.
-    {0.f, 0x0, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {-0.f, 0x8000, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {1.0f, 0x3C00, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {-1.0f, 0xBC00, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+INSTANTIATE_TEST_CASE_P(
+    F32ToF16, HexFloatFP32To16Tests,
+    ::testing::ValuesIn(std::vector<DownCastTest>({
+        // Exactly representable as half.
+        {0.f,
+         0x0,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {-0.f,
+         0x8000,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {1.0f,
+         0x3C00,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {-1.0f,
+         0xBC00,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
 
-    {float_fractions({0, 1, 10}) , 0x3E01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {-float_fractions({0, 1, 10}) , 0xBE01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(ldexp(float_fractions({0, 1, 10}), 3)), 0x4A01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(-ldexp(float_fractions({0, 1, 10}), 3)), 0xCA01, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+        {float_fractions({0, 1, 10}),
+         0x3E01,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {-float_fractions({0, 1, 10}),
+         0xBE01,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(ldexp(float_fractions({0, 1, 10}), 3)),
+         0x4A01,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(-ldexp(float_fractions({0, 1, 10}), 3)),
+         0xCA01,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
 
+        // Underflow
+        {static_cast<float>(ldexp(1.0f, -25)),
+         0x0,
+         {RD::kToZero, RD::kToNegativeInfinity, RD::kToNearestEven}},
+        {static_cast<float>(ldexp(1.0f, -25)), 0x1, {RD::kToPositiveInfinity}},
+        {static_cast<float>(-ldexp(1.0f, -25)),
+         0x8000,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNearestEven}},
+        {static_cast<float>(-ldexp(1.0f, -25)),
+         0x8001,
+         {RD::kToNegativeInfinity}},
+        {static_cast<float>(ldexp(1.0f, -24)),
+         0x1,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
 
-    // Underflow
-    {static_cast<float>(ldexp(1.0f, -25)), 0x0, {RD::kToZero, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(ldexp(1.0f, -25)), 0x1, {RD::kToPositiveInfinity}},
-    {static_cast<float>(-ldexp(1.0f, -25)), 0x8000, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNearestEven}},
-    {static_cast<float>(-ldexp(1.0f, -25)), 0x8001, {RD::kToNegativeInfinity}},
-    {static_cast<float>(ldexp(1.0f, -24)), 0x1, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+        // Overflow
+        {static_cast<float>(ldexp(1.0f, 16)),
+         positive_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(ldexp(1.0f, 18)),
+         positive_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(ldexp(1.3f, 16)),
+         positive_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(-ldexp(1.0f, 16)),
+         negative_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(-ldexp(1.0f, 18)),
+         negative_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {static_cast<float>(-ldexp(1.3f, 16)),
+         negative_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
 
-    // Overflow
-    {static_cast<float>(ldexp(1.0f, 16)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(ldexp(1.0f, 18)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(ldexp(1.3f, 16)), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(-ldexp(1.0f, 16)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(-ldexp(1.0f, 18)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {static_cast<float>(-ldexp(1.3f, 16)), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+        // Transfer of Infinities
+        {std::numeric_limits<float>::infinity(),
+         positive_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
+        {-std::numeric_limits<float>::infinity(),
+         negative_infinity,
+         {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity,
+          RD::kToNearestEven}},
 
-    // Transfer of Infinities
-    {std::numeric_limits<float>::infinity(), positive_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
-    {-std::numeric_limits<float>::infinity(), negative_infinity, {RD::kToZero, RD::kToPositiveInfinity, RD::kToNegativeInfinity, RD::kToNearestEven}},
+        // Nans are below because we cannot test for equality.
+    })), );
 
-    // Nans are below because we cannot test for equality.
-  })),);
-
-struct UpCastCase{
+struct UpCastCase {
   uint16_t source_half;
   float expected_float;
 };
@@ -947,28 +1004,28 @@ TEST_P(HexFloatFP16To32Tests, WideningCasts) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(F16ToF32, HexFloatFP16To32Tests,
-  ::testing::ValuesIn(std::vector<UpCastCase>(
-  {
-    {0x0000, 0.f},
-    {0x8000, -0.f},
-    {0x3C00, 1.0f},
-    {0xBC00, -1.0f},
-    {0x3F00, float_fractions({0, 1, 2})},
-    {0xBF00, -float_fractions({0, 1, 2})},
-    {0x3F01, float_fractions({0, 1, 2, 10})},
-    {0xBF01, -float_fractions({0, 1, 2, 10})},
+INSTANTIATE_TEST_CASE_P(
+    F16ToF32, HexFloatFP16To32Tests,
+    ::testing::ValuesIn(std::vector<UpCastCase>({
+        {0x0000, 0.f},
+        {0x8000, -0.f},
+        {0x3C00, 1.0f},
+        {0xBC00, -1.0f},
+        {0x3F00, float_fractions({0, 1, 2})},
+        {0xBF00, -float_fractions({0, 1, 2})},
+        {0x3F01, float_fractions({0, 1, 2, 10})},
+        {0xBF01, -float_fractions({0, 1, 2, 10})},
 
-    // denorm
-    {0x0001, static_cast<float>(ldexp(1.0, -24))},
-    {0x0002, static_cast<float>(ldexp(1.0, -23))},
-    {0x8001, static_cast<float>(-ldexp(1.0, -24))},
-    {0x8011, static_cast<float>(-ldexp(1.0, -20) + -ldexp(1.0, -24))},
+        // denorm
+        {0x0001, static_cast<float>(ldexp(1.0, -24))},
+        {0x0002, static_cast<float>(ldexp(1.0, -23))},
+        {0x8001, static_cast<float>(-ldexp(1.0, -24))},
+        {0x8011, static_cast<float>(-ldexp(1.0, -20) + -ldexp(1.0, -24))},
 
-    // inf
-    {0x7C00, std::numeric_limits<float>::infinity()},
-    {0xFC00, -std::numeric_limits<float>::infinity()},
-  })),);
+        // inf
+        {0x7C00, std::numeric_limits<float>::infinity()},
+        {0xFC00, -std::numeric_limits<float>::infinity()},
+    })), );
 
 TEST(HexFloatOperationTests, NanTests) {
   using HF = spvutils::HexFloat<spvutils::FloatProxy<float>>;
@@ -1074,7 +1131,7 @@ INSTANTIATE_TEST_CASE_P(
         // We can't have -1e40 and negate_value == true since
         // that represents an original case of "--1e40" which
         // is invalid.
-  }),);
+    }), );
 
 using ParseNormalFloat16Test =
     ::testing::TestWithParam<FloatParseCase<Float16>>;
@@ -1117,7 +1174,7 @@ INSTANTIATE_TEST_CASE_P(
         BadFloatParseCase<Float16>("-2.0", true, uint16_t{0}),
         BadFloatParseCase<Float16>("+0.0", true, uint16_t{0}),
         BadFloatParseCase<Float16>("+2.0", true, uint16_t{0}),
-    }),);
+    }), );
 
 // A test case for detecting infinities.
 template <typename T>
@@ -1152,7 +1209,7 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e40", false, -FLT_MAX},
         {"1e400", false, FLT_MAX},
         {"-1e400", false, -FLT_MAX},
-    })),);
+    })), );
 
 using FloatProxyParseOverflowDoubleTest =
     ::testing::TestWithParam<OverflowParseCase<double>>;
@@ -1179,7 +1236,7 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e40", true, -1e40},
         {"1e400", false, DBL_MAX},
         {"-1e400", false, -DBL_MAX},
-    })),);
+    })), );
 
 using FloatProxyParseOverflowFloat16Test =
     ::testing::TestWithParam<OverflowParseCase<uint16_t>>;
@@ -1188,8 +1245,8 @@ TEST_P(FloatProxyParseOverflowFloat16Test, Sample) {
   std::istringstream input(GetParam().input);
   HexFloat<FloatProxy<Float16>> value(0);
   input >> value;
-  EXPECT_NE(GetParam().expect_success, input.fail()) << " literal: "
-                                                     << GetParam().input;
+  EXPECT_NE(GetParam().expect_success, input.fail())
+      << " literal: " << GetParam().input;
   if (GetParam().expect_success) {
     EXPECT_THAT(value.value().data(), Eq(GetParam().expected_value))
         << " literal: " << GetParam().input;
@@ -1210,7 +1267,7 @@ INSTANTIATE_TEST_CASE_P(
         {"-1e38", false, uint16_t{0xfbff}},
         {"-1e40", false, uint16_t{0xfbff}},
         {"-1e400", false, uint16_t{0xfbff}},
-    })),);
+    })), );
 
 TEST(FloatProxy, Max) {
   EXPECT_THAT(FloatProxy<Float16>::max().getAsFloat().get_value(),

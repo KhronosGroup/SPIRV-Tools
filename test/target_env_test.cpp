@@ -22,15 +22,15 @@ namespace {
 
 using ::testing::AnyOf;
 using ::testing::Eq;
-using ::testing::ValuesIn;
 using ::testing::StartsWith;
+using ::testing::ValuesIn;
 
 using TargetEnvTest = ::testing::TestWithParam<spv_target_env>;
 TEST_P(TargetEnvTest, CreateContext) {
   spv_target_env env = GetParam();
   spv_context context = spvContextCreate(env);
   ASSERT_NE(nullptr, context);
-  spvContextDestroy(context); // Avoid leaking
+  spvContextDestroy(context);  // Avoid leaking
 }
 
 TEST_P(TargetEnvTest, ValidDescription) {

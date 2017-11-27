@@ -31,13 +31,13 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
   const std::string capabilities =
-R"(
+      R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64)";
 
   const std::string after_extension_before_body =
-R"(
+      R"(
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
 %void = OpTypeVoid
@@ -143,19 +143,19 @@ OpEntryPoint Fragment %main "main"
 %main_entry = OpLabel)";
 
   const std::string after_body =
-R"(
+      R"(
 OpReturn
 OpFunctionEnd)";
 
   return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+         after_extension_before_body + body + after_body;
 }
 
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
   const std::string capabilities =
-R"(
+      R"(
 OpCapability Addresses
 OpCapability Kernel
 OpCapability Linkage
@@ -164,7 +164,7 @@ OpCapability Int64
 OpCapability Float64)";
 
   const std::string after_extension_before_body =
-R"(
+      R"(
 OpMemoryModel Physical32 OpenCL
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -250,12 +250,12 @@ OpMemoryModel Physical32 OpenCL
 %main_entry = OpLabel)";
 
   const std::string after_body =
-R"(
+      R"(
 OpReturn
 OpFunctionEnd)";
 
   return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+         after_extension_before_body + body + after_body;
 }
 
 TEST_F(ValidateConversion, ConvertFToUSuccess) {
@@ -276,8 +276,9 @@ TEST_F(ValidateConversion, ConvertFToUWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected unsigned int scalar or vector type as Result Type: ConvertFToU"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected unsigned int scalar or vector type as Result "
+                        "Type: ConvertFToU"));
 }
 
 TEST_F(ValidateConversion, ConvertFToUWrongInputType) {
@@ -287,8 +288,9 @@ TEST_F(ValidateConversion, ConvertFToUWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be float scalar or vector: ConvertFToU"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be float scalar or vector: ConvertFToU"));
 }
 
 TEST_F(ValidateConversion, ConvertFToUDifferentDimension) {
@@ -298,8 +300,9 @@ TEST_F(ValidateConversion, ConvertFToUDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: ConvertFToU"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: ConvertFToU"));
 }
 
 TEST_F(ValidateConversion, ConvertFToSSuccess) {
@@ -320,8 +323,10 @@ TEST_F(ValidateConversion, ConvertFToSWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: ConvertFToS"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected int scalar or vector type as Result Type: ConvertFToS"));
 }
 
 TEST_F(ValidateConversion, ConvertFToSWrongInputType) {
@@ -331,8 +336,9 @@ TEST_F(ValidateConversion, ConvertFToSWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be float scalar or vector: ConvertFToS"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be float scalar or vector: ConvertFToS"));
 }
 
 TEST_F(ValidateConversion, ConvertFToSDifferentDimension) {
@@ -342,8 +348,9 @@ TEST_F(ValidateConversion, ConvertFToSDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: ConvertFToS"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: ConvertFToS"));
 }
 
 TEST_F(ValidateConversion, ConvertSToFSuccess) {
@@ -364,8 +371,10 @@ TEST_F(ValidateConversion, ConvertSToFWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float scalar or vector type as Result Type: ConvertSToF"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected float scalar or vector type as Result Type: ConvertSToF"));
 }
 
 TEST_F(ValidateConversion, ConvertSToFWrongInputType) {
@@ -375,8 +384,9 @@ TEST_F(ValidateConversion, ConvertSToFWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be int scalar or vector: ConvertSToF"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be int scalar or vector: ConvertSToF"));
 }
 
 TEST_F(ValidateConversion, ConvertSToFDifferentDimension) {
@@ -386,8 +396,9 @@ TEST_F(ValidateConversion, ConvertSToFDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: ConvertSToF"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: ConvertSToF"));
 }
 
 TEST_F(ValidateConversion, UConvertSuccess) {
@@ -466,8 +477,9 @@ TEST_F(ValidateConversion, SConvertWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: SConvert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected int scalar or vector type as Result Type: SConvert"));
 }
 
 TEST_F(ValidateConversion, SConvertWrongInputType) {
@@ -477,8 +489,8 @@ TEST_F(ValidateConversion, SConvertWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be int scalar or vector: SConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be int scalar or vector: SConvert"));
 }
 
 TEST_F(ValidateConversion, SConvertDifferentDimension) {
@@ -488,8 +500,9 @@ TEST_F(ValidateConversion, SConvertDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: SConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: SConvert"));
 }
 
 TEST_F(ValidateConversion, SConvertSameBitWidth) {
@@ -499,8 +512,9 @@ TEST_F(ValidateConversion, SConvertSameBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have different bit width from Result Type: SConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have different bit width from "
+                        "Result Type: SConvert"));
 }
 
 TEST_F(ValidateConversion, FConvertSuccess) {
@@ -521,8 +535,10 @@ TEST_F(ValidateConversion, FConvertWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected float scalar or vector type as Result Type: FConvert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected float scalar or vector type as Result Type: FConvert"));
 }
 
 TEST_F(ValidateConversion, FConvertWrongInputType) {
@@ -532,8 +548,9 @@ TEST_F(ValidateConversion, FConvertWrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be float scalar or vector: FConvert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be float scalar or vector: FConvert"));
 }
 
 TEST_F(ValidateConversion, FConvertDifferentDimension) {
@@ -543,8 +560,9 @@ TEST_F(ValidateConversion, FConvertDifferentDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: FConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have the same dimension as Result "
+                        "Type: FConvert"));
 }
 
 TEST_F(ValidateConversion, FConvertSameBitWidth) {
@@ -554,8 +572,9 @@ TEST_F(ValidateConversion, FConvertSameBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have different bit width from Result Type: FConvert"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have different bit width from "
+                        "Result Type: FConvert"));
 }
 
 TEST_F(ValidateConversion, QuantizeToF16Success) {
@@ -576,9 +595,10 @@ TEST_F(ValidateConversion, QuantizeToF16WrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected 32-bit float scalar or vector type as Result Type: "
-      "QuantizeToF16"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected 32-bit float scalar or vector type as Result Type: "
+                "QuantizeToF16"));
 }
 
 TEST_F(ValidateConversion, QuantizeToF16WrongResultTypeBitWidth) {
@@ -588,9 +608,10 @@ TEST_F(ValidateConversion, QuantizeToF16WrongResultTypeBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected 32-bit float scalar or vector type as Result Type: "
-      "QuantizeToF16"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected 32-bit float scalar or vector type as Result Type: "
+                "QuantizeToF16"));
 }
 
 TEST_F(ValidateConversion, QuantizeToF16WrongInputType) {
@@ -600,8 +621,10 @@ TEST_F(ValidateConversion, QuantizeToF16WrongInputType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input type to be equal to Result Type: QuantizeToF16"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected input type to be equal to Result Type: QuantizeToF16"));
 }
 
 TEST_F(ValidateConversion, ConvertPtrToUSuccess) {
@@ -623,9 +646,9 @@ TEST_F(ValidateConversion, ConvertPtrToUWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected unsigned int scalar type as Result Type: "
-      "ConvertPtrToU"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected unsigned int scalar type as Result Type: "
+                        "ConvertPtrToU"));
 }
 
 TEST_F(ValidateConversion, ConvertPtrToUNotPointer) {
@@ -635,8 +658,8 @@ TEST_F(ValidateConversion, ConvertPtrToUNotPointer) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer: ConvertPtrToU"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer: ConvertPtrToU"));
 }
 
 TEST_F(ValidateConversion, SatConvertSToUSuccess) {
@@ -657,9 +680,9 @@ TEST_F(ValidateConversion, SatConvertSToUWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: "
-      "SatConvertSToU"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar or vector type as Result Type: "
+                        "SatConvertSToU"));
 }
 
 TEST_F(ValidateConversion, SatConvertSToUWrongInputType) {
@@ -669,8 +692,9 @@ TEST_F(ValidateConversion, SatConvertSToUWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector as input: SatConvertSToU"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected int scalar or vector as input: SatConvertSToU"));
 }
 
 TEST_F(ValidateConversion, SatConvertSToUDifferentDimension) {
@@ -680,9 +704,10 @@ TEST_F(ValidateConversion, SatConvertSToUDifferentDimension) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same dimension as Result Type: "
-      "SatConvertSToU"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to have the same dimension as Result Type: "
+                "SatConvertSToU"));
 }
 
 TEST_F(ValidateConversion, ConvertUToPtrSuccess) {
@@ -702,8 +727,8 @@ TEST_F(ValidateConversion, ConvertUToPtrWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be a pointer: ConvertUToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be a pointer: ConvertUToPtr"));
 }
 
 TEST_F(ValidateConversion, ConvertUToPtrNotInt) {
@@ -713,8 +738,8 @@ TEST_F(ValidateConversion, ConvertUToPtrNotInt) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar as input: ConvertUToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar as input: ConvertUToPtr"));
 }
 
 TEST_F(ValidateConversion, ConvertUToPtrNotIntScalar) {
@@ -724,8 +749,8 @@ TEST_F(ValidateConversion, ConvertUToPtrNotIntScalar) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar as input: ConvertUToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar as input: ConvertUToPtr"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericSuccess) {
@@ -746,8 +771,9 @@ TEST_F(ValidateConversion, PtrCastToGenericWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be a pointer: PtrCastToGeneric"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be a pointer: PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericWrongResultStorageClass) {
@@ -758,8 +784,9 @@ TEST_F(ValidateConversion, PtrCastToGenericWrongResultStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to have storage class Generic: PtrCastToGeneric"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have storage class Generic: "
+                        "PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericWrongInputType) {
@@ -770,8 +797,8 @@ TEST_F(ValidateConversion, PtrCastToGenericWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer: PtrCastToGeneric"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer: PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericWrongInputStorageClass) {
@@ -781,9 +808,9 @@ TEST_F(ValidateConversion, PtrCastToGenericWrongInputStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have storage class Workgroup, "
-      "CrossWorkgroup or Function: PtrCastToGeneric"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have storage class Workgroup, "
+                        "CrossWorkgroup or Function: PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericPointToDifferentType) {
@@ -794,9 +821,10 @@ TEST_F(ValidateConversion, PtrCastToGenericPointToDifferentType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input and Result Type to point to the same type: "
-      "PtrCastToGeneric"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input and Result Type to point to the same type: "
+                "PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrSuccess) {
@@ -821,8 +849,9 @@ TEST_F(ValidateConversion, GenericCastToPtrWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be a pointer: GenericCastToPtr"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be a pointer: GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrWrongResultStorageClass) {
@@ -834,9 +863,9 @@ TEST_F(ValidateConversion, GenericCastToPtrWrongResultStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to have storage class Workgroup, "
-      "CrossWorkgroup or Function: GenericCastToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have storage class Workgroup, "
+                        "CrossWorkgroup or Function: GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrWrongInputType) {
@@ -848,8 +877,8 @@ TEST_F(ValidateConversion, GenericCastToPtrWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer: GenericCastToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer: GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrWrongInputStorageClass) {
@@ -860,9 +889,9 @@ TEST_F(ValidateConversion, GenericCastToPtrWrongInputStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have storage class Generic: "
-      "GenericCastToPtr"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have storage class Generic: "
+                        "GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrPointToDifferentType) {
@@ -874,9 +903,10 @@ TEST_F(ValidateConversion, GenericCastToPtrPointToDifferentType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input and Result Type to point to the same type: "
-      "GenericCastToPtr"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input and Result Type to point to the same type: "
+                "GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitSuccess) {
@@ -901,8 +931,10 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be a pointer: GenericCastToPtrExplicit"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Result Type to be a pointer: GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitResultStorageClassDiffers) {
@@ -914,9 +946,9 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitResultStorageClassDiffers) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be of target storage class: "
-      "GenericCastToPtrExplicit"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be of target storage class: "
+                        "GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongResultStorageClass) {
@@ -928,9 +960,10 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongResultStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected target storage class to be Workgroup, "
-      "CrossWorkgroup or Function: GenericCastToPtrExplicit"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected target storage class to be Workgroup, "
+                "CrossWorkgroup or Function: GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongInputType) {
@@ -942,8 +975,9 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer: GenericCastToPtrExplicit"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be a pointer: GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongInputStorageClass) {
@@ -954,9 +988,9 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongInputStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have storage class Generic: "
-      "GenericCastToPtrExplicit"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have storage class Generic: "
+                        "GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitPointToDifferentType) {
@@ -968,9 +1002,10 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitPointToDifferentType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input and Result Type to point to the same type: "
-      "GenericCastToPtrExplicit"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input and Result Type to point to the same type: "
+                "GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, BitcastSuccess) {
@@ -998,8 +1033,8 @@ TEST_F(ValidateConversion, BitcastInputHasNoType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have a type: Bitcast"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to have a type: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastWrongResultType) {
@@ -1009,9 +1044,10 @@ TEST_F(ValidateConversion, BitcastWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Result Type to be a pointer or int or float vector "
-      "or scalar type: Bitcast"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be a pointer or int or float vector "
+                "or scalar type: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastWrongInputType) {
@@ -1021,9 +1057,9 @@ TEST_F(ValidateConversion, BitcastWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer or int or float vector "
-      "or scalar: Bitcast"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected input to be a pointer or int or float vector "
+                        "or scalar: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastPtrWrongInputType) {
@@ -1033,9 +1069,10 @@ TEST_F(ValidateConversion, BitcastPtrWrongInputType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to be a pointer or int scalar if Result Type "
-      "is pointer: Bitcast"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected input to be a pointer or int scalar if Result Type "
+                "is pointer: Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastPtrWrongResultType) {
@@ -1045,9 +1082,11 @@ TEST_F(ValidateConversion, BitcastPtrWrongResultType) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Pointer can only be converted to another pointer or int scalar: "
-      "Bitcast"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Pointer can only be converted to another pointer or int scalar: "
+          "Bitcast"));
 }
 
 TEST_F(ValidateConversion, BitcastDifferentTotalBitWidth) {
@@ -1057,9 +1096,11 @@ TEST_F(ValidateConversion, BitcastDifferentTotalBitWidth) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected input to have the same total bit width as Result Type: "
-      "Bitcast"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected input to have the same total bit width as Result Type: "
+          "Bitcast"));
 }
 
 }  // anonymous namespace

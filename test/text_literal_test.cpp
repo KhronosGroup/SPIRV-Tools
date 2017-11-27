@@ -14,9 +14,9 @@
 
 #include "unit_spirv.h"
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
 #include "message.h"
+#include "test_fixture.h"
 
 #include <string>
 

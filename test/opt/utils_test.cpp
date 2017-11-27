@@ -51,7 +51,7 @@ struct SubstringReplacementTestCase {
   const char* expected_str;
   bool replace_should_succeed;
 };
-}
+}  // namespace
 using FindAndReplaceTest =
     ::testing::TestWithParam<SubstringReplacementTestCase>;
 

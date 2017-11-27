@@ -63,7 +63,7 @@ class PassTest : public TestT {
                                   << original << std::endl;
     if (!context()) {
       return std::make_tuple(std::vector<uint32_t>(),
-          opt::Pass::Status::Failure);
+                             opt::Pass::Status::Failure);
     }
 
     const auto status = pass->Run(context());
@@ -95,8 +95,8 @@ class PassTest : public TestT {
     std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
         assembly, skip_nop, std::forward<Args>(args)...);
     std::string optimized_asm;
-    EXPECT_TRUE(tools_.Disassemble(optimized_bin, &optimized_asm,
-                                   disassemble_options_))
+    EXPECT_TRUE(
+        tools_.Disassemble(optimized_bin, &optimized_asm, disassemble_options_))
         << "Disassembling failed for shader:\n"
         << assembly << std::endl;
     return std::make_tuple(optimized_asm, status);
@@ -123,18 +123,16 @@ class PassTest : public TestT {
       spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
       spv_context spvContext = spvContextCreate(target_env);
       spv_diagnostic diagnostic = nullptr;
-      spv_const_binary_t binary = {optimized_bin.data(),
-          optimized_bin.size()};
+      spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
       spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
       EXPECT_EQ(error, 0);
-      if (error != 0)
-        spvDiagnosticPrint(diagnostic);
+      if (error != 0) spvDiagnosticPrint(diagnostic);
       spvDiagnosticDestroy(diagnostic);
       spvContextDestroy(spvContext);
     }
     std::string optimized_asm;
-    EXPECT_TRUE(tools_.Disassemble(optimized_bin, &optimized_asm,
-                                   disassemble_options_))
+    EXPECT_TRUE(
+        tools_.Disassemble(optimized_bin, &optimized_asm, disassemble_options_))
         << "Disassembling failed for shader:\n"
         << original << std::endl;
     EXPECT_EQ(expected, optimized_asm);
@@ -149,7 +147,7 @@ class PassTest : public TestT {
                              const std::string& expected, bool skip_nop,
                              Args&&... args) {
     SinglePassRunAndCheck<PassT>(original, expected, skip_nop, false,
-      std::forward<Args>(args)...);
+                                 std::forward<Args>(args)...);
   }
 
 #ifdef SPIRV_EFFCEE
@@ -200,8 +198,7 @@ class PassTest : public TestT {
     context()->module()->ToBinary(&binary, /* skip_nop = */ false);
 
     std::string optimized;
-    EXPECT_TRUE(tools_.Disassemble(binary, &optimized,
-                                   disassemble_options_));
+    EXPECT_TRUE(tools_.Disassemble(binary, &optimized, disassemble_options_));
     EXPECT_EQ(expected, optimized);
   }
 
@@ -213,11 +210,12 @@ class PassTest : public TestT {
     disassemble_options_ = disassemble_options;
   }
 
-  MessageConsumer consumer() { return consumer_;}
+  MessageConsumer consumer() { return consumer_; }
   ir::IRContext* context() { return context_.get(); }
+
  private:
-  MessageConsumer consumer_;  // Message consumer.
-  std::unique_ptr<ir::IRContext> context_; // IR context
+  MessageConsumer consumer_;                // Message consumer.
+  std::unique_ptr<ir::IRContext> context_;  // IR context
   SpirvTools tools_;  // An instance for calling SPIRV-Tools functionalities.
   std::unique_ptr<opt::PassManager> manager_;  // The pass manager.
   uint32_t assemble_options_;

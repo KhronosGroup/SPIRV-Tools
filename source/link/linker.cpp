@@ -72,9 +72,9 @@ using LinkageTable = std::vector<LinkageEntry>;
 // Both |modules| and |max_id_bound| should not be null, and |modules| should
 // not be empty either. Furthermore |modules| should not contain any null
 // pointers.
-static spv_result_t ShiftIdsInModules(
-    const MessageConsumer& consumer,
-    std::vector<ir::Module*>* modules, uint32_t* max_id_bound);
+static spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
+                                      std::vector<ir::Module*>* modules,
+                                      uint32_t* max_id_bound);
 
 // Generates the header for the linked module and returns it in |header|.
 //
@@ -84,20 +84,19 @@ static spv_result_t ShiftIdsInModules(
 // TODO(pierremoreau): What to do when binaries use different versions of
 //                     SPIR-V? For now, use the max of all versions found in
 //                     the input modules.
-static spv_result_t GenerateHeader(
-    const MessageConsumer& consumer,
-    const std::vector<ir::Module*>& modules,
-    uint32_t max_id_bound, ir::ModuleHeader* header);
+static spv_result_t GenerateHeader(const MessageConsumer& consumer,
+                                   const std::vector<ir::Module*>& modules,
+                                   uint32_t max_id_bound,
+                                   ir::ModuleHeader* header);
 
 // Merge all the modules from |inModules| into a single module owned by
 // |linked_context|.
 //
 // |linked_context| should not be null.
-static spv_result_t MergeModules(
-    const MessageConsumer& consumer,
-    const std::vector<Module*>& inModules,
-    const libspirv::AssemblyGrammar& grammar,
-    IRContext* linked_context);
+static spv_result_t MergeModules(const MessageConsumer& consumer,
+                                 const std::vector<Module*>& inModules,
+                                 const libspirv::AssemblyGrammar& grammar,
+                                 IRContext* linked_context);
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
 //
@@ -283,9 +282,9 @@ spv_result_t Linker::Link(const uint32_t* const* binaries,
   return SPV_SUCCESS;
 }
 
-static spv_result_t ShiftIdsInModules(
-    const MessageConsumer& consumer,
-    std::vector<ir::Module*>* modules, uint32_t* max_id_bound) {
+static spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
+                                      std::vector<ir::Module*>* modules,
+                                      uint32_t* max_id_bound) {
   spv_position_t position = {};
 
   if (modules == nullptr)
@@ -329,10 +328,10 @@ static spv_result_t ShiftIdsInModules(
   return SPV_SUCCESS;
 }
 
-static spv_result_t GenerateHeader(
-    const MessageConsumer& consumer,
-    const std::vector<ir::Module*>& modules,
-    uint32_t max_id_bound, ir::ModuleHeader* header) {
+static spv_result_t GenerateHeader(const MessageConsumer& consumer,
+                                   const std::vector<ir::Module*>& modules,
+                                   uint32_t max_id_bound,
+                                   ir::ModuleHeader* header) {
   spv_position_t position = {};
 
   if (modules.empty())
@@ -357,10 +356,10 @@ static spv_result_t GenerateHeader(
   return SPV_SUCCESS;
 }
 
-static spv_result_t MergeModules(
-    const MessageConsumer& consumer,
-    const std::vector<Module*>& input_modules,
-    const libspirv::AssemblyGrammar& grammar, IRContext* linked_context) {
+static spv_result_t MergeModules(const MessageConsumer& consumer,
+                                 const std::vector<Module*>& input_modules,
+                                 const libspirv::AssemblyGrammar& grammar,
+                                 IRContext* linked_context) {
   spv_position_t position = {};
 
   if (linked_context == nullptr)
@@ -423,8 +422,8 @@ static spv_result_t MergeModules(
     }
 
     if (memory_model_inst != nullptr)
-      linked_module->SetMemoryModel(
-          std::unique_ptr<Instruction>(memory_model_inst->Clone(linked_context)));
+      linked_module->SetMemoryModel(std::unique_ptr<Instruction>(
+          memory_model_inst->Clone(linked_context)));
   } while (false);
 
   std::vector<std::pair<uint32_t, const char*>> entry_points;
@@ -707,7 +706,8 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   // Remove declarations of imported variables
   for (const auto& linking_entry : linkings_to_do) {
     for (auto& inst : linked_context->types_values())
-      if (inst.result_id() == linking_entry.imported_symbol.id) linked_context->KillInst(&inst);
+      if (inst.result_id() == linking_entry.imported_symbol.id)
+        linked_context->KillInst(&inst);
   }
 
   // Remove import linkage attributes
@@ -738,12 +738,14 @@ static spv_result_t RemoveLinkageSpecificInstructions(
   return SPV_SUCCESS;
 }
 
-spv_result_t VerifyIds(const MessageConsumer& consumer, ir::IRContext* linked_context) {
+spv_result_t VerifyIds(const MessageConsumer& consumer,
+                       ir::IRContext* linked_context) {
   std::unordered_set<uint32_t> ids;
   bool ok = true;
-  linked_context->module()->ForEachInst([&ids,&ok](const ir::Instruction* inst) {
-    ok &= ids.insert(inst->unique_id()).second;
-  });
+  linked_context->module()->ForEachInst(
+      [&ids, &ok](const ir::Instruction* inst) {
+        ok &= ids.insert(inst->unique_id()).second;
+      });
 
   if (!ok) {
     consumer(SPV_MSG_INTERNAL_ERROR, "", {}, "Non-unique id in merged module");

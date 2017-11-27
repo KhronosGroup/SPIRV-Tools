@@ -63,7 +63,7 @@ INSTANTIATE_TEST_CASE_P(
         {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
         {" Sample %5", {MASK(Sample), 5}},
         {" MinLod %5", {MASK(MinLod), 5}},
-    }),);
+    }), );
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
@@ -76,8 +76,7 @@ INSTANTIATE_TEST_CASE_P(
         {" Lod|Grad %5 %6 %7", {MASK(Lod) | MASK(Grad), 5, 6, 7}},
         {" Grad|ConstOffset %5 %6 %7",
          {MASK(Grad) | MASK(ConstOffset), 5, 6, 7}},
-        {" ConstOffset|Offset %5 %6",
-         {MASK(ConstOffset) | MASK(Offset), 5, 6}},
+        {" ConstOffset|Offset %5 %6", {MASK(ConstOffset) | MASK(Offset), 5, 6}},
         {" Offset|ConstOffsets %5 %6",
          {MASK(Offset) | MASK(ConstOffsets), 5, 6}},
         {" ConstOffsets|Sample %5 %6",
@@ -93,7 +92,7 @@ INSTANTIATE_TEST_CASE_P(
          " %5 %6 %7 %8 %9 %10 %11 %12",
          {MASK(Bias) | MASK(Lod) | MASK(Grad) | MASK(ConstOffset) |
               MASK(Offset) | MASK(ConstOffsets) | MASK(Sample),
-          5, 6, 7, 8, 9, 10, 11, 12}}}),);
+          5, 6, 7, 8, 9, 10, 11, 12}}}), );
 #undef MASK
 
 TEST_F(ImageOperandsTest, WrongOperand) {
@@ -132,7 +131,7 @@ TEST_F(OpImageTest, InvalidSampledImageOperand) {
 TEST_F(OpImageTest, TooManyOperands) {
   // We should improve this message, to say what instruction we're trying to
   // parse.
-  EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 %4"), // an Id
+  EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 %4"),  // an Id
               Eq("Expected '=', found end of stream."));
 
   EXPECT_THAT(CompileFailure("%2 = OpImage %1 %3 99"),  // a number
@@ -185,7 +184,7 @@ INSTANTIATE_TEST_CASE_P(ImageSparseReadImageOperandsAny,
                             {" ConstOffsets %5", {MASK(ConstOffsets), 5}},
                             {" Sample %5", {MASK(Sample), 5}},
                             {" MinLod %5", {MASK(MinLod), 5}},
-                        }),);
+                        }), );
 #undef MASK
 #define MASK(NAME) static_cast<uint32_t>(SpvImageOperands##NAME##Mask)
 INSTANTIATE_TEST_CASE_P(
@@ -210,7 +209,7 @@ INSTANTIATE_TEST_CASE_P(
           5, 6, 7, 8, 9, 10, 11, 12}},
         // Don't try the masks reversed, since this is a round trip test,
         // and the disassembler will sort them.
-    }),);
+    }), );
 #undef MASK
 
 TEST_F(OpImageSparseReadTest, InvalidTypeOperand) {

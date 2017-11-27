@@ -28,12 +28,12 @@
 
 namespace {
 
-using ::testing::HasSubstr;
-using ::testing::ValuesIn;
 using spvtest::ScopedContext;
 using std::ostringstream;
 using std::string;
 using std::vector;
+using ::testing::HasSubstr;
+using ::testing::ValuesIn;
 
 using ValidateIdWithMessage = spvtest::ValidateBase<bool>;
 
@@ -2516,8 +2516,7 @@ TEST_F(ValidateIdWithMessage, OpStoreBuiltin) {
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("storage class is read-only"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("storage class is read-only"));
 }
 
 TEST_F(ValidateIdWithMessage, OpCopyMemoryGood) {
@@ -2736,8 +2735,8 @@ TEST_P(AccessChainInstructionTest, AccessChainGood) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup +
                  "%float_entry = " + instr +
-      R"( %_ptr_Private_float %my_matrix )" + elem +
-      R"(%int_0 %int_1
+                 R"( %_ptr_Private_float %my_matrix )" + elem +
+                 R"(%int_0 %int_1
               OpReturn
               OpFunctionEnd
           )";
@@ -2770,8 +2769,8 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %float_entry = )" +
-      instr + " %_ptr_Private_float %void " + elem +
-      R"(%int_0 %int_1
+                 instr + " %_ptr_Private_float %void " + elem +
+                 R"(%int_0 %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -2788,8 +2787,7 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %_ptr_Private_float )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2809,8 +2807,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Function_float %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -2831,8 +2828,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(%int_0
 OpReturn
 OpFunctionEnd
@@ -2851,8 +2847,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -2867,8 +2862,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_mat4x3 %my_float_var )" + elem + R"(
 OpReturn
 OpFunctionEnd
@@ -3017,10 +3011,9 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
 TEST_P(AccessChainInstructionTest, AccessChainUndefinedIndexBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
-  string spirv =
-      kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
+  string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
 %entry = )" + instr +
-          R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
+                 R"( %_ptr_Private_float %my_matrix )" + elem + R"(%float %int_1
 OpReturn
 OpFunctionEnd
   )";
@@ -3037,9 +3030,9 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%f = )" +
-      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
-      R"(%int_0 %spec_int %int_2
+%f = )" + instr + R"( %_ptr_Uniform_float %blockName_var )" +
+                 elem +
+                 R"(%int_0 %spec_int %int_2
 OpReturn
 OpFunctionEnd
   )";
@@ -3057,8 +3050,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_1 %int_2
 OpReturn
@@ -3078,8 +3070,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructTooManyIndexesBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_0 %int_2 %int_2
 OpReturn
@@ -3098,8 +3089,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Uniform_float %blockName_var )" + elem +
                  R"(%int_3 %int_2 %int_2
 OpReturn
@@ -3186,8 +3176,7 @@ TEST_P(AccessChainInstructionTest, AccessChainMatrixMoreArgsThanNeededBad) {
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_float %my_matrix )" + elem +
                  R"(%int_0 %int_1 %int_0
 OpReturn
@@ -3207,8 +3196,7 @@ TEST_P(AccessChainInstructionTest,
   const std::string instr = GetParam();
   const std::string elem = AccessChainRequiresElemId(instr) ? "%int_0 " : "";
   string spirv = kGLSL450MemoryModel + kDeeplyNestedStructureSetup + R"(
-%entry = )" +
-      instr +
+%entry = )" + instr +
                  R"( %_ptr_Private_mat4x3 %my_matrix )" + elem +
                  R"(%int_0 %int_1
 OpReturn
@@ -4094,10 +4082,9 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleVector1ComponentType) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("The Component Type of Vector 1 must be the same as "
-                "ResultType."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Component Type of Vector 1 must be the same as "
+                        "ResultType."));
 }
 
 TEST_F(ValidateIdWithMessage, OpVectorShuffleVector2ComponentType) {
@@ -4128,10 +4115,9 @@ TEST_F(ValidateIdWithMessage, OpVectorShuffleVector2ComponentType) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("The Component Type of Vector 2 must be the same as "
-                "ResultType."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Component Type of Vector 2 must be the same as "
+                        "ResultType."));
 }
 
 TEST_F(ValidateIdWithMessage, OpVectorShuffleLiterals) {
@@ -4276,7 +4262,8 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_CondIsScalarInt) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Condition operand for OpBranchConditional must be of boolean type"));
+      HasSubstr(
+          "Condition operand for OpBranchConditional must be of boolean type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
@@ -4288,13 +4275,13 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_TrueTargetIsNotLabel) {
   // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   // EXPECT_THAT(
   //     getDiagnosticString(),
-  //     HasSubstr("The 'True Label' operand for OpBranchConditional must be the ID of an OpLabel instruction"));
+  //     HasSubstr("The 'True Label' operand for OpBranchConditional must be the
+  //     ID of an OpLabel instruction"));
 
   // xxxnsubtil: this is actually caught by the ID validation instead
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("are referenced but not defined in function"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("are referenced but not defined in function"));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
@@ -4306,13 +4293,13 @@ TEST_F(ValidateIdWithMessage, OpBranchConditional_FalseTargetIsNotLabel) {
   // EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   // EXPECT_THAT(
   //     getDiagnosticString(),
-  //     HasSubstr("The 'False Label' operand for OpBranchConditional must be the ID of an OpLabel instruction"));
+  //     HasSubstr("The 'False Label' operand for OpBranchConditional must be
+  //     the ID of an OpLabel instruction"));
 
   // xxxnsubtil: this is actually caught by the ID validation
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("are referenced but not defined in function"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("are referenced but not defined in function"));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditional_NotEnoughWeights) {

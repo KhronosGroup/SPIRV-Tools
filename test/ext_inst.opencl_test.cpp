@@ -15,8 +15,8 @@
 #include "unit_spirv.h"
 
 #include <gmock/gmock.h>
-#include "test_fixture.h"
 #include "spirv/1.0/OpenCL.std.h"
+#include "test_fixture.h"
 
 namespace {
 

@@ -24,10 +24,10 @@ using LocalSSAElimTest = PassTest<::testing::Test>;
 
 TEST_F(LocalSSAElimTest, ForLoop) {
   // #version 140
-  // 
+  //
   // in vec4 BC;
   // out float fo;
-  // 
+  //
   // void main()
   // {
   //     float f = 0.0;
@@ -143,16 +143,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, ForLoopWithContinue) {
   // #version 140
-  // 
+  //
   // in vec4 BC;
   // out float fo;
-  // 
+  //
   // void main()
   // {
   //     float f = 0.0;
@@ -291,16 +290,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, ForLoopWithBreak) {
   // #version 140
-  // 
+  //
   // in vec4 BC;
   // out float fo;
-  // 
+  //
   // void main()
   // {
   //     float f = 0.0;
@@ -440,16 +438,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, SwapProblem) {
   // #version 140
-  // 
+  //
   // in float fe;
   // out float fo;
-  // 
+  //
   // void main()
   // {
   //     float f1 = 0.0;
@@ -580,16 +577,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, LostCopyProblem) {
   // #version 140
-  // 
+  //
   // in vec4 BC;
   // out float fo;
-  // 
+  //
   // void main()
   // {
   //     float f = 0.0;
@@ -731,16 +727,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, IfThenElse) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float f;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -843,18 +838,17 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, DecoratedVar) {
   // SPIR-V hand edited to decorate v
   // #version 450
-  // 
+  //
   // layout (location=0) in vec4 BaseColor;
   // layout (location=1) in float f;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -979,17 +973,15 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
-      predefs_before + before,
-      predefs_after + after,
-      true, true);
+      predefs_before + before, predefs_after + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, IfThen) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float f;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -1081,16 +1073,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, Switch) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float f;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -1220,16 +1211,15 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, SwitchWithFallThrough) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
   // in float f;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -1360,8 +1350,7 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<opt::LocalMultiStoreElimPass>(
       predefs + names_before + predefs2 + before,
-      predefs + names_after + predefs2 + after,
-      true, true);
+      predefs + names_after + predefs2 + after, true, true);
 }
 
 TEST_F(LocalSSAElimTest, DontPatchPhiInLoopHeaderThatIsNotAVar) {

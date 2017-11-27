@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "def_use_manager.h"
 #include "decoration_manager.h"
+#include "def_use_manager.h"
 #include "module.h"
 #include "pass.h"
 

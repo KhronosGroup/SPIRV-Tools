@@ -71,7 +71,8 @@ class DecorationManager {
   // Function |f| can be used to update context information and is called
   // with |false|, before an instruction is going to be changed and
   // with |true| afterwards.
-  void CloneDecorations(uint32_t from, uint32_t to, std::function<void(ir::Instruction&, bool)> f);
+  void CloneDecorations(uint32_t from, uint32_t to,
+                        std::function<void(ir::Instruction&, bool)> f);
 
   // Informs the decoration manager of a new decoration that it needs to track.
   void AddDecoration(ir::Instruction* inst);

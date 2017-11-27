@@ -343,7 +343,7 @@ class IRContext {
 
   // Opcodes of shader capability core executable instructions
   // without side-effect.
-  std::unordered_map<uint32_t, std::unordered_set<uint32_t>>  combinator_ops_;
+  std::unordered_map<uint32_t, std::unordered_set<uint32_t>> combinator_ops_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,

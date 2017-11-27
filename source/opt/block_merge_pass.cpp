@@ -24,12 +24,11 @@ namespace opt {
 
 bool BlockMergePass::HasMultipleRefs(uint32_t labId) {
   int rcnt = 0;
-  get_def_use_mgr()->ForEachUser(
-      labId, [&rcnt](ir::Instruction* user) {
-        if (user->opcode() != SpvOpName) {
-          ++rcnt;
-        }
-      });
+  get_def_use_mgr()->ForEachUser(labId, [&rcnt](ir::Instruction* user) {
+    if (user->opcode() != SpvOpName) {
+      ++rcnt;
+    }
+  });
   return rcnt > 1;
 }
 
@@ -40,7 +39,7 @@ void BlockMergePass::KillInstAndName(ir::Instruction* inst) {
       to_kill.push_back(user);
     }
   });
-  for (auto i: to_kill) {
+  for (auto i : to_kill) {
     context()->KillInst(i);
   }
   context()->KillInst(inst);

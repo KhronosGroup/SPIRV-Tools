@@ -121,6 +121,6 @@ struct hash<libspirv::Instruction> {
     return hash<uint32_t>()(inst.id());
   }
 };
-}  /// namespace std
+}  // namespace std
 
 #endif  // LIBSPIRV_VAL_INSTRUCTION_H_

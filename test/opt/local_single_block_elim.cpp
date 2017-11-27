@@ -681,21 +681,21 @@ TEST_F(LocalSingleBlockLoadStoreElimTest, PositiveAndNegativeCallTree) {
   // Note that the call tree function bar is optimized, but foo is not
   //
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // vec4 foo(vec4 v1)
   // {
   //     vec4 t = v1;
   //     return t;
   // }
-  // 
+  //
   // vec4 bar(vec4 v1)
   // {
   //     vec4 t = v1;
   //     return t;
   // }
-  // 
+  //
   // void main()
   // {
   //     gl_FragColor = bar(BaseColor);

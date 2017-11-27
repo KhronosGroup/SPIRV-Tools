@@ -30,13 +30,13 @@ TEST_F(CommonUniformElimTest, Basic1) {
   // #version 140
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     float g_F;
   //     float g_F2;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -179,13 +179,13 @@ TEST_F(CommonUniformElimTest, Basic2) {
   // in vec4 BaseColor;
   // in float fi;
   // in float fi2;
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     float g_F;
   //     float g_F2;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     float f = fi;
@@ -340,13 +340,13 @@ TEST_F(CommonUniformElimTest, Basic3) {
   // #version 140
   // in vec4 BaseColor;
   // in float fi;
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     bool g_B;
   //     float g_F;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -458,12 +458,12 @@ TEST_F(CommonUniformElimTest, Loop) {
   // #version 140
   // in vec4 BC;
   // in vec4 BC2;
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     float g_F;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BC;
@@ -663,7 +663,7 @@ OpFunctionEnd
       predefs + before, predefs + after, true, true);
 }
 
-  TEST_F(CommonUniformElimTest, Volatile1) {
+TEST_F(CommonUniformElimTest, Volatile1) {
   // Note: This test exemplifies the following:
   // - Same test as Basic1 with the exception that
   //   the Load of g_F in else-branch is volatile
@@ -810,7 +810,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::CommonUniformElimPass>(
-  predefs + before, predefs + after, true, true);
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(CommonUniformElimTest, Volatile2) {
@@ -918,7 +918,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res = std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
+  opt::Pass::Status res = std::get<1>(
+      SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
 
@@ -955,7 +956,7 @@ TEST_F(CommonUniformElimTest, Volatile3) {
   // }
 
   const std::string text =
-  R"(OpCapability Shader
+      R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %BaseColor %fi
@@ -1034,7 +1035,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res = std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
+  opt::Pass::Status res = std::get<1>(
+      SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

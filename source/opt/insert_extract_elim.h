@@ -41,7 +41,7 @@ class InsertExtractElimPass : public Pass {
 
  private:
   // Return true if indices of extract |extInst| starting at |extOffset|
-  // match indices of insert |insInst|. 
+  // match indices of insert |insInst|.
   bool ExtInsMatch(const ir::Instruction* extInst,
                    const ir::Instruction* insInst,
                    const uint32_t extOffset) const;

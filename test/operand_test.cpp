@@ -17,8 +17,8 @@
 namespace {
 
 using GetTargetTest = ::testing::TestWithParam<spv_target_env>;
-using ::testing::ValuesIn;
 using std::vector;
+using ::testing::ValuesIn;
 
 TEST_P(GetTargetTest, Default) {
   spv_operand_table table;

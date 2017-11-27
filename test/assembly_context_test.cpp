@@ -14,8 +14,8 @@
 
 #include "unit_spirv.h"
 
-#include <vector>
 #include <gmock/gmock.h>
+#include <vector>
 
 #include "source/instruction.h"
 

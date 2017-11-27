@@ -51,10 +51,7 @@ Pass::Status EliminateDeadFunctionsPass::Process(ir::IRContext* c) {
 void EliminateDeadFunctionsPass::EliminateFunction(ir::Function* func) {
   // Remove all of the instruction in the function body
   func->ForEachInst(
-      [this](ir::Instruction* inst) {
-        context()->KillInst(inst);
-      },
-      true);
+      [this](ir::Instruction* inst) { context()->KillInst(inst); }, true);
 }
 }  // namespace opt
 }  // namespace spvtools

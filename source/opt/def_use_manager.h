@@ -42,15 +42,11 @@ inline bool operator==(const Use& lhs, const Use& rhs) {
   return lhs.inst == rhs.inst && lhs.operand_index == rhs.operand_index;
 }
 
-inline bool operator!=(const Use& lhs, const Use& rhs) {
-  return !(lhs == rhs);
-}
+inline bool operator!=(const Use& lhs, const Use& rhs) { return !(lhs == rhs); }
 
 inline bool operator<(const Use& lhs, const Use& rhs) {
-  if (lhs.inst < rhs.inst)
-    return true;
-  if (lhs.inst > rhs.inst)
-    return false;
+  if (lhs.inst < rhs.inst) return true;
+  if (lhs.inst > rhs.inst) return false;
   return lhs.operand_index < rhs.operand_index;
 }
 
@@ -77,26 +73,19 @@ struct UserEntryLess {
   bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
     // If lhs.first and rhs.first are both null, fall through to checking the
     // second entries.
-    if (!lhs.first && rhs.first)
-      return true;
-    if (lhs.first && !rhs.first)
-      return false;
+    if (!lhs.first && rhs.first) return true;
+    if (lhs.first && !rhs.first) return false;
 
     // If neither defintion is null, then compare unique ids.
     if (lhs.first && rhs.first) {
-      if (lhs.first->unique_id() < rhs.first->unique_id())
-        return true;
-      if (rhs.first->unique_id() < lhs.first->unique_id())
-        return false;
+      if (lhs.first->unique_id() < rhs.first->unique_id()) return true;
+      if (rhs.first->unique_id() < lhs.first->unique_id()) return false;
     }
 
     // Return false on equality.
-    if (!lhs.second && !rhs.second)
-      return false;
-    if (!lhs.second)
-      return true;
-    if (!rhs.second)
-      return false;
+    if (!lhs.second && !rhs.second) return false;
+    if (!lhs.second) return true;
+    if (!rhs.second) return false;
 
     // If neither user is null then compare unique ids.
     return lhs.second->unique_id() < rhs.second->unique_id();
@@ -155,12 +144,12 @@ class DefUseManager {
   // visited separately.
   //
   // |def| (or |id|) must be registered as a definition.
-  void ForEachUse(
-      const ir::Instruction* def,
-      const std::function<void(ir::Instruction*, uint32_t operand_index)>& f) const;
-  void ForEachUse(
-      uint32_t id,
-      const std::function<void(ir::Instruction*, uint32_t operand_index)>& f) const;
+  void ForEachUse(const ir::Instruction* def,
+                  const std::function<void(ir::Instruction*,
+                                           uint32_t operand_index)>& f) const;
+  void ForEachUse(uint32_t id,
+                  const std::function<void(ir::Instruction*,
+                                           uint32_t operand_index)>& f) const;
 
   // Returns the annotation instrunctions which are a direct use of the given
   // |id|. This means when the decorations are applied through decoration
@@ -184,8 +173,8 @@ class DefUseManager {
   // Erases the records that a given instruction uses its operand ids.
   void EraseUseRecordsOfOperandIds(const ir::Instruction* inst);
 
-  friend  bool operator==(const DefUseManager&, const DefUseManager&);
-  friend  bool operator!=(const DefUseManager& lhs, const DefUseManager& rhs) {
+  friend bool operator==(const DefUseManager&, const DefUseManager&);
+  friend bool operator!=(const DefUseManager& lhs, const DefUseManager& rhs) {
     return !(lhs == rhs);
   }
 
@@ -213,11 +202,10 @@ class DefUseManager {
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDefUse(ir::Module* module);
 
-  IdToDefMap id_to_def_;    // Mapping from ids to their definitions
-  IdToUsersMap id_to_users_; // Mapping from ids to their users
+  IdToDefMap id_to_def_;      // Mapping from ids to their definitions
+  IdToUsersMap id_to_users_;  // Mapping from ids to their users
   // Mapping from instructions to the ids used in the instruction.
   InstToUsedIdsMap inst_to_used_ids_;
-
 };
 
 }  // namespace analysis

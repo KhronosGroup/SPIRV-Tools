@@ -27,9 +27,9 @@ TEST_F(BlockMergeTest, Simple) {
   // between two statements in main.
   //
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  void main()
   //  {
   //      vec4 v = BaseColor;
@@ -84,8 +84,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+                                             true, true);
 }
 
 TEST_F(BlockMergeTest, EmptyBlock) {
@@ -93,9 +93,9 @@ TEST_F(BlockMergeTest, EmptyBlock) {
   // after two statements in main.
   //
   //  #version 140
-  //  
+  //
   //  in vec4 BaseColor;
-  //  
+  //
   //  void main()
   //  {
   //      vec4 v = BaseColor;
@@ -154,8 +154,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+                                             true, true);
 }
 
 TEST_F(BlockMergeTest, NoOptOfMergeOrContinueBlock) {
@@ -164,7 +164,7 @@ TEST_F(BlockMergeTest, NoOptOfMergeOrContinueBlock) {
   //
   // #version 140
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     while (true) {
@@ -212,8 +212,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(
-      assembly, assembly, true, true);
+  SinglePassRunAndCheck<opt::BlockMergePass>(assembly, assembly, true, true);
 }
 
 TEST_F(BlockMergeTest, NestedInControlFlow) {
@@ -222,16 +221,16 @@ TEST_F(BlockMergeTest, NestedInControlFlow) {
   //
   // #version 140
   // in vec4 BaseColor;
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     bool g_B ;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
-  //     if (g_B) 
+  //     if (g_B)
   //       vec4 v = v * 0.25;
   //     gl_FragColor = v;
   // }
@@ -325,8 +324,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::BlockMergePass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::BlockMergePass>(predefs + before, predefs + after,
+                                             true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

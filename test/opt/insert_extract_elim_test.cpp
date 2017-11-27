@@ -30,12 +30,12 @@ TEST_F(InsertExtractElimTest, Simple) {
   // #version 140
   //
   // in vec4 BaseColor;
-  // 
+  //
   // struct S_t {
   //     vec4 v0;
   //     vec4 v1;
   // };
-  // 
+  //
   // void main()
   // {
   //     S_t s0;
@@ -99,8 +99,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeAcrossNonConflictingInsert) {
@@ -111,12 +111,12 @@ TEST_F(InsertExtractElimTest, OptimizeAcrossNonConflictingInsert) {
   // #version 140
   //
   // in vec4 BaseColor;
-  // 
+  //
   // struct S_t {
   //     vec4 v0;
   //     vec4 v1;
   // };
-  // 
+  //
   // void main()
   // {
   //     S_t s0;
@@ -184,8 +184,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeOpaque) {
@@ -266,8 +266,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, OptimizeNestedStruct) {
@@ -277,22 +277,22 @@ TEST_F(InsertExtractElimTest, OptimizeNestedStruct) {
   //     int x;
   //     SamplerState ss;
   // };
-  // 
+  //
   // struct S1
   // {
   //     float b;
   //     S0 s0;
   // };
-  // 
+  //
   // struct S2
   // {
   //     int a1;
   //     S1 resources;
   // };
-  // 
+  //
   // SamplerState samp;
   // Texture2D tex;
-  // 
+  //
   // float4 main(float4 vpos : VPOS) : COLOR0
   // {
   //     S1 s1;
@@ -395,8 +395,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(predefs + before, 
-      predefs + after, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(
+      predefs + before, predefs + after, true, true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
@@ -407,12 +407,12 @@ TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization) {
   // #version 140
   //
   // in vec4 BaseColor;
-  // 
+  //
   // struct S_t {
   //     vec4 v0;
   //     vec4 v1;
   // };
-  // 
+  //
   // void main()
   // {
   //     S_t s0;
@@ -463,8 +463,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, 
-      assembly, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, assembly, true,
+                                                    true);
 }
 
 TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
@@ -475,12 +475,12 @@ TEST_F(InsertExtractElimTest, ConflictingInsertPreventsOptimization2) {
   // #version 140
   //
   // in vec4 BaseColor;
-  // 
+  //
   // struct S_t {
   //     vec4 v0;
   //     vec4 v1;
   // };
-  // 
+  //
   // void main()
   // {
   //     S_t s0;
@@ -535,8 +535,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, 
-      assembly, true, true);
+  SinglePassRunAndCheck<opt::InsertExtractElimPass>(assembly, assembly, true,
+                                                    true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

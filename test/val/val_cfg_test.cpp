@@ -262,8 +262,8 @@ TEST_P(ValidateCFG, LoopUnreachableFromEntryButLeadingToReturn) {
            OpFunctionEnd
   )";
   CompileSuccessfully(str);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
-                                                 << getDiagnosticString();
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions())
+      << str << getDiagnosticString();
 }
 
 TEST_P(ValidateCFG, Simple) {
@@ -278,9 +278,10 @@ TEST_P(ValidateCFG, Simple) {
     loop.SetBody("OpLoopMerge %merge %cont None\n");
   }
 
-  string str = header(GetParam()) + nameOps("loop", "entry", "cont", "merge",
-                                            make_pair("func", "Main")) +
-               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+  string str =
+      header(GetParam()) +
+      nameOps("loop", "entry", "cont", "merge", make_pair("func", "Main")) +
+      types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
   str += loop >> vector<Block>({cont, merge});
@@ -1258,9 +1259,10 @@ TEST_P(ValidateCFG, ContinueTargetCanBeMergeBlockForNestedStructureGood) {
     if_head.SetBody("OpSelectionMerge %if_merge None\n");
   }
 
-  string str = header(GetParam()) + nameOps("entry", "loop", "if_head",
-                                            "if_true", "if_merge", "merge") +
-               types_consts() + "%func    = OpFunction %voidt None %funct\n";
+  string str =
+      header(GetParam()) +
+      nameOps("entry", "loop", "if_head", "if_true", "if_merge", "merge") +
+      types_consts() + "%func    = OpFunction %voidt None %funct\n";
 
   str += entry >> loop;
   str += loop >> if_head;
@@ -1298,8 +1300,8 @@ TEST_P(ValidateCFG, SingleLatchBlockMultipleBranchesToLoopHeader) {
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
-                                                 << getDiagnosticString();
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions())
+      << str << getDiagnosticString();
 }
 
 TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
@@ -1330,8 +1332,8 @@ TEST_P(ValidateCFG, SingleLatchBlockHeaderContinueTargetIsItselfGood) {
   str += "OpFunctionEnd";
 
   CompileSuccessfully(str);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << str
-                                                 << getDiagnosticString();
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions())
+      << str << getDiagnosticString();
 }
 
 // Unit test to check the case where a basic block is the entry block of 2
@@ -1399,4 +1401,4 @@ TEST_F(ValidateCFG, OpReturnInNonVoidFunc) {
 
 /// TODO(umar): Switch instructions
 /// TODO(umar): Nested CFG constructs
-}  /// namespace
+}  // namespace

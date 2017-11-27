@@ -88,10 +88,12 @@ class AssemblyBuilder {
         types_consts_globals_(),
         main_func_(),
         main_func_postamble_({
-            "OpReturn", "OpFunctionEnd",
+            "OpReturn",
+            "OpFunctionEnd",
         }) {
     AppendTypesConstantsGlobals({
-        "%void = OpTypeVoid", "%main_func_type = OpTypeFunction %void",
+        "%void = OpTypeVoid",
+        "%main_func_type = OpTypeFunction %void",
     });
     AppendInMain({
         "%main = OpFunction %void None %main_func_type",

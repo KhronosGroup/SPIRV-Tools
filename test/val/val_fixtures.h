@@ -17,8 +17,8 @@
 #ifndef LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 #define LIBSPIRV_TEST_VALIDATE_FIXTURES_H_
 
-#include "unit_spirv.h"
 #include "source/val/validation_state.h"
+#include "unit_spirv.h"
 
 namespace spvtest {
 
@@ -60,5 +60,5 @@ class ValidateBase : public ::testing::Test,
   spv_validator_options options_;
   std::unique_ptr<libspirv::ValidationState_t> vstate_;
 };
-}
+}  // namespace spvtest
 #endif

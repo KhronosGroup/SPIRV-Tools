@@ -694,9 +694,8 @@ bool idUsage::isValid<SpvOpConstantComposite>(const spv_instruction_t* inst,
       for (size_t constituentIndex = 3; constituentIndex < inst->words.size();
            constituentIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
-        if (!constituent ||
-            !(SpvOpConstantComposite == constituent->opcode() ||
-              SpvOpUndef == constituent->opcode())) {
+        if (!constituent || !(SpvOpConstantComposite == constituent->opcode() ||
+                              SpvOpUndef == constituent->opcode())) {
           // The message says "... or undef" because the spec does not say
           // undef is a constant.
           DIAG(constituentIndex) << "OpConstantComposite Constituent <id> '"
@@ -924,8 +923,9 @@ bool idUsage::isValid<SpvOpSampledImage>(const spv_instruction_t* inst,
             << "All OpSampledImage instructions must be in the same block in "
                "which their Result <id> are consumed. OpSampledImage Result "
                "Type <id> '"
-            << resultID << "' has a consumer in a different basic "
-                           "block. The consumer instruction <id> is '"
+            << resultID
+            << "' has a consumer in a different basic "
+               "block. The consumer instruction <id> is '"
             << consumer_id << "'.";
         return false;
       }
@@ -1023,10 +1023,9 @@ bool idUsage::isValid<SpvOpSpecConstantComposite>(const spv_instruction_t* inst,
            constituentIndex++) {
         auto constituent = module_.FindDef(inst->words[constituentIndex]);
         auto constituentOpCode = constituent->opcode();
-        if (!constituent ||
-            !(SpvOpSpecConstantComposite == constituentOpCode ||
-              SpvOpConstantComposite == constituentOpCode ||
-              SpvOpUndef == constituentOpCode)) {
+        if (!constituent || !(SpvOpSpecConstantComposite == constituentOpCode ||
+                              SpvOpConstantComposite == constituentOpCode ||
+                              SpvOpUndef == constituentOpCode)) {
           // The message says "... or undef" because the spec does not say
           // undef is a constant.
           DIAG(constituentIndex) << "OpSpecConstantComposite Constituent <id> '"
@@ -1524,8 +1523,9 @@ bool idUsage::isValid<SpvOpAccessChain>(const spv_instruction_t* inst,
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        DIAG(i) << instr_name << " reached non-composite type while indexes "
-                                 "still remain to be traversed.";
+        DIAG(i) << instr_name
+                << " reached non-composite type while indexes "
+                   "still remain to be traversed.";
         return false;
       }
     }
@@ -1744,8 +1744,9 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
   auto resultVectorDimension = resultType->words()[vectorComponentCountIndex];
   if (componentCount != resultVectorDimension) {
     DIAG(inst->words.size() - 1)
-        << instr_name() << " component literals count does not match "
-                           "Result Type <id> '"
+        << instr_name()
+        << " component literals count does not match "
+           "Result Type <id> '"
         << resultType->id() << "'s vector component count.";
     return false;
   }
@@ -1858,8 +1859,9 @@ bool walkCompositeTypeHierarchy(
       }
       default: {
         // Give an error. reached non-composite type while indexes still remain.
-        *error << instr_name() << " reached non-composite type while indexes "
-                                  "still remain to be traversed.";
+        *error << instr_name()
+               << " reached non-composite type while indexes "
+                  "still remain to be traversed.";
         return false;
       }
     }
@@ -1986,8 +1988,9 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
     DIAG(objectIdIndex)
         << "The Object type (Op"
         << spvOpcodeString(static_cast<SpvOp>(objectTypeInstr->opcode()))
-        << ") in " << instr_name() << " does not match the type that results "
-                                      "from indexing into the Composite (Op"
+        << ") in " << instr_name()
+        << " does not match the type that results "
+           "from indexing into the Composite (Op"
         << spvOpcodeString(static_cast<SpvOp>(indexedTypeInstr->opcode()))
         << ").";
     return false;

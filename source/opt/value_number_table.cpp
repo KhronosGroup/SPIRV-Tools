@@ -92,7 +92,8 @@ bool ComputeSameValue::operator()(const ir::Instruction& lhs,
     }
   }
 
-  return lhs.context()->get_decoration_mgr()->HaveTheSameDecorations(lhs.result_id(), rhs.result_id());
+  return lhs.context()->get_decoration_mgr()->HaveTheSameDecorations(
+      lhs.result_id(), rhs.result_id());
 }
 
 std::size_t ValueTableHash::operator()(

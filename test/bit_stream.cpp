@@ -21,47 +21,41 @@
 
 namespace {
 
-using spvutils::BitWriterInterface;
 using spvutils::BitReaderInterface;
-using spvutils::BitWriterWord64;
 using spvutils::BitReaderWord64;
-using spvutils::StreamToBuffer;
-using spvutils::BufferToStream;
-using spvutils::NumBitsToNumWords;
-using spvutils::PadToWord;
-using spvutils::StreamToBitset;
 using spvutils::BitsetToStream;
 using spvutils::BitsToStream;
-using spvutils::StreamToBits;
-using spvutils::GetLowerBits;
-using spvutils::EncodeZigZag;
+using spvutils::BitWriterInterface;
+using spvutils::BitWriterWord64;
+using spvutils::BufferToStream;
 using spvutils::DecodeZigZag;
+using spvutils::EncodeZigZag;
+using spvutils::GetLowerBits;
 using spvutils::Log2U64;
+using spvutils::NumBitsToNumWords;
+using spvutils::PadToWord;
+using spvutils::StreamToBits;
+using spvutils::StreamToBitset;
+using spvutils::StreamToBuffer;
 
 // A simple and inefficient implementatition of BitWriterInterface,
 // using std::stringstream. Intended for tests only.
 class BitWriterStringStream : public BitWriterInterface {
  public:
-  void WriteStream(const std::string& bits) override {
-    ss_ << bits;
-  }
+  void WriteStream(const std::string& bits) override { ss_ << bits; }
 
   void WriteBits(uint64_t bits, size_t num_bits) override {
     assert(num_bits <= 64);
     ss_ << BitsToStream(bits, num_bits);
   }
 
-  size_t GetNumBits() const override {
-    return ss_.str().size();
-  }
+  size_t GetNumBits() const override { return ss_.str().size(); }
 
   std::vector<uint8_t> GetDataCopy() const override {
     return StreamToBuffer<uint8_t>(ss_.str());
   }
 
-  std::string GetStreamRaw() const {
-    return ss_.str();
-  }
+  std::string GetStreamRaw() const { return ss_.str(); }
 
  private:
   std::stringstream ss_;
@@ -81,25 +75,18 @@ class BitReaderFromString : public BitReaderInterface {
       : str_(PadToWord<64>(BufferToStream(buffer))), pos_(0) {}
 
   size_t ReadBits(uint64_t* bits, size_t num_bits) override {
-    if (ReachedEnd())
-      return 0;
+    if (ReachedEnd()) return 0;
     std::string sub = str_.substr(pos_, num_bits);
     *bits = StreamToBits(sub);
     pos_ += sub.length();
     return sub.length();
   }
 
-  size_t GetNumReadBits() const override {
-    return pos_;
-  }
+  size_t GetNumReadBits() const override { return pos_; }
 
-  bool ReachedEnd() const override {
-    return pos_ >= str_.length();
-  }
+  bool ReachedEnd() const override { return pos_ >= str_.length(); }
 
-  const std::string& GetStreamPadded64() const {
-    return str_;
-  }
+  const std::string& GetStreamPadded64() const { return str_; }
 
  private:
   std::string str_;
@@ -325,7 +312,7 @@ TEST(ZigZagCoding, Encode63) {
   EXPECT_EQ(0u, EncodeZigZag(0, 63));
 
   for (int64_t i = 0; i < 0xFFFFFFFF; i += 1234567) {
-    const int64_t positive_val = GetLowerBits(i * i  * i + i * i, 63) | 1UL;
+    const int64_t positive_val = GetLowerBits(i * i * i + i * i, 63) | 1UL;
     ASSERT_EQ(static_cast<uint64_t>(positive_val),
               EncodeZigZag(positive_val, 63));
     ASSERT_EQ((1ULL << 63) - 1 + positive_val, EncodeZigZag(-positive_val, 63));
@@ -350,24 +337,27 @@ TEST(BufToStream, UInt8_Empty) {
 TEST(BufToStream, UInt8_OneWord) {
   const std::string expected_bits = "00101100";
   std::vector<uint8_t> buffer = StreamToBuffer<uint8_t>(expected_bits);
-  EXPECT_EQ(
-      std::vector<uint8_t>(
-          {static_cast<uint8_t>(StreamToBitset<8>(expected_bits).to_ulong())}),
-      buffer);
+  EXPECT_EQ(std::vector<uint8_t>({static_cast<uint8_t>(
+                StreamToBitset<8>(expected_bits).to_ulong())}),
+            buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
 
 TEST(BufToStream, UInt8_MultipleWords) {
-  const std::string expected_bits = "00100010""01101010""01111101""00100010";
+  const std::string expected_bits =
+      "00100010"
+      "01101010"
+      "01111101"
+      "00100010";
   std::vector<uint8_t> buffer = StreamToBuffer<uint8_t>(expected_bits);
-  EXPECT_EQ(
-      std::vector<uint8_t>({
-            static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
-            static_cast<uint8_t>(StreamToBitset<8>("01101010").to_ulong()),
-            static_cast<uint8_t>(StreamToBitset<8>("01111101").to_ulong()),
-            static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
-      }), buffer);
+  EXPECT_EQ(std::vector<uint8_t>({
+                static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
+                static_cast<uint8_t>(StreamToBitset<8>("01101010").to_ulong()),
+                static_cast<uint8_t>(StreamToBitset<8>("01111101").to_ulong()),
+                static_cast<uint8_t>(StreamToBitset<8>("00100010").to_ulong()),
+            }),
+            buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
@@ -396,9 +386,10 @@ TEST(BufToStream, UInt64_Unaligned) {
       "0010001001101010011111111111111111111111";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
   EXPECT_EQ(std::vector<uint64_t>({
-    StreamToBits(expected_bits.substr(0, 64)),
-    StreamToBits(expected_bits.substr(64, 64)),
-  }), buffer);
+                StreamToBits(expected_bits.substr(0, 64)),
+                StreamToBits(expected_bits.substr(64, 64)),
+            }),
+            buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(PadToWord<64>(expected_bits), result_bits);
 }
@@ -410,22 +401,37 @@ TEST(BufToStream, UInt64_MultipleWords) {
       "0000000000000000000000000000000000000000000000000010010011111111";
   std::vector<uint64_t> buffer = StreamToBuffer<uint64_t>(expected_bits);
   EXPECT_EQ(std::vector<uint64_t>({
-    StreamToBits(expected_bits.substr(0, 64)),
-    StreamToBits(expected_bits.substr(64, 64)),
-    StreamToBits(expected_bits.substr(128, 64)),
-  }), buffer);
+                StreamToBits(expected_bits.substr(0, 64)),
+                StreamToBits(expected_bits.substr(64, 64)),
+                StreamToBits(expected_bits.substr(128, 64)),
+            }),
+            buffer);
   const std::string result_bits = BufferToStream(buffer);
   EXPECT_EQ(expected_bits, result_bits);
 }
 
 TEST(PadToWord, Test) {
   EXPECT_EQ("10100000", PadToWord<8>("101"));
-  EXPECT_EQ("10100000""00000000", PadToWord<16>("101"));
-  EXPECT_EQ("10100000""00000000""00000000""00000000",
-            PadToWord<32>("101"));
-  EXPECT_EQ("10100000""00000000""00000000""00000000"
-            "00000000""00000000""00000000""00000000",
-            PadToWord<64>("101"));
+  EXPECT_EQ(
+      "10100000"
+      "00000000",
+      PadToWord<16>("101"));
+  EXPECT_EQ(
+      "10100000"
+      "00000000"
+      "00000000"
+      "00000000",
+      PadToWord<32>("101"));
+  EXPECT_EQ(
+      "10100000"
+      "00000000"
+      "00000000"
+      "00000000"
+      "00000000"
+      "00000000"
+      "00000000"
+      "00000000",
+      PadToWord<64>("101"));
 }
 
 TEST(BitWriterStringStream, Empty) {
@@ -578,10 +584,12 @@ TEST(BitWriterWord64, WriteZeroBits) {
   writer.WriteBits(0, 0);
   writer.WriteBits(7, 3);
   writer.WriteBits(0, 0);
-  EXPECT_EQ(PadToWord<64>(
+  EXPECT_EQ(
+      PadToWord<64>(
           "1"
           "000000000000000000000000000000000000000000000000000000000000000"
-          "111"), writer.GetStreamPadded64());
+          "111"),
+      writer.GetStreamPadded64());
 }
 
 TEST(BitWriterWord64, ComparisonTestWriteLotsOfBits) {
@@ -594,8 +602,7 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfBits) {
     ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
-  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
-            writer2.GetStreamPadded64());
+  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()), writer2.GetStreamPadded64());
 }
 
 TEST(BitWriterWord64, ComparisonTestWriteLotsOfStreams) {
@@ -604,19 +611,15 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfStreams) {
 
   for (int i = 0; i < 1000; ++i) {
     std::string bits = "1111100000";
-    if (i % 2)
-      bits += "101010";
-    if (i % 3)
-      bits += "1110100";
-    if (i % 5)
-      bits += "1110100111111111111";
+    if (i % 2) bits += "101010";
+    if (i % 3) bits += "1110100";
+    if (i % 5) bits += "1110100111111111111";
     writer1.WriteStream(bits);
     writer2.WriteStream(bits);
     ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
-  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
-            writer2.GetStreamPadded64());
+  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()), writer2.GetStreamPadded64());
 }
 
 TEST(BitWriterWord64, ComparisonTestWriteLotsOfBitsets) {
@@ -633,8 +636,7 @@ TEST(BitWriterWord64, ComparisonTestWriteLotsOfBitsets) {
     ASSERT_EQ(writer1.GetNumBits(), writer2.GetNumBits());
   }
 
-  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()),
-            writer2.GetStreamPadded64());
+  EXPECT_EQ(PadToWord<64>(writer1.GetStreamRaw()), writer2.GetStreamPadded64());
 }
 
 TEST(GetLowerBits, Test) {
@@ -654,17 +656,22 @@ TEST(GetLowerBits, Test) {
   EXPECT_EQ(0xFFFFFFFFFFFFFFFFu,
             GetLowerBits<uint64_t>(0xFFFFFFFFFFFFFFFFu, 64));
   EXPECT_EQ(StreamToBits("1010001110"),
-            GetLowerBits<uint64_t>(
-                StreamToBits("1010001110111101111111"), 10));
+            GetLowerBits<uint64_t>(StreamToBits("1010001110111101111111"), 10));
 }
 
 TEST(BitReaderFromString, FromU8) {
   std::vector<uint8_t> buffer = {
-    0xAA, 0xBB, 0xCC, 0xDD,
+      0xAA,
+      0xBB,
+      0xCC,
+      0xDD,
   };
 
   const std::string total_stream =
-      "01010101""11011101""00110011""10111011";
+      "01010101"
+      "11011101"
+      "00110011"
+      "10111011";
 
   BitReaderFromString reader(buffer);
   EXPECT_EQ(PadToWord<64>(total_stream), reader.GetStreamPadded64());
@@ -683,10 +690,10 @@ TEST(BitReaderFromString, FromU8) {
 
 TEST(BitReaderFromString, FromU64) {
   std::vector<uint64_t> buffer = {
-    0xAAAAAAAAAAAAAAAA,
-    0xBBBBBBBBBBBBBBBB,
-    0xCCCCCCCCCCCCCCCC,
-    0xDDDDDDDDDDDDDDDD,
+      0xAAAAAAAAAAAAAAAA,
+      0xBBBBBBBBBBBBBBBB,
+      0xCCCCCCCCCCCCCCCC,
+      0xDDDDDDDDDDDDDDDD,
   };
 
   const std::string total_stream =
@@ -769,10 +776,7 @@ TEST(BitReaderWord64, ReadStreamEmpty) {
 }
 
 TEST(BitReaderWord64, ReadBitsTwoWords) {
-  std::vector<uint64_t> buffer = {
-    0x0000000000000001,
-    0x0000000000FFFFFF
-  };
+  std::vector<uint64_t> buffer = {0x0000000000000001, 0x0000000000FFFFFF};
 
   BitReaderWord64 reader(std::move(buffer));
 
@@ -820,7 +824,10 @@ TEST(BitReaderFromString, ReadUnencodedS64) {
 
 TEST(BitReaderWord64, FromU8) {
   std::vector<uint8_t> buffer = {
-    0xAA, 0xBB, 0xCC, 0xDD,
+      0xAA,
+      0xBB,
+      0xCC,
+      0xDD,
   };
 
   BitReaderWord64 reader(std::move(buffer));
@@ -839,10 +846,10 @@ TEST(BitReaderWord64, FromU8) {
 
 TEST(BitReaderWord64, FromU64) {
   std::vector<uint64_t> buffer = {
-    0xAAAAAAAAAAAAAAAA,
-    0xBBBBBBBBBBBBBBBB,
-    0xCCCCCCCCCCCCCCCC,
-    0xDDDDDDDDDDDDDDDD,
+      0xAAAAAAAAAAAAAAAA,
+      0xBBBBBBBBBBBBBBBB,
+      0xCCCCCCCCCCCCCCCC,
+      0xDDDDDDDDDDDDDDDD,
   };
 
   const std::string total_stream =
@@ -867,7 +874,7 @@ TEST(BitReaderWord64, FromU64) {
 
 TEST(BitReaderWord64, ComparisonLotsOfU8) {
   std::vector<uint8_t> buffer;
-  for(uint32_t i = 0; i < 10003; ++i) {
+  for (uint32_t i = 0; i < 10003; ++i) {
     buffer.push_back(static_cast<uint8_t>(i % 255));
   }
 
@@ -887,7 +894,7 @@ TEST(BitReaderWord64, ComparisonLotsOfU8) {
 
 TEST(BitReaderWord64, ComparisonLotsOfU64) {
   std::vector<uint64_t> buffer;
-  for(uint64_t i = 0; i < 1000; ++i) {
+  for (uint64_t i = 0; i < 1000; ++i) {
     buffer.push_back(i);
   }
 
@@ -928,126 +935,238 @@ TEST(ReadWriteWord64, ReadWriteLotsOfBits) {
 TEST(VariableWidthWrite, Write0U) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU64(0, 2);
-  EXPECT_EQ("000", writer.GetStreamRaw ());
+  EXPECT_EQ("000", writer.GetStreamRaw());
   writer.WriteVariableWidthU32(0, 2);
-  EXPECT_EQ("000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthU16(0, 2);
-  EXPECT_EQ("000""000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000"
+      "000",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthU8(0, 2);
-  EXPECT_EQ("000""000""000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000"
+      "000"
+      "000",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, Write0S) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthS64(0, 2, 0);
-  EXPECT_EQ("000", writer.GetStreamRaw ());
+  EXPECT_EQ("000", writer.GetStreamRaw());
   writer.WriteVariableWidthS32(0, 2, 0);
-  EXPECT_EQ("000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthS16(0, 2, 0);
-  EXPECT_EQ("000""000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000"
+      "000",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthS8(0, 2, 0);
-  EXPECT_EQ("000""000""000""000", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "000"
+      "000"
+      "000"
+      "000",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, WriteSmallUnsigned) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU64(1, 2);
-  EXPECT_EQ("100", writer.GetStreamRaw ());
+  EXPECT_EQ("100", writer.GetStreamRaw());
   writer.WriteVariableWidthU32(2, 2);
-  EXPECT_EQ("100""010", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "100"
+      "010",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthU16(3, 2);
-  EXPECT_EQ("100""010""110", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "100"
+      "010"
+      "110",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthU8(4, 2);
-  EXPECT_EQ("100""010""110""001100", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "100"
+      "010"
+      "110"
+      "001100",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, WriteSmallSigned) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthS64(1, 2, 0);
-  EXPECT_EQ("010", writer.GetStreamRaw ());
+  EXPECT_EQ("010", writer.GetStreamRaw());
   writer.WriteVariableWidthS64(-1, 2, 0);
-  EXPECT_EQ("010""100", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "010"
+      "100",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthS16(3, 2, 0);
-  EXPECT_EQ("010""100""011100", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "010"
+      "100"
+      "011100",
+      writer.GetStreamRaw());
   writer.WriteVariableWidthS8(-4, 2, 0);
-  EXPECT_EQ("010""100""011100""111100", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "010"
+      "100"
+      "011100"
+      "111100",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, U64Val127ChunkLength7) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU64(127, 7);
-  EXPECT_EQ("1111111""0", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "1111111"
+      "0",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, U32Val255ChunkLength7) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU32(255, 7);
-  EXPECT_EQ("1111111""1""1000000""0", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "1111111"
+      "1"
+      "1000000"
+      "0",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, U16Val2ChunkLength4) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU16(2, 4);
-  EXPECT_EQ("0100""0", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "0100"
+      "0",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, U8Val128ChunkLength7) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU8(128, 7);
-  EXPECT_EQ("0000000""1""1", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "0000000"
+      "1"
+      "1",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, U64ValAAAAChunkLength2) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthU64(0xAAAA, 2);
-  EXPECT_EQ("01""1""01""1""01""1""01""1"
-            "01""1""01""1""01""1""01""0", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "0",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthWrite, S8ValM128ChunkLength7) {
   BitWriterStringStream writer;
   writer.WriteVariableWidthS8(-128, 7, 0);
-  EXPECT_EQ("1111111""1""1", writer.GetStreamRaw());
+  EXPECT_EQ(
+      "1111111"
+      "1"
+      "1",
+      writer.GetStreamRaw());
 }
 
 TEST(VariableWidthRead, U64Val127ChunkLength7) {
-  BitReaderFromString reader("1111111""0");
+  BitReaderFromString reader(
+      "1111111"
+      "0");
   uint64_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU64(&val, 7));
   EXPECT_EQ(127u, val);
 }
 
 TEST(VariableWidthRead, U32Val255ChunkLength7) {
-  BitReaderFromString reader("1111111""1""1000000""0");
+  BitReaderFromString reader(
+      "1111111"
+      "1"
+      "1000000"
+      "0");
   uint32_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU32(&val, 7));
   EXPECT_EQ(255u, val);
 }
 
 TEST(VariableWidthRead, U16Val2ChunkLength4) {
-  BitReaderFromString reader("0100""0");
+  BitReaderFromString reader(
+      "0100"
+      "0");
   uint16_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU16(&val, 4));
   EXPECT_EQ(2u, val);
 }
 
 TEST(VariableWidthRead, U8Val128ChunkLength7) {
-  BitReaderFromString reader("0000000""1""1");
+  BitReaderFromString reader(
+      "0000000"
+      "1"
+      "1");
   uint8_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU8(&val, 7));
   EXPECT_EQ(128u, val);
 }
 
 TEST(VariableWidthRead, U64ValAAAAChunkLength2) {
-  BitReaderFromString reader("01""1""01""1""01""1""01""1"
-                             "01""1""01""1""01""1""01""0");
+  BitReaderFromString reader(
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "1"
+      "01"
+      "0");
   uint64_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthU64(&val, 2));
   EXPECT_EQ(0xAAAAu, val);
 }
 
 TEST(VariableWidthRead, S8ValM128ChunkLength7) {
-  BitReaderFromString reader("1111111""1""1");
+  BitReaderFromString reader(
+      "1111111"
+      "1"
+      "1");
   int8_t val = 0;
   ASSERT_TRUE(reader.ReadVariableWidthS8(&val, 7, 0));
   EXPECT_EQ(-128, val);
@@ -1086,8 +1205,8 @@ TEST(VariableWidthWriteRead, SingleWriteReadS64) {
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int64_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS64(&read_val, chunk_length,
-                                            zigzag_exponent));
+    ASSERT_TRUE(
+        reader.ReadVariableWidthS64(&read_val, chunk_length, zigzag_exponent));
 
     ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -1120,8 +1239,8 @@ TEST(VariableWidthWriteRead, SingleWriteReadS32) {
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int32_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS32(
-        &read_val, chunk_length, zigzag_exponent));
+    ASSERT_TRUE(
+        reader.ReadVariableWidthS32(&read_val, chunk_length, zigzag_exponent));
 
     ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -1154,8 +1273,8 @@ TEST(VariableWidthWriteRead, SingleWriteReadS16) {
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int16_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS16(&read_val, chunk_length,
-                                            zigzag_exponent));
+    ASSERT_TRUE(
+        reader.ReadVariableWidthS16(&read_val, chunk_length, zigzag_exponent));
 
     ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -1188,8 +1307,8 @@ TEST(VariableWidthWriteRead, SingleWriteReadS8) {
 
     BitReaderWord64 reader(writer.GetDataCopy());
     int8_t read_val = 0;
-    ASSERT_TRUE(reader.ReadVariableWidthS8(&read_val, chunk_length,
-                                           zigzag_exponent));
+    ASSERT_TRUE(
+        reader.ReadVariableWidthS8(&read_val, chunk_length, zigzag_exponent));
 
     ASSERT_EQ(val, read_val) << "Chunk length " << chunk_length;
   }
@@ -1207,7 +1326,7 @@ TEST(VariableWidthWriteRead, SmallNumbersChunkLength4) {
 
   std::vector<uint64_t> actual_values;
   BitReaderWord64 reader(writer.GetDataCopy());
-  while(!reader.OnlyZeroesLeft()) {
+  while (!reader.OnlyZeroesLeft()) {
     uint64_t val = 0;
     ASSERT_TRUE(reader.ReadVariableWidthU64(&val, 4));
     actual_values.push_back(val);

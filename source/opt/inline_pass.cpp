@@ -146,7 +146,8 @@ void InlinePass::CloneAndMapLocals(
     std::unique_ptr<ir::Instruction> var_inst(
         callee_var_itr->Clone(callee_var_itr->context()));
     uint32_t newId = TakeNextId();
-    get_decoration_mgr()->CloneDecorations(callee_var_itr->result_id(), newId, update_def_use_mgr_);
+    get_decoration_mgr()->CloneDecorations(callee_var_itr->result_id(), newId,
+                                           update_def_use_mgr_);
     var_inst->SetResultId(newId);
     (*callee2caller)[callee_var_itr->result_id()] = newId;
     new_vars->push_back(std::move(var_inst));
@@ -175,7 +176,8 @@ uint32_t InlinePass::CreateReturnVar(
           {SpvStorageClassFunction}}}));
     new_vars->push_back(std::move(var_inst));
   }
-  get_decoration_mgr()->CloneDecorations(calleeFn->result_id(), returnVarId, update_def_use_mgr_);
+  get_decoration_mgr()->CloneDecorations(calleeFn->result_id(), returnVarId,
+                                         update_def_use_mgr_);
   return returnVarId;
 }
 
@@ -188,30 +190,30 @@ void InlinePass::CloneSameBlockOps(
     std::unordered_map<uint32_t, uint32_t>* postCallSB,
     std::unordered_map<uint32_t, ir::Instruction*>* preCallSB,
     std::unique_ptr<ir::BasicBlock>* block_ptr) {
-  (*inst)->ForEachInId(
-      [&postCallSB, &preCallSB, &block_ptr, this](uint32_t* iid) {
-        const auto mapItr = (*postCallSB).find(*iid);
-        if (mapItr == (*postCallSB).end()) {
-          const auto mapItr2 = (*preCallSB).find(*iid);
-          if (mapItr2 != (*preCallSB).end()) {
-            // Clone pre-call same-block ops, map result id.
-            const ir::Instruction* inInst = mapItr2->second;
-            std::unique_ptr<ir::Instruction> sb_inst(
-                inInst->Clone(inInst->context()));
-            CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr);
-            const uint32_t rid = sb_inst->result_id();
-            const uint32_t nid = this->TakeNextId();
-            get_decoration_mgr()->CloneDecorations(rid, nid, update_def_use_mgr_);
-            sb_inst->SetResultId(nid);
-            (*postCallSB)[rid] = nid;
-            *iid = nid;
-            (*block_ptr)->AddInstruction(std::move(sb_inst));
-          }
-        } else {
-          // Reset same-block op operand.
-          *iid = mapItr->second;
-        }
-      });
+  (*inst)->ForEachInId([&postCallSB, &preCallSB, &block_ptr,
+                        this](uint32_t* iid) {
+    const auto mapItr = (*postCallSB).find(*iid);
+    if (mapItr == (*postCallSB).end()) {
+      const auto mapItr2 = (*preCallSB).find(*iid);
+      if (mapItr2 != (*preCallSB).end()) {
+        // Clone pre-call same-block ops, map result id.
+        const ir::Instruction* inInst = mapItr2->second;
+        std::unique_ptr<ir::Instruction> sb_inst(
+            inInst->Clone(inInst->context()));
+        CloneSameBlockOps(&sb_inst, postCallSB, preCallSB, block_ptr);
+        const uint32_t rid = sb_inst->result_id();
+        const uint32_t nid = this->TakeNextId();
+        get_decoration_mgr()->CloneDecorations(rid, nid, update_def_use_mgr_);
+        sb_inst->SetResultId(nid);
+        (*postCallSB)[rid] = nid;
+        *iid = nid;
+        (*block_ptr)->AddInstruction(std::move(sb_inst));
+      }
+    } else {
+      // Reset same-block op operand.
+      *iid = mapItr->second;
+    }
+  });
 }
 
 void InlinePass::GenInlineCode(
@@ -649,7 +651,7 @@ void InlinePass::InitializeInline(ir::IRContext* c) {
   InitializeProcessing(c);
 
   // Don't bother updating the DefUseManger
-  update_def_use_mgr_ = [this] (ir::Instruction&, bool) {};
+  update_def_use_mgr_ = [this](ir::Instruction&, bool) {};
 
   false_id_ = 0;
 

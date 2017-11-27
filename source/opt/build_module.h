@@ -29,8 +29,8 @@ namespace spvtools {
 // decoded according to the given target |env|. Returns nullptr if errors occur
 // and sends the errors to |consumer|.
 std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
-                                        MessageConsumer consumer,
-                                        const uint32_t* binary, size_t size);
+                                           MessageConsumer consumer,
+                                           const uint32_t* binary, size_t size);
 
 // Builds an ir::Module and returns the owning ir::IRContext from the given
 // SPIR-V assembly |text|.  The |text| will be encoded according to the given

@@ -17,16 +17,16 @@
 
 #include "unit_spirv.h"
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
+#include "test_fixture.h"
 
 namespace {
 
-using ::testing::ElementsAre;
-using ::testing::Eq;
-using ::testing::_;
 using spvtest::MakeInstruction;
 using spvtest::TextToBinaryTest;
+using ::testing::_;
+using ::testing::ElementsAre;
+using ::testing::Eq;
 
 // Test OpMemoryBarrier
 

@@ -18,8 +18,8 @@
 
 #include <gmock/gmock.h>
 
-#include "test_fixture.h"
 #include "source/util/bitutils.h"
+#include "test_fixture.h"
 
 namespace {
 

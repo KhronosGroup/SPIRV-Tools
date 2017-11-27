@@ -24,20 +24,15 @@ using IdsLimit = spvtest::LinkerTest;
 TEST_F(IdsLimit, UnderLimit) {
   spvtest::Binaries binaries = {
       {
-          SpvMagicNumber,
-          SpvVersion,
-          SPV_GENERATOR_CODEPLAY,
-          0x2FFFFFu, // NOTE: Bound
-          0u,        // NOTE: Schema; reserved
+          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
+          0x2FFFFFu,  // NOTE: Bound
+          0u,         // NOTE: Schema; reserved
       },
       {
-          SpvMagicNumber,
-          SpvVersion,
-          SPV_GENERATOR_CODEPLAY,
-          0x100000u, // NOTE: Bound
-          0u,        // NOTE: Schema; reserved
-      }
-  };
+          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
+          0x100000u,  // NOTE: Bound
+          0u,         // NOTE: Schema; reserved
+      }};
   spvtest::Binary linked_binary;
 
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
@@ -48,27 +43,20 @@ TEST_F(IdsLimit, UnderLimit) {
 TEST_F(IdsLimit, OverLimit) {
   spvtest::Binaries binaries = {
       {
-          SpvMagicNumber,
-          SpvVersion,
-          SPV_GENERATOR_CODEPLAY,
-          0x2FFFFFu, // NOTE: Bound
-          0u,        // NOTE: Schema; reserved
+          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
+          0x2FFFFFu,  // NOTE: Bound
+          0u,         // NOTE: Schema; reserved
       },
       {
-          SpvMagicNumber,
-          SpvVersion,
-          SPV_GENERATOR_CODEPLAY,
-          0x100000u, // NOTE: Bound
-          0u,        // NOTE: Schema; reserved
+          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
+          0x100000u,  // NOTE: Bound
+          0u,         // NOTE: Schema; reserved
       },
       {
-          SpvMagicNumber,
-          SpvVersion,
-          SPV_GENERATOR_CODEPLAY,
+          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
           3u,  // NOTE: Bound
           0u,  // NOTE: Schema; reserved
-      }
-  };
+      }};
 
   spvtest::Binary linked_binary;
 

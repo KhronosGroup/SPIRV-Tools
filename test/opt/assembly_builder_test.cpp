@@ -166,8 +166,11 @@ TEST_F(AssemblyBuilderTest, ShaderWithConstants) {
 TEST_F(AssemblyBuilderTest, SpecConstants) {
   AssemblyBuilder builder;
   builder.AppendTypesConstantsGlobals({
-      "%bool = OpTypeBool", "%uint = OpTypeInt 32 0", "%int = OpTypeInt 32 1",
-      "%float = OpTypeFloat 32", "%double = OpTypeFloat 64",
+      "%bool = OpTypeBool",
+      "%uint = OpTypeInt 32 0",
+      "%int = OpTypeInt 32 1",
+      "%float = OpTypeFloat 32",
+      "%double = OpTypeFloat 64",
       "%v2int = OpTypeVector %int 2",
 
       "%spec_true = OpSpecConstantTrue %bool",

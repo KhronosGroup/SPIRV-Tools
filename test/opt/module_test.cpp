@@ -26,9 +26,9 @@
 
 namespace {
 
+using spvtest::GetIdBound;
 using spvtools::ir::IRContext;
 using spvtools::ir::Module;
-using spvtest::GetIdBound;
 using ::testing::Eq;
 
 TEST(ModuleTest, SetIdBound) {
@@ -55,19 +55,23 @@ TEST(ModuleTest, ComputeIdBound) {
   // Sensitive to result id
   EXPECT_EQ(2u, BuildModule("%void = OpTypeVoid")->module()->ComputeIdBound());
   // Sensitive to type id
-  EXPECT_EQ(1000u, BuildModule("%a = OpTypeArray !999 3")->module()->ComputeIdBound());
+  EXPECT_EQ(1000u,
+            BuildModule("%a = OpTypeArray !999 3")->module()->ComputeIdBound());
   // Sensitive to a regular Id parameter
-  EXPECT_EQ(2000u, BuildModule("OpDecorate !1999 0")->module()->ComputeIdBound());
+  EXPECT_EQ(2000u,
+            BuildModule("OpDecorate !1999 0")->module()->ComputeIdBound());
   // Sensitive to a scope Id parameter.
   EXPECT_EQ(3000u,
             BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
                         "OpMemoryBarrier !2999 %b\n")
-                ->module()->ComputeIdBound());
+                ->module()
+                ->ComputeIdBound());
   // Sensitive to a semantics Id parameter
   EXPECT_EQ(4000u,
             BuildModule("%f = OpFunction %void None %fntype %a = OpLabel "
                         "OpMemoryBarrier %b !3999\n")
-                ->module()->ComputeIdBound());
+                ->module()
+                ->ComputeIdBound());
 }
 
 }  // anonymous namespace

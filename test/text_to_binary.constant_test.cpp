@@ -20,14 +20,14 @@
 #include <cstdint>
 #include <limits>
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
+#include "test_fixture.h"
 
 namespace {
 
+using spvtest::Concatenate;
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
-using spvtest::Concatenate;
 using ::testing::Eq;
 
 // Test Sampler Addressing Mode enum values
@@ -233,14 +233,15 @@ INSTANTIATE_TEST_CASE_P(
     }),);
 // clang-format on
 
-// A test case for checking OpConstant with invalid literals with a leading minus.
+// A test case for checking OpConstant with invalid literals with a leading
+// minus.
 struct InvalidLeadingMinusCase {
   std::string type;
   std::string literal;
 };
 
-using OpConstantInvalidLeadingMinusTest =
-    spvtest::TextToBinaryTestBase<::testing::TestWithParam<InvalidLeadingMinusCase>>;
+using OpConstantInvalidLeadingMinusTest = spvtest::TextToBinaryTestBase<
+    ::testing::TestWithParam<InvalidLeadingMinusCase>>;
 
 TEST_P(OpConstantInvalidLeadingMinusTest, InvalidCase) {
   const std::string input = "%1 = " + GetParam().type +
@@ -519,7 +520,7 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 0\n",
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 1.79769e+308\n",
         "%1 = OpTypeFloat 64\n%2 = OpConstant %1 -1.79769e+308\n",
-    }),);
+    }), );
 
 INSTANTIATE_TEST_CASE_P(
     OpConstantHalfRoundTrip, RoundTripTest,
@@ -537,24 +538,24 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.8p+1\n",
         "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffcp+1\n",
 
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p-16\n", // some denorms
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p-16\n",  // some denorms
         "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p-24\n",
         "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p-24\n",
 
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p+16\n", // +inf
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p+16\n", // -inf
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n", // -inf
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.01p+16\n", // nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.11p+16\n", // nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffp+16\n", // nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffcp+16\n", // nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.004p+16\n", // nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n", // -nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.11p+16\n", // -nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffp+16\n", // -nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffcp+16\n", // -nan
-        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.004p+16\n", // -nan
-    }),);
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1p+16\n",       // +inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1p+16\n",      // -inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n",   // -inf
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.01p+16\n",    // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.11p+16\n",    // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffp+16\n",    // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.ffcp+16\n",   // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 0x1.004p+16\n",   // nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.01p+16\n",   // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.11p+16\n",   // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffp+16\n",   // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.ffcp+16\n",  // -nan
+        "%1 = OpTypeFloat 16\n%2 = OpConstant %1 -0x1.004p+16\n",  // -nan
+    }), );
 
 // clang-format off
 // (Clang-format really wants to break up these strings across lines.
@@ -629,7 +630,7 @@ INSTANTIATE_TEST_CASE_P(
         "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 0\n",
         "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 1.79769e+308\n",
         "%1 = OpTypeFloat 64\n%2 = OpSpecConstant %1 -1.79769e+308\n",
-    }),);
+    }), );
 
 // Test OpSpecConstantOp
 
@@ -780,7 +781,7 @@ INSTANTIATE_TEST_CASE_P(
         // composite, and then literal indices.
         {CASE(CompositeInsert), {0}},
         {CASE(CompositeInsert), {4, 3, 99, 1}},
-    }),);
+    }), );
 
 using OpSpecConstantOpTestWithOneIdThenLiteralNumbers =
     spvtest::TextToBinaryTestBase<::testing::TestWithParam<EnumCase<SpvOp>>>;
@@ -811,7 +812,7 @@ INSTANTIATE_TEST_CASE_P(
         // indices.  Let's only test a few.
         {CASE(CompositeExtract), {0}},
         {CASE(CompositeExtract), {0, 99, 42, 16, 17, 12, 19}},
-    }),);
+    }), );
 
 // TODO(dneto): OpConstantTrue
 // TODO(dneto): OpConstantFalse

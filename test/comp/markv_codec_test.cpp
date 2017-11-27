@@ -27,8 +27,8 @@
 namespace {
 
 using libspirv::SetContextMessageConsumer;
-using spvtools::MarkvModelType;
 using spvtest::ScopedContext;
+using spvtools::MarkvModelType;
 using MarkvTest = ::testing::TestWithParam<MarkvModelType>;
 
 void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
@@ -38,8 +38,7 @@ void DiagnosticsMessageHandler(spv_message_level_t level, const char*,
     case SPV_MSG_FATAL:
     case SPV_MSG_INTERNAL_ERROR:
     case SPV_MSG_ERROR:
-      std::cerr << "error: " << position.index << ": " << message
-                << std::endl;
+      std::cerr << "error: " << position.index << ": " << message << std::endl;
       break;
     case SPV_MSG_WARNING:
       std::cout << "warning: " << position.index << ": " << message
@@ -61,18 +60,18 @@ void Compile(const std::string& code, std::vector<uint32_t>* words,
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
 
   spv_binary spirv_binary;
-  ASSERT_EQ(SPV_SUCCESS, spvTextToBinaryWithOptions(
-      ctx.context, code.c_str(), code.size(), options, &spirv_binary, nullptr));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvTextToBinaryWithOptions(ctx.context, code.c_str(), code.size(),
+                                       options, &spirv_binary, nullptr));
 
-  *words = std::vector<uint32_t>(
-      spirv_binary->code, spirv_binary->code + spirv_binary->wordCount);
+  *words = std::vector<uint32_t>(spirv_binary->code,
+                                 spirv_binary->code + spirv_binary->wordCount);
 
   spvBinaryDestroy(spirv_binary);
 }
 
 // Disassembles SPIR-V |words| to |out_text|.
-void Disassemble(const std::vector<uint32_t>& words,
-                 std::string* out_text,
+void Disassemble(const std::vector<uint32_t>& words, std::string* out_text,
                  spv_target_env env = SPV_ENV_UNIVERSAL_1_2) {
   ScopedContext ctx(env);
   SetContextMessageConsumer(ctx.context, DiagnosticsMessageHandler);
@@ -110,22 +109,21 @@ void TestEncodeDecode(MarkvModelType model_type,
 
   std::stringstream encoder_comments;
   const auto output_to_string_stream =
-      [&encoder_comments](const std::string& str) {
-    encoder_comments << str;
-  };
+      [&encoder_comments](const std::string& str) { encoder_comments << str; };
 
   std::vector<uint8_t> markv;
   ASSERT_EQ(SPV_SUCCESS, spvtools::SpirvToMarkv(
-      ctx.context, binary_to_encode, options, *model,
-      DiagnosticsMessageHandler, output_to_string_stream,
-      spvtools::MarkvDebugConsumer(), &markv));
+                             ctx.context, binary_to_encode, options, *model,
+                             DiagnosticsMessageHandler, output_to_string_stream,
+                             spvtools::MarkvDebugConsumer(), &markv));
   ASSERT_FALSE(markv.empty());
 
   std::vector<uint32_t> decoded_binary;
-  ASSERT_EQ(SPV_SUCCESS, spvtools::MarkvToSpirv(
-      ctx.context, markv, options, *model,
-      DiagnosticsMessageHandler, spvtools::MarkvLogConsumer(),
-      spvtools::MarkvDebugConsumer(), &decoded_binary));
+  ASSERT_EQ(SPV_SUCCESS,
+            spvtools::MarkvToSpirv(
+                ctx.context, markv, options, *model, DiagnosticsMessageHandler,
+                spvtools::MarkvLogConsumer(), spvtools::MarkvDebugConsumer(),
+                &decoded_binary));
   ASSERT_FALSE(decoded_binary.empty());
 
   EXPECT_EQ(expected_binary, decoded_binary) << encoder_comments.str();
@@ -140,7 +138,7 @@ void TestEncodeDecode(MarkvModelType model_type,
 void TestEncodeDecodeShaderMainBody(MarkvModelType model_type,
                                     const std::string& body) {
   const std::string prefix =
-R"(
+      R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64
@@ -217,7 +215,7 @@ OpEntryPoint Fragment %main "main"
 %main_entry = OpLabel)";
 
   const std::string suffix =
-R"(
+      R"(
 OpReturn
 OpFunctionEnd)";
 
@@ -820,12 +818,11 @@ OpFunctionEnd
 )");
 }
 
-INSTANTIATE_TEST_CASE_P(
-    AllMarkvModels, MarkvTest,
-    ::testing::ValuesIn(std::vector<MarkvModelType>{
-        spvtools::kMarkvModelShaderLite,
-        spvtools::kMarkvModelShaderMid,
-        spvtools::kMarkvModelShaderMax,
-    }),);
+INSTANTIATE_TEST_CASE_P(AllMarkvModels, MarkvTest,
+                        ::testing::ValuesIn(std::vector<MarkvModelType>{
+                            spvtools::kMarkvModelShaderLite,
+                            spvtools::kMarkvModelShaderMid,
+                            spvtools::kMarkvModelShaderMax,
+                        }), );
 
 }  // namespace

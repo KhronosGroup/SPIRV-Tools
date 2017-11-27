@@ -18,19 +18,19 @@
 
 #include "gmock/gmock.h"
 
-#include "test_fixture.h"
 #include "source/spirv_constant.h"
+#include "test_fixture.h"
 
 namespace {
 
-using ::testing::Combine;
-using ::testing::Eq;
-using ::testing::HasSubstr;
 using spvtest::AutoText;
 using spvtest::ScopedContext;
 using spvtest::TextToBinaryTest;
 using std::get;
 using std::tuple;
+using ::testing::Combine;
+using ::testing::Eq;
+using ::testing::HasSubstr;
 
 class BinaryToText : public ::testing::Test {
  public:
@@ -278,7 +278,8 @@ INSTANTIATE_TEST_CASE_P(
             ::testing::ValuesIn(std::vector<std::string>{
                 "OpStore %1 %2\n",       // 3 words long.
                 "OpStore %1 %2 None\n",  // 4 words long, explicit final 0.
-                "OpStore %1 %2 Volatile\n", "OpStore %1 %2 Aligned 8\n",
+                "OpStore %1 %2 Volatile\n",
+                "OpStore %1 %2 Aligned 8\n",
                 "OpStore %1 %2 Nontemporal\n",
                 // Combinations show the names from LSB to MSB
                 "OpStore %1 %2 Volatile|Aligned 16\n",
@@ -304,15 +305,16 @@ INSTANTIATE_TEST_CASE_P(
             "OpDecorate %1 FPFastMathMode NotNaN|NotInf|NSZ|AllowRecip|Fast\n",
         })), );
 
-INSTANTIATE_TEST_CASE_P(
-    LoopControlMasks, RoundTripInstructionsTest,
-    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
-            ::testing::ValuesIn(std::vector<std::string>{
-                "OpLoopMerge %1 %2 None\n", "OpLoopMerge %1 %2 Unroll\n",
-                "OpLoopMerge %1 %2 DontUnroll\n",
-                "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
-            })), );
+INSTANTIATE_TEST_CASE_P(LoopControlMasks, RoundTripInstructionsTest,
+                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
+                                                  SPV_ENV_UNIVERSAL_1_1,
+                                                  SPV_ENV_UNIVERSAL_1_2),
+                                ::testing::ValuesIn(std::vector<std::string>{
+                                    "OpLoopMerge %1 %2 None\n",
+                                    "OpLoopMerge %1 %2 Unroll\n",
+                                    "OpLoopMerge %1 %2 DontUnroll\n",
+                                    "OpLoopMerge %1 %2 Unroll|DontUnroll\n",
+                                })), );
 
 INSTANTIATE_TEST_CASE_P(LoopControlMasksV11, RoundTripInstructionsTest,
                         Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_1,
@@ -322,28 +324,30 @@ INSTANTIATE_TEST_CASE_P(LoopControlMasksV11, RoundTripInstructionsTest,
                                     "OpLoopMerge %1 %2 DependencyLength 8\n",
                                 })), );
 
-INSTANTIATE_TEST_CASE_P(
-    SelectionControlMasks, RoundTripInstructionsTest,
-    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
-            ::testing::ValuesIn(std::vector<std::string>{
-                "OpSelectionMerge %1 None\n", "OpSelectionMerge %1 Flatten\n",
-                "OpSelectionMerge %1 DontFlatten\n",
-                "OpSelectionMerge %1 Flatten|DontFlatten\n",
-            })), );
+INSTANTIATE_TEST_CASE_P(SelectionControlMasks, RoundTripInstructionsTest,
+                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
+                                                  SPV_ENV_UNIVERSAL_1_1,
+                                                  SPV_ENV_UNIVERSAL_1_2),
+                                ::testing::ValuesIn(std::vector<std::string>{
+                                    "OpSelectionMerge %1 None\n",
+                                    "OpSelectionMerge %1 Flatten\n",
+                                    "OpSelectionMerge %1 DontFlatten\n",
+                                    "OpSelectionMerge %1 Flatten|DontFlatten\n",
+                                })), );
 
-INSTANTIATE_TEST_CASE_P(
-    FunctionControlMasks, RoundTripInstructionsTest,
-    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
-                              SPV_ENV_UNIVERSAL_1_2),
-            ::testing::ValuesIn(std::vector<std::string>{
-                "%2 = OpFunction %1 None %3\n",
-                "%2 = OpFunction %1 Inline %3\n",
-                "%2 = OpFunction %1 DontInline %3\n",
-                "%2 = OpFunction %1 Pure %3\n", "%2 = OpFunction %1 Const %3\n",
-                "%2 = OpFunction %1 Inline|Pure|Const %3\n",
-                "%2 = OpFunction %1 DontInline|Const %3\n",
-            })), );
+INSTANTIATE_TEST_CASE_P(FunctionControlMasks, RoundTripInstructionsTest,
+                        Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0,
+                                                  SPV_ENV_UNIVERSAL_1_1,
+                                                  SPV_ENV_UNIVERSAL_1_2),
+                                ::testing::ValuesIn(std::vector<std::string>{
+                                    "%2 = OpFunction %1 None %3\n",
+                                    "%2 = OpFunction %1 Inline %3\n",
+                                    "%2 = OpFunction %1 DontInline %3\n",
+                                    "%2 = OpFunction %1 Pure %3\n",
+                                    "%2 = OpFunction %1 Const %3\n",
+                                    "%2 = OpFunction %1 Inline|Pure|Const %3\n",
+                                    "%2 = OpFunction %1 DontInline|Const %3\n",
+                                })), );
 
 INSTANTIATE_TEST_CASE_P(
     ImageMasks, RoundTripInstructionsTest,
@@ -530,8 +534,7 @@ INSTANTIATE_TEST_CASE_P(GeneratorStrings, GeneratorStringTest,
                             {SPV_GENERATOR_KHRONOS, 12, "Khronos; 12"},
                             {SPV_GENERATOR_LUNARG, 99, "LunarG; 99"},
                             {SPV_GENERATOR_VALVE, 1, "Valve; 1"},
-                            {SPV_GENERATOR_CODEPLAY, 65535,
-                             "Codeplay; 65535"},
+                            {SPV_GENERATOR_CODEPLAY, 65535, "Codeplay; 65535"},
                             {SPV_GENERATOR_NVIDIA, 19, "NVIDIA; 19"},
                             {SPV_GENERATOR_ARM, 1000, "ARM; 1000"},
                             {SPV_GENERATOR_KHRONOS_LLVM_TRANSLATOR, 38,

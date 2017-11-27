@@ -50,7 +50,7 @@ class ErrorMsgStream {
   // destructor is called.
   std::string* error_msg_sink_;
 };
-}
+}  // namespace
 
 EncodeNumberStatus ParseAndEncodeIntegerNumber(
     const char* text, const NumberType& type,

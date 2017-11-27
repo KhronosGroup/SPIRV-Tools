@@ -17,8 +17,8 @@
 #include "dead_branch_elim_pass.h"
 
 #include "cfa.h"
-#include "iterator.h"
 #include "ir_context.h"
+#include "iterator.h"
 
 namespace spvtools {
 namespace opt {

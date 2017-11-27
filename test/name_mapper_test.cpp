@@ -19,8 +19,8 @@
 
 #include "source/name_mapper.h"
 
-using libspirv::NameMapper;
 using libspirv::FriendlyNameMapper;
+using libspirv::NameMapper;
 using spvtest::ScopedContext;
 using ::testing::Eq;
 
@@ -197,7 +197,8 @@ INSTANTIATE_TEST_CASE_P(ExoticTypes, FriendlyNameTest,
                             {"%1 = OpTypeDeviceEvent", 1, "DeviceEvent"},
                             {"%1 = OpTypeReserveId", 1, "ReserveId"},
                             {"%1 = OpTypeQueue", 1, "Queue"},
-                            {"%1 = OpTypeOpaque \"hello world!\"", 1, "Opaque_hello_world_"},
+                            {"%1 = OpTypeOpaque \"hello world!\"", 1,
+                             "Opaque_hello_world_"},
                             {"%1 = OpTypePipe ReadOnly", 1, "PipeReadOnly"},
                             {"%1 = OpTypePipe WriteOnly", 1, "PipeWriteOnly"},
                             {"%1 = OpTypePipe ReadWrite", 1, "PipeReadWrite"},

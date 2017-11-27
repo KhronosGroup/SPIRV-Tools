@@ -43,9 +43,9 @@ bool InsertExtractElimPass::ExtInsMatch(const ir::Instruction* extInst,
   return true;
 }
 
-bool InsertExtractElimPass::ExtInsConflict(
-    const ir::Instruction* extInst, const ir::Instruction* insInst,
-    const uint32_t extOffset) const {
+bool InsertExtractElimPass::ExtInsConflict(const ir::Instruction* extInst,
+                                           const ir::Instruction* insInst,
+                                           const uint32_t extOffset) const {
   if (extInst->NumInOperands() - extOffset == insInst->NumInOperands() - 1)
     return false;
   uint32_t extNumIdx = extInst->NumInOperands() - 1 - extOffset;
@@ -80,21 +80,18 @@ bool InsertExtractElimPass::EliminateInsertExtract(ir::Function* func) {
               // Match! Use inserted value as replacement
               replId = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
               break;
-            }
-            else if (ExtInsConflict(&*ii, cinst, extOffset)) {
+            } else if (ExtInsConflict(&*ii, cinst, extOffset)) {
               // If extract has fewer indices than the insert, stop searching.
               // Otherwise increment offset of extract indices considered and
               // continue searching through the inserted value
               if (ii->NumInOperands() - extOffset <
                   cinst->NumInOperands() - 1) {
                 break;
-              }
-              else {
+              } else {
                 extOffset += cinst->NumInOperands() - 2;
                 cid = cinst->GetSingleWordInOperand(kInsertObjectIdInIdx);
               }
-            }
-            else {
+            } else {
               // Consider next composite in insert chain
               cid = cinst->GetSingleWordInOperand(kInsertCompositeIdInIdx);
             }

@@ -220,7 +220,8 @@ class MarkvModel {
   uint32_t s64_chunk_length_ = 8;
   uint32_t s64_block_exponent_ = 10;
 
-  IdFallbackStrategy id_fallback_strategy_ = IdFallbackStrategy::kShortDescriptor;
+  IdFallbackStrategy id_fallback_strategy_ =
+      IdFallbackStrategy::kShortDescriptor;
 
   uint32_t model_type_ = 0;
   uint32_t model_version_ = 0;

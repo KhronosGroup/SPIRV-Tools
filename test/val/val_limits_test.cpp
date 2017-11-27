@@ -24,9 +24,9 @@
 
 namespace {
 
+using std::string;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
-using std::string;
 
 using ValidateLimits = spvtest::ValidateBase<bool>;
 
@@ -302,8 +302,8 @@ TEST_F(ValidateLimits, CustomizedOpTypeFunctionGood) {
   for (int i = 0; i < num_args; ++i) {
     spirv << " %1";
   }
-  spvValidatorOptionsSetUniversalLimit(options_,
-                                       spv_validator_limit_max_function_args, 100u);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_function_args, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -318,8 +318,8 @@ TEST_F(ValidateLimits, CustomizedOpTypeFunctionBad) {
   for (int i = 0; i < num_args; ++i) {
     spirv << " %1";
   }
-  spvValidatorOptionsSetUniversalLimit(options_,
-                                       spv_validator_limit_max_function_args, 100u);
+  spvValidatorOptionsSetUniversalLimit(
+      options_, spv_validator_limit_max_function_args, 100u);
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -526,8 +526,8 @@ TEST_F(ValidateLimits, StructNestingDepthGood) {
     %int = OpTypeInt 32 0
     %s_depth_1  = OpTypeStruct %int
   )";
-  for(auto i=2; i<=255; ++i) {
-    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i-1;
+  for (auto i = 2; i <= 255; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
     spirv << "\n";
   }
   CompileSuccessfully(spirv.str());
@@ -541,8 +541,8 @@ TEST_F(ValidateLimits, StructNestingDepthBad) {
     %int = OpTypeInt 32 0
     %s_depth_1  = OpTypeStruct %int
   )";
-  for(auto i=2; i<=256; ++i) {
-    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i-1;
+  for (auto i = 2; i <= 256; ++i) {
+    spirv << "%s_depth_" << i << " = OpTypeStruct %int %s_depth_" << i - 1;
     spirv << "\n";
   }
   CompileSuccessfully(spirv.str());

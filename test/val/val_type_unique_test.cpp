@@ -91,8 +91,8 @@ OpFunctionEnd
 // Returns expected error string if |opcode| produces a duplicate type
 // declaration.
 string GetErrorString(SpvOp opcode) {
-  return "Duplicate non-aggregate type declarations are not allowed. Opcode: "
-      + std::string(spvOpcodeString(opcode));
+  return "Duplicate non-aggregate type declarations are not allowed. Opcode: " +
+         std::string(spvOpcodeString(opcode));
 }
 
 TEST_F(ValidateTypeUnique, success) {

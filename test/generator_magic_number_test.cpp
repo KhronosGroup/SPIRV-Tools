@@ -44,7 +44,7 @@ INSTANTIATE_TEST_CASE_P(
          "Khronos LLVM/SPIR-V Translator"},
         {SPV_GENERATOR_KHRONOS_ASSEMBLER, "Khronos SPIR-V Tools Assembler"},
         {SPV_GENERATOR_KHRONOS_GLSLANG, "Khronos Glslang Reference Front End"},
-    }),);
+    }), );
 
 INSTANTIATE_TEST_CASE_P(
     Unregistered, GeneratorMagicNumberTest,
@@ -53,5 +53,5 @@ INSTANTIATE_TEST_CASE_P(
         // which can change over time.
         {spv_generator_t(1000), "Unknown"},
         {spv_generator_t(9999), "Unknown"},
-    }),);
+    }), );
 }  // anonymous namespace

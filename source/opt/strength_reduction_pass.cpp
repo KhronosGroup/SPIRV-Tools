@@ -100,8 +100,8 @@ bool StrengthReductionPass::ReplaceMultiplyByPowerOf2(
                                  {shiftConstResultId});
         newOperands.push_back(shiftOperand);
         std::unique_ptr<ir::Instruction> newInstruction(
-            new ir::Instruction(context(), SpvOp::SpvOpShiftLeftLogical, inst->type_id(),
-                                newResultId, newOperands));
+            new ir::Instruction(context(), SpvOp::SpvOpShiftLeftLogical,
+                                inst->type_id(), newResultId, newOperands));
 
         // Insert the new instruction and update the data structures.
         inst = inst.InsertBefore(std::move(newInstruction));
@@ -160,8 +160,9 @@ uint32_t StrengthReductionPass::GetConstantId(uint32_t val) {
     uint32_t resultId = TakeNextId();
     ir::Operand constant(spv_operand_type_t::SPV_OPERAND_TYPE_LITERAL_INTEGER,
                          {val});
-    std::unique_ptr<ir::Instruction> newConstant(new ir::Instruction(
-        context(), SpvOp::SpvOpConstant, uint32_type_id_, resultId, {constant}));
+    std::unique_ptr<ir::Instruction> newConstant(
+        new ir::Instruction(context(), SpvOp::SpvOpConstant, uint32_type_id_,
+                            resultId, {constant}));
     get_module()->AddGlobalValue(std::move(newConstant));
 
     // Notify the DefUseManager about this constant.

@@ -175,4 +175,4 @@ TEST_F(ValidateStorage, GenericVariableInsideFunction) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpVariable storage class cannot be Generic"));
 }
-}
+}  // namespace

@@ -20,9 +20,9 @@
 
 namespace {
 
-using ::testing::ElementsAre;
 using spvtools::utils::IntrusiveList;
 using spvtools::utils::IntrusiveNodeBase;
+using ::testing::ElementsAre;
 using IListTest = ::testing::Test;
 
 class TestNode : public IntrusiveNodeBase<TestNode> {

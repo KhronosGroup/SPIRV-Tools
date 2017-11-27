@@ -115,6 +115,6 @@ class AssemblyGrammar {
   const spv_opcode_table opcodeTable_;
   const spv_ext_inst_table extInstTable_;
 };
-}
+}  // namespace libspirv
 
 #endif  // LIBSPIRV_ASSEMBLY_GRAMMAR_H_

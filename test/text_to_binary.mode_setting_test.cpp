@@ -17,21 +17,21 @@
 
 #include "unit_spirv.h"
 
-#include "test_fixture.h"
 #include "gmock/gmock.h"
+#include "test_fixture.h"
 
 namespace {
 
-using ::testing::Combine;
-using ::testing::Eq;
-using ::testing::TestWithParam;
-using ::testing::Values;
-using ::testing::ValuesIn;
 using spvtest::EnumCase;
 using spvtest::MakeInstruction;
 using spvtest::MakeVector;
 using std::get;
 using std::tuple;
+using ::testing::Combine;
+using ::testing::Eq;
+using ::testing::TestWithParam;
+using ::testing::Values;
+using ::testing::ValuesIn;
 
 // Test OpMemoryModel
 

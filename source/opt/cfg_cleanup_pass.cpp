@@ -27,9 +27,7 @@
 namespace spvtools {
 namespace opt {
 
-void CFGCleanupPass::Initialize(ir::IRContext* c) {
-  InitializeProcessing(c);
-}
+void CFGCleanupPass::Initialize(ir::IRContext* c) { InitializeProcessing(c); }
 
 Pass::Status CFGCleanupPass::Process(ir::IRContext* c) {
   Initialize(c);

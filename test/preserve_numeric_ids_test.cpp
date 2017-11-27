@@ -34,16 +34,15 @@ spv_result_t ToBinaryAndBack(
   spv_binary binary;
   spv_text text;
 
-  spv_result_t result = spvTextToBinaryWithOptions(
-      ctx.context, before.c_str(), before.size(), text_to_binary_options,
-      &binary, nullptr);
+  spv_result_t result =
+      spvTextToBinaryWithOptions(ctx.context, before.c_str(), before.size(),
+                                 text_to_binary_options, &binary, nullptr);
   if (result != SPV_SUCCESS) {
     return result;
   }
 
-  result = spvBinaryToText(
-      ctx.context, binary->code, binary->wordCount, binary_to_text_options,
-      &text, nullptr);
+  result = spvBinaryToText(ctx.context, binary->code, binary->wordCount,
+                           binary_to_text_options, &text, nullptr);
   if (result != SPV_SUCCESS) {
     return result;
   }
@@ -58,7 +57,7 @@ spv_result_t ToBinaryAndBack(
 
 TEST(ToBinaryAndBack, DontPreserveNumericIds) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -78,7 +77,7 @@ OpFunctionEnd
 )";
 
   const std::string expected =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -98,16 +97,16 @@ OpFunctionEnd
 )";
 
   std::string after;
-  EXPECT_EQ(SPV_SUCCESS, ToBinaryAndBack(before, &after,
-                                         SPV_TEXT_TO_BINARY_OPTION_NONE,
-                                         SPV_BINARY_TO_TEXT_OPTION_NO_HEADER));
+  EXPECT_EQ(SPV_SUCCESS,
+            ToBinaryAndBack(before, &after, SPV_TEXT_TO_BINARY_OPTION_NONE,
+                            SPV_BINARY_TO_TEXT_OPTION_NO_HEADER));
 
   EXPECT_EQ(expected, after);
 }
 
 TEST(TextHandler, PreserveNumericIds) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -127,7 +126,7 @@ OpFunctionEnd
 )";
 
   const std::string expected =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage

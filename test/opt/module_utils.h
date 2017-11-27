@@ -31,4 +31,4 @@ inline uint32_t GetIdBound(const spvtools::ir::Module& m) {
 
 }  // namespace spvtest
 
-#endif // LIBSPIRV_TEST_OPT_MODULE_UTILS_H_
+#endif  // LIBSPIRV_TEST_OPT_MODULE_UTILS_H_

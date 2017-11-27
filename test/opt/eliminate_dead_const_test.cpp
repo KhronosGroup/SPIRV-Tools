@@ -59,7 +59,9 @@ TEST_F(EliminateDeadConstantBasicTest, BasicAllDeadConstants) {
   // None of the above constants is ever used, so all of them should be
   // eliminated.
   const char* const_decl_opcodes[] = {
-      " OpConstantTrue ", " OpConstantFalse ", " OpConstant ",
+      " OpConstantTrue ",
+      " OpConstantFalse ",
+      " OpConstant ",
   };
   // Skip lines that have any one of const_decl_opcodes.
   const std::string expected_disassembly =

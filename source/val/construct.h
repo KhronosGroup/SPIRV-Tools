@@ -127,6 +127,6 @@ class Construct {
   BasicBlock* exit_block_;
 };
 
-}  /// namespace libspirv
+}  // namespace libspirv
 
 #endif  /// LIBSPIRV_VAL_CONSTRUCT_H_

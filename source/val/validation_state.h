@@ -505,6 +505,6 @@ class ValidationState_t {
   std::unordered_map<uint32_t, Function*> id_to_function_;
 };
 
-}  /// namespace libspirv
+}  // namespace libspirv
 
 #endif  /// LIBSPIRV_VAL_VALIDATIONSTATE_H_

@@ -356,8 +356,7 @@ bool Function::IsCompatibleWithExecutionModel(SpvExecutionModel model,
 
   for (const auto& kv : execution_model_limitations_) {
     if (kv.first != model) {
-      if (!reason)
-        return false;
+      if (!reason) return false;
       is_compatible = false;
       ss_reason << kv.second << "\n";
     }
@@ -370,4 +369,4 @@ bool Function::IsCompatibleWithExecutionModel(SpvExecutionModel model,
   return is_compatible;
 }
 
-}  /// namespace libspirv
+}  // namespace libspirv

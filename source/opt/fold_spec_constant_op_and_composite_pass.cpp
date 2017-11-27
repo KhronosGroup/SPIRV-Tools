@@ -515,7 +515,7 @@ bool IsValidTypeForComponentWiseOperation(const analysis::Type* type) {
   }
   return false;
 }
-}
+}  // namespace
 
 ir::Instruction* FoldSpecConstantOpAndCompositePass::DoComponentWiseOperation(
     ir::Module::inst_iterator* pos) {
@@ -766,8 +766,7 @@ FoldSpecConstantOpAndCompositePass::CreateCompositeInstruction(
     operands.emplace_back(spv_operand_type_t::SPV_OPERAND_TYPE_ID,
                           std::initializer_list<uint32_t>{id});
   }
-  return MakeUnique<ir::Instruction>(context(),
-                                     SpvOp::SpvOpConstantComposite,
+  return MakeUnique<ir::Instruction>(context(), SpvOp::SpvOpConstantComposite,
                                      type_mgr_->GetId(cc->type()), result_id,
                                      std::move(operands));
 }

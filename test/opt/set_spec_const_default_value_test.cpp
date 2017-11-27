@@ -42,7 +42,9 @@ TEST_P(DefaultValuesStringParsingTest, TestCase) {
           tc.default_values_str);
   if (tc.expect_success) {
     EXPECT_NE(nullptr, actual_map);
-    if (actual_map) { EXPECT_THAT(*actual_map, Eq(tc.expected_map)); }
+    if (actual_map) {
+      EXPECT_THAT(*actual_map, Eq(tc.expected_map));
+    }
   } else {
     EXPECT_EQ(nullptr, actual_map);
   }
@@ -272,7 +274,9 @@ INSTANTIATE_TEST_CASE_P(
             "%3 = OpSpecConstantTrue %bool\n",
             // default values
             SpecIdToValueStrMap{
-                {201, "0x1.fffffffffffffp+1024"}, {202, "2048"}, {203, "false"},
+                {201, "0x1.fffffffffffffp+1024"},
+                {202, "2048"},
+                {203, "false"},
             },
             // expected
             "OpDecorate %1 SpecId 201\n"

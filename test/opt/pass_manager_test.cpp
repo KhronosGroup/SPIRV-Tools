@@ -141,8 +141,8 @@ class AppendTypeVoidInstPass : public opt::Pass {
 
   const char* name() const override { return "AppendTypeVoidInstPass"; }
   Status Process(ir::IRContext* irContext) override {
-    auto inst = MakeUnique<ir::Instruction>(irContext, SpvOpTypeVoid, 0, result_id_,
-                                            std::vector<ir::Operand>{});
+    auto inst = MakeUnique<ir::Instruction>(
+        irContext, SpvOpTypeVoid, 0, result_id_, std::vector<ir::Operand>{});
     irContext->AddType(std::move(inst));
     return Status::SuccessWithChange;
   }
@@ -156,7 +156,6 @@ TEST(PassManager, RecomputeIdBoundAutomatically) {
   std::unique_ptr<ir::Module> module(new ir::Module());
   ir::IRContext context(std::move(module), manager.consumer());
   EXPECT_THAT(GetIdBound(*context.module()), Eq(0u));
-
 
   manager.Run(&context);
   manager.AddPass<AppendOpNopPass>();

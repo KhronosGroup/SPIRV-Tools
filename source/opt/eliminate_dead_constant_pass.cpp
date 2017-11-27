@@ -95,15 +95,14 @@ Pass::Status EliminateDeadConstantPass::Process(ir::IRContext* irContext) {
   // constants.
   std::unordered_set<ir::Instruction*> dead_others;
   for (auto* dc : dead_consts) {
-    irContext->get_def_use_mgr()->ForEachUser(dc, [&dead_others](ir::Instruction* user) {
-      SpvOp op = user->opcode();
-      if (ir::IsAnnotationInst(op) ||
-          ir::IsDebug1Inst(op) ||
-          ir::IsDebug2Inst(op) ||
-          ir::IsDebug3Inst(op)) {
-        dead_others.insert(user);
-      }
-    });
+    irContext->get_def_use_mgr()->ForEachUser(
+        dc, [&dead_others](ir::Instruction* user) {
+          SpvOp op = user->opcode();
+          if (ir::IsAnnotationInst(op) || ir::IsDebug1Inst(op) ||
+              ir::IsDebug2Inst(op) || ir::IsDebug3Inst(op)) {
+            dead_others.insert(user);
+          }
+        });
   }
 
   // Turn all dead instructions and uses of them to nop

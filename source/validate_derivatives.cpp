@@ -25,7 +25,7 @@ namespace libspirv {
 
 // Validates correctness of derivative instructions.
 spv_result_t DerivativesPass(ValidationState_t& _,
-                          const spv_parsed_instruction_t* inst) {
+                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   const uint32_t result_type = inst->type_id;
 

@@ -1459,10 +1459,10 @@ INSTANTIATE_TEST_CASE_P(
 // True if capability exists in env.
 bool Exists(const std::string& capability, spv_target_env env) {
   spv_operand_desc dummy;
-  return SPV_SUCCESS ==
-         libspirv::AssemblyGrammar(ScopedContext(env).context)
-             .lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability.c_str(),
-                            capability.size(), &dummy);
+  return SPV_SUCCESS == libspirv::AssemblyGrammar(ScopedContext(env).context)
+                            .lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
+                                           capability.c_str(),
+                                           capability.size(), &dummy);
 }
 
 TEST_P(ValidateCapability, Capability) {
@@ -1626,4 +1626,4 @@ OpDecorate %intt BuiltIn PointSize
               HasSubstr("Capability value 4427 is not allowed by Vulkan 1.0"));
 }
 
-}  // namespace anonymous
+}  // namespace

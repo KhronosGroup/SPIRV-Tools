@@ -64,4 +64,4 @@ const BasicBlock* Construct::exit_block() const { return exit_block_; }
 BasicBlock* Construct::exit_block() { return exit_block_; }
 
 void Construct::set_exit(BasicBlock* block) { exit_block_ = block; }
-}  /// namespace libspirv
+}  // namespace libspirv

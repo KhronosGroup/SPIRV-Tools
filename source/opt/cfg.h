@@ -104,7 +104,7 @@ class CFG {
   std::unordered_map<uint32_t, ir::BasicBlock*> id2block_;
 };
 
-}  // namespace opt
+}  // namespace ir
 }  // namespace spvtools
 
 #endif  // LIBSPIRV_OPT_CFG_H_

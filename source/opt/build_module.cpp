@@ -14,7 +14,7 @@
 
 #include "build_module.h"
 
-#include"ir_context.h"
+#include "ir_context.h"
 #include "ir_loader.h"
 #include "make_unique.h"
 #include "table.h"
@@ -42,12 +42,12 @@ spv_result_t SetSpvInst(void* builder, const spv_parsed_instruction_t* inst) {
   return SPV_ERROR_INVALID_BINARY;
 };
 
-}  // annoymous namespace
+}  // namespace
 
 std::unique_ptr<ir::IRContext> BuildModule(spv_target_env env,
-                                        MessageConsumer consumer,
-                                        const uint32_t* binary,
-                                        const size_t size) {
+                                           MessageConsumer consumer,
+                                           const uint32_t* binary,
+                                           const size_t size) {
   auto context = spvContextCreate(env);
   libspirv::SetContextMessageConsumer(context, consumer);
 

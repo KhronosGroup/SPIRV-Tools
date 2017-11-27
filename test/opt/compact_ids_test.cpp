@@ -28,7 +28,7 @@ using CompactIdsTest = PassTest<::testing::Test>;
 
 TEST_F(CompactIdsTest, PassOff) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -48,7 +48,7 @@ OpMemoryModel Physical32 OpenCL
 
 TEST_F(CompactIdsTest, PassOn) {
   const std::string before =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage
@@ -67,7 +67,7 @@ OpFunctionEnd
 )";
 
   const std::string after =
-R"(OpCapability Addresses
+      R"(OpCapability Addresses
 OpCapability Kernel
 OpCapability GenericPointer
 OpCapability Linkage

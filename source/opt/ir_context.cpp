@@ -93,12 +93,14 @@ bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   if (before == after) return false;
 
   // Ensure that |after| has been registered as def.
-  assert(get_def_use_mgr()->GetDef(after) && "'after' is not a registered def.");
+  assert(get_def_use_mgr()->GetDef(after) &&
+         "'after' is not a registered def.");
 
-  std::vector<std::pair<ir::Instruction*,uint32_t>> uses_to_update;
-  get_def_use_mgr()->ForEachUse(before, [&uses_to_update](ir::Instruction* user, uint32_t index) {
-    uses_to_update.emplace_back(user, index);
-  });
+  std::vector<std::pair<ir::Instruction*, uint32_t>> uses_to_update;
+  get_def_use_mgr()->ForEachUse(
+      before, [&uses_to_update](ir::Instruction* user, uint32_t index) {
+        uses_to_update.emplace_back(user, index);
+      });
 
   ir::Instruction* prev = nullptr;
   for (auto p : uses_to_update) {
@@ -421,11 +423,11 @@ void IRContext::AddCombinatorsForExtension(ir::Instruction* extension) {
 }
 
 void IRContext::InitializeCombinators() {
-  for( auto& capability : module()->capabilities()) {
+  for (auto& capability : module()->capabilities()) {
     AddCombinatorsForCapability(capability.GetSingleWordInOperand(0));
   }
 
-  for( auto& extension : module()->ext_inst_imports()) {
+  for (auto& extension : module()->ext_inst_imports()) {
     AddCombinatorsForExtension(&extension);
   }
 

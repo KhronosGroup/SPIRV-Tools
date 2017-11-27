@@ -149,7 +149,6 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::CFGCleanupPass>(before, after, true, true);
 }
 
-
 TEST_F(CFGCleanupTest, UpdatePhis) {
   const std::string before = R"(
                OpCapability Shader
@@ -252,7 +251,7 @@ TEST_F(CFGCleanupTest, RemoveNamedLabels) {
                OpReturn
                OpFunctionEnd)";
 
-    const std::string after = R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Vertex %main "main"
@@ -270,7 +269,7 @@ OpFunctionEnd
 }
 
 TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
-    const std::string before = R"(
+  const std::string before = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -318,7 +317,7 @@ TEST_F(CFGCleanupTest, RemovePhiArgsFromFarBlocks) {
                OpReturn
                OpFunctionEnd)";
 
-    const std::string after = R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %y %outparm
@@ -368,7 +367,7 @@ OpFunctionEnd
 }
 
 TEST_F(CFGCleanupTest, RemovePhiConstantArgs) {
-    const std::string before = R"(
+  const std::string before = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
@@ -409,7 +408,7 @@ TEST_F(CFGCleanupTest, RemovePhiConstantArgs) {
                OpReturn
                OpFunctionEnd)";
 
-    const std::string after = R"(OpCapability Shader
+  const std::string after = R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %y %outparm

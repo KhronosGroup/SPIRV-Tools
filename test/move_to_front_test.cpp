@@ -28,9 +28,7 @@ using spvutils::MultiMoveToFront;
 class MoveToFrontTester : public MoveToFront<uint32_t> {
  public:
   // Inserts the value in the internal tree data structure. For testing only.
-  void TestInsert(uint32_t val) {
-    InsertNode(CreateNode(val, val));
-  }
+  void TestInsert(uint32_t val) { InsertNode(CreateNode(val, val)); }
 
   // Removes the value from the internal tree data structure. For testing only.
   void TestRemove(uint32_t val) {
@@ -41,15 +39,14 @@ class MoveToFrontTester : public MoveToFront<uint32_t> {
 
   // Prints the internal tree data structure to |out|. For testing only.
   void PrintTree(std::ostream& out, bool print_timestamp = false) const {
-    if (root_)
-      PrintTreeInternal(out, root_, 1, print_timestamp);
+    if (root_) PrintTreeInternal(out, root_, 1, print_timestamp);
   }
 
-  // Returns node handle corresponding to the value. The value may not be in the tree.
+  // Returns node handle corresponding to the value. The value may not be in the
+  // tree.
   uint32_t GetNodeHandle(uint32_t value) const {
     const auto it = value_to_node_.find(value);
-    if (it == value_to_node_.end())
-      return 0;
+    if (it == value_to_node_.end()) return 0;
 
     return it->second;
   }
@@ -61,9 +58,7 @@ class MoveToFrontTester : public MoveToFront<uint32_t> {
     return nodes_.size() - 1;
   }
 
-  uint32_t GetLastAccessedValue() const {
-    return last_accessed_value_;
-  }
+  uint32_t GetLastAccessedValue() const { return last_accessed_value_; }
 
  private:
   // Prints the internal tree data structure for debug purposes in the following
@@ -77,9 +72,9 @@ class MoveToFrontTester : public MoveToFront<uint32_t> {
                          bool print_timestamp) const;
 };
 
-void MoveToFrontTester::PrintTreeInternal(
-    std::ostream& out, uint32_t node,
-    size_t depth, bool print_timestamp) const {
+void MoveToFrontTester::PrintTreeInternal(std::ostream& out, uint32_t node,
+                                          size_t depth,
+                                          bool print_timestamp) const {
   if (!node) {
     out << "D" << depth - 1 << std::endl;
     return;
@@ -87,13 +82,13 @@ void MoveToFrontTester::PrintTreeInternal(
 
   const size_t kTextFieldWvaluethWithoutTimestamp = 10;
   const size_t kTextFieldWvaluethWithTimestamp = 14;
-  const size_t text_field_wvalueth = print_timestamp ?
-      kTextFieldWvaluethWithTimestamp : kTextFieldWvaluethWithoutTimestamp;
+  const size_t text_field_wvalueth = print_timestamp
+                                         ? kTextFieldWvaluethWithTimestamp
+                                         : kTextFieldWvaluethWithoutTimestamp;
 
   std::stringstream label;
   label << ValueOf(node) << "H" << HeightOf(node) << "S" << SizeOf(node);
-  if (print_timestamp)
-    label << "T" << TimestampOf(node);
+  if (print_timestamp) label << "T" << TimestampOf(node);
   const size_t label_length = label.str().length();
   if (label_length < text_field_wvalueth)
     label << std::string(text_field_wvalueth - label_length, '-');
@@ -128,13 +123,15 @@ TEST(MoveToFront, InsertLeftRotation) {
 
   CheckTree(mtf, std::string(R"(
 30H2S2----20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(10);
   CheckTree(mtf, std::string(R"(
 20H2S3----10H1S1----D2
           30H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, InsertRightRotation) {
@@ -146,13 +143,15 @@ TEST(MoveToFront, InsertRightRotation) {
   CheckTree(mtf, std::string(R"(
 10H2S2----D1
           20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(30);
   CheckTree(mtf, std::string(R"(
 20H2S3----10H1S1----D2
           30H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, InsertRightLeftRotation) {
@@ -163,13 +162,15 @@ TEST(MoveToFront, InsertRightLeftRotation) {
 
   CheckTree(mtf, std::string(R"(
 30H2S2----20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(25);
   CheckTree(mtf, std::string(R"(
 25H2S3----20H1S1----D2
           30H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, InsertLeftRightRotation) {
@@ -181,13 +182,15 @@ TEST(MoveToFront, InsertLeftRightRotation) {
   CheckTree(mtf, std::string(R"(
 10H2S2----D1
           20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(15);
   CheckTree(mtf, std::string(R"(
 15H2S3----10H1S1----D2
           20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RemoveSingleton) {
@@ -196,7 +199,8 @@ TEST(MoveToFront, RemoveSingleton) {
   mtf.TestInsert(10);
   CheckTree(mtf, std::string(R"(
 10H1S1----D1
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(10);
   CheckTree(mtf, "");
@@ -211,12 +215,14 @@ TEST(MoveToFront, RemoveRootWithScapegoat) {
   CheckTree(mtf, std::string(R"(
 10H2S3----5H1S1-----D2
           15H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(10);
   CheckTree(mtf, std::string(R"(
 15H2S2----5H1S1-----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RemoveRightRotation) {
@@ -230,14 +236,16 @@ TEST(MoveToFront, RemoveRightRotation) {
 10H3S4----5H1S1-----D2
           15H2S2----D2
                     20H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(5);
 
   CheckTree(mtf, std::string(R"(
 15H2S3----10H1S1----D2
           20H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RemoveLeftRotation) {
@@ -250,14 +258,16 @@ TEST(MoveToFront, RemoveLeftRotation) {
   CheckTree(mtf, std::string(R"(
 10H3S4----5H2S2-----1H1S1-----D3
           15H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(15);
 
   CheckTree(mtf, std::string(R"(
 5H2S3-----1H1S1-----D2
           10H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RemoveLeftRightRotation) {
@@ -270,14 +280,16 @@ TEST(MoveToFront, RemoveLeftRightRotation) {
   CheckTree(mtf, std::string(R"(
 10H3S4----5H1S1-----D2
           15H2S2----12H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(5);
 
   CheckTree(mtf, std::string(R"(
 12H2S3----10H1S1----D2
           15H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RemoveRightLeftRotation) {
@@ -291,20 +303,22 @@ TEST(MoveToFront, RemoveRightLeftRotation) {
 10H3S4----5H2S2-----D2
                     8H1S1-----D3
           15H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(15);
 
   CheckTree(mtf, std::string(R"(
 8H2S3-----5H1S1-----D2
           10H1S1----D2
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, MultipleOperations) {
   MoveToFrontTester mtf;
-  std::vector<uint32_t> vals =
-      { 5, 11, 12, 16, 15, 6, 14, 2, 7, 10, 4, 8, 9, 3, 1, 13 };
+  std::vector<uint32_t> vals = {5, 11, 12, 16, 15, 6, 14, 2,
+                                7, 10, 4,  8,  9,  3, 1,  13};
 
   for (uint32_t i : vals) {
     mtf.TestInsert(i);
@@ -319,7 +333,8 @@ TEST(MoveToFront, MultipleOperations) {
           15H3S5----13H2S3----12H1S1----D4
                               14H1S1----D4
                     16H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(11);
 
@@ -331,7 +346,8 @@ TEST(MoveToFront, MultipleOperations) {
           15H3S5----13H2S3----12H1S1----D4
                               14H1S1----D4
                     16H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(11);
 
@@ -343,7 +359,8 @@ TEST(MoveToFront, MultipleOperations) {
           13H3S6----12H2S2----11H1S1----D4
                     15H2S3----14H1S1----D4
                               16H1S1----D4
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(5);
 
@@ -355,7 +372,8 @@ TEST(MoveToFront, MultipleOperations) {
           13H3S6----12H2S2----11H1S1----D4
                     15H2S3----14H1S1----D4
                               16H1S1----D4
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestInsert(5);
 
@@ -368,7 +386,8 @@ TEST(MoveToFront, MultipleOperations) {
           13H3S6----12H2S2----11H1S1----D4
                     15H2S3----14H1S1----D4
                               16H1S1----D4
-)").substr(1));
+)")
+                     .substr(1));
 
   mtf.TestRemove(2);
   mtf.TestRemove(1);
@@ -384,7 +403,8 @@ TEST(MoveToFront, MultipleOperations) {
                     12H2S2----11H1S1----D4
           15H2S3----14H1S1----D3
                     16H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, BiggerScaleTreeTest) {
@@ -435,7 +455,8 @@ TEST(MoveToFront, BiggerScaleTreeTest) {
                               24H1S1----D4
           37H2S3----35H1S1----D3
                     46H1S1----D3
-)").substr(1));
+)")
+                     .substr(1));
 }
 
 TEST(MoveToFront, RankFromValue) {
@@ -448,20 +469,26 @@ TEST(MoveToFront, RankFromValue) {
   EXPECT_TRUE(mtf.Insert(2));
   EXPECT_TRUE(mtf.Insert(3));
   EXPECT_FALSE(mtf.Insert(2));
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 2H2S3T2-------1H1S1T1-------D2
               3H1S1T3-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_FALSE(mtf.RankFromValue(4, &rank));
 
   EXPECT_TRUE(mtf.RankFromValue(1, &rank));
   EXPECT_EQ(3u, rank);
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 3H2S3T3-------2H1S1T2-------D2
               1H1S1T4-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.RankFromValue(1, &rank));
   EXPECT_EQ(1u, rank);
@@ -482,21 +509,27 @@ TEST(MoveToFront, RankFromValue) {
   EXPECT_TRUE(mtf.RankFromValue(1, &rank));
   EXPECT_EQ(2u, rank);
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 2H3S5T6-------3H1S1T5-------D2
               50H2S3T9------40H1S1T7------D3
                             1H1S1T10------D3
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.RankFromValue(50, &rank));
   EXPECT_EQ(2u, rank);
 
   EXPECT_EQ(5u, mtf.GetSize());
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 2H3S5T6-------3H1S1T5-------D2
               1H2S3T10------40H1S1T7------D3
                             50H1S1T11-----D3
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_FALSE(mtf.RankFromValue(0, &rank));
   EXPECT_FALSE(mtf.RankFromValue(20, &rank));
@@ -524,35 +557,47 @@ TEST(MoveToFront, ValueFromRank) {
   EXPECT_EQ(1u, value);
   EXPECT_EQ(1u, mtf.GetLastAccessedValue());
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 3H2S3T3-------2H1S1T2-------D2
               1H1S1T4-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(2, &value));
   EXPECT_EQ(3u, value);
 
   EXPECT_EQ(3u, mtf.GetSize());
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 1H2S3T4-------2H1S1T2-------D2
               3H1S1T5-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(3, &value));
   EXPECT_EQ(2u, value);
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 3H2S3T5-------1H1S1T4-------D2
               2H1S1T6-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.Insert(10));
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 3H3S4T5-------1H1S1T4-------D2
               2H2S2T6-------D2
                             10H1S1T7------D3
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.ValueFromRank(1, &value));
   EXPECT_EQ(10u, value);
@@ -568,29 +613,38 @@ TEST(MoveToFront, Remove) {
   EXPECT_TRUE(mtf.Insert(2));
   EXPECT_TRUE(mtf.Insert(3));
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 2H2S3T2-------1H1S1T1-------D2
               3H1S1T3-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_EQ(1u, mtf.GetNodeHandle(1));
   EXPECT_EQ(3u, mtf.GetTotalNodeCount());
   EXPECT_TRUE(mtf.Remove(1));
   EXPECT_EQ(3u, mtf.GetTotalNodeCount());
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 2H2S2T2-------D1
               3H1S1T3-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   uint32_t value = 0;
   EXPECT_TRUE(mtf.ValueFromRank(2, &value));
   EXPECT_EQ(2u, value);
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 3H2S2T3-------D1
               2H1S1T4-------D2
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   EXPECT_TRUE(mtf.Insert(1));
   EXPECT_EQ(1u, mtf.GetNodeHandle(1));
@@ -752,13 +806,16 @@ TEST(MoveToFront, LargerScale) {
     }
   }
 
-  CheckTree(mtf, std::string(R"(
+  CheckTree(mtf,
+            std::string(R"(
 6H4S9T1029----8H2S3T8-------7H1S1T7-------D3
                             9H1S1T9-------D3
               2H3S5T1033----4H2S3T1031----5H1S1T1030----D4
                                           3H1S1T1032----D4
                             1H1S1T1034----D3
-)").substr(1), /* print_timestamp = */ true);
+)")
+                .substr(1),
+            /* print_timestamp = */ true);
 
   ASSERT_TRUE(mtf.Insert(1000));
   ASSERT_TRUE(mtf.ValueFromRank(1, &value));
@@ -816,7 +873,6 @@ TEST(MultiMoveToFront, Empty) {
   EXPECT_FALSE(multi_mtf.HasValue(1001, "AAA"));
   EXPECT_FALSE(multi_mtf.Remove(1001, "AAA"));
 }
-
 
 TEST(MultiMoveToFront, TwoSequences) {
   MultiMoveToFront<std::string> multi_mtf;

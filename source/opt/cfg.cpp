@@ -30,8 +30,8 @@ CFG::CFG(ir::Module* module)
     : module_(module),
       pseudo_entry_block_(std::unique_ptr<ir::Instruction>(
           new ir::Instruction(module->context(), SpvOpLabel, 0, 0, {}))),
-      pseudo_exit_block_(std::unique_ptr<ir::Instruction>(
-          new ir::Instruction(module->context(), SpvOpLabel, 0, kInvalidId, {}))) {
+      pseudo_exit_block_(std::unique_ptr<ir::Instruction>(new ir::Instruction(
+          module->context(), SpvOpLabel, 0, kInvalidId, {}))) {
   for (auto& fn : *module) {
     for (auto& blk : fn) {
       uint32_t blkId = blk.id();
@@ -88,5 +88,5 @@ void CFG::ComputeStructuredSuccessors(ir::Function* func) {
   }
 }
 
-}  // namespace opt
+}  // namespace ir
 }  // namespace spvtools

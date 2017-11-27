@@ -17,18 +17,18 @@
 
 #include "gmock/gmock.h"
 
-#include "spirv-tools/libspirv.h"
-#include "unit_spirv.h"
 #include "pass_fixture.h"
 #include "pass_utils.h"
+#include "spirv-tools/libspirv.h"
+#include "unit_spirv.h"
 
 namespace {
 
 using namespace spvtools;
-using spvtest::MakeInstruction;
 using ir::Instruction;
 using ir::IRContext;
 using ir::Operand;
+using spvtest::MakeInstruction;
 using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
 

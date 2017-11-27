@@ -25,8 +25,8 @@
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
-using std::string;
 using std::pair;
+using std::string;
 using std::stringstream;
 
 namespace {

@@ -76,7 +76,9 @@ using StripDebugInfoTest = PassTest<::testing::TestWithParam<const char*>>;
 
 TEST_P(StripDebugInfoTest, Kind) {
   std::vector<const char*> text = {
-      "OpCapability Shader", "OpMemoryModel Logical GLSL450", GetParam(),
+      "OpCapability Shader",
+      "OpMemoryModel Logical GLSL450",
+      GetParam(),
   };
   SinglePassRunAndCheck<opt::StripDebugInfoPass>(JoinAllInsts(text),
                                                  JoinNonDebugInsts(text),

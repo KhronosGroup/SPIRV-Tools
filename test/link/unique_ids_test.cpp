@@ -134,4 +134,4 @@ TEST_F(UniqueIds, UniquelyMerged) {
   EXPECT_EQ(SPV_SUCCESS, res);
 }
 
-} // anonymous namespace
+}  // anonymous namespace

@@ -31,13 +31,13 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
   const std::string capabilities =
-R"(
+      R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64)";
 
   const std::string after_extension_before_body =
-R"(
+      R"(
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
 %void = OpTypeVoid
@@ -131,12 +131,12 @@ OpEntryPoint Fragment %main "main"
 %main_entry = OpLabel)";
 
   const std::string after_body =
-R"(
+      R"(
 OpReturn
 OpFunctionEnd)";
 
   return capabilities + capabilities_and_extensions +
-      after_extension_before_body + body + after_body;
+         after_extension_before_body + body + after_body;
 }
 
 TEST_F(ValidateBitwise, ShiftAllSuccess) {
@@ -157,8 +157,9 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: ShiftRightLogical"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar or vector type as Result Type: "
+                        "ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, OpShiftRightLogicalBaseNotInt) {
@@ -168,8 +169,9 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalBaseNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base to be int scalar or vector: ShiftRightLogical"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base to be int scalar or vector: ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, OpShiftRightLogicalBaseWrongDimension) {
@@ -179,9 +181,10 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalBaseWrongDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base to have the same dimension as Result Type: "
-      "ShiftRightLogical"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base to have the same dimension as Result Type: "
+                "ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, OpShiftRightLogicalBaseWrongBitWidth) {
@@ -191,9 +194,10 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalBaseWrongBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base to have the same bit width as Result Type: "
-      "ShiftRightLogical"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base to have the same bit width as Result Type: "
+                "ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, OpShiftRightLogicalShiftNotInt) {
@@ -203,8 +207,10 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalShiftNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Shift to be int scalar or vector: ShiftRightLogical"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Shift to be int scalar or vector: ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, OpShiftRightLogicalShiftWrongDimension) {
@@ -214,9 +220,10 @@ TEST_F(ValidateBitwise, OpShiftRightLogicalShiftWrongDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Shift to have the same dimension as Result Type: "
-      "ShiftRightLogical"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Shift to have the same dimension as Result Type: "
+                "ShiftRightLogical"));
 }
 
 TEST_F(ValidateBitwise, LogicAllSuccess) {
@@ -238,8 +245,10 @@ TEST_F(ValidateBitwise, OpBitwiseAndWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: BitwiseAnd"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected int scalar or vector type as Result Type: BitwiseAnd"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndLeftNotInt) {
@@ -249,9 +258,9 @@ TEST_F(ValidateBitwise, OpBitwiseAndLeftNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector as operand: BitwiseAnd "
-      "operand index 2"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar or vector as operand: BitwiseAnd "
+                        "operand index 2"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndRightNotInt) {
@@ -261,9 +270,9 @@ TEST_F(ValidateBitwise, OpBitwiseAndRightNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector as operand: BitwiseAnd "
-      "operand index 3"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar or vector as operand: BitwiseAnd "
+                        "operand index 3"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndLeftWrongDimension) {
@@ -273,9 +282,10 @@ TEST_F(ValidateBitwise, OpBitwiseAndLeftWrongDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to have the same dimension as Result Type: "
-      "BitwiseAnd operand index 2"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected operands to have the same dimension as Result Type: "
+                "BitwiseAnd operand index 2"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndRightWrongDimension) {
@@ -285,9 +295,10 @@ TEST_F(ValidateBitwise, OpBitwiseAndRightWrongDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to have the same dimension as Result Type: "
-      "BitwiseAnd operand index 3"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected operands to have the same dimension as Result Type: "
+                "BitwiseAnd operand index 3"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndLeftWrongBitWidth) {
@@ -297,9 +308,10 @@ TEST_F(ValidateBitwise, OpBitwiseAndLeftWrongBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to have the same bit width as Result Type: "
-      "BitwiseAnd operand index 2"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected operands to have the same bit width as Result Type: "
+                "BitwiseAnd operand index 2"));
 }
 
 TEST_F(ValidateBitwise, OpBitwiseAndRightWrongBitWidth) {
@@ -309,9 +321,10 @@ TEST_F(ValidateBitwise, OpBitwiseAndRightWrongBitWidth) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected operands to have the same bit width as Result Type: "
-      "BitwiseAnd operand index 3"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected operands to have the same bit width as Result Type: "
+                "BitwiseAnd operand index 3"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldInsertSuccess) {
@@ -331,8 +344,10 @@ TEST_F(ValidateBitwise, OpBitFieldInsertWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: BitFieldInsert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected int scalar or vector type as Result Type: BitFieldInsert"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldInsertWrongBaseType) {
@@ -342,8 +357,10 @@ TEST_F(ValidateBitwise, OpBitFieldInsertWrongBaseType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base Type to be equal to Result Type: BitFieldInsert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Base Type to be equal to Result Type: BitFieldInsert"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldInsertWrongInsertType) {
@@ -353,8 +370,10 @@ TEST_F(ValidateBitwise, OpBitFieldInsertWrongInsertType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Insert Type to be equal to Result Type: BitFieldInsert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Insert Type to be equal to Result Type: BitFieldInsert"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldInsertOffsetNotInt) {
@@ -364,8 +383,9 @@ TEST_F(ValidateBitwise, OpBitFieldInsertOffsetNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Offset Type to be int scalar: BitFieldInsert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Offset Type to be int scalar: BitFieldInsert"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldInsertCountNotInt) {
@@ -375,8 +395,9 @@ TEST_F(ValidateBitwise, OpBitFieldInsertCountNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Count Type to be int scalar: BitFieldInsert"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Count Type to be int scalar: BitFieldInsert"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldSExtractSuccess) {
@@ -396,8 +417,9 @@ TEST_F(ValidateBitwise, OpBitFieldSExtractWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: BitFieldSExtract"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected int scalar or vector type as Result Type: "
+                        "BitFieldSExtract"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldSExtractWrongBaseType) {
@@ -407,8 +429,10 @@ TEST_F(ValidateBitwise, OpBitFieldSExtractWrongBaseType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base Type to be equal to Result Type: BitFieldSExtract"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Base Type to be equal to Result Type: BitFieldSExtract"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldSExtractOffsetNotInt) {
@@ -418,8 +442,9 @@ TEST_F(ValidateBitwise, OpBitFieldSExtractOffsetNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Offset Type to be int scalar: BitFieldSExtract"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Offset Type to be int scalar: BitFieldSExtract"));
 }
 
 TEST_F(ValidateBitwise, OpBitFieldSExtractCountNotInt) {
@@ -429,8 +454,9 @@ TEST_F(ValidateBitwise, OpBitFieldSExtractCountNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Count Type to be int scalar: BitFieldSExtract"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Count Type to be int scalar: BitFieldSExtract"));
 }
 
 TEST_F(ValidateBitwise, OpBitReverseSuccess) {
@@ -450,8 +476,10 @@ TEST_F(ValidateBitwise, OpBitReverseWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: BitReverse"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected int scalar or vector type as Result Type: BitReverse"));
 }
 
 TEST_F(ValidateBitwise, OpBitReverseWrongBaseType) {
@@ -461,8 +489,9 @@ TEST_F(ValidateBitwise, OpBitReverseWrongBaseType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base Type to be equal to Result Type: BitReverse"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base Type to be equal to Result Type: BitReverse"));
 }
 
 TEST_F(ValidateBitwise, OpBitCountSuccess) {
@@ -482,8 +511,9 @@ TEST_F(ValidateBitwise, OpBitCountWrongResultType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected int scalar or vector type as Result Type: BitCount"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected int scalar or vector type as Result Type: BitCount"));
 }
 
 TEST_F(ValidateBitwise, OpBitCountBaseNotInt) {
@@ -493,8 +523,9 @@ TEST_F(ValidateBitwise, OpBitCountBaseNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base Type to be int scalar or vector: BitCount"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base Type to be int scalar or vector: BitCount"));
 }
 
 TEST_F(ValidateBitwise, OpBitCountBaseWrongDimension) {
@@ -504,9 +535,10 @@ TEST_F(ValidateBitwise, OpBitCountBaseWrongDimension) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(
-      "Expected Base dimension to be equal to Result Type dimension: "
-      "BitCount"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Base dimension to be equal to Result Type dimension: "
+                "BitCount"));
 }
 
 }  // anonymous namespace

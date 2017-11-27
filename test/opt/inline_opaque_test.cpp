@@ -125,8 +125,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::InlineOpaquePass>(
-      predefs + before + post_defs,
-      predefs + after + post_defs, true, true);
+      predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
 TEST_F(InlineOpaqueTest, InlineOpaqueReturn) {
@@ -216,8 +215,7 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::InlineOpaquePass>(
-      predefs + before + post_defs,
-      predefs + after + post_defs, true, true);
+      predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
 TEST_F(InlineOpaqueTest, InlineInNonEntryPointFunction) {
@@ -331,21 +329,20 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<opt::InlineOpaquePass>(
-      predefs + before + post_defs,
-      predefs + after + post_defs, true, true);
+      predefs + before + post_defs, predefs + after + post_defs, true, true);
 }
 
 TEST_F(InlineOpaqueTest, NoInlineNoOpaque) {
   // Function without opaque interface is not inlined.
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // float foo(vec4 bar)
   // {
   //     return bar.x + bar.y;
   // }
-  // 
+  //
   // void main()
   // {
   //     vec4 color = vec4(foo(BaseColor));
@@ -405,8 +402,7 @@ OpReturnValue %31
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::InlineOpaquePass>(
-      assembly, assembly, true, true);
+  SinglePassRunAndCheck<opt::InlineOpaquePass>(assembly, assembly, true, true);
 }
 
 }  // anonymous namespace

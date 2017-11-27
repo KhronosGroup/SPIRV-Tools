@@ -219,7 +219,8 @@ TEST(IrBuilder, OpUndefOutsideFunction) {
   ASSERT_NE(nullptr, context);
 
   const auto opundef_count = std::count_if(
-      context->module()->types_values_begin(), context->module()->types_values_end(),
+      context->module()->types_values_begin(),
+      context->module()->types_values_end(),
       [](const ir::Instruction& inst) { return inst.opcode() == SpvOpUndef; });
   EXPECT_EQ(3, opundef_count);
 
@@ -302,7 +303,7 @@ TEST(IrBuilder, KeepLineDebugInfoBeforeFunctionEnd) {
 
 TEST(IrBuilder, KeepModuleProcessedInRightPlace) {
   DoRoundTripCheck(
-   // clang-format off
+      // clang-format off
                "OpCapability Shader\n"
                "OpMemoryModel Logical GLSL450\n"
           "%1 = OpString \"minimal.vert\"\n"

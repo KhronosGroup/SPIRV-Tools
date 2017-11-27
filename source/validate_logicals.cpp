@@ -42,7 +42,7 @@ inline uint32_t GetOperandTypeId(ValidationState_t& _,
                                  size_t operand_index) {
   return _.GetTypeId(GetOperandWord(inst, operand_index));
 }
-}
+}  // namespace
 
 // Validates correctness of logical instructions.
 spv_result_t LogicalsPass(ValidationState_t& _,

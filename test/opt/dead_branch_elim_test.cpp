@@ -24,9 +24,9 @@ using DeadBranchElimTest = PassTest<::testing::Test>;
 
 TEST_F(DeadBranchElimTest, IfThenElseTrue) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -99,15 +99,15 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElseFalse) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -180,15 +180,15 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenTrue) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -262,15 +262,15 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenFalse) {
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -339,8 +339,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElsePhiTrue) {
@@ -348,7 +348,7 @@ TEST_F(DeadBranchElimTest, IfThenElsePhiTrue) {
   // Note: The SPIR-V has had store/load elimination and phi insertion
   //
   // #version 140
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -412,8 +412,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, IfThenElsePhiFalse) {
@@ -421,7 +421,7 @@ TEST_F(DeadBranchElimTest, IfThenElsePhiFalse) {
   // Note: The SPIR-V has had store/load elimination and phi insertion
   //
   // #version 140
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -485,18 +485,18 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, CompoundIfThenElseFalse) {
   // #version 140
-  // 
+  //
   // layout(std140) uniform U_t
   // {
   //     bool g_B ;
   // } ;
-  // 
+  //
   // void main()
   // {
   //     vec4 v;
@@ -620,12 +620,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, PreventOrphanMerge) {
-
   const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -685,12 +684,11 @@ OpKill
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, HandleOrphanMerge) {
-
   const std::string predefs =
       R"(OpCapability Shader
 %1 = OpExtInstImport "GLSL.std.450"
@@ -747,8 +745,8 @@ OpReturnValue %13
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, KeepContinueTargetWhenKillAfterMerge) {
@@ -845,16 +843,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, DecorateDeleted) {
   // Note: SPIR-V hand-edited to add decoration
   // #version 140
-  // 
+  //
   // in vec4 BaseColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -956,10 +954,10 @@ OpFunctionEnd
 
 TEST_F(DeadBranchElimTest, LoopInDeadBranch) {
   // #version 450
-  // 
+  //
   // layout(location = 0) in vec4 BaseColor;
   // layout(location = 0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     vec4 v = BaseColor;
@@ -1055,16 +1053,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveCase) {
   // #version 450
-  // 
+  //
   // layout (location=0) in vec4 BaseColor;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     switch (1) {
@@ -1148,16 +1146,16 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveDefault) {
   // #version 450
-  // 
+  //
   // layout (location=0) in vec4 BaseColor;
   // layout (location=0) out vec4 OutColor;
-  // 
+  //
   // void main()
   // {
   //     switch (7) {
@@ -1241,8 +1239,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 TEST_F(DeadBranchElimTest, SwitchLiveCaseBreakFromLoop) {
@@ -1251,7 +1249,7 @@ TEST_F(DeadBranchElimTest, SwitchLiveCaseBreakFromLoop) {
   // This construct is currently formed by inlining a function
   // containing early returns from the cases of a switch. The
   // function is wrapped in a one-trip loop and returns are
-  // translated to branches to the loop's merge block. 
+  // translated to branches to the loop's merge block.
 
   const std::string predefs =
       R"(OpCapability Shader
@@ -1344,8 +1342,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<opt::DeadBranchElimPass>(
-      predefs + before, predefs + after, true, true);
+  SinglePassRunAndCheck<opt::DeadBranchElimPass>(predefs + before,
+                                                 predefs + after, true, true);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

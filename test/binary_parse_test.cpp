@@ -16,12 +16,12 @@
 #include <string>
 #include <vector>
 
-#include "test_fixture.h"
-#include "unit_spirv.h"
 #include "gmock/gmock.h"
 #include "source/message.h"
 #include "source/table.h"
 #include "spirv/1.0/OpenCL.std.h"
+#include "test_fixture.h"
+#include "unit_spirv.h"
 
 // Returns true if two spv_parsed_operand_t values are equal.
 // To use this operator, this definition must appear in the same namespace
@@ -40,11 +40,11 @@ using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
 using ::spvtest::MakeVector;
 using ::spvtest::ScopedContext;
+using ::testing::_;
 using ::testing::AnyOf;
 using ::testing::Eq;
 using ::testing::InSequence;
 using ::testing::Return;
-using ::testing::_;
 
 // An easily-constructible and comparable object for the contents of an
 // spv_parsed_instruction_t.  Unlike spv_parsed_instruction_t, owns the memory
@@ -818,7 +818,8 @@ INSTANTIATE_TEST_CASE_P(
          }),
          "Type Id 2 is not a type"},
         {Concatenate({
-             ExpectedHeaderForBound(3), MakeInstruction(SpvOpTypeBool, {1}),
+             ExpectedHeaderForBound(3),
+             MakeInstruction(SpvOpTypeBool, {1}),
              MakeInstruction(SpvOpConstant, {1, 2, 42}),
          }),
          "Type Id 1 is not a scalar numeric type"},

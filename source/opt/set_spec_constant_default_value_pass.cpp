@@ -32,10 +32,10 @@ namespace spvtools {
 namespace opt {
 
 namespace {
-using spvutils::NumberType;
 using spvutils::EncodeNumberStatus;
-using spvutils::ParseNumber;
+using spvutils::NumberType;
 using spvutils::ParseAndEncodeNumber;
+using spvutils::ParseNumber;
 
 // Given a numeric value in a null-terminated c string and the expected type of
 // the value, parses the string and encodes it in a vector of words. If the
@@ -137,11 +137,12 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
   // the first OpGroupDecoration instruction that uses the given decoration
   // group.
   ir::Instruction* group_decorate_inst = nullptr;
-  def_use_mgr->ForEachUser(&decoration_group_defining_inst, [&group_decorate_inst](ir::Instruction* user) {
-    if (user->opcode() == SpvOp::SpvOpGroupDecorate) {
-      group_decorate_inst = user;
-    }
-  });
+  def_use_mgr->ForEachUser(&decoration_group_defining_inst,
+                           [&group_decorate_inst](ir::Instruction* user) {
+                             if (user->opcode() == SpvOp::SpvOpGroupDecorate) {
+                               group_decorate_inst = user;
+                             }
+                           });
   if (!group_decorate_inst) return nullptr;
 
   // Scan through the target ids of the OpGroupDecorate instruction. There
@@ -184,7 +185,7 @@ ir::Instruction* GetSpecIdTargetFromDecorationGroup(
   }
   return target_inst;
 }
-};
+};  // namespace
 
 Pass::Status SetSpecConstantDefaultValuePass::Process(
     ir::IRContext* irContext) {

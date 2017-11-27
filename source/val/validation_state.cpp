@@ -266,8 +266,7 @@ const Function& ValidationState_t::current_function() const {
 
 const Function* ValidationState_t::function(uint32_t id) const {
   const auto it = id_to_function_.find(id);
-  if (it == id_to_function_.end())
-    return nullptr;
+  if (it == id_to_function_.end()) return nullptr;
   return it->second;
 }
 
@@ -740,8 +739,7 @@ bool ValidationState_t::GetConstantValUint64(uint32_t id, uint64_t* val) const {
   if (inst->opcode() != SpvOpConstant && inst->opcode() != SpvOpSpecConstant)
     return false;
 
-  if (!IsIntScalarType(inst->type_id()))
-    return false;
+  if (!IsIntScalarType(inst->type_id())) return false;
 
   if (inst->words().size() == 4) {
     *val = inst->word(3);

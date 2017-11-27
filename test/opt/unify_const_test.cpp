@@ -156,7 +156,8 @@ TEST_F(UnifyFrontEndConstantSingleTest, Basic) {
 
   expected_builder
       .AppendTypesConstantsGlobals({
-          "%uint = OpTypeInt 32 0", "%_pf_uint = OpTypePointer Function %uint",
+          "%uint = OpTypeInt 32 0",
+          "%_pf_uint = OpTypePointer Function %uint",
           "%unsigned_1 = OpConstant %uint 1",
       })
       .AppendInMain({
@@ -302,7 +303,8 @@ TEST_F(UnifyFrontEndConstantSingleTest, UnifyWithDecorationOnTypes) {
           "OpStore %flat_d_var %flat_d_1",
       })
       .AppendNames({
-          "OpName %flat_1 \"flat_1_dup\"", "OpName %flat_d_1 \"flat_d_1_dup\"",
+          "OpName %flat_1 \"flat_1_dup\"",
+          "OpName %flat_d_1 \"flat_d_1_dup\"",
       });
 
   Check(expected_builder, test_builder);

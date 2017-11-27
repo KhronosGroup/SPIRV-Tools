@@ -255,5 +255,5 @@ class AssemblyContext {
   uint32_t next_id_;
   std::set<uint32_t> ids_to_preserve_;
 };
-}
+}  // namespace libspirv
 #endif  // _LIBSPIRV_TEXT_HANDLER_H_

@@ -47,6 +47,7 @@ class ValidationStateTest : public testing::Test {
     spvContextDestroy(context_);
     spvValidatorOptionsDestroy(options_);
   }
+
  protected:
   spv_context context_;
   spv_validator_options options_;
@@ -121,20 +122,15 @@ TEST_F(ValidationState_HasAnyOfExtensions, SingleCapMask) {
 }
 
 TEST_F(ValidationState_HasAnyOfExtensions, MultiCapMask) {
-  const auto set1 = ExtensionSet {
-    Extension::kSPV_KHR_multiview,
-    Extension::kSPV_KHR_16bit_storage
-  };
-  const auto set2 = ExtensionSet {
-    Extension::kSPV_KHR_shader_draw_parameters,
-    Extension::kSPV_NV_stereo_view_rendering,
-    Extension::kSPV_KHR_shader_ballot
-  };
+  const auto set1 = ExtensionSet{Extension::kSPV_KHR_multiview,
+                                 Extension::kSPV_KHR_16bit_storage};
+  const auto set2 = ExtensionSet{Extension::kSPV_KHR_shader_draw_parameters,
+                                 Extension::kSPV_NV_stereo_view_rendering,
+                                 Extension::kSPV_KHR_shader_ballot};
   EXPECT_FALSE(state_.HasAnyOfExtensions(set1));
   EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
   state_.RegisterExtension(Extension::kSPV_KHR_multiview);
   EXPECT_TRUE(state_.HasAnyOfExtensions(set1));
   EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
 }
-
-}
+}  // namespace

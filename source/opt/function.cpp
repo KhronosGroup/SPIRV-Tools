@@ -24,7 +24,7 @@ Function* Function::Clone(IRContext* context) const {
       new Function(std::unique_ptr<Instruction>(DefInst().Clone(context)));
   clone->params_.reserve(params_.size());
   ForEachParam(
-      [clone,context](const Instruction* inst) {
+      [clone, context](const Instruction* inst) {
         clone->AddParameter(std::unique_ptr<Instruction>(inst->Clone(context)));
       },
       true);
@@ -36,7 +36,8 @@ Function* Function::Clone(IRContext* context) const {
     clone->AddBasicBlock(std::move(bb));
   }
 
-  clone->SetFunctionEnd(std::unique_ptr<Instruction>(function_end().Clone(context)));
+  clone->SetFunctionEnd(
+      std::unique_ptr<Instruction>(function_end().Clone(context)));
   return clone;
 }
 

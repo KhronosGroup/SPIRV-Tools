@@ -346,6 +346,6 @@ class Function {
   std::set<uint32_t> function_call_targets_;
 };
 
-}  /// namespace libspirv
+}  // namespace libspirv
 
 #endif  /// LIBSPIRV_VAL_FUNCTION_H_
