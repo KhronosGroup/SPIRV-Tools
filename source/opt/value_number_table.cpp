@@ -16,29 +16,49 @@
 
 #include <algorithm>
 
+#include "cfg.h"
+
 namespace spvtools {
 namespace opt {
 
 uint32_t ValueNumberTable::GetValueNumber(spvtools::ir::Instruction* inst) {
-  // TODO: Need to implement the substitution of operands by their value number
-  // before hashing.
-  // TODO: Implement a normal form for opcodes that commute like integer
-  // addition.  This will let us know that a+b is the same value as b+a.
   assert(inst->result_id() != 0 &&
          "inst must have a result id to get a value number.");
 
   // Check if this instruction already has a value.
-  auto id_to_val = id_to_value_.find(inst->result_id());
-  if (id_to_val != id_to_value_.end()) {
-    return id_to_val->second;
+  auto result_id_to_val = id_to_value_.find(inst->result_id());
+  if (result_id_to_val != id_to_value_.end()) {
+    return result_id_to_val->second;
+  }
+  return 0;
+}
+
+uint32_t ValueNumberTable::AssignValueNumber(ir::Instruction* inst) {
+  // If it already has a value return that.
+  uint32_t value = GetValueNumber(inst);
+  if (value != 0) {
+    return value;
   }
 
   // If the instruction has other side effects, then it must
   // have its own value number.
+  // OpSampledImage and OpImage must remain in the same basic block in which
+  // they are used, because of this we will assign each one it own value number.
   if (!context()->IsCombinatorInstruction(inst)) {
-    uint32_t value_number = TakeNextValueNumber();
-    id_to_value_[inst->result_id()] = value_number;
-    return value_number;
+    value = TakeNextValueNumber();
+    id_to_value_[inst->result_id()] = value;
+    return value;
+  }
+
+  switch (inst->opcode()) {
+    case SpvOpSampledImage:
+    case SpvOpImage:
+    case SpvOpVariable:
+      value = TakeNextValueNumber();
+      id_to_value_[inst->result_id()] = value;
+      return value;
+    default:
+      break;
   }
 
   // If it is a load from memory that can be modified, we have to assume the
@@ -48,24 +68,111 @@ uint32_t ValueNumberTable::GetValueNumber(spvtools::ir::Instruction* inst) {
   // read only.  However, if this is ever relaxed because we analyze stores, we
   // will have to add a new case for volatile loads.
   if (inst->IsLoad() && !inst->IsReadOnlyLoad()) {
-    uint32_t value_number = TakeNextValueNumber();
-    id_to_value_[inst->result_id()] = value_number;
-    return value_number;
+    value = TakeNextValueNumber();
+    id_to_value_[inst->result_id()] = value;
+    return value;
   }
 
+  // When we copy an object, the value numbers should be the same.
+  if (inst->opcode() == SpvOpCopyObject) {
+    value = GetValueNumber(inst->GetSingleWordInOperand(0));
+    if (value != 0) {
+      id_to_value_[inst->result_id()] = value;
+      return value;
+    }
+  }
+
+  // Phi nodes are a type of copy.  If all of the inputs have the same value
+  // number, then we can assign the result of the phi the same value number.
+  if (inst->opcode() == SpvOpPhi) {
+    value = GetValueNumber(inst->GetSingleWordInOperand(0));
+    if (value != 0) {
+      for (uint32_t op = 2; op < inst->NumInOperands(); op += 2) {
+        if (value != GetValueNumber(inst->GetSingleWordInOperand(op))) {
+          value = 0;
+          break;
+        }
+      }
+      if (value != 0) {
+        id_to_value_[inst->result_id()] = value;
+        return value;
+      }
+    }
+  }
+
+  // Replace all of the operands by their value number.  The sign bit will be
+  // set to distinguish between an id and a value number.
+  ir::Instruction value_ins(context(), inst->opcode(), inst->type_id(),
+                            inst->result_id(), {});
+  for (uint32_t o = 0; o < inst->NumInOperands(); ++o) {
+    const ir::Operand& op = inst->GetInOperand(o);
+    if (spvIsIdType(op.type)) {
+      uint32_t id_value = op.words[0];
+      auto use_id_to_val = id_to_value_.find(id_value);
+      if (use_id_to_val != id_to_value_.end()) {
+        id_value = (1 << 31) | use_id_to_val->second;
+      }
+      value_ins.AddOperand(ir::Operand(op.type, {id_value}));
+    } else {
+      value_ins.AddOperand(ir::Operand(op.type, op.words));
+    }
+  }
+
+  // TODO: Implement a normal form for opcodes that commute like integer
+  // addition.  This will let us know that a+b is the same value as b+a.
+
   // Otherwise, we check if this value has been computed before.
-  auto value = instruction_to_value_.find(*inst);
-  if (value != instruction_to_value_.end()) {
-    uint32_t value_number = id_to_value_[value->first.result_id()];
-    id_to_value_[inst->result_id()] = value_number;
-    return value_number;
+  auto value_iterator = instruction_to_value_.find(value_ins);
+  if (value_iterator != instruction_to_value_.end()) {
+    value = id_to_value_[value_iterator->first.result_id()];
+    id_to_value_[inst->result_id()] = value;
+    return value;
   }
 
   // If not, assign it a new value number.
-  uint32_t value_number = TakeNextValueNumber();
-  id_to_value_[inst->result_id()] = value_number;
-  instruction_to_value_[*inst] = value_number;
-  return value_number;
+  value = TakeNextValueNumber();
+  id_to_value_[inst->result_id()] = value;
+  instruction_to_value_[value_ins] = value;
+  return value;
+}
+
+void ValueNumberTable::BuildDominatorTreeValueNumberTable() {
+  // First value number the headers.
+  for (auto& inst : context()->annotations()) {
+    if (inst.result_id() != 0) {
+      AssignValueNumber(&inst);
+    }
+  }
+
+  for (auto& inst : context()->capabilities()) {
+    if (inst.result_id() != 0) {
+      AssignValueNumber(&inst);
+    }
+  }
+
+  for (auto& inst : context()->types_values()) {
+    if (inst.result_id() != 0) {
+      AssignValueNumber(&inst);
+    }
+  }
+
+  for (auto& inst : context()->module()->ext_inst_imports()) {
+    if (inst.result_id() != 0) {
+      AssignValueNumber(&inst);
+    }
+  }
+
+  for (ir::Function& func : *context()->module()) {
+    // For best results we want to traverse the code in reverse post order.
+    // This happens naturally because of the forward referencing rules.
+    for (ir::BasicBlock& block : func) {
+      for (ir::Instruction& inst : block) {
+        if (inst.result_id() != 0) {
+          AssignValueNumber(&inst);
+        }
+      }
+    }
+  }
 }
 
 bool ComputeSameValue::operator()(const ir::Instruction& lhs,
@@ -99,8 +206,8 @@ bool ComputeSameValue::operator()(const ir::Instruction& lhs,
 std::size_t ValueTableHash::operator()(
     const spvtools::ir::Instruction& inst) const {
   // We hash the opcode and in-operands, not the result, because we want
-  // instructions that are the same except for the result to hash to the same
-  // value.
+  // instructions that are the same except for the result to hash to the
+  // same value.
   std::u32string h;
   h.push_back(inst.opcode());
   h.push_back(inst.type_id());

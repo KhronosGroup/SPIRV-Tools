@@ -23,14 +23,10 @@ Pass::Status LocalRedundancyEliminationPass::Process(ir::IRContext* c) {
   InitializeProcessing(c);
 
   bool modified = false;
+  ValueNumberTable vnTable(context());
 
   for (auto& func : *get_module()) {
     for (auto& bb : func) {
-      // Resetting the value number table for every basic block because we just
-      // want the opportunities within a basic block. This will help keep
-      // register pressure down.
-      ValueNumberTable vnTable(context());
-
       // Keeps track of all ids that contain a given value number. We keep
       // track of multiple values because they could have the same value, but
       // different decorations.
@@ -39,7 +35,6 @@ Pass::Status LocalRedundancyEliminationPass::Process(ir::IRContext* c) {
         modified = true;
     }
   }
-
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
 
@@ -54,6 +49,11 @@ bool LocalRedundancyEliminationPass::EliminateRedundanciesInBB(
     }
 
     uint32_t value = vnTable->GetValueNumber(inst);
+
+    if (value == 0) {
+      return;
+    }
+
     if (value >= value_to_ids->size()) {
       value_to_ids->resize(value + 1);
     }

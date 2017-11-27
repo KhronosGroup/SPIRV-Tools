@@ -37,23 +37,45 @@ class ValueTableHash {
 };
 
 // This class implements the value number analysis.  It is using a hash-based
-// approach to value numbering.  For now, it is very simple, and computes value
-// numbers for instructions when they are asked for via |GetValueNumber|.  This
-// may change in the future and should not be relied on.
+// approach to value numbering.  It is essentially doing dominator-tree value
+// numbering described in
+//
+//   Preston Briggs, Keith D. Cooper, and L. Taylor Simpson. 1997. Value
+//   numbering. Softw. Pract. Exper. 27, 6 (June 1997), 701-724.
+//   https://www.cs.rice.edu/~keith/Promo/CRPC-TR94517.pdf.gz
+//
+// The main difference is that because we do not perform redundancy elimination
+// as we build the value number table, we do not have to deal with cleaning up
+// the scope.
 class ValueNumberTable {
  public:
-  ValueNumberTable(ir::IRContext* ctx) : context_(ctx), next_value_number_(1) {}
+  ValueNumberTable(ir::IRContext* ctx) : context_(ctx), next_value_number_(1) {
+    BuildDominatorTreeValueNumberTable();
+  }
 
   // Returns the value number of the value computed by |inst|.  |inst| must have
-  // a result id that will hold the computed value.
+  // a result id that will hold the computed value.  If no value number has been
+  // assigned to the result id, then the return value is 0.
   uint32_t GetValueNumber(spvtools::ir::Instruction* inst);
 
-  // Returns the value number of the value contain in |id|.
+  // Returns the value number of the value contain in |id|.  Returns 0 if it
+  // has not been assigned a value number.
   inline uint32_t GetValueNumber(uint32_t id);
 
   ir::IRContext* context() { return context_; }
 
  private:
+  // Assigns a value number to every result id in the module.
+  void BuildDominatorTreeValueNumberTable();
+
+  // Returns the new value number.
+  uint32_t TakeNextValueNumber() { return next_value_number_++; }
+
+  // Assigns a new value number to the result of |inst| if it does not already
+  // have one.  Return the value number for |inst|.  |inst| must have a result
+  // id.
+  uint32_t AssignValueNumber(ir::Instruction* inst);
+
   std::unordered_map<spvtools::ir::Instruction, uint32_t, ValueTableHash,
                      ComputeSameValue>
       instruction_to_value_;
@@ -61,7 +83,6 @@ class ValueNumberTable {
   ir::IRContext* context_;
   uint32_t next_value_number_;
 
-  uint32_t TakeNextValueNumber() { return next_value_number_++; }
 };
 
 uint32_t ValueNumberTable::GetValueNumber(uint32_t id) {
