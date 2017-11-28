@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DOMINATOR_ANALYSIS_PASS_H
-#define DOMINATOR_ANALYSIS_PASS_H
+#ifndef LIBSPIRV_OPT_DOMINATOR_ANALYSIS_PASS_H_
+#define LIBSPIRV_OPT_DOMINATOR_ANALYSIS_PASS_H_
 
 #include <cstdint>
+#include <map>
 
 #include "dominator_tree.h"
 #include "module.h"
@@ -27,47 +28,74 @@ namespace opt {
 // Interface to perform dominator or postdominator analysis on a given function.
 class DominatorAnalysisBase {
  public:
-  DominatorAnalysisBase(bool isPostDom) : Tree(isPostDom) {}
+  explicit DominatorAnalysisBase(bool isPostDom) : tree_(isPostDom) {}
 
   // Calculate the dominator (or postdominator) tree for given function F.
-  void InitializeTree(const ir::Function* F);
+  inline void InitializeTree(const ir::Function* f) { tree_.InitializeTree(f); }
 
   // Returns true if BasicBlock A dominates BasicBlock B.
-  bool Dominates(const ir::BasicBlock* A, const ir::BasicBlock* B) const;
+  inline bool Dominates(const ir::BasicBlock* a,
+                        const ir::BasicBlock* b) const {
+    if (!a || !b) return false;
+    return Dominates(a->id(), b->id());
+  }
 
   // Returns true if BasicBlock A dominates BasicBlock B. Same as above only
   // using the BasicBlock IDs.
-  bool Dominates(uint32_t A, uint32_t B) const;
+  inline bool Dominates(uint32_t a, uint32_t b) const {
+    return tree_.Dominates(a, b);
+  }
 
   // Returns true if BasicBlock A strictly dominates BasicBlock B.
-  bool StrictlyDominates(const ir::BasicBlock* A,
-                         const ir::BasicBlock* B) const;
+  inline bool StrictlyDominates(const ir::BasicBlock* a,
+                                const ir::BasicBlock* b) const {
+    if (!a || !b) return false;
+    return StrictlyDominates(a->id(), b->id());
+  }
 
   // Returns true if BasicBlock A strictly dominates BasicBlock B. Same as above
   // only using the BasicBlock IDs.
-  bool StrictlyDominates(uint32_t A, uint32_t B) const;
-
-  // Dump the tree structure into the given stream in the dot format.
-  void DumpAsDot(std::ostream& Out) const;
+  inline bool StrictlyDominates(uint32_t a, uint32_t b) const {
+    return tree_.StrictlyDominates(a, b);
+  }
 
   // Return the immediate dominator of node A or return NULL if it is an entry
   // node.
-  ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* A) const;
+  inline ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* node) const {
+    if (!node) return nullptr;
+    return tree_.ImmediateDominator(node);
+  }
 
   // Return the immediate dominator of node A or return NULL if it is an entry
-  // node. Same as above but operates on IDs.§
-  ir::BasicBlock* ImmediateDominator(uint32_t A) const;
+  // node. Same as above but operates on IDs.
+  inline ir::BasicBlock* ImmediateDominator(uint32_t node_id) const {
+    return tree_.ImmediateDominator(node_id);
+  }
+
+  // Returns true if A is reachable from the entry.
+  inline bool IsReachable(const ir::BasicBlock* node) const {
+    if (!node) return false;
+    return tree_.ReachableFromRoots(node->id());
+  }
+
+  // Returns true if A is reachable from the entry.
+  inline bool IsReachable(uint32_t node_id) const {
+    return tree_.ReachableFromRoots(node_id);
+  }
+
+  // Dump the tree structure into the given stream in the dot format.
+  inline void DumpAsDot(std::ostream& out) const { tree_.DumpTreeAsDot(out); }
 
   // Returns true if this is a postdomiator tree.
-  bool isPostDominator() const { return Tree.isPostDominator(); }
+  inline bool IsPostDominator() const { return tree_.IsPostDominator(); }
 
   // Return the tree itself for manual operations, such as traversing the roots.
   // For normal dominance relationships the methods above should be used.
-  DominatorTree& GetDomTree() { return Tree; }
-  const DominatorTree& GetDomTree() const { return Tree; }
+  inline DominatorTree& GetDomTree() { return tree_; }
+  inline const DominatorTree& GetDomTree() const { return tree_; }
 
  protected:
-  DominatorTree Tree;
+  DominatorTree tree_;
 };
 
 // Derived class for normal dominator analysis.
@@ -85,22 +113,32 @@ class PostDominatorAnalysis : public DominatorAnalysisBase {
 // A simple mechanism to cache the result for the dominator tree.
 class DominatorAnalysisPass {
  public:
-  DominatorAnalysisPass() {}
-
   // Gets the dominator analysis for function F.
-  DominatorAnalysis* GetDominatorAnalysis(const ir::Function* F);
+  DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f) {
+    if (dominator_trees_.find(f) == dominator_trees_.end()) {
+      dominator_trees_[f].InitializeTree(f);
+    }
+
+    return &dominator_trees_[f];
+  }
 
   // Gets the postdominator analysis for function F.
-  PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* F);
+  PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f) {
+    if (post_dominator_trees_.find(f) == post_dominator_trees_.end()) {
+      post_dominator_trees_[f].InitializeTree(f);
+    }
+
+    return &post_dominator_trees_[f];
+  }
 
  private:
   // Each function in the module will create its own dominator tree. We cache
   // the result so it doesn't need to be rebuilt each time.
-  std::map<const ir::Function*, DominatorAnalysis> DomTrees;
-  std::map<const ir::Function*, PostDominatorAnalysis> PostDomTrees;
+  std::map<const ir::Function*, DominatorAnalysis> dominator_trees_;
+  std::map<const ir::Function*, PostDominatorAnalysis> post_dominator_trees_;
 };
 
-}  // ir
-}  // spvtools
+}  // namespace opt
+}  // namespace spvtools
 
-#endif  // DOMINATOR_ANALYSIS_PASS_H
+#endif  // LIBSPIRV_OPT_DOMINATOR_ANALYSIS_PASS_H_

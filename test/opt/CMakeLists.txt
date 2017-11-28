@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_subdirectory(DominatorTree)
+add_subdirectory(dominator_tree)
 
 add_spvtools_unittest(TARGET instruction
   SRCS instruction_test.cpp

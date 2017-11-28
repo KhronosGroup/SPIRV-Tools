@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DOMINATOR_ANALYSIS_TREE_H
-#define DOMINATOR_ANALYSIS_TREE_H
+#ifndef LIBSPIRV_OPT_DOMINATOR_ANALYSIS_TREE_H_
+#define LIBSPIRV_OPT_DOMINATOR_ANALYSIS_TREE_H_
 
 #include <cstdint>
 #include <map>
+#include <utility>
+#include <vector>
+
 #include "module.h"
 
 namespace spvtools {
@@ -25,22 +28,25 @@ namespace opt {
 // children. It also contains two values, for the pre and post indexes in the
 // tree which are used to compare two nodes.
 struct DominatorTreeNode {
-  DominatorTreeNode(ir::BasicBlock* bb);
+  explicit DominatorTreeNode(ir::BasicBlock* bb)
+      : bb_(bb),
+        parent_(nullptr),
+        childrens_({}),
+        dfs_num_pre_(-1),
+        dfs_num_post_(-1) {}
 
-  ir::BasicBlock* BB;
-  DominatorTreeNode* Parent;
-  std::vector<DominatorTreeNode*> Children;
+  inline uint32_t id() const { return bb_->id(); }
+
+  ir::BasicBlock* bb_;
+  DominatorTreeNode* parent_;
+  std::vector<DominatorTreeNode*> childrens_;
 
   // These indexes are used to compare two given nodes. A node is a child or
   // grandchild of another node if its preorder index is greater than the
   // first nodes preorder index AND if its postorder index is less than the
   // first nodes postorder index.
-  int DepthFirstPreOrderIndex;
-  int DepthFirstPostOrderIndex;
-
-  // Returns the ID of the basic block. We need this method to be able to use
-  // this struct in the cfa depth first traversal function.
-  uint32_t id() const;
+  int dfs_num_pre_;
+  int dfs_num_post_;
 };
 
 // A class representing a tree of BasicBlocks in a given function, where each
@@ -51,26 +57,26 @@ class DominatorTree {
   using iterator = DominatorTreeNodeList::iterator;
   using const_iterator = DominatorTreeNodeList::const_iterator;
 
-  DominatorTree() : PostDominator(false) {}
-  DominatorTree(bool post) : PostDominator(post) {}
+  DominatorTree() : postdominator_(false) {}
+  explicit DominatorTree(bool post) : postdominator_(post) {}
 
-  iterator begin() { return Roots.begin(); }
-  iterator end() { return Roots.end(); }
+  iterator begin() { return roots_.begin(); }
+  iterator end() { return roots_.end(); }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
-  const_iterator cbegin() const { return Roots.begin(); }
-  const_iterator cend() const { return Roots.end(); }
+  const_iterator cbegin() const { return roots_.begin(); }
+  const_iterator cend() const { return roots_.end(); }
 
   // Get the unique root of the tree.
-  // It is guaranteed to work on a dominator tree post-dominator might have a
-  // list.
+  // It is guaranteed to work on a dominator tree.
+  // A postdominator may have more than one element.
   DominatorTreeNode* GetRoot() {
-    assert(Roots.size() == 1);
+    assert(roots_.size() == 1);
     return *begin();
   }
 
   const DominatorTreeNode* GetRoot() const {
-    assert(Roots.size() == 1);
+    assert(roots_.size() == 1);
     return *begin();
   }
 
@@ -103,44 +109,55 @@ class DominatorTree {
   // Returns true if BasicBlock A is reachable by this tree. A node would be
   // unreachable if it cannot be reached by traversal from the start node or for
   // a postdominator tree, cannot be reached from the exit nodes.
-  bool Reachable(const ir::BasicBlock* A) const;
+  inline bool ReachableFromRoots(const ir::BasicBlock* A) const {
+    if (!A) return false;
+    return ReachableFromRoots(A->id());
+  }
 
   // Same as the above method but takes in the ID of the BasicBlock rather than
   // the BasicBlock itself.
-  bool Reachable(uint32_t A) const;
+  bool ReachableFromRoots(uint32_t A) const;
 
   // Returns true if this tree is a post dominator tree or not.
-  bool isPostDominator() const { return PostDominator; }
+  bool IsPostDominator() const { return postdominator_; }
+
+  // Clean up the tree.
+  void ClearTree() {
+    nodes_.clear();
+    roots_.clear();
+  }
 
  private:
-  // Clean up the tree.
-  void ResetTree();
-
   // Adds the BasicBlock to the tree structure if it doesn't already exist.
   DominatorTreeNode* GetOrInsertNode(ir::BasicBlock* BB);
 
-  // Applies the std::function 'func' to 'node' then applies it to nodes
+  // Applies the std::function 'func' to 'node' then applies it to node's
   // children.
   void Visit(const DominatorTreeNode* node,
              std::function<void(const DominatorTreeNode*)> func) const;
 
-  // Wrapper functio which gets the list of BasicBlock->DominatingBasicBlock
+  // Wrapper function which gets the list of BasicBlock->DominatingBasicBlock
   // from the CFA and stores it in the edges parameter.
+  //
+  // The |edges| vector will contain the dominator tree as pairs of nodes.
+  // The first node in the pair is a node in the graph. The second node in the
+  // pair is its immediate dominator.
+  // The root of the tree has him self as immediate dominator.
   void GetDominatorEdges(
       const ir::Function* F, ir::BasicBlock* DummyStartNode,
       std::vector<std::pair<ir::BasicBlock*, ir::BasicBlock*>>& edges);
 
-  // The root of the tree.
-  std::vector<DominatorTreeNode*> Roots;
+  // The roots of the tree.
+  std::vector<DominatorTreeNode*> roots_;
 
   // Pairs each basic block id to the tree node containing that basic block.
-  std::map<uint32_t, DominatorTreeNode> Nodes;
+  std::map<uint32_t, DominatorTreeNode> nodes_;
 
   // True if this is a post dominator tree.
-  bool PostDominator;
+  bool postdominator_;
 };
 
-}  // ir
-}  // spvtools
+}  // namespace opt
+}  // namespace spvtools
 
-#endif
+#endif  // LIBSPIRV_OPT_DOMINATOR_ANALYSIS_TREE_H_

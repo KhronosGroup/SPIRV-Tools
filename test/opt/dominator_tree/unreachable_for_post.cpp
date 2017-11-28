@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 
 #include "../assembly_builder.h"
+#include "../function_utils.h"
 #include "../pass_fixture.h"
 #include "../pass_utils.h"
 #include "opt/dominator_analysis_pass.h"
@@ -29,15 +30,6 @@ using namespace spvtools;
 using ::testing::UnorderedElementsAre;
 
 using PassClassTest = PassTest<::testing::Test>;
-
-const ir::Function* getFromModule(ir::Module* module, uint32_t id) {
-  for (ir::Function& F : *module) {
-    if (F.result_id() == id) {
-      return &F;
-    }
-  }
-  return nullptr;
-}
 
 /*
   Generated from the following GLSL
@@ -97,9 +89,9 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
                              << text << std::endl;
   opt::DominatorAnalysisPass pass;
 
-  const ir::Function* F = getFromModule(module, 4);
+  const ir::Function* f = spvtest::GetFunction(module, 4);
 
-  opt::PostDominatorAnalysis* analysis = pass.GetPostDominatorAnalysis(F);
+  opt::PostDominatorAnalysis* analysis = pass.GetPostDominatorAnalysis(f);
 
   EXPECT_TRUE(analysis->Dominates(12, 12));
   EXPECT_TRUE(analysis->Dominates(12, 14));
