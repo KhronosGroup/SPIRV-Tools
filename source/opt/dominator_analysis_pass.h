@@ -94,6 +94,9 @@ class DominatorAnalysisBase {
   inline DominatorTree& GetDomTree() { return tree_; }
   inline const DominatorTree& GetDomTree() const { return tree_; }
 
+  // Force the dominator tree to be removed
+  inline void ClearTree() { tree_.ClearTree(); }
+
  protected:
   DominatorTree tree_;
 };
@@ -129,6 +132,16 @@ class DominatorAnalysisPass {
     }
 
     return &post_dominator_trees_[f];
+  }
+
+  // Remove the dominator tree of F from the cache.
+  void RemoveDominatorAnalysis(const ir::Function* f) {
+    dominator_trees_.erase(f);
+  }
+
+  // Remove the postdominator tree of F from the cache.
+  void RemovePostDominatorAnalysis(const ir::Function* f) {
+    post_dominator_trees_.erase(f);
   }
 
  private:
