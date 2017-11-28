@@ -190,7 +190,7 @@ TEST_F(PropagatorTest, PropagateThroughPhis) {
         uint32_t phi_arg_id = instr->GetSingleWordOperand(i);
         auto it = values_.find(phi_arg_id);
         if (it != values_.end()) {
-          EXPECT_EQ(it->second, 4);
+          EXPECT_EQ(it->second, 4u);
           retval = opt::SSAPropagator::kInteresting;
           values_[instr->result_id()] = it->second;
         } else {
@@ -209,9 +209,9 @@ TEST_F(PropagatorTest, PropagateThroughPhis) {
   // The propagator should've concluded that the Phi instruction has a constant
   // value of 4.
   EXPECT_NE(phi_instr, nullptr);
-  EXPECT_EQ(values_[phi_instr->result_id()], 4);
+  EXPECT_EQ(values_[phi_instr->result_id()], 4u);
 
-  EXPECT_THAT(GetValues(), UnorderedElementsAre(4, 4, 4));
+  EXPECT_THAT(GetValues(), UnorderedElementsAre(4u, 4u, 4u));
 }
 
 }  // namespace
