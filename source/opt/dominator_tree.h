@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "cfg.h"
 #include "module.h"
 
 namespace spvtools {
@@ -82,7 +83,7 @@ class DominatorTree {
 
   // Get the unique root of the tree.
   // It is guaranteed to work on a dominator tree.
-  // A postdominator tree may have more than one element.
+  // post-dominator might have a list.
   DominatorTreeNode* GetRoot() {
     assert(roots_.size() == 1);
     return *roots_.begin();
@@ -93,49 +94,46 @@ class DominatorTree {
     return *roots_.begin();
   }
 
-  const DominatorTreeNodeList& Roots() const {
-    return roots_;
-  }
+  const DominatorTreeNodeList& Roots() const { return roots_; }
 
-  // Dumps the tree in the graphvis dot format into the stream.
+  // Dumps the tree in the graphvis dot format into the |out_stream|.
   void DumpTreeAsDot(std::ostream& out_stream) const;
 
-  // Build the (post-)dominator tree for the function |F|
+  // Build the (post-)dominator tree for the function |f|
   // Any existing data will be overwritten
-  void InitializeTree(const ir::Function* F);
+  void InitializeTree(const ir::Function* f, const ir::CFG& cfg);
 
-  // Check if BasicBlock B is a dominator of BasicBlock A.
-  bool Dominates(const ir::BasicBlock* A, const ir::BasicBlock* B) const;
+  // Check if the basic block |a| dominates the basic block |b|.
+  bool Dominates(const ir::BasicBlock* a, const ir::BasicBlock* b) const;
 
-  // Check if BasicBlock B is a dominator of BasicBlock A. This function uses
-  // the IDs of A and B.
-  bool Dominates(uint32_t A, uint32_t B) const;
+  // Check if the basic block id |a| dominates the basic block id |b|.
+  bool Dominates(uint32_t a, uint32_t b) const;
 
-  // Check if BasicBlock A strictly dominates B
-  bool StrictlyDominates(const ir::BasicBlock* A,
-                         const ir::BasicBlock* B) const;
+  // Check if the basic block |a| strictly dominates the basic block |b|.
+  bool StrictlyDominates(const ir::BasicBlock* a,
+                         const ir::BasicBlock* b) const;
 
-  bool StrictlyDominates(uint32_t A, uint32_t B) const;
+  // Check if the basic block id |a| strictly dominates the basic block id |b|.
+  bool StrictlyDominates(uint32_t a, uint32_t b) const;
 
-  // Returns the immediate dominator of basicblock A.
+  // Returns the immediate dominator of basic block |a|.
   ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* A) const;
 
-  // Returns the immediate dominator of basicblock A.
-  ir::BasicBlock* ImmediateDominator(uint32_t A) const;
+  // Returns the immediate dominator of basic block id |a|.
+  ir::BasicBlock* ImmediateDominator(uint32_t a) const;
 
-  // Returns true if BasicBlock A is reachable by this tree. A node would be
-  // unreachable if it cannot be reached by traversal from the start node or for
-  // a postdominator tree, cannot be reached from the exit nodes.
-  inline bool ReachableFromRoots(const ir::BasicBlock* A) const {
-    if (!A) return false;
-    return ReachableFromRoots(A->id());
+  // Returns true if the basic block |a| is reachable by this tree. A node would
+  // be unreachable if it cannot be reached by traversal from the start node or
+  // for a postdominator tree, cannot be reached from the exit nodes.
+  inline bool ReachableFromRoots(const ir::BasicBlock* a) const {
+    if (!a) return false;
+    return ReachableFromRoots(a->id());
   }
 
-  // Same as the above method but takes in the ID of the BasicBlock rather than
-  // the BasicBlock itself.
-  bool ReachableFromRoots(uint32_t A) const;
+  // Returns true if the basic block id |a| is reachable by this tree.
+  bool ReachableFromRoots(uint32_t a) const;
 
-  // Returns true if this tree is a post dominator tree or not.
+  // Returns true if this tree is a post dominator tree.
   bool IsPostDominator() const { return postdominator_; }
 
   // Clean up the tree.
@@ -145,10 +143,11 @@ class DominatorTree {
   }
 
  private:
-  // Adds the BasicBlock to the tree structure if it doesn't already exist.
+  // Adds the basic block |bb| to the tree structure if it doesn't already
+  // exist.
   DominatorTreeNode* GetOrInsertNode(ir::BasicBlock* bb);
 
-  // Applies the std::function 'func' to 'node' then applies it to node's
+  // Applies the std::function |func| to |node| then applies it to nodes
   // children.
   void Visit(const DominatorTreeNode* node,
              std::function<void(const DominatorTreeNode*)> func) const;
@@ -159,7 +158,7 @@ class DominatorTree {
   // The |edges| vector will contain the dominator tree as pairs of nodes.
   // The first node in the pair is a node in the graph. The second node in the
   // pair is its immediate dominator.
-  // The root of the tree has him self as immediate dominator.
+  // The root of the tree has themself as immediate dominator.
   void GetDominatorEdges(
       const ir::Function* f, ir::BasicBlock* dummy_start_node,
       std::vector<std::pair<ir::BasicBlock*, ir::BasicBlock*>>& edges);

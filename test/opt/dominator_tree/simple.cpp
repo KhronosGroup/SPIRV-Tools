@@ -21,7 +21,7 @@
 #include "../function_utils.h"
 #include "../pass_fixture.h"
 #include "../pass_utils.h"
-#include "opt/dominator_analysis_pass.h"
+#include "opt/dominator_analysis.h"
 #include "opt/pass.h"
 
 namespace {
@@ -146,9 +146,9 @@ TEST_F(PassClassTest, BasicVisitFromEntryPoint) {
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
   const ir::Function* f = spvtest::GetFunction(module, 4);
-  opt::DominatorAnalysisPass pass;
 
-  opt::DominatorAnalysis* analysis = pass.GetDominatorAnalysis(f);
+  ir::CFG cfg(module);
+  opt::DominatorAnalysis* analysis = context->GetDominatorAnalysis(f, cfg);
 
   opt::DominatorTree& tree = analysis->GetDomTree();
 

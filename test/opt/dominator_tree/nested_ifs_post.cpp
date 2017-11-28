@@ -22,7 +22,7 @@
 #include "../function_utils.h"
 #include "../pass_fixture.h"
 #include "../pass_utils.h"
-#include "opt/dominator_analysis_pass.h"
+#include "opt/dominator_analysis.h"
 #include "opt/pass.h"
 
 namespace {
@@ -116,11 +116,12 @@ TEST_F(PassClassTest, UnreachableNestedIfs) {
   ir::Module* module = context->module();
   EXPECT_NE(nullptr, module) << "Assembling failed for shader:\n"
                              << text << std::endl;
-  opt::DominatorAnalysisPass pass;
 
   const ir::Function* f = spvtest::GetFunction(module, 4);
 
-  opt::PostDominatorAnalysis* analysis = pass.GetPostDominatorAnalysis(f);
+  ir::CFG cfg(module);
+  opt::PostDominatorAnalysis* analysis =
+      context->GetPostDominatorAnalysis(f, cfg);
 
   EXPECT_TRUE(analysis->Dominates(5, 5));
   EXPECT_TRUE(analysis->Dominates(8, 8));

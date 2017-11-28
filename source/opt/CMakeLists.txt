@@ -25,7 +25,7 @@ add_library(SPIRV-Tools-opt
   dead_variable_elimination.h
   decoration_manager.h
   def_use_manager.h
-  dominator_analysis_pass.h
+  dominator_analysis.h
   dominator_tree.h
   eliminate_dead_constant_pass.h
   eliminate_dead_functions_pass.h

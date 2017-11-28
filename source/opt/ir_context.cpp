@@ -34,6 +34,12 @@ void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   if (set & kAnalysisCFG) {
     BuildCFG();
   }
+  if (set & kAnalysisDominatorAnalysis) {
+    // An invalid dominator tree analysis will be empty so rebuilding it just
+    // means marking it as valid. Each tree will be initalisalised when
+    // requested on a per function basis.
+    valid_analyses_ |= kAnalysisDominatorAnalysis;
+  }
 }
 
 void IRContext::InvalidateAnalysesExceptFor(
@@ -58,6 +64,11 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   if (analyses_to_invalidate & kAnalysisCFG) {
     cfg_.reset(nullptr);
   }
+  if (analyses_to_invalidate & kAnalysisDominatorAnalysis) {
+    dominator_trees_.clear();
+    post_dominator_trees_.clear();
+  }
+
   valid_analyses_ = Analysis(valid_analyses_ & ~analyses_to_invalidate);
 }
 
@@ -439,5 +450,28 @@ void IRContext::InitializeCombinators() {
 
   valid_analyses_ |= kAnalysisCombinators;
 }
+
+// Gets the dominator analysis for function |f|.
+opt::DominatorAnalysis* IRContext::GetDominatorAnalysis(const ir::Function* f,
+                                                        const ir::CFG& in_cfg) {
+  if (dominator_trees_.find(f) == dominator_trees_.end() ||
+      !AreAnalysesValid(kAnalysisDominatorAnalysis)) {
+    dominator_trees_[f].InitializeTree(f, in_cfg);
+  }
+
+  return &dominator_trees_[f];
+}
+
+// Gets the postdominator analysis for function |f|.
+opt::PostDominatorAnalysis* IRContext::GetPostDominatorAnalysis(
+    const ir::Function* f, const ir::CFG& in_cfg) {
+  if (post_dominator_trees_.find(f) == post_dominator_trees_.end() ||
+      !AreAnalysesValid(kAnalysisDominatorAnalysis)) {
+    post_dominator_trees_[f].InitializeTree(f, in_cfg);
+  }
+
+  return &post_dominator_trees_[f];
+}
+
 }  // namespace ir
 }  // namespace spvtools

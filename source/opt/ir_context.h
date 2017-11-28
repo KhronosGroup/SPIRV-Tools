@@ -18,6 +18,7 @@
 #include "cfg.h"
 #include "decoration_manager.h"
 #include "def_use_manager.h"
+#include "dominator_analysis.h"
 #include "module.h"
 
 #include <algorithm>
@@ -49,7 +50,8 @@ class IRContext {
     kAnalysisDecorations = 1 << 2,
     kAnalysisCombinators = 1 << 3,
     kAnalysisCFG = 1 << 4,
-    kAnalysisEnd = 1 << 5
+    kAnalysisDominatorAnalysis = 1 << 5,
+    kAnalysisEnd = 1 << 6
   };
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
@@ -293,6 +295,24 @@ class IRContext {
     return cfg_.get();
   }
 
+  // Gets the dominator analysis for function |f|.
+  opt::DominatorAnalysis* GetDominatorAnalysis(const ir::Function* f,
+                                               const ir::CFG&);
+
+  // Gets the postdominator analysis for function |f|.
+  opt::PostDominatorAnalysis* GetPostDominatorAnalysis(const ir::Function* f,
+                                                       const ir::CFG&);
+
+  // Remove the dominator tree of |f| from the cache.
+  inline void RemoveDominatorAnalysis(const ir::Function* f) {
+    dominator_trees_.erase(f);
+  }
+
+  // Remove the postdominator tree of |f| from the cache.
+  inline void RemovePostDominatorAnalysis(const ir::Function* f) {
+    post_dominator_trees_.erase(f);
+  }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -361,6 +381,12 @@ class IRContext {
 
   // The CFG for all the functions in |module_|.
   std::unique_ptr<ir::CFG> cfg_;
+
+  // Each function in the module will create its own dominator tree. We cache
+  // the result so it doesn't need to be rebuilt each time.
+  std::map<const ir::Function*, opt::DominatorAnalysis> dominator_trees_;
+  std::map<const ir::Function*, opt::PostDominatorAnalysis>
+      post_dominator_trees_;
 };
 
 inline ir::IRContext::Analysis operator|(ir::IRContext::Analysis lhs,

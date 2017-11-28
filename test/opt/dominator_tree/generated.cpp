@@ -23,7 +23,7 @@
 #include "../function_utils.h"
 #include "../pass_fixture.h"
 #include "../pass_utils.h"
-#include "opt/dominator_analysis_pass.h"
+#include "opt/dominator_analysis.h"
 #include "opt/pass.h"
 
 namespace {
@@ -120,7 +120,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   // Test normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -180,7 +181,8 @@ TEST_F(PassClassTest, DominatorSimpleCFG) {
   // Test post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -278,7 +280,8 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   // Check normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -316,7 +319,8 @@ TEST_F(PassClassTest, DominatorIrreducibleCFG) {
   // Check post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -392,7 +396,8 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   // Check normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -416,7 +421,8 @@ TEST_F(PassClassTest, DominatorLoopToSelf) {
   // Check post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -486,7 +492,8 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   // Check normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -533,7 +540,8 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
   // Check post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     std::set<uint32_t> exits{15, 13, 14, 11};
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -616,7 +624,8 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
   // Check normal dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -647,7 +656,8 @@ TEST_F(PassClassTest, DominatorInfinitLoop) {
   // Check post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
@@ -713,7 +723,8 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   // Check dominator tree
   {
     opt::DominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
     EXPECT_EQ(tree.GetRoot()->bb_, entry);
@@ -737,7 +748,8 @@ TEST_F(PassClassTest, DominatorUnreachableFromEntry) {
   // Check post dominator tree
   {
     opt::PostDominatorAnalysis dom_tree;
-    dom_tree.InitializeTree(fn);
+    ir::CFG cfg(module);
+    dom_tree.InitializeTree(fn, cfg);
 
     // Inspect the actual tree
     opt::DominatorTree& tree = dom_tree.GetDomTree();
