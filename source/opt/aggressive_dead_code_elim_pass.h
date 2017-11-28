@@ -101,6 +101,9 @@ class AggressiveDCEPass : public MemPass {
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, ir::BasicBlock* bp);
 
+  // Add all branches to |labelId| to worklist if not already live
+  void AddBranchesToWorklist(uint32_t labelId);
+
   // For function |func|, mark all Stores to non-function-scope variables
   // and block terminating instructions as live. Recursively mark the values
   // they use. When complete, delete any non-live instructions. Return true

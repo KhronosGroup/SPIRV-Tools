@@ -2108,6 +2108,87 @@ OpFunctionEnd
   SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
 }
 
+TEST_F(AggressiveDCETest, NoEliminateIfBreak) {
+  // Note: Assembly optimized from GLSL
+  //
+  // #version 450 
+  // 
+  // layout(location=0) in vec4 InColor;
+  // layout(location=0) out vec4 OutColor;
+  // 
+  // void main()
+  // {
+  //     float f = 0.0;
+  //     for (;;) {
+  //         f += 2.0;
+  //         if (f > 20.0)
+  //             break;
+  //     }
+  // 
+  //     OutColor = InColor / f;
+  // }
+
+  const std::string assembly =
+      R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %OutColor %InColor
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpName %main "main"
+OpName %f "f"
+OpName %OutColor "OutColor"
+OpName %InColor "InColor"
+OpDecorate %OutColor Location 0
+OpDecorate %InColor Location 0
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0 = OpConstant %float 0
+%float_2 = OpConstant %float 2
+%float_20 = OpConstant %float 20
+%bool = OpTypeBool
+%v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%OutColor = OpVariable %_ptr_Output_v4float Output
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%InColor = OpVariable %_ptr_Input_v4float Input
+%main = OpFunction %void None %7
+%17 = OpLabel
+%f = OpVariable %_ptr_Function_float Function
+OpStore %f %float_0
+OpBranch %18
+%18 = OpLabel
+OpLoopMerge %19 %20 None
+OpBranch %21
+%21 = OpLabel
+%22 = OpLoad %float %f
+%23 = OpFAdd %float %22 %float_2
+OpStore %f %23
+%24 = OpLoad %float %f
+%25 = OpFOrdGreaterThan %bool %24 %float_20
+OpSelectionMerge %26 None
+OpBranchConditional %25 %27 %26
+%27 = OpLabel
+OpBranch %19
+%26 = OpLabel
+OpBranch %20
+%20 = OpLabel
+OpBranch %18
+%19 = OpLabel
+%28 = OpLoad %v4float %InColor
+%29 = OpLoad %float %f
+%30 = OpCompositeConstruct %v4float %29 %29 %29 %29
+%31 = OpFDiv %v4float %28 %30
+OpStore %OutColor %31
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<opt::AggressiveDCEPass>(assembly, assembly, true, true);
+}
+
 TEST_F(AggressiveDCETest, EliminateEntireFunctionBody) {
   // #version 450
   //

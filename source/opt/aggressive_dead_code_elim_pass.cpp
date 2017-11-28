@@ -31,6 +31,7 @@ const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 
 }  // namespace
 
@@ -163,6 +164,14 @@ void AggressiveDCEPass::AddBranch(uint32_t labelId, ir::BasicBlock* bp) {
   bp->AddInstruction(std::move(newBranch));
 }
 
+void AggressiveDCEPass::AddBranchesToWorklist(uint32_t labelId) {
+  get_def_use_mgr()->ForEachUser(labelId, [this](ir::Instruction* user) {
+    SpvOp op = user->opcode();
+    if (op == SpvOpBranchConditional || op == SpvOpBranch)
+      if (!IsLive(user)) AddToWorklist(user);
+  });
+}
+
 bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
   // Compute map from instruction to block
   ComputeInst2BlockMap(func);
@@ -288,6 +297,14 @@ bool AggressiveDCEPass::AggressiveDCE(ir::Function* func) {
         (void)GetPtr(*iid, &varId);
         ProcessLoad(varId);
       });
+    }
+    // If loop merge, add all branches to continue and merge blocks
+    // to worklist
+    else if (liveInst->opcode() == SpvOpLoopMerge) {
+      AddBranchesToWorklist(
+          liveInst->GetSingleWordInOperand(kLoopMergeContinueBlockIdInIdx));
+      AddBranchesToWorklist(
+          liveInst->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
     }
     // If function parameter, treat as if it's result id is loaded from
     else if (liveInst->opcode() == SpvOpFunctionParameter) {
