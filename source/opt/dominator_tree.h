@@ -53,31 +53,48 @@ struct DominatorTreeNode {
 // node is dominated by its parent.
 class DominatorTree {
  public:
+  // Map OpLabel ids to dominator tree nodes
+  using DominatorTreeNodeMap = std::map<uint32_t, DominatorTreeNode>;
+  using iterator = DominatorTreeNodeMap::iterator;
+  using const_iterator = DominatorTreeNodeMap::const_iterator;
+
+  // List of DominatorTreeNode to define the list of roots
   using DominatorTreeNodeList = std::vector<DominatorTreeNode*>;
-  using iterator = DominatorTreeNodeList::iterator;
-  using const_iterator = DominatorTreeNodeList::const_iterator;
+  using roots_iterator = DominatorTreeNodeList::iterator;
+  using roots_const_iterator = DominatorTreeNodeList::const_iterator;
 
   DominatorTree() : postdominator_(false) {}
   explicit DominatorTree(bool post) : postdominator_(post) {}
 
-  iterator begin() { return roots_.begin(); }
-  iterator end() { return roots_.end(); }
+  iterator begin() { return nodes_.begin(); }
+  iterator end() { return nodes_.end(); }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
-  const_iterator cbegin() const { return roots_.begin(); }
-  const_iterator cend() const { return roots_.end(); }
+  const_iterator cbegin() const { return nodes_.begin(); }
+  const_iterator cend() const { return nodes_.end(); }
+
+  roots_iterator roots_begin() { return roots_.begin(); }
+  roots_iterator roots_end() { return roots_.end(); }
+  roots_const_iterator roots_begin() const { return roots_cbegin(); }
+  roots_const_iterator roots_end() const { return roots_cend(); }
+  roots_const_iterator roots_cbegin() const { return roots_.begin(); }
+  roots_const_iterator roots_cend() const { return roots_.end(); }
 
   // Get the unique root of the tree.
   // It is guaranteed to work on a dominator tree.
-  // A postdominator may have more than one element.
+  // A postdominator tree may have more than one element.
   DominatorTreeNode* GetRoot() {
     assert(roots_.size() == 1);
-    return *begin();
+    return *roots_.begin();
   }
 
   const DominatorTreeNode* GetRoot() const {
     assert(roots_.size() == 1);
-    return *begin();
+    return *roots_.begin();
+  }
+
+  const DominatorTreeNodeList& Roots() const {
+    return roots_;
   }
 
   // Dumps the tree in the graphvis dot format into the stream.
@@ -151,7 +168,7 @@ class DominatorTree {
   std::vector<DominatorTreeNode*> roots_;
 
   // Pairs each basic block id to the tree node containing that basic block.
-  std::map<uint32_t, DominatorTreeNode> nodes_;
+  DominatorTreeNodeMap nodes_;
 
   // True if this is a post dominator tree.
   bool postdominator_;

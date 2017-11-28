@@ -537,7 +537,7 @@ TEST_F(PassClassTest, DominatorUnreachableInLoop) {
 
     std::set<uint32_t> exits{15, 13, 14, 11};
     opt::DominatorTree& tree = dom_tree.GetDomTree();
-    for (opt::DominatorTreeNode* node : tree) {
+    for (const opt::DominatorTreeNode* node : tree.Roots()) {
       EXPECT_TRUE(exits.count(node->id()) != 0);
     }
 

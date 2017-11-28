@@ -339,13 +339,13 @@ void DominatorTree::InitializeTree(const ir::Function* f) {
     return &node->childrens_;
   };
 
-  for (auto root : *this) DepthFirstSearch(root, getSucc, preFunc, postFunc);
+  for (auto root : roots_) DepthFirstSearch(root, getSucc, preFunc, postFunc);
 }
 
 void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
   out_stream << "digraph {\n";
   out_stream << "Dummy [label=\"Entry\"];\n";
-  for (auto Root : *this) {
+  for (auto Root : roots_) {
     Visit(Root, [&](const DominatorTreeNode* node) {
 
       // Print the node.
