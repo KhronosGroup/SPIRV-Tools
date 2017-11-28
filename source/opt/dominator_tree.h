@@ -98,7 +98,7 @@ class DominatorTree {
   }
 
   // Dumps the tree in the graphvis dot format into the stream.
-  void DumpTreeAsDot(std::ostream& OutStream) const;
+  void DumpTreeAsDot(std::ostream& out_stream) const;
 
   // Build the (post-)dominator tree for the function |F|
   // Any existing data will be overwritten
@@ -146,7 +146,7 @@ class DominatorTree {
 
  private:
   // Adds the BasicBlock to the tree structure if it doesn't already exist.
-  DominatorTreeNode* GetOrInsertNode(ir::BasicBlock* BB);
+  DominatorTreeNode* GetOrInsertNode(ir::BasicBlock* bb);
 
   // Applies the std::function 'func' to 'node' then applies it to node's
   // children.
@@ -161,7 +161,7 @@ class DominatorTree {
   // pair is its immediate dominator.
   // The root of the tree has him self as immediate dominator.
   void GetDominatorEdges(
-      const ir::Function* F, ir::BasicBlock* DummyStartNode,
+      const ir::Function* f, ir::BasicBlock* dummy_start_node,
       std::vector<std::pair<ir::BasicBlock*, ir::BasicBlock*>>& edges);
 
   // The roots of the tree.
