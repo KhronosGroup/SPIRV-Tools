@@ -14,51 +14,61 @@
 
 
 add_spvtools_unittest(TARGET dominator_analysis_simple
-    SRCS simple.cpp
+    SRCS ../function_utils.h
+         simple.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_post
-    SRCS post.cpp
+    SRCS ../function_utils.h
+         post.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_nested_ifs
-    SRCS nested_ifs.cpp
+    SRCS ../function_utils.h
+         nested_ifs.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_nested_ifs_post
-    SRCS nested_ifs_post.cpp
+    SRCS ../function_utils.h
+         nested_ifs_post.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_nested_loops
-    SRCS nested_loops.cpp
+    SRCS ../function_utils.h
+         nested_loops.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_nested_loops_with_unreachables
-    SRCS nested_loops_with_unreachables.cpp
+    SRCS ../function_utils.h
+         nested_loops_with_unreachables.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_switch_case_fallthrough
-    SRCS switch_case_fallthrough
+    SRCS ../function_utils.h
+         switch_case_fallthrough.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_unreachable_for
-    SRCS unreachable_for.cpp
+    SRCS ../function_utils.h
+         unreachable_for.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_analysis_unreachable_for_post
-    SRCS unreachable_for_post.cpp
+    SRCS ../function_utils.h
+         unreachable_for_post.cpp
     LIBS SPIRV-Tools-opt
 )
 
 add_spvtools_unittest(TARGET dominator_generated
-    SRCS generated.cpp
+    SRCS ../function_utils.h
+         generated.cpp
     LIBS SPIRV-Tools-opt
 )
