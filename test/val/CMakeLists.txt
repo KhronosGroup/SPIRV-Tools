@@ -80,6 +80,12 @@ add_spvtools_unittest(TARGET val_arithmetics
   LIBS ${SPIRV_TOOLS}
 )
 
+add_spvtools_unittest(TARGET val_composites
+	SRCS val_composites_test.cpp
+       ${VAL_TEST_COMMON_SRCS}
+  LIBS ${SPIRV_TOOLS}
+)
+
 add_spvtools_unittest(TARGET val_conversion
 	SRCS val_conversion_test.cpp
        ${VAL_TEST_COMMON_SRCS}

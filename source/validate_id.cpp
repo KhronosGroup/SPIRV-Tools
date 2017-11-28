@@ -1704,18 +1704,6 @@ bool idUsage::isValid<SpvOpFunctionCall>(const spv_instruction_t* inst,
   return true;
 }
 
-#if 0
-template <>
-bool idUsage::isValid<OpVectorExtractDynamic>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpVectorInsertDynamic>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
-
 template <>
 bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
                                           const spv_opcode_desc) {
@@ -1798,12 +1786,6 @@ bool idUsage::isValid<SpvOpVectorShuffle>(const spv_instruction_t* inst,
 
   return true;
 }
-
-#if 0
-template <>
-bool idUsage::isValid<OpCompositeConstruct>(
-    const spv_instruction_t *inst, const spv_opcode_desc opcodeEntry) {}
-#endif
 
 // Walks the composite type hierarchy starting from the base.
 // At each step, the iterator is dereferenced to get the next literal index.
@@ -1998,18 +1980,6 @@ bool idUsage::isValid<SpvOpCompositeInsert>(const spv_instruction_t* inst,
 
   return true;
 }
-
-#if 0
-template <>
-bool idUsage::isValid<OpCopyObject>(const spv_instruction_t *inst,
-                                    const spv_opcode_desc opcodeEntry) {}
-#endif
-
-#if 0
-template <>
-bool idUsage::isValid<OpTranspose>(const spv_instruction_t *inst,
-                                   const spv_opcode_desc opcodeEntry) {}
-#endif
 
 #if 0
 template <>
@@ -2571,14 +2541,10 @@ bool idUsage::isValid(const spv_instruction_t* inst) {
     CASE(OpFunctionParameter)
     CASE(OpFunctionCall)
     // Conversion opcodes are validated in validate_conversion.cpp.
-    TODO(OpVectorExtractDynamic)
-    TODO(OpVectorInsertDynamic)
     CASE(OpVectorShuffle)
-    TODO(OpCompositeConstruct)
     CASE(OpCompositeExtract)
     CASE(OpCompositeInsert)
-    TODO(OpCopyObject)
-    TODO(OpTranspose)
+    // Other composite opcodes are validated in validate_composites.cpp.
     // Arithmetic opcodes are validated in validate_arithmetics.cpp.
     // Bitwise opcodes are validated in validate_bitwise.cpp.
     // Logical opcodes are validated in validate_logicals.cpp.

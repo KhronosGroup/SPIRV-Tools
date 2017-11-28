@@ -2333,12 +2333,12 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeRelaxedNestedStruct) {
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 Uniform
-%13 = OpFunction %5 None %9
-%14 = OpLabel
-%15 = OpCompositeConstruct %3 %11 %6
-%16 = OpCompositeConstruct %4 %11 %11
-      OpStore %12 %16
+%12 = OpConstantComposite %3 %11 %10
+%13 = OpVariable %8 Uniform
+%14 = OpFunction %5 None %9
+%15 = OpLabel
+%16 = OpCompositeConstruct %4 %12 %12
+      OpStore %13 %16
       OpReturn
       OpFunctionEnd)";
   spvValidatorOptionsSetRelaxStoreStruct(options_, true);
@@ -2369,12 +2369,12 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 Uniform
-%13 = OpFunction %5 None %9
-%14 = OpLabel
-%15 = OpCompositeConstruct %3 %11 %6
-%16 = OpCompositeConstruct %4 %11 %11
-      OpStore %12 %16
+%12 = OpConstantComposite %3 %11 %10
+%13 = OpVariable %8 Uniform
+%14 = OpFunction %5 None %9
+%15 = OpLabel
+%16 = OpCompositeConstruct %4 %12 %12
+      OpStore %13 %16
       OpReturn
       OpFunctionEnd)";
   spvValidatorOptionsSetRelaxStoreStruct(options_, true);
@@ -2382,7 +2382,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct1) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
+      HasSubstr("OpStore Pointer <id> '13's layout does not match Object "
                 "<id> '16's layout."));
 }
 
@@ -2409,12 +2409,12 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
 %9 = OpTypeFunction %5
 %10 = OpConstant %6 7
 %11 = OpConstant %7 3.14
-%12 = OpVariable %8 Uniform
-%13 = OpFunction %5 None %9
-%14 = OpLabel
-%15 = OpCompositeConstruct %3 %11 %6
-%16 = OpCompositeConstruct %4 %11 %11
-      OpStore %12 %16
+%12 = OpConstantComposite %3 %11 %10
+%13 = OpVariable %8 Uniform
+%14 = OpFunction %5 None %9
+%15 = OpLabel
+%16 = OpCompositeConstruct %4 %12 %12
+      OpStore %13 %16
       OpReturn
       OpFunctionEnd)";
   spvValidatorOptionsSetRelaxStoreStruct(options_, true);
@@ -2422,7 +2422,7 @@ TEST_F(ValidateIdWithMessage, OpStoreTypeBadRelaxedStruct2) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpStore Pointer <id> '12's layout does not match Object "
+      HasSubstr("OpStore Pointer <id> '13's layout does not match Object "
                 "<id> '16's layout."));
 }
 
