@@ -374,6 +374,8 @@ typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_0,     // Vulkan 1.0 latest revision.
   SPV_ENV_UNIVERSAL_1_1,  // SPIR-V 1.1 latest revision, no other restrictions.
+  SPV_ENV_OPENCL_1_2,     // OpenCL 1.2 plus cl_khr_il_program, latest revision.
+  SPV_ENV_OPENCL_2_0,     // OpenCL 2.0 plus cl_khr_il_program, latest revision.
   SPV_ENV_OPENCL_2_1,     // OpenCL 2.1 latest revision.
   SPV_ENV_OPENCL_2_2,     // OpenCL 2.2 latest revision.
   SPV_ENV_OPENGL_4_0,     // OpenGL 4.0 plus GL_ARB_gl_spirv, latest revisions.
