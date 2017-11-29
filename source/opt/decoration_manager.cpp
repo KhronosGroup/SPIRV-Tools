@@ -305,12 +305,13 @@ void DecorationManager::RemoveInstructionFromTarget(ir::Instruction* inst,
                                                     const uint32_t target_id) {
   auto const group_iter = group_to_decoration_insts_.find(target_id);
   if (group_iter != group_to_decoration_insts_.end()) {
-    remove(group_iter->second.begin(), group_iter->second.end(), inst);
+    auto& insts = group_iter->second;
+    insts.erase(std::remove(insts.begin(), insts.end(), inst), insts.end());
   } else {
     auto target_list_iter = id_to_decoration_insts_.find(target_id);
     if (target_list_iter != id_to_decoration_insts_.end()) {
-      remove(target_list_iter->second.begin(), target_list_iter->second.end(),
-             inst);
+      auto& insts = target_list_iter->second;
+      insts.erase(std::remove(insts.begin(), insts.end(), inst), insts.end());
     }
   }
 }
