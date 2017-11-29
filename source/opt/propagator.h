@@ -18,6 +18,7 @@
 #include <functional>
 #include <queue>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -36,7 +37,8 @@ struct Edge {
   ir::BasicBlock* source;
   ir::BasicBlock* dest;
   bool operator<(const Edge& o) const {
-    return source->id() + dest->id() < o.source->id() + o.dest->id();
+    return std::make_pair(source->id(), dest->id()) <
+           std::make_pair(o.source->id(), o.dest->id());
   }
 };
 
