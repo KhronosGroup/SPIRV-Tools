@@ -374,8 +374,8 @@ typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_0,     // Vulkan 1.0 latest revision.
   SPV_ENV_UNIVERSAL_1_1,  // SPIR-V 1.1 latest revision, no other restrictions.
-  SPV_ENV_OPENCL_2_1,     // OpenCL 2.1 latest revision.
-  SPV_ENV_OPENCL_2_2,     // OpenCL 2.2 latest revision.
+  SPV_ENV_OPENCL_2_1,     // OpenCL Full Profile 2.1 latest revision.
+  SPV_ENV_OPENCL_2_2,     // OpenCL Full Profile 2.2 latest revision.
   SPV_ENV_OPENGL_4_0,     // OpenGL 4.0 plus GL_ARB_gl_spirv, latest revisions.
   SPV_ENV_OPENGL_4_1,     // OpenGL 4.1 plus GL_ARB_gl_spirv, latest revisions.
   SPV_ENV_OPENGL_4_2,     // OpenGL 4.2 plus GL_ARB_gl_spirv, latest revisions.
@@ -383,6 +383,16 @@ typedef enum {
   // There is no variant for OpenGL 4.4.
   SPV_ENV_OPENGL_4_5,     // OpenGL 4.5 plus GL_ARB_gl_spirv, latest revisions.
   SPV_ENV_UNIVERSAL_1_2,  // SPIR-V 1.2, latest revision, no other restrictions.
+  SPV_ENV_OPENCL_1_2,     // OpenCL Full Profile 1.2 plus cl_khr_il_program,
+                          // latest revision.
+  SPV_ENV_OPENCL_EMBEDDED_1_2,  // OpenCL Embedded Profile 1.2 plus
+                                // cl_khr_il_program, latest revision.
+  SPV_ENV_OPENCL_2_0,  // OpenCL Full Profile 2.0 plus cl_khr_il_program,
+                       // latest revision.
+  SPV_ENV_OPENCL_EMBEDDED_2_0,  // OpenCL Embedded Profile 2.0 plus
+                                // cl_khr_il_program, latest revision.
+  SPV_ENV_OPENCL_EMBEDDED_2_1,  // OpenCL Embedded Profile 2.1 latest revision.
+  SPV_ENV_OPENCL_EMBEDDED_2_2,  // OpenCL Embedded Profile 2.2 latest revision.
 } spv_target_env;
 
 // SPIR-V Validator can be parameterized with the following Universal Limits.

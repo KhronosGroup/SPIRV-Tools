@@ -1626,4 +1626,340 @@ OpDecorate %intt BuiltIn PointSize
               HasSubstr("Capability value 4427 is not allowed by Vulkan 1.0"));
 }
 
+TEST_F(ValidateCapability, NonOpenCL12FullCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Pipes
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 17 is not allowed by OpenCL 1.2 Full Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL12FullEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_1_2));
+}
+
+TEST_F(ValidateCapability, OpenCL12FullNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 1.2 Full Profile"));
+}
+
+TEST_F(ValidateCapability, NonOpenCL12EmbeddedCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 11 is not allowed by OpenCL 1.2 Embedded Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL12EmbeddedEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
+}
+
+TEST_F(ValidateCapability, OpenCL12EmbeddedNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 1.2 Embedded Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL20FullCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Pipes
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_2_0));
+}
+
+TEST_F(ValidateCapability, NonOpenCL20FullCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Matrix
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_2_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 0 is not allowed by OpenCL 2.0/2.1 Full Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL20FullEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_2_0));
+}
+
+TEST_F(ValidateCapability, OpenCL20FullNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_2_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.0/2.1 Full Profile"));
+}
+
+TEST_F(ValidateCapability, NonOpenCL20EmbeddedCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability value 11 is not allowed by OpenCL 2.0/2.1 "
+                        "Embedded Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL20EmbeddedEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_0));
+}
+
+TEST_F(ValidateCapability, OpenCL20EmbeddedNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability value 43 is not allowed by OpenCL 2.0/2.1 "
+                        "Embedded Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL22FullCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability PipeStorage
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_2_2));
+}
+
+TEST_F(ValidateCapability, NonOpenCL22FullCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Matrix
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_2_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 0 is not allowed by OpenCL 2.2 Full Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL22FullEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_2_2));
+}
+
+TEST_F(ValidateCapability, OpenCL22FullNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_2_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_2_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.2 Full Profile"));
+}
+
+TEST_F(ValidateCapability, NonOpenCL22EmbeddedCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)";
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 11 is not allowed by OpenCL 2.2 Embedded Profile"));
+}
+
+TEST_F(ValidateCapability, OpenCL22EmbeddedEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability ImageBasic
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_2));
+}
+
+TEST_F(ValidateCapability, OpenCL22EmbeddedNotEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Sampled1D
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_2_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_2_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Capability value 43 is not allowed by OpenCL 2.2 Embedded Profile"));
+}
+
 }  // namespace

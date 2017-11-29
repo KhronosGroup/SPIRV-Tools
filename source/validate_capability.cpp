@@ -77,6 +77,57 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
   return false;
 }
 
+bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability, bool embedded_profile) {
+  switch (capability) {
+    case SpvCapabilityAddresses:
+    case SpvCapabilityFloat16Buffer:
+    case SpvCapabilityGroups:
+    case SpvCapabilityInt16:
+    case SpvCapabilityInt8:
+    case SpvCapabilityKernel:
+    case SpvCapabilityLinkage:
+    case SpvCapabilityVector16:
+      return true;
+    case SpvCapabilityInt64:
+      return !embedded_profile;
+    case SpvCapabilityPipes:
+      return embedded_profile;
+  }
+  return false;
+}
+
+bool IsSupportGuaranteedOpenCL_2_0(uint32_t capability, bool embedded_profile) {
+  if (IsSupportGuaranteedOpenCL_1_2(capability, embedded_profile)) return true;
+
+  switch (capability) {
+    case SpvCapabilityDeviceEnqueue:
+    case SpvCapabilityGenericPointer:
+    case SpvCapabilityPipes:
+      return true;
+  }
+  return false;
+}
+
+bool IsSupportGuaranteedOpenCL_2_2(uint32_t capability, bool embedded_profile) {
+  if (IsSupportGuaranteedOpenCL_2_0(capability, embedded_profile)) return true;
+
+  switch (capability) {
+    case SpvCapabilitySubgroupDispatch:
+    case SpvCapabilityPipeStorage:
+      return true;
+  }
+  return false;
+}
+
+bool IsSupportOptionalOpenCL_1_2(uint32_t capability) {
+  switch (capability) {
+    case SpvCapabilityImageBasic:
+    case SpvCapabilityFloat64:
+      return true;
+  }
+  return false;
+}
+
 // Checks if |capability| was enabled by extension.
 bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
   spv_operand_desc operand_desc = nullptr;
@@ -92,6 +143,39 @@ bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
   if (operand_exts.IsEmpty()) return false;
 
   return _.HasAnyOfExtensions(operand_exts);
+}
+
+bool IsEnabledByCapabilityOpenCL_1_2(ValidationState_t& _,
+                                     uint32_t capability) {
+  if (_.HasCapability(SpvCapabilityImageBasic)) {
+    switch (capability) {
+      case SpvCapabilityLiteralSampler:
+      case SpvCapabilitySampled1D:
+      case SpvCapabilityImage1D:
+      case SpvCapabilitySampledBuffer:
+      case SpvCapabilityImageBuffer:
+        return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+bool IsEnabledByCapabilityOpenCL_2_0(ValidationState_t& _,
+                                     uint32_t capability) {
+  if (_.HasCapability(SpvCapabilityImageBasic)) {
+    switch (capability) {
+      case SpvCapabilityImageReadWrite:
+      case SpvCapabilityLiteralSampler:
+      case SpvCapabilitySampled1D:
+      case SpvCapabilityImage1D:
+      case SpvCapabilitySampledBuffer:
+      case SpvCapabilityImageBuffer:
+        return true;
+    }
+    return false;
+  }
+  return false;
 }
 
 }  // namespace
@@ -113,6 +197,11 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   const uint32_t capability = inst->words[operand.offset];
 
   const auto env = _.context()->target_env;
+  const bool opencl_embedded = env == SPV_ENV_OPENCL_EMBEDDED_1_2 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_1 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_2;
+  const std::string opencl_profile = opencl_embedded ? "Embedded" : "Full";
   if (env == SPV_ENV_VULKAN_1_0) {
     if (!IsSupportGuaranteedVulkan_1_0(capability) &&
         !IsSupportOptionalVulkan_1_0(capability) &&
@@ -121,6 +210,40 @@ spv_result_t CapabilityPass(ValidationState_t& _,
              << "Capability value " << capability
              << " is not allowed by Vulkan 1.0 specification"
              << " (or requires extension)";
+    }
+  } else if (env == SPV_ENV_OPENCL_1_2 || env == SPV_ENV_OPENCL_EMBEDDED_1_2) {
+    if (!IsSupportGuaranteedOpenCL_1_2(capability, opencl_embedded) &&
+        !IsSupportOptionalOpenCL_1_2(capability) &&
+        !IsEnabledByExtension(_, capability) &&
+        !IsEnabledByCapabilityOpenCL_1_2(_, capability)) {
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+             << "Capability value " << capability
+             << " is not allowed by OpenCL 1.2 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
+    }
+  } else if (env == SPV_ENV_OPENCL_2_0 || env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
+             env == SPV_ENV_OPENCL_2_1 || env == SPV_ENV_OPENCL_EMBEDDED_2_1) {
+    if (!IsSupportGuaranteedOpenCL_2_0(capability, opencl_embedded) &&
+        !IsSupportOptionalOpenCL_1_2(capability) &&
+        !IsEnabledByExtension(_, capability) &&
+        !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+             << "Capability value " << capability
+             << " is not allowed by OpenCL 2.0/2.1 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
+    }
+  } else if (env == SPV_ENV_OPENCL_2_2 || env == SPV_ENV_OPENCL_EMBEDDED_2_2) {
+    if (!IsSupportGuaranteedOpenCL_2_2(capability, opencl_embedded) &&
+        !IsSupportOptionalOpenCL_1_2(capability) &&
+        !IsEnabledByExtension(_, capability) &&
+        !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY)
+             << "Capability value " << capability
+             << " is not allowed by OpenCL 2.2 " << opencl_profile
+             << " Profile specification"
+             << " (or requires extension or capability)";
     }
   }
 

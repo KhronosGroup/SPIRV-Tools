@@ -21,8 +21,14 @@ spv_context spvContextCreate(spv_target_env env) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_VULKAN_1_0:
     case SPV_ENV_UNIVERSAL_1_1:
+    case SPV_ENV_OPENCL_1_2:
+    case SPV_ENV_OPENCL_EMBEDDED_1_2:
+    case SPV_ENV_OPENCL_2_0:
+    case SPV_ENV_OPENCL_EMBEDDED_2_0:
     case SPV_ENV_OPENCL_2_1:
+    case SPV_ENV_OPENCL_EMBEDDED_2_1:
     case SPV_ENV_OPENCL_2_2:
+    case SPV_ENV_OPENCL_EMBEDDED_2_2:
     case SPV_ENV_OPENGL_4_0:
     case SPV_ENV_OPENGL_4_1:
     case SPV_ENV_OPENGL_4_2:

@@ -49,7 +49,7 @@ INSTANTIATE_TEST_CASE_P(AllTargetEnvs, TargetEnvTest,
 
 TEST(GetContextTest, InvalidTargetEnvProducesNull) {
   // Use a value beyond the last valid enum value.
-  spv_context context = spvContextCreate(static_cast<spv_target_env>(15));
+  spv_context context = spvContextCreate(static_cast<spv_target_env>(17));
   EXPECT_EQ(context, nullptr);
 }
 
@@ -69,22 +69,29 @@ TEST_P(TargetParseTest, InvalidTargetEnvProducesNull) {
   EXPECT_THAT(env, Eq(GetParam().env));
 }
 
-INSTANTIATE_TEST_CASE_P(TargetParsing, TargetParseTest,
-                        ValuesIn(std::vector<ParseCase>{
-                            {"spv1.0", true, SPV_ENV_UNIVERSAL_1_0},
-                            {"spv1.1", true, SPV_ENV_UNIVERSAL_1_1},
-                            {"spv1.2", true, SPV_ENV_UNIVERSAL_1_2},
-                            {"vulkan1.0", true, SPV_ENV_VULKAN_1_0},
-                            {"opencl2.1", true, SPV_ENV_OPENCL_2_1},
-                            {"opencl2.2", true, SPV_ENV_OPENCL_2_2},
-                            {"opengl4.0", true, SPV_ENV_OPENGL_4_0},
-                            {"opengl4.1", true, SPV_ENV_OPENGL_4_1},
-                            {"opengl4.2", true, SPV_ENV_OPENGL_4_2},
-                            {"opengl4.3", true, SPV_ENV_OPENGL_4_3},
-                            {"opengl4.5", true, SPV_ENV_OPENGL_4_5},
-                            {nullptr, false, SPV_ENV_UNIVERSAL_1_0},
-                            {"", false, SPV_ENV_UNIVERSAL_1_0},
-                            {"abc", false, SPV_ENV_UNIVERSAL_1_0},
-                        }));
+INSTANTIATE_TEST_CASE_P(
+    TargetParsing, TargetParseTest,
+    ValuesIn(std::vector<ParseCase>{
+        {"spv1.0", true, SPV_ENV_UNIVERSAL_1_0},
+        {"spv1.1", true, SPV_ENV_UNIVERSAL_1_1},
+        {"spv1.2", true, SPV_ENV_UNIVERSAL_1_2},
+        {"vulkan1.0", true, SPV_ENV_VULKAN_1_0},
+        {"opencl2.1", true, SPV_ENV_OPENCL_2_1},
+        {"opencl2.2", true, SPV_ENV_OPENCL_2_2},
+        {"opengl4.0", true, SPV_ENV_OPENGL_4_0},
+        {"opengl4.1", true, SPV_ENV_OPENGL_4_1},
+        {"opengl4.2", true, SPV_ENV_OPENGL_4_2},
+        {"opengl4.3", true, SPV_ENV_OPENGL_4_3},
+        {"opengl4.5", true, SPV_ENV_OPENGL_4_5},
+        {"opencl1.2", true, SPV_ENV_OPENCL_1_2},
+        {"opencl1.2embedded", true, SPV_ENV_OPENCL_EMBEDDED_1_2},
+        {"opencl2.0", true, SPV_ENV_OPENCL_2_0},
+        {"opencl2.0embedded", true, SPV_ENV_OPENCL_EMBEDDED_2_0},
+        {"opencl2.1embedded", true, SPV_ENV_OPENCL_EMBEDDED_2_1},
+        {"opencl2.2embedded", true, SPV_ENV_OPENCL_EMBEDDED_2_2},
+        {nullptr, false, SPV_ENV_UNIVERSAL_1_0},
+        {"", false, SPV_ENV_UNIVERSAL_1_0},
+        {"abc", false, SPV_ENV_UNIVERSAL_1_0},
+    }));
 
 }  // anonymous namespace
