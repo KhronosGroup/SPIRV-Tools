@@ -140,11 +140,11 @@ int main(int argc, char** argv) {
   });
 
   std::vector<uint32_t> linkingResult;
-  bool succeed = linker.Link(contents, linkingResult, options);
+  bool success = linker.Link(contents, linkingResult, options);
 
   if (!WriteFile<uint32_t>(outFile, "wb", linkingResult.data(),
                            linkingResult.size()))
     return 1;
 
-  return !succeed;
+  return success;
 }
