@@ -36,7 +36,7 @@ struct Edge {
   ir::BasicBlock* source;
   ir::BasicBlock* dest;
   bool operator<(const Edge& o) const {
-    return source < o.source || dest < o.dest;
+    return source->id() + dest->id() < o.source->id() + o.dest->id();
   }
 };
 
