@@ -138,15 +138,18 @@ bool RemoveDuplicatesPass::RemoveDuplicateTypes(
   return modified;
 }
 
+// TODO(pierremoreau): Duplicate decoration groups should be removed. For
+// example, in
+//     OpDecorate %1 Constant
+//     %1 = OpDecorationGroup
+//     OpDecorate %2 Constant
+//     %2 = OpDecorationGroup
+//     OpGroupDecorate %1 %3
+//     OpGroupDecorate %2 %4
+// group %2 could be removed.
 bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     ir::IRContext* irContext) const {
   bool modified = false;
-
-  std::unordered_map<SpvId, const Instruction*> constants;
-  for (const auto& i : irContext->types_values())
-    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
-  for (const auto& i : irContext->types_values())
-    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
 
   std::vector<const Instruction*> visitedDecorations;
 
@@ -156,7 +159,7 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     // visited?
     bool alreadyVisited = false;
     for (const Instruction* j : visitedDecorations) {
-      if (decorationManager.AreDecorationsTheSame(&*i, j)) {
+      if (decorationManager.AreDecorationsTheSame(&*i, j, false)) {
         alreadyVisited = true;
         break;
       }
