@@ -142,12 +142,6 @@ bool RemoveDuplicatesPass::RemoveDuplicateDecorations(
     ir::IRContext* irContext) const {
   bool modified = false;
 
-  std::unordered_map<SpvId, const Instruction*> constants;
-  for (const auto& i : irContext->types_values())
-    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
-  for (const auto& i : irContext->types_values())
-    if (i.opcode() == SpvOpConstant) constants[i.result_id()] = &i;
-
   std::vector<const Instruction*> visitedDecorations;
 
   opt::analysis::DecorationManager decorationManager(irContext->module());
