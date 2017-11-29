@@ -140,11 +140,11 @@ int main(int argc, char** argv) {
   });
 
   std::vector<uint32_t> linkingResult;
-  bool succeed = linker.Link(contents, linkingResult, options);
+  spv_result_t status = linker.Link(contents, linkingResult, options);
 
   if (!WriteFile<uint32_t>(outFile, "wb", linkingResult.data(),
                            linkingResult.size()))
     return 1;
 
-  return !succeed;
+  return status == SPV_SUCCESS ? 0 : 1;
 }
