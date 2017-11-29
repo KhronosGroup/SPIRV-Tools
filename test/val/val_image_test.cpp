@@ -32,7 +32,7 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& execution_model = "Fragment") {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << R"(
 OpCapability Shader
 OpCapability InputAttachment
@@ -168,11 +168,6 @@ OpCapability ImageQuery
 %uniform_image_f32_2d_0002 = OpVariable %ptr_image_f32_2d_0001 UniformConstant
 %type_sampled_image_f32_2d_0002 = OpTypeSampledImage %type_image_f32_2d_0002
 
-%type_image_f32_spd_0001 = OpTypeImage %f32 SubpassData 0 0 0 1 Unknown
-%ptr_image_f32_spd_0001 = OpTypePointer UniformConstant %type_image_f32_spd_0001
-%uniform_image_f32_spd_0001 = OpVariable %ptr_image_f32_spd_0001 UniformConstant
-%type_sampled_image_f32_spd_0001 = OpTypeSampledImage %type_image_f32_spd_0001
-
 %type_image_f32_spd_0002 = OpTypeImage %f32 SubpassData 0 0 0 2 Unknown
 %ptr_image_f32_spd_0002 = OpTypePointer UniformConstant %type_image_f32_spd_0002
 %uniform_image_f32_spd_0002 = OpVariable %ptr_image_f32_spd_0002 UniformConstant
@@ -218,7 +213,7 @@ OpFunctionEnd)";
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << R"(
 OpCapability Addresses
 OpCapability Kernel
@@ -310,6 +305,120 @@ OpFunctionEnd)";
   return ss.str();
 }
 
+std::string GetShaderHeader(
+    const std::string& capabilities_and_extensions = "") {
+  std::ostringstream ss;
+  ss << R"(
+OpCapability Shader
+)";
+
+  ss << capabilities_and_extensions;
+
+  ss << R"(
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+)";
+
+  return ss.str();
+}
+
+TEST_F(ValidateImage, TypeImageWrongSampledType) {
+  const std::string code = GetShaderHeader() +  R"(
+%img_type = OpTypeImage %bool 2D 0 0 0 1 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: expected Sampled Type to be either void or numerical scalar "
+      "type"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongDepth) {
+  const std::string code = GetShaderHeader() +  R"(
+%img_type = OpTypeImage %f32 2D 3 0 0 1 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: invalid Depth 3 (must be 0, 1 or 2)"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongArrayed) {
+  const std::string code = GetShaderHeader() +  R"(
+%img_type = OpTypeImage %f32 2D 0 2 0 1 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: invalid Arrayed 2 (must be 0 or 1)"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongMS) {
+  const std::string code = GetShaderHeader() +  R"(
+%img_type = OpTypeImage %f32 2D 0 0 2 1 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: invalid MS 2 (must be 0 or 1)"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongSampled) {
+  const std::string code = GetShaderHeader() +  R"(
+%img_type = OpTypeImage %f32 2D 0 0 0 3 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: invalid Sampled 3 (must be 0, 1 or 2)"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
+  const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
+      R"(
+%img_type = OpTypeImage %f32 SubpassData 0 0 0 1 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: Dim SubpassData requires Sampled to be 2"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
+  const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
+      R"(
+%img_type = OpTypeImage %f32 SubpassData 0 0 0 2 Rgba32f
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeImage: Dim SubpassData requires format Unknown"));
+}
+
+TEST_F(ValidateImage, TypeSampledImageNotImage) {
+  const std::string code = GetShaderHeader() +  R"(
+%simg_type = OpTypeSampledImage %f32
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "TypeSampledImage: expected Image to be of type OpTypeImage"));
+}
+
 TEST_F(ValidateImage, SampledImageSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
@@ -363,20 +472,6 @@ TEST_F(ValidateImage, SampledImageImageNotForSampling) {
       getDiagnosticString(),
       HasSubstr(
           "Expected Image 'Sampled' parameter to be 0 or 1: SampledImage"));
-}
-
-TEST_F(ValidateImage, SampledImageImageDimSubpassData) {
-  const std::string body = R"(
-%img = OpLoad %type_image_f32_spd_0001 %uniform_image_f32_spd_0001
-%sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_spd_0001 %img %sampler
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected Image 'Dim' parameter to be not SubpassData"));
 }
 
 TEST_F(ValidateImage, SampledImageNotSampler) {
@@ -3226,6 +3321,19 @@ TEST_F(ValidateImage, ImplicitLodWrongExecutionModel) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("ImplicitLod instructions require Fragment execution model"));
+}
+
+TEST_F(ValidateImage, ReadSubpassDataWrongExecutionModel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_spd_0002 %uniform_image_f32_spd_0002
+%res1 = OpImageRead %f32vec4 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex").c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(
+      "Dim SubpassData requires Fragment execution model: ImageRead"));
 }
 
 }  // anonymous namespace
