@@ -85,6 +85,7 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
   return RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateEliminateDeadFunctionsPass())
+      .RegisterPass(CreateScalarReplacementPass())
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -286,5 +287,10 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass() {
 Optimizer::PassToken CreateRedundancyEliminationPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::RedundancyEliminationPass>());
+}
+
+Optimizer::PassToken CreateScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ScalarReplacementPass>());
 }
 }  // namespace spvtools

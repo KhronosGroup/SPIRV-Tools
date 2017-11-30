@@ -196,6 +196,11 @@ add_spvtools_unittest(TARGET pass_strength_reduction
   LIBS SPIRV-Tools-opt
 )
 
+add_spvtools_unittest(TARGET pass_scalar_replacement
+  SRCS scalar_replacement_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+
 add_spvtools_unittest(TARGET cfg_cleanup
   SRCS cfg_cleanup_test.cpp pass_utils.cpp
   LIBS SPIRV-Tools-opt

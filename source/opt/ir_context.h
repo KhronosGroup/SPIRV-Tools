@@ -197,6 +197,19 @@ class IRContext {
     auto entry = instr_to_block_.find(instr);
     return (entry != instr_to_block_.end()) ? entry->second : nullptr;
   }
+  ir::BasicBlock* get_instr_block(uint32_t id) {
+    ir::Instruction* def = get_def_use_mgr()->GetDef(id);
+    return get_instr_block(def);
+  }
+
+  // Sets the basic block for |inst|. Re-builds the mapping if it has become invalid.
+  void set_instr_block(ir::Instruction* inst, ir::BasicBlock* block) {
+    if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+      instr_to_block_[inst] = block;
+    } else {
+      BuildInstrToBlockMapping();
+    }
+  }
 
   // Returns a pointer the decoration manager.  If the decoration manger is
   // invalid, it is rebuilt first.
