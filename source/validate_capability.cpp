@@ -77,24 +77,27 @@ bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
   return false;
 }
 
-bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability) {
+bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability, bool embedded_profile) {
   switch (capability) {
     case SpvCapabilityAddresses:
     case SpvCapabilityFloat16Buffer:
     case SpvCapabilityGroups:
-    case SpvCapabilityInt64:
     case SpvCapabilityInt16:
     case SpvCapabilityInt8:
     case SpvCapabilityKernel:
     case SpvCapabilityLinkage:
     case SpvCapabilityVector16:
       return true;
+    case SpvCapabilityInt64:
+      return !embedded_profile;
+    case SpvCapabilityPipes:
+      return embedded_profile;
   }
   return false;
 }
 
-bool IsSupportGuaranteedOpenCL_2_0(uint32_t capability) {
-  if (IsSupportGuaranteedOpenCL_1_2(capability)) return true;
+bool IsSupportGuaranteedOpenCL_2_0(uint32_t capability, bool embedded_profile) {
+  if (IsSupportGuaranteedOpenCL_1_2(capability, embedded_profile)) return true;
 
   switch (capability) {
     case SpvCapabilityDeviceEnqueue:
@@ -105,8 +108,8 @@ bool IsSupportGuaranteedOpenCL_2_0(uint32_t capability) {
   return false;
 }
 
-bool IsSupportGuaranteedOpenCL_2_2(uint32_t capability) {
-  if (IsSupportGuaranteedOpenCL_2_0(capability)) return true;
+bool IsSupportGuaranteedOpenCL_2_2(uint32_t capability, bool embedded_profile) {
+  if (IsSupportGuaranteedOpenCL_2_0(capability, embedded_profile)) return true;
 
   switch (capability) {
     case SpvCapabilitySubgroupDispatch:
@@ -194,6 +197,10 @@ spv_result_t CapabilityPass(ValidationState_t& _,
   const uint32_t capability = inst->words[operand.offset];
 
   const auto env = _.context()->target_env;
+  const bool opencl_embedded = env == SPV_ENV_OPENCL_EMBEDDED_1_2 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_1 ||
+                               env == SPV_ENV_OPENCL_EMBEDDED_2_2;
   if (env == SPV_ENV_VULKAN_1_0) {
     if (!IsSupportGuaranteedVulkan_1_0(capability) &&
         !IsSupportOptionalVulkan_1_0(capability) &&
@@ -203,8 +210,8 @@ spv_result_t CapabilityPass(ValidationState_t& _,
              << " is not allowed by Vulkan 1.0 specification"
              << " (or requires extension)";
     }
-  } else if (env == SPV_ENV_OPENCL_1_2) {
-    if (!IsSupportGuaranteedOpenCL_1_2(capability) &&
+  } else if (env == SPV_ENV_OPENCL_1_2 || env == SPV_ENV_OPENCL_EMBEDDED_1_2) {
+    if (!IsSupportGuaranteedOpenCL_1_2(capability, opencl_embedded) &&
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_1_2(_, capability)) {
@@ -213,8 +220,9 @@ spv_result_t CapabilityPass(ValidationState_t& _,
              << " is not allowed by OpenCL 1.2 specification"
              << " (or requires extension)";
     }
-  } else if (env == SPV_ENV_OPENCL_2_0 || env == SPV_ENV_OPENCL_2_1) {
-    if (!IsSupportGuaranteedOpenCL_2_0(capability) &&
+  } else if (env == SPV_ENV_OPENCL_2_0 || env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
+             env == SPV_ENV_OPENCL_2_1 || env == SPV_ENV_OPENCL_EMBEDDED_2_1) {
+    if (!IsSupportGuaranteedOpenCL_2_0(capability, opencl_embedded) &&
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
@@ -223,8 +231,8 @@ spv_result_t CapabilityPass(ValidationState_t& _,
              << " is not allowed by OpenCL 2.0/2.1 specification"
              << " (or requires extension)";
     }
-  } else if (env == SPV_ENV_OPENCL_2_2) {
-    if (!IsSupportGuaranteedOpenCL_2_2(capability) &&
+  } else if (env == SPV_ENV_OPENCL_2_2 || env == SPV_ENV_OPENCL_EMBEDDED_2_2) {
+    if (!IsSupportGuaranteedOpenCL_2_2(capability, opencl_embedded) &&
         !IsSupportOptionalOpenCL_1_2(capability) &&
         !IsEnabledByExtension(_, capability) &&
         !IsEnabledByCapabilityOpenCL_2_0(_, capability)) {
