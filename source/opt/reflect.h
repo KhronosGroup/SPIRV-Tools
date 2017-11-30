@@ -47,6 +47,12 @@ inline bool IsTypeInst(SpvOp opcode) {
 inline bool IsConstantInst(SpvOp opcode) {
   return opcode >= SpvOpConstantTrue && opcode <= SpvOpSpecConstantOp;
 }
+inline bool IsCompileTimeConstantInst(SpvOp opcode) {
+  return opcode >= SpvOpConstantTrue && opcode <= SpvOpConstantNull;
+}
+inline bool IsSpecConstantInst(SpvOp opcode) {
+  return opcode >= SpvOpSpecConstantTrue && opcode <= SpvOpSpecConstantOp;
+}
 inline bool IsTerminatorInst(SpvOp opcode) {
   return opcode >= SpvOpBranch && opcode <= SpvOpUnreachable;
 }

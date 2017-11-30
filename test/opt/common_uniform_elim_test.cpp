@@ -918,8 +918,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res = std::get<1>(
-      SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
+  opt::Pass::Status res =
+      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
+          text, true, false));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
 
@@ -1035,8 +1036,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  opt::Pass::Status res = std::get<1>(
-      SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(text, true));
+  opt::Pass::Status res =
+      std::get<1>(SinglePassRunAndDisassemble<opt::CommonUniformElimPass>(
+          text, true, false));
   EXPECT_EQ(res, opt::Pass::Status::SuccessWithoutChange);
 }
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

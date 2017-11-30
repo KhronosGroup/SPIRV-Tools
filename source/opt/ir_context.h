@@ -20,6 +20,7 @@
 #include "decoration_manager.h"
 #include "def_use_manager.h"
 #include "dominator_analysis.h"
+#include "feature_manager.h"
 #include "module.h"
 #include "type_manager.h"
 
@@ -198,6 +199,25 @@ class IRContext {
     return (entry != instr_to_block_.end()) ? entry->second : nullptr;
   }
 
+  // Returns the basic block for |id|. Re-builds the instruction block map, if
+  // needed.
+  //
+  // |id| must be a registered definition.
+  ir::BasicBlock* get_instr_block(uint32_t id) {
+    ir::Instruction* def = get_def_use_mgr()->GetDef(id);
+    return get_instr_block(def);
+  }
+
+  // Sets the basic block for |inst|. Re-builds the mapping if it has become
+  // invalid.
+  void set_instr_block(ir::Instruction* inst, ir::BasicBlock* block) {
+    if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
+      instr_to_block_[inst] = block;
+    } else {
+      BuildInstrToBlockMapping();
+    }
+  }
+
   // Returns a pointer the decoration manager.  If the decoration manger is
   // invalid, it is rebuilt first.
   opt::analysis::DecorationManager* get_decoration_mgr() {
@@ -351,6 +371,13 @@ class IRContext {
   // Return the next available SSA id and increment it.
   inline uint32_t TakeNextId() { return module()->TakeNextIdBound(); }
 
+  opt::FeatureManager* get_feature_mgr() {
+    if (!feature_mgr_.get()) {
+      AnalyzeFeatures();
+    }
+    return feature_mgr_.get();
+  }
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
@@ -381,6 +408,12 @@ class IRContext {
     valid_analyses_ = valid_analyses_ | kAnalysisCFG;
   }
 
+  // Analyzes the features in the owned module. Builds the manager if required.
+  void AnalyzeFeatures() {
+    feature_mgr_.reset(new opt::FeatureManager());
+    feature_mgr_->Analyze(module());
+  }
+
   // Scans a module looking for it capabilities, and initializes combinator_ops_
   // accordingly.
   void InitializeCombinators();
@@ -409,6 +442,7 @@ class IRContext {
 
   // The instruction decoration manager for |module_|.
   std::unique_ptr<opt::analysis::DecorationManager> decoration_mgr_;
+  std::unique_ptr<opt::FeatureManager> feature_mgr_;
 
   // A map from instructions the the basic block they belong to. This mapping is
   // built on-demand when get_instr_block() is called.

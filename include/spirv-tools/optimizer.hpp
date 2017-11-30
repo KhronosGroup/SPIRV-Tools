@@ -437,6 +437,11 @@ Optimizer::PassToken CreateLocalRedundancyEliminationPass();
 // This pass will look for instructions where the same value is computed on all
 // paths leading to the instruction.  Those instructions are deleted.
 Optimizer::PassToken CreateRedundancyEliminationPass();
+
+// Create scalar replacement pass.
+// This pass replaces composite function scope variables with variables for each
+// element if those elements are accessed individually.
+Optimizer::PassToken CreateScalarReplacementPass();
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

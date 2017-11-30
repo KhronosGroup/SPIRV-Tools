@@ -152,6 +152,9 @@ Options (in lexicographical order):
                a new basic block containing an unified return.
                This pass does not currently support structured control flow. It
                makes no changes if the shader capability is detected.
+  --local-redundancy-elimination
+               Looks for instructions in the same basic block that compute the
+               same value, and deletes the redundant ones.
   -O
                Optimize for performance. Apply a sequence of transformations
                in an attempt to improve the performance of the generated
@@ -198,10 +201,14 @@ Options (in lexicographical order):
   --redundancy-elimination
                Looks for instructions in the same function that compute the
                same value, and deletes the redundant ones.
-  --relax-store-struct
+  --relax-struct-store
                Allow store from one struct type to a different type with
                compatible layout and members. This option is forwarded to the
                validator.
+  --scalar-replacement
+               Replace aggregate function scope variables that are only accessed
+               via their elements with new function variables representing each
+               element.
   --set-spec-const-default-value "<spec id>:<default value> ..."
                Set the default values of the specialization constants with
                <spec id>:<default value> pairs specified in a double-quoted
@@ -385,6 +392,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateDeadVariableEliminationPass());
       } else if (0 == strcmp(cur_arg, "--fold-spec-const-op-composite")) {
         optimizer->RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
+      } else if (0 == strcmp(cur_arg, "--scalar-replacement")) {
+        optimizer->RegisterPass(CreateScalarReplacementPass());
       } else if (0 == strcmp(cur_arg, "--strength-reduction")) {
         optimizer->RegisterPass(CreateStrengthReductionPass());
       } else if (0 == strcmp(cur_arg, "--unify-const")) {
@@ -399,7 +408,7 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--redundancy-elimination")) {
         optimizer->RegisterPass(CreateRedundancyEliminationPass());
-      } else if (0 == strcmp(cur_arg, "--relax-store-struct")) {
+      } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "--skip-validation")) {
         *skip_validator = true;

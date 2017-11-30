@@ -89,11 +89,23 @@ class PassTest : public TestT {
   // disassembly string and the boolean value from the pass Process() function.
   template <typename PassT, typename... Args>
   std::tuple<std::string, opt::Pass::Status> SinglePassRunAndDisassemble(
-      const std::string& assembly, bool skip_nop, Args&&... args) {
+      const std::string& assembly, bool skip_nop, bool do_validation,
+      Args&&... args) {
     std::vector<uint32_t> optimized_bin;
     auto status = opt::Pass::Status::SuccessWithoutChange;
     std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
         assembly, skip_nop, std::forward<Args>(args)...);
+    if (do_validation) {
+      spv_target_env target_env = SPV_ENV_UNIVERSAL_1_1;
+      spv_context spvContext = spvContextCreate(target_env);
+      spv_diagnostic diagnostic = nullptr;
+      spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
+      spv_result_t error = spvValidate(spvContext, &binary, &diagnostic);
+      EXPECT_EQ(error, 0);
+      if (error != 0) spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+      spvContextDestroy(spvContext);
+    }
     std::string optimized_asm;
     EXPECT_TRUE(
         tools_.Disassemble(optimized_bin, &optimized_asm, disassemble_options_))
@@ -157,10 +169,11 @@ class PassTest : public TestT {
   // This does *not* involve pass manager.  Callers are suggested to use
   // SCOPED_TRACE() for better messages.
   template <typename PassT, typename... Args>
-  void SinglePassRunAndMatch(const std::string& original, Args&&... args) {
+  void SinglePassRunAndMatch(const std::string& original, bool do_validation,
+                             Args&&... args) {
     const bool skip_nop = true;
     auto pass_result = SinglePassRunAndDisassemble<PassT>(
-        original, skip_nop, std::forward<Args>(args)...);
+        original, skip_nop, do_validation, std::forward<Args>(args)...);
     auto disassembly = std::get<0>(pass_result);
     auto match_result = effcee::Match(disassembly, original);
     EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())

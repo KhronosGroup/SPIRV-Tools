@@ -66,6 +66,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/dominator_tree.cpp \
 		source/opt/eliminate_dead_constant_pass.cpp \
 		source/opt/eliminate_dead_functions_pass.cpp \
+		source/opt/feature_manager.cpp \
 		source/opt/flatten_decoration_pass.cpp \
 		source/opt/fold.cpp \
 		source/opt/fold_spec_constant_op_and_composite_pass.cpp \
@@ -93,6 +94,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/propagator.cpp \
 		source/opt/redundancy_elimination.cpp \
 		source/opt/remove_duplicates_pass.cpp \
+		source/opt/scalar_replacement_pass.cpp \
 		source/opt/set_spec_constant_default_value_pass.cpp \
 		source/opt/strength_reduction_pass.cpp \
 		source/opt/strip_debug_info_pass.cpp \

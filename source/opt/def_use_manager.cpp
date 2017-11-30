@@ -136,6 +136,26 @@ void DefUseManager::ForEachUse(
   ForEachUse(GetDef(id), f);
 }
 
+uint32_t DefUseManager::NumUsers(const ir::Instruction* def) const {
+  uint32_t count = 0;
+  ForEachUser(def, [&count](ir::Instruction*) { ++count; });
+  return count;
+}
+
+uint32_t DefUseManager::NumUsers(uint32_t id) const {
+  return NumUsers(GetDef(id));
+}
+
+uint32_t DefUseManager::NumUses(const ir::Instruction* def) const {
+  uint32_t count = 0;
+  ForEachUse(def, [&count](ir::Instruction*, uint32_t) { ++count; });
+  return count;
+}
+
+uint32_t DefUseManager::NumUses(uint32_t id) const {
+  return NumUses(GetDef(id));
+}
+
 std::vector<ir::Instruction*> DefUseManager::GetAnnotations(uint32_t id) const {
   std::vector<ir::Instruction*> annos;
   const ir::Instruction* def = GetDef(id);

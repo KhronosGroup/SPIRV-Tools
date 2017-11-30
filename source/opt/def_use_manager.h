@@ -151,6 +151,14 @@ class DefUseManager {
                   const std::function<void(ir::Instruction*,
                                            uint32_t operand_index)>& f) const;
 
+  // Returns the number of users of |def| (or |id|).
+  uint32_t NumUsers(const ir::Instruction* def) const;
+  uint32_t NumUsers(uint32_t id) const;
+
+  // Returns the number of uses of |def| (or |id|).
+  uint32_t NumUses(const ir::Instruction* def) const;
+  uint32_t NumUses(uint32_t id) const;
+
   // Returns the annotation instrunctions which are a direct use of the given
   // |id|. This means when the decorations are applied through decoration
   // group(s), this function will just return the OpGroupDecorate
