@@ -160,7 +160,7 @@ class DominatorTree {
   // pair is its immediate dominator.
   // The root of the tree has themself as immediate dominator.
   void GetDominatorEdges(
-      const ir::Function* f, ir::BasicBlock* dummy_start_node,
+      const ir::Function* f, const ir::BasicBlock* dummy_start_node,
       std::vector<std::pair<ir::BasicBlock*, ir::BasicBlock*>>& edges);
 
   // The roots of the tree.
