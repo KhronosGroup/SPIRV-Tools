@@ -371,44 +371,52 @@ void DominatorTree::InitializeTree(const ir::Function* f, const ir::CFG& cfg) {
 void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
   out_stream << "digraph {\n";
   out_stream << "Dummy [label=\"Entry\"];\n";
-  for (auto Root : roots_) {
-    Visit(Root, [&out_stream](const DominatorTreeNode* node) {
+  Visit([&out_stream](const DominatorTreeNode* node) {
 
-      // Print the node.
-      if (node->bb_) {
-        out_stream << node->bb_->id() << "[label=\"" << node->bb_->id()
-                   << "\"];\n";
-      }
+    // Print the node.
+    if (node->bb_) {
+      out_stream << node->bb_->id() << "[label=\"" << node->bb_->id()
+                 << "\"];\n";
+    }
 
-      // Print the arrow from the parent to this node. Entry nodes will not have
-      // parents so draw them as children from the dummy node.
-      if (node->parent_) {
-        out_stream << node->parent_->bb_->id() << " -> " << node->bb_->id()
-                   << ";\n";
-      } else {
-        out_stream << "Dummy -> " << node->bb_->id() << " [style=dotted];\n";
-      }
+    // Print the arrow from the parent to this node. Entry nodes will not have
+    // parents so draw them as children from the dummy node.
+    if (node->parent_) {
+      out_stream << node->parent_->bb_->id() << " -> " << node->bb_->id()
+                 << ";\n";
+    } else {
+      out_stream << "Dummy -> " << node->bb_->id() << " [style=dotted];\n";
+    }
 
-      // Return true to continue the traversal.
-      return true;
-    });
-  }
+    // Return true to continue the traversal.
+    return true;
+  });
   out_stream << "}\n";
+}
+
+bool DominatorTree::Visit(
+    DominatorTreeNode* node,
+    std::function<bool(DominatorTreeNode*)> func) {
+  // Apply the function to the node.
+  if (!func(node)) return false;
+
+  // Apply the function to every child node.
+  for (DominatorTreeNode* child : node->children_) {
+    if (!Visit(child, func)) return false;
+  }
+
+  return true;
 }
 
 bool DominatorTree::Visit(
     const DominatorTreeNode* node,
     std::function<bool(const DominatorTreeNode*)> func) const {
   // Apply the function to the node.
-  bool functor_return = func(node);
-
-  // If the user provided function return false, stop the traversal.
-  if (!functor_return) return false;
+  if (!func(node)) return false;
 
   // Apply the function to every child node.
   for (const DominatorTreeNode* child : node->children_) {
-    functor_return = Visit(child, func);
-    if (!functor_return) return false;
+    if (!Visit(child, func)) return false;
   }
 
   return true;

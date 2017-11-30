@@ -98,6 +98,18 @@ class DominatorAnalysisBase {
   // Force the dominator tree to be removed
   inline void ClearTree() { tree_.ClearTree(); }
 
+  // Applies the std::function |func| to dominator tree nodes in dominator
+  // order.
+  void Visit(std::function<bool(DominatorTreeNode*)> func) {
+    tree_.Visit(func);
+  }
+
+  // Applies the std::function |func| to dominator tree nodes in dominator
+  // order.
+  void Visit(std::function<bool(const DominatorTreeNode*)> func) const {
+    tree_.Visit(func);
+  }
+
  protected:
   DominatorTree tree_;
 };

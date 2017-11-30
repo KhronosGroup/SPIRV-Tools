@@ -142,13 +142,31 @@ class DominatorTree {
     roots_.clear();
   }
 
-  // Applies the std::function |func| to |node| then applies it to every child
-  // node recursively. If the function |func| returns false the traversal will
-  // stop. This function will return true if the traversal was completed without
-  // being interrupted by any children.
+  // Applies the std::function |func| to all nodes in the dominator tree.
+  bool Visit(std::function<bool(DominatorTreeNode*)> func) {
+    for (auto n : roots_) {
+      if (!Visit(n, func)) return false;
+    }
+    return true;
+  }
+
+  // Applies the std::function |func| to all nodes in the dominator tree.
+  bool Visit(std::function<bool(const DominatorTreeNode*)> func) const {
+    for (auto n : roots_) {
+      if (!Visit(n, func)) return false;
+    }
+    return true;
+  }
+
+  // Applies the std::function |func| to |node| then applies it to nodes
+  // children.
+  bool Visit(DominatorTreeNode* node,
+             std::function<bool(DominatorTreeNode*)> func);
+
+  // Applies the std::function |func| to |node| then applies it to nodes
+  // children.
   bool Visit(const DominatorTreeNode* node,
              std::function<bool(const DominatorTreeNode*)> func) const;
-
 
  private:
   // Adds the basic block |bb| to the tree structure if it doesn't already
