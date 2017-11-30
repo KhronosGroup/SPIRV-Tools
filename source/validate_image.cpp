@@ -852,7 +852,7 @@ spv_result_t ImagePass(ValidationState_t& _,
       }
 
       const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
-      if (!_.IsFloatScalarType(dref_type)) {
+      if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA)
                << spvOpcodeString(opcode)
                << ": Expected Dref to be of 32-bit float type";
@@ -1017,7 +1017,7 @@ spv_result_t ImagePass(ValidationState_t& _,
       } else {
         assert(opcode == SpvOpImageDrefGather);
         const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
-        if (!_.IsFloatScalarType(dref_type)) {
+        if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA)
                  << spvOpcodeString(opcode)
                  << ": Expected Dref to be of 32-bit float type";

@@ -34,6 +34,7 @@ std::string GenerateShaderCode(
     const std::string& execution_model = "Fragment") {
   std::ostringstream ss;
   ss << R"(
+OpCapability Float16
 OpCapability Shader
 OpCapability InputAttachment
 OpCapability ImageGatherExtended
@@ -51,6 +52,7 @@ OpCapability ImageQuery
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
+%f16 = OpTypeFloat 16
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
@@ -63,6 +65,9 @@ OpCapability ImageQuery
 %u32vec4 = OpTypeVector %u32 4
 %s32vec4 = OpTypeVector %s32 4
 %f32vec4 = OpTypeVector %f32 4
+
+%f16_0 = OpConstant %f16 0
+%f16_1 = OpConstant %f16 1
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
@@ -1579,7 +1584,7 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
 %img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
-%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %s32_4
+%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %f16_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
