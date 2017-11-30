@@ -41,26 +41,32 @@ namespace clr {
 // Resets console color.
 struct reset {
   operator const char*();
+  bool isPrint;
 };
 // Sets console color to grey.
 struct grey {
   operator const char*();
+  bool isPrint;
 };
 // Sets console color to red.
 struct red {
   operator const char*();
+  bool isPrint;
 };
 // Sets console color to green.
 struct green {
   operator const char*();
+  bool isPrint;
 };
 // Sets console color to yellow.
 struct yellow {
   operator const char*();
+  bool isPrint;
 };
 // Sets console color to blue.
 struct blue {
   operator const char*();
+  bool isPrint;
 };
 }  // namespace clr
 

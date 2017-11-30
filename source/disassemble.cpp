@@ -45,8 +45,7 @@ class Disassembler {
                libspirv::NameMapper name_mapper)
       : grammar_(grammar),
         print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
-        color_(print_ &&
-               spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
+        color_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
         indent_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_INDENT, options)
                     ? kStandardIndent
                     : 0),
@@ -87,27 +86,27 @@ class Disassembler {
 
   // Resets the output color, if color is turned on.
   void ResetColor() {
-    if (color_) out_.get() << libspirv::clr::reset();
+    if (color_) out_.get() << libspirv::clr::reset{print_};
   }
   // Sets the output to grey, if color is turned on.
   void SetGrey() {
-    if (color_) out_.get() << libspirv::clr::grey();
+    if (color_) out_.get() << libspirv::clr::grey{print_};
   }
   // Sets the output to blue, if color is turned on.
   void SetBlue() {
-    if (color_) out_.get() << libspirv::clr::blue();
+    if (color_) out_.get() << libspirv::clr::blue{print_};
   }
   // Sets the output to yellow, if color is turned on.
   void SetYellow() {
-    if (color_) out_.get() << libspirv::clr::yellow();
+    if (color_) out_.get() << libspirv::clr::yellow{print_};
   }
   // Sets the output to red, if color is turned on.
   void SetRed() {
-    if (color_) out_.get() << libspirv::clr::red();
+    if (color_) out_.get() << libspirv::clr::red{print_};
   }
   // Sets the output to green, if color is turned on.
   void SetGreen() {
-    if (color_) out_.get() << libspirv::clr::green();
+    if (color_) out_.get() << libspirv::clr::green{print_};
   }
 
   const libspirv::AssemblyGrammar& grammar_;
