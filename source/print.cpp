@@ -54,36 +54,55 @@ static void SetConsoleForegroundColor(WORD color) {
 }
 
 clr::reset::operator const char*() {
-  SetConsoleForegroundColor(0xf);
-  return "";
+  if (isPrint) {
+    SetConsoleForegroundColor(0xf);
+    return "";
+  }
+  return "\x1b[0m";
 }
 
 clr::grey::operator const char*() {
-  SetConsoleForegroundColor(FOREGROUND_INTENSITY);
-  return "";
+  if (isPrint) {
+    SetConsoleForegroundColor(FOREGROUND_INTENSITY);
+    return "";
+  }
+  return "\x1b[1;30m";
 }
 
 clr::red::operator const char*() {
-  SetConsoleForegroundColor(FOREGROUND_RED);
-  return "";
+  if (isPrint) {
+    SetConsoleForegroundColor(FOREGROUND_RED);
+    return "";
+  }
+  return "\x1b[31m";
 }
 
 clr::green::operator const char*() {
-  SetConsoleForegroundColor(FOREGROUND_GREEN);
-  return "";
+  if (isPrint) {
+    SetConsoleForegroundColor(FOREGROUND_GREEN);
+    return "";
+  }
+  return "\x1b[32m";
 }
 
 clr::yellow::operator const char*() {
-  SetConsoleForegroundColor(FOREGROUND_RED | FOREGROUND_GREEN);
-  return "";
+  if (isPrint) {
+    SetConsoleForegroundColor(FOREGROUND_RED | FOREGROUND_GREEN);
+    return "";
+  }
+  return "\x1b[33m";
 }
 
 clr::blue::operator const char*() {
   // Blue all by itself is hard to see against a black background (the
   // default on command shell), or a medium blue background (the default
   // on PowerShell).  So increase its intensity.
-  SetConsoleForegroundColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-  return "";
+
+  if (isPrint) {
+    SetConsoleForegroundColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+    return "";
+  }
+  return "\x1b[94m";
 }
 
 }  // namespace libspirv
