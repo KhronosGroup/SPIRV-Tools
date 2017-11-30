@@ -28,6 +28,7 @@ spv_result_t CompositesPass(ValidationState_t& _,
                             const spv_parsed_instruction_t* inst) {
   const SpvOp opcode = static_cast<SpvOp>(inst->opcode);
   const uint32_t result_type = inst->type_id;
+  const uint32_t num_operands = static_cast<uint32_t>(inst->num_operands);
 
   switch (opcode) {
     case SpvOpVectorExtractDynamic: {
@@ -110,14 +111,13 @@ spv_result_t CompositesPass(ValidationState_t& _,
               _.GetComponentType(result_type);
           uint32_t given_component_count = 0;
 
-          const uint32_t num_constituents = inst->num_operands - 2;
-          if (num_constituents <= 1) {
+          if (num_operands <= 3) {
             return _.diag(SPV_ERROR_INVALID_DATA)
                    << spvOpcodeString(opcode)
                    << ": expected number of constituents to be at least 2";
           }
 
-          for (uint32_t operand_index = 2; operand_index < inst->num_operands;
+          for (uint32_t operand_index = 2; operand_index < num_operands;
                ++operand_index) {
             const uint32_t operand_type =
                 _.GetOperandTypeId(inst, operand_index);
@@ -156,14 +156,14 @@ spv_result_t CompositesPass(ValidationState_t& _,
             assert(0);
           }
 
-          if (result_num_cols != inst->num_operands - 2) {
+          if (result_num_cols + 2 != num_operands) {
             return _.diag(SPV_ERROR_INVALID_DATA)
                    << spvOpcodeString(opcode)
                    << ": expected total number of Constituents to be equal "
                    << "to the number of columns of Result Type matrix";
           }
 
-          for (uint32_t operand_index = 2; operand_index < inst->num_operands;
+          for (uint32_t operand_index = 2; operand_index < num_operands;
                ++operand_index) {
             const uint32_t operand_type =
                 _.GetOperandTypeId(inst, operand_index);
@@ -187,7 +187,7 @@ spv_result_t CompositesPass(ValidationState_t& _,
             assert(0 && "Array type definition is corrupt");
           }
 
-          if (array_size != inst->num_operands - 2) {
+          if (array_size + 2 != num_operands) {
             return _.diag(SPV_ERROR_INVALID_DATA)
                    << spvOpcodeString(opcode)
                    << ": expected total number of Constituents to be equal "
@@ -195,7 +195,7 @@ spv_result_t CompositesPass(ValidationState_t& _,
           }
 
           const uint32_t result_component_type = array_inst->word(2);
-          for (uint32_t operand_index = 2; operand_index < inst->num_operands;
+          for (uint32_t operand_index = 2; operand_index < num_operands;
                ++operand_index) {
             const uint32_t operand_type =
                 _.GetOperandTypeId(inst, operand_index);
@@ -214,14 +214,14 @@ spv_result_t CompositesPass(ValidationState_t& _,
           assert(struct_inst);
           assert(struct_inst->opcode() == SpvOpTypeStruct);
 
-          if (struct_inst->operands().size() + 1 != inst->num_operands) {
+          if (struct_inst->operands().size() + 1 != num_operands) {
             return _.diag(SPV_ERROR_INVALID_DATA)
                    << spvOpcodeString(opcode)
                    << ": expected total number of Constituents to be equal "
                    << "to the number of members of Result Type struct";
           }
 
-          for (uint32_t operand_index = 2; operand_index < inst->num_operands;
+          for (uint32_t operand_index = 2; operand_index < num_operands;
                ++operand_index) {
             const uint32_t operand_type =
                 _.GetOperandTypeId(inst, operand_index);
