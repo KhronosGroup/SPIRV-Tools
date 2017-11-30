@@ -651,7 +651,7 @@ void InlinePass::InitializeInline(ir::IRContext* c) {
   InitializeProcessing(c);
 
   // Don't bother updating the DefUseManger
-  update_def_use_mgr_ = [this](ir::Instruction&, bool) {};
+  update_def_use_mgr_ = [](ir::Instruction&, bool) {};
 
   false_id_ = 0;
 

@@ -795,10 +795,9 @@ bool MemPass::RemoveUnreachableBlocks(ir::Function* func) {
     // If the block is reachable and has Phi instructions, remove all
     // operands from its Phi instructions that reference unreachable blocks.
     // If the block has no Phi instructions, this is a no-op.
-    block.ForEachPhiInst(
-        [&block, &reachable_blocks, this](ir::Instruction* phi) {
-          RemovePhiOperands(phi, reachable_blocks);
-        });
+    block.ForEachPhiInst([&reachable_blocks, this](ir::Instruction* phi) {
+      RemovePhiOperands(phi, reachable_blocks);
+    });
   }
 
   // Erase unreachable blocks.
