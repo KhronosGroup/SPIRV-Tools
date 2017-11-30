@@ -102,29 +102,29 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
   } else if (match("spv1.2")) {
     if (env) *env = SPV_ENV_UNIVERSAL_1_2;
     return true;
-  } else if (match("opencl1.2")) {
-    if (env) *env = SPV_ENV_OPENCL_1_2;
-    return true;
   } else if (match("opencl1.2embedded")) {
     if (env) *env = SPV_ENV_OPENCL_EMBEDDED_1_2;
     return true;
-  } else if (match("opencl2.0")) {
-    if (env) *env = SPV_ENV_OPENCL_2_0;
+  } else if (match("opencl1.2")) {
+    if (env) *env = SPV_ENV_OPENCL_1_2;
     return true;
   } else if (match("opencl2.0embedded")) {
     if (env) *env = SPV_ENV_OPENCL_EMBEDDED_2_0;
     return true;
-  } else if (match("opencl2.1")) {
-    if (env) *env = SPV_ENV_OPENCL_2_1;
+  } else if (match("opencl2.0")) {
+    if (env) *env = SPV_ENV_OPENCL_2_0;
     return true;
   } else if (match("opencl2.1embedded")) {
     if (env) *env = SPV_ENV_OPENCL_EMBEDDED_2_1;
     return true;
-  } else if (match("opencl2.2")) {
-    if (env) *env = SPV_ENV_OPENCL_2_2;
+  } else if (match("opencl2.1")) {
+    if (env) *env = SPV_ENV_OPENCL_2_1;
     return true;
   } else if (match("opencl2.2embedded")) {
     if (env) *env = SPV_ENV_OPENCL_EMBEDDED_2_2;
+    return true;
+  } else if (match("opencl2.2")) {
+    if (env) *env = SPV_ENV_OPENCL_2_2;
     return true;
   } else if (match("opengl4.0")) {
     if (env) *env = SPV_ENV_OPENGL_4_0;
