@@ -34,6 +34,7 @@ std::string GenerateShaderCode(
     const std::string& execution_model = "Fragment") {
   std::ostringstream ss;
   ss << R"(
+OpCapability Float16
 OpCapability Shader
 OpCapability InputAttachment
 OpCapability ImageGatherExtended
@@ -51,6 +52,7 @@ OpCapability ImageQuery
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
+%f16 = OpTypeFloat 16
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
@@ -63,6 +65,9 @@ OpCapability ImageQuery
 %u32vec4 = OpTypeVector %u32 4
 %s32vec4 = OpTypeVector %s32 4
 %f32vec4 = OpTypeVector %f32 4
+
+%f16_0 = OpConstant %f16 0
+%f16_1 = OpConstant %f16 1
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
@@ -1470,12 +1475,12 @@ TEST_F(ValidateImage, SampleDrefImplicitLodSuccess) {
 %img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
-%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1
-%res2 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1 Bias %f32_0_25
-%res4 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1 ConstOffset %s32vec2_01
-%res5 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1 Offset %s32vec2_01
-%res6 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1 MinLod %f32_0_5
-%res7 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %u32_1 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
+%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1
+%res2 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 Bias %f32_0_25
+%res4 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 ConstOffset %s32vec2_01
+%res5 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 Offset %s32vec2_01
+%res6 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 MinLod %f32_0_5
+%res7 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_hh %f32_1 Bias|Offset|MinLod %f32_0_25 %s32vec2_01 %f32_0_5
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1579,14 +1584,14 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
 %img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
-%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %f32_0_5
+%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec2_00 %f16_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Dref to be of Image 'Sampled Type': "
-                        "ImageSampleDrefImplicitLod"));
+              HasSubstr("ImageSampleDrefImplicitLod: "
+                        "Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodSuccess) {
@@ -1594,11 +1599,11 @@ TEST_F(ValidateImage, SampleDrefExplicitLodSuccess) {
 %img = OpLoad %type_image_s32_3d_0001 %uniform_image_s32_3d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_s32_3d_0001 %img %sampler
-%res1 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %s32_1 Lod %f32_1
-%res3 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %s32_1 Grad %f32vec3_hhh %f32vec3_hhh
-%res4 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %s32_1 ConstOffset %s32vec3_012
-%res5 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %s32_1 Offset %s32vec3_012
-%res7 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %s32_1 Grad|Offset %f32vec3_hhh %f32vec3_hhh %s32vec3_012
+%res1 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %f32_1 Lod %f32_1
+%res3 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 Grad %f32vec3_hhh %f32vec3_hhh
+%res4 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 ConstOffset %s32vec3_012
+%res5 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec4_0000 %f32_1 Offset %s32vec3_012
+%res7 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 Grad|Offset %f32vec3_hhh %f32vec3_hhh %s32vec3_012
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1702,14 +1707,14 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongDrefType) {
 %img = OpLoad %type_image_s32_3d_0001 %uniform_image_s32_3d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_s32_3d_0001 %img %sampler
-%res1 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %f32_1 Lod %f32_1
+%res1 = OpImageSampleDrefExplicitLod %s32 %simg %f32vec3_hhh %u32_1 Lod %f32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Dref to be of Image 'Sampled Type': "
-                        "ImageSampleDrefExplicitLod"));
+              HasSubstr("ImageSampleDrefExplicitLod: "
+                        "Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodSuccess) {
@@ -1826,14 +1831,14 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongDrefType) {
 %img = OpLoad %type_image_u32_2d_0001 %uniform_image_u32_2d_0001
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_u32_2d_0001 %img %sampler
-%res1 = OpImageSampleProjDrefImplicitLod %u32 %simg %f32vec3_hhh %f32_0_5
+%res1 = OpImageSampleProjDrefImplicitLod %u32 %simg %f32vec3_hhh %f32vec4_0000
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Dref to be of Image 'Sampled Type': "
-                        "ImageSampleProjDrefImplicitLod"));
+              HasSubstr("ImageSampleProjDrefImplicitLod: "
+                        "Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodSuccess) {
@@ -2357,10 +2362,9 @@ TEST_F(ValidateImage, DrefGatherWrongDrefType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Dref to be of Image 'Sampled Type': ImageDrefGather"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImageDrefGather: "
+                        "Expected Dref to be of 32-bit float type"));
 }
 
 TEST_F(ValidateImage, ReadSuccess1) {
