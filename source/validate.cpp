@@ -185,6 +185,7 @@ spv_result_t ProcessInstruction(void* user_data,
   if (auto error = LogicalsPass(_, inst)) return error;
   if (auto error = BitwisePass(_, inst)) return error;
   if (auto error = ImagePass(_, inst)) return error;
+  if (auto error = AtomicsPass(_, inst)) return error;
 
   return SPV_SUCCESS;
 }
