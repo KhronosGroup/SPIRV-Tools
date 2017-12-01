@@ -110,51 +110,73 @@ build and its tests should pass at each commit in that history. A linear
 always-working history is easier to understand and to bisect in case we want to
 find which commit introduced a bug.
 
-These are the steps to follow to ensure this happens:
+### Initial merge setup
 
-*   \<userid\> is the user id of the author of the PR.
-*   \<url\> is the url to that user's fork of SPIRV-Tools. Will often look like
-
-    ```
-    git@github.com:<userid>/SPIRV-Tools.git
-    ```
-
-*   \<branch\> is the name of the branch that contains the PR
+The following steps should be done exactly once (when you are about to merge a
+PR for the first time):
 
 *   It is assumed that upstream points to
-    [git@github.com](mailto:git@github.com):KhronosGroup/SPIRV-Tools.git. You
-    can check this by doing
+    [git@github.com](mailto:git@github.com):KhronosGroup/SPIRV-Tools.git or
+    https://github.com/KhronosGroup/SPIRV-Tools.git.
+
+*   Find out the local name for the main github repo in your git configuration.
+    For example, in this configuration, it is labeled `upstream`.
 
     ```
     git remote -v
+    [ ... ]
+    upstream https://github.com/KhronosGroup/SPIRV-Tools.git (fetch)
+    upstream https://github.com/KhronosGroup/SPIRV-Tools.git (push)
     ```
+
+*   Make sure that the `upstream` remote is set to fetch from the `refs/pull`
+    namespace:
+
+    ```
+    git config --get-all remote.upstream.fetch
+    +refs/heads/*:refs/remotes/upstream/*
+    +refs/pull/*/head:refs/remotes/upstream/pr/*
+    ```
+
+*   If the line `+refs/pull/*/head:refs/remotes/upstream/pr/*` is not present in
+    your configuration, you can add it with the command:
+
+    ```
+    git config --local --add remote.upstream.fetch '+refs/pull/*/head:refs/remotes/upstream/pr/*'
+    ```
+
+### Merge workflow
+
+The following steps should be done for every PR that you intend to merge:
 
 *   Make sure your local copy of the master branch is up to date:
 
     ```
+    git checkout master
     git pull
     ```
 
-*   Get a local copy of the branch containing the PR.
+*   Fetch all pull requests refs:
 
     ```
-    git remote add <userid> <url>
-    git fetch <userid> <branch>
-    git checkout <userid>/<branch>
-    git branch -D <branch> # if it already exists
-    git checkout -b <branch>  # assuming it does not collide.
+    git fetch upstream
     ```
 
-*   Rebase the branch on top of the master branch. If there are conflicts, send
-    it back to the author and ask them to rebase. During the interactive rebase
-    be sure to squash all of the commits down to a single commit.
+*   Checkout the particular pull request you are going to review:
 
     ```
-    git branch -u master
-    git rebase -i
+    git checkout pr/1048
     ```
 
-*   **Build and test the branch.**
+*   Rebase the PR on top of the master branch. If there are conflicts, send it
+    back to the author and ask them to rebase. During the interactive rebase be
+    sure to squash all of the commits down to a single commit.
+
+    ```
+    git rebase -i master
+    ```
+
+*   **Build and test the PR.**
 
 *   If all of the tests pass, push the commit `git push upstream HEAD:master`
 
