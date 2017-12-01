@@ -84,7 +84,7 @@ if (NOT ${SPIRV_SKIP_TESTS})
         # SPIRV-Tools uses the shared CRT with MSVC.  Tell Effcee to do the same.
         set(EFFCEE_ENABLE_SHARED_CRT ON)
       endif()
-      add_subdirectory(effcee)
+      add_subdirectory(effcee EXCLUDE_FROM_ALL)
       set_property(TARGET effcee PROPERTY FOLDER Effcee)
       # Turn off warnings for effcee and re2
       set_property(TARGET effcee APPEND PROPERTY COMPILE_OPTIONS -w)
