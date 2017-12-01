@@ -27,7 +27,7 @@ branches:
 # the tag advance. Disable testing tags.
 skip_tags: true
 
-clone_depth: 5
+clone_depth: 1
 
 matrix:
   fast_finish: true # Show final status immediately if a test fails.
@@ -39,10 +39,21 @@ matrix:
 
 # scripts that run after cloning repository
 install:
-  - git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
-  - git clone https://github.com/google/googletest.git external/googletest
-  - git clone https://github.com/google/effcee.git external/effcee
-  - git clone https://github.com/google/re2.git external/re2
+  # Install ninja
+  - set NINJA_URL="https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip"
+  - appveyor DownloadFile %NINJA_URL% -FileName ninja.zip
+  - 7z x ninja.zip -oC:\ninja > nul
+  - set PATH=C:\ninja;%PATH%
+
+before_build:
+  - git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
+  - git clone --depth=1 https://github.com/google/googletest.git external/googletest
+  - git clone --depth=1 https://github.com/google/effcee.git external/effcee
+  - git clone --depth=1 https://github.com/google/re2.git external/re2
+  # Set path and environment variables for the current Visual Studio version
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2013" (call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x86_amd64)
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2015" (call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64)
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" (call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64)
 
 build:
   parallel: true  # enable MSBuild parallel builds
@@ -50,8 +61,8 @@ build:
 
 build_script:
   - mkdir build && cd build
-  - cmake -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..
-  - cmake --build . --config %CONFIGURATION% --target install
+  - cmake -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..
+  - ninja install
 
 test_script:
   - ctest -C %CONFIGURATION% --output-on-failure --timeout 300
