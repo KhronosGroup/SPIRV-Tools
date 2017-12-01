@@ -32,6 +32,8 @@ matrix:
     - env: BUILD_ANDROID_CMAKE=ON
     # Additional build using Android NDK with Android.mk
     - env: BUILD_ANDROID_MK=ON
+    # Additional check over format
+    - env: CHECK_FORMAT=ON
   exclude:
     # Skip GCC builds on macOS.
     - os: osx
@@ -54,6 +56,9 @@ before_install:
       git clone --depth=1 https://github.com/taka-no-me/android-cmake.git $HOME/android-cmake;
       export TOOLCHAIN_PATH=$HOME/android-cmake/android.toolchain.cmake;
     fi
+  - if [[ "$CHECK_FORMAT" == "ON" ]]; then
+      curl -L http://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py -o utils/clang-format-diff.py;
+    fi
 
 before_script:
   - git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
@@ -65,8 +70,8 @@ script:
   # Due to the limitation of Travis platform, we cannot start too many concurrent jobs.
   # Otherwise GCC will panic with internal error, possibility because of memory issues.
   # ctest with the current tests doesn't profit from using more than 4 threads.
-  - export NPROC=4;
-  - mkdir build && cd build;
+  - export NPROC=4
+  - mkdir build && cd build
   - if [[ "$BUILD_ANDROID_MK" == "ON" ]]; then
       export BUILD_DIR=$(pwd);
       mkdir ${BUILD_DIR}/libs;
@@ -82,6 +87,8 @@ script:
             -DSPIRV_BUILD_COMPRESSION=ON
             -DSPIRV_SKIP_TESTS=ON ..;
       make -j${NPROC};
+    elif [[ "$CHECK_FORMAT" == "ON" ]]; then
+      ./utils/check_code_format.sh;
     else
       cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..;
       make -j${NPROC} install;
