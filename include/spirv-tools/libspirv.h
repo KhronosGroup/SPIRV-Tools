@@ -96,11 +96,8 @@ typedef enum spv_operand_type_t {
   // A sentinel value.
   SPV_OPERAND_TYPE_NONE = 0,
 
-#define FIRST_CONCRETE(ENUM) ENUM, SPV_OPERAND_TYPE_FIRST_CONCRETE_TYPE = ENUM
-#define LAST_CONCRETE(ENUM) ENUM, SPV_OPERAND_TYPE_LAST_CONCRETE_TYPE = ENUM
-
   // Set 1:  Operands that are IDs.
-  FIRST_CONCRETE(SPV_OPERAND_TYPE_ID),
+  SPV_OPERAND_TYPE_ID,
   SPV_OPERAND_TYPE_TYPE_ID,
   SPV_OPERAND_TYPE_RESULT_ID,
   SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,  // SPIR-V Sec 3.25
@@ -150,21 +147,14 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO,         // SPIR-V Sec 3.30
   SPV_OPERAND_TYPE_CAPABILITY,                    // SPIR-V Sec 3.31
 
-// Set 5:  Operands that are a single word bitmask.
-// Sometimes a set bit indicates the instruction requires still more operands.
-#define FIRST_CONCRETE_MASK(ENUM) \
-  ENUM, SPV_OPERAND_TYPE_FIRST_CONCRETE_MASK_TYPE = ENUM
-  FIRST_CONCRETE_MASK(SPV_OPERAND_TYPE_IMAGE),    // SPIR-V Sec 3.14
-  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,             // SPIR-V Sec 3.15
-  SPV_OPERAND_TYPE_SELECTION_CONTROL,             // SPIR-V Sec 3.22
-  SPV_OPERAND_TYPE_LOOP_CONTROL,                  // SPIR-V Sec 3.23
-  SPV_OPERAND_TYPE_FUNCTION_CONTROL,              // SPIR-V Sec 3.24
-  LAST_CONCRETE(SPV_OPERAND_TYPE_MEMORY_ACCESS),  // SPIR-V Sec 3.26
-  SPV_OPERAND_TYPE_LAST_CONCRETE_MASK_TYPE =
-      SPV_OPERAND_TYPE_LAST_CONCRETE_TYPE,
-#undef FIRST_CONCRETE_MASK
-#undef FIRST_CONCRETE
-#undef LAST_CONCRETE
+  // Set 5:  Operands that are a single word bitmask.
+  // Sometimes a set bit indicates the instruction requires still more operands.
+  SPV_OPERAND_TYPE_IMAGE,              // SPIR-V Sec 3.14
+  SPV_OPERAND_TYPE_FP_FAST_MATH_MODE,  // SPIR-V Sec 3.15
+  SPV_OPERAND_TYPE_SELECTION_CONTROL,  // SPIR-V Sec 3.22
+  SPV_OPERAND_TYPE_LOOP_CONTROL,       // SPIR-V Sec 3.23
+  SPV_OPERAND_TYPE_FUNCTION_CONTROL,   // SPIR-V Sec 3.24
+  SPV_OPERAND_TYPE_MEMORY_ACCESS,      // SPIR-V Sec 3.26
 
 // The remaining operand types are only used internally by the assembler.
 // There are two categories:

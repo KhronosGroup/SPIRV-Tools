@@ -678,8 +678,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       return diagnostic() << "Internal error: Unhandled operand type: " << type;
   }
 
-  assert(int(SPV_OPERAND_TYPE_FIRST_CONCRETE_TYPE) <= int(parsed_operand.type));
-  assert(int(SPV_OPERAND_TYPE_LAST_CONCRETE_TYPE) >= int(parsed_operand.type));
+  assert(spvOperandIsConcrete(parsed_operand.type));
 
   operands->push_back(parsed_operand);
 
