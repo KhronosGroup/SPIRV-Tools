@@ -114,7 +114,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else {
         SPIRV_UNIMPLEMENTED(consumer_,
-                            "unhandled inst type outside function defintion");
+                            "unhandled inst type outside function definition");
       }
     } else {
       if (block_ == nullptr) {  // Inside function but outside blocks

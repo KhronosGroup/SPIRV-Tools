@@ -76,7 +76,7 @@ struct UserEntryLess {
     if (!lhs.first && rhs.first) return true;
     if (lhs.first && !rhs.first) return false;
 
-    // If neither defintion is null, then compare unique ids.
+    // If neither definition is null, then compare unique ids.
     if (lhs.first && rhs.first) {
       if (lhs.first->unique_id() < rhs.first->unique_id()) return true;
       if (rhs.first->unique_id() < lhs.first->unique_id()) return false;
