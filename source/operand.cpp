@@ -246,9 +246,58 @@ void spvPushOperandTypesForMask(const spv_operand_table operandTable,
   }
 }
 
+bool spvOperandIsConcrete(spv_operand_type_t type) {
+  if (spvIsIdType(type) || spvOperandIsConcreteMask(type)) {
+    return true;
+  }
+  switch (type) {
+    case SPV_OPERAND_TYPE_LITERAL_INTEGER:
+    case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER:
+    case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER:
+    case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
+    case SPV_OPERAND_TYPE_LITERAL_STRING:
+    case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
+    case SPV_OPERAND_TYPE_EXECUTION_MODEL:
+    case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
+    case SPV_OPERAND_TYPE_MEMORY_MODEL:
+    case SPV_OPERAND_TYPE_EXECUTION_MODE:
+    case SPV_OPERAND_TYPE_STORAGE_CLASS:
+    case SPV_OPERAND_TYPE_DIMENSIONALITY:
+    case SPV_OPERAND_TYPE_SAMPLER_ADDRESSING_MODE:
+    case SPV_OPERAND_TYPE_SAMPLER_FILTER_MODE:
+    case SPV_OPERAND_TYPE_SAMPLER_IMAGE_FORMAT:
+    case SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER:
+    case SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE:
+    case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
+    case SPV_OPERAND_TYPE_LINKAGE_TYPE:
+    case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
+    case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:
+    case SPV_OPERAND_TYPE_DECORATION:
+    case SPV_OPERAND_TYPE_BUILT_IN:
+    case SPV_OPERAND_TYPE_GROUP_OPERATION:
+    case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
+    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO:
+    case SPV_OPERAND_TYPE_CAPABILITY:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 bool spvOperandIsConcreteMask(spv_operand_type_t type) {
-  return SPV_OPERAND_TYPE_FIRST_CONCRETE_MASK_TYPE <= type &&
-         type <= SPV_OPERAND_TYPE_LAST_CONCRETE_MASK_TYPE;
+  switch (type) {
+    case SPV_OPERAND_TYPE_IMAGE:
+    case SPV_OPERAND_TYPE_FP_FAST_MATH_MODE:
+    case SPV_OPERAND_TYPE_SELECTION_CONTROL:
+    case SPV_OPERAND_TYPE_LOOP_CONTROL:
+    case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
+    case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+      return true;
+    default:
+      break;
+  }
+  return false;
 }
 
 bool spvOperandIsOptional(spv_operand_type_t type) {
