@@ -612,6 +612,10 @@ def main():
                         type=str, required=False,
                         help='input JSON grammar file for core SPIR-V '
                         'instructions')
+    parser.add_argument('--extinst-debuginfo-grammar', metavar='<path>',
+                        type=str, required=False, default=None,
+                        help='input JSON grammar file for GLSL extended '
+                        'instruction set')
     parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
                         type=str, required=False, default=None,
                         help='input JSON grammar file for GLSL extended '
@@ -650,8 +654,12 @@ def main():
 
     if (args.core_insts_output is None) != \
             (args.operand_kinds_output is None):
-        print('error: --core-insts-output and --operand_kinds_output '
+        print('error: --core-insts-output and --operand-kinds-output '
               'should be specified together.')
+        exit(1)
+    if args.operand_kinds_output and not (args.spirv_core_grammar and args.extinst_debuginfo_grammar):
+        print('error: --operand-kinds-output requires --spirv-core-grammar '
+              'and --exinst-debuginfo-grammar')
         exit(1)
     if (args.glsl_insts_output is None) != \
             (args.extinst_glsl_grammar is None):
@@ -680,26 +688,28 @@ def main():
     if args.spirv_core_grammar is not None:
         with open(args.spirv_core_grammar) as json_file:
             grammar = json.loads(json_file.read())
-            if args.core_insts_output is not None:
-                make_path_to_file(args.core_insts_output)
-                make_path_to_file(args.operand_kinds_output)
-                version = '{}_{}'.format(grammar['major_version'],
-                                         grammar['minor_version'])
-                print(generate_instruction_table(
-                        grammar['instructions'], version),
-                      file=open(args.core_insts_output, 'w'))
-                print(generate_operand_kind_table(
-                        grammar['operand_kinds'], version),
-                      file=open(args.operand_kinds_output, 'w'))
-            if args.extension_enum_output is not None:
-                make_path_to_file(args.extension_enum_output)
-                print(generate_extension_enum(grammar['operand_kinds']),
-                      file=open(args.extension_enum_output, 'w'))
-            if args.enum_string_mapping_output is not None:
-                make_path_to_file(args.enum_string_mapping_output)
-                print(generate_all_string_enum_mappings(
-                          grammar['operand_kinds']),
-                      file=open(args.enum_string_mapping_output, 'w'))
+            with open(args.extinst_debuginfo_grammar) as debuginfo_json_file:
+                debuginfo_grammar = json.loads(debuginfo_json_file.read())
+                operand_kinds = grammar['operand_kinds']
+                operand_kinds.extend(debuginfo_grammar['operand_kinds'])
+		if args.core_insts_output is not None:
+		    make_path_to_file(args.core_insts_output)
+		    make_path_to_file(args.operand_kinds_output)
+		    version = '{}_{}'.format(grammar['major_version'],
+					     grammar['minor_version'])
+		    print(generate_instruction_table(
+			    grammar['instructions'], version),
+			  file=open(args.core_insts_output, 'w'))
+		    print(generate_operand_kind_table(operand_kinds, version),
+			  file=open(args.operand_kinds_output, 'w'))
+		if args.extension_enum_output is not None:
+		    make_path_to_file(args.extension_enum_output)
+		    print(generate_extension_enum(grammar['operand_kinds']),
+			  file=open(args.extension_enum_output, 'w'))
+		if args.enum_string_mapping_output is not None:
+		    make_path_to_file(args.enum_string_mapping_output)
+		    print(generate_all_string_enum_mappings(operand_kinds),
+			  file=open(args.enum_string_mapping_output, 'w'))
 
     if args.extinst_glsl_grammar is not None:
         with open(args.extinst_glsl_grammar) as json_file:

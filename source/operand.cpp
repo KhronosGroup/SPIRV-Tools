@@ -200,6 +200,16 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "image";
     case SPV_OPERAND_TYPE_OPTIONAL_CIV:
       return "context-insensitive value";
+    case SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS:
+      return "debug info flags";
+    case SPV_OPERAND_TYPE_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:
+      return "debug base type encoding";
+    case SPV_OPERAND_TYPE_DEBUG_COMPOSITE_TYPE:
+      return "debug composite type";
+    case SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER:
+      return "debug type qualifier";
+    case SPV_OPERAND_TYPE_DEBUG_OPERATION:
+      return "debug operation";
 
     // The next values are for values returned from an instruction, not actually
     // an operand.  So the specific strings don't matter.  But let's add them
@@ -278,6 +288,10 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
     case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO:
     case SPV_OPERAND_TYPE_CAPABILITY:
+    case SPV_OPERAND_TYPE_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:
+    case SPV_OPERAND_TYPE_DEBUG_COMPOSITE_TYPE:
+    case SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER:
+    case SPV_OPERAND_TYPE_DEBUG_OPERATION:
       return true;
     default:
       break;
@@ -293,6 +307,7 @@ bool spvOperandIsConcreteMask(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_LOOP_CONTROL:
     case SPV_OPERAND_TYPE_FUNCTION_CONTROL:
     case SPV_OPERAND_TYPE_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS:
       return true;
     default:
       break;

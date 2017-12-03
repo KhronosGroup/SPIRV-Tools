@@ -17,12 +17,17 @@
 #include <cassert>
 #include <cstring>
 
+// DebugInfo extended instruction set.
+// See https://www.khronos.org/registry/spir-v/specs/1.0/DebugInfo.html
+// TODO(dneto): DebugInfo.h should probably move to SPIRV-Headers.
+#include "DebugInfo.h"
+
 #include "latest_version_glsl_std_450_header.h"
 #include "latest_version_opencl_std_header.h"
+#include "macro.h"
 #include "spirv_definition.h"
 
-#include "macro.h"
-
+#include "debuginfo.insts.inc"     // defines opencl_entries
 #include "glsl.std.450.insts.inc"  // defines glsl_entries
 #include "opencl.std.insts.inc"    // defines opencl_entries
 
@@ -44,6 +49,8 @@ static const spv_ext_inst_group_t kGroups_1_0[] = {
      ARRAY_SIZE(spv_amd_gcn_shader_entries), spv_amd_gcn_shader_entries},
     {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
      ARRAY_SIZE(spv_amd_shader_ballot_entries), spv_amd_shader_ballot_entries},
+    {SPV_EXT_INST_TYPE_DEBUGINFO, ARRAY_SIZE(debuginfo_entries),
+     debuginfo_entries},
 };
 
 static const spv_ext_inst_table_t kTable_1_0 = {ARRAY_SIZE(kGroups_1_0),
@@ -100,6 +107,9 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   }
   if (!strcmp("SPV_AMD_shader_ballot", name)) {
     return SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT;
+  }
+  if (!strcmp("DebugInfo", name)) {
+    return SPV_EXT_INST_TYPE_DEBUGINFO;
   }
   return SPV_EXT_INST_TYPE_NONE;
 }
