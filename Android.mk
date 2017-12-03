@@ -112,8 +112,11 @@ SPVTOOLS_OPT_SRC_FILES := \
 SPV_CORE10_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.0/spirv.core.grammar.json
 SPV_CORE11_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.1/spirv.core.grammar.json
 SPV_CORE12_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/spirv.core.grammar.json
+SPV_CORELATEST_GRAMMAR=$(SPV_CORE12_GRAMMAR)
 SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.glsl.std.450.grammar.json
 SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/1.2/extinst.opencl.std.100.grammar.json
+# TODO(dneto): I expect the DebugInfo grammar file to eventually migrate to SPIRV-Headers
+SPV_DEBUGINFO_GRAMMAR=$(LOCAL_PATH)/source/extinst.debuginfo.grammar.json
 
 define gen_spvtools_grammar_tables
 $(call generate-file-dir,$(1)/core.insts-1.0.inc)
@@ -121,11 +124,13 @@ $(1)/core.insts-1.0.inc $(1)/operand.kinds-1.0.inc $(1)/glsl.std.450.insts.inc $
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
         $(SPV_CORE10_GRAMMAR) \
         $(SPV_GLSL_GRAMMAR) \
-        $(SPV_OPENCL_GRAMMAR)
+        $(SPV_OPENCL_GRAMMAR) \
+        $(SPV_DEBUGINFO_GRAMMAR)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
 		                --spirv-core-grammar=$(SPV_CORE10_GRAMMAR) \
 		                --extinst-glsl-grammar=$(SPV_GLSL_GRAMMAR) \
 		                --extinst-opencl-grammar=$(SPV_OPENCL_GRAMMAR) \
+		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --core-insts-output=$(1)/core.insts-1.0.inc \
 		                --glsl-insts-output=$(1)/glsl.std.450.insts.inc \
 		                --opencl-insts-output=$(1)/opencl.std.insts.inc \
@@ -133,17 +138,21 @@ $(1)/core.insts-1.0.inc $(1)/operand.kinds-1.0.inc $(1)/glsl.std.450.insts.inc $
 		@echo "[$(TARGET_ARCH_ABI)] Grammar v1.0   : instructions & operands <= grammar JSON files"
 $(1)/core.insts-1.1.inc $(1)/operand.kinds-1.1.inc: \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPV_CORE11_GRAMMAR)
+        $(SPV_CORE11_GRAMMAR) \
+        $(SPV_DEBUGINFO_GRAMMAR)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
 		                --spirv-core-grammar=$(SPV_CORE11_GRAMMAR) \
+		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --core-insts-output=$(1)/core.insts-1.1.inc \
 		                --operand-kinds-output=$(1)/operand.kinds-1.1.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar v1.1   : instructions & operands <= grammar JSON files"
 $(1)/core.insts-1.2.inc $(1)/operand.kinds-1.2.inc: \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPV_CORE12_GRAMMAR)
+        $(SPV_CORE12_GRAMMAR) \
+        $(SPV_DEBUGINFO_GRAMMAR)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
 		                --spirv-core-grammar=$(SPV_CORE12_GRAMMAR) \
+		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --core-insts-output=$(1)/core.insts-1.2.inc \
 		                --operand-kinds-output=$(1)/operand.kinds-1.2.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar v1.2   : instructions & operands <= grammar JSON files"
@@ -152,6 +161,27 @@ $(LOCAL_PATH)/source/operand.cpp: $(1)/operand.kinds-1.0.inc $(1)/operand.kinds-
 $(LOCAL_PATH)/source/ext_inst.cpp: $(1)/glsl.std.450.insts.inc $(1)/opencl.std.insts.inc
 endef
 $(eval $(call gen_spvtools_grammar_tables,$(SPVTOOLS_OUT_PATH)))
+
+
+define gen_spvtools_lang_headers
+# Generate language-specific headers.  So far we only generate C headers
+# $1 is the output directory.
+# $2 is the base name of the header file, e.g. "DebugInfo".
+# $3 is the grammar file containing token definitions.
+$(call generate-file-dir,$(1)/$(2).h)
+$(1)/$(2).h : \
+        $(LOCAL_PATH)/utils/generate_language_headers.py \
+        $(3)
+		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_language_headers.py \
+		    --extinst-name=$(2) \
+		    --extinst-grammar=$(3) \
+		    --extinst-output-base=$(1)/$(2)
+		@echo "[$(TARGET_ARCH_ABI)] Generate language specific header for $(2): headers <= grammar"
+$(LOCAL_PATH)/source/ext_inst.cpp: $(1)/$(2).h
+endef
+# We generate language-specific headers for DebugInfo
+$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),DebugInfo,$(SPV_DEBUGINFO_GRAMMAR)))
+
 
 define gen_spvtools_vendor_tables
 $(call generate-file-dir,$(1)/$(2).insts.inc)
@@ -172,9 +202,10 @@ define gen_spvtools_enum_string_mapping
 $(call generate-file-dir,$(1)/extension_enum.inc.inc)
 $(1)/extension_enum.inc $(1)/enum_string_mapping.inc: \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPV_CORE11_GRAMMAR)
+        $(SPV_CORELATEST_GRAMMAR)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-		                --spirv-core-grammar=$(SPV_CORE11_GRAMMAR) \
+		                --spirv-core-grammar=$(SPV_CORELATEST_GRAMMAR) \
+		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --extension-enum-output=$(1)/extension_enum.inc \
 		                --enum-string-mapping-output=$(1)/enum_string_mapping.inc
 		@echo "[$(TARGET_ARCH_ABI)] Generate enum<->string mapping <= grammar JSON files"

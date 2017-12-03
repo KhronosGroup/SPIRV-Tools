@@ -265,7 +265,11 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_BUILT_IN:
     case SPV_OPERAND_TYPE_GROUP_OPERATION:
     case SPV_OPERAND_TYPE_KERNEL_ENQ_FLAGS:
-    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO: {
+    case SPV_OPERAND_TYPE_KERNEL_PROFILING_INFO:
+    case SPV_OPERAND_TYPE_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:
+    case SPV_OPERAND_TYPE_DEBUG_COMPOSITE_TYPE:
+    case SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER:
+    case SPV_OPERAND_TYPE_DEBUG_OPERATION: {
       spv_operand_desc entry;
       if (grammar_.lookupOperand(operand.type, word, &entry))
         assert(false && "should have caught this earlier");
@@ -277,6 +281,7 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_MEMORY_ACCESS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
+    case SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS:
       EmitMaskOperand(operand.type, word);
       break;
     default:

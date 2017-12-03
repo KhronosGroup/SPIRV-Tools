@@ -206,6 +206,13 @@ typedef enum spv_operand_type_t {
   // A sequence of zero or more pairs of (Id, Literal integer)
   LAST_VARIABLE(SPV_OPERAND_TYPE_VARIABLE_ID_LITERAL_INTEGER),
 
+  // The following are concrete enum types.
+  SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS,  // DebugInfo Sec 3.2.  A mask.
+  SPV_OPERAND_TYPE_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING,  // DebugInfo Sec 3.3
+  SPV_OPERAND_TYPE_DEBUG_COMPOSITE_TYPE,                // DebugInfo Sec 3.4
+  SPV_OPERAND_TYPE_DEBUG_TYPE_QUALIFIER,                // DebugInfo Sec 3.5
+  SPV_OPERAND_TYPE_DEBUG_OPERATION,                     // DebugInfo Sec 3.6
+
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
@@ -221,6 +228,7 @@ typedef enum spv_ext_inst_type_t {
   SPV_EXT_INST_TYPE_SPV_AMD_SHADER_TRINARY_MINMAX,
   SPV_EXT_INST_TYPE_SPV_AMD_GCN_SHADER,
   SPV_EXT_INST_TYPE_SPV_AMD_SHADER_BALLOT,
+  SPV_EXT_INST_TYPE_DEBUGINFO,
 
   SPV_FORCE_32_BIT_ENUM(spv_ext_inst_type_t)
 } spv_ext_inst_type_t;
