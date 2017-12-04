@@ -388,32 +388,5 @@ void DominatorTree::DumpTreeAsDot(std::ostream& out_stream) const {
   out_stream << "}\n";
 }
 
-bool DominatorTree::Visit(DominatorTreeNode* node,
-                          std::function<bool(DominatorTreeNode*)> func) {
-  // Apply the function to the node.
-  if (!func(node)) return false;
-
-  // Apply the function to every child node.
-  for (DominatorTreeNode* child : node->children_) {
-    if (!Visit(child, func)) return false;
-  }
-
-  return true;
-}
-
-bool DominatorTree::Visit(
-    const DominatorTreeNode* node,
-    std::function<bool(const DominatorTreeNode*)> func) const {
-  // Apply the function to the node.
-  if (!func(node)) return false;
-
-  // Apply the function to every child node.
-  for (const DominatorTreeNode* child : node->children_) {
-    if (!Visit(child, func)) return false;
-  }
-
-  return true;
-}
-
 }  // namespace opt
 }  // namespace spvtools

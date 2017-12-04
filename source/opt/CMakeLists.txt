@@ -60,6 +60,7 @@ add_library(SPIRV-Tools-opt
   set_spec_constant_default_value_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
+  tree_iterator.h
   type_manager.h
   types.h
   unify_const_pass.h
