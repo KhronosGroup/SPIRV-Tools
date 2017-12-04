@@ -116,13 +116,13 @@ class DominatorTree {
   // Check if the basic block id |a| strictly dominates the basic block id |b|.
   bool StrictlyDominates(uint32_t a, uint32_t b) const;
 
-  // Returns the immediate dominator of basic block |a|.
+  // Return the immediate dominator of basic block |a|.
   ir::BasicBlock* ImmediateDominator(const ir::BasicBlock* A) const;
 
-  // Returns the immediate dominator of basic block id |a|.
+  // Return the immediate dominator of basic block id |a|.
   ir::BasicBlock* ImmediateDominator(uint32_t a) const;
 
-  // Returns true if the basic block |a| is reachable by this tree. A node would
+  // Return true if the basic block |a| is reachable by this tree. A node would
   // be unreachable if it cannot be reached by traversal from the start node or
   // for a postdominator tree, cannot be reached from the exit nodes.
   inline bool ReachableFromRoots(const ir::BasicBlock* a) const {
@@ -130,10 +130,10 @@ class DominatorTree {
     return ReachableFromRoots(a->id());
   }
 
-  // Returns true if the basic block id |a| is reachable by this tree.
+  // Return true if the basic block id |a| is reachable by this tree.
   bool ReachableFromRoots(uint32_t a) const;
 
-  // Returns true if this tree is a post dominator tree.
+  // Return true if this tree is a post dominator tree.
   bool IsPostDominator() const { return postdominator_; }
 
   // Clean up the tree.

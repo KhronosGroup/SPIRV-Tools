@@ -47,7 +47,7 @@ namespace {
 //
 // BBType - BasicBlock type. Will either be ir::BasicBlock or DominatorTreeNode
 // SuccessorLambda - Lamdba matching the signature of 'const
-// std::vector<BBType>*(const BBType *A)'. Will returns a vector of the nodes
+// std::vector<BBType>*(const BBType *A)'. Will return a vector of the nodes
 // succeding BasicBlock A.
 // PostLambda - Lamdba matching the signature of 'void (const BBType*)' will be
 // called on each node traversed AFTER their children.
@@ -63,7 +63,7 @@ static void DepthFirstSearch(const BBType* bb, SuccessorLambda successors,
 }
 
 // Wrapper around CFA::DepthFirstTraversal to provide an interface to perform
-// depth first search on generic BasicBlock types. This overload is for only
+// depth first search on generic BasicBlock types. This overload is only
 // performing user defined post order.
 //
 // BBType - BasicBlock type. Will either be ir::BasicBlock or DominatorTreeNode
@@ -115,7 +115,7 @@ class BasicBlockSuccessorHelper {
   using GetBlocksFunction =
       std::function<const std::vector<BasicBlock*>*(const BasicBlock*)>;
 
-  // Returns the list of predecessor functions.
+  // Return the list of predecessor functions.
   GetBlocksFunction GetPredFunctor() {
     return [this](const BasicBlock* bb) {
       BasicBlockListTy* v = &this->predecessors_[bb];
@@ -123,7 +123,7 @@ class BasicBlockSuccessorHelper {
     };
   }
 
-  // Returns a vector of the list of successor nodes from a given node.
+  // Return a vector of the list of successor nodes from a given node.
   GetBlocksFunction GetSuccessorFunctor() {
     return [this](const BasicBlock* bb) {
       BasicBlockListTy* v = &this->successors_[bb];

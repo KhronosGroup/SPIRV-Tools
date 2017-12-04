@@ -34,27 +34,27 @@ class DominatorAnalysisBase {
     tree_.InitializeTree(f, cfg);
   }
 
-  // Returns true if BasicBlock |a| dominates BasicBlock |b|.
+  // Return true if BasicBlock |a| dominates BasicBlock |b|.
   inline bool Dominates(const ir::BasicBlock* a,
                         const ir::BasicBlock* b) const {
     if (!a || !b) return false;
     return Dominates(a->id(), b->id());
   }
 
-  // Returns true if BasicBlock |a| dominates BasicBlock |b|. Same as above only
+  // Return true if BasicBlock |a| dominates BasicBlock |b|. Same as above only
   // using the BasicBlock IDs.
   inline bool Dominates(uint32_t a, uint32_t b) const {
     return tree_.Dominates(a, b);
   }
 
-  // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|.
+  // Return true if BasicBlock |a| strictly dominates BasicBlock |b|.
   inline bool StrictlyDominates(const ir::BasicBlock* a,
                                 const ir::BasicBlock* b) const {
     if (!a || !b) return false;
     return StrictlyDominates(a->id(), b->id());
   }
 
-  // Returns true if BasicBlock |a| strictly dominates BasicBlock |b|. Same as
+  // Return true if BasicBlock |a| strictly dominates BasicBlock |b|. Same as
   // above only using the BasicBlock IDs.
   inline bool StrictlyDominates(uint32_t a, uint32_t b) const {
     return tree_.StrictlyDominates(a, b);
@@ -73,13 +73,13 @@ class DominatorAnalysisBase {
     return tree_.ImmediateDominator(node_id);
   }
 
-  // Returns true if |node| is reachable from the entry.
+  // Return true if |node| is reachable from the entry.
   inline bool IsReachable(const ir::BasicBlock* node) const {
     if (!node) return false;
     return tree_.ReachableFromRoots(node->id());
   }
 
-  // Returns true if |node_id| is reachable from the entry.
+  // Return true if |node_id| is reachable from the entry.
   inline bool IsReachable(uint32_t node_id) const {
     return tree_.ReachableFromRoots(node_id);
   }
@@ -87,7 +87,7 @@ class DominatorAnalysisBase {
   // Dump the tree structure into the given |out| stream in the dot format.
   inline void DumpAsDot(std::ostream& out) const { tree_.DumpTreeAsDot(out); }
 
-  // Returns true if this is a postdomiator tree.
+  // Return true if this is a postdominator tree.
   inline bool IsPostDominator() const { return tree_.IsPostDominator(); }
 
   // Return the tree itself for manual operations, such as traversing the roots.
