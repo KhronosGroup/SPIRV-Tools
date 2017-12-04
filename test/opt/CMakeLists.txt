@@ -225,3 +225,9 @@ add_spvtools_unittest(TARGET propagator
   SRCS propagator_test.cpp
   LIBS SPIRV-Tools-opt
 )
+
+add_spvtools_unittest(TARGET redundancy_elimination
+  SRCS redundancy_elimination_test.cpp pass_utils.cpp
+  LIBS SPIRV-Tools-opt
+)
+

@@ -432,6 +432,11 @@ Optimizer::PassToken CreateMergeReturnPass();
 // This pass will look for instructions in the same basic block that compute the
 // same value, and remove the redundant ones.
 Optimizer::PassToken CreateLocalRedundancyEliminationPass();
+
+// Create global value numbering pass.
+// This pass will look for instructions where the same value is computed on all
+// paths leading to the instruction.  Those instructions are deleted.
+Optimizer::PassToken CreateRedundancyEliminationPass();
 }  // namespace spvtools
 
 #endif  // SPIRV_TOOLS_OPTIMIZER_HPP_

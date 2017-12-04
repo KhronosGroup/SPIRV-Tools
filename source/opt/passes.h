@@ -39,6 +39,7 @@
 #include "local_ssa_elim_pass.h"
 #include "merge_return_pass.h"
 #include "null_pass.h"
+#include "redundancy_elimination.h"
 #include "set_spec_constant_default_value_pass.h"
 #include "strength_reduction_pass.h"
 #include "strip_debug_info_pass.h"

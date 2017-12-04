@@ -56,13 +56,13 @@ class ValueNumberTable {
   // Returns the value number of the value computed by |inst|.  |inst| must have
   // a result id that will hold the computed value.  If no value number has been
   // assigned to the result id, then the return value is 0.
-  uint32_t GetValueNumber(spvtools::ir::Instruction* inst);
+  uint32_t GetValueNumber(spvtools::ir::Instruction* inst) const;
 
   // Returns the value number of the value contain in |id|.  Returns 0 if it
   // has not been assigned a value number.
-  inline uint32_t GetValueNumber(uint32_t id);
+  inline uint32_t GetValueNumber(uint32_t id) const;
 
-  ir::IRContext* context() { return context_; }
+  ir::IRContext* context() const { return context_; }
 
  private:
   // Assigns a value number to every result id in the module.
@@ -82,10 +82,9 @@ class ValueNumberTable {
   std::unordered_map<uint32_t, uint32_t> id_to_value_;
   ir::IRContext* context_;
   uint32_t next_value_number_;
-
 };
 
-uint32_t ValueNumberTable::GetValueNumber(uint32_t id) {
+uint32_t ValueNumberTable::GetValueNumber(uint32_t id) const {
   return GetValueNumber(context()->get_def_use_mgr()->GetDef(id));
 }
 

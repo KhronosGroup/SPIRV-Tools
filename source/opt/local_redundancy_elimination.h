@@ -33,18 +33,29 @@ class LocalRedundancyEliminationPass : public Pass {
  public:
   const char* name() const override { return "local-redundancy-elimination"; }
   Status Process(ir::IRContext*) override;
+  virtual ir::IRContext::Analysis GetPreservedAnalyses() override {
+    return ir::IRContext::kAnalysisDefUse |
+           ir::IRContext::kAnalysisInstrToBlockMapping |
+           ir::IRContext::kAnalysisDecorations |
+           ir::IRContext::kAnalysisCombinators | ir::IRContext::kAnalysisCFG |
+           ir::IRContext::kAnalysisDominatorAnalysis;
+  }
 
- private:
-  // Deletes instructions in |block| whose value is in |vnTable| or is computed
-  // earlier in |block|. The values computed in |block| are added to |vnTable|.
-  // |value_to_ids| is a map from a value number to the result ids known to
-  // contain those values. The definition of the ids in value_to_ids must
-  // dominate |block|. One value needs to map to multiple ids because the ids
-  // may contain the same value, but have different decorations.  Returns true
-  // if the module is changed.
-  bool EliminateRedundanciesInBB(
-      ir::BasicBlock* block, ValueNumberTable* vnTable,
-      std::vector<std::vector<uint32_t>>* value_to_ids);
+ protected:
+  // Deletes instructions in |block| whose value is in |value_to_ids| or is
+  // computed earlier in |block|.
+  //
+  // |vnTable| must have computed a value number for every result id defined
+  // in |bb|.
+  //
+  // |value_to_ids| is a map from value number to ids.  If {vn, id} is in
+  // |value_to_ids| then vn is the value number of id, and the definition of id
+  // dominates |bb|.
+  //
+  // Returns true if the module is changed.
+  bool EliminateRedundanciesInBB(ir::BasicBlock* block,
+                                 const ValueNumberTable& vnTable,
+                                 std::map<uint32_t, uint32_t>* value_to_ids);
 };
 
 }  // namespace opt

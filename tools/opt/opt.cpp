@@ -197,6 +197,9 @@ Options (in lexicographical order):
                'spirv-opt --merge-blocks -O ...' applies the transformation
                --merge-blocks followed by all the transformations implied by
                -O.
+  --redundancy-elimination
+               Looks for instructions in the same function that compute the
+               same value, and deletes the redundant ones.
   --relax-store-struct
                Allow store from one struct type to a different type with
                compatible layout and members. This option is forwarded to the
@@ -389,6 +392,8 @@ OptStatus ParseFlags(int argc, const char** argv, Optimizer* optimizer,
         optimizer->RegisterPass(CreateCFGCleanupPass());
       } else if (0 == strcmp(cur_arg, "--local-redundancy-elimination")) {
         optimizer->RegisterPass(CreateLocalRedundancyEliminationPass());
+      } else if (0 == strcmp(cur_arg, "--redundancy-elimination")) {
+        optimizer->RegisterPass(CreateRedundancyEliminationPass());
       } else if (0 == strcmp(cur_arg, "--relax-store-struct")) {
         options->relax_struct_store = true;
       } else if (0 == strcmp(cur_arg, "-O")) {

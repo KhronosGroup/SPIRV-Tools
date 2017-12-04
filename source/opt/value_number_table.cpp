@@ -21,7 +21,8 @@
 namespace spvtools {
 namespace opt {
 
-uint32_t ValueNumberTable::GetValueNumber(spvtools::ir::Instruction* inst) {
+uint32_t ValueNumberTable::GetValueNumber(
+    spvtools::ir::Instruction* inst) const {
   assert(inst->result_id() != 0 &&
          "inst must have a result id to get a value number.");
 
