@@ -16,7 +16,7 @@ env:
   matrix:
     # Each line is a set of environment variables set before a build.
     # Thus each line represents a different build configuration.
-    - BUILD_TYPE=Release
+    - BUILD_TYPE=RelWithDebInfo
     - BUILD_TYPE=Debug
 
 compiler:
