@@ -22,7 +22,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "cfg.h"
 #include "ir_context.h"
 #include "module.h"
 
@@ -185,9 +184,8 @@ class SSAPropagator {
   using VisitFunction =
       std::function<PropStatus(ir::Instruction*, ir::BasicBlock**)>;
 
-  SSAPropagator(ir::IRContext* context, ir::CFG* cfg,
-                const VisitFunction& visit_fn)
-      : ctx_(context), cfg_(cfg), visit_fn_(visit_fn) {}
+  SSAPropagator(ir::IRContext* context, const VisitFunction& visit_fn)
+      : ctx_(context), visit_fn_(visit_fn) {}
 
   // Run the propagator on function |fn|. Returns true if changes were made to
   // the function. Otherwise, it returns false.
@@ -252,10 +250,6 @@ class SSAPropagator {
 
   // IR context to use.
   ir::IRContext* ctx_;
-
-  // CFG to propagate values on. TODO(dnovillo): The CFG should be part of
-  // IRContext.
-  ir::CFG* cfg_;
 
   // Function that visits instructions during simulation. The output of this
   // function is used to determine if the simulated instruction produced a value

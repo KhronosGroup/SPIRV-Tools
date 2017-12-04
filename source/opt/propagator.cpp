@@ -21,7 +21,7 @@ void SSAPropagator::AddControlEdge(const Edge& edge) {
   ir::BasicBlock* dest_bb = edge.dest;
 
   // Refuse to add the exit block to the work list.
-  if (dest_bb == cfg_->pseudo_exit_block()) {
+  if (dest_bb == ctx_->cfg()->pseudo_exit_block()) {
     return;
   }
 
@@ -37,7 +37,7 @@ void SSAPropagator::AddControlEdge(const Edge& edge) {
 }
 
 void SSAPropagator::AddSSAEdges(uint32_t id) {
-  get_def_use_mgr()->ForEachUser(id, [this](ir::Instruction *instr) {
+  get_def_use_mgr()->ForEachUser(id, [this](ir::Instruction* instr) {
     // If the basic block for |instr| has not been simulated yet, do nothing.
     if (!BlockHasBeenSimulated(ctx_->get_instr_block(instr))) {
       return;
@@ -142,7 +142,7 @@ bool SSAPropagator::Simulate(ir::Instruction* instr) {
 }
 
 bool SSAPropagator::Simulate(ir::BasicBlock* block) {
-  if (block == cfg_->pseudo_exit_block()) {
+  if (block == ctx_->cfg()->pseudo_exit_block()) {
     return false;
   }
 
@@ -179,8 +179,8 @@ void SSAPropagator::Initialize(ir::Function* fn) {
   // Compute predecessor and successor blocks for every block in |fn|'s CFG.
   // TODO(dnovillo): Move this to ir::CFG and always build them. Alternately,
   // move it to IRContext and build CFG preds/succs on-demand.
-  bb_succs_[cfg_->pseudo_entry_block()].push_back(
-      Edge(cfg_->pseudo_entry_block(), fn->entry().get()));
+  bb_succs_[ctx_->cfg()->pseudo_entry_block()].push_back(
+      Edge(ctx_->cfg()->pseudo_entry_block(), fn->entry().get()));
 
   for (auto& block : *fn) {
     block.ForEachSuccessorLabel([this, &block](uint32_t label_id) {
@@ -190,14 +190,15 @@ void SSAPropagator::Initialize(ir::Function* fn) {
       bb_preds_[succ_bb].push_back(Edge(succ_bb, &block));
     });
     if (block.IsReturn()) {
-      bb_succs_[&block].push_back(Edge(&block, cfg_->pseudo_exit_block()));
-      bb_preds_[cfg_->pseudo_exit_block()].push_back(
-          Edge(cfg_->pseudo_exit_block(), &block));
+      bb_succs_[&block].push_back(
+          Edge(&block, ctx_->cfg()->pseudo_exit_block()));
+      bb_preds_[ctx_->cfg()->pseudo_exit_block()].push_back(
+          Edge(ctx_->cfg()->pseudo_exit_block(), &block));
     }
   }
 
   // Add the edges out of the entry block to seed the propagator.
-  const auto& entry_succs = bb_succs_[cfg_->pseudo_entry_block()];
+  const auto& entry_succs = bb_succs_[ctx_->cfg()->pseudo_entry_block()];
   for (const auto& e : entry_succs) {
     AddControlEdge(e);
   }
