@@ -184,7 +184,7 @@ void MemPass::AddStores(uint32_t ptr_id, std::queue<ir::Instruction*>* insts) {
 }
 
 void MemPass::DCEInst(ir::Instruction* inst,
-                      const function<void(ir::Instruction * )>& call_back) {
+                      const function<void(ir::Instruction*)>& call_back) {
   std::queue<ir::Instruction*> deadInsts;
   deadInsts.push(inst);
   while (!deadInsts.empty()) {
@@ -195,8 +195,8 @@ void MemPass::DCEInst(ir::Instruction* inst,
       continue;
     }
     // Remember operands
-    std::vector<uint32_t> ids;
-    di->ForEachInId([&ids](uint32_t* iid) { ids.push_back(*iid); });
+    std::set<uint32_t> ids;
+    di->ForEachInId([&ids](uint32_t* iid) { ids.insert(*iid); });
     uint32_t varId = 0;
     // Remember variable if dead load
     if (di->opcode() == SpvOpLoad) (void)GetPtr(di, &varId);
