@@ -61,7 +61,7 @@ build:
 
 build_script:
   - mkdir build && cd build
-  - cmake -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_INSTALL_PREFIX=install ..
+  - cmake -GNinja -DSPIRV_BUILD_COMPRESSION=ON -DCMAKE_BUILD_TYPE=%CONFIGURATION% -DCMAKE_INSTALL_PREFIX=install ..
   - ninja install
 
 test_script:
