@@ -270,12 +270,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   }
 
   if (mask & SpvImageOperandsLodMask) {
-    // TODO(atgoo@github.com) Check which opcodes are allowed to use this
-    // ImageOperand.
-    if (is_implicit_lod) {
+    if (!is_explicit_lod && opcode != SpvOpImageFetch) {
       return _.diag(SPV_ERROR_INVALID_DATA)
-             << "Image Operand Lod cannot be used with ImplicitLod opcodes: "
-             << spvOpcodeString(opcode);
+             << "Image Operand Lod can only be used with ExplicitLod opcodes "
+             << "and OpImageFetch: " << spvOpcodeString(opcode);
     };
 
     if (mask & SpvImageOperandsGradMask) {
@@ -286,12 +284,18 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     const uint32_t type_id = _.GetTypeId(inst.words[word_index++]);
-    // TODO(atgoo@github.com) Check which opcode can work with floats and which
-    // with ints. The spec is unclear.
-    if (!_.IsFloatScalarType(type_id) && !_.IsIntScalarType(type_id)) {
-      return _.diag(SPV_ERROR_INVALID_DATA)
-             << "Expected Image Operand Lod to be int or float scalar: "
-             << spvOpcodeString(opcode);
+    if (is_explicit_lod) {
+      if (!_.IsFloatScalarType(type_id)) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Image Operand Lod to be float scalar when used with "
+            << "ExplicitLod: " << spvOpcodeString(opcode);
+      }
+    } else {
+      if (!_.IsIntScalarType(type_id)) {
+        return _.diag(SPV_ERROR_INVALID_DATA)
+            << "Expected Image Operand Lod to be int scalar when used with "
+            << "OpImageFetch";
+      }
     }
 
     if (info.dim != SpvDim1D && info.dim != SpvDim2D && info.dim != SpvDim3D &&
@@ -1009,9 +1013,10 @@ spv_result_t ImagePass(ValidationState_t& _,
 
       if (opcode == SpvOpImageGather) {
         const uint32_t component_index_type = _.GetOperandTypeId(inst, 4);
-        if (!_.IsIntScalarType(component_index_type)) {
+        if (!_.IsIntScalarType(component_index_type) ||
+            _.GetBitWidth(component_index_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA)
-                 << "Expected Component to be int scalar: "
+                 << "Expected Component to be 32-bit int scalar: "
                  << spvOpcodeString(opcode);
         }
       } else {
@@ -1302,9 +1307,9 @@ spv_result_t ImagePass(ValidationState_t& _,
       }
 
       const uint32_t lod_type = _.GetOperandTypeId(inst, 3);
-      if (!_.IsIntScalarType(lod_type) && !_.IsFloatScalarType(lod_type)) {
+      if (!_.IsIntScalarType(lod_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA)
-               << "Expected Level of Detail to be int or float scalar: "
+               << "Expected Level of Detail to be int scalar: "
                << spvOpcodeString(opcode);
       }
 
