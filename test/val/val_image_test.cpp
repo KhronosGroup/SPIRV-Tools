@@ -42,6 +42,7 @@ OpCapability MinLod
 OpCapability Sampled1D
 OpCapability SampledRect
 OpCapability ImageQuery
+OpCapability Int64
 )";
 
   ss << capabilities_and_extensions;
@@ -56,6 +57,7 @@ OpCapability ImageQuery
 %f32 = OpTypeFloat 32
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
+%u64 = OpTypeInt 64 0
 %s32vec2 = OpTypeVector %s32 2
 %u32vec2 = OpTypeVector %u32 2
 %f32vec2 = OpTypeVector %f32 2
@@ -87,6 +89,8 @@ OpCapability ImageQuery
 %u32_2 = OpConstant %u32 2
 %u32_3 = OpConstant %u32 3
 %u32_4 = OpConstant %u32 4
+
+%u64_0 = OpConstant %u64 0
 
 %u32vec2arr4 = OpTypeArray %u32vec2 %u32_4
 %u32vec2arr3 = OpTypeArray %u32vec2 %u32_3
@@ -805,8 +809,8 @@ TEST_F(ValidateImage, ImplicitLodWithLod) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Image Operand Lod cannot be used with ImplicitLod opcodes: "
-                "ImageSampleImplicitLod"));
+      HasSubstr("Image Operand Lod can only be used with ExplicitLod opcodes "
+                "and OpImageFetch: ImageSampleImplicitLod"));
 }
 
 TEST_F(ValidateImage, LodWrongType) {
@@ -819,8 +823,8 @@ TEST_F(ValidateImage, LodWrongType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Lod to be int or float scalar: "
-                        "ImageSampleExplicitLod"));
+              HasSubstr("Expected Image Operand Lod to be float scalar when "
+                        "used with ExplicitLod: ImageSampleExplicitLod"));
 }
 
 TEST_F(ValidateImage, LodWrongDim) {
@@ -2078,6 +2082,19 @@ TEST_F(ValidateImage, FetchCoordinateSizeTooSmall) {
                         "ImageFetch"));
 }
 
+TEST_F(ValidateImage, FetchLodNotInt) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%res1 = OpImageFetch %f32vec4 %img %u32vec2_01 Lod %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image Operand Lod to be int scalar when used "
+                        "with OpImageFetch"));
+}
+
 TEST_F(ValidateImage, GatherSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
@@ -2205,7 +2222,23 @@ TEST_F(ValidateImage, GatherWrongComponentType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Component to be int scalar: ImageGather"));
+              HasSubstr("Expected Component to be 32-bit int scalar: "
+                        "ImageGather"));
+}
+
+TEST_F(ValidateImage, GatherComponentNot32Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u64_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Component to be 32-bit int scalar: "
+                        "ImageGather"));
 }
 
 TEST_F(ValidateImage, GatherDimCube) {
@@ -3027,13 +3060,13 @@ TEST_F(ValidateImage, QuerySizeLodMultisampled) {
 TEST_F(ValidateImage, QuerySizeLodWrongLodType) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
-%res1 = OpImageQuerySizeLod %u32vec2 %img %u32vec2_01
+%res1 = OpImageQuerySizeLod %u32vec2 %img %f32_0
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Level of Detail to be int or float scalar: "
+              HasSubstr("Expected Level of Detail to be int scalar: "
                         "ImageQuerySizeLod"));
 }
 
